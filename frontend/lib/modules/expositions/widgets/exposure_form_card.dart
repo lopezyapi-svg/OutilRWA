@@ -6,6 +6,7 @@ import 'package:lottie/lottie.dart';
 import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../models/exposition_models.dart';
 
@@ -52,6 +53,169 @@ Color _wizardMutedColor(BuildContext context) =>
 Color _wizardSubtleMutedColor(BuildContext context) => _isExposureDark(context)
     ? const Color(0xFFA3B1C8)
     : const Color(0xFF71839E);
+
+String _capitalizeTooltipText(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) {
+    return trimmed;
+  }
+  final first = trimmed[0];
+  final shouldCapitalize = RegExp(r'[a-zà-ÿ]').hasMatch(first);
+  if (!shouldCapitalize) {
+    return trimmed;
+  }
+  return '${first.toUpperCase()}${trimmed.substring(1)}';
+}
+
+String _normalizeTooltipSentence(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) {
+    return trimmed;
+  }
+  final normalized = _capitalizeTooltipText(trimmed);
+  if (RegExp(r'[.!?]$').hasMatch(normalized)) {
+    return normalized;
+  }
+  return '$normalized.';
+}
+
+List<String> _expandTooltipMessageLines(String message) {
+  final lines = <String>[];
+  for (final rawLine in message.split('\n')) {
+    final line = rawLine.trim();
+    if (line.isEmpty) {
+      lines.add('');
+      continue;
+    }
+    if (line.startsWith('[[NOTE]]')) {
+      final noteText = line.replaceFirst('[[NOTE]]', '').trimLeft();
+      lines.add('[[NOTE]]${_normalizeTooltipSentence(noteText)}');
+      continue;
+    }
+    final segments = line
+        .split(';')
+        .map((segment) => segment.trim())
+        .where((segment) => segment.isNotEmpty);
+    lines.addAll(segments.map(_normalizeTooltipSentence));
+  }
+  return lines;
+}
+
+InlineSpan _buildModernTooltipContent(String title, String message) {
+  final lines = _expandTooltipMessageLines(message);
+
+  if (lines.isEmpty) {
+    return const TextSpan(text: '');
+  }
+
+  final spans = <InlineSpan>[
+    TextSpan(
+      text: '$title\n',
+      style: const TextStyle(
+        fontSize: 12.4,
+        fontWeight: FontWeight.w800,
+        color: Colors.white,
+        height: 1.2,
+      ),
+    ),
+  ];
+
+  for (var index = 0; index < lines.length; index++) {
+    final line = lines[index];
+    if (line.isEmpty) {
+      spans.add(const TextSpan(text: '\n'));
+      continue;
+    }
+    final isNote = line.startsWith('[[NOTE]]');
+    if (isNote) {
+      final noteText = line.replaceFirst('[[NOTE]]', '').trimLeft();
+      spans.add(
+        TextSpan(
+          text: '$noteText${index == lines.length - 1 ? '' : '\n'}',
+          style: const TextStyle(
+            fontSize: 10.2,
+            fontWeight: FontWeight.w500,
+            fontStyle: FontStyle.italic,
+            color: Color(0xFFFFB86B),
+            height: 1.35,
+          ),
+        ),
+      );
+      continue;
+    }
+
+    final separatorIndex = line.indexOf(':');
+    final hasLabelValueFormat =
+        separatorIndex > 0 && separatorIndex < line.length - 1;
+
+    if (hasLabelValueFormat) {
+      final label = line.substring(0, separatorIndex).trim();
+      final detail = line.substring(separatorIndex + 1).trim();
+      spans.add(
+        TextSpan(
+          children: [
+            const TextSpan(
+              text: '• ',
+              style: TextStyle(
+                fontSize: 11.4,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF8FB4FF),
+                height: 1.5,
+              ),
+            ),
+            TextSpan(
+              text: _capitalizeTooltipText(label),
+              style: const TextStyle(
+                fontSize: 11.3,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                height: 1.5,
+              ),
+            ),
+            TextSpan(
+              text:
+                  ' : ${_normalizeTooltipSentence(detail)}${index == lines.length - 1 ? '' : '\n'}',
+              style: const TextStyle(
+                fontSize: 11.2,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFFE8EEF9),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      );
+      continue;
+    }
+
+    spans.add(
+      TextSpan(
+        children: [
+          const TextSpan(
+            text: '• ',
+            style: TextStyle(
+              fontSize: 11.4,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF8FB4FF),
+              height: 1.48,
+            ),
+          ),
+          TextSpan(
+            text: '$line${index == lines.length - 1 ? '' : '\n'}',
+            style: const TextStyle(
+              fontSize: 11.2,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFFE8EEF9),
+              height: 1.48,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  return TextSpan(children: spans);
+}
 
 class ExposureFormCard extends StatefulWidget {
   const ExposureFormCard({
@@ -132,6 +296,26 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   static const String _commercialRealEstateCriteriaTooltip =
       'Ratio Prêt/Valeur (LTV) ≤ 90 %\n'
       'Consentement du client à la transmission des données aux BIC';
+  static const String _crmFinancedTooltip =
+      'Une CRM financée est une protection de crédit reposant sur une sûreté réelle ou financière. Elle réduit l exposition en tenant compte de la valeur ajustée de la sûreté reçue.';
+  static const String _collateralValueTooltip =
+      'Montant de la sûreté ou du collatéral reçu. Cette valeur sera corrigée par les décotes réglementaires avant d être déduite de l exposition.';
+  static const String _heTooltip =
+      'HE correspond à la décote appliquée à l exposition. Dans notre cas actuel, l exposition est un crédit classique déjà catégorisé. La décote HE est donc fixée à 0 %. Elle pourrait être différente pour certaines opérations de marché ou expositions sous forme de titres.';
+  static const String _hcTooltip =
+      'HC est la décote appliquée à la sûreté. Elle dépend du type de sûreté, de la notation, du type d émetteur et de la durée résiduelle du titre reçu en garantie.';
+  static const String _hfxTooltip =
+      'Hfx correspond à la décote appliquée lorsqu il existe une différence de devise entre l exposition et la sûreté. Elle est de 8 % en cas d asymétrie de devises. Toutefois, entre le FCFA et l euro, elle est de 0 %.';
+  static const String _evaTooltip =
+      'EVA est l exposition ajustée après application de la décote HE : EVA = Montant brut de l exposition × (1 + HE).';
+  static const String _cvaTooltip =
+      'CVA est la valeur ajustée de la sûreté après application des décotes HC et Hfx : CVA = Valeur de la sûreté × (1 - HC - Hfx).';
+  static const String _eadAfterFinancedCrmTooltip =
+      'L EAD après CRM financée correspond à l exposition nette après prise en compte de la sûreté : EAD = max(0, EVA - CVA).';
+  static const String _ineligibleCollateralTooltip =
+      'Lorsque la sûreté n est pas éligible, elle ne peut pas réduire l exposition réglementaire. L exposition reste donc inchangée.';
+  static const String _basketTooltip =
+      'Lorsque la sûreté est composée de plusieurs actifs, la décote globale est calculée comme la somme pondérée des décotes de chaque actif.';
   static const List<String> _nonFinancedCrmTypes = [
     'Garantie etatique',
     'Assurance credit',
@@ -237,11 +421,16 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   late String _crmMode;
   late String _lastSelectedCrmMode;
   late String _crmType;
+  late String _collateralType;
+  late String _collateralCurrency;
   late String _issuerType;
   late String _issuerRating;
   late String _maturityBucket;
   late String _guarantorCategoryCode;
   late String _guarantorRating;
+  late bool _convertibleMainIndex;
+  late double _opcvmHighestHaircut;
+  List<FinancedCrmBasketItem> _basketItems = const [];
   DateTime? _grantDate;
   DateTime? _maturityDate;
 
@@ -396,15 +585,29 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _crmType = _nonFinancedCrmTypes.contains(draft?.crmType)
         ? draft!.crmType
         : 'Garantie etatique';
-    _issuerType = financedCrmIssuerTypes.contains(draft?.issuerType)
+    _collateralType = financedCrmCollateralTypes.contains(draft?.collateralType)
+        ? draft!.collateralType
+        : financedCrmCollateralTypes.first;
+    _collateralCurrency = _resolveCurrency(
+      draft?.collateralCurrency,
+      fallback: _currency,
+    );
+    _issuerType = financedCrmIssuerRoleOptions.contains(draft?.issuerType)
         ? draft!.issuerType
-        : financedCrmIssuerTypes.first;
+        : financedCrmIssuerRoleOptions.last;
     _issuerRating = draft?.issuerRating != null
         ? coerceFinancedCrmCollateralRating(draft!.issuerRating)
-        : financedCrmCollateralRatings.first;
+        : financedCrmDebtRatings.last;
     _maturityBucket = financedCrmMaturityBuckets.contains(draft?.maturityBucket)
         ? draft!.maturityBucket
         : financedCrmMaturityBuckets.first;
+    _convertibleMainIndex = draft?.convertibleMainIndex ?? true;
+    _opcvmHighestHaircut =
+        coerceFinancedCrmOpcvmHaircut(draft?.opcvmHighestHaircut);
+    _basketItems = draft?.basketItems
+            .map((item) => FinancedCrmBasketItem.fromJson(item.toJson()))
+            .toList(growable: true) ??
+        <FinancedCrmBasketItem>[];
     _guarantorCategoryCode =
         guarantorEligibleCategoryCodes.contains(draft?.guarantorCategoryCode)
             ? draft!.guarantorCategoryCode
@@ -414,6 +617,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       preferred: 'AAA',
     );
     _coverage = draft?.crmCoveragePercent ?? 0.0;
+    _syncFinancedCollateralCurrencyToExposureIfNeeded();
+    _syncBasketCollateralController();
   }
 
   @override
@@ -521,6 +726,109 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     }
   }
 
+  List<String> get _availableCurrencyOptions {
+    final values = <String>{
+      ..._supportedCurrencies,
+      _currency,
+      _collateralCurrency
+    };
+    return values.toList()..sort();
+  }
+
+  FinancedCrmSnapshot get _financedCrmSnapshotPreview {
+    final amount = _parseDecimal(_amountController.text) ?? 0.0;
+    final collateral = _parseDecimal(_collateralController.text) ?? 0.0;
+    return computeFinancedCrmSnapshot(
+      _draftFromValues(
+        grossAmount: amount,
+        collateralValue: collateral,
+        fxHaircut: 0.0,
+        comment: _commentController.text,
+      ),
+    );
+  }
+
+  String _formatReadonlyAmount(double amount) {
+    return amount <= 0
+        ? '0'
+        : AppFormatters.currency(amount, currencyCode: _currency);
+  }
+
+  double get _basketTotalValue => _basketItems.fold<double>(
+        0.0,
+        (total, item) => total + item.value,
+      );
+
+  void _syncBasketCollateralController() {
+    if (!financedCrmCollateralIsBasket(_collateralType)) {
+      return;
+    }
+    _collateralController.text = _basketTotalValue.toStringAsFixed(0);
+  }
+
+  void _syncFinancedCollateralCurrencyToExposureIfNeeded() {
+    if (_collateralType == 'Liquidités dans la même devise') {
+      _collateralCurrency = _currency;
+    }
+  }
+
+  void _setCollateralType(String value) {
+    setState(() {
+      _collateralType = value;
+      if (_collateralType == 'Liquidités dans la même devise') {
+        _collateralCurrency = _currency;
+      }
+      if (!financedCrmCollateralRequiresIssuerRole(_collateralType)) {
+        _issuerType = financedCrmIssuerRoleOptions.last;
+      }
+      if (!financedCrmCollateralRequiresRating(_collateralType)) {
+        _issuerRating = financedCrmDebtRatings.last;
+      }
+      if (!financedCrmCollateralRequiresResidualMaturity(_collateralType)) {
+        _maturityBucket = financedCrmMaturityBuckets.first;
+      }
+      if (!financedCrmCollateralSupportsConvertibleIndexQuestion(
+          _collateralType)) {
+        _convertibleMainIndex = true;
+      }
+      if (!financedCrmCollateralSupportsOpcvmHaircut(_collateralType)) {
+        _opcvmHighestHaircut = 0.30;
+      }
+      if (financedCrmCollateralIsBasket(value) && _basketItems.isEmpty) {
+        _basketItems = const [FinancedCrmBasketItem()];
+      }
+      _syncBasketCollateralController();
+    });
+  }
+
+  void _addBasketItem() {
+    setState(() {
+      _basketItems = [
+        ..._basketItems,
+        FinancedCrmBasketItem(currency: _collateralCurrency),
+      ];
+      _syncBasketCollateralController();
+    });
+  }
+
+  void _updateBasketItem(int index, FinancedCrmBasketItem item) {
+    setState(() {
+      final next = List<FinancedCrmBasketItem>.from(_basketItems);
+      next[index] = item;
+      _basketItems = next;
+      _syncBasketCollateralController();
+    });
+  }
+
+  void _removeBasketItem(int index) {
+    setState(() {
+      final next = List<FinancedCrmBasketItem>.from(_basketItems);
+      next.removeAt(index);
+      _basketItems = next;
+      _syncBasketCollateralController();
+    });
+  }
+
   Widget _dropdownLabel(
     String text, {
     bool translate = false,
@@ -581,40 +889,119 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     String title,
     String message,
   ) {
-    final lines = message
-        .split('\n')
-        .map((line) => line.trim())
-        .where((line) => line.isNotEmpty)
-        .toList(growable: false);
+    final lines = _expandTooltipMessageLines(message);
 
     if (lines.isEmpty) {
       return const TextSpan(text: '');
     }
 
-    return TextSpan(
-      children: [
-        TextSpan(
-          text: '$title\n',
-          style: const TextStyle(
-            fontSize: 12.4,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            height: 1.2,
-          ),
+    final spans = <InlineSpan>[
+      TextSpan(
+        text: '$title\n',
+        style: const TextStyle(
+          fontSize: 12.4,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+          height: 1.2,
         ),
-        for (var index = 0; index < lines.length; index++)
+      ),
+    ];
+
+    for (var index = 0; index < lines.length; index++) {
+      final line = lines[index];
+      if (line.isEmpty) {
+        spans.add(const TextSpan(text: '\n'));
+        continue;
+      }
+      final isNote = line.startsWith('[[NOTE]]');
+      if (isNote) {
+        final noteText = line.replaceFirst('[[NOTE]]', '').trimLeft();
+        spans.add(
           TextSpan(
-            text:
-                '${lines[index].startsWith('(') ? '• ' : ''}${lines[index]}${index == lines.length - 1 ? '' : '\n'}',
+            text: '$noteText${index == lines.length - 1 ? '' : '\n'}',
             style: const TextStyle(
-              fontSize: 11.4,
+              fontSize: 10.2,
               fontWeight: FontWeight.w500,
-              color: Color(0xFFE8EEF9),
-              height: 1.42,
+              fontStyle: FontStyle.italic,
+              color: Color(0xFFFFB86B),
+              height: 1.35,
             ),
           ),
-      ],
-    );
+        );
+        continue;
+      }
+
+      final separatorIndex = line.indexOf(':');
+      final hasLabelValueFormat =
+          separatorIndex > 0 && separatorIndex < line.length - 1;
+
+      if (hasLabelValueFormat) {
+        final label = line.substring(0, separatorIndex).trim();
+        final detail = line.substring(separatorIndex + 1).trim();
+        spans.add(
+          TextSpan(
+            children: [
+              const TextSpan(
+                text: '• ',
+                style: TextStyle(
+                  fontSize: 11.4,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF8FB4FF),
+                  height: 1.5,
+                ),
+              ),
+              TextSpan(
+                text: _capitalizeTooltipText(label),
+                style: const TextStyle(
+                  fontSize: 11.3,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1.5,
+                ),
+              ),
+              TextSpan(
+                text:
+                    ' : ${_normalizeTooltipSentence(detail)}${index == lines.length - 1 ? '' : '\n'}',
+                style: const TextStyle(
+                  fontSize: 11.2,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFFE8EEF9),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        );
+        continue;
+      }
+
+      spans.add(
+        TextSpan(
+          children: [
+            const TextSpan(
+              text: '• ',
+              style: TextStyle(
+                fontSize: 11.4,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF8FB4FF),
+                height: 1.48,
+              ),
+            ),
+            TextSpan(
+              text: '$line${index == lines.length - 1 ? '' : '\n'}',
+              style: const TextStyle(
+                fontSize: 11.2,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFFE8EEF9),
+                height: 1.48,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return TextSpan(children: spans);
   }
 
   Widget _buildBankInstitutionInfoTooltip({
@@ -1436,7 +1823,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   final parsed = _parseDecimal(value);
-                  return parsed == null ? context.tr('Montant invalide') : null;
+                  if (parsed == null) {
+                    return context.tr('Montant invalide');
+                  }
+                  return parsed <= 0
+                      ? context.tr('Montant positif requis')
+                      : null;
                 },
                 onChanged: (_) => setState(() {}),
               ),
@@ -1457,8 +1849,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       ),
                     )
                     .toList(),
-                onChanged: (value) =>
-                    setState(() => _currency = value ?? _currency),
+                onChanged: (value) => setState(() {
+                  _currency = value ?? _currency;
+                  _syncFinancedCollateralCurrencyToExposureIfNeeded();
+                }),
               ),
             ),
             _buildFieldCard(
@@ -1527,6 +1921,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           accent: _crmMode == 'CRM financee'
               ? const Color(0xFF0F766E)
               : AppTheme.accent,
+          inlineTooltip:
+              _crmMode == 'CRM financee' ? _crmFinancedTooltip : null,
+          tooltipTitle: 'CRM financée',
           child: _buildCrmDynamicBody(context),
         );
       case 5:
@@ -1613,10 +2010,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   bool get _usesBankInstitutionMatrix =>
       _isBankInstitutionCategory &&
       _bankInstitutionCase == bankInstitutionEligibleCategoriesCase;
-  bool get _usesEnterprisePrudentialPenalty =>
-      _isEnterpriseLikeCategory &&
-      _enterpriseExceedsBceaoDegradationThreshold == false &&
-      _enterprisePrudentialProcedure == true;
   bool get _shouldAskEnterprisePrudentialProcedure =>
       _isEnterpriseLikeCategory &&
       _enterpriseExceedsBceaoDegradationThreshold == false;
@@ -1907,6 +2300,66 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _sovereignOceNote = sovereignOceNotes.first;
       }
     });
+  }
+
+  Widget _buildSovereignOceQuestionCard(BuildContext context) {
+    return _buildFieldCard(
+      context: context,
+      title: 'Le souverain est-il établi par les OCE ?',
+      subtitle: '',
+      icon: Icons.fact_check_outlined,
+      child: CheckboxListTile(
+        value: _sovereignOceEstablished,
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        controlAffinity: ListTileControlAffinity.leading,
+        title: Text(
+          context.tr('Oui'),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 10.8,
+                fontWeight: FontWeight.w600,
+                color: _wizardBodyTitleColor(context),
+              ),
+        ),
+        onChanged: (value) {
+          setState(() {
+            _sovereignOceEstablished = value ?? false;
+            if (!_sovereignOceEstablished) {
+              _sovereignOceNote = sovereignOceNotes.first;
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildSovereignRatingAndOceRow(
+    BuildContext context,
+    Widget ratingCard,
+  ) {
+    return _StepGridFullWidth(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 760) {
+            return Column(
+              children: [
+                ratingCard,
+                const SizedBox(height: 12),
+                _buildSovereignOceQuestionCard(context),
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: ratingCard),
+              const SizedBox(width: 12),
+              Expanded(child: _buildSovereignOceQuestionCard(context)),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildCategoryStepBody(BuildContext context) {
@@ -2492,7 +2945,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             child: DropdownButtonFormField<double>(
               value: _defaultedExposureInitialRiskWeight,
               isExpanded: true,
-              decoration: _fieldDecoration(context),
+              decoration: _fieldDecoration(
+                context,
+                hint: context.tr('Choisir une option'),
+              ),
               validator: (value) =>
                   value == null ? context.tr('Champ requis') : null,
               selectedItemBuilder: (context) =>
@@ -2657,38 +3113,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       );
     }
 
-    if (_usesEnterprisePrudentialPenalty) {
-      cards.add(
-        _StepGridFullWidth(
-          child: _buildFieldCard(
-            context: context,
-            title: 'Procédure prudentielle détectée',
-            subtitle: 'Pondération renforcée appliquée',
-            icon: Icons.gpp_bad_outlined,
-            inlineTooltip: _enterpriseArticle133Tooltip,
-            tooltipTitle: 'Article 133',
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-              decoration: BoxDecoration(
-                color: _wizardInputFillColor(context),
-                borderRadius: BorderRadius.circular(_exposureFormRadius),
-                border: Border.all(color: _wizardBorderColor(context)),
-              ),
-              child: Text(
-                context.tr('Pondération appliquée : 150 %'),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontSize: 11.6,
-                      fontWeight: FontWeight.w700,
-                      color: _wizardBodyTitleColor(context),
-                    ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
     if (_shouldAskEnterpriseInvestmentFirm) {
       cards.add(
         _StepGridFullWidth(
@@ -2813,46 +3237,19 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           onChanged: _handleCounterpartyRatingChanged,
         ),
       );
-      cards.add(
-        (_isBankInstitutionCategory || _isEnterpriseLikeCategory)
-            ? _StepGridFullWidth(child: ratingCard)
-            : ratingCard,
-      );
-    }
-
-    if (_isSovereignCategory &&
-        !_sovereignPriorityQuestionAnsweredYes &&
-        _rating == 'Non noté') {
-      cards.add(
-        _buildFieldCard(
-          context: context,
-          title: 'Le souverain est-il établi par les OCE ?',
-          subtitle: '',
-          icon: Icons.fact_check_outlined,
-          child: CheckboxListTile(
-            value: _sovereignOceEstablished,
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            controlAffinity: ListTileControlAffinity.leading,
-            title: Text(
-              context.tr('Oui'),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 10.8,
-                    fontWeight: FontWeight.w600,
-                    color: _wizardBodyTitleColor(context),
-                  ),
-            ),
-            onChanged: (value) {
-              setState(() {
-                _sovereignOceEstablished = value ?? false;
-                if (!_sovereignOceEstablished) {
-                  _sovereignOceNote = sovereignOceNotes.first;
-                }
-              });
-            },
-          ),
-        ),
-      );
+      if (_isSovereignCategory && !_sovereignPriorityQuestionAnsweredYes) {
+        if (_rating == 'Non noté') {
+          cards.add(_buildSovereignRatingAndOceRow(context, ratingCard));
+        } else {
+          cards.add(_StepGridFullWidth(child: ratingCard));
+        }
+      } else {
+        cards.add(
+          (_isBankInstitutionCategory || _isEnterpriseLikeCategory)
+              ? _StepGridFullWidth(child: ratingCard)
+              : ratingCard,
+        );
+      }
     }
 
     if (_isSovereignCategory &&
@@ -3149,6 +3546,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final residualMaturityMonths = _maturityDate != null
         ? _positiveMonthDifference(DateTime.now(), _maturityDate!)
         : null;
+    final grossAmount = _parseDecimal(_amountController.text) ?? 0.0;
     final isOffBalance = _isOffBalanceCategory;
     final counterpartyName = _nameController.text.trim();
     final residenceCountry = _countryController.text.trim();
@@ -3184,6 +3582,16 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         accent: const Color(0xFF0F766E),
       ),
       _KpiData(
+        label: context.tr('Montant brut'),
+        value: compactCurrencyForDisplay(
+          grossAmount,
+          fromCurrency: _currency,
+          toCurrency: displayCurrency,
+        ),
+        icon: Icons.payments_outlined,
+        accent: const Color(0xFF0284C7),
+      ),
+      _KpiData(
         label: context.tr('EAD'),
         value: compactCurrencyForDisplay(
           preview.ead,
@@ -3199,13 +3607,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           value: _offBalanceRiskLevel ?? '-',
           icon: Icons.warning_amber_rounded,
           accent: const Color(0xFFDC2626),
-        )
-      else
-        _KpiData(
-          label: context.tr('RW brut'),
-          value: _formatPercent(preview.originalRw),
-          icon: Icons.filter_tilt_shift_rounded,
-          accent: const Color(0xFF14B8A6),
         ),
       _KpiData(
         label: isOffBalance ? context.tr('FCEC') : context.tr('RW final'),
@@ -3261,109 +3662,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     }
 
     if (_crmMode == 'CRM financee') {
-      return _StepGrid(
-        children: [
-          _buildFieldCard(
-            context: context,
-            title: 'Valeur du collateral',
-            subtitle: 'Montant eligible',
-            icon: Icons.account_balance_outlined,
-            child: TextFormField(
-              controller: _collateralController,
-              decoration: _fieldDecoration(
-                context,
-                hint: context.tr('Valeur du collateral'),
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              validator: _crmMode == 'CRM financee' ? _amountValidator : null,
-              onChanged: (_) => setState(() {}),
-            ),
-          ),
-          _buildFieldCard(
-            context: context,
-            title: 'Type d emetteur',
-            subtitle: 'Nature du collateral',
-            icon: Icons.category_outlined,
-            child: DropdownButtonFormField<String>(
-              value: financedCrmIssuerTypes.contains(_issuerType)
-                  ? _issuerType
-                  : financedCrmIssuerTypes.first,
-              isExpanded: true,
-              decoration: _fieldDecoration(context),
-              selectedItemBuilder: (context) => _selectedStringDropdownItems(
-                financedCrmIssuerTypes,
-                translate: true,
-              ),
-              items: _stringDropdownItems(
-                financedCrmIssuerTypes,
-                translate: true,
-              ),
-              onChanged: (value) =>
-                  setState(() => _issuerType = value ?? _issuerType),
-            ),
-          ),
-          _buildFieldCard(
-            context: context,
-            title: 'Notation du collateral',
-            subtitle: 'Qualite de l emetteur',
-            icon: Icons.workspace_premium_outlined,
-            child: DropdownButtonFormField<String>(
-              value: financedCrmCollateralRatings.contains(_issuerRating)
-                  ? _issuerRating
-                  : financedCrmCollateralRatings.first,
-              isExpanded: true,
-              decoration: _fieldDecoration(context),
-              selectedItemBuilder: (context) => _selectedStringDropdownItems(
-                financedCrmCollateralRatings,
-              ),
-              items: _stringDropdownItems(financedCrmCollateralRatings),
-              onChanged: (value) =>
-                  setState(() => _issuerRating = value ?? _issuerRating),
-            ),
-          ),
-          _buildFieldCard(
-            context: context,
-            title: 'Maturite',
-            subtitle: 'Bucket prudentiel',
-            icon: Icons.schedule_outlined,
-            child: DropdownButtonFormField<String>(
-              value: financedCrmMaturityBuckets.contains(_maturityBucket)
-                  ? _maturityBucket
-                  : financedCrmMaturityBuckets.first,
-              isExpanded: true,
-              decoration: _fieldDecoration(context),
-              selectedItemBuilder: (context) => _selectedStringDropdownItems(
-                financedCrmMaturityBuckets,
-                translate: true,
-              ),
-              items: _stringDropdownItems(
-                financedCrmMaturityBuckets,
-                translate: true,
-              ),
-              onChanged: (value) =>
-                  setState(() => _maturityBucket = value ?? _maturityBucket),
-            ),
-          ),
-          _buildFieldCard(
-            context: context,
-            title: 'Decote de change',
-            subtitle: 'Hfx en pourcentage',
-            icon: Icons.percent_rounded,
-            child: TextFormField(
-              controller: _fxHaircutController,
-              decoration: _fieldDecoration(
-                context,
-                hint: context.tr('Ex: 8'),
-              ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              validator: _crmMode == 'CRM financee' ? _percentValidator : null,
-              onChanged: (_) => setState(() {}),
-            ),
-          ),
-        ],
-      );
+      return _buildFinancedCrmBody(context);
     }
 
     return _StepGrid(
@@ -3486,6 +3785,779 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFinancedCrmBody(BuildContext context) {
+    final snapshot = _financedCrmSnapshotPreview;
+    final isBasket = financedCrmCollateralIsBasket(_collateralType);
+    final showIssuerRole = financedCrmCollateralRequiresIssuerRole(
+      _collateralType,
+    );
+    final showRating = financedCrmCollateralRequiresRating(_collateralType);
+    final showResidualMaturity = financedCrmCollateralRequiresResidualMaturity(
+      _collateralType,
+    );
+    final showConvertibleIndexQuestion =
+        financedCrmCollateralSupportsConvertibleIndexQuestion(_collateralType);
+    final showOpcvmHaircut =
+        financedCrmCollateralSupportsOpcvmHaircut(_collateralType);
+    final collateralAmount = isBasket
+        ? _basketTotalValue
+        : (_parseDecimal(_collateralController.text) ?? 0.0);
+
+    final regulatoryFields = <Widget>[
+      if (showIssuerRole)
+        _buildFieldCard(
+          context: context,
+          title: 'Type d’émetteur',
+          subtitle: 'Rôle réglementaire',
+          icon: Icons.apartment_outlined,
+          child: DropdownButtonFormField<String>(
+            value: financedCrmIssuerRoleOptions.contains(_issuerType)
+                ? _issuerType
+                : financedCrmIssuerRoleOptions.last,
+            isExpanded: true,
+            decoration: _fieldDecoration(context),
+            selectedItemBuilder: (context) =>
+                _selectedStringDropdownItems(financedCrmIssuerRoleOptions),
+            items: _stringDropdownItems(financedCrmIssuerRoleOptions),
+            onChanged: (value) => setState(
+              () => _issuerType = value ?? financedCrmIssuerRoleOptions.last,
+            ),
+          ),
+        ),
+      if (showRating)
+        _buildFieldCard(
+          context: context,
+          title: 'Notation de la sûreté',
+          subtitle: 'Notation externe',
+          icon: Icons.workspace_premium_outlined,
+          child: DropdownButtonFormField<String>(
+            value: financedCrmDebtRatings.contains(_issuerRating)
+                ? _issuerRating
+                : financedCrmDebtRatings.last,
+            isExpanded: true,
+            decoration: _fieldDecoration(context),
+            selectedItemBuilder: (context) =>
+                _selectedStringDropdownItems(financedCrmDebtRatings),
+            items: _stringDropdownItems(financedCrmDebtRatings),
+            onChanged: (value) => setState(
+              () => _issuerRating = value ?? financedCrmDebtRatings.last,
+            ),
+          ),
+        ),
+      if (showResidualMaturity)
+        _buildFieldCard(
+          context: context,
+          title: 'Durée résiduelle du titre',
+          subtitle: 'Titre reçu en garantie',
+          icon: Icons.schedule_outlined,
+          child: DropdownButtonFormField<String>(
+            value: financedCrmMaturityBuckets.contains(_maturityBucket)
+                ? _maturityBucket
+                : financedCrmMaturityBuckets.first,
+            isExpanded: true,
+            decoration: _fieldDecoration(context),
+            selectedItemBuilder: (context) =>
+                _selectedStringDropdownItems(financedCrmMaturityBuckets),
+            items: _stringDropdownItems(financedCrmMaturityBuckets),
+            onChanged: (value) => setState(
+              () => _maturityBucket = value ?? financedCrmMaturityBuckets.first,
+            ),
+          ),
+        ),
+      if (showConvertibleIndexQuestion)
+        _buildFieldCard(
+          context: context,
+          title: 'Indice principal reconnu ?',
+          subtitle: 'Obligation convertible',
+          icon: Icons.auto_graph_outlined,
+          child: DropdownButtonFormField<bool>(
+            value: _convertibleMainIndex,
+            isExpanded: true,
+            decoration: _fieldDecoration(context),
+            items: const [
+              DropdownMenuItem<bool>(value: true, child: Text('Oui')),
+              DropdownMenuItem<bool>(value: false, child: Text('Non')),
+            ],
+            onChanged: (value) => setState(
+              () => _convertibleMainIndex = value ?? true,
+            ),
+          ),
+        ),
+      if (showOpcvmHaircut)
+        _buildFieldCard(
+          context: context,
+          title: 'Plus forte décote du fonds',
+          subtitle: 'Actif le plus risqué',
+          icon: Icons.stacked_bar_chart_outlined,
+          child: DropdownButtonFormField<double>(
+            value: coerceFinancedCrmOpcvmHaircut(_opcvmHighestHaircut),
+            isExpanded: true,
+            decoration: _fieldDecoration(context),
+            items: financedCrmOpcvmHaircutLevels
+                .map(
+                  (item) => DropdownMenuItem<double>(
+                    value: item,
+                    child: Text(formatFinancedCrmHaircutPercent(item)),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (value) => setState(
+              () => _opcvmHighestHaircut = coerceFinancedCrmOpcvmHaircut(value),
+            ),
+          ),
+        ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _StepGrid(
+          children: [
+            _StepGridFullWidth(
+              child: _buildFieldCard(
+                context: context,
+                title: 'Sûreté reçue',
+                subtitle: 'Caractéristiques métier',
+                icon: Icons.security_outlined,
+                inlineTooltip: _collateralValueTooltip,
+                tooltipTitle: 'Valeur de la sûreté',
+                child: _StepGrid(
+                  children: [
+                    _buildFieldCard(
+                      context: context,
+                      title: 'Valeur de la sûreté',
+                      subtitle: 'Valeur saisie',
+                      icon: Icons.account_balance_outlined,
+                      child: TextFormField(
+                        controller: _collateralController,
+                        readOnly: isBasket,
+                        decoration: _fieldDecoration(
+                          context,
+                          hint: context.tr('Valeur de la sûreté'),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        validator: _crmMode == 'CRM financee'
+                            ? _amountValidator
+                            : null,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                    _buildFieldCard(
+                      context: context,
+                      title: 'Type de sûreté',
+                      subtitle: 'Nature du collatéral',
+                      icon: Icons.widgets_outlined,
+                      child: DropdownButtonFormField<String>(
+                        value:
+                            financedCrmCollateralTypes.contains(_collateralType)
+                                ? _collateralType
+                                : financedCrmCollateralTypes.first,
+                        isExpanded: true,
+                        decoration: _fieldDecoration(context),
+                        selectedItemBuilder: (context) =>
+                            _selectedStringDropdownItems(
+                                financedCrmCollateralTypes),
+                        items: _stringDropdownItems(financedCrmCollateralTypes),
+                        onChanged: (value) => _setCollateralType(
+                          value ?? financedCrmCollateralTypes.first,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (isBasket)
+              _StepGridFullWidth(
+                child: _buildFieldCard(
+                  context: context,
+                  title: 'Panier d actifs',
+                  subtitle: 'Composition pondérée',
+                  icon: Icons.inventory_2_outlined,
+                  inlineTooltip: _basketTooltip,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var index = 0;
+                          index < _basketItems.length;
+                          index++) ...[
+                        _buildBasketItemEditor(
+                            context, index, _basketItems[index]),
+                        if (index < _basketItems.length - 1)
+                          const SizedBox(height: 10),
+                      ],
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: OutlinedButton.icon(
+                          onPressed: _addBasketItem,
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          label: const Text('Ajouter un actif'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _InfoBanner(
+                        icon: Icons.info_outline,
+                        accent: const Color(0xFF0F766E),
+                        text:
+                            'La devise, la pondération de chaque actif et la contribution au panier sont calculées ligne par ligne.',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            _StepGridFullWidth(
+              child: _buildFieldCard(
+                context: context,
+                title: 'Caractéristiques réglementaires',
+                subtitle: 'Émetteur, notation, durée et éligibilité',
+                icon: Icons.fact_check_outlined,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (regulatoryFields.isEmpty)
+                      _InfoBanner(
+                        icon: Icons.info_outline,
+                        accent: const Color(0xFF2563EB),
+                        text:
+                            'Aucun paramètre complémentaire n est requis pour ce type de sûreté.',
+                      )
+                    else
+                      _StepGrid(children: regulatoryFields),
+                  ],
+                ),
+              ),
+            ),
+            _StepGridFullWidth(
+              child: _buildFieldCard(
+                context: context,
+                title: 'Décotes automatiques',
+                subtitle: 'HE, HC et Hfx calculées',
+                icon: Icons.percent_rounded,
+                child: _StepGrid(
+                  children: [
+                    _buildReadonlyMetricCard(
+                      context: context,
+                      label: 'HE',
+                      value: _formatPercent(snapshot.he),
+                      icon: Icons.info_outline,
+                      accent: const Color(0xFF2563EB),
+                      tooltip: _heTooltip,
+                    ),
+                    _buildReadonlyMetricCard(
+                      context: context,
+                      label: 'HC',
+                      value: _formatPercent(snapshot.hc),
+                      icon: Icons.shield_moon_outlined,
+                      accent: const Color(0xFFF59E0B),
+                      tooltip: _hcTooltip,
+                    ),
+                    _buildReadonlyMetricCard(
+                      context: context,
+                      label: 'Hfx',
+                      value: _formatPercent(snapshot.hfx),
+                      icon: Icons.currency_exchange_outlined,
+                      accent: const Color(0xFF0F766E),
+                      tooltip: _hfxTooltip,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            _StepGridFullWidth(
+              child: _buildFieldCard(
+                context: context,
+                title: 'Calcul CRM financée',
+                subtitle: 'Résultat automatique',
+                icon: Icons.calculate_outlined,
+                child: _StepGrid(
+                  children: [
+                    _buildReadonlyMetricCard(
+                      context: context,
+                      label: 'EVA',
+                      value: _formatReadonlyAmount(snapshot.eva),
+                      icon: Icons.exposure_plus_1_outlined,
+                      accent: const Color(0xFF2563EB),
+                      tooltip: _evaTooltip,
+                    ),
+                    _buildReadonlyMetricCard(
+                      context: context,
+                      label: 'CVA',
+                      value: _formatReadonlyAmount(snapshot.cva),
+                      icon: Icons.savings_outlined,
+                      accent: const Color(0xFF0F766E),
+                      tooltip: _cvaTooltip,
+                    ),
+                    _buildReadonlyMetricCard(
+                      context: context,
+                      label: 'EAD après CRM financée',
+                      value: _formatReadonlyAmount(
+                        snapshot.eadAfterFinancedCrm,
+                      ),
+                      icon: Icons.account_balance_wallet_outlined,
+                      accent: const Color(0xFF7C3AED),
+                      tooltip: _eadAfterFinancedCrmTooltip,
+                    ),
+                    _buildReadonlyMetricCard(
+                      context: context,
+                      label: 'RWA final',
+                      value: _formatReadonlyAmount(snapshot.rwaFinal),
+                      icon: Icons.analytics_outlined,
+                      accent: const Color(0xFFF59E0B),
+                    ),
+                    _buildReadonlyMetricCard(
+                      context: context,
+                      label: 'Gain CRM',
+                      value: _formatReadonlyAmount(snapshot.crmGain),
+                      icon: Icons.trending_down_outlined,
+                      accent: const Color(0xFF16A34A),
+                    ),
+                    _buildReadonlyMetricCard(
+                      context: context,
+                      label: 'Valeur de la sûreté',
+                      value: _formatReadonlyAmount(collateralAmount),
+                      icon: Icons.account_balance_outlined,
+                      accent: const Color(0xFF0891B2),
+                      tooltip: _collateralValueTooltip,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (!snapshot.collateralEligible)
+              _StepGridFullWidth(
+                child: _InfoBanner(
+                  icon: Icons.info_outline,
+                  accent: const Color(0xFFDC2626),
+                  text: snapshot.eligibilityReason.isEmpty
+                      ? 'Cette sûreté n est pas éligible à la réduction réglementaire de l exposition. L exposition reste donc inchangée.'
+                      : snapshot.eligibilityReason,
+                ),
+              )
+            else if (snapshot.eadAfterFinancedCrm == 0)
+              _StepGridFullWidth(
+                child: _InfoBanner(
+                  icon: Icons.task_alt_outlined,
+                  accent: const Color(0xFF16A34A),
+                  text:
+                      'La sûreté ajustée couvre entièrement l exposition ajustée.',
+                ),
+              )
+            else if (snapshot.cva > 0)
+              _StepGridFullWidth(
+                child: _InfoBanner(
+                  icon: Icons.pie_chart_outline_rounded,
+                  accent: const Color(0xFF0F766E),
+                  text: 'La sûreté couvre partiellement l exposition.',
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReadonlyMetricCard({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color accent,
+    String? tooltip,
+  }) {
+    final isDark = _isExposureDark(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF14233D) : const Color(0xFFFDFEFF),
+        borderRadius: BorderRadius.circular(_exposureFormRadius),
+        border: Border.all(color: _wizardBorderColor(context)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: accent.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(_exposureFormRadius),
+            ),
+            child: Icon(icon, size: 14, color: accent),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _wizardMutedColor(context),
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
+                    if (tooltip != null && tooltip.isNotEmpty)
+                      _buildInlineInfoButton(context, tooltip),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: _wizardBodyTitleColor(context),
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInlineInfoButton(BuildContext context, String message) {
+    return Tooltip(
+      message: message,
+      preferBelow: false,
+      decoration: BoxDecoration(
+        color: const Color(0xFF172544),
+        borderRadius: BorderRadius.circular(_exposureFormRadius),
+        border: Border.all(color: const Color(0xFF2F4D7F)),
+      ),
+      textStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white,
+            height: 1.4,
+          ),
+      child: const Padding(
+        padding: EdgeInsets.only(left: 6),
+        child: Icon(
+          Icons.info_outline,
+          size: 15,
+          color: Color(0xFF3B82F6),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBasketItemEditor(
+    BuildContext context,
+    int index,
+    FinancedCrmBasketItem item,
+  ) {
+    final showIssuerRole =
+        financedCrmCollateralRequiresIssuerRole(item.collateralType);
+    final showRating = financedCrmCollateralRequiresRating(item.collateralType);
+    final showMaturity =
+        financedCrmCollateralRequiresResidualMaturity(item.collateralType);
+    final showConvertibleIndexQuestion =
+        financedCrmCollateralSupportsConvertibleIndexQuestion(
+      item.collateralType,
+    );
+    final showOpcvmHaircut = financedCrmCollateralSupportsOpcvmHaircut(
+      item.collateralType,
+    );
+    final basketWeight = _basketTotalValue <= 0
+        ? 0.0
+        : (item.value / _basketTotalValue).clamp(0.0, 1.0).toDouble();
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(_exposureFormRadius),
+        border: Border.all(color: _wizardBorderColor(context)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Actif ${index + 1}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+              IconButton(
+                onPressed: _basketItems.length <= 1
+                    ? null
+                    : () => _removeBasketItem(index),
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _StepGrid(
+            children: [
+              _buildFieldCard(
+                context: context,
+                title: 'Type d actif',
+                subtitle: '',
+                icon: Icons.widgets_outlined,
+                child: DropdownButtonFormField<String>(
+                  value:
+                      financedCrmCollateralTypes.contains(item.collateralType)
+                          ? item.collateralType
+                          : financedCrmCollateralTypes.first,
+                  isExpanded: true,
+                  decoration: _fieldDecoration(context),
+                  items: _stringDropdownItems(
+                    financedCrmCollateralTypes
+                        .where((value) => value != 'Panier d actifs')
+                        .toList(growable: false),
+                  ),
+                  onChanged: (value) => _updateBasketItem(
+                    index,
+                    FinancedCrmBasketItem(
+                      collateralType: value ?? item.collateralType,
+                      value: item.value,
+                      currency: item.currency,
+                      issuerRole: item.issuerRole,
+                      rating: item.rating,
+                      residualMaturityBucket: item.residualMaturityBucket,
+                      convertibleMainIndex: item.convertibleMainIndex,
+                      opcvmHighestHaircut: item.opcvmHighestHaircut,
+                    ),
+                  ),
+                ),
+              ),
+              _buildFieldCard(
+                context: context,
+                title: 'Valeur',
+                subtitle: '',
+                icon: Icons.payments_outlined,
+                child: TextFormField(
+                  initialValue:
+                      item.value == 0 ? '' : item.value.toStringAsFixed(0),
+                  decoration: _fieldDecoration(context),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (value) => _updateBasketItem(
+                    index,
+                    FinancedCrmBasketItem(
+                      collateralType: item.collateralType,
+                      value: _parseDecimal(value) ?? 0.0,
+                      currency: item.currency,
+                      issuerRole: item.issuerRole,
+                      rating: item.rating,
+                      residualMaturityBucket: item.residualMaturityBucket,
+                      convertibleMainIndex: item.convertibleMainIndex,
+                      opcvmHighestHaircut: item.opcvmHighestHaircut,
+                    ),
+                  ),
+                ),
+              ),
+              _buildFieldCard(
+                context: context,
+                title: 'Devise',
+                subtitle: '',
+                icon: Icons.currency_exchange_outlined,
+                child: DropdownButtonFormField<String>(
+                  value: _availableCurrencyOptions.contains(item.currency)
+                      ? item.currency
+                      : _collateralCurrency,
+                  isExpanded: true,
+                  decoration: _fieldDecoration(context),
+                  items: _availableCurrencyOptions
+                      .map(
+                        (value) => DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        ),
+                      )
+                      .toList(growable: false),
+                  onChanged: (value) => _updateBasketItem(
+                    index,
+                    FinancedCrmBasketItem(
+                      collateralType: item.collateralType,
+                      value: item.value,
+                      currency: value ?? item.currency,
+                      issuerRole: item.issuerRole,
+                      rating: item.rating,
+                      residualMaturityBucket: item.residualMaturityBucket,
+                      convertibleMainIndex: item.convertibleMainIndex,
+                      opcvmHighestHaircut: item.opcvmHighestHaircut,
+                    ),
+                  ),
+                ),
+              ),
+              if (showIssuerRole)
+                _buildFieldCard(
+                  context: context,
+                  title: 'Émetteur',
+                  subtitle: '',
+                  icon: Icons.apartment_outlined,
+                  child: DropdownButtonFormField<String>(
+                    value:
+                        financedCrmIssuerRoleOptions.contains(item.issuerRole)
+                            ? item.issuerRole
+                            : financedCrmIssuerRoleOptions.last,
+                    isExpanded: true,
+                    decoration: _fieldDecoration(context),
+                    items: _stringDropdownItems(financedCrmIssuerRoleOptions),
+                    onChanged: (value) => _updateBasketItem(
+                      index,
+                      FinancedCrmBasketItem(
+                        collateralType: item.collateralType,
+                        value: item.value,
+                        currency: item.currency,
+                        issuerRole: value ?? item.issuerRole,
+                        rating: item.rating,
+                        residualMaturityBucket: item.residualMaturityBucket,
+                        convertibleMainIndex: item.convertibleMainIndex,
+                        opcvmHighestHaircut: item.opcvmHighestHaircut,
+                      ),
+                    ),
+                  ),
+                ),
+              if (showRating)
+                _buildFieldCard(
+                  context: context,
+                  title: 'Notation',
+                  subtitle: '',
+                  icon: Icons.workspace_premium_outlined,
+                  child: DropdownButtonFormField<String>(
+                    value: financedCrmDebtRatings.contains(item.rating)
+                        ? item.rating
+                        : financedCrmDebtRatings.last,
+                    isExpanded: true,
+                    decoration: _fieldDecoration(context),
+                    items: _stringDropdownItems(financedCrmDebtRatings),
+                    onChanged: (value) => _updateBasketItem(
+                      index,
+                      FinancedCrmBasketItem(
+                        collateralType: item.collateralType,
+                        value: item.value,
+                        currency: item.currency,
+                        issuerRole: item.issuerRole,
+                        rating: value ?? item.rating,
+                        residualMaturityBucket: item.residualMaturityBucket,
+                        convertibleMainIndex: item.convertibleMainIndex,
+                        opcvmHighestHaircut: item.opcvmHighestHaircut,
+                      ),
+                    ),
+                  ),
+                ),
+              if (showMaturity)
+                _buildFieldCard(
+                  context: context,
+                  title: 'Durée résiduelle',
+                  subtitle: '',
+                  icon: Icons.schedule_outlined,
+                  child: DropdownButtonFormField<String>(
+                    value: financedCrmMaturityBuckets.contains(
+                      item.residualMaturityBucket,
+                    )
+                        ? item.residualMaturityBucket
+                        : financedCrmMaturityBuckets.first,
+                    isExpanded: true,
+                    decoration: _fieldDecoration(context),
+                    items: _stringDropdownItems(financedCrmMaturityBuckets),
+                    onChanged: (value) => _updateBasketItem(
+                      index,
+                      FinancedCrmBasketItem(
+                        collateralType: item.collateralType,
+                        value: item.value,
+                        currency: item.currency,
+                        issuerRole: item.issuerRole,
+                        rating: item.rating,
+                        residualMaturityBucket:
+                            value ?? item.residualMaturityBucket,
+                        convertibleMainIndex: item.convertibleMainIndex,
+                        opcvmHighestHaircut: item.opcvmHighestHaircut,
+                      ),
+                    ),
+                  ),
+                ),
+              if (showConvertibleIndexQuestion)
+                _buildFieldCard(
+                  context: context,
+                  title: 'Indice principal reconnu ?',
+                  subtitle: '',
+                  icon: Icons.auto_graph_outlined,
+                  child: DropdownButtonFormField<bool>(
+                    value: item.convertibleMainIndex,
+                    isExpanded: true,
+                    decoration: _fieldDecoration(context),
+                    items: const [
+                      DropdownMenuItem<bool>(value: true, child: Text('Oui')),
+                      DropdownMenuItem<bool>(value: false, child: Text('Non')),
+                    ],
+                    onChanged: (value) => _updateBasketItem(
+                      index,
+                      FinancedCrmBasketItem(
+                        collateralType: item.collateralType,
+                        value: item.value,
+                        currency: item.currency,
+                        issuerRole: item.issuerRole,
+                        rating: item.rating,
+                        residualMaturityBucket: item.residualMaturityBucket,
+                        convertibleMainIndex:
+                            value ?? item.convertibleMainIndex,
+                        opcvmHighestHaircut: item.opcvmHighestHaircut,
+                      ),
+                    ),
+                  ),
+                ),
+              if (showOpcvmHaircut)
+                _buildFieldCard(
+                  context: context,
+                  title: 'Plus forte décote du fonds',
+                  subtitle: '',
+                  icon: Icons.stacked_bar_chart_outlined,
+                  child: DropdownButtonFormField<double>(
+                    value: coerceFinancedCrmOpcvmHaircut(
+                      item.opcvmHighestHaircut,
+                    ),
+                    isExpanded: true,
+                    decoration: _fieldDecoration(context),
+                    items: financedCrmOpcvmHaircutLevels
+                        .map(
+                          (value) => DropdownMenuItem<double>(
+                            value: value,
+                            child: Text(
+                              formatFinancedCrmHaircutPercent(value),
+                            ),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: (value) => _updateBasketItem(
+                      index,
+                      FinancedCrmBasketItem(
+                        collateralType: item.collateralType,
+                        value: item.value,
+                        currency: item.currency,
+                        issuerRole: item.issuerRole,
+                        rating: item.rating,
+                        residualMaturityBucket: item.residualMaturityBucket,
+                        convertibleMainIndex: item.convertibleMainIndex,
+                        opcvmHighestHaircut:
+                            coerceFinancedCrmOpcvmHaircut(value),
+                      ),
+                    ),
+                  ),
+                ),
+              _buildReadonlyMetricCard(
+                context: context,
+                label: 'Poids dans le panier',
+                value: _formatPercent(basketWeight),
+                icon: Icons.pie_chart_outline_rounded,
+                accent: const Color(0xFF0F766E),
+                tooltip: _basketTooltip,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -3968,16 +5040,33 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _crmType = _nonFinancedCrmTypes.contains(draft?.crmType)
           ? draft!.crmType
           : 'Garantie etatique';
-      _issuerType = financedCrmIssuerTypes.contains(draft?.issuerType)
+      _collateralType =
+          financedCrmCollateralTypes.contains(draft?.collateralType)
+              ? draft!.collateralType
+              : financedCrmCollateralTypes.first;
+      _collateralCurrency = _resolveCurrency(
+        draft?.collateralCurrency,
+        fallback: _currency,
+      );
+      _issuerType = financedCrmIssuerRoleOptions.contains(draft?.issuerType)
           ? draft!.issuerType
-          : financedCrmIssuerTypes.first;
+          : financedCrmIssuerRoleOptions.last;
       _issuerRating = draft?.issuerRating != null
           ? coerceFinancedCrmCollateralRating(draft!.issuerRating)
-          : financedCrmCollateralRatings.first;
+          : financedCrmDebtRatings.last;
       _maturityBucket =
           financedCrmMaturityBuckets.contains(draft?.maturityBucket)
               ? draft!.maturityBucket
               : financedCrmMaturityBuckets.first;
+      _convertibleMainIndex = draft?.convertibleMainIndex ?? true;
+      _opcvmHighestHaircut =
+          coerceFinancedCrmOpcvmHaircut(draft?.opcvmHighestHaircut);
+      _basketItems = draft?.basketItems
+              .map(
+                (item) => FinancedCrmBasketItem.fromJson(item.toJson()),
+              )
+              .toList(growable: true) ??
+          <FinancedCrmBasketItem>[];
       _guarantorCategoryCode =
           guarantorEligibleCategoryCodes.contains(draft?.guarantorCategoryCode)
               ? draft!.guarantorCategoryCode
@@ -3988,6 +5077,63 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       );
       _coverage = draft?.crmCoveragePercent ?? 0.0;
     });
+  }
+
+  bool _validateFinancedCrmInputs() {
+    final grossAmount = _parseDecimal(_amountController.text);
+    if (grossAmount == null || grossAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.tr(
+              'Le montant brut de l exposition doit être strictement positif.',
+            ),
+          ),
+        ),
+      );
+      return false;
+    }
+
+    if (financedCrmCollateralIsBasket(_collateralType)) {
+      if (_basketItems.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              context.tr('Ajouter au moins un actif dans le panier.'),
+            ),
+          ),
+        );
+        return false;
+      }
+      if (_basketItems.any((item) => item.value <= 0)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              context.tr(
+                'Chaque actif du panier doit avoir une valeur strictement positive.',
+              ),
+            ),
+          ),
+        );
+        return false;
+      }
+      return true;
+    }
+
+    final collateralValue = _parseDecimal(_collateralController.text);
+    if (collateralValue == null || collateralValue <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context.tr(
+              'La valeur de la sûreté doit être strictement positive.',
+            ),
+          ),
+        ),
+      );
+      return false;
+    }
+    return true;
   }
 
   bool _validateCurrentStep() {
@@ -4028,9 +5174,17 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       case 3:
         return _financialFormKey.currentState?.validate() ?? true;
       case 4:
-        return _crmSelectionStage
-            ? true
-            : (_crmFormKey.currentState?.validate() ?? true);
+        if (_crmSelectionStage) {
+          return true;
+        }
+        final isValid = _crmFormKey.currentState?.validate() ?? true;
+        if (!isValid) {
+          return false;
+        }
+        if (_crmMode == 'CRM financee') {
+          return _validateFinancedCrmInputs();
+        }
+        return true;
       case 5:
         return _commentFormKey.currentState?.validate() ?? true;
       default:
@@ -4043,17 +5197,15 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
     final collateral =
         double.tryParse(_collateralController.text.replaceAll(',', '.')) ?? 0.0;
-    final fxHaircut = _parsePercent(_fxHaircutController.text) ?? 0.0;
     final metrics = computeDraftMetrics(
       _draftFromValues(
         grossAmount: amount,
         collateralValue: collateral,
-        fxHaircut: fxHaircut,
+        fxHaircut: 0.0,
         comment: _commentController.text,
       ),
     );
     return _ExposurePreview(
-      originalRw: metrics.originalRw,
       ead: metrics.ead,
       finalRw: metrics.finalRw,
       rwa: metrics.rwa,
@@ -4069,10 +5221,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final collateralValue = _crmMode == 'CRM financee'
         ? _parseDecimal(_collateralController.text)
         : 0.0;
-    final fxHaircut = _crmMode == 'CRM financee'
-        ? _parsePercent(_fxHaircutController.text)
-        : 0.0;
-    if (grossAmount == null || collateralValue == null || fxHaircut == null) {
+    if (grossAmount == null || collateralValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.tr('Verifier les montants saisis.'))),
       );
@@ -4084,7 +5233,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       final draft = _draftFromValues(
         grossAmount: grossAmount,
         collateralValue: collateralValue,
-        fxHaircut: fxHaircut,
+        fxHaircut: 0.0,
         comment: _commentController.text.trim(),
       );
       await widget.onSubmit(draft);
@@ -4117,12 +5266,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
   String? _amountValidator(String? value) {
     final parsed = _parseDecimal(value);
-    return parsed == null ? context.tr('Montant invalide') : null;
-  }
-
-  String? _percentValidator(String? value) {
-    final parsed = _parsePercent(value);
-    return parsed == null ? context.tr('Pourcentage invalide') : null;
+    if (parsed == null) {
+      return context.tr('Montant invalide');
+    }
+    return parsed <= 0 ? context.tr('Montant positif requis') : null;
   }
 
   String _formatDateForField(DateTime? value) {
@@ -4187,14 +5334,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return double.tryParse(normalized);
   }
 
-  double? _parsePercent(String? raw) {
-    final parsed = _parseDecimal(raw);
-    if (parsed == null) {
-      return null;
-    }
-    return parsed > 1 ? parsed / 100.0 : parsed;
-  }
-
   ExposureDraft _draftFromValues({
     required double grossAmount,
     required double collateralValue,
@@ -4223,12 +5362,24 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       crmMode: _crmMode,
       crmType: _crmMode == 'CRM non financee' ? _crmType : 'Cash collateral',
       collateralValue: _crmMode == 'CRM financee' ? collateralValue : 0.0,
+      collateralCurrency:
+          _crmMode == 'CRM financee' ? _collateralCurrency : _currency,
+      collateralType: _crmMode == 'CRM financee'
+          ? _collateralType
+          : financedCrmCollateralTypes.first,
       issuerType: _crmMode == 'CRM financee' ? _issuerType : '',
       issuerRating: _crmMode == 'CRM financee' ? _issuerRating : '',
       maturityBucket: _crmMode == 'CRM financee'
           ? _maturityBucket
           : financedCrmMaturityBuckets.first,
       fxHaircut: _crmMode == 'CRM financee' ? fxHaircut : 0.0,
+      convertibleMainIndex:
+          _crmMode == 'CRM financee' ? _convertibleMainIndex : true,
+      opcvmHighestHaircut:
+          _crmMode == 'CRM financee' ? _opcvmHighestHaircut : 0.30,
+      basketItems: _crmMode == 'CRM financee'
+          ? List<FinancedCrmBasketItem>.from(_basketItems)
+          : const [],
       guarantorName: _crmMode == 'CRM non financee'
           ? _guarantorNameController.text.trim()
           : '',
@@ -4396,7 +5547,7 @@ class _CompactFieldCard extends StatelessWidget {
   final Widget child;
 
   InlineSpan _buildTooltipContent(String title, String message) {
-    final lines = message.split('\n').map((line) => line.trim()).toList();
+    final lines = _expandTooltipMessageLines(message);
 
     if (lines.isEmpty) {
       return const TextSpan(text: '');
@@ -4458,7 +5609,7 @@ class _CompactFieldCard extends StatelessWidget {
                 ),
               ),
               TextSpan(
-                text: label,
+                text: _capitalizeTooltipText(label),
                 style: const TextStyle(
                   fontSize: 11.3,
                   fontWeight: FontWeight.w700,
@@ -4467,7 +5618,8 @@ class _CompactFieldCard extends StatelessWidget {
                 ),
               ),
               TextSpan(
-                text: ' : $detail${index == lines.length - 1 ? '' : '\n'}',
+                text:
+                    ' : ${_normalizeTooltipSentence(detail)}${index == lines.length - 1 ? '' : '\n'}',
                 style: const TextStyle(
                   fontSize: 11.2,
                   fontWeight: FontWeight.w500,
@@ -4481,16 +5633,28 @@ class _CompactFieldCard extends StatelessWidget {
         continue;
       }
 
-      final text = line.startsWith('(') ? '• $line' : '• $line';
       spans.add(
         TextSpan(
-          text: '$text${index == lines.length - 1 ? '' : '\n'}',
-          style: const TextStyle(
-            fontSize: 11.2,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFFE8EEF9),
-            height: 1.48,
-          ),
+          children: [
+            const TextSpan(
+              text: '• ',
+              style: TextStyle(
+                fontSize: 11.4,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF8FB4FF),
+                height: 1.48,
+              ),
+            ),
+            TextSpan(
+              text: '$line${index == lines.length - 1 ? '' : '\n'}',
+              style: const TextStyle(
+                fontSize: 11.2,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFFE8EEF9),
+                height: 1.48,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -4799,6 +5963,8 @@ class _CrmDetailsStepScreen extends StatelessWidget {
     required this.icon,
     required this.accent,
     required this.child,
+    this.inlineTooltip,
+    this.tooltipTitle = 'Critères',
   });
 
   final String title;
@@ -4807,6 +5973,8 @@ class _CrmDetailsStepScreen extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final Widget child;
+  final String? inlineTooltip;
+  final String tooltipTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -4815,6 +5983,8 @@ class _CrmDetailsStepScreen extends StatelessWidget {
       subtitle: subtitle,
       icon: icon,
       accent: accent,
+      inlineTooltip: inlineTooltip,
+      tooltipTitle: tooltipTitle,
       child: Form(
         key: formKey,
         child: child,
@@ -4956,6 +6126,8 @@ class _StepSurface extends StatelessWidget {
     required this.icon,
     required this.accent,
     required this.child,
+    this.inlineTooltip,
+    this.tooltipTitle = 'Critères',
   });
 
   final String title;
@@ -4963,6 +6135,8 @@ class _StepSurface extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final Widget child;
+  final String? inlineTooltip;
+  final String tooltipTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -5002,13 +6176,71 @@ class _StepSurface extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14,
-                            color: _wizardBodyTitleColor(context),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: _wizardBodyTitleColor(context),
+                                ),
                           ),
+                        ),
+                        if (inlineTooltip != null &&
+                            inlineTooltip!.trim().isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Tooltip(
+                            richMessage: _buildModernTooltipContent(
+                              tooltipTitle,
+                              inlineTooltip!,
+                            ),
+                            constraints: const BoxConstraints(maxWidth: 350),
+                            waitDuration: const Duration(milliseconds: 140),
+                            showDuration: const Duration(seconds: 12),
+                            preferBelow: false,
+                            verticalOffset: 18,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            margin: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F1C34),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFF2D4B7A),
+                                width: 1,
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x33000000),
+                                  blurRadius: 18,
+                                  offset: Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            textStyle: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.white,
+                                ),
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 1.5),
+                              child: Icon(
+                                Icons.info_outline_rounded,
+                                size: 15,
+                                color: AppTheme.accent,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -5347,13 +6579,11 @@ class _InfoBanner extends StatelessWidget {
 
 class _ExposurePreview {
   const _ExposurePreview({
-    required this.originalRw,
     required this.ead,
     required this.finalRw,
     required this.rwa,
   });
 
-  final double originalRw;
   final double ead;
   final double finalRw;
   final double rwa;

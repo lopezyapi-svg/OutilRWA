@@ -194,6 +194,62 @@ const List<String> financedCrmMaturityBuckets = [
   '>10 ans',
 ];
 
+const List<String> financedCrmCollateralTypes = [
+  'Liquidités dans la même devise',
+  'Liquidités dans une devise différente',
+  'Or',
+  'Titre de dette souverain',
+  'Titre non noté émis par un État de l UMOA',
+  'Titre de dette émis par un autre émetteur',
+  'Titre garanti par un agent agréé par la BRVM',
+  'Titre bancaire non noté',
+  'Action de l indice BRVM 10',
+  'Action d un indice principal reconnu',
+  'Autre action cotée à la BRVM ou sur une bourse reconnue',
+  'Obligation convertible en action',
+  'OPCVM / FI',
+  'Panier d actifs',
+  'Autre sûreté non éligible',
+];
+
+const List<String> financedCrmIssuerRoleOptions = [
+  'emprunteur souverain',
+  'autre émetteur',
+];
+
+const List<String> financedCrmDebtRatings = [
+  'AAA',
+  'AA+',
+  'AA',
+  'AA-',
+  'A+',
+  'A',
+  'A-',
+  'BBB+',
+  'BBB',
+  'BBB-',
+  'BB+',
+  'BB',
+  'BB-',
+  '< B-',
+  'Non noté',
+];
+
+const List<double> financedCrmOpcvmHaircutLevels = [
+  0.0,
+  0.005,
+  0.01,
+  0.02,
+  0.03,
+  0.04,
+  0.06,
+  0.08,
+  0.12,
+  0.15,
+  0.20,
+  0.30,
+];
+
 const List<String> guarantorEligibleCategoryCodes = [
   'a',
   'b',
@@ -300,6 +356,8 @@ const Map<String, String> _financedCrmCollateralRatingLabelsByKey = {
   'BB+': 'BB+',
   'BB': 'BB',
   'BB-': 'BB-',
+  '<_B-': '< B-',
+  'NON_NOTE': 'Non noté',
   'NON_NOTE_ETAT_UMOA': 'non_noté_état_umoa',
   'GARANTI_BRVM': 'garanti_brvm',
   'BANCAIRE_NON_NOTE': 'bancaire_non_noté',
@@ -353,9 +411,86 @@ String normalizeFinancedCrmCollateralRating(String rating) {
 String coerceFinancedCrmCollateralRating(String rating) {
   final normalized = normalizeFinancedCrmCollateralRating(rating);
   return _financedCrmCollateralRatingLabelsByKey[normalized] ??
-      (financedCrmCollateralRatings.contains(rating)
+      (financedCrmDebtRatings.contains(rating)
           ? rating
-          : financedCrmCollateralRatings.first);
+          : financedCrmDebtRatings.last);
+}
+
+String normalizeFinancedCrmCurrency(String currency) {
+  final normalized = currency.trim().toUpperCase();
+  if (['XOF', 'XAF', 'FCFA'].contains(normalized)) {
+    return 'FCFA';
+  }
+  return normalized;
+}
+
+bool isFinancedCrmDebtCollateral(String collateralType) {
+  return [
+    'Titre de dette souverain',
+    'Titre non noté émis par un État de l UMOA',
+    'Titre de dette émis par un autre émetteur',
+    'Titre garanti par un agent agréé par la BRVM',
+    'Titre bancaire non noté',
+  ].contains(collateralType);
+}
+
+bool isFinancedCrmCollateralTypeEligible(String collateralType) {
+  return collateralType != 'Autre sûreté non éligible';
+}
+
+bool financedCrmCollateralRequiresIssuerRole(String collateralType) {
+  return [
+    'Titre de dette souverain',
+    'Titre non noté émis par un État de l UMOA',
+    'Titre de dette émis par un autre émetteur',
+    'Titre garanti par un agent agréé par la BRVM',
+    'Titre bancaire non noté',
+  ].contains(collateralType);
+}
+
+bool financedCrmCollateralRequiresRating(String collateralType) {
+  return [
+    'Titre de dette souverain',
+    'Titre de dette émis par un autre émetteur',
+  ].contains(collateralType);
+}
+
+bool financedCrmCollateralRequiresResidualMaturity(String collateralType) {
+  return isFinancedCrmDebtCollateral(collateralType);
+}
+
+bool financedCrmCollateralSupportsConvertibleIndexQuestion(
+  String collateralType,
+) {
+  return collateralType == 'Obligation convertible en action';
+}
+
+bool financedCrmCollateralSupportsOpcvmHaircut(String collateralType) {
+  return collateralType == 'OPCVM / FI';
+}
+
+bool financedCrmCollateralIsBasket(String collateralType) {
+  return collateralType == 'Panier d actifs';
+}
+
+String formatFinancedCrmHaircutPercent(double value) {
+  final percent = value * 100;
+  if ((percent - percent.roundToDouble()).abs() < 0.001) {
+    return '${percent.toStringAsFixed(0)} %';
+  }
+  return '${percent.toStringAsFixed(1).replaceAll('.', ',')} %';
+}
+
+double coerceFinancedCrmOpcvmHaircut(double? value) {
+  if (value == null) {
+    return financedCrmOpcvmHaircutLevels.last;
+  }
+  for (final option in financedCrmOpcvmHaircutLevels) {
+    if ((option - value).abs() < 0.0001) {
+      return option;
+    }
+  }
+  return financedCrmOpcvmHaircutLevels.last;
 }
 
 String bucketizeRating(String rating) {
@@ -402,6 +537,52 @@ double lookupSovereignOceRiskWeight(String note) {
     default:
       return 1.0;
   }
+}
+
+double lookupCountryRatingRiskWeight(String countryRating) {
+  switch (bucketizeRating(countryRating)) {
+    case 'AAA/AA':
+      return 0.0;
+    case 'A':
+      return 0.2;
+    case 'BBB':
+      return 0.5;
+    case 'BB/B':
+      return 1.0;
+    case '< B-':
+      return 1.5;
+    default:
+      return 1.0;
+  }
+}
+
+bool _shouldApplyUnratedCounterpartyCountryFloor(String categoryCode) {
+  switch (categoryCode) {
+    case 'a':
+    case 'k':
+    case 'l':
+      return false;
+    default:
+      return true;
+  }
+}
+
+double applyUnratedCounterpartyCountryFloor(
+  double riskWeight,
+  String rating, {
+  required String categoryCode,
+  String? countryRating,
+}) {
+  if (!_shouldApplyUnratedCounterpartyCountryFloor(categoryCode)) {
+    return riskWeight;
+  }
+  if (bucketizeRating(rating) != 'Non noté') {
+    return riskWeight;
+  }
+  final countryWeight =
+      lookupCountryRatingRiskWeight(countryRating ?? 'Non noté');
+  final floor = countryWeight > 1.0 ? countryWeight : 1.0;
+  return riskWeight > floor ? riskWeight : floor;
 }
 
 const String bankInstitutionEquivalentRulesCase = 'equivalent_umoa_rules';
@@ -707,6 +888,7 @@ double lookupBankInstitutionRiskWeight(
 double lookupPrudentialRiskWeight(
   String categoryCode,
   String rating, {
+  String? countryRating,
   String sovereignSpecialCase = sovereignNoSpecialCase,
   bool sovereignPreferentialZeroWeight = false,
   bool sovereignOceEstablished = false,
@@ -734,31 +916,41 @@ double lookupPrudentialRiskWeight(
 }) {
   final category = exposureCategoryByCode(categoryCode);
   final ratingBucket = bucketizeRating(rating);
+  double finalize(double riskWeight) => applyUnratedCounterpartyCountryFloor(
+        riskWeight,
+        rating,
+        categoryCode: categoryCode,
+        countryRating: countryRating,
+      );
   if (categoryCode == 'a' &&
       hasSovereignPriorityZeroWeightCase(
         sovereignSpecialCase,
         sovereignPreferentialZeroWeight: sovereignPreferentialZeroWeight,
       )) {
-    return 0.0;
+    return finalize(0.0);
   }
   if (categoryCode == 'a' &&
       ratingBucket == 'Non noté' &&
       sovereignOceEstablished) {
-    return lookupSovereignOceRiskWeight(sovereignOceNote);
+    return finalize(lookupSovereignOceRiskWeight(sovereignOceNote));
   }
   if (categoryCode == 'b' &&
       hasPublicBodyPreferentialUemoaCase(
         publicBodyUemoaFcfaCase,
         publicBodyFinancesNonPublicActivity,
       )) {
-    return publicBodyUemoaFcfaRiskWeight;
+    return finalize(publicBodyUemoaFcfaRiskWeight);
   }
   if (categoryCode == 'b' &&
       hasPublicBodyEnterpriseOverride(
         publicBodyUemoaFcfaCase,
         publicBodyFinancesNonPublicActivity,
       )) {
-    return lookupPrudentialRiskWeight('e', rating);
+    return lookupPrudentialRiskWeight(
+      'e',
+      rating,
+      countryRating: countryRating,
+    );
   }
   if (categoryCode == 'c' &&
       hasBmdPriorityZeroWeightCase(
@@ -767,41 +959,44 @@ double lookupPrudentialRiskWeight(
         bmdUemoaCriteriaSatisfied: bmdUemoaCriteriaSatisfied,
         bmdListedInstitutionFcfaCase: bmdListedInstitutionFcfaCase,
       )) {
-    return 0.0;
+    return finalize(0.0);
   }
   if (categoryCode == 'd') {
     final resolvedBankInstitutionCase =
         coerceBankInstitutionCase(bankInstitutionCase);
     if (resolvedBankInstitutionCase == bankInstitutionEquivalentRulesCase) {
-      return 1.0;
+      return finalize(1.0);
     }
     if (resolvedBankInstitutionCase == bankInstitutionWeakPrudentialCase) {
-      return 2.5;
+      return finalize(2.5);
     }
     if (resolvedBankInstitutionCase == bankInstitutionEligibleCategoriesCase) {
-      return lookupBankInstitutionRiskWeight(
+      return finalize(lookupBankInstitutionRiskWeight(
         rating,
         isShortInitialMaturity:
             hasShortInitialMaturity(grantDate, maturityDate),
-      );
+      ));
     }
   }
   if (categoryCode == 'e') {
-    return lookupEnterpriseRiskWeight(
+    return finalize(lookupEnterpriseRiskWeight(
       rating,
       enterpriseExceedsBceaoDegradationThreshold:
           enterpriseExceedsBceaoDegradationThreshold == true,
       enterprisePrudentialProcedure: enterprisePrudentialProcedure == true,
-    );
+    ));
   }
   if (categoryCode == 'g') {
-    return lookupResidentialMortgageRiskWeight(residentialMortgageEligible);
+    return finalize(
+      lookupResidentialMortgageRiskWeight(residentialMortgageEligible),
+    );
   }
   if (categoryCode == 'h') {
     if (commercialRealEstateEligible == false) {
       return lookupPrudentialRiskWeight(
         'e',
         rating,
+        countryRating: countryRating,
         enterpriseExceedsBceaoDegradationThreshold:
             enterpriseExceedsBceaoDegradationThreshold,
         enterprisePrudentialProcedure: enterprisePrudentialProcedure,
@@ -809,22 +1004,25 @@ double lookupPrudentialRiskWeight(
             enterpriseInvestmentFirmWithoutBankingLaw,
       );
     }
-    return lookupCommercialRealEstateRiskWeight(commercialRealEstateEligible);
+    return finalize(
+      lookupCommercialRealEstateRiskWeight(commercialRealEstateEligible),
+    );
   }
   if (categoryCode == 'i') {
-    return lookupDefaultedExposureRiskWeight(
+    return finalize(lookupDefaultedExposureRiskWeight(
       defaultedExposureInitialRiskWeight,
       isResidentialMortgageInDefault:
           defaultedExposureResidentialMortgageInDefault,
       provisionAtLeastTwentyPercent:
           defaultedExposureProvisionAtLeastTwentyPercent,
-    );
+    ));
   }
   if (categoryCode == 'f') {
     if (retailEligibilityCriteriaSatisfied == false) {
       return lookupPrudentialRiskWeight(
         'e',
         rating,
+        countryRating: countryRating,
         enterpriseExceedsBceaoDegradationThreshold:
             enterpriseExceedsBceaoDegradationThreshold,
         enterprisePrudentialProcedure: enterprisePrudentialProcedure,
@@ -834,16 +1032,16 @@ double lookupPrudentialRiskWeight(
         maturityDate: maturityDate,
       );
     }
-    return 0.75;
+    return finalize(0.75);
   }
   if (categoryCode == 'k') {
-    return lookupOtherAssetRiskWeight(otherAssetType);
+    return finalize(lookupOtherAssetRiskWeight(otherAssetType));
   }
   if (categoryCode == 'l') {
-    return lookupOffBalanceFcec(offBalanceRiskLevel);
+    return finalize(lookupOffBalanceFcec(offBalanceRiskLevel));
   }
   if (category.fixedRiskWeight != null) {
-    return category.fixedRiskWeight!;
+    return finalize(category.fixedRiskWeight!);
   }
 
   switch (categoryCode) {
@@ -856,59 +1054,59 @@ double lookupPrudentialRiskWeight(
         case 'BBB':
           return 0.5;
         case 'BB/B':
-          return 1.0;
+          return finalize(1.0);
         case '< B-':
-          return 1.5;
+          return finalize(1.5);
         default:
-          return 1.0;
+          return finalize(1.0);
       }
     case 'b':
       switch (ratingBucket) {
         case 'AAA/AA':
-          return 0.2;
+          return finalize(0.2);
         case 'A':
-          return 0.5;
+          return finalize(0.5);
         case 'BBB':
-          return 1.0;
+          return finalize(1.0);
         case 'BB/B':
-          return 1.0;
+          return finalize(1.0);
         case '< B-':
-          return 1.5;
+          return finalize(1.5);
         default:
-          return 1.0;
+          return finalize(1.0);
       }
     case 'c':
       switch (ratingBucket) {
         case 'AAA/AA':
-          return 0.2;
+          return finalize(0.2);
         case 'A':
-          return 0.5;
+          return finalize(0.5);
         case 'BBB':
-          return 0.5;
+          return finalize(0.5);
         case 'BB/B':
-          return 1.0;
+          return finalize(1.0);
         case '< B-':
-          return 1.5;
+          return finalize(1.5);
         default:
-          return 0.5;
+          return finalize(0.5);
       }
     case 'd':
       switch (ratingBucket) {
         case 'AAA/AA':
-          return 0.2;
+          return finalize(0.2);
         case 'A':
-          return 0.5;
+          return finalize(0.5);
         case 'BBB':
-          return 0.5;
+          return finalize(0.5);
         case 'BB/B':
-          return 1.0;
+          return finalize(1.0);
         case '< B-':
-          return 1.5;
+          return finalize(1.5);
         default:
-          return 1.0;
+          return finalize(1.0);
       }
     default:
-      return 1.0;
+      return finalize(1.0);
   }
 }
 
@@ -1218,28 +1416,147 @@ class CounterpartyModel {
   }
 }
 
+class FinancedCrmBasketItem {
+  const FinancedCrmBasketItem({
+    this.collateralType = 'Liquidités dans la même devise',
+    this.value = 0,
+    this.currency = 'XOF',
+    this.issuerRole = 'autre émetteur',
+    this.rating = 'Non noté',
+    this.residualMaturityBucket = '<=1 an',
+    this.convertibleMainIndex = true,
+    this.opcvmHighestHaircut = 0.30,
+  });
+
+  final String collateralType;
+  final double value;
+  final String currency;
+  final String issuerRole;
+  final String rating;
+  final String residualMaturityBucket;
+  final bool convertibleMainIndex;
+  final double opcvmHighestHaircut;
+
+  factory FinancedCrmBasketItem.fromJson(Map<String, dynamic>? json) {
+    return FinancedCrmBasketItem(
+      collateralType: (json?['collateral_type'] ??
+          financedCrmCollateralTypes.first) as String,
+      value: ((json?['value'] ?? 0) as num).toDouble(),
+      currency: (json?['currency'] ?? 'XOF') as String,
+      issuerRole:
+          (json?['issuer_role'] ?? financedCrmIssuerRoleOptions.last) as String,
+      rating: coerceFinancedCrmCollateralRating(
+        (json?['rating'] ?? financedCrmDebtRatings.last) as String,
+      ),
+      residualMaturityBucket: (json?['residual_maturity_bucket'] ??
+          financedCrmMaturityBuckets.first) as String,
+      convertibleMainIndex: (json?['convertible_main_index'] ?? true) as bool,
+      opcvmHighestHaircut: coerceFinancedCrmOpcvmHaircut(
+        ((json?['opcvm_highest_haircut'] ?? 0.30) as num).toDouble(),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'collateral_type': collateralType,
+      'value': value,
+      'currency': currency,
+      'issuer_role': issuerRole,
+      'rating': rating,
+      'residual_maturity_bucket': residualMaturityBucket,
+      'convertible_main_index': convertibleMainIndex,
+      'opcvm_highest_haircut': opcvmHighestHaircut,
+    };
+  }
+}
+
+class FinancedCrmSnapshot {
+  const FinancedCrmSnapshot({
+    required this.riskWeight,
+    required this.he,
+    required this.hc,
+    required this.hfx,
+    required this.eva,
+    required this.cva,
+    required this.eadAfterFinancedCrm,
+    required this.rwaFinal,
+    required this.crmGain,
+    required this.collateralEligible,
+    required this.eligibilityReason,
+    required this.coveragePercent,
+  });
+
+  final double riskWeight;
+  final double he;
+  final double hc;
+  final double hfx;
+  final double eva;
+  final double cva;
+  final double eadAfterFinancedCrm;
+  final double rwaFinal;
+  final double crmGain;
+  final bool collateralEligible;
+  final String eligibilityReason;
+  final double coveragePercent;
+}
+
 class ExposureCrmDetails {
   const ExposureCrmDetails({
-    required this.mode,
-    required this.label,
-    required this.collateralValue,
-    required this.issuerType,
-    required this.issuerRating,
-    required this.maturityBucket,
-    required this.fxHaircut,
-    required this.guarantorName,
-    required this.guarantorCategory,
-    required this.guarantorRating,
-    required this.coveragePercent,
+    this.mode = 'Aucune',
+    this.label = 'Aucune',
+    this.collateralValue = 0,
+    this.collateralCurrency = 'XOF',
+    this.collateralType = 'Liquidités dans la même devise',
+    this.issuerType = '',
+    this.issuerRating = '',
+    this.maturityBucket = '<=1 an',
+    this.convertibleMainIndex = true,
+    this.opcvmHighestHaircut = 0.30,
+    this.basketItems = const [],
+    this.fxHaircut = 0,
+    this.exposureCurrency = 'XOF',
+    this.riskWeight = 0,
+    this.eligible = true,
+    this.eligibilityReason = '',
+    this.he = 0,
+    this.hc = 0,
+    this.hfx = 0,
+    this.eva = 0,
+    this.cva = 0,
+    this.eadAfterFinancedCrm = 0,
+    this.rwaFinal = 0,
+    this.crmGain = 0,
+    this.guarantorName = '',
+    this.guarantorCategory = '',
+    this.guarantorRating = '',
+    this.coveragePercent = 0,
   });
 
   final String mode;
   final String label;
   final double collateralValue;
+  final String collateralCurrency;
+  final String collateralType;
   final String issuerType;
   final String issuerRating;
   final String maturityBucket;
+  final bool convertibleMainIndex;
+  final double opcvmHighestHaircut;
+  final List<FinancedCrmBasketItem> basketItems;
   final double fxHaircut;
+  final String exposureCurrency;
+  final double riskWeight;
+  final bool eligible;
+  final String eligibilityReason;
+  final double he;
+  final double hc;
+  final double hfx;
+  final double eva;
+  final double cva;
+  final double eadAfterFinancedCrm;
+  final double rwaFinal;
+  final double crmGain;
   final String guarantorName;
   final String guarantorCategory;
   final String guarantorRating;
@@ -1250,10 +1567,49 @@ class ExposureCrmDetails {
       mode: (json?['mode'] ?? 'Aucune') as String,
       label: (json?['label'] ?? '') as String,
       collateralValue: ((json?['collateral_value'] ?? 0) as num).toDouble(),
+      collateralCurrency: (json?['collateral_currency'] ?? 'XOF') as String,
+      collateralType: (json?['collateral_type'] ??
+          'Liquidités dans la même devise') as String,
       issuerType: (json?['issuer_type'] ?? '') as String,
-      issuerRating: (json?['issuer_rating'] ?? '') as String,
+      issuerRating: coerceFinancedCrmCollateralRating(
+        (json?['issuer_rating'] ?? financedCrmDebtRatings.last) as String,
+      ),
       maturityBucket: (json?['maturity_bucket'] ?? '<=1 an') as String,
+      convertibleMainIndex: (json?['convertible_main_index'] ?? true) as bool,
+      opcvmHighestHaircut: coerceFinancedCrmOpcvmHaircut(
+        ((json?['opcvm_highest_haircut'] ?? 0.30) as num).toDouble(),
+      ),
+      basketItems: ((json?['basket_items'] as List<dynamic>? ?? const [])
+          .map(
+            (item) => FinancedCrmBasketItem.fromJson(
+              item is Map<String, dynamic>
+                  ? item
+                  : Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(growable: false)),
       fxHaircut: ((json?['fx_haircut'] ?? 0) as num).toDouble(),
+      exposureCurrency: (json?['exposure_currency'] ?? 'XOF') as String,
+      riskWeight: ((json?['risk_weight'] ??
+              json?['rw_determined'] ??
+              json?['final_rw'] ??
+              0) as num)
+          .toDouble(),
+      eligible:
+          (json?['eligible'] ?? json?['collateral_eligible'] ?? true) as bool,
+      eligibilityReason: (json?['eligibility_reason'] ??
+          json?['ineligibility_reason'] ??
+          '') as String,
+      he: ((json?['he'] ?? 0) as num).toDouble(),
+      hc: ((json?['hc'] ?? json?['haircut'] ?? 0) as num).toDouble(),
+      hfx: ((json?['hfx'] ?? json?['fx_haircut'] ?? 0) as num).toDouble(),
+      eva: ((json?['eva'] ?? 0) as num).toDouble(),
+      cva: ((json?['cva'] ?? 0) as num).toDouble(),
+      eadAfterFinancedCrm:
+          ((json?['ead_after_financed_crm'] ?? json?['ead'] ?? 0) as num)
+              .toDouble(),
+      rwaFinal: ((json?['rwa_final'] ?? json?['rwa'] ?? 0) as num).toDouble(),
+      crmGain: ((json?['crm_gain'] ?? 0) as num).toDouble(),
       guarantorName: (json?['guarantor_name'] ?? '') as String,
       guarantorCategory: (json?['guarantor_category'] ?? '') as String,
       guarantorRating: (json?['guarantor_rating'] ?? '') as String,
@@ -1269,10 +1625,27 @@ class ExposureCrmDetails {
       'mode': mode,
       'label': label,
       'collateral_value': collateralValue,
+      'collateral_currency': collateralCurrency,
+      'collateral_type': collateralType,
       'issuer_type': issuerType,
       'issuer_rating': issuerRating,
       'maturity_bucket': maturityBucket,
+      'convertible_main_index': convertibleMainIndex,
+      'opcvm_highest_haircut': opcvmHighestHaircut,
+      'basket_items': basketItems.map((item) => item.toJson()).toList(),
       'fx_haircut': fxHaircut,
+      'exposure_currency': exposureCurrency,
+      'risk_weight': riskWeight,
+      'eligible': eligible,
+      'eligibility_reason': eligibilityReason,
+      'he': he,
+      'hc': hc,
+      'hfx': hfx,
+      'eva': eva,
+      'cva': cva,
+      'ead_after_financed_crm': eadAfterFinancedCrm,
+      'rwa_final': rwaFinal,
+      'crm_gain': crmGain,
       'guarantor_name': guarantorName,
       'guarantor_category': guarantorCategory,
       'guarantor_rating': guarantorRating,
@@ -1493,10 +1866,15 @@ class ExposureRecord {
       crmMode: crmDetails.mode == 'Aucune' ? 'Aucune' : crmDetails.mode,
       crmType: crmType,
       collateralValue: crmDetails.collateralValue,
+      collateralCurrency: crmDetails.collateralCurrency,
+      collateralType: crmDetails.collateralType,
       issuerType: crmDetails.issuerType,
       issuerRating: crmDetails.issuerRating,
       maturityBucket: crmDetails.maturityBucket,
-      fxHaircut: crmDetails.fxHaircut,
+      fxHaircut: crmDetails.hfx == 0 ? crmDetails.fxHaircut : crmDetails.hfx,
+      convertibleMainIndex: crmDetails.convertibleMainIndex,
+      opcvmHighestHaircut: crmDetails.opcvmHighestHaircut,
+      basketItems: crmDetails.basketItems,
       guarantorName: crmDetails.guarantorName,
       guarantorCategoryCode: crmDetails.guarantorCategory.isEmpty
           ? 'a'
@@ -1584,10 +1962,15 @@ class ExposureDraft {
     required this.crmMode,
     required this.crmType,
     required this.collateralValue,
+    this.collateralCurrency = 'XOF',
+    this.collateralType = 'Liquidités dans la même devise',
     required this.issuerType,
     required this.issuerRating,
     required this.maturityBucket,
     required this.fxHaircut,
+    this.convertibleMainIndex = true,
+    this.opcvmHighestHaircut = 0.30,
+    this.basketItems = const [],
     required this.guarantorName,
     required this.guarantorCategoryCode,
     required this.guarantorRating,
@@ -1632,10 +2015,15 @@ class ExposureDraft {
   final String crmMode;
   final String crmType;
   final double collateralValue;
+  final String collateralCurrency;
+  final String collateralType;
   final String issuerType;
   final String issuerRating;
   final String maturityBucket;
   final double fxHaircut;
+  final bool convertibleMainIndex;
+  final double opcvmHighestHaircut;
+  final List<FinancedCrmBasketItem> basketItems;
   final String guarantorName;
   final String guarantorCategoryCode;
   final String guarantorRating;
@@ -1685,18 +2073,40 @@ class ExposureDraft {
   }
 
   Map<String, dynamic> get crmDetailsJson {
+    final financedSnapshot =
+        crmMode == 'CRM financee' ? computeFinancedCrmSnapshot(this) : null;
     return {
       'mode': crmMode,
       'label': crmType,
       'collateral_value': collateralValue,
+      'collateral_currency': collateralCurrency,
+      'collateral_type': collateralType,
       'issuer_type': issuerType,
       'issuer_rating': issuerRating,
       'maturity_bucket': maturityBucket,
-      'fx_haircut': fxHaircut,
+      'convertible_main_index': convertibleMainIndex,
+      'opcvm_highest_haircut': opcvmHighestHaircut,
+      'basket_items': basketItems.map((item) => item.toJson()).toList(),
+      'fx_haircut':
+          crmMode == 'CRM financee' ? financedSnapshot!.hfx : fxHaircut,
+      'exposure_currency': currency,
+      'risk_weight': financedSnapshot?.riskWeight ?? 0.0,
+      'eligible': financedSnapshot?.collateralEligible ?? true,
+      'eligibility_reason': financedSnapshot?.eligibilityReason ?? '',
+      'he': financedSnapshot?.he ?? 0.0,
+      'hc': financedSnapshot?.hc ?? 0.0,
+      'hfx': financedSnapshot?.hfx ?? 0.0,
+      'eva': financedSnapshot?.eva ?? 0.0,
+      'cva': financedSnapshot?.cva ?? 0.0,
+      'ead_after_financed_crm':
+          financedSnapshot?.eadAfterFinancedCrm ?? grossAmount,
+      'rwa_final': financedSnapshot?.rwaFinal ?? 0.0,
+      'crm_gain': financedSnapshot?.crmGain ?? 0.0,
       'guarantor_name': guarantorName,
       'guarantor_category': guarantorCategory.prudentialLabel,
       'guarantor_rating': guarantorRating,
-      'coverage_percent': crmCoveragePercent,
+      'coverage_percent':
+          financedSnapshot?.coveragePercent ?? crmCoveragePercent,
     };
   }
 }
@@ -1751,10 +2161,11 @@ class ExposureComputation {
   final double haircut;
 }
 
-ExposureComputation computeDraftMetrics(ExposureDraft draft) {
-  final originalRw = lookupPrudentialRiskWeight(
+double _lookupOriginalRiskWeightForDraft(ExposureDraft draft) {
+  return lookupPrudentialRiskWeight(
     draft.categoryCode,
     draft.rating,
+    countryRating: draft.countryRating,
     sovereignSpecialCase: draft.sovereignSpecialCase,
     sovereignPreferentialZeroWeight: draft.sovereignPreferentialZeroWeight,
     sovereignOceEstablished: draft.sovereignOceEstablished,
@@ -1787,6 +2198,356 @@ ExposureComputation computeDraftMetrics(ExposureDraft draft) {
     grantDate: draft.grantDate,
     maturityDate: draft.maturityDate,
   );
+}
+
+class _FinancedCrmCollateralOutcome {
+  const _FinancedCrmCollateralOutcome({
+    required this.eligible,
+    required this.reason,
+    required this.value,
+    required this.hc,
+    required this.hfx,
+    required this.cva,
+  });
+
+  final bool eligible;
+  final String reason;
+  final double value;
+  final double hc;
+  final double hfx;
+  final double cva;
+}
+
+double lookupFinancedCrmHfx({
+  required String exposureCurrency,
+  required String collateralCurrency,
+}) {
+  final exposure = normalizeFinancedCrmCurrency(exposureCurrency);
+  final collateral = normalizeFinancedCrmCurrency(collateralCurrency);
+  if (exposure == collateral) {
+    return 0.0;
+  }
+  final isFcfaEuroPair = (exposure == 'FCFA' && collateral == 'EUR') ||
+      (exposure == 'EUR' && collateral == 'FCFA');
+  return isFcfaEuroPair ? 0.0 : 0.08;
+}
+
+String _normalizeFinancedCrmMaturityBucket(String value) {
+  return _normalizeMaturityBucket(value);
+}
+
+double _lookupDebtCollateralHaircut({
+  required String collateralType,
+  required String issuerRole,
+  required String rating,
+  required String maturityBucket,
+}) {
+  final normalizedRole = _normalizeExposureLabel(issuerRole);
+  final sovereign = normalizedRole.contains('souverain');
+  final bucket = _normalizeFinancedCrmMaturityBucket(maturityBucket);
+  final normalizedRating = normalizeFinancedCrmCollateralRating(rating);
+
+  if (collateralType == 'Titre non noté émis par un État de l UMOA') {
+    if (bucket == '<=1 an') {
+      return sovereign ? 0.005 : 0.01;
+    }
+    if (bucket == '1-3 ans' || bucket == '3-5 ans') {
+      return sovereign
+          ? 0.02
+          : bucket == '1-3 ans'
+              ? 0.03
+              : 0.04;
+    }
+    if (bucket == '5-10 ans') {
+      return sovereign ? 0.04 : 0.06;
+    }
+    return sovereign ? 0.04 : 0.12;
+  }
+
+  final isHighQuality = ['AAA', 'AA+', 'AA', 'AA-'].contains(normalizedRating);
+  final isMediumQuality = [
+    'A+',
+    'A',
+    'A-',
+    'BBB+',
+    'BBB',
+    'BBB-',
+  ].contains(normalizedRating);
+  final isBbRange = ['BB+', 'BB', 'BB-'].contains(normalizedRating);
+
+  if (collateralType == 'Titre garanti par un agent agréé par la BRVM' ||
+      collateralType == 'Titre bancaire non noté') {
+    if (bucket == '<=1 an') {
+      return sovereign ? 0.01 : 0.02;
+    }
+    if (bucket == '1-3 ans') {
+      return sovereign ? 0.03 : 0.04;
+    }
+    if (bucket == '3-5 ans') {
+      return sovereign ? 0.03 : 0.06;
+    }
+    if (bucket == '5-10 ans') {
+      return sovereign ? 0.06 : 0.12;
+    }
+    return sovereign ? 0.06 : 0.20;
+  }
+
+  if (isHighQuality) {
+    if (bucket == '<=1 an') {
+      return sovereign ? 0.005 : 0.01;
+    }
+    if (bucket == '1-3 ans') {
+      return sovereign ? 0.02 : 0.03;
+    }
+    if (bucket == '3-5 ans') {
+      return sovereign ? 0.02 : 0.04;
+    }
+    if (bucket == '5-10 ans') {
+      return sovereign ? 0.04 : 0.06;
+    }
+    return sovereign ? 0.04 : 0.12;
+  }
+
+  if (isMediumQuality) {
+    if (bucket == '<=1 an') {
+      return sovereign ? 0.01 : 0.02;
+    }
+    if (bucket == '1-3 ans') {
+      return sovereign ? 0.03 : 0.04;
+    }
+    if (bucket == '3-5 ans') {
+      return sovereign ? 0.03 : 0.06;
+    }
+    if (bucket == '5-10 ans') {
+      return sovereign ? 0.06 : 0.12;
+    }
+    return sovereign ? 0.06 : 0.20;
+  }
+
+  if (isBbRange && sovereign) {
+    return 0.15;
+  }
+
+  return 0.0;
+}
+
+_FinancedCrmCollateralOutcome _evaluateSingleFinancedCollateral({
+  required double exposureAmount,
+  required String exposureCurrency,
+  required double collateralValue,
+  required String collateralCurrency,
+  required String collateralType,
+  required String issuerRole,
+  required String rating,
+  required String maturityBucket,
+  required bool convertibleMainIndex,
+  required double opcvmHighestHaircut,
+}) {
+  if (collateralValue <= 0) {
+    return const _FinancedCrmCollateralOutcome(
+      eligible: false,
+      reason: 'Valeur de sûreté non renseignée.',
+      value: 0.0,
+      hc: 0.0,
+      hfx: 0.0,
+      cva: 0.0,
+    );
+  }
+
+  if (!isFinancedCrmCollateralTypeEligible(collateralType)) {
+    return const _FinancedCrmCollateralOutcome(
+      eligible: false,
+      reason: 'Cette sûreté n est pas reconnue par le dispositif prudentiel.',
+      value: 0.0,
+      hc: 0.0,
+      hfx: 0.0,
+      cva: 0.0,
+    );
+  }
+
+  final normalizedRating = normalizeFinancedCrmCollateralRating(rating);
+  double hc = 0.0;
+  var eligible = true;
+  var reason = '';
+
+  switch (collateralType) {
+    case 'Liquidités dans la même devise':
+    case 'Liquidités dans une devise différente':
+      hc = 0.0;
+      break;
+    case 'Or':
+    case 'Action de l indice BRVM 10':
+    case 'Action d un indice principal reconnu':
+      hc = 0.20;
+      break;
+    case 'Autre action cotée à la BRVM ou sur une bourse reconnue':
+      hc = 0.30;
+      break;
+    case 'Obligation convertible en action':
+      hc = convertibleMainIndex ? 0.20 : 0.30;
+      break;
+    case 'OPCVM / FI':
+      hc = coerceFinancedCrmOpcvmHaircut(opcvmHighestHaircut);
+      break;
+    case 'Titre non noté émis par un État de l UMOA':
+      hc = _lookupDebtCollateralHaircut(
+        collateralType: collateralType,
+        issuerRole: issuerRole,
+        rating: rating,
+        maturityBucket: maturityBucket,
+      );
+      break;
+    case 'Titre garanti par un agent agréé par la BRVM':
+    case 'Titre bancaire non noté':
+      hc = _lookupDebtCollateralHaircut(
+        collateralType: collateralType,
+        issuerRole: issuerRole,
+        rating: rating,
+        maturityBucket: maturityBucket,
+      );
+      break;
+    case 'Titre de dette souverain':
+    case 'Titre de dette émis par un autre émetteur':
+      if (normalizedRating == 'NON_NOTE') {
+        eligible = false;
+        reason =
+            'La notation de la sûreté doit être renseignée pour ce titre de dette.';
+      } else if (normalizedRating == '<_B-') {
+        eligible = false;
+        reason = 'Les titres en dessous de BB- ne sont pas éligibles.';
+      } else if (['BB+', 'BB', 'BB-'].contains(normalizedRating) &&
+          !_normalizeExposureLabel(issuerRole).contains('souverain')) {
+        eligible = false;
+        reason =
+            'Un autre émetteur noté BB+ à BB- n est pas éligible à la CRM financée.';
+      } else {
+        hc = _lookupDebtCollateralHaircut(
+          collateralType: collateralType,
+          issuerRole: issuerRole,
+          rating: rating,
+          maturityBucket: maturityBucket,
+        );
+      }
+      break;
+    default:
+      eligible = false;
+      reason = 'Cette sûreté n est pas éligible à la réduction réglementaire.';
+      break;
+  }
+
+  final hfx = lookupFinancedCrmHfx(
+    exposureCurrency: exposureCurrency,
+    collateralCurrency: collateralCurrency,
+  );
+  final cva = eligible
+      ? (collateralValue * (1 - hc - hfx))
+          .clamp(0.0, double.infinity)
+          .toDouble()
+      : 0.0;
+
+  return _FinancedCrmCollateralOutcome(
+    eligible: eligible,
+    reason: reason,
+    value: collateralValue,
+    hc: hc,
+    hfx: hfx,
+    cva: cva,
+  );
+}
+
+FinancedCrmSnapshot computeFinancedCrmSnapshot(ExposureDraft draft) {
+  final riskWeight = _lookupOriginalRiskWeightForDraft(draft);
+  final exposureAmount = draft.grossAmount < 0 ? 0.0 : draft.grossAmount;
+  const he = 0.0;
+  final eva = exposureAmount * (1 + he);
+
+  _FinancedCrmCollateralOutcome outcome;
+  if (financedCrmCollateralIsBasket(draft.collateralType) &&
+      draft.basketItems.isNotEmpty) {
+    var totalValue = 0.0;
+    var totalCva = 0.0;
+    var weightedHc = 0.0;
+    var weightedHfx = 0.0;
+    final ineligibleReasons = <String>[];
+    for (final item in draft.basketItems) {
+      final itemOutcome = _evaluateSingleFinancedCollateral(
+        exposureAmount: exposureAmount,
+        exposureCurrency: draft.currency,
+        collateralValue: item.value,
+        collateralCurrency: item.currency,
+        collateralType: item.collateralType,
+        issuerRole: item.issuerRole,
+        rating: item.rating,
+        maturityBucket: item.residualMaturityBucket,
+        convertibleMainIndex: item.convertibleMainIndex,
+        opcvmHighestHaircut: item.opcvmHighestHaircut,
+      );
+      totalValue += item.value;
+      totalCva += itemOutcome.cva;
+      weightedHc += item.value * itemOutcome.hc;
+      weightedHfx += item.value * itemOutcome.hfx;
+      if (!itemOutcome.eligible && itemOutcome.reason.isNotEmpty) {
+        ineligibleReasons.add(itemOutcome.reason);
+      }
+    }
+    final hasEligiblePortion = totalCva > 0;
+    final denominator = totalValue <= 0 ? 1.0 : totalValue;
+    outcome = _FinancedCrmCollateralOutcome(
+      eligible: hasEligiblePortion,
+      reason: hasEligiblePortion
+          ? ''
+          : (ineligibleReasons.isEmpty
+              ? 'Aucun actif éligible dans le panier.'
+              : ineligibleReasons.first),
+      value: totalValue,
+      hc: (weightedHc / denominator).clamp(0.0, double.infinity).toDouble(),
+      hfx: (weightedHfx / denominator).clamp(0.0, double.infinity).toDouble(),
+      cva: totalCva.clamp(0.0, double.infinity).toDouble(),
+    );
+  } else {
+    outcome = _evaluateSingleFinancedCollateral(
+      exposureAmount: exposureAmount,
+      exposureCurrency: draft.currency,
+      collateralValue: draft.collateralValue,
+      collateralCurrency: draft.collateralCurrency,
+      collateralType: draft.collateralType,
+      issuerRole: draft.issuerType,
+      rating: draft.issuerRating,
+      maturityBucket: draft.maturityBucket,
+      convertibleMainIndex: draft.convertibleMainIndex,
+      opcvmHighestHaircut: draft.opcvmHighestHaircut,
+    );
+  }
+
+  final eadAfterFinancedCrm = outcome.eligible
+      ? (eva - outcome.cva).clamp(0.0, double.infinity).toDouble()
+      : exposureAmount;
+  final rwaFinal = eadAfterFinancedCrm * riskWeight;
+  final crmGain = (exposureAmount - eadAfterFinancedCrm)
+      .clamp(0.0, double.infinity)
+      .toDouble();
+  final coveragePercent = exposureAmount == 0
+      ? 0.0
+      : (crmGain / exposureAmount).clamp(0.0, 1.0).toDouble();
+
+  return FinancedCrmSnapshot(
+    riskWeight: riskWeight,
+    he: he,
+    hc: outcome.hc,
+    hfx: outcome.hfx,
+    eva: eva,
+    cva: outcome.eligible ? outcome.cva : 0.0,
+    eadAfterFinancedCrm: eadAfterFinancedCrm,
+    rwaFinal: rwaFinal,
+    crmGain: crmGain,
+    collateralEligible: outcome.eligible,
+    eligibilityReason: outcome.reason,
+    coveragePercent: coveragePercent,
+  );
+}
+
+ExposureComputation computeDraftMetrics(ExposureDraft draft) {
+  final originalRw = _lookupOriginalRiskWeightForDraft(draft);
   final amount = draft.grossAmount;
   if (draft.categoryCode == 'l') {
     final fcec = lookupOffBalanceFcec(draft.offBalanceRiskLevel);
@@ -1807,20 +2568,11 @@ ExposureComputation computeDraftMetrics(ExposureDraft draft) {
   var haircut = 0.0;
 
   if (draft.crmMode == 'CRM financee') {
-    haircut = lookupFinancedCrmHaircut(
-      issuerType: draft.issuerType,
-      rating: draft.issuerRating,
-      maturityBucket: draft.maturityBucket,
-    );
-    effectiveCoverage = amount == 0
-        ? 0.0
-        : (draft.collateralValue / amount).clamp(0.0, 1.0).toDouble();
-    final exposureAdjusted = amount * (1 - haircut);
-    final collateralAdjusted = draft.collateralValue *
-        (1 - haircut - draft.fxHaircut).clamp(0.0, double.infinity);
-    ead = (exposureAdjusted - collateralAdjusted)
-        .clamp(0.0, double.infinity)
-        .toDouble();
+    final snapshot = computeFinancedCrmSnapshot(draft);
+    haircut = snapshot.hc;
+    effectiveCoverage = snapshot.coveragePercent;
+    finalRw = originalRw;
+    ead = snapshot.eadAfterFinancedCrm;
   } else if (draft.crmMode == 'CRM non financee') {
     effectiveCoverage = draft.crmCoveragePercent.clamp(0.0, 1.0).toDouble();
     final guarantorRw = lookupPrudentialRiskWeight(
@@ -1845,50 +2597,6 @@ ExposureComputation computeDraftMetrics(ExposureDraft draft) {
   );
 }
 
-double lookupFinancedCrmHaircut({
-  required String issuerType,
-  required String rating,
-  required String maturityBucket,
-}) {
-  final cluster = _haircutCluster(rating);
-  final sovereign = issuerType.toLowerCase().trim() == 'souverain';
-  final bucket = _normalizeMaturityBucket(maturityBucket);
-
-  if (cluster == 'AAA_AA') {
-    return switch (bucket) {
-      '<=1 an' => sovereign ? 0.005 : 0.01,
-      '1-3 ans' => sovereign ? 0.02 : 0.03,
-      '3-5 ans' => sovereign ? 0.02 : 0.04,
-      '5-10 ans' => sovereign ? 0.04 : 0.06,
-      '>10 ans' => sovereign ? 0.04 : 0.12,
-      _ => 0.0,
-    };
-  }
-  if (cluster == 'A_BBB') {
-    return switch (bucket) {
-      '<=1 an' => sovereign ? 0.01 : 0.02,
-      '1-3 ans' => sovereign ? 0.03 : 0.04,
-      '3-5 ans' => sovereign ? 0.03 : 0.06,
-      '5-10 ans' => sovereign ? 0.06 : 0.12,
-      '>10 ans' => sovereign ? 0.06 : 0.20,
-      _ => 0.0,
-    };
-  }
-  if (cluster == 'BB') {
-    return sovereign ? 0.15 : 0.0;
-  }
-  if (cluster == 'ACTION_BRVM') {
-    return 0.20;
-  }
-  if (cluster == 'AUTRE_ACTION') {
-    return 0.30;
-  }
-  if (cluster == 'LIQUIDITE' || cluster == 'OPCVM') {
-    return 0.0;
-  }
-  return 0.0;
-}
-
 String _normalizeMaturityBucket(String value) {
   final normalized = value.trim().toLowerCase().replaceAll(' ', '');
   if (normalized == '<=1an' || normalized == '<=1ans') return '<=1 an';
@@ -1899,32 +2607,4 @@ String _normalizeMaturityBucket(String value) {
   if (normalized == '5-10ans') return '5-10 ans';
   if (normalized == '>10ans' || normalized == '>5ans') return '>10 ans';
   return value;
-}
-
-String _haircutCluster(String rating) {
-  final normalized = normalizeFinancedCrmCollateralRating(rating);
-  if (['AAA', 'AA+', 'AA', 'AA-', 'AAA/AA', 'NON_NOTE_ETAT_UMOA']
-      .contains(normalized)) {
-    return 'AAA_AA';
-  }
-  if ([
-    'A+',
-    'A',
-    'A-',
-    'BBB+',
-    'BBB',
-    'BBB-',
-    'GARANTI_BRVM',
-    'BANCAIRE_NON_NOTE'
-  ].contains(normalized)) {
-    return 'A_BBB';
-  }
-  if (['BB+', 'BB', 'BB-', 'BB/B'].contains(normalized)) {
-    return 'BB';
-  }
-  if (normalized == 'ACTIONS_BRVM') return 'ACTION_BRVM';
-  if (normalized == 'AUTRES_ACTIONS') return 'AUTRE_ACTION';
-  if (normalized == 'OPCVM') return 'OPCVM';
-  if (normalized == 'LIQUIDITE') return 'LIQUIDITE';
-  return '';
 }

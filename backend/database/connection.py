@@ -173,6 +173,34 @@ class DatabaseManager:
             column_name="defaulted_exposure_provision_at_least_twenty_percent",
             column_definition="INTEGER",
         )
+        for column_name, column_definition in (
+            ("collateral_currency", "TEXT NOT NULL DEFAULT 'XOF'"),
+            (
+                "collateral_type",
+                "TEXT NOT NULL DEFAULT 'Liquidités dans la même devise'",
+            ),
+            ("convertible_main_index", "INTEGER NOT NULL DEFAULT 1"),
+            ("opcvm_highest_haircut", "REAL NOT NULL DEFAULT 0.30"),
+            ("basket_items_json", "TEXT NOT NULL DEFAULT '[]'"),
+            ("exposure_currency", "TEXT NOT NULL DEFAULT 'XOF'"),
+            ("risk_weight", "REAL NOT NULL DEFAULT 0"),
+            ("collateral_eligible", "INTEGER NOT NULL DEFAULT 1"),
+            ("ineligibility_reason", "TEXT NOT NULL DEFAULT ''"),
+            ("he", "REAL NOT NULL DEFAULT 0"),
+            ("hc", "REAL NOT NULL DEFAULT 0"),
+            ("hfx", "REAL NOT NULL DEFAULT 0"),
+            ("eva", "REAL NOT NULL DEFAULT 0"),
+            ("cva", "REAL NOT NULL DEFAULT 0"),
+            ("ead_after_financed_crm", "REAL NOT NULL DEFAULT 0"),
+            ("rwa_final", "REAL NOT NULL DEFAULT 0"),
+            ("crm_gain", "REAL NOT NULL DEFAULT 0"),
+        ):
+            self._ensure_table_column(
+                connection,
+                table_name="crm_financed",
+                column_name=column_name,
+                column_definition=column_definition,
+            )
 
     def _ensure_table_column(
         self,

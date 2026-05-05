@@ -1,6 +1,7 @@
 """Modeles du module expositions."""
 
 from datetime import date
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -22,10 +23,42 @@ class ExposureCrmDetails(BaseModel):
     mode: str = Field(default="Aucune", description="Aucune, CRM financee ou CRM non financee.")
     label: str = Field(default="Aucune", description="Libelle metier de la CRM.")
     collateral_value: float = Field(default=0.0, description="Valeur du collateral avant decote.")
+    collateral_currency: str = Field(default="XOF", description="Devise de la surete.")
+    collateral_type: str = Field(default="Liquidités dans la même devise", description="Type de surete financee.")
     issuer_type: str = Field(default="", description="Type d'emetteur du collateral.")
     issuer_rating: str = Field(default="", description="Notation du collateral.")
     maturity_bucket: str = Field(default="<=1 an", description="Tranche de maturite du collateral.")
+    convertible_main_index: bool = Field(
+        default=True,
+        description="Indique si l'obligation convertible est incluse dans un indice principal.",
+    )
+    opcvm_highest_haircut: float = Field(
+        default=0.30,
+        description="Plus forte decote applicable aux actifs eligibles de l'OPCVM/FI.",
+    )
+    basket_items: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Composition du panier d'actifs lorsque la surete est un panier.",
+    )
     fx_haircut: float = Field(default=0.0, description="Decote de change Hfx appliquee au collateral.")
+    exposure_currency: str = Field(default="XOF", description="Devise de l'exposition brute.")
+    risk_weight: float = Field(default=0.0, description="Ponderation RW deja determinee.")
+    eligible: bool = Field(default=True, description="Indique si la surete est eligible.")
+    eligibility_reason: str = Field(default="", description="Motif de non-eligibilite de la surete.")
+    he: float = Field(default=0.0, description="Decote appliquee a l'exposition.")
+    hc: float = Field(default=0.0, description="Decote appliquee a la surete.")
+    hfx: float = Field(default=0.0, description="Decote de change.")
+    eva: float = Field(default=0.0, description="Valeur ajustee de l'exposition.")
+    cva: float = Field(default=0.0, description="Valeur ajustee de la surete.")
+    ead_after_financed_crm: float = Field(
+        default=0.0,
+        description="Exposition nette apres CRM financee.",
+    )
+    rwa_final: float = Field(default=0.0, description="RWA final apres CRM financee.")
+    crm_gain: float = Field(
+        default=0.0,
+        description="Reduction d'exposition obtenue grace a la CRM financee.",
+    )
     guarantor_name: str = Field(default="", description="Nom du garant.")
     guarantor_category: str = Field(default="", description="Categorie prudentielle du garant.")
     guarantor_rating: str = Field(default="", description="Notation du garant.")

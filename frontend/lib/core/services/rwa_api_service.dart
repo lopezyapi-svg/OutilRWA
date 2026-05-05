@@ -1462,11 +1462,7 @@ class RwaApiService {
 
   double _effectiveCrmCoverage(ExposureDraft draft) {
     if (draft.crmMode == 'CRM financee') {
-      return draft.grossAmount == 0
-          ? 0.0
-          : (draft.collateralValue / draft.grossAmount)
-              .clamp(0.0, 1.0)
-              .toDouble();
+      return computeFinancedCrmSnapshot(draft).coveragePercent;
     }
     if (draft.crmMode == 'CRM non financee') {
       return draft.crmCoveragePercent.clamp(0.0, 1.0).toDouble();

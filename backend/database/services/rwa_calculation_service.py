@@ -255,6 +255,41 @@ def lookup_other_asset_risk_weight(other_asset_type: str | None) -> float:
     return 1.0
 
 
+def lookup_country_rating_risk_weight(country_rating: str) -> float:
+    bucket = bucketize_rating(country_rating)
+    if bucket == "AAA/AA":
+        return 0.0
+    if bucket == "A":
+        return 0.2
+    if bucket == "BBB":
+        return 0.5
+    if bucket == "BB/B":
+        return 1.0
+    if bucket == "< B-":
+        return 1.5
+    return 1.0
+
+
+def should_apply_unrated_counterparty_country_floor(category_code: str) -> bool:
+    return category_code not in {"a", "k", "l"}
+
+
+def apply_unrated_counterparty_country_floor(
+    risk_weight: float,
+    rating: str,
+    *,
+    category_code: str,
+    country_rating: str | None = None,
+) -> float:
+    if not should_apply_unrated_counterparty_country_floor(category_code):
+        return risk_weight
+    if bucketize_rating(rating) != "Non noté":
+        return risk_weight
+    country_weight = lookup_country_rating_risk_weight(country_rating or "Non noté")
+    floor = max(1.0, country_weight)
+    return max(risk_weight, floor)
+
+
 def infer_off_balance_risk_level_from_factor(factor: float | None) -> str | None:
     if factor is None:
         return None
@@ -444,6 +479,7 @@ def lookup_prudential_risk_weight(
     category_code: str,
     rating: str,
     *,
+    country_rating: str | None = None,
     sovereign_special_case: str = "",
     sovereign_preferential_zero_weight: bool = False,
     sovereign_oce_established: bool = False,
@@ -470,56 +506,69 @@ def lookup_prudential_risk_weight(
     maturity_date: date | None = None,
 ) -> float:
     bucket = bucketize_rating(rating)
+    def finalize(risk_weight: float) -> float:
+        return apply_unrated_counterparty_country_floor(
+            risk_weight,
+            rating,
+            category_code=category_code,
+            country_rating=country_rating,
+        )
+
     if category_code == "a" and has_sovereign_priority_zero_weight_case(
         sovereign_special_case,
         sovereign_preferential_zero_weight=sovereign_preferential_zero_weight,
     ):
-        return 0.0
+        return finalize(0.0)
     if category_code == "a" and bucket == "Non noté" and sovereign_oce_established:
-        return lookup_sovereign_oce_risk_weight(sovereign_oce_note)
+        return finalize(lookup_sovereign_oce_risk_weight(sovereign_oce_note))
     if category_code == "b" and has_public_body_preferential_uemoa_case(
         public_body_uemoa_fcfa_case,
         public_body_non_public_activity,
     ):
-        return PUBLIC_BODY_UEMOA_FCFA_RISK_WEIGHT
+        return finalize(PUBLIC_BODY_UEMOA_FCFA_RISK_WEIGHT)
     if category_code == "b" and has_public_body_enterprise_override(
         public_body_uemoa_fcfa_case,
         public_body_non_public_activity,
     ):
-        return lookup_prudential_risk_weight("e", rating)
+        return lookup_prudential_risk_weight(
+            "e",
+            rating,
+            country_rating=country_rating,
+        )
     if category_code == "c" and has_bmd_priority_zero_weight_case(
         bmd_high_quality_case,
         bmd_uemoa_fcfa_case,
         bmd_uemoa_criteria_satisfied,
         bmd_listed_institution_fcfa_case,
     ):
-        return 0.0
+        return finalize(0.0)
     if category_code == "d":
         resolved_bank_case = coerce_bank_institution_case(bank_institution_case)
         if resolved_bank_case == BANK_INSTITUTION_EQUIVALENT_RULES_CASE:
-            return 1.0
+            return finalize(1.0)
         if resolved_bank_case == BANK_INSTITUTION_WEAK_PRUDENTIAL_CASE:
-            return 2.5
+            return finalize(2.5)
         if resolved_bank_case == BANK_INSTITUTION_ELIGIBLE_CATEGORIES_CASE:
-            return lookup_bank_institution_risk_weight(
+            return finalize(lookup_bank_institution_risk_weight(
                 rating,
                 is_short_initial_maturity=has_short_initial_maturity(
                     grant_date, maturity_date
                 ),
-            )
+            ))
     if category_code == "e":
-        return lookup_enterprise_risk_weight(
+        return finalize(lookup_enterprise_risk_weight(
             rating,
             enterprise_exceeds_bceao_degradation_threshold=
                 enterprise_exceeds_bceao_degradation_threshold is True,
             enterprise_prudential_procedure=
                 enterprise_prudential_procedure is True,
-        )
+        ))
     if category_code == "f":
         if retail_eligibility_criteria_satisfied is False:
             return lookup_prudential_risk_weight(
                 "e",
                 rating,
+                country_rating=country_rating,
                 enterprise_exceeds_bceao_degradation_threshold=
                     enterprise_exceeds_bceao_degradation_threshold,
                 enterprise_prudential_procedure=
@@ -529,20 +578,23 @@ def lookup_prudential_risk_weight(
                 grant_date=grant_date,
                 maturity_date=maturity_date,
             )
-        return 0.75
+        return finalize(0.75)
     if category_code == "k":
-        return lookup_other_asset_risk_weight(other_asset_type)
+        return finalize(lookup_other_asset_risk_weight(other_asset_type))
     if category_code == "l":
-        return lookup_off_balance_fcec(off_balance_risk_level)
+        return finalize(lookup_off_balance_fcec(off_balance_risk_level))
     if category_code == "g":
-        return lookup_residential_mortgage_risk_weight(
-            residential_mortgage_eligible
+        return finalize(
+            lookup_residential_mortgage_risk_weight(
+                residential_mortgage_eligible
+            )
         )
     if category_code == "h":
         if commercial_real_estate_eligible is False:
             return lookup_prudential_risk_weight(
                 "e",
                 rating,
+                country_rating=country_rating,
                 enterprise_exceeds_bceao_degradation_threshold=
                     enterprise_exceeds_bceao_degradation_threshold,
                 enterprise_prudential_procedure=
@@ -552,28 +604,30 @@ def lookup_prudential_risk_weight(
                 grant_date=grant_date,
                 maturity_date=maturity_date,
             )
-        return lookup_commercial_real_estate_risk_weight(
-            commercial_real_estate_eligible
+        return finalize(
+            lookup_commercial_real_estate_risk_weight(
+                commercial_real_estate_eligible
+            )
         )
     if category_code == "i":
-        return lookup_defaulted_exposure_risk_weight(
+        return finalize(lookup_defaulted_exposure_risk_weight(
             defaulted_exposure_initial_risk_weight,
             is_residential_mortgage_in_default=
                 defaulted_exposure_residential_mortgage_in_default,
             provision_at_least_twenty_percent=
                 defaulted_exposure_provision_at_least_twenty_percent,
-        )
+        ))
     if category_code == "j":
-        return 1.5
+        return finalize(1.5)
     if category_code == "k":
-        return 1.0
+        return finalize(1.0)
     lookup = {
         "a": {"AAA/AA": 0.0, "A": 0.2, "BBB": 0.5, "BB/B": 1.0, "< B-": 1.5, "Non noté": 1.0},
         "b": {"AAA/AA": 0.2, "A": 0.5, "BBB": 1.0, "BB/B": 1.0, "< B-": 1.5, "Non noté": 1.0},
         "c": {"AAA/AA": 0.2, "A": 0.5, "BBB": 0.5, "BB/B": 1.0, "< B-": 1.5, "Non noté": 0.5},
         "d": {"AAA/AA": 0.2, "A": 0.5, "BBB": 0.5, "BB/B": 1.0, "< B-": 1.5, "Non noté": 1.0},
     }
-    return lookup.get(category_code, lookup["d"]).get(bucket, 1.0)
+    return finalize(lookup.get(category_code, lookup["d"]).get(bucket, 1.0))
 
 
 def normalize_maturity_bucket(value: str) -> str:
@@ -591,40 +645,320 @@ def normalize_maturity_bucket(value: str) -> str:
     return value or "<=1 an"
 
 
-def haircut_cluster(rating: str) -> str:
-    normalized = rating.strip().upper()
-    if normalized in {"AAA", "AA+", "AA", "AA-", "AAA/AA"}:
-        return "AAA_AA"
-    if normalized in {"A+", "A", "A-", "BBB+", "BBB", "BBB-"}:
-        return "A_BBB"
-    if normalized in {"BB+", "BB", "BB-", "BB/B"}:
-        return "BB"
-    return ""
+def normalize_financed_crm_currency(currency: str) -> str:
+    normalized = str(currency or "").strip().upper()
+    if normalized in {"XOF", "XAF", "FCFA"}:
+        return "FCFA"
+    return normalized
 
 
-def lookup_financed_crm_haircut(issuer_type: str, rating: str, maturity_bucket: str) -> float:
-    cluster = haircut_cluster(rating)
-    sovereign = normalize_text(issuer_type) == "souverain"
+def normalize_financed_crm_rating(rating: str) -> str:
+    normalized = str(rating or "").strip().upper()
+    if normalized in {"NON NOTE", "NON NOTÉ"}:
+        return "NON NOTE"
+    return normalized
+
+
+def is_financed_crm_debt_collateral(collateral_type: str) -> bool:
+    return collateral_type in {
+        "Titre de dette souverain",
+        "Titre non noté émis par un État de l UMOA",
+        "Titre de dette émis par un autre émetteur",
+        "Titre garanti par un agent agréé par la BRVM",
+        "Titre bancaire non noté",
+    }
+
+
+def lookup_financed_crm_hfx(exposure_currency: str, collateral_currency: str) -> float:
+    exposure = normalize_financed_crm_currency(exposure_currency)
+    collateral = normalize_financed_crm_currency(collateral_currency)
+    if exposure == collateral:
+        return 0.0
+    if (exposure == "FCFA" and collateral == "EUR") or (
+        exposure == "EUR" and collateral == "FCFA"
+    ):
+        return 0.0
+    return 0.08
+
+
+def _lookup_financed_crm_debt_haircut(
+    *,
+    collateral_type: str,
+    issuer_type: str,
+    rating: str,
+    maturity_bucket: str,
+) -> float:
+    sovereign = "souverain" in normalize_text(issuer_type)
     bucket = normalize_maturity_bucket(maturity_bucket)
-    if cluster == "AAA_AA":
-        return {
-            "<=1 an": 0.005 if sovereign else 0.01,
-            "1-3 ans": 0.02 if sovereign else 0.03,
-            "3-5 ans": 0.02 if sovereign else 0.04,
-            "5-10 ans": 0.04 if sovereign else 0.06,
-            ">10 ans": 0.04 if sovereign else 0.12,
-        }.get(bucket, 0.0)
-    if cluster == "A_BBB":
-        return {
-            "<=1 an": 0.01 if sovereign else 0.02,
-            "1-3 ans": 0.03 if sovereign else 0.04,
-            "3-5 ans": 0.03 if sovereign else 0.06,
-            "5-10 ans": 0.06 if sovereign else 0.12,
-            ">10 ans": 0.06 if sovereign else 0.20,
-        }.get(bucket, 0.0)
-    if cluster == "BB":
-        return 0.15 if sovereign else 0.0
+    normalized_rating = normalize_financed_crm_rating(rating)
+
+    if collateral_type == "Titre non noté émis par un État de l UMOA":
+        if bucket == "<=1 an":
+            return 0.005 if sovereign else 0.01
+        if bucket == "1-3 ans":
+            return 0.02 if sovereign else 0.03
+        if bucket == "3-5 ans":
+            return 0.02 if sovereign else 0.04
+        if bucket == "5-10 ans":
+            return 0.04 if sovereign else 0.06
+        return 0.04 if sovereign else 0.12
+
+    if collateral_type in {
+        "Titre garanti par un agent agréé par la BRVM",
+        "Titre bancaire non noté",
+    }:
+        if bucket == "<=1 an":
+            return 0.01 if sovereign else 0.02
+        if bucket == "1-3 ans":
+            return 0.03 if sovereign else 0.04
+        if bucket == "3-5 ans":
+            return 0.03 if sovereign else 0.06
+        if bucket == "5-10 ans":
+            return 0.06 if sovereign else 0.12
+        return 0.06 if sovereign else 0.20
+
+    if normalized_rating in {"AAA", "AA+", "AA", "AA-"}:
+        if bucket == "<=1 an":
+            return 0.005 if sovereign else 0.01
+        if bucket == "1-3 ans":
+            return 0.02 if sovereign else 0.03
+        if bucket == "3-5 ans":
+            return 0.02 if sovereign else 0.04
+        if bucket == "5-10 ans":
+            return 0.04 if sovereign else 0.06
+        return 0.04 if sovereign else 0.12
+
+    if normalized_rating in {"A+", "A", "A-", "BBB+", "BBB", "BBB-"}:
+        if bucket == "<=1 an":
+            return 0.01 if sovereign else 0.02
+        if bucket == "1-3 ans":
+            return 0.03 if sovereign else 0.04
+        if bucket == "3-5 ans":
+            return 0.03 if sovereign else 0.06
+        if bucket == "5-10 ans":
+            return 0.06 if sovereign else 0.12
+        return 0.06 if sovereign else 0.20
+
+    if normalized_rating in {"BB+", "BB", "BB-"} and sovereign:
+        return 0.15
     return 0.0
+
+
+def _evaluate_single_financed_collateral(
+    *,
+    exposure_currency: str,
+    collateral_value: float,
+    collateral_currency: str,
+    collateral_type: str,
+    issuer_type: str,
+    rating: str,
+    maturity_bucket: str,
+    convertible_main_index: bool,
+    opcvm_highest_haircut: float,
+) -> dict[str, Any]:
+    if collateral_value <= 0:
+        return {
+            "eligible": False,
+            "reason": "Valeur de sûreté non renseignée.",
+            "value": 0.0,
+            "hc": 0.0,
+            "hfx": 0.0,
+            "cva": 0.0,
+        }
+
+    if collateral_type == "Autre sûreté non éligible":
+        return {
+            "eligible": False,
+            "reason": "Cette sûreté n est pas reconnue par le dispositif prudentiel.",
+            "value": collateral_value,
+            "hc": 0.0,
+            "hfx": 0.0,
+            "cva": 0.0,
+        }
+
+    normalized_rating = normalize_financed_crm_rating(rating)
+    eligible = True
+    reason = ""
+    hc = 0.0
+
+    if collateral_type in {
+        "Liquidités dans la même devise",
+        "Liquidités dans une devise différente",
+    }:
+        hc = 0.0
+    elif collateral_type in {
+        "Or",
+        "Action de l indice BRVM 10",
+        "Action d un indice principal reconnu",
+    }:
+        hc = 0.20
+    elif collateral_type == "Autre action cotée à la BRVM ou sur une bourse reconnue":
+        hc = 0.30
+    elif collateral_type == "Obligation convertible en action":
+        hc = 0.20 if convertible_main_index else 0.30
+    elif collateral_type == "OPCVM / FI":
+        hc = max(0.0, float(opcvm_highest_haircut or 0.30))
+    elif collateral_type in {
+        "Titre non noté émis par un État de l UMOA",
+        "Titre garanti par un agent agréé par la BRVM",
+        "Titre bancaire non noté",
+    }:
+        hc = _lookup_financed_crm_debt_haircut(
+            collateral_type=collateral_type,
+            issuer_type=issuer_type,
+            rating=rating,
+            maturity_bucket=maturity_bucket,
+        )
+    elif collateral_type in {
+        "Titre de dette souverain",
+        "Titre de dette émis par un autre émetteur",
+    }:
+        if normalized_rating == "NON NOTE":
+            eligible = False
+            reason = "La notation de la sûreté doit être renseignée pour ce titre de dette."
+        elif normalized_rating == "< B-":
+            eligible = False
+            reason = "Les titres en dessous de BB- ne sont pas éligibles."
+        elif normalized_rating in {"BB+", "BB", "BB-"} and "souverain" not in normalize_text(issuer_type):
+            eligible = False
+            reason = "Un autre émetteur noté BB+ à BB- n est pas éligible à la CRM financée."
+        else:
+            hc = _lookup_financed_crm_debt_haircut(
+                collateral_type=collateral_type,
+                issuer_type=issuer_type,
+                rating=rating,
+                maturity_bucket=maturity_bucket,
+            )
+    else:
+        eligible = False
+        reason = "Cette sûreté n est pas éligible à la réduction réglementaire."
+
+    hfx = lookup_financed_crm_hfx(exposure_currency, collateral_currency)
+    cva = (
+        max(collateral_value * max(0.0, 1.0 - hc - hfx), 0.0) if eligible else 0.0
+    )
+    return {
+        "eligible": eligible,
+        "reason": reason,
+        "value": collateral_value,
+        "hc": hc,
+        "hfx": hfx,
+        "cva": cva,
+    }
+
+
+def compute_financed_crm_details(
+    payload: ExposureCreate,
+    *,
+    risk_weight: float,
+    crm_details: dict[str, Any],
+) -> dict[str, Any]:
+    exposure_currency = str(crm_details.get("exposure_currency") or payload.currency or "XOF")
+    collateral_value = float(crm_details.get("collateral_value", 0.0) or 0.0)
+    collateral_currency = str(crm_details.get("collateral_currency") or exposure_currency)
+    collateral_type = str(
+        crm_details.get("collateral_type") or "Liquidités dans la même devise"
+    )
+    issuer_type = str(crm_details.get("issuer_type") or "autre émetteur")
+    issuer_rating = str(crm_details.get("issuer_rating") or "Non noté")
+    maturity_bucket = str(crm_details.get("maturity_bucket") or "<=1 an")
+    convertible_main_index = bool(crm_details.get("convertible_main_index", True))
+    opcvm_highest_haircut = float(
+        crm_details.get("opcvm_highest_haircut", 0.30) or 0.30
+    )
+    basket_items = list(crm_details.get("basket_items") or [])
+
+    gross_amount = float(payload.gross_amount or 0.0)
+    he = 0.0
+    eva = gross_amount * (1 + he)
+
+    if collateral_type == "Panier d actifs" and basket_items:
+        total_value = 0.0
+        total_cva = 0.0
+        weighted_hc = 0.0
+        weighted_hfx = 0.0
+        ineligible_reasons: list[str] = []
+        for item in basket_items:
+            row = dict(item or {})
+            item_value = float(row.get("value", 0.0) or 0.0)
+            outcome = _evaluate_single_financed_collateral(
+                exposure_currency=exposure_currency,
+                collateral_value=item_value,
+                collateral_currency=str(row.get("currency") or collateral_currency),
+                collateral_type=str(row.get("collateral_type") or "Liquidités dans la même devise"),
+                issuer_type=str(row.get("issuer_role") or "autre émetteur"),
+                rating=str(row.get("rating") or "Non noté"),
+                maturity_bucket=str(row.get("residual_maturity_bucket") or "<=1 an"),
+                convertible_main_index=bool(row.get("convertible_main_index", True)),
+                opcvm_highest_haircut=float(
+                    row.get("opcvm_highest_haircut", 0.30) or 0.30
+                ),
+            )
+            total_value += item_value
+            total_cva += float(outcome["cva"])
+            weighted_hc += item_value * float(outcome["hc"])
+            weighted_hfx += item_value * float(outcome["hfx"])
+            if not outcome["eligible"] and outcome["reason"]:
+                ineligible_reasons.append(str(outcome["reason"]))
+        denominator = total_value if total_value > 0 else 1.0
+        eligible = total_cva > 0
+        eligibility_reason = "" if eligible else (
+            ineligible_reasons[0] if ineligible_reasons else "Aucun actif éligible dans le panier."
+        )
+        hc = weighted_hc / denominator
+        hfx = weighted_hfx / denominator
+        cva = total_cva if eligible else 0.0
+        collateral_value = total_value
+    else:
+        outcome = _evaluate_single_financed_collateral(
+            exposure_currency=exposure_currency,
+            collateral_value=collateral_value,
+            collateral_currency=collateral_currency,
+            collateral_type=collateral_type,
+            issuer_type=issuer_type,
+            rating=issuer_rating,
+            maturity_bucket=maturity_bucket,
+            convertible_main_index=convertible_main_index,
+            opcvm_highest_haircut=opcvm_highest_haircut,
+        )
+        eligible = bool(outcome["eligible"])
+        eligibility_reason = str(outcome["reason"] or "")
+        hc = float(outcome["hc"])
+        hfx = float(outcome["hfx"])
+        cva = float(outcome["cva"]) if eligible else 0.0
+
+    ead_after_financed_crm = max(0.0, eva - cva) if eligible else gross_amount
+    rwa_final = ead_after_financed_crm * risk_weight
+    crm_gain = max(0.0, gross_amount - ead_after_financed_crm)
+    coverage_percent = clamp_ratio(crm_gain / gross_amount) if gross_amount > 0 else 0.0
+
+    return {
+        "mode": "CRM financee",
+        "label": crm_details.get("label") or payload.crm_type,
+        "collateral_value": collateral_value,
+        "collateral_currency": collateral_currency,
+        "collateral_type": collateral_type,
+        "issuer_type": issuer_type,
+        "issuer_rating": issuer_rating,
+        "maturity_bucket": normalize_maturity_bucket(maturity_bucket),
+        "convertible_main_index": convertible_main_index,
+        "opcvm_highest_haircut": opcvm_highest_haircut,
+        "basket_items": basket_items,
+        "fx_haircut": hfx,
+        "exposure_currency": exposure_currency,
+        "risk_weight": risk_weight,
+        "eligible": eligible,
+        "eligibility_reason": eligibility_reason,
+        "he": he,
+        "hc": hc,
+        "hfx": hfx,
+        "eva": eva,
+        "cva": cva,
+        "ead_after_financed_crm": ead_after_financed_crm,
+        "rwa_final": rwa_final,
+        "crm_gain": crm_gain,
+        "coverage_percent": coverage_percent,
+    }
 
 
 def crm_mode_from_type(crm_type: str) -> str:
@@ -675,6 +1009,15 @@ def crm_details_payload(payload: ExposureCreate) -> dict[str, Any]:
     crm_details["coverage_percent"] = clamp_ratio(
         float(crm_details.get("coverage_percent", payload.crm_coverage_percent or 0.0))
     )
+    crm_details["collateral_currency"] = str(
+        crm_details.get("collateral_currency") or payload.currency or "XOF"
+    )
+    crm_details["collateral_type"] = str(
+        crm_details.get("collateral_type") or "Liquidités dans la même devise"
+    )
+    crm_details["exposure_currency"] = str(
+        crm_details.get("exposure_currency") or payload.currency or "XOF"
+    )
     return crm_details
 
 
@@ -682,6 +1025,7 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
     original_rw = lookup_prudential_risk_weight(
         category_code,
         payload.rating,
+        country_rating=payload.country_rating,
         sovereign_special_case=payload.sovereign_special_case,
         sovereign_preferential_zero_weight=payload.sovereign_preferential_zero_weight,
         sovereign_oce_established=payload.sovereign_oce_established,
@@ -735,17 +1079,16 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
         }
 
     if crm_details["mode"] == "CRM financee":
-        collateral_value = float(crm_details.get("collateral_value", 0.0) or 0.0)
-        fx_haircut = float(crm_details.get("fx_haircut", 0.0) or 0.0)
-        haircut = lookup_financed_crm_haircut(
-            issuer_type=str(crm_details.get("issuer_type", "")),
-            rating=str(crm_details.get("issuer_rating", payload.rating)),
-            maturity_bucket=str(crm_details.get("maturity_bucket", "<=1 an")),
+        financed_details = compute_financed_crm_details(
+            payload,
+            risk_weight=original_rw,
+            crm_details=crm_details,
         )
-        effective_coverage = 0.0 if gross_amount == 0 else clamp_ratio(collateral_value / gross_amount)
-        exposure_adjusted = gross_amount * max(0.0, 1.0 - haircut)
-        collateral_adjusted = collateral_value * max(0.0, 1.0 - haircut - fx_haircut)
-        ead = max(exposure_adjusted - collateral_adjusted, 0.0)
+        crm_details.update(financed_details)
+        effective_coverage = float(financed_details["coverage_percent"])
+        haircut = float(financed_details["hc"])
+        ead = float(financed_details["ead_after_financed_crm"])
+        final_rw = original_rw
     elif crm_details["mode"] == "CRM non financee":
         effective_coverage = clamp_ratio(float(crm_details.get("coverage_percent", payload.crm_coverage_percent)))
         guarantor_category = resolve_category(str(crm_details.get("guarantor_category") or "Souverains"))
@@ -773,6 +1116,10 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
     metrics = compute_metrics(payload, category["code"], crm_details)
     crm_details["coverage_percent"] = metrics["effective_coverage"]
     crm_details["haircut"] = metrics["haircut"]
+    if crm_details["mode"] == "CRM financee":
+        crm_details["risk_weight"] = metrics["original_rw"]
+        crm_details["rwa_final"] = metrics["rwa"]
+        crm_details["ead_after_financed_crm"] = metrics["ead"]
     return {
         "id": exposure_id,
         "analysis_date": payload.analysis_date,
@@ -846,12 +1193,16 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
 
 def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
     crm_details = record.get("crm_details", {})
+    category_label = (
+        record.get("category_raw") or record.get("category_standard") or "Entreprises"
+    )
+    category = resolve_category(str(category_label))
     counterparty = Counterparty(
         id=record["id"],
         name=record["counterparty_name"],
         country=record["country"],
         country_rating=record.get("country_rating", "Non noté"),
-        category=record.get("category_raw") or record.get("category_standard") or "Entreprises",
+        category=category_label,
         rating=record["rating"],
     )
     return ExposureView(

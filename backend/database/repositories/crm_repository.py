@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import nullcontext
+import json
 from typing import Any
 
 from database.connection import database_manager
@@ -68,11 +69,31 @@ class CrmRepository:
                         (
                             exposure_id,
                             float(crm_details.get("collateral_value", 0.0) or 0.0),
+                            str(crm_details.get("collateral_currency", "XOF") or "XOF"),
+                            str(
+                                crm_details.get("collateral_type")
+                                or "Liquidités dans la même devise"
+                            ),
                             str(crm_details.get("issuer_type", "") or ""),
                             str(crm_details.get("issuer_rating", "") or ""),
                             str(crm_details.get("maturity_bucket", "<=1 an") or "<=1 an"),
+                            _bool_to_int(bool(crm_details.get("convertible_main_index", True))),
+                            float(crm_details.get("opcvm_highest_haircut", 0.30) or 0.30),
+                            json.dumps(crm_details.get("basket_items", []), ensure_ascii=False),
                             float(crm_details.get("fx_haircut", 0.0) or 0.0),
                             float(crm_details.get("haircut", 0.0) or 0.0),
+                            str(crm_details.get("exposure_currency", "XOF") or "XOF"),
+                            float(crm_details.get("risk_weight", 0.0) or 0.0),
+                            _bool_to_int(bool(crm_details.get("eligible", True))),
+                            str(crm_details.get("eligibility_reason", "") or ""),
+                            float(crm_details.get("he", 0.0) or 0.0),
+                            float(crm_details.get("hc", 0.0) or 0.0),
+                            float(crm_details.get("hfx", 0.0) or 0.0),
+                            float(crm_details.get("eva", 0.0) or 0.0),
+                            float(crm_details.get("cva", 0.0) or 0.0),
+                            float(crm_details.get("ead_after_financed_crm", 0.0) or 0.0),
+                            float(crm_details.get("rwa_final", 0.0) or 0.0),
+                            float(crm_details.get("crm_gain", 0.0) or 0.0),
                         )
                     )
                 elif crm_mode == "CRM non financee":
@@ -102,19 +123,53 @@ class CrmRepository:
                     INSERT INTO crm_financed(
                         exposure_id,
                         collateral_value,
+                        collateral_currency,
+                        collateral_type,
                         issuer_type,
                         issuer_rating,
                         maturity_bucket,
+                        convertible_main_index,
+                        opcvm_highest_haircut,
+                        basket_items_json,
                         fx_haircut,
-                        haircut
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                        haircut,
+                        exposure_currency,
+                        risk_weight,
+                        collateral_eligible,
+                        ineligibility_reason,
+                        he,
+                        hc,
+                        hfx,
+                        eva,
+                        cva,
+                        ead_after_financed_crm,
+                        rwa_final,
+                        crm_gain
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ON CONFLICT(exposure_id) DO UPDATE SET
                         collateral_value = excluded.collateral_value,
+                        collateral_currency = excluded.collateral_currency,
+                        collateral_type = excluded.collateral_type,
                         issuer_type = excluded.issuer_type,
                         issuer_rating = excluded.issuer_rating,
                         maturity_bucket = excluded.maturity_bucket,
+                        convertible_main_index = excluded.convertible_main_index,
+                        opcvm_highest_haircut = excluded.opcvm_highest_haircut,
+                        basket_items_json = excluded.basket_items_json,
                         fx_haircut = excluded.fx_haircut,
-                        haircut = excluded.haircut
+                        haircut = excluded.haircut,
+                        exposure_currency = excluded.exposure_currency,
+                        risk_weight = excluded.risk_weight,
+                        collateral_eligible = excluded.collateral_eligible,
+                        ineligibility_reason = excluded.ineligibility_reason,
+                        he = excluded.he,
+                        hc = excluded.hc,
+                        hfx = excluded.hfx,
+                        eva = excluded.eva,
+                        cva = excluded.cva,
+                        ead_after_financed_crm = excluded.ead_after_financed_crm,
+                        rwa_final = excluded.rwa_final,
+                        crm_gain = excluded.crm_gain
                     """,
                     financed_rows,
                 )
