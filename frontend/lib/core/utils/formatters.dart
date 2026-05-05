@@ -1,0 +1,103 @@
+// Ce fichier regroupe les formateurs utilises dans l'interface.
+import 'package:intl/intl.dart';
+
+import '../localization/app_localization.dart';
+
+/// Centralise les formats d'affichage des montants, pourcentages et dates.
+class AppFormatters {
+  static String currency(num value, {String currencyCode = 'XOF'}) {
+    final formatter = NumberFormat.currency(
+      locale: currencyCode.toUpperCase() == 'USD'
+          ? 'en_US'
+          : AppLocalizations.currentLanguage.intlLocale,
+      symbol: _currencySymbol(currencyCode),
+      decimalDigits: 0,
+    );
+    return formatter.format(value);
+  }
+
+  static String compactNumber(num value) {
+    final amount = value.toDouble();
+    final absolute = amount.abs();
+    final isEnglish = AppLocalizations.isEnglish;
+
+    if (absolute >= 1000000000) {
+      final scaled = amount / 1000000000;
+      return '${_compactScaled(scaled)} ${isEnglish ? _scaleLabel(scaled, singular: 'billion', plural: 'billions') : _scaleLabel(scaled, singular: 'milliard', plural: 'milliards')}';
+    }
+    if (absolute >= 1000000) {
+      final scaled = amount / 1000000;
+      return '${_compactScaled(scaled)} ${_scaleLabel(scaled, singular: 'million', plural: 'millions')}';
+    }
+    if (absolute >= 1000) {
+      final scaled = amount / 1000;
+      return '${_compactScaled(scaled)} ${isEnglish ? 'thousand' : 'mille'}';
+    }
+
+    if (absolute >= 100) {
+      return _plainNumber().format(amount);
+    }
+    if (absolute >= 10) {
+      return _trimCompact(amount.toStringAsFixed(1));
+    }
+    return _trimCompact(amount.toStringAsFixed(2));
+  }
+
+  static String percent(num value) => NumberFormat.decimalPercentPattern(
+        locale: AppLocalizations.currentLanguage.intlLocale,
+        decimalDigits: 1,
+      ).format(value);
+
+  static String shortDate(DateTime value) => DateFormat(
+        'dd/MM/yyyy',
+        AppLocalizations.currentLanguage.intlLocale,
+      ).format(value);
+
+  static String _currencySymbol(String currencyCode) {
+    switch (currencyCode.toUpperCase()) {
+      case 'XOF':
+      case 'XAF':
+        return 'FCFA';
+      case 'EUR':
+        return 'EUR';
+      case 'USD':
+        return 'USD';
+      default:
+        return currencyCode.toUpperCase();
+    }
+  }
+
+  static NumberFormat _plainNumber() =>
+      NumberFormat.decimalPattern(AppLocalizations.currentLanguage.intlLocale);
+
+  static String _compactScaled(double value) {
+    final absolute = value.abs();
+    if (absolute >= 100) {
+      return _trimCompact(value.toStringAsFixed(0));
+    }
+    if (absolute >= 10) {
+      return _trimCompact(value.toStringAsFixed(1));
+    }
+    return _trimCompact(value.toStringAsFixed(2));
+  }
+
+  static String _trimCompact(String value) {
+    final normalized =
+        value.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+    if (normalized.isEmpty) {
+      return _plainNumber().format(0);
+    }
+    return AppLocalizations.isEnglish
+        ? normalized
+        : normalized.replaceAll('.', ',');
+  }
+
+  static String _scaleLabel(
+    double scaledValue, {
+    required String singular,
+    required String plural,
+  }) {
+    final absolute = scaledValue.abs();
+    return absolute >= 2 ? plural : singular;
+  }
+}

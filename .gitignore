@@ -1,0 +1,38 @@
+# Fichiers generes localement.
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+backend/.ruff_cache/
+
+# Sorties Flutter.
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/build/
+frontend/.idea/
+
+# Sorties generales.
+build/
+dist/
+# IDE
+.vscode/
+
+# Données locales / bases SQLite
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Dossiers temporaires
+tmp/
+**/node_modules/
+
+# Fichiers de test locaux
+backend/_excel_source_test.xlsx
+backend/_excel_recalc_test.vbs
+
