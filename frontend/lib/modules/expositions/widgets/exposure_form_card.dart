@@ -306,14 +306,16 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       'HC est la décote appliquée à la sûreté. Elle dépend du type de sûreté, de la notation, du type d émetteur et de la durée résiduelle du titre reçu en garantie.';
   static const String _hfxTooltip =
       'Hfx correspond à la décote appliquée lorsqu il existe une différence de devise entre l exposition et la sûreté. Elle est de 8 % en cas d asymétrie de devises. Toutefois, entre le FCFA et l euro, elle est de 0 %.';
+  static const String _convertibleMainIndexTooltip =
+      "Choisissez Oui si l'obligation convertible reçue en garantie est incluse dans un indice principal reconnu.\n"
+      'Choisissez Non dans le cas contraire.\n'
+      'La décote HC est de 20 % si Oui, contre 30 % si Non.';
   static const String _evaTooltip =
       'EVA est l exposition ajustée après application de la décote HE : EVA = Montant brut de l exposition × (1 + HE).';
   static const String _cvaTooltip =
       'CVA est la valeur ajustée de la sûreté après application des décotes HC et Hfx : CVA = Valeur de la sûreté × (1 - HC - Hfx).';
   static const String _eadAfterFinancedCrmTooltip =
       'L EAD après CRM financée correspond à l exposition nette après prise en compte de la sûreté : EAD = max(0, EVA - CVA).';
-  static const String _ineligibleCollateralTooltip =
-      'Lorsque la sûreté n est pas éligible, elle ne peut pas réduire l exposition réglementaire. L exposition reste donc inchangée.';
   static const String _basketTooltip =
       'Lorsque la sûreté est composée de plusieurs actifs, la décote globale est calculée comme la somme pondérée des décotes de chaque actif.';
   static const List<String> _nonFinancedCrmTypes = [
@@ -3868,21 +3870,25 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           ),
         ),
       if (showConvertibleIndexQuestion)
-        _buildFieldCard(
-          context: context,
-          title: 'Indice principal reconnu ?',
-          subtitle: 'Obligation convertible',
-          icon: Icons.auto_graph_outlined,
-          child: DropdownButtonFormField<bool>(
-            value: _convertibleMainIndex,
-            isExpanded: true,
-            decoration: _fieldDecoration(context),
-            items: const [
-              DropdownMenuItem<bool>(value: true, child: Text('Oui')),
-              DropdownMenuItem<bool>(value: false, child: Text('Non')),
-            ],
-            onChanged: (value) => setState(
-              () => _convertibleMainIndex = value ?? true,
+        _StepGridFullWidth(
+          child: _buildFieldCard(
+            context: context,
+            title: 'Indice principal reconnu ?',
+            subtitle: 'Obligation convertible',
+            icon: Icons.auto_graph_outlined,
+            inlineTooltip: _convertibleMainIndexTooltip,
+            tooltipTitle: 'Précision',
+            child: DropdownButtonFormField<bool>(
+              value: _convertibleMainIndex,
+              isExpanded: true,
+              decoration: _fieldDecoration(context),
+              items: const [
+                DropdownMenuItem<bool>(value: true, child: Text('Oui')),
+                DropdownMenuItem<bool>(value: false, child: Text('Non')),
+              ],
+              onChanged: (value) => setState(
+                () => _convertibleMainIndex = value ?? true,
+              ),
             ),
           ),
         ),
@@ -4010,59 +4016,61 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   ),
                 ),
               ),
-            _StepGridFullWidth(
-              child: _buildFieldCard(
-                context: context,
-                title: 'Caractéristiques réglementaires',
-                subtitle: 'Émetteur, notation, durée et éligibilité',
-                icon: Icons.fact_check_outlined,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (regulatoryFields.isEmpty)
-                      _InfoBanner(
-                        icon: Icons.info_outline,
-                        accent: const Color(0xFF2563EB),
-                        text:
-                            'Aucun paramètre complémentaire n est requis pour ce type de sûreté.',
-                      )
-                    else
-                      _StepGrid(children: regulatoryFields),
-                  ],
+            if (regulatoryFields.isNotEmpty)
+              _StepGridFullWidth(
+                child: _buildFieldCard(
+                  context: context,
+                  title: 'Caractéristiques réglementaires',
+                  subtitle: 'Émetteur, notation, durée et éligibilité',
+                  icon: Icons.fact_check_outlined,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [_StepGrid(children: regulatoryFields)],
+                  ),
                 ),
               ),
-            ),
             _StepGridFullWidth(
               child: _buildFieldCard(
                 context: context,
                 title: 'Décotes automatiques',
                 subtitle: 'HE, HC et Hfx calculées',
                 icon: Icons.percent_rounded,
-                child: _StepGrid(
+                child: Row(
                   children: [
-                    _buildReadonlyMetricCard(
-                      context: context,
-                      label: 'HE',
-                      value: _formatPercent(snapshot.he),
-                      icon: Icons.info_outline,
-                      accent: const Color(0xFF2563EB),
-                      tooltip: _heTooltip,
+                    Expanded(
+                      child: _buildReadonlyMetricCard(
+                        context: context,
+                        label: 'HE',
+                        value: _formatPercent(snapshot.he),
+                        icon: Icons.info_outline,
+                        accent: const Color(0xFF2563EB),
+                        tooltip: _heTooltip,
+                        compact: true,
+                      ),
                     ),
-                    _buildReadonlyMetricCard(
-                      context: context,
-                      label: 'HC',
-                      value: _formatPercent(snapshot.hc),
-                      icon: Icons.shield_moon_outlined,
-                      accent: const Color(0xFFF59E0B),
-                      tooltip: _hcTooltip,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadonlyMetricCard(
+                        context: context,
+                        label: 'HC',
+                        value: _formatPercent(snapshot.hc),
+                        icon: Icons.shield_moon_outlined,
+                        accent: const Color(0xFFF59E0B),
+                        tooltip: _hcTooltip,
+                        compact: true,
+                      ),
                     ),
-                    _buildReadonlyMetricCard(
-                      context: context,
-                      label: 'Hfx',
-                      value: _formatPercent(snapshot.hfx),
-                      icon: Icons.currency_exchange_outlined,
-                      accent: const Color(0xFF0F766E),
-                      tooltip: _hfxTooltip,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildReadonlyMetricCard(
+                        context: context,
+                        label: 'Hfx',
+                        value: _formatPercent(snapshot.hfx),
+                        icon: Icons.currency_exchange_outlined,
+                        accent: const Color(0xFF0F766E),
+                        tooltip: _hfxTooltip,
+                        compact: true,
+                      ),
                     ),
                   ],
                 ),
@@ -4074,7 +4082,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 title: 'Calcul CRM financée',
                 subtitle: 'Résultat automatique',
                 icon: Icons.calculate_outlined,
-                child: _StepGrid(
+                child: _AdaptiveMetricGrid(
                   children: [
                     _buildReadonlyMetricCard(
                       context: context,
@@ -4083,6 +4091,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       icon: Icons.exposure_plus_1_outlined,
                       accent: const Color(0xFF2563EB),
                       tooltip: _evaTooltip,
+                      compact: true,
                     ),
                     _buildReadonlyMetricCard(
                       context: context,
@@ -4091,6 +4100,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       icon: Icons.savings_outlined,
                       accent: const Color(0xFF0F766E),
                       tooltip: _cvaTooltip,
+                      compact: true,
                     ),
                     _buildReadonlyMetricCard(
                       context: context,
@@ -4101,6 +4111,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       icon: Icons.account_balance_wallet_outlined,
                       accent: const Color(0xFF7C3AED),
                       tooltip: _eadAfterFinancedCrmTooltip,
+                      compact: true,
                     ),
                     _buildReadonlyMetricCard(
                       context: context,
@@ -4108,6 +4119,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       value: _formatReadonlyAmount(snapshot.rwaFinal),
                       icon: Icons.analytics_outlined,
                       accent: const Color(0xFFF59E0B),
+                      compact: true,
                     ),
                     _buildReadonlyMetricCard(
                       context: context,
@@ -4115,6 +4127,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       value: _formatReadonlyAmount(snapshot.crmGain),
                       icon: Icons.trending_down_outlined,
                       accent: const Color(0xFF16A34A),
+                      compact: true,
                     ),
                     _buildReadonlyMetricCard(
                       context: context,
@@ -4123,6 +4136,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       icon: Icons.account_balance_outlined,
                       accent: const Color(0xFF0891B2),
                       tooltip: _collateralValueTooltip,
+                      compact: true,
                     ),
                   ],
                 ),
@@ -4168,10 +4182,19 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     required IconData icon,
     required Color accent,
     String? tooltip,
+    bool compact = false,
   }) {
     final isDark = _isExposureDark(context);
+    final cardPadding = compact ? 8.0 : 12.0;
+    final iconBoxSize = compact ? 22.0 : 28.0;
+    final iconSize = compact ? 12.0 : 14.0;
+    final horizontalGap = compact ? 7.0 : 10.0;
+    final valueGap = compact ? 1.0 : 4.0;
+    final labelFontSize = compact ? 8.7 : null;
+    final valueFontSize = compact ? 9.9 : null;
+    final labelMaxLines = compact ? 2 : 1;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF14233D) : const Color(0xFFFDFEFF),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
@@ -4181,15 +4204,15 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 28,
-            height: 28,
+            width: iconBoxSize,
+            height: iconBoxSize,
             decoration: BoxDecoration(
               color: accent.withOpacity(0.10),
               borderRadius: BorderRadius.circular(_exposureFormRadius),
             ),
-            child: Icon(icon, size: 14, color: accent),
+            child: Icon(icon, size: iconSize, color: accent),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: horizontalGap),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4202,20 +4225,32 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: _wizardMutedColor(context),
                               fontWeight: FontWeight.w700,
+                              fontSize: labelFontSize,
+                              height: compact ? 1.12 : null,
                             ),
+                        maxLines: labelMaxLines,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     if (tooltip != null && tooltip.isNotEmpty)
-                      _buildInlineInfoButton(context, tooltip),
+                      _buildInlineInfoButton(
+                        context,
+                        tooltip,
+                        compact: compact,
+                      ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: valueGap),
                 Text(
                   value,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: _wizardBodyTitleColor(context),
                         fontWeight: FontWeight.w800,
+                        fontSize: valueFontSize,
+                        height: compact ? 1.05 : null,
                       ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -4225,7 +4260,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     );
   }
 
-  Widget _buildInlineInfoButton(BuildContext context, String message) {
+  Widget _buildInlineInfoButton(
+    BuildContext context,
+    String message, {
+    bool compact = false,
+  }) {
     return Tooltip(
       message: message,
       preferBelow: false,
@@ -4238,11 +4277,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             color: Colors.white,
             height: 1.4,
           ),
-      child: const Padding(
-        padding: EdgeInsets.only(left: 6),
+      child: Padding(
+        padding: EdgeInsets.only(left: compact ? 4 : 6),
         child: Icon(
           Icons.info_outline,
-          size: 15,
+          size: compact ? 13 : 15,
           color: Color(0xFF3B82F6),
         ),
       ),
@@ -4479,31 +4518,38 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   ),
                 ),
               if (showConvertibleIndexQuestion)
-                _buildFieldCard(
-                  context: context,
-                  title: 'Indice principal reconnu ?',
-                  subtitle: '',
-                  icon: Icons.auto_graph_outlined,
-                  child: DropdownButtonFormField<bool>(
-                    value: item.convertibleMainIndex,
-                    isExpanded: true,
-                    decoration: _fieldDecoration(context),
-                    items: const [
-                      DropdownMenuItem<bool>(value: true, child: Text('Oui')),
-                      DropdownMenuItem<bool>(value: false, child: Text('Non')),
-                    ],
-                    onChanged: (value) => _updateBasketItem(
-                      index,
-                      FinancedCrmBasketItem(
-                        collateralType: item.collateralType,
-                        value: item.value,
-                        currency: item.currency,
-                        issuerRole: item.issuerRole,
-                        rating: item.rating,
-                        residualMaturityBucket: item.residualMaturityBucket,
-                        convertibleMainIndex:
-                            value ?? item.convertibleMainIndex,
-                        opcvmHighestHaircut: item.opcvmHighestHaircut,
+                _StepGridFullWidth(
+                  child: _buildFieldCard(
+                    context: context,
+                    title: 'Indice principal reconnu ?',
+                    subtitle: '',
+                    icon: Icons.auto_graph_outlined,
+                    inlineTooltip: _convertibleMainIndexTooltip,
+                    tooltipTitle: 'Précision',
+                    child: DropdownButtonFormField<bool>(
+                      value: item.convertibleMainIndex,
+                      isExpanded: true,
+                      decoration: _fieldDecoration(context),
+                      items: const [
+                        DropdownMenuItem<bool>(value: true, child: Text('Oui')),
+                        DropdownMenuItem<bool>(
+                          value: false,
+                          child: Text('Non'),
+                        ),
+                      ],
+                      onChanged: (value) => _updateBasketItem(
+                        index,
+                        FinancedCrmBasketItem(
+                          collateralType: item.collateralType,
+                          value: item.value,
+                          currency: item.currency,
+                          issuerRole: item.issuerRole,
+                          rating: item.rating,
+                          residualMaturityBucket: item.residualMaturityBucket,
+                          convertibleMainIndex:
+                              value ?? item.convertibleMainIndex,
+                          opcvmHighestHaircut: item.opcvmHighestHaircut,
+                        ),
                       ),
                     ),
                   ),
@@ -6290,6 +6336,42 @@ class _StepGrid extends StatelessWidget {
                     ? constraints.maxWidth
                     : itemWidth,
                 child: child is _StepGridFullWidth ? child.child : child,
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AdaptiveMetricGrid extends StatelessWidget {
+  const _AdaptiveMetricGrid({
+    required this.children,
+  });
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        final columns = constraints.maxWidth >= 760
+            ? 3
+            : constraints.maxWidth >= 470
+                ? 2
+                : 1;
+        final itemWidth = columns == 1
+            ? constraints.maxWidth
+            : (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final child in children)
+              SizedBox(
+                width: itemWidth,
+                child: child,
               ),
           ],
         );

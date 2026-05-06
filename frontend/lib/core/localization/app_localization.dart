@@ -446,6 +446,10 @@ const Map<String, String> _englishTranslations = {
   'Statut': 'Status',
   'Mode CRM': 'CRM mode',
   'Valeur du collateral': 'Collateral value',
+  'Indice principal reconnu ?': 'Recognized main index?',
+  'Obligation convertible': 'Convertible bond',
+  "Choisissez Oui si l'obligation convertible reçue en garantie est incluse dans un indice principal reconnu.\nChoisissez Non dans le cas contraire.\nLa décote HC est de 20 % si Oui, contre 30 % si Non.":
+      'Choose Yes if the convertible bond received as collateral is included in a recognized main index.\nChoose No otherwise.\nThe HC haircut is 20% for Yes, versus 30% for No.',
   'Type d emetteur': 'Issuer type',
   'Notation du collateral': 'Collateral rating',
   'Maturite': 'Maturity',

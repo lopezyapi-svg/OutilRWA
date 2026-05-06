@@ -10,12 +10,10 @@ import 'core/state/portfolio_currency_scope.dart';
 import 'core/theme/app_theme.dart';
 import 'modules/crm/screens/crm_screen.dart';
 import 'modules/dashboard/screens/dashboard_screen.dart';
-import 'modules/donnees_marche/screens/donnees_marche_screen.dart';
-import 'modules/echeanciers_flux/screens/echeanciers_flux_screen.dart';
 import 'modules/expositions/screens/expositions_screen.dart';
+import 'modules/hors_bilan/screens/hors_bilan_screen.dart';
+import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/referentiels/screens/referentiels_screen.dart';
-import 'modules/simulation/screens/simulation_screen.dart';
-import 'modules/stress_tests/screens/stress_tests_screen.dart';
 import 'shared/widgets/app_shell.dart';
 
 /// Widget racine qui pilote le thème et la navigation principale.
@@ -29,10 +27,12 @@ class RwaApp extends StatefulWidget {
 /// Etat interne qui mémorise le module courant et le mode de thème.
 class _RwaAppState extends State<RwaApp> {
   final RwaApiService _api = RwaApiService(useMockData: false);
-  final ValueNotifier<String> _portfolioDisplayCurrency =
-      ValueNotifier<String>('XOF');
-  final ValueNotifier<AppLanguage> _appLanguage =
-      ValueNotifier<AppLanguage>(AppLanguage.francais);
+  final ValueNotifier<String> _portfolioDisplayCurrency = ValueNotifier<String>(
+    'XOF',
+  );
+  final ValueNotifier<AppLanguage> _appLanguage = ValueNotifier<AppLanguage>(
+    AppLanguage.francais,
+  );
   AppModule _selectedModule = AppModule.dashboard;
   ThemeMode _themeMode = ThemeMode.light;
   final Map<AppModule, Widget> _screenCache = {};
@@ -115,23 +115,19 @@ class _RwaAppState extends State<RwaApp> {
       switch (module) {
         case AppModule.dashboard:
           return DashboardScreen(api: _api);
-        case AppModule.inventairePortefeuille:
+        case AppModule.expositions:
           return ExpositionsScreen(
             api: _api,
             displayCurrencyListenable: _portfolioDisplayCurrency,
           );
-        case AppModule.donneesMarche:
-          return const DonneesMarcheScreen();
-        case AppModule.echeanciersFlux:
-          return const EcheanciersFluxScreen();
-        case AppModule.analyseRisques:
+        case AppModule.horsBilan:
+          return HorsBilanScreen(api: _api);
+        case AppModule.crm:
           return CrmScreen(api: _api);
-        case AppModule.stressTests:
-          return const StressTestsScreen();
-        case AppModule.simulation:
-          return const SimulationScreen();
         case AppModule.referentiels:
           return ReferentielsScreen(api: _api);
+        case AppModule.rapports:
+          return RapportsScreen(api: _api);
       }
     });
   }
@@ -144,10 +140,7 @@ class _RwaAppState extends State<RwaApp> {
       index: visibleModules.indexOf(_selectedModule),
       children: [
         for (final module in visibleModules)
-          KeyedSubtree(
-            key: ValueKey(module),
-            child: _screenFor(module),
-          ),
+          KeyedSubtree(key: ValueKey(module), child: _screenFor(module)),
       ],
     );
   }

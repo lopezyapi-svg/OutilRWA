@@ -34,27 +34,22 @@ class SidebarNavigation extends StatelessWidget {
         'Tableau de bord',
       ),
       _MenuEntry(
-        AppModule.inventairePortefeuille,
+        AppModule.expositions,
         Icons.table_chart_rounded,
         'Expositions',
       ),
-      _MenuEntry(AppModule.donneesMarche, Icons.query_stats_rounded, 'Marché'),
       _MenuEntry(
-        AppModule.echeanciersFlux,
-        Icons.waterfall_chart_rounded,
-        'Échéanciers & Flux',
+        AppModule.horsBilan,
+        Icons.account_balance_wallet_outlined,
+        'Hors Bilan',
       ),
-      _MenuEntry(
-        AppModule.analyseRisques,
-        Icons.shield_outlined,
-        'Analyse & Risques',
-      ),
-      _MenuEntry(AppModule.simulation, Icons.auto_graph_rounded, 'Simulation'),
+      _MenuEntry(AppModule.crm, Icons.shield_outlined, 'CRM'),
       _MenuEntry(
         AppModule.referentiels,
         Icons.menu_book_rounded,
         'Referentiels',
       ),
+      _MenuEntry(AppModule.rapports, Icons.assessment_outlined, 'Rapports'),
     ];
 
     if (compact) {
@@ -234,15 +229,15 @@ class _CompactNavButton extends StatelessWidget {
               decoration: BoxDecoration(
                 color: selected
                     ? (isDark
-                        ? const Color(0xFF162742)
-                        : const Color(0xFFF1F5FF))
+                          ? const Color(0xFF162742)
+                          : const Color(0xFFF1F5FF))
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(
                   color: selected
                       ? (isDark
-                          ? const Color(0xFF34537F)
-                          : const Color(0xFFD7E2FF))
+                            ? const Color(0xFF34537F)
+                            : const Color(0xFFD7E2FF))
                       : Colors.transparent,
                 ),
                 boxShadow: selected
@@ -303,8 +298,9 @@ class _ExpandedSidebar extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color:
-                    isDark ? const Color(0x33040A16) : const Color(0x120F172A),
+                color: isDark
+                    ? const Color(0x33040A16)
+                    : const Color(0x120F172A),
                 blurRadius: 22,
                 offset: const Offset(0, 10),
               ),
@@ -341,8 +337,9 @@ class _ExpandedSidebar extends StatelessWidget {
               Divider(
                 height: 1,
                 thickness: 1,
-                color:
-                    isDark ? const Color(0xFF22304B) : const Color(0xFFE5ECFA),
+                color: isDark
+                    ? const Color(0xFF22304B)
+                    : const Color(0xFFE5ECFA),
               ),
               const SizedBox(height: 10),
               if (isCondensed) ...[
@@ -550,11 +547,11 @@ class _ExpandedNavTile extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: selected
                           ? (isDark
-                              ? const Color(0xFF1C3154)
-                              : const Color(0xFFDDEBFF))
+                                ? const Color(0xFF1C3154)
+                                : const Color(0xFFDDEBFF))
                           : (isDark
-                              ? const Color(0xFF14233D)
-                              : const Color(0xFFF7FAFF)),
+                                ? const Color(0xFF14233D)
+                                : const Color(0xFFF7FAFF)),
                       borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                     child: Icon(entry.icon, size: 15, color: iconColor),
@@ -568,8 +565,9 @@ class _ExpandedNavTile extends StatelessWidget {
                       style: TextStyle(
                         color: textColor,
                         fontSize: 11,
-                        fontWeight:
-                            selected ? FontWeight.w800 : FontWeight.w700,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w700,
                       ),
                     ),
                   ),
