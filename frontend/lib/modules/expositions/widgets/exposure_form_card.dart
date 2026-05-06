@@ -1,7 +1,6 @@
 // Ce fichier affiche le parcours guide de creation et d'edition des expositions.
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
@@ -11,6 +10,7 @@ import '../../../core/utils/currency_conversion.dart';
 import '../models/exposition_models.dart';
 
 const double _exposureFormRadius = 5;
+const double _wizardBorderWidth = 1.0;
 
 bool _isExposureDark(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark;
@@ -19,27 +19,52 @@ Color _wizardScreenColor(BuildContext context) => _isExposureDark(context)
     ? AppTheme.darkBackground
     : const Color(0xFFF4F7FB);
 
-Color _wizardShellColor(BuildContext context) =>
-    _isExposureDark(context) ? const Color(0xFF0D172A) : Colors.white;
+Color _wizardShellColor(BuildContext context) => _isExposureDark(context)
+    ? const Color(0xFF0D172A)
+    : const Color(0xFFF8FBFE);
 
 Color _wizardPanelColor(BuildContext context) => _isExposureDark(context)
     ? const Color(0xFF101B31)
-    : const Color(0xFFF9FBFE);
+    : const Color(0xFFF1F6FD);
 
 Color _wizardCardColor(BuildContext context) =>
     _isExposureDark(context) ? const Color(0xFF13233C) : Colors.white;
 
 Color _wizardSoftCardColor(BuildContext context) => _isExposureDark(context)
     ? const Color(0xFF122038)
-    : const Color(0xFFF9FBFF);
+    : const Color(0xFFF6FAFD);
 
-Color _wizardInputFillColor(BuildContext context) => _isExposureDark(context)
-    ? const Color(0xFF14233D)
-    : const Color(0xFFFBFCFF);
+Color _wizardInputFillColor(BuildContext context) =>
+    _isExposureDark(context) ? const Color(0xFF182A46) : Colors.white;
 
 Color _wizardBorderColor(BuildContext context) => _isExposureDark(context)
-    ? const Color(0xFF273853)
-    : const Color(0xFFE4EBF6);
+    ? const Color(0xFF304763)
+    : const Color(0xFFD7E1EC);
+
+Color _wizardRightSectionBorderColor(BuildContext context) =>
+    _isExposureDark(context)
+        ? const Color(0x993A506B)
+        : const Color(0x8FD7E1EC);
+
+BorderSide _wizardBorderSide(
+  BuildContext context, {
+  Color? color,
+  double width = _wizardBorderWidth,
+}) =>
+    BorderSide(
+      color: color ?? _wizardBorderColor(context),
+      width: width,
+    );
+
+Border _wizardBoxBorder(
+  BuildContext context, {
+  Color? color,
+  double width = _wizardBorderWidth,
+}) =>
+    Border.all(
+      color: color ?? _wizardBorderColor(context),
+      width: width,
+    );
 
 Color _wizardTitleColor(BuildContext context) =>
     _isExposureDark(context) ? AppTheme.darkText : const Color(0xFF0F172A);
@@ -492,7 +517,14 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     );
     _rating = _resolveRatingValue(
       draft?.rating,
-      preferred: 'BBB',
+      preferred: (_categoryCode == 'a' ||
+              _categoryCode == 'b' ||
+              _categoryCode == 'c' ||
+              _categoryCode == 'd' ||
+              _categoryCode == 'e')
+          ? 'Non noté'
+          : 'BBB',
+      options: _counterpartyRatingOptionsForCategory(_categoryCode),
     );
     if ((_categoryCode == 'a' || _categoryCode == 'c') &&
         !prudentialRatings.contains(_rating)) {
@@ -704,8 +736,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   String _resolveRatingValue(
     String? value, {
     String? preferred,
+    List<String>? options,
   }) {
-    final ratings = _availableRatings;
+    final ratings = options ?? _availableRatings;
     if (value != null && ratings.contains(value)) {
       return value;
     }
@@ -713,6 +746,19 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       return preferred;
     }
     return ratings.first;
+  }
+
+  List<String> _counterpartyRatingOptionsForCategory(String categoryCode) {
+    if (categoryCode == 'a' ||
+        categoryCode == 'b' ||
+        categoryCode == 'c' ||
+        categoryCode == 'd') {
+      return prudentialRatings;
+    }
+    if (categoryCode == 'e') {
+      return enterpriseRatingOptions;
+    }
+    return _availableRatings;
   }
 
   List<String> get _availableCountryOptions {
@@ -1268,12 +1314,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       final contentWidth = constraints.maxWidth - 40;
                       final fixedMainCardHeight = useSplitLayout ? 528.0 : null;
                       final useFixedMainCard = fixedMainCardHeight != null;
-                      final leftPaneWidth = useSplitLayout
-                          ? (contentWidth - 18) / 2
+                      final summaryPaneWidth = useSplitLayout
+                          ? (contentWidth - 18) * 0.4
                           : contentWidth;
-                      final kpiWidth = leftPaneWidth >= 580
-                          ? (leftPaneWidth - 10) / 2
-                          : contentWidth;
+                      final kpiWidth = summaryPaneWidth >= 580
+                          ? (summaryPaneWidth - 10) / 2
+                          : summaryPaneWidth;
 
                       final leftColumn = _buildFixedSummaryColumn(
                         context,
@@ -1294,9 +1340,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                                   ? CrossAxisAlignment.stretch
                                   : CrossAxisAlignment.start,
                               children: [
-                                Expanded(child: rightPanel),
+                                Expanded(flex: 6, child: rightPanel),
                                 const SizedBox(width: 18),
-                                Expanded(child: leftColumn),
+                                Expanded(flex: 4, child: leftColumn),
                               ],
                             )
                           : Column(
@@ -1323,8 +1369,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                             color: _wizardShellColor(context),
                             borderRadius:
                                 BorderRadius.circular(_exposureFormRadius),
-                            border:
-                                Border.all(color: _wizardBorderColor(context)),
+                            border: _wizardBoxBorder(context),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1357,177 +1402,166 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     String displayCurrency,
     double kpiWidth,
   ) {
-    final compactKpiWidth = kpiWidth > 168 ? 168.0 : kpiWidth;
+    final compactKpiWidth = kpiWidth > 156 ? 156.0 : kpiWidth;
     final items = _buildIntroKpis(context, preview, displayCurrency);
     final isDark = _isExposureDark(context);
+    final summaryShellBorderColor =
+        isDark ? const Color(0xFF4F6FA3) : const Color(0xFFBED0F1);
+    final summaryBackground = isDark
+        ? const [Color(0xFF10234A), Color(0xFF16377A), Color(0xFF1A4697)]
+        : const [Color(0xFFF8FBFF), Color(0xFFE3ECFF), Color(0xFFC9DAFF)];
+    final summaryTitleColor =
+        isDark ? AppTheme.darkText : const Color(0xFF153B7A);
+    final summaryBodyColor =
+        isDark ? const Color(0xFFD7E2F4) : const Color(0xFF5A709A);
+    final summaryIconBackground =
+        isDark ? const Color(0xFF1A2D48) : const Color(0xFFF4F7FF);
+    final summaryIconBorder =
+        isDark ? const Color(0xFF3F5C89) : const Color(0xFFBFD0F3);
+    const summaryAccentStart = Color(0xFF3B82F6);
+    const summaryAccentEnd = Color(0xFF0B3D91);
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: _wizardSoftCardColor(context),
-        borderRadius: BorderRadius.circular(_exposureFormRadius),
-        border: Border.all(color: _wizardBorderColor(context)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: summaryBackground,
+          stops: const [0.0, 0.52, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: summaryShellBorderColor,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? const Color(0x22000000) : const Color(0x0D9DB4CC),
+            color: isDark ? const Color(0x26000000) : const Color(0x120B3D91),
             blurRadius: 10,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 3.0,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF4E79D8) : const Color(0xFFBFD3F6),
+            height: 10,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  summaryAccentStart,
+                  summaryAccentEnd,
+                ],
+              ),
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(_exposureFormRadius),
-                bottomLeft: Radius.circular(_exposureFormRadius),
+                topLeft: Radius.circular(8),
+                topRight: Radius.circular(8),
               ),
             ),
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 2),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  const spacing = 8.0;
-                  final availableWidth = constraints.maxWidth.isFinite
-                      ? constraints.maxWidth
-                      : compactKpiWidth * 2 + spacing;
-                  final twoColumnWidth = (availableWidth - spacing) / 2;
-                  final itemWidth = twoColumnWidth < compactKpiWidth
-                      ? twoColumnWidth
-                      : compactKpiWidth;
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const spacing = 8.0;
+                final availableWidth = constraints.maxWidth.isFinite
+                    ? constraints.maxWidth
+                    : compactKpiWidth * 2 + spacing;
+                final columns = availableWidth >= 320 ? 2 : 1;
+                final itemWidth = columns == 1
+                    ? availableWidth
+                    : (availableWidth - spacing * (columns - 1)) / columns;
+                final hasBoundedHeight = constraints.maxHeight.isFinite;
 
-                  return Wrap(
+                return ConstrainedBox(
+                  constraints: hasBoundedHeight
+                      ? BoxConstraints(minHeight: constraints.maxHeight)
+                      : const BoxConstraints(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: isDark
-                                      ? const [
-                                          Color(0xFF1A335C),
-                                          Color(0xFF153D39),
-                                        ]
-                                      : const [
-                                          Color(0xFFE7EEFF),
-                                          Color(0xFFE1F7F2),
-                                        ],
-                                ),
-                                borderRadius: BorderRadius.circular(5),
-                                border: Border.all(
-                                  color: isDark
-                                      ? const Color(0xFF2E4667)
-                                      : const Color(0xFFD7E2F2),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: isDark
-                                        ? const Color(0x22000000)
-                                        : const Color(0x110F172A),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.insights_rounded,
-                                size: 21,
-                                color: Color(0xFF2563EB),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: summaryIconBackground,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: summaryIconBorder,
+                                width: 1,
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Synthese',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 13.5,
-                                          color: _wizardTitleColor(context),
-                                          letterSpacing: -0.1,
-                                        ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Lecture rapide du profil RWA, des expositions et des echeances',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 10,
-                                          color: _wizardMutedColor(context),
-                                          height: 1.2,
-                                        ),
-                                  ),
-                                ],
-                              ),
+                            child: const Icon(
+                              Icons.insights_rounded,
+                              size: 22,
+                              color: Color(0xFF2563EB),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Synthèse',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 15.8,
+                                        color: summaryTitleColor,
+                                        height: 1.05,
+                                      ),
+                                ),
+                                const SizedBox(height: 7),
+                                Text(
+                                  'Lecture rapide du profil RWA, des expositions et des échéances.',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 10.5,
+                                        color: summaryBodyColor,
+                                        height: 1.45,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 16),
                       Wrap(
                         spacing: spacing,
                         runSpacing: spacing,
                         children: [
                           for (final item in items)
                             SizedBox(
-                              width: itemWidth,
+                              width: item.fullSpan ? availableWidth : itemWidth,
                               child: _HeroKpiCard(
                                 label: item.label,
                                 value: item.value,
                                 icon: item.icon,
                                 accent: item.accent,
+                                compact: true,
                               ),
                             ),
                         ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 14),
-                        child: SizedBox(
-                          width: availableWidth,
-                          child: Container(
-                            height: 146,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF101E34)
-                                  : const Color(0xFFF8FBFF),
-                              borderRadius:
-                                  BorderRadius.circular(_exposureFormRadius),
-                            ),
-                            alignment: Alignment.center,
-                            child: Lottie.asset(
-                              'assets/lotties/rwa_dashboard.json',
-                              width: 196,
-                              height: 118,
-                              fit: BoxFit.contain,
-                              repeat: true,
-                            ),
-                          ),
-                        ),
-                      ),
+                      if (hasBoundedHeight) const Spacer(),
                     ],
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -1551,7 +1585,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 filled: true,
                 onTap: _resetDraftValues,
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 6),
               for (var visibleIndex = 0;
                   visibleIndex < visibleStepCount;
                   visibleIndex++) ...[
@@ -1564,7 +1598,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                           _currentStep > 4),
                 ),
                 if (visibleIndex < visibleStepCount - 1)
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
               ],
             ],
           ),
@@ -1578,13 +1612,17 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       {required bool fixedHeight}) {
     final stickyHeight =
         _showStickyStepHeader ? (_expandStickyStepHeader ? 58.0 : 38.0) : 0.0;
+    const panelBorderColor = Color(0x990B3D91);
 
     return Container(
       height: fixedHeight ? double.infinity : null,
       decoration: BoxDecoration(
         color: _wizardPanelColor(context),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        border: Border.all(color: _wizardBorderColor(context)),
+        border: Border.all(
+          color: panelBorderColor,
+          width: 0.55,
+        ),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -3084,8 +3122,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             tooltipTitle: 'Article 133',
             child: DropdownButtonFormField<bool>(
               value: _enterpriseExceedsBceaoDegradationThreshold,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               isExpanded: true,
-              decoration: _fieldDecoration(context),
+              decoration: _fieldDecoration(
+                context,
+                hint: context.tr('Choisir une option'),
+              ),
               validator: (value) =>
                   value == null ? context.tr('Champ requis') : null,
               items: [
@@ -3118,8 +3160,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             tooltipTitle: 'Article 133',
             child: DropdownButtonFormField<bool>(
               value: _enterprisePrudentialProcedure,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               isExpanded: true,
-              decoration: _fieldDecoration(context),
+              decoration: _fieldDecoration(
+                context,
+                hint: context.tr('Choisir une option'),
+              ),
               validator: (value) =>
                   value == null ? context.tr('Champ requis') : null,
               items: [
@@ -3236,6 +3282,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         child: DropdownButtonFormField<String>(
           value: _resolveRatingValue(
             _rating,
+            options: ratingOptions,
             preferred: (_isSovereignCategory ||
                     _isPublicBodyCategory ||
                     _isBmdCategory ||
@@ -3330,7 +3377,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             backgroundColor: _wizardCardColor(context),
             foregroundColor: _wizardMutedColor(context),
-            side: BorderSide(color: _wizardBorderColor(context)),
+            side: _wizardBorderSide(context),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(_exposureFormRadius),
             ),
@@ -3401,7 +3448,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           ),
           borderRadius: BorderRadius.circular(_exposureFormRadius),
           border: Border.all(
-            color: isDark ? const Color(0xFF293B58) : const Color(0xFFDCE5F3),
+            color: isDark ? const Color(0x88293B58) : const Color(0x99DCE5F3),
+            width: _wizardBorderWidth,
           ),
         ),
         child: Row(
@@ -3475,8 +3523,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 borderRadius: BorderRadius.circular(_exposureFormRadius),
                 border: Border.all(
                   color: isDark
-                      ? const Color(0xFF30435F)
-                      : const Color(0xFFD7E2F2),
+                      ? const Color(0x8830435F)
+                      : const Color(0x99D7E2F2),
+                  width: _wizardBorderWidth,
                 ),
               ),
               child: IconButton(
@@ -3510,7 +3559,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           decoration: BoxDecoration(
             color: _wizardCardColor(context),
             borderRadius: BorderRadius.circular(_exposureFormRadius),
-            border: Border.all(color: _wizardBorderColor(context)),
+            border: _wizardBoxBorder(context),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.08),
@@ -3608,6 +3657,18 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         accent: const Color(0xFF0F766E),
       ),
       _KpiData(
+        label: context.tr('Maturité'),
+        value: _formatMonthCount(maturityMonths),
+        icon: Icons.date_range_outlined,
+        accent: const Color(0xFF6366F1),
+      ),
+      _KpiData(
+        label: context.tr('Maturité résiduelle'),
+        value: _formatMonthCount(residualMaturityMonths),
+        icon: Icons.timelapse_rounded,
+        accent: const Color(0xFF7C3AED),
+      ),
+      _KpiData(
         label: context.tr('Montant brut'),
         value: compactCurrencyForDisplay(
           grossAmount,
@@ -3650,18 +3711,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         ),
         icon: Icons.analytics_outlined,
         accent: const Color(0xFF0F766E),
-      ),
-      _KpiData(
-        label: context.tr('Maturité'),
-        value: _formatMonthCount(maturityMonths),
-        icon: Icons.date_range_outlined,
-        accent: const Color(0xFF6366F1),
-      ),
-      _KpiData(
-        label: context.tr('Maturité résiduelle'),
-        value: _formatMonthCount(residualMaturityMonths),
-        icon: Icons.timelapse_rounded,
-        accent: const Color(0xFF7C3AED),
+        fullSpan: isOffBalance,
       ),
       if (_crmMode == 'CRM non financee') ...[
         _KpiData(
@@ -4255,9 +4305,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return Container(
       padding: EdgeInsets.all(cardPadding),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14233D) : const Color(0xFFFDFEFF),
+        color: isDark ? const Color(0xFF14233D) : Colors.white,
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        border: Border.all(color: _wizardBorderColor(context)),
+        border: _wizardBoxBorder(context),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4352,6 +4402,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     int index,
     FinancedCrmBasketItem item,
   ) {
+    final isDark = _isExposureDark(context);
     final showIssuerRole =
         financedCrmCollateralRequiresIssuerRole(item.collateralType);
     final showRating = financedCrmCollateralRequiresRating(item.collateralType);
@@ -4368,8 +4419,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF14233D) : Colors.white,
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        border: Border.all(color: _wizardBorderColor(context)),
+        border: _wizardBoxBorder(context),
       ),
       child: Column(
         children: [
@@ -4682,6 +4734,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     String? hint,
     Widget? suffixIcon,
   }) {
+    final restingBorderColor = _isExposureDark(context)
+        ? const Color(0x88334862)
+        : const Color(0x99D6E1EF);
+    final disabledBorderColor = _isExposureDark(context)
+        ? const Color(0x702A3C55)
+        : const Color(0x8AE3EAF4);
+
     return InputDecoration(
       hintText: hint,
       isDense: true,
@@ -4697,21 +4756,38 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         horizontal: 11,
         vertical: 10,
       ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(_exposureFormRadius),
+        borderSide: _wizardBorderSide(
+          context,
+          color: restingBorderColor,
+        ),
+      ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        borderSide: BorderSide(color: _wizardBorderColor(context)),
+        borderSide: _wizardBorderSide(
+          context,
+          color: restingBorderColor,
+        ),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(_exposureFormRadius),
+        borderSide: _wizardBorderSide(
+          context,
+          color: disabledBorderColor,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        borderSide: const BorderSide(color: AppTheme.accent, width: 1.15),
+        borderSide: const BorderSide(color: AppTheme.accent, width: 1.0),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        borderSide: const BorderSide(color: AppTheme.danger),
+        borderSide: const BorderSide(color: AppTheme.danger, width: 0.9),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        borderSide: const BorderSide(color: AppTheme.danger, width: 1.15),
+        borderSide: const BorderSide(color: AppTheme.danger, width: 1.0),
       ),
     );
   }
@@ -5009,6 +5085,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 _categoryCode == 'e')
             ? 'Non noté'
             : 'BBB',
+        options: _counterpartyRatingOptionsForCategory(_categoryCode),
       );
       if ((_categoryCode == 'a' ||
               _categoryCode == 'c' ||
@@ -5571,12 +5648,14 @@ class _KpiData {
     required this.value,
     required this.icon,
     required this.accent,
+    this.fullSpan = false,
   });
 
   final String label;
   final String value;
   final IconData icon;
   final Color accent;
+  final bool fullSpan;
 }
 
 class _ChoiceCardData {
@@ -5616,15 +5695,15 @@ class _IntroActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(_exposureFormRadius),
+        borderRadius: BorderRadius.circular(999),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          width: 34,
-          height: 30,
+          width: 28,
+          height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: background,
-            borderRadius: BorderRadius.circular(_exposureFormRadius),
+            borderRadius: BorderRadius.circular(999),
             border: Border.all(color: borderColor),
             boxShadow: filled
                 ? [
@@ -5638,7 +5717,7 @@ class _IntroActionButton extends StatelessWidget {
           ),
           child: Icon(
             icon,
-            size: 13,
+            size: 12,
             color: foreground,
           ),
         ),
@@ -5839,9 +5918,12 @@ class _CompactFieldCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: _wizardCardColor(context),
+        color: _wizardSoftCardColor(context),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        border: Border.all(color: _wizardBorderColor(context)),
+        border: Border.all(
+          color: _wizardRightSectionBorderColor(context),
+          width: _wizardBorderWidth,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -6194,7 +6276,7 @@ class _FinalDecisionStepScreen extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                   backgroundColor: _wizardCardColor(context),
                   foregroundColor: _wizardMutedColor(context),
-                  side: BorderSide(color: _wizardBorderColor(context)),
+                  side: _wizardBorderSide(context),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(_exposureFormRadius),
                   ),
@@ -6275,7 +6357,10 @@ class _StepSurface extends StatelessWidget {
       decoration: BoxDecoration(
         color: _wizardCardColor(context),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        border: Border.all(color: _wizardBorderColor(context)),
+        border: Border.all(
+          color: _wizardRightSectionBorderColor(context),
+          width: _wizardBorderWidth,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(isDark ? 0.16 : 0.03),
@@ -6479,64 +6564,100 @@ class _HeroKpiCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.accent,
+    this.compact = false,
   });
 
   final String label;
   final String value;
   final IconData icon;
   final Color accent;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final isDark = _isExposureDark(context);
+    final cardPadding = compact
+        ? const EdgeInsets.fromLTRB(7, 7, 7, 7)
+        : const EdgeInsets.fromLTRB(9, 8, 9, 8);
+    final iconSize = compact ? 10.0 : 11.0;
+    final iconBoxSize = compact ? 20.0 : 22.0;
+    final labelFontSize = compact ? 7.6 : 8.2;
+    final valueFontSize = compact ? 9.2 : 10.2;
+    final cardBackground = compact
+        ? (isDark ? const Color(0xFF172740) : const Color(0xFFF9FBFF))
+        : (isDark ? const Color(0xFF14233D) : Colors.white);
+    final cardBorderColor = compact
+        ? (isDark ? const Color(0xFF324A6A) : const Color(0xFFC9D8F3))
+        : _wizardBorderColor(context);
+    final cardShadowColor = compact
+        ? (isDark ? const Color(0x22000000) : const Color(0x160B3D91))
+        : (isDark ? const Color(0x22000000) : const Color(0x080F172A));
+    final cardRadius = compact ? 6.0 : _exposureFormRadius;
+    final labelColor = compact && !isDark
+        ? const Color(0xFF5B6F98)
+        : _wizardMutedColor(context);
+    final valueColor = compact && !isDark
+        ? const Color(0xFF1B2559)
+        : _wizardBodyTitleColor(context);
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+      padding: cardPadding,
+      constraints: BoxConstraints(minHeight: compact ? 50 : 58),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14233D) : const Color(0xFFFCFDFE),
-        borderRadius: BorderRadius.circular(_exposureFormRadius),
-        border: Border.all(color: _wizardBorderColor(context)),
+        color: cardBackground,
+        borderRadius: BorderRadius.circular(cardRadius),
+        border: Border.all(
+          color: cardBorderColor,
+          width: _wizardBorderWidth,
+        ),
         boxShadow: [
           BoxShadow(
-            color: isDark ? const Color(0x22000000) : const Color(0x0A8BA3BF),
-            blurRadius: 8,
-            offset: Offset(0, 2),
+            color: cardShadowColor,
+            blurRadius: compact ? 8 : 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 24,
-            height: 24,
+            width: iconBoxSize,
+            height: iconBoxSize,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(_exposureFormRadius),
+              color: accent.withAlpha(compact ? 24 : 26),
+              borderRadius: BorderRadius.circular(cardRadius),
             ),
-            child: Icon(icon, size: 12, color: accent),
+            child: Icon(icon, size: iconSize, color: accent),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: compact ? 7 : 8),
           Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: _wizardMutedColor(context),
+                        color: labelColor,
                         fontWeight: FontWeight.w700,
-                        fontSize: 9.6,
+                        fontSize: labelFontSize,
+                        height: 1.1,
                       ),
                 ),
                 const SizedBox(height: 1),
                 Text(
                   value,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                        color: _wizardBodyTitleColor(context),
-                      ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: valueFontSize,
+                        color: valueColor,
+                        height: 1.08,
+                      ),
                 ),
               ],
             ),
@@ -6573,11 +6694,11 @@ class _StepOverviewChip extends StatelessWidget {
             : (isDark ? const Color(0xFF13233C) : const Color(0xFFF8FAFC));
 
     return Container(
-      width: 36,
-      height: 30,
+      width: 28,
+      height: 28,
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(_exposureFormRadius),
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: isActive
               ? (isDark ? const Color(0xFF335596) : const Color(0xFFCFE0FF))
@@ -6586,29 +6707,17 @@ class _StepOverviewChip extends StatelessWidget {
                   : (isDark
                       ? const Color(0xFF2B3B56)
                       : const Color(0xFFE2E8F0)),
+          width: _wizardBorderWidth,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              color: accent.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(999),
+      alignment: Alignment.center,
+      child: Text(
+        '$number',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w800,
+              fontSize: 9,
             ),
-            alignment: Alignment.center,
-            child: Text(
-              '$number',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: accent,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 8.6,
-                  ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -6647,9 +6756,9 @@ class _ModeChoiceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(_exposureFormRadius),
           border: Border.all(
             color: selected
-                ? accent.withOpacity(0.70)
+                ? accent.withOpacity(0.58)
                 : (isDark ? const Color(0xFF2B3B56) : const Color(0xFFDDE6F2)),
-            width: selected ? 1.3 : 1,
+            width: selected ? 1.0 : _wizardBorderWidth,
           ),
           boxShadow: [
             BoxShadow(
@@ -6719,7 +6828,10 @@ class _InfoBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: accent.withOpacity(isDark ? 0.14 : 0.08),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        border: Border.all(color: accent.withOpacity(isDark ? 0.26 : 0.16)),
+        border: Border.all(
+          color: accent.withOpacity(isDark ? 0.20 : 0.12),
+          width: _wizardBorderWidth,
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
