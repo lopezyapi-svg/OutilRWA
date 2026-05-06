@@ -14,6 +14,7 @@ import 'api_client.dart';
 
 /// Service principal qui orchestre les appels API et les données mockées.
 class RwaApiService {
+<<<<<<< HEAD
   RwaApiService({
     this.useMockData = true,
     String? baseUrl,
@@ -26,6 +27,19 @@ class RwaApiService {
                     defaultValue: 'http://localhost:8002',
                   ),
             );
+=======
+  RwaApiService({this.useMockData = true, String? baseUrl, ApiClient? client})
+    : _client =
+          client ??
+          ApiClient(
+            baseUrl:
+                baseUrl ??
+                const String.fromEnvironment(
+                  'RWA_API_BASE_URL',
+                  defaultValue: 'http://localhost:8001',
+                ),
+          );
+>>>>>>> 22f62014f09a5e8febb394d05b890fb16a724dc8
 
   final bool useMockData;
   final ApiClient _client;
@@ -42,91 +56,91 @@ class RwaApiService {
       'segment': 'Souverains',
       'rating': 'AAA/AA',
       'risk_weight': 0.0,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW002',
       'segment': 'Souverains',
       'rating': 'A',
       'risk_weight': 0.2,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW003',
       'segment': 'Souverains',
       'rating': 'BBB',
       'risk_weight': 0.5,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW005',
       'segment': 'Banques',
       'rating': 'AAA/AA',
       'risk_weight': 0.2,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW006',
       'segment': 'Banques',
       'rating': 'A',
       'risk_weight': 0.5,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW007',
       'segment': 'Banques',
       'rating': 'BBB',
       'risk_weight': 1.0,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW009',
       'segment': 'Entreprises',
       'rating': 'AAA/AA',
       'risk_weight': 0.2,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW010',
       'segment': 'Entreprises',
       'rating': 'A',
       'risk_weight': 0.5,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW011',
       'segment': 'Entreprises',
       'rating': 'BBB',
       'risk_weight': 1.0,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW012',
       'segment': 'Entreprises',
       'rating': 'BB/B',
       'risk_weight': 1.5,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW014',
       'segment': 'Particuliers',
       'rating': 'AAA/AA',
       'risk_weight': 0.35,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW016',
       'segment': 'Particuliers',
       'rating': 'BBB',
       'risk_weight': 0.75,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
     {
       'id': 'RW017',
       'segment': 'Particuliers',
       'rating': 'BB/B',
       'risk_weight': 1.0,
-      'approach': 'Standard'
+      'approach': 'Standard',
     },
   ];
 
@@ -143,31 +157,31 @@ class RwaApiService {
       'id': 'RT001',
       'label': 'AAA/AA',
       'description': 'Qualite de signature tres forte',
-      'sort_order': 1
+      'sort_order': 1,
     },
     {
       'id': 'RT002',
       'label': 'A',
       'description': 'Qualite de signature solide',
-      'sort_order': 2
+      'sort_order': 2,
     },
     {
       'id': 'RT003',
       'label': 'BBB',
       'description': 'Qualite investment grade',
-      'sort_order': 3
+      'sort_order': 3,
     },
     {
       'id': 'RT004',
       'label': 'BB/B',
       'description': 'Qualite speculative',
-      'sort_order': 4
+      'sort_order': 4,
     },
     {
       'id': 'RT005',
       'label': 'Non noté',
       'description': 'Absence de notation externe',
-      'sort_order': 5
+      'sort_order': 5,
     },
   ];
 
@@ -432,7 +446,7 @@ class RwaApiService {
       'include_rating_chart': true,
       'exports': {
         'pdf': '/exports/RPT001.pdf',
-        'excel': '/exports/RPT001.xlsx'
+        'excel': '/exports/RPT001.xlsx',
       },
       'lines': <Map<String, dynamic>>[],
     },
@@ -447,7 +461,7 @@ class RwaApiService {
       'include_rating_chart': false,
       'exports': {
         'pdf': '/exports/RPT002.pdf',
-        'excel': '/exports/RPT002.xlsx'
+        'excel': '/exports/RPT002.xlsx',
       },
       'lines': <Map<String, dynamic>>[],
     },
@@ -494,8 +508,9 @@ class RwaApiService {
       }
     }
 
-    final exposures =
-        _exposures.map((item) => ExposureRecord.fromJson(item)).toList();
+    final exposures = _exposures
+        .map((item) => ExposureRecord.fromJson(item))
+        .toList();
     return _withDelay(
       ExposureModuleData(
         exposures: exposures,
@@ -537,9 +552,7 @@ class RwaApiService {
       return _client.getBytes('/expositions/export/excel/download');
     }
 
-    throw UnsupportedError(
-      'L export Excel n est pas disponible en mode demo.',
-    );
+    throw UnsupportedError('L export Excel n est pas disponible en mode demo.');
   }
 
   Future<ExposureRecord> createExposure(ExposureDraft draft) async {
@@ -547,58 +560,67 @@ class RwaApiService {
       try {
         final response = Map<String, dynamic>.from(
           await _client.post('/expositions', {
-            'id': draft.id,
-            'analysis_date':
-                draft.analysisDate.toIso8601String().split('T').first,
-            'grant_date': draft.grantDate?.toIso8601String().split('T').first,
-            'maturity_date':
-                draft.maturityDate?.toIso8601String().split('T').first,
-            'counterparty_name': draft.counterpartyName,
-            'country': draft.country,
-            'country_rating': draft.countryRating,
-            'category': draft.backendCategory,
-            'rating': draft.rating,
-            'gross_amount': draft.grossAmount,
-            'currency': draft.currency,
-            'status': draft.status,
-            'sovereign_special_case': draft.sovereignSpecialCase,
-            'sovereign_preferential_zero_weight':
-                draft.sovereignPreferentialZeroWeight,
-            'sovereign_oce_established': draft.sovereignOceEstablished,
-            'sovereign_oce_note': draft.sovereignOceNote,
-            'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
-            'public_body_non_public_activity':
-                draft.publicBodyFinancesNonPublicActivity,
-            'bmd_high_quality_case': draft.bmdHighQualityCase,
-            'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
-            'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
-            'bmd_listed_institution_fcfa_case':
-                draft.bmdListedInstitutionFcfaCase,
-            'bank_institution_case': draft.bankInstitutionCase,
-            'other_asset_type': draft.otherAssetType,
-            'off_balance_risk_level': draft.offBalanceRiskLevel,
-            'retail_eligibility_criteria_satisfied':
-                draft.retailEligibilityCriteriaSatisfied,
-            'residential_mortgage_eligible': draft.residentialMortgageEligible,
-            'commercial_real_estate_eligible':
-                draft.commercialRealEstateEligible,
-            'defaulted_exposure_initial_risk_weight':
-                draft.defaultedExposureInitialRiskWeight,
-            'defaulted_exposure_residential_mortgage_in_default':
-                draft.defaultedExposureResidentialMortgageInDefault,
-            'defaulted_exposure_provision_at_least_twenty_percent':
-                draft.defaultedExposureProvisionAtLeastTwentyPercent,
-            'enterprise_exceeds_bceao_degradation_threshold':
-                draft.enterpriseExceedsBceaoDegradationThreshold,
-            'enterprise_prudential_procedure':
-                draft.enterprisePrudentialProcedure,
-            'enterprise_investment_firm_without_banking_law':
-                draft.enterpriseInvestmentFirmWithoutBankingLaw,
-            'crm_type': draft.backendCrmType,
-            'crm_coverage_percent': _effectiveCrmCoverage(draft),
-            'crm_details': draft.crmDetailsJson,
-            'comment': draft.comment,
-          }) as Map,
+                'id': draft.id,
+                'analysis_date': draft.analysisDate
+                    .toIso8601String()
+                    .split('T')
+                    .first,
+                'grant_date': draft.grantDate
+                    ?.toIso8601String()
+                    .split('T')
+                    .first,
+                'maturity_date': draft.maturityDate
+                    ?.toIso8601String()
+                    .split('T')
+                    .first,
+                'counterparty_name': draft.counterpartyName,
+                'country': draft.country,
+                'country_rating': draft.countryRating,
+                'category': draft.backendCategory,
+                'rating': draft.rating,
+                'gross_amount': draft.grossAmount,
+                'currency': draft.currency,
+                'status': draft.status,
+                'sovereign_special_case': draft.sovereignSpecialCase,
+                'sovereign_preferential_zero_weight':
+                    draft.sovereignPreferentialZeroWeight,
+                'sovereign_oce_established': draft.sovereignOceEstablished,
+                'sovereign_oce_note': draft.sovereignOceNote,
+                'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
+                'public_body_non_public_activity':
+                    draft.publicBodyFinancesNonPublicActivity,
+                'bmd_high_quality_case': draft.bmdHighQualityCase,
+                'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
+                'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
+                'bmd_listed_institution_fcfa_case':
+                    draft.bmdListedInstitutionFcfaCase,
+                'bank_institution_case': draft.bankInstitutionCase,
+                'other_asset_type': draft.otherAssetType,
+                'off_balance_risk_level': draft.offBalanceRiskLevel,
+                'retail_eligibility_criteria_satisfied':
+                    draft.retailEligibilityCriteriaSatisfied,
+                'residential_mortgage_eligible':
+                    draft.residentialMortgageEligible,
+                'commercial_real_estate_eligible':
+                    draft.commercialRealEstateEligible,
+                'defaulted_exposure_initial_risk_weight':
+                    draft.defaultedExposureInitialRiskWeight,
+                'defaulted_exposure_residential_mortgage_in_default':
+                    draft.defaultedExposureResidentialMortgageInDefault,
+                'defaulted_exposure_provision_at_least_twenty_percent':
+                    draft.defaultedExposureProvisionAtLeastTwentyPercent,
+                'enterprise_exceeds_bceao_degradation_threshold':
+                    draft.enterpriseExceedsBceaoDegradationThreshold,
+                'enterprise_prudential_procedure':
+                    draft.enterprisePrudentialProcedure,
+                'enterprise_investment_firm_without_banking_law':
+                    draft.enterpriseInvestmentFirmWithoutBankingLaw,
+                'crm_type': draft.backendCrmType,
+                'crm_coverage_percent': _effectiveCrmCoverage(draft),
+                'crm_details': draft.crmDetailsJson,
+                'comment': draft.comment,
+              })
+              as Map,
         );
         _notifyPortfolioChanged();
         return ExposureRecord.fromJson(response);
@@ -624,58 +646,67 @@ class RwaApiService {
       try {
         final response = Map<String, dynamic>.from(
           await _client.put('/expositions/$id', {
-            'id': id,
-            'analysis_date':
-                draft.analysisDate.toIso8601String().split('T').first,
-            'grant_date': draft.grantDate?.toIso8601String().split('T').first,
-            'maturity_date':
-                draft.maturityDate?.toIso8601String().split('T').first,
-            'counterparty_name': draft.counterpartyName,
-            'country': draft.country,
-            'country_rating': draft.countryRating,
-            'category': draft.backendCategory,
-            'rating': draft.rating,
-            'gross_amount': draft.grossAmount,
-            'currency': draft.currency,
-            'status': draft.status,
-            'sovereign_special_case': draft.sovereignSpecialCase,
-            'sovereign_preferential_zero_weight':
-                draft.sovereignPreferentialZeroWeight,
-            'sovereign_oce_established': draft.sovereignOceEstablished,
-            'sovereign_oce_note': draft.sovereignOceNote,
-            'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
-            'public_body_non_public_activity':
-                draft.publicBodyFinancesNonPublicActivity,
-            'bmd_high_quality_case': draft.bmdHighQualityCase,
-            'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
-            'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
-            'bmd_listed_institution_fcfa_case':
-                draft.bmdListedInstitutionFcfaCase,
-            'bank_institution_case': draft.bankInstitutionCase,
-            'other_asset_type': draft.otherAssetType,
-            'off_balance_risk_level': draft.offBalanceRiskLevel,
-            'retail_eligibility_criteria_satisfied':
-                draft.retailEligibilityCriteriaSatisfied,
-            'residential_mortgage_eligible': draft.residentialMortgageEligible,
-            'commercial_real_estate_eligible':
-                draft.commercialRealEstateEligible,
-            'defaulted_exposure_initial_risk_weight':
-                draft.defaultedExposureInitialRiskWeight,
-            'defaulted_exposure_residential_mortgage_in_default':
-                draft.defaultedExposureResidentialMortgageInDefault,
-            'defaulted_exposure_provision_at_least_twenty_percent':
-                draft.defaultedExposureProvisionAtLeastTwentyPercent,
-            'enterprise_exceeds_bceao_degradation_threshold':
-                draft.enterpriseExceedsBceaoDegradationThreshold,
-            'enterprise_prudential_procedure':
-                draft.enterprisePrudentialProcedure,
-            'enterprise_investment_firm_without_banking_law':
-                draft.enterpriseInvestmentFirmWithoutBankingLaw,
-            'crm_type': draft.backendCrmType,
-            'crm_coverage_percent': _effectiveCrmCoverage(draft),
-            'crm_details': draft.crmDetailsJson,
-            'comment': draft.comment,
-          }) as Map,
+                'id': id,
+                'analysis_date': draft.analysisDate
+                    .toIso8601String()
+                    .split('T')
+                    .first,
+                'grant_date': draft.grantDate
+                    ?.toIso8601String()
+                    .split('T')
+                    .first,
+                'maturity_date': draft.maturityDate
+                    ?.toIso8601String()
+                    .split('T')
+                    .first,
+                'counterparty_name': draft.counterpartyName,
+                'country': draft.country,
+                'country_rating': draft.countryRating,
+                'category': draft.backendCategory,
+                'rating': draft.rating,
+                'gross_amount': draft.grossAmount,
+                'currency': draft.currency,
+                'status': draft.status,
+                'sovereign_special_case': draft.sovereignSpecialCase,
+                'sovereign_preferential_zero_weight':
+                    draft.sovereignPreferentialZeroWeight,
+                'sovereign_oce_established': draft.sovereignOceEstablished,
+                'sovereign_oce_note': draft.sovereignOceNote,
+                'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
+                'public_body_non_public_activity':
+                    draft.publicBodyFinancesNonPublicActivity,
+                'bmd_high_quality_case': draft.bmdHighQualityCase,
+                'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
+                'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
+                'bmd_listed_institution_fcfa_case':
+                    draft.bmdListedInstitutionFcfaCase,
+                'bank_institution_case': draft.bankInstitutionCase,
+                'other_asset_type': draft.otherAssetType,
+                'off_balance_risk_level': draft.offBalanceRiskLevel,
+                'retail_eligibility_criteria_satisfied':
+                    draft.retailEligibilityCriteriaSatisfied,
+                'residential_mortgage_eligible':
+                    draft.residentialMortgageEligible,
+                'commercial_real_estate_eligible':
+                    draft.commercialRealEstateEligible,
+                'defaulted_exposure_initial_risk_weight':
+                    draft.defaultedExposureInitialRiskWeight,
+                'defaulted_exposure_residential_mortgage_in_default':
+                    draft.defaultedExposureResidentialMortgageInDefault,
+                'defaulted_exposure_provision_at_least_twenty_percent':
+                    draft.defaultedExposureProvisionAtLeastTwentyPercent,
+                'enterprise_exceeds_bceao_degradation_threshold':
+                    draft.enterpriseExceedsBceaoDegradationThreshold,
+                'enterprise_prudential_procedure':
+                    draft.enterprisePrudentialProcedure,
+                'enterprise_investment_firm_without_banking_law':
+                    draft.enterpriseInvestmentFirmWithoutBankingLaw,
+                'crm_type': draft.backendCrmType,
+                'crm_coverage_percent': _effectiveCrmCoverage(draft),
+                'crm_details': draft.crmDetailsJson,
+                'comment': draft.comment,
+              })
+              as Map,
         );
         _notifyPortfolioChanged();
         return ExposureRecord.fromJson(response);
@@ -718,13 +749,11 @@ class RwaApiService {
     if (!useMockData) {
       try {
         final response = Map<String, dynamic>.from(
-          await _client.post(
-            '/expositions/delete',
-            {
-              'ids': normalizedIds,
-              'reindex_ids': reindexIds,
-            },
-          ) as Map,
+          await _client.post('/expositions/delete', {
+                'ids': normalizedIds,
+                'reindex_ids': reindexIds,
+              })
+              as Map,
         );
         _notifyPortfolioChanged();
         return response;
@@ -746,8 +775,9 @@ class RwaApiService {
     _exposures.removeWhere(
       (item) => normalizedIds.contains((item['id'] ?? '').toString()),
     );
-    final renumberedIds =
-        reindexIds ? _reindexMockExposureIds() : <String, String>{};
+    final renumberedIds = reindexIds
+        ? _reindexMockExposureIds()
+        : <String, String>{};
     _notifyPortfolioChanged();
     return {
       'requested_ids': normalizedIds,
@@ -761,14 +791,13 @@ class RwaApiService {
   }
 
   Future<Map<String, dynamic>> importExposureCsvContent(
-      String csvContent) async {
+    String csvContent,
+  ) async {
     if (!useMockData) {
       try {
         final response = Map<String, dynamic>.from(
-          await _client.post(
-            '/expositions/import/csv',
-            {'content': csvContent},
-          ) as Map<String, dynamic>,
+          await _client.post('/expositions/import/csv', {'content': csvContent})
+              as Map<String, dynamic>,
         );
         _notifyPortfolioChanged();
         return response;
@@ -795,17 +824,20 @@ class RwaApiService {
   }
 
   Future<Map<String, dynamic>> importExposureExcelFile(
-      Uint8List bytes, String filename,
-      {String mode = 'merge'}) async {
+    Uint8List bytes,
+    String filename, {
+    String mode = 'merge',
+  }) async {
     if (!useMockData) {
       try {
         final response = Map<String, dynamic>.from(
           await _client.uploadBytes(
-            '/expositions/import/upload',
-            bytes,
-            filename,
-            fields: {'mode': mode},
-          ) as Map<String, dynamic>,
+                '/expositions/import/upload',
+                bytes,
+                filename,
+                fields: {'mode': mode},
+              )
+              as Map<String, dynamic>,
         );
         _notifyPortfolioChanged();
         return response;
@@ -837,29 +869,28 @@ class RwaApiService {
       try {
         return Map<String, dynamic>.from(
           await _client.uploadBytes(
-            '/expositions/import/upload/inspect',
-            bytes,
-            filename,
-          ) as Map,
+                '/expositions/import/upload/inspect',
+                bytes,
+                filename,
+              )
+              as Map,
         );
       } catch (_) {
         if (!enableOfflineFallback) rethrow;
       }
     }
 
-    return _withDelay(
-      <String, dynamic>{
-        'file': filename,
-        'valid': true,
-        'sheet_count': 0,
-        'detected_sheets': const <String>[],
-        'sheets': const <Map<String, dynamic>>[],
-        'errors': const <Map<String, dynamic>>[],
-        'rows_read_by_sheet': const <String, int>{},
-        'duration_ms': 0,
-        'steps_ms': const <String, dynamic>{},
-      },
-    );
+    return _withDelay(<String, dynamic>{
+      'file': filename,
+      'valid': true,
+      'sheet_count': 0,
+      'detected_sheets': const <String>[],
+      'sheets': const <Map<String, dynamic>>[],
+      'errors': const <Map<String, dynamic>>[],
+      'rows_read_by_sheet': const <String, int>{},
+      'duration_ms': 0,
+      'steps_ms': const <String, dynamic>{},
+    });
   }
 
   Future<Map<String, dynamic>> fetchExcelImportSpec() async {
@@ -873,15 +904,13 @@ class RwaApiService {
       }
     }
 
-    return _withDelay(
-      <String, dynamic>{
-        'accepted_extensions': const ['.xlsx'],
-        'sheets': const <Map<String, dynamic>>[],
-        'required_sheet_names': const <String>[],
-        'optional_sheet_names': const <String>[],
-        'notes': const <String>[],
-      },
-    );
+    return _withDelay(<String, dynamic>{
+      'accepted_extensions': const ['.xlsx'],
+      'sheets': const <Map<String, dynamic>>[],
+      'required_sheet_names': const <String>[],
+      'optional_sheet_names': const <String>[],
+      'notes': const <String>[],
+    });
   }
 
   Future<Uint8List> downloadExcelImportTemplate() async {
@@ -900,16 +929,18 @@ class RwaApiService {
           await _client.get('/hors-bilan/summary') as Map<String, dynamic>;
       return OffBalanceModuleData(
         items: itemsJson
-            .map((item) =>
-                OffBalanceRecord.fromJson(item as Map<String, dynamic>))
+            .map(
+              (item) => OffBalanceRecord.fromJson(item as Map<String, dynamic>),
+            )
             .toList(),
         summary: OffBalanceSummary.fromJson(summaryJson),
       );
     }
 
     // Les données mock sont converties avant agrégation pour rester proches du mode réel.
-    final items =
-        _offBalance.map((item) => OffBalanceRecord.fromJson(item)).toList();
+    final items = _offBalance
+        .map((item) => OffBalanceRecord.fromJson(item))
+        .toList();
     return _withDelay(
       OffBalanceModuleData(
         items: items,
@@ -932,7 +963,8 @@ class RwaApiService {
 
     // Quelques règles simples suffisent ici pour produire un scénario crédible côté UI.
     final ccf = _lookupCcf(draft.engagementType);
-    final category = draft.counterpartyId.startsWith('CP002') ||
+    final category =
+        draft.counterpartyId.startsWith('CP002') ||
             draft.counterpartyId.startsWith('CP006')
         ? 'Banques'
         : 'Entreprises';
@@ -980,22 +1012,31 @@ class RwaApiService {
           );
     // Le résumé CRM consolide les effets avant/après et la couverture moyenne.
     final summary = CrmSummary(
-      totalExpositions:
-          items.fold<double>(0.0, (sum, item) => sum + item.grossAmount),
+      totalExpositions: items.fold<double>(
+        0.0,
+        (sum, item) => sum + item.grossAmount,
+      ),
       totalEad: items.fold<double>(0.0, (sum, item) => sum + item.ead),
-      totalRwaBefore:
-          items.fold<double>(0.0, (sum, item) => sum + item.rwaBefore),
-      totalRwaAfter:
-          items.fold<double>(0.0, (sum, item) => sum + item.rwaAfter),
-      totalCapitalAfter:
-          items.fold<double>(0.0, (sum, item) => sum + item.capitalAfter),
+      totalRwaBefore: items.fold<double>(
+        0.0,
+        (sum, item) => sum + item.rwaBefore,
+      ),
+      totalRwaAfter: items.fold<double>(
+        0.0,
+        (sum, item) => sum + item.rwaAfter,
+      ),
+      totalCapitalAfter: items.fold<double>(
+        0.0,
+        (sum, item) => sum + item.capitalAfter,
+      ),
       averageCoverage: items.isEmpty
           ? 0.0
           : items.fold<double>(0.0, (sum, item) => sum + item.coverageRatio) /
-              items.length,
+                items.length,
     );
     return _withDelay(
-        CrmModuleData(highlight: highlight, items: items, summary: summary));
+      CrmModuleData(highlight: highlight, items: items, summary: summary),
+    );
   }
 
   Future<ReferentielsModuleData> fetchReferentiels() async {
@@ -1007,8 +1048,9 @@ class RwaApiService {
     // Les trois tables sont servies ensemble car elles alimentent tous les écrans métiers.
     return _withDelay(
       ReferentielsModuleData(
-        riskWeights:
-            _riskWeights.map((item) => RiskWeightRow.fromJson(item)).toList(),
+        riskWeights: _riskWeights
+            .map((item) => RiskWeightRow.fromJson(item))
+            .toList(),
         ccfTable: _ccfTable.map((item) => CcfRow.fromJson(item)).toList(),
         ratings: _ratings.map((item) => RatingRow.fromJson(item)).toList(),
       ),
@@ -1088,17 +1130,24 @@ class RwaApiService {
 
   DashboardSnapshot _buildMockDashboard() {
     // Les modèles sont d'abord reconstruits pour réutiliser les mêmes objets que l'UI.
-    final exposureModels =
-        _exposures.map((item) => ExposureRecord.fromJson(item)).toList();
+    final exposureModels = _exposures
+        .map((item) => ExposureRecord.fromJson(item))
+        .toList();
     final valuationDate = _resolveValuationDate(exposureModels);
     // Les agrégats principaux servent ensuite à tous les KPI et graphiques.
-    final gross =
-        exposureModels.fold<double>(0.0, (sum, item) => sum + item.grossAmount);
-    final totalEad =
-        exposureModels.fold<double>(0.0, (sum, item) => sum + item.ead);
+    final gross = exposureModels.fold<double>(
+      0.0,
+      (sum, item) => sum + item.grossAmount,
+    );
+    final totalEad = exposureModels.fold<double>(
+      0.0,
+      (sum, item) => sum + item.ead,
+    );
     final rwa = exposureModels.fold<double>(0.0, (sum, item) => sum + item.rwa);
-    final capital =
-        exposureModels.fold<double>(0.0, (sum, item) => sum + item.capital);
+    final capital = exposureModels.fold<double>(
+      0.0,
+      (sum, item) => sum + item.capital,
+    );
     final coveredGross = exposureModels
         .where((item) => item.crmModeLabel != 'Aucune')
         .fold<double>(
@@ -1227,79 +1276,75 @@ class RwaApiService {
         searchIndex: 'capital minimum solvabilite coussin prudentiel',
       ),
       const GlobalSearchEntry(
-        id: 'market-curve',
-        title: 'Courbe de taux',
-        subtitle: 'Paramètres de marché et taux observés',
-        section: 'Données de Marché',
-        module: AppModule.donneesMarche,
-        searchIndex: 'courbe taux marche swap spread yield',
+        id: 'off-balance-ead',
+        title: 'EAD hors bilan',
+        subtitle: 'Encours convertis apres application des CCF',
+        section: 'Hors Bilan',
+        module: AppModule.horsBilan,
+        searchIndex: 'hors bilan ead ccf engagement conversion',
       ),
       const GlobalSearchEntry(
-        id: 'market-fx',
-        title: 'EUR / USD',
-        subtitle: 'Suivi du change spot',
-        section: 'Données de Marché',
-        module: AppModule.donneesMarche,
-        searchIndex: 'eur usd fx devise spot change',
+        id: 'off-balance-capital',
+        title: 'Capital hors bilan',
+        subtitle: 'Besoin en fonds propres sur les engagements',
+        section: 'Hors Bilan',
+        module: AppModule.horsBilan,
+        searchIndex: 'hors bilan capital engagement rwa ccf',
       ),
       const GlobalSearchEntry(
-        id: 'flow-maturity',
-        title: 'Vue maturité',
-        subtitle: 'Echéanciers et flux à venir',
-        section: 'Échéanciers & Flux',
-        module: AppModule.echeanciersFlux,
-        searchIndex: 'maturite echeancier flux remboursement cashflow',
+        id: 'crm-reduction',
+        title: 'Reduction RWA CRM',
+        subtitle: 'Impact des garanties sur les actifs ponderes',
+        section: 'CRM',
+        module: AppModule.crm,
+        searchIndex: 'crm garantie reduction rwa mitigation couverture',
       ),
       const GlobalSearchEntry(
-        id: 'stress-rating',
-        title: 'Dégradation notation',
-        subtitle: 'Stress sur migration de notation',
-        section: 'Stress Tests',
-        module: AppModule.stressTests,
-        searchIndex: 'stress degradation notation migration rating',
+        id: 'reports-history',
+        title: 'Rapports recents',
+        subtitle: 'Historique des generations et exports',
+        section: 'Rapports',
+        module: AppModule.rapports,
+        searchIndex: 'rapports historique generation export pdf excel',
       ),
       const GlobalSearchEntry(
-        id: 'stress-ccf',
-        title: 'Hausse CCF',
-        subtitle: 'Stress sur engagements hors bilan',
-        section: 'Stress Tests',
-        module: AppModule.stressTests,
-        searchIndex: 'stress ccf hors bilan engagement conversion',
-      ),
-      const GlobalSearchEntry(
-        id: 'simulation-rw',
-        title: 'Variation RW',
-        subtitle: 'Simulation des pondérations de risque',
-        section: 'Simulation',
-        module: AppModule.simulation,
-        searchIndex: 'simulation rw ponderation risque scenario',
-      ),
-      const GlobalSearchEntry(
-        id: 'simulation-crm',
-        title: 'Effet CRM',
-        subtitle: 'Impact des garanties sur les RWA',
-        section: 'Simulation',
-        module: AppModule.simulation,
-        searchIndex: 'simulation crm garantie rwa couverture',
+        id: 'reports-export',
+        title: 'Exports PDF et Excel',
+        subtitle: 'Sorties documentaires des rapports prudentiels',
+        section: 'Rapports',
+        module: AppModule.rapports,
+        searchIndex: 'rapport export pdf excel synthese detaille',
       ),
     ];
 
     // On injecte ensuite les expositions pour pouvoir les retrouver depuis la top bar.
     entries.addAll(
-      _exposures.map(
-        (item) {
-          final counterparty = item['counterparty'] as Map<String, dynamic>;
-          return GlobalSearchEntry(
-            id: 'exposure-${item['id']}',
-            title: counterparty['name'] as String,
-            subtitle:
-                '${item['id']} • ${counterparty['category']} • ${counterparty['country']}',
-            section: 'Portefeuille',
-            module: AppModule.inventairePortefeuille,
-            searchIndex:
-                '${item['id']} ${counterparty['name']} ${counterparty['category']} ${counterparty['country']} ${counterparty['rating']} ${item['comment']} ${item['crm_type']}',
-          );
-        },
+      _exposures.map((item) {
+        final counterparty = item['counterparty'] as Map<String, dynamic>;
+        return GlobalSearchEntry(
+          id: 'exposure-${item['id']}',
+          title: counterparty['name'] as String,
+          subtitle:
+              '${item['id']} • ${counterparty['category']} • ${counterparty['country']}',
+          section: 'Expositions',
+          module: AppModule.expositions,
+          searchIndex:
+              '${item['id']} ${counterparty['name']} ${counterparty['category']} ${counterparty['country']} ${counterparty['rating']} ${item['comment']} ${item['crm_type']}',
+        );
+      }),
+    );
+
+    entries.addAll(
+      _offBalance.map(
+        (item) => GlobalSearchEntry(
+          id: 'off-balance-${item['id']}',
+          title: item['counterparty_name'] as String,
+          subtitle: '${item['id']} • ${item['engagement_type']}',
+          section: 'Hors Bilan',
+          module: AppModule.horsBilan,
+          searchIndex:
+              '${item['id']} ${item['counterparty_name']} ${item['engagement_type']} ${item['category']} ${item['rating']} ${item['comment']}',
+        ),
       ),
     );
 
@@ -1310,8 +1355,8 @@ class RwaApiService {
           id: 'crm-${item['id']}',
           title: item['borrower_name'] as String,
           subtitle: '${item['id']} • Garant ${item['guarantor_name']}',
-          section: 'Analyse & Risques',
-          module: AppModule.analyseRisques,
+          section: 'CRM',
+          module: AppModule.crm,
           searchIndex:
               '${item['id']} ${item['borrower_name']} ${item['guarantor_name']} ${item['guarantee_type']} ${item['borrower_category']} ${item['guarantor_category']}',
         ),
@@ -1363,6 +1408,20 @@ class RwaApiService {
       ),
     );
 
+    entries.addAll(
+      _reports.map(
+        (item) => GlobalSearchEntry(
+          id: 'report-${item['id']}',
+          title: item['period'] as String,
+          subtitle: '${item['id']} • ${item['report_type']}',
+          section: 'Rapports',
+          module: AppModule.rapports,
+          searchIndex:
+              '${item['id']} ${item['period']} ${item['report_type']} ${item['currency']} ${item['exposure_scope']}',
+        ),
+      ),
+    );
+
     return entries;
   }
 
@@ -1370,37 +1429,39 @@ class RwaApiService {
     switch (module) {
       case AppModule.dashboard:
         return 'encours rwa capital ratio couverture crm';
-      case AppModule.inventairePortefeuille:
+      case AppModule.expositions:
         return 'expositions portefeuille contreparties import edition';
-      case AppModule.donneesMarche:
-        return 'marché taux devises spread courbe';
-      case AppModule.echeanciersFlux:
-        return 'echeanciers flux maturites remboursements';
-      case AppModule.analyseRisques:
+      case AppModule.horsBilan:
+        return 'hors bilan engagements ccf ead rwa';
+      case AppModule.crm:
         return 'crm garanties mitigations analyse risques';
-      case AppModule.stressTests:
-        return 'stress test sensibilites ccf notation';
-      case AppModule.simulation:
-        return 'simulation scenarios capital rw';
       case AppModule.referentiels:
         return 'referentiels rw ccf notations tables';
+      case AppModule.rapports:
+        return 'rapports synthese exports pdf excel historique';
     }
   }
 
   ExposureSummary _computeExposureSummary(List<ExposureRecord> exposures) {
     // Le résumé expositions additionne simplement les grandeurs déjà calculées par ligne.
     return ExposureSummary(
-      totalExpositions:
-          exposures.fold<double>(0.0, (sum, item) => sum + item.grossAmount),
+      totalExpositions: exposures.fold<double>(
+        0.0,
+        (sum, item) => sum + item.grossAmount,
+      ),
       totalEad: exposures.fold<double>(0.0, (sum, item) => sum + item.ead),
       totalRwa: exposures.fold<double>(0.0, (sum, item) => sum + item.rwa),
-      totalCapital:
-          exposures.fold<double>(0.0, (sum, item) => sum + item.capital),
+      totalCapital: exposures.fold<double>(
+        0.0,
+        (sum, item) => sum + item.capital,
+      ),
     );
   }
 
   Map<String, dynamic> _buildExposureMapFromDraft(
-      ExposureDraft draft, String id) {
+    ExposureDraft draft,
+    String id,
+  ) {
     final metrics = computeDraftMetrics(draft);
     return {
       'id': id,
@@ -1462,11 +1523,7 @@ class RwaApiService {
 
   double _effectiveCrmCoverage(ExposureDraft draft) {
     if (draft.crmMode == 'CRM financee') {
-      return draft.grossAmount == 0
-          ? 0.0
-          : (draft.collateralValue / draft.grossAmount)
-              .clamp(0.0, 1.0)
-              .toDouble();
+      return computeFinancedCrmSnapshot(draft).coveragePercent;
     }
     if (draft.crmMode == 'CRM non financee') {
       return draft.crmCoveragePercent.clamp(0.0, 1.0).toDouble();
@@ -1495,19 +1552,21 @@ class RwaApiService {
   }
 
   Map<String, String> _reindexMockExposureIds() {
-    final orderedIds = _exposures
-        .map((item) => (item['id'] ?? '').toString())
-        .where((identifier) {
-      if (!identifier.startsWith('CP')) {
-        return false;
-      }
-      return int.tryParse(identifier.substring(2)) != null;
-    }).toList(growable: false)
-      ..sort((left, right) {
-        final leftIndex = int.parse(left.substring(2));
-        final rightIndex = int.parse(right.substring(2));
-        return leftIndex.compareTo(rightIndex);
-      });
+    final orderedIds =
+        _exposures
+            .map((item) => (item['id'] ?? '').toString())
+            .where((identifier) {
+              if (!identifier.startsWith('CP')) {
+                return false;
+              }
+              return int.tryParse(identifier.substring(2)) != null;
+            })
+            .toList(growable: false)
+          ..sort((left, right) {
+            final leftIndex = int.parse(left.substring(2));
+            final rightIndex = int.parse(right.substring(2));
+            return leftIndex.compareTo(rightIndex);
+          });
 
     final renumberedIds = <String, String>{};
     for (var index = 0; index < orderedIds.length; index++) {
@@ -1556,8 +1615,10 @@ class RwaApiService {
   OffBalanceSummary _computeOffBalanceSummary(List<OffBalanceRecord> items) {
     // Le résumé hors bilan reprend la même logique, avec le nominal comme encours brut.
     return OffBalanceSummary(
-      totalEngagements:
-          items.fold<double>(0.0, (sum, item) => sum + item.nominalAmount),
+      totalEngagements: items.fold<double>(
+        0.0,
+        (sum, item) => sum + item.nominalAmount,
+      ),
       totalEad: items.fold<double>(0.0, (sum, item) => sum + item.ead),
       totalRwa: items.fold<double>(0.0, (sum, item) => sum + item.rwa),
       totalCapital: items.fold<double>(0.0, (sum, item) => sum + item.capital),
@@ -1594,7 +1655,8 @@ class RwaApiService {
   }
 
   List<DistributionEntry> _buildDistributionByCountry(
-      List<ExposureRecord> exposures) {
+    List<ExposureRecord> exposures,
+  ) {
     final totals = <String, double>{};
     final global = exposures.fold<double>(0.0, (sum, item) => sum + item.rwa);
     for (final exposure in exposures) {
@@ -1606,26 +1668,30 @@ class RwaApiService {
       );
     }
 
-    final entries = totals.entries
-        .map(
-          (entry) => DistributionEntry(
-            label: entry.key,
-            amount: entry.value,
-            percentage: global == 0 ? 0.0 : entry.value / global,
-          ),
-        )
-        .toList()
-      // Les pays sont ensuite triés pour ne conserver que les plus contributeurs.
-      ..sort((a, b) => b.amount.compareTo(a.amount));
+    final entries =
+        totals.entries
+            .map(
+              (entry) => DistributionEntry(
+                label: entry.key,
+                amount: entry.value,
+                percentage: global == 0 ? 0.0 : entry.value / global,
+              ),
+            )
+            .toList()
+          // Les pays sont ensuite triés pour ne conserver que les plus contributeurs.
+          ..sort((a, b) => b.amount.compareTo(a.amount));
 
     return entries.take(5).toList();
   }
 
   List<DistributionEntry> _buildDistributionByCrmType(
-      List<ExposureRecord> exposures) {
+    List<ExposureRecord> exposures,
+  ) {
     final totals = <String, double>{};
-    final global =
-        exposures.fold<double>(0.0, (sum, item) => sum + item.grossAmount);
+    final global = exposures.fold<double>(
+      0.0,
+      (sum, item) => sum + item.grossAmount,
+    );
 
     for (final exposure in exposures) {
       // Le CRM est mesuré sur l'encours couvert et non sur le seul RWA.
@@ -1649,10 +1715,13 @@ class RwaApiService {
   }
 
   List<DistributionEntry> _buildDistributionByRating(
-      List<ExposureRecord> exposures) {
+    List<ExposureRecord> exposures,
+  ) {
     final totals = <String, double>{};
-    final global =
-        exposures.fold<double>(0.0, (sum, item) => sum + item.grossAmount);
+    final global = exposures.fold<double>(
+      0.0,
+      (sum, item) => sum + item.grossAmount,
+    );
     for (final exposure in exposures) {
       // La répartition notation s'appuie sur la notation de la contrepartie porteuse.
       totals.update(
@@ -1693,17 +1762,22 @@ class RwaApiService {
 
     final projection = <DashboardProjectionPoint>[];
     for (var monthIndex = 0; monthIndex < 12; monthIndex++) {
-      final pointDate =
-          DateTime(valuationDate.year, valuationDate.month + monthIndex + 1, 1);
+      final pointDate = DateTime(
+        valuationDate.year,
+        valuationDate.month + monthIndex + 1,
+        1,
+      );
       var projectedRwa = 0.0;
 
       for (var index = 0; index < exposures.length; index++) {
         final exposure = exposures[index];
         // Chaque catégorie reçoit un rythme d'amortissement simple pour matérialiser la décroissance.
-        final pace = _amortizationPaceForCategory(exposure.categoryLabel) +
+        final pace =
+            _amortizationPaceForCategory(exposure.categoryLabel) +
             (index % 3) * 0.006;
-        final remainingFactor =
-            (1 - (pace * monthIndex)).clamp(0.42, 1.0).toDouble();
+        final remainingFactor = (1 - (pace * monthIndex))
+            .clamp(0.42, 1.0)
+            .toDouble();
         projectedRwa += exposure.rwa * remainingFactor;
       }
 
@@ -1730,7 +1804,7 @@ class RwaApiService {
     final last = trend.last;
     final delta = first == 0 ? 0.0 : ((last - first) / first);
     final prefix = delta >= 0 ? '+' : '';
-    final variation = '${prefix}${(delta * 100).toStringAsFixed(1)}% M/M';
+    final variation = '$prefix${(delta * 100).toStringAsFixed(1)}% M/M';
 
     return DashboardMetric(
       key: key,
@@ -1754,9 +1828,7 @@ class RwaApiService {
 
   DateTime _resolveValuationDate(List<ExposureRecord> exposures) {
     // La date de valorisation prend le point le plus récent présent dans les jeux de données.
-    final dates = <DateTime>[
-      ...exposures.map((item) => item.analysisDate),
-    ];
+    final dates = <DateTime>[...exposures.map((item) => item.analysisDate)];
 
     if (dates.isEmpty) {
       return DateTime.now();

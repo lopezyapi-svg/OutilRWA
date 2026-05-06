@@ -61,15 +61,17 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildDesktopShell() {
-    final sidebarWidth =
-        _isSidebarCompact ? _compactSidebarWidth : _expandedSidebarWidth;
+    final sidebarWidth = _isSidebarCompact
+        ? _compactSidebarWidth
+        : _expandedSidebarWidth;
     final sidebarAreaWidth = sidebarWidth + _sidebarToggleReserve;
     final toggleLeft = sidebarWidth - 10;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF091224) : const Color(0xFFEAE9F8),
+      backgroundColor: isDark
+          ? const Color(0xFF091224)
+          : const Color(0xFFEAE9F8),
       body: Stack(
         children: [
           // Ce fond reste fixe derrière tout l'espace de travail.
@@ -135,8 +137,9 @@ class _AppShellState extends State<AppShell> {
                                 color: isDark
                                     ? const Color(0xFF0F1B31).withOpacity(0.92)
                                     : Colors.white.withOpacity(0.80),
-                                borderRadius:
-                                    BorderRadius.circular(AppTheme.radius),
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radius,
+                                ),
                                 border: Border.all(
                                   color: isDark
                                       ? const Color(0xFF22304B)
@@ -153,8 +156,9 @@ class _AppShellState extends State<AppShell> {
                                 ],
                               ),
                               child: ClipRRect(
-                                borderRadius:
-                                    BorderRadius.circular(AppTheme.radius),
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radius,
+                                ),
                                 child: widget.child,
                               ),
                             ),
@@ -176,8 +180,9 @@ class _AppShellState extends State<AppShell> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF091224) : const Color(0xFFF0F2F8),
+      backgroundColor: isDark
+          ? const Color(0xFF091224)
+          : const Color(0xFFF0F2F8),
       // Sur mobile, la navigation passe dans un drawer pour conserver de l'espace utile.
       drawer: Drawer(
         child: SidebarNavigation(
@@ -225,9 +230,7 @@ class _AppShellState extends State<AppShell> {
 
 /// Fond décoratif léger affiché derrière l'espace de travail.
 class _DecorativeBackdrop extends StatelessWidget {
-  const _DecorativeBackdrop({
-    required this.dark,
-  });
+  const _DecorativeBackdrop({required this.dark});
 
   final bool dark;
 
@@ -239,16 +242,8 @@ class _DecorativeBackdrop extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: dark
-              ? const [
-                  Color(0xFF091224),
-                  Color(0xFF0B1630),
-                  Color(0xFF0F1D38),
-                ]
-              : const [
-                  Color(0xFFF2F0FF),
-                  Color(0xFFE8F0FB),
-                  Color(0xFFF6F3FF),
-                ],
+              ? const [Color(0xFF091224), Color(0xFF0B1630), Color(0xFF0F1D38)]
+              : const [Color(0xFFF2F0FF), Color(0xFFE8F0FB), Color(0xFFF6F3FF)],
         ),
       ),
       child: Stack(
@@ -320,20 +315,16 @@ IconData _iconForModule(AppModule module) {
   switch (module) {
     case AppModule.dashboard:
       return Icons.grid_view_rounded;
-    case AppModule.inventairePortefeuille:
+    case AppModule.expositions:
       return Icons.inventory_2_outlined;
-    case AppModule.donneesMarche:
-      return Icons.query_stats_rounded;
-    case AppModule.echeanciersFlux:
-      return Icons.timeline_rounded;
-    case AppModule.analyseRisques:
+    case AppModule.horsBilan:
+      return Icons.account_balance_wallet_outlined;
+    case AppModule.crm:
       return Icons.analytics_outlined;
-    case AppModule.stressTests:
-      return Icons.monitor_heart_outlined;
-    case AppModule.simulation:
-      return Icons.auto_graph_rounded;
     case AppModule.referentiels:
       return Icons.menu_book_outlined;
+    case AppModule.rapports:
+      return Icons.assessment_outlined;
   }
 }
 
@@ -399,9 +390,7 @@ class _WorkspaceTopBar extends StatelessWidget {
                 onThemeModeChanged: onThemeModeChanged,
               ),
               const SizedBox(width: 6),
-              _LanguagePicker(
-                appLanguage: appLanguage,
-              ),
+              _LanguagePicker(appLanguage: appLanguage),
               if (showActionButtons) ...[
                 // Les actions secondaires et primaires ne s'affichent que sur les écrans larges.
                 const SizedBox(width: 8),
@@ -513,10 +502,7 @@ class _DesktopSidebarFrame extends StatelessWidget {
 
 /// Bouton qui replie ou déplie la sidebar.
 class _SidebarToggleButton extends StatelessWidget {
-  const _SidebarToggleButton({
-    required this.compact,
-    required this.onTap,
-  });
+  const _SidebarToggleButton({required this.compact, required this.onTap});
 
   final bool compact;
   final VoidCallback onTap;
@@ -618,16 +604,15 @@ class _GlobalSearchFieldState extends State<_GlobalSearchField> {
 
     final normalizedQuery = _normalize(query);
     // Chaque résultat reçoit un score simple pour remonter les correspondances les plus utiles.
-    final scored = _catalog
-        .map(
-          (entry) => (
-            entry: entry,
-            score: _scoreEntry(entry, normalizedQuery),
-          ),
-        )
-        .where((item) => item.score > 0)
-        .toList()
-      ..sort((a, b) => b.score.compareTo(a.score));
+    final scored =
+        _catalog
+            .map(
+              (entry) =>
+                  (entry: entry, score: _scoreEntry(entry, normalizedQuery)),
+            )
+            .where((item) => item.score > 0)
+            .toList()
+          ..sort((a, b) => b.score.compareTo(a.score));
 
     return scored.take(10).map((item) => item.entry).toList(growable: false);
   }
@@ -698,8 +683,7 @@ class _GlobalSearchFieldState extends State<_GlobalSearchField> {
       displayStringForOption: (entry) => entry.title,
       optionsBuilder: _buildOptions,
       onSelected: _selectEntry,
-      fieldViewBuilder:
-          (context, textEditingController, focusNode, onFieldSubmitted) {
+      fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
         return SizedBox(
           height: 30,
           child: TextField(
@@ -743,27 +727,30 @@ class _GlobalSearchFieldState extends State<_GlobalSearchField> {
                       ),
                     )
                   : (textEditingController.text.isEmpty
-                      ? null
-                      : IconButton(
-                          // Le bouton efface rapidement la requête sans quitter le champ.
-                          onPressed: () {
-                            textEditingController.clear();
-                            setState(() {});
-                          },
-                          splashRadius: 14,
-                          icon: Icon(
-                            Icons.close_rounded,
-                            size: 14,
-                            color: isDark
-                                ? const Color(0xFF8FA0BC)
-                                : AppTheme.muted,
-                          ),
-                        )),
+                        ? null
+                        : IconButton(
+                            // Le bouton efface rapidement la requête sans quitter le champ.
+                            onPressed: () {
+                              textEditingController.clear();
+                              setState(() {});
+                            },
+                            splashRadius: 14,
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 14,
+                              color: isDark
+                                  ? const Color(0xFF8FA0BC)
+                                  : AppTheme.muted,
+                            ),
+                          )),
               filled: true,
-              fillColor:
-                  isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              fillColor: isDark
+                  ? const Color(0xFF14233D)
+                  : const Color(0xFFF7F8FD),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 6,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 borderSide: BorderSide(
@@ -782,8 +769,10 @@ class _GlobalSearchFieldState extends State<_GlobalSearchField> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radius),
-                borderSide:
-                    const BorderSide(color: Color(0xFF234A84), width: 1),
+                borderSide: const BorderSide(
+                  color: Color(0xFF234A84),
+                  width: 1,
+                ),
               ),
             ),
             onChanged: (_) => setState(() {}),
@@ -852,8 +841,9 @@ class _GlobalSearchFieldState extends State<_GlobalSearchField> {
                               color: isDark
                                   ? const Color(0xFF14233D)
                                   : const Color(0xFFF4F7FF),
-                              borderRadius:
-                                  BorderRadius.circular(AppTheme.radius),
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radius,
+                              ),
                             ),
                             child: Icon(
                               _iconForModule(entry.module),
@@ -908,8 +898,9 @@ class _GlobalSearchFieldState extends State<_GlobalSearchField> {
                               color: isDark
                                   ? const Color(0xFF162742)
                                   : const Color(0xFFEFF5FF),
-                              borderRadius:
-                                  BorderRadius.circular(AppTheme.radius),
+                              borderRadius: BorderRadius.circular(
+                                AppTheme.radius,
+                              ),
                             ),
                             child: Text(
                               entry.section,
@@ -954,14 +945,18 @@ class _ThemeModePill extends StatelessWidget {
     final tooltip = isDarkMode
         ? context.tr('Passer en mode clair')
         : context.tr('Passer en mode sombre');
-    final icon =
-        isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded;
-    final iconColor =
-        isDarkMode ? const Color(0xFFF4F7FF) : const Color(0xFF234A84);
-    final backgroundColor =
-        isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD);
-    final borderColor =
-        isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5);
+    final icon = isDarkMode
+        ? Icons.dark_mode_rounded
+        : Icons.light_mode_rounded;
+    final iconColor = isDarkMode
+        ? const Color(0xFFF4F7FF)
+        : const Color(0xFF234A84);
+    final backgroundColor = isDark
+        ? const Color(0xFF14233D)
+        : const Color(0xFFF7F8FD);
+    final borderColor = isDark
+        ? const Color(0xFF22304B)
+        : const Color(0xFFE7EAF5);
 
     return Tooltip(
       message: tooltip,
@@ -997,10 +992,7 @@ class _ThemeModePill extends StatelessWidget {
             decoration: BoxDecoration(
               color: backgroundColor,
               borderRadius: BorderRadius.circular(AppTheme.radius),
-              border: Border.all(
-                color: borderColor,
-                width: 0.8,
-              ),
+              border: Border.all(color: borderColor, width: 0.8),
             ),
             child: Center(
               child: AnimatedSwitcher(
@@ -1011,9 +1003,10 @@ class _ThemeModePill extends StatelessWidget {
                   return FadeTransition(
                     opacity: animation,
                     child: ScaleTransition(
-                      scale: Tween<double>(begin: 0.88, end: 1).animate(
-                        animation,
-                      ),
+                      scale: Tween<double>(
+                        begin: 0.88,
+                        end: 1,
+                      ).animate(animation),
                       child: child,
                     ),
                   );
@@ -1035,9 +1028,7 @@ class _ThemeModePill extends StatelessWidget {
 
 /// Sélecteur de langue compact affiché dans la top bar.
 class _PortfolioCurrencyPicker extends StatelessWidget {
-  const _PortfolioCurrencyPicker({
-    required this.selectedCurrencyListenable,
-  });
+  const _PortfolioCurrencyPicker({required this.selectedCurrencyListenable});
 
   final ValueNotifier<String> selectedCurrencyListenable;
 
@@ -1109,8 +1100,9 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
               height: 16,
               padding: const EdgeInsets.symmetric(horizontal: 5),
               decoration: BoxDecoration(
-                color:
-                    isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
+                color: isDark
+                    ? const Color(0xFF14233D)
+                    : const Color(0xFFF7F8FD),
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(
                   color: isDark
@@ -1154,9 +1146,7 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
 
 /// Sélecteur de langue compact affiché dans la top bar.
 class _LanguagePicker extends StatelessWidget {
-  const _LanguagePicker({
-    required this.appLanguage,
-  });
+  const _LanguagePicker({required this.appLanguage});
 
   final ValueNotifier<AppLanguage> appLanguage;
 
@@ -1215,8 +1205,9 @@ class _LanguagePicker extends StatelessWidget {
               height: 20,
               padding: const EdgeInsets.symmetric(horizontal: 5),
               decoration: BoxDecoration(
-                color:
-                    isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
+                color: isDark
+                    ? const Color(0xFF14233D)
+                    : const Color(0xFFF7F8FD),
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(
                   color: isDark
@@ -1268,11 +1259,7 @@ class _LanguagePicker extends StatelessWidget {
       height: 36,
       child: Row(
         children: [
-          _LanguageFlag(
-            language: language,
-            width: 20,
-            height: 14,
-          ),
+          _LanguageFlag(language: language, width: 20, height: 14),
           const SizedBox(width: 8),
           Text(
             language.shortLabel,
@@ -1318,12 +1305,8 @@ class _LanguageFlag extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
           ),
           child: switch (language) {
-            AppLanguage.francais => CustomPaint(
-                painter: _FrenchFlagPainter(),
-              ),
-            AppLanguage.anglais => CustomPaint(
-                painter: _UnionJackPainter(),
-              ),
+            AppLanguage.francais => CustomPaint(painter: _FrenchFlagPainter()),
+            AppLanguage.anglais => CustomPaint(painter: _UnionJackPainter()),
           },
         ),
       ),
@@ -1392,11 +1375,7 @@ class _UnionJackPainter extends CustomPainter {
       Offset(size.width, size.height),
       redDiagonal,
     );
-    canvas.drawLine(
-      Offset(size.width, 0),
-      Offset(0, size.height),
-      redDiagonal,
-    );
+    canvas.drawLine(Offset(size.width, 0), Offset(0, size.height), redDiagonal);
 
     final whiteCross = Paint()..color = Colors.white;
     canvas.drawRect(
@@ -1441,10 +1420,7 @@ class _UnionJackPainter extends CustomPainter {
 
 /// Bouton secondaire au style discret pour la top bar.
 class _HeaderGhostButton extends StatelessWidget {
-  const _HeaderGhostButton({
-    required this.label,
-    required this.icon,
-  });
+  const _HeaderGhostButton({required this.label, required this.icon});
 
   final String label;
   final IconData icon;
@@ -1488,10 +1464,7 @@ class _HeaderGhostButton extends StatelessWidget {
 
 /// Bouton principal de la top bar pour l'action mise en avant.
 class _HeaderPrimaryButton extends StatelessWidget {
-  const _HeaderPrimaryButton({
-    required this.label,
-    required this.icon,
-  });
+  const _HeaderPrimaryButton({required this.label, required this.icon});
 
   final String label;
   final IconData icon;
@@ -1535,10 +1508,7 @@ class _HeaderPrimaryButton extends StatelessWidget {
 
 /// Structure globale de la barre supérieure.
 class _TopBar extends StatelessWidget {
-  const _TopBar({
-    required this.selectedModule,
-    required this.showMenuButton,
-  });
+  const _TopBar({required this.selectedModule, required this.showMenuButton});
 
   final AppModule selectedModule;
   final bool showMenuButton;
@@ -1571,11 +1541,9 @@ class _TopBar extends StatelessWidget {
           Text(
             selectedModule.title.tr(context),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: isDark
-                      ? const Color(0xFFF2F6FF)
-                      : const Color(0xFF1E2337),
-                ),
+              fontWeight: FontWeight.w800,
+              color: isDark ? const Color(0xFFF2F6FF) : const Color(0xFF1E2337),
+            ),
           ),
           const Spacer(),
           const Icon(Icons.notifications_none_rounded, color: AppTheme.muted),

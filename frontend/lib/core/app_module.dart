@@ -2,13 +2,11 @@
 /// Enumération des modules disponibles dans l'application.
 enum AppModule {
   dashboard,
-  inventairePortefeuille,
-  donneesMarche,
-  echeanciersFlux,
-  analyseRisques,
-  stressTests,
-  simulation,
+  expositions,
+  horsBilan,
+  crm,
   referentiels,
+  rapports,
 }
 
 /// Extension qui expose les titres et sous-titres de chaque module.
@@ -17,20 +15,16 @@ extension AppModuleLabel on AppModule {
     switch (this) {
       case AppModule.dashboard:
         return 'Dashboard';
-      case AppModule.inventairePortefeuille:
+      case AppModule.expositions:
         return 'Expositions';
-      case AppModule.donneesMarche:
-        return 'Données de Marché';
-      case AppModule.echeanciersFlux:
-        return 'Échéanciers & Flux';
-      case AppModule.analyseRisques:
-        return 'Analyse & Risques';
-      case AppModule.stressTests:
-        return 'Stress Tests';
-      case AppModule.simulation:
-        return 'Simulation';
+      case AppModule.horsBilan:
+        return 'Hors Bilan';
+      case AppModule.crm:
+        return 'CRM';
       case AppModule.referentiels:
         return 'Référentiels';
+      case AppModule.rapports:
+        return 'Rapports';
     }
   }
 
@@ -38,20 +32,16 @@ extension AppModuleLabel on AppModule {
     switch (this) {
       case AppModule.dashboard:
         return 'Pilotage global des encours, RWA, capital et couverture CRM.';
-      case AppModule.inventairePortefeuille:
+      case AppModule.expositions:
         return 'Saisie, import, edition et suivi detaille des expositions du portefeuille.';
-      case AppModule.donneesMarche:
-        return 'Suivi des paramètres de marché utiles aux valorisations, stress et simulations.';
-      case AppModule.echeanciersFlux:
-        return 'Vision des flux attendus, maturités et échéanciers de portefeuille.';
-      case AppModule.analyseRisques:
-        return 'Analyse du risque, des garanties et des impacts RWA.';
-      case AppModule.stressTests:
-        return 'Stress tests prudentiels et sensibilités du portefeuille.';
-      case AppModule.simulation:
-        return 'Simulation de scénarios RWA et capital minimum.';
+      case AppModule.horsBilan:
+        return 'Gestion des engagements hors bilan avec application des CCF et calcul des RWA.';
+      case AppModule.crm:
+        return 'Analyse des garanties, mitigations et impacts sur les RWA.';
       case AppModule.referentiels:
         return 'Référentiels, tables RW, CCF et notations de calcul.';
+      case AppModule.rapports:
+        return 'Generation de rapports de synthese, details et exports metier.';
     }
   }
 }

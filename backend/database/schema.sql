@@ -92,11 +92,28 @@ CREATE TABLE IF NOT EXISTS exposures (
 CREATE TABLE IF NOT EXISTS crm_financed (
     exposure_id TEXT PRIMARY KEY,
     collateral_value REAL NOT NULL DEFAULT 0,
+    collateral_currency TEXT NOT NULL DEFAULT 'XOF',
+    collateral_type TEXT NOT NULL DEFAULT 'Liquidités dans la même devise',
     issuer_type TEXT NOT NULL DEFAULT '',
     issuer_rating TEXT NOT NULL DEFAULT '',
     maturity_bucket TEXT NOT NULL DEFAULT '<=1 an',
+    convertible_main_index INTEGER NOT NULL DEFAULT 1,
+    opcvm_highest_haircut REAL NOT NULL DEFAULT 0.30,
+    basket_items_json TEXT NOT NULL DEFAULT '[]',
     fx_haircut REAL NOT NULL DEFAULT 0,
     haircut REAL NOT NULL DEFAULT 0,
+    exposure_currency TEXT NOT NULL DEFAULT 'XOF',
+    risk_weight REAL NOT NULL DEFAULT 0,
+    collateral_eligible INTEGER NOT NULL DEFAULT 1,
+    ineligibility_reason TEXT NOT NULL DEFAULT '',
+    he REAL NOT NULL DEFAULT 0,
+    hc REAL NOT NULL DEFAULT 0,
+    hfx REAL NOT NULL DEFAULT 0,
+    eva REAL NOT NULL DEFAULT 0,
+    cva REAL NOT NULL DEFAULT 0,
+    ead_after_financed_crm REAL NOT NULL DEFAULT 0,
+    rwa_final REAL NOT NULL DEFAULT 0,
+    crm_gain REAL NOT NULL DEFAULT 0,
     FOREIGN KEY(exposure_id) REFERENCES exposures(id) ON DELETE CASCADE
 );
 
