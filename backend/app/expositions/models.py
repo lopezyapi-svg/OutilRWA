@@ -29,6 +29,8 @@ class ExposureCrmDetails(BaseModel):
     guarantor_name: str = Field(default="", description="Nom du garant.")
     guarantor_category: str = Field(default="", description="Categorie prudentielle du garant.")
     guarantor_rating: str = Field(default="", description="Notation du garant.")
+    guarantor_country: str = Field(default="", description="Pays du garant.")
+    guarantor_country_rating: str = Field(default="", description="Notation souveraine du pays du garant.")
     coverage_percent: float = Field(default=0.0, description="Part couverte entre 0 et 1.")
 
 

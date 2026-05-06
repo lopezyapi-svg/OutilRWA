@@ -1230,6 +1230,8 @@ class ExposureCrmDetails {
     required this.guarantorName,
     required this.guarantorCategory,
     required this.guarantorRating,
+    required this.guarantorCountry,
+    required this.guarantorCountryRating,
     required this.coveragePercent,
   });
 
@@ -1243,6 +1245,8 @@ class ExposureCrmDetails {
   final String guarantorName;
   final String guarantorCategory;
   final String guarantorRating;
+  final String guarantorCountry;
+  final String guarantorCountryRating;
   final double coveragePercent;
 
   factory ExposureCrmDetails.fromJson(Map<String, dynamic>? json) {
@@ -1257,6 +1261,8 @@ class ExposureCrmDetails {
       guarantorName: (json?['guarantor_name'] ?? '') as String,
       guarantorCategory: (json?['guarantor_category'] ?? '') as String,
       guarantorRating: (json?['guarantor_rating'] ?? '') as String,
+      guarantorCountry: (json?['guarantor_country'] ?? '') as String,
+      guarantorCountryRating: (json?['guarantor_country_rating'] ?? '') as String,
       coveragePercent: ((json?['coverage_percent'] ??
               json?['crm_coverage_percent'] ??
               0) as num)
@@ -1276,6 +1282,8 @@ class ExposureCrmDetails {
       'guarantor_name': guarantorName,
       'guarantor_category': guarantorCategory,
       'guarantor_rating': guarantorRating,
+      'guarantor_country': guarantorCountry,
+      'guarantor_country_rating': guarantorCountryRating,
       'coverage_percent': coveragePercent,
     };
   }
@@ -1502,6 +1510,8 @@ class ExposureRecord {
           ? 'a'
           : exposureCategoryByName(crmDetails.guarantorCategory).code,
       guarantorRating: crmDetails.guarantorRating,
+      guarantorCountry: crmDetails.guarantorCountry,
+      guarantorCountryRating: crmDetails.guarantorCountryRating,
       crmCoveragePercent: crmCoveragePercent,
       comment: comment,
       analysisDate: analysisDate,
@@ -1591,6 +1601,8 @@ class ExposureDraft {
     required this.guarantorName,
     required this.guarantorCategoryCode,
     required this.guarantorRating,
+    required this.guarantorCountry,
+    required this.guarantorCountryRating,
     required this.crmCoveragePercent,
     required this.comment,
     required this.analysisDate,
@@ -1639,6 +1651,8 @@ class ExposureDraft {
   final String guarantorName;
   final String guarantorCategoryCode;
   final String guarantorRating;
+  final String guarantorCountry;
+  final String guarantorCountryRating;
   final double crmCoveragePercent;
   final String comment;
   final DateTime analysisDate;
@@ -1696,6 +1710,8 @@ class ExposureDraft {
       'guarantor_name': guarantorName,
       'guarantor_category': guarantorCategory.prudentialLabel,
       'guarantor_rating': guarantorRating,
+      'guarantor_country': guarantorCountry,
+      'guarantor_country_rating': guarantorCountryRating,
       'coverage_percent': crmCoveragePercent,
     };
   }

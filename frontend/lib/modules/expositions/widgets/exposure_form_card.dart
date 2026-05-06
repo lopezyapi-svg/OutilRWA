@@ -208,6 +208,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   late final TextEditingController _collateralController;
   late final TextEditingController _fxHaircutController;
   late final TextEditingController _guarantorNameController;
+  late final TextEditingController _guarantorCountryController;
 
   late String _categoryCode;
   late String _countryRating;
@@ -242,11 +243,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   late String _maturityBucket;
   late String _guarantorCategoryCode;
   late String _guarantorRating;
+  late String _guarantorCountryRating;
   DateTime? _grantDate;
   DateTime? _maturityDate;
 
   int _currentStep = 1;
-  double _coverage = 0.0;
+  late final TextEditingController _coveredAmountController;
   bool _sovereignPreferentialZeroWeight = false;
   bool _sovereignPriorityQuestionAnsweredYes = false;
   bool _sovereignOceEstablished = false;
@@ -287,6 +289,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     );
     _guarantorNameController =
         TextEditingController(text: draft?.guarantorName ?? '');
+    _guarantorCountryController =
+        TextEditingController(text: draft?.guarantorCountry ?? '');
     _categoryCode =
         exposureCategories.any((item) => item.code == draft?.categoryCode)
             ? draft!.categoryCode
@@ -413,7 +417,15 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       draft?.guarantorRating,
       preferred: 'AAA',
     );
-    _coverage = draft?.crmCoveragePercent ?? 0.0;
+    _guarantorCountryRating = _resolveRatingValue(
+      draft?.guarantorCountryRating,
+      preferred: 'Non noté',
+    );
+    final grossAmt = draft?.grossAmount ?? 0.0;
+    final coveredAmt = (draft?.crmCoveragePercent ?? 0.0) * grossAmt;
+    _coveredAmountController = TextEditingController(
+      text: coveredAmt > 0 ? coveredAmt.toStringAsFixed(0) : '',
+    );
   }
 
   @override
@@ -442,6 +454,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _collateralController.dispose();
     _fxHaircutController.dispose();
     _guarantorNameController.dispose();
+    _guarantorCountryController.dispose();
+    _coveredAmountController.dispose();
     super.dispose();
   }
 
@@ -468,6 +482,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       return normalized;
     }
     return fallback;
+  }
+
+  double get _computedCoverage {
+    final gross = double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
+    final covered = double.tryParse(_coveredAmountController.text.replaceAll(',', '.')) ?? 0.0;
+    return gross > 0 ? (covered / gross).clamp(0.0, 1.0) : 0.0;
   }
 
   String _resolveRatingValue(
@@ -3236,6 +3256,36 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         icon: Icons.timelapse_rounded,
         accent: const Color(0xFF7C3AED),
       ),
+      if (_crmMode == 'CRM non financee') ...[
+        _KpiData(
+          label: context.tr('Montant du credit'),
+          value: compactCurrencyForDisplay(
+            preview.ead,
+            fromCurrency: _currency,
+            toCurrency: displayCurrency,
+          ),
+          icon: Icons.account_balance_outlined,
+          accent: const Color(0xFF2563EB),
+        ),
+        _KpiData(
+          label: context.tr('% Couverture'),
+          value: _formatPercent(preview.ead > 0
+              ? ((double.tryParse(_coveredAmountController.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0.0) / preview.ead).clamp(0.0, 1.0)
+              : 0.0),
+          icon: Icons.pie_chart_outline_rounded,
+          accent: const Color(0xFF0891B2),
+        ),
+        _KpiData(
+          label: context.tr('Part non couverte'),
+          value: compactCurrencyForDisplay(
+            (preview.ead - (double.tryParse(_coveredAmountController.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0.0)).clamp(0.0, double.infinity),
+            fromCurrency: _currency,
+            toCurrency: displayCurrency,
+          ),
+          icon: Icons.remove_circle_outline_rounded,
+          accent: const Color(0xFFDC2626),
+        ),
+      ],
     ];
   }
 
@@ -3465,24 +3515,51 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         ),
         _buildFieldCard(
           context: context,
-          title: 'Couverture',
-          subtitle: 'Part de l exposition couverte',
-          icon: Icons.pie_chart_outline_rounded,
-          child: DropdownButtonFormField<double>(
-            value: _coverageOptions.contains(_coverage)
-                ? _coverage
-                : _coverageOptions.first,
+          title: 'Pays de residence du garant',
+          subtitle: '',
+          icon: Icons.flag_outlined,
+          child: TextFormField(
+            controller: _guarantorCountryController,
+            decoration: _fieldDecoration(
+              context,
+              hint: context.tr('Pays du garant'),
+            ),
+          ),
+        ),
+        _buildFieldCard(
+          context: context,
+          title: 'Notation du pays du garant',
+          subtitle: '',
+          icon: Icons.public_outlined,
+          child: DropdownButtonFormField<String>(
+            value: _resolveRatingValue(
+              _guarantorCountryRating,
+              preferred: 'Non noté',
+            ),
+            isExpanded: true,
             decoration: _fieldDecoration(context),
-            items: _coverageOptions
-                .map(
-                  (item) => DropdownMenuItem(
-                    value: item,
-                    child: Text('${(item * 100).toStringAsFixed(0)} %'),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) =>
-                setState(() => _coverage = value ?? _coverage),
+            selectedItemBuilder: (context) =>
+                _selectedStringDropdownItems(_availableRatings),
+            items: _stringDropdownItems(_availableRatings),
+            onChanged: (value) => setState(
+              () => _guarantorCountryRating = value ?? _guarantorCountryRating,
+            ),
+          ),
+        ),
+        _buildFieldCard(
+          context: context,
+          title: 'Part couverte',
+          subtitle: '',
+          icon: Icons.verified_outlined,
+          child: TextFormField(
+            controller: _coveredAmountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: _fieldDecoration(
+              context,
+              hint: context.tr('Montant couvert'),
+            ),
+            onChanged: (_) => setState(() {}),
+            validator: _crmMode == 'CRM non financee' ? _requiredValidator : null,
           ),
         ),
       ],
@@ -3986,7 +4063,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _coerceGuarantorRating(draft?.guarantorRating),
         preferred: 'AAA',
       );
-      _coverage = draft?.crmCoveragePercent ?? 0.0;
+      final resetGrossAmt = draft?.grossAmount ?? 0.0;
+      final resetCoveredAmt = (draft?.crmCoveragePercent ?? 0.0) * resetGrossAmt;
+      _coveredAmountController.text =
+          resetCoveredAmt > 0 ? resetCoveredAmt.toStringAsFixed(0) : '';
     });
   }
 
@@ -4235,7 +4315,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       guarantorCategoryCode:
           _crmMode == 'CRM non financee' ? _guarantorCategoryCode : 'a',
       guarantorRating: _crmMode == 'CRM non financee' ? _guarantorRating : '',
-      crmCoveragePercent: _crmMode == 'CRM non financee' ? _coverage : 0.0,
+      guarantorCountry: _crmMode == 'CRM non financee'
+          ? _guarantorCountryController.text.trim()
+          : '',
+      guarantorCountryRating:
+          _crmMode == 'CRM non financee' ? _guarantorCountryRating : '',
+      crmCoveragePercent: _crmMode == 'CRM non financee' ? _computedCoverage : 0.0,
       comment: comment,
       analysisDate: widget.initialDraft?.analysisDate ?? DateTime.now(),
       grantDate: _grantDate,

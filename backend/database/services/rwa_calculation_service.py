@@ -675,6 +675,9 @@ def crm_details_payload(payload: ExposureCreate) -> dict[str, Any]:
     crm_details["coverage_percent"] = clamp_ratio(
         float(crm_details.get("coverage_percent", payload.crm_coverage_percent or 0.0))
     )
+    if crm_mode == "CRM non financee":
+        country_rating = str(crm_details.get("guarantor_country_rating") or "")
+        crm_details["guarantor_country_rw"] = lookup_prudential_risk_weight("a", country_rating) if country_rating else 0.0
     return crm_details
 
 
@@ -751,7 +754,10 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
         guarantor_category = resolve_category(str(crm_details.get("guarantor_category") or "Souverains"))
         guarantor_rating = str(crm_details.get("guarantor_rating") or payload.rating)
         guarantor_rw = lookup_prudential_risk_weight(guarantor_category["code"], guarantor_rating)
-        final_rw = max(0.0, min((effective_coverage * guarantor_rw) + ((1 - effective_coverage) * original_rw), 1.5))
+        covered_ead = gross_amount * effective_coverage
+        uncovered_ead = gross_amount - covered_ead
+        rwa = (covered_ead * guarantor_rw) + (uncovered_ead * guarantor_rw)
+        final_rw = 0.0 if gross_amount == 0 else max(0.0, min(rwa / gross_amount, 1.5))
 
     rwa = round(ead * final_rw, 2)
     capital = calculate_capital(rwa)
@@ -846,6 +852,7 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
 
 def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
     crm_details = record.get("crm_details", {})
+    category = resolve_category(record.get("category_raw") or record.get("category_standard") or "")
     counterparty = Counterparty(
         id=record["id"],
         name=record["counterparty_name"],

@@ -2367,6 +2367,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       guarantorName: '',
       guarantorCategoryCode: 'a',
       guarantorRating: _ratings.contains('AAA') ? 'AAA' : _ratings.first,
+      guarantorCountry: '',
+      guarantorCountryRating: 'Non noté',
       crmCoveragePercent: 0,
       comment: '',
       analysisDate: DateTime.now(),
