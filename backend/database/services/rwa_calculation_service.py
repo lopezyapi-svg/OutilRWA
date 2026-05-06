@@ -1009,11 +1009,6 @@ def crm_details_payload(payload: ExposureCreate) -> dict[str, Any]:
     crm_details["coverage_percent"] = clamp_ratio(
         float(crm_details.get("coverage_percent", payload.crm_coverage_percent or 0.0))
     )
-<<<<<<< HEAD
-    if crm_mode == "CRM non financee":
-        country_rating = str(crm_details.get("guarantor_country_rating") or "")
-        crm_details["guarantor_country_rw"] = lookup_prudential_risk_weight("a", country_rating) if country_rating else 0.0
-=======
     crm_details["collateral_currency"] = str(
         crm_details.get("collateral_currency") or payload.currency or "XOF"
     )
@@ -1023,7 +1018,13 @@ def crm_details_payload(payload: ExposureCreate) -> dict[str, Any]:
     crm_details["exposure_currency"] = str(
         crm_details.get("exposure_currency") or payload.currency or "XOF"
     )
->>>>>>> 22f62014f09a5e8febb394d05b890fb16a724dc8
+    if crm_mode == "CRM non financee":
+        country_rating = str(crm_details.get("guarantor_country_rating") or "")
+        crm_details["guarantor_country_rw"] = (
+            lookup_prudential_risk_weight("a", country_rating)
+            if country_rating
+            else 0.0
+        )
     return crm_details
 
 
@@ -1202,14 +1203,10 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
 
 def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
     crm_details = record.get("crm_details", {})
-<<<<<<< HEAD
-    category = resolve_category(record.get("category_raw") or record.get("category_standard") or "")
-=======
     category_label = (
         record.get("category_raw") or record.get("category_standard") or "Entreprises"
     )
     category = resolve_category(str(category_label))
->>>>>>> 22f62014f09a5e8febb394d05b890fb16a724dc8
     counterparty = Counterparty(
         id=record["id"],
         name=record["counterparty_name"],
