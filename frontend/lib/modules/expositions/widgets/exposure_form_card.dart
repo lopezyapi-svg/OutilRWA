@@ -300,22 +300,19 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       'Une CRM financée est une protection de crédit reposant sur une sûreté réelle ou financière. Elle réduit l exposition en tenant compte de la valeur ajustée de la sûreté reçue.';
   static const String _collateralValueTooltip =
       'Montant de la sûreté ou du collatéral reçu. Cette valeur sera corrigée par les décotes réglementaires avant d être déduite de l exposition.';
-  static const String _heTooltip =
-      'HE correspond à la décote appliquée à l exposition. Dans notre cas actuel, l exposition est un crédit classique déjà catégorisé. La décote HE est donc fixée à 0 %. Elle pourrait être différente pour certaines opérations de marché ou expositions sous forme de titres.';
-  static const String _hcTooltip =
-      'HC est la décote appliquée à la sûreté. Elle dépend du type de sûreté, de la notation, du type d émetteur et de la durée résiduelle du titre reçu en garantie.';
-  static const String _hfxTooltip =
-      'Hfx correspond à la décote appliquée lorsqu il existe une différence de devise entre l exposition et la sûreté. Elle est de 8 % en cas d asymétrie de devises. Toutefois, entre le FCFA et l euro, elle est de 0 %.';
+  static const String _automaticHaircutsTooltip =
+      'HE : HE correspond à la décote appliquée à l exposition. Dans notre cas actuel, l exposition est un crédit classique déjà catégorisé. La décote HE est donc fixée à 0 %. Elle pourrait être différente pour certaines opérations de marché ou expositions sous forme de titres.\n'
+      'HC : HC est la décote appliquée à la sûreté. Elle dépend du type de sûreté, de la notation, du type d émetteur et de la durée résiduelle du titre reçu en garantie.\n'
+      'Hfx : Hfx correspond à la décote appliquée lorsqu il existe une différence de devise entre l exposition et la sûreté. Elle est de 8 % en cas d asymétrie de devises. Toutefois, entre le FCFA et l euro, elle est de 0 %.';
   static const String _convertibleMainIndexTooltip =
       "Choisissez Oui si l'obligation convertible reçue en garantie est incluse dans un indice principal reconnu.\n"
       'Choisissez Non dans le cas contraire.\n'
       'La décote HC est de 20 % si Oui, contre 30 % si Non.';
-  static const String _evaTooltip =
-      'EVA est l exposition ajustée après application de la décote HE : EVA = Montant brut de l exposition × (1 + HE).';
-  static const String _cvaTooltip =
-      'CVA est la valeur ajustée de la sûreté après application des décotes HC et Hfx : CVA = Valeur de la sûreté × (1 - HC - Hfx).';
-  static const String _eadAfterFinancedCrmTooltip =
-      'L EAD après CRM financée correspond à l exposition nette après prise en compte de la sûreté : EAD = max(0, EVA - CVA).';
+  static const String _financedCrmCalculationTooltip =
+      'EVA : EVA est l exposition ajustée après application de la décote HE : EVA = Montant brut de l exposition × (1 + HE).\n'
+      'CVA : CVA est la valeur ajustée de la sûreté après application des décotes HC et Hfx : CVA = Valeur de la sûreté × (1 - HC - Hfx).\n'
+      'EAD après CRM financée : L EAD après CRM financée correspond à l exposition nette après prise en compte de la sûreté : EAD = max(0, EVA - CVA).\n'
+      'Valeur de la sûreté : Montant de la sûreté ou du collatéral reçu. Cette valeur sera corrigée par les décotes réglementaires avant d être déduite de l exposition.';
   static const String _basketTooltip =
       'Lorsque la sûreté est composée de plusieurs actifs, la décote globale est calculée comme la somme pondérée des décotes de chaque actif.';
   static const List<String> _nonFinancedCrmTypes = [
@@ -3628,13 +3625,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         accent: const Color(0xFF0F766E),
       ),
       _KpiData(
-        label: context.tr('Maturite'),
+        label: context.tr('Maturité'),
         value: _formatMonthCount(maturityMonths),
         icon: Icons.date_range_outlined,
         accent: const Color(0xFF6366F1),
       ),
       _KpiData(
-        label: context.tr('Maturite residuelle'),
+        label: context.tr('Maturité résiduelle'),
         value: _formatMonthCount(residualMaturityMonths),
         icon: Icons.timelapse_rounded,
         accent: const Color(0xFF7C3AED),
@@ -3797,9 +3794,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _collateralType,
     );
     final showRating = financedCrmCollateralRequiresRating(_collateralType);
-    final showResidualMaturity = financedCrmCollateralRequiresResidualMaturity(
-      _collateralType,
-    );
     final showConvertibleIndexQuestion =
         financedCrmCollateralSupportsConvertibleIndexQuestion(_collateralType);
     final showOpcvmHaircut =
@@ -3810,22 +3804,24 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
     final regulatoryFields = <Widget>[
       if (showIssuerRole)
-        _buildFieldCard(
-          context: context,
-          title: 'Type d’émetteur',
-          subtitle: 'Rôle réglementaire',
-          icon: Icons.apartment_outlined,
-          child: DropdownButtonFormField<String>(
-            value: financedCrmIssuerRoleOptions.contains(_issuerType)
-                ? _issuerType
-                : financedCrmIssuerRoleOptions.last,
-            isExpanded: true,
-            decoration: _fieldDecoration(context),
-            selectedItemBuilder: (context) =>
-                _selectedStringDropdownItems(financedCrmIssuerRoleOptions),
-            items: _stringDropdownItems(financedCrmIssuerRoleOptions),
-            onChanged: (value) => setState(
-              () => _issuerType = value ?? financedCrmIssuerRoleOptions.last,
+        _StepGridFullWidth(
+          child: _buildFieldCard(
+            context: context,
+            title: 'Type d’émetteur',
+            subtitle: 'Rôle réglementaire',
+            icon: Icons.apartment_outlined,
+            child: DropdownButtonFormField<String>(
+              value: financedCrmIssuerRoleOptions.contains(_issuerType)
+                  ? _issuerType
+                  : financedCrmIssuerRoleOptions.last,
+              isExpanded: true,
+              decoration: _fieldDecoration(context),
+              selectedItemBuilder: (context) =>
+                  _selectedStringDropdownItems(financedCrmIssuerRoleOptions),
+              items: _stringDropdownItems(financedCrmIssuerRoleOptions),
+              onChanged: (value) => setState(
+                () => _issuerType = value ?? financedCrmIssuerRoleOptions.last,
+              ),
             ),
           ),
         ),
@@ -3846,26 +3842,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             items: _stringDropdownItems(financedCrmDebtRatings),
             onChanged: (value) => setState(
               () => _issuerRating = value ?? financedCrmDebtRatings.last,
-            ),
-          ),
-        ),
-      if (showResidualMaturity)
-        _buildFieldCard(
-          context: context,
-          title: 'Durée résiduelle du titre',
-          subtitle: 'Titre reçu en garantie',
-          icon: Icons.schedule_outlined,
-          child: DropdownButtonFormField<String>(
-            value: financedCrmMaturityBuckets.contains(_maturityBucket)
-                ? _maturityBucket
-                : financedCrmMaturityBuckets.first,
-            isExpanded: true,
-            decoration: _fieldDecoration(context),
-            selectedItemBuilder: (context) =>
-                _selectedStringDropdownItems(financedCrmMaturityBuckets),
-            items: _stringDropdownItems(financedCrmMaturityBuckets),
-            onChanged: (value) => setState(
-              () => _maturityBucket = value ?? financedCrmMaturityBuckets.first,
             ),
           ),
         ),
@@ -4035,6 +4011,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 title: 'Décotes automatiques',
                 subtitle: 'HE, HC et Hfx calculées',
                 icon: Icons.percent_rounded,
+                inlineTooltip: _automaticHaircutsTooltip,
+                tooltipTitle: 'HE, HC et Hfx',
+                tooltipMaxWidth: 280,
                 child: Row(
                   children: [
                     Expanded(
@@ -4042,9 +4021,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         context: context,
                         label: 'HE',
                         value: _formatPercent(snapshot.he),
-                        icon: Icons.info_outline,
+                        icon: Icons.percent_rounded,
                         accent: const Color(0xFF2563EB),
-                        tooltip: _heTooltip,
                         compact: true,
                       ),
                     ),
@@ -4056,7 +4034,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         value: _formatPercent(snapshot.hc),
                         icon: Icons.shield_moon_outlined,
                         accent: const Color(0xFFF59E0B),
-                        tooltip: _hcTooltip,
                         compact: true,
                       ),
                     ),
@@ -4068,7 +4045,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         value: _formatPercent(snapshot.hfx),
                         icon: Icons.currency_exchange_outlined,
                         accent: const Color(0xFF0F766E),
-                        tooltip: _hfxTooltip,
                         compact: true,
                       ),
                     ),
@@ -4082,6 +4058,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 title: 'Calcul CRM financée',
                 subtitle: 'Résultat automatique',
                 icon: Icons.calculate_outlined,
+                inlineTooltip: _financedCrmCalculationTooltip,
+                tooltipTitle: 'Calcul CRM financée',
+                tooltipMaxWidth: 320,
                 child: _AdaptiveMetricGrid(
                   children: [
                     _buildReadonlyMetricCard(
@@ -4090,7 +4069,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       value: _formatReadonlyAmount(snapshot.eva),
                       icon: Icons.exposure_plus_1_outlined,
                       accent: const Color(0xFF2563EB),
-                      tooltip: _evaTooltip,
                       compact: true,
                     ),
                     _buildReadonlyMetricCard(
@@ -4099,7 +4077,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       value: _formatReadonlyAmount(snapshot.cva),
                       icon: Icons.savings_outlined,
                       accent: const Color(0xFF0F766E),
-                      tooltip: _cvaTooltip,
                       compact: true,
                     ),
                     _buildReadonlyMetricCard(
@@ -4110,7 +4087,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       ),
                       icon: Icons.account_balance_wallet_outlined,
                       accent: const Color(0xFF7C3AED),
-                      tooltip: _eadAfterFinancedCrmTooltip,
                       compact: true,
                     ),
                     _buildReadonlyMetricCard(
@@ -4135,7 +4111,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       value: _formatReadonlyAmount(collateralAmount),
                       icon: Icons.account_balance_outlined,
                       accent: const Color(0xFF0891B2),
-                      tooltip: _collateralValueTooltip,
                       compact: true,
                     ),
                   ],
@@ -4296,8 +4271,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final showIssuerRole =
         financedCrmCollateralRequiresIssuerRole(item.collateralType);
     final showRating = financedCrmCollateralRequiresRating(item.collateralType);
-    final showMaturity =
-        financedCrmCollateralRequiresResidualMaturity(item.collateralType);
     final showConvertibleIndexQuestion =
         financedCrmCollateralSupportsConvertibleIndexQuestion(
       item.collateralType,
@@ -4486,37 +4459,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     ),
                   ),
                 ),
-              if (showMaturity)
-                _buildFieldCard(
-                  context: context,
-                  title: 'Durée résiduelle',
-                  subtitle: '',
-                  icon: Icons.schedule_outlined,
-                  child: DropdownButtonFormField<String>(
-                    value: financedCrmMaturityBuckets.contains(
-                      item.residualMaturityBucket,
-                    )
-                        ? item.residualMaturityBucket
-                        : financedCrmMaturityBuckets.first,
-                    isExpanded: true,
-                    decoration: _fieldDecoration(context),
-                    items: _stringDropdownItems(financedCrmMaturityBuckets),
-                    onChanged: (value) => _updateBasketItem(
-                      index,
-                      FinancedCrmBasketItem(
-                        collateralType: item.collateralType,
-                        value: item.value,
-                        currency: item.currency,
-                        issuerRole: item.issuerRole,
-                        rating: item.rating,
-                        residualMaturityBucket:
-                            value ?? item.residualMaturityBucket,
-                        convertibleMainIndex: item.convertibleMainIndex,
-                        opcvmHighestHaircut: item.opcvmHighestHaircut,
-                      ),
-                    ),
-                  ),
-                ),
               if (showConvertibleIndexQuestion)
                 _StepGridFullWidth(
                   child: _buildFieldCard(
@@ -4617,6 +4559,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     bool hideLeadingIcon = false,
     String? iconTooltip,
     String tooltipTitle = 'Critères',
+    double tooltipMaxWidth = 350,
     Color? subtitleColor,
     required Widget child,
   }) {
@@ -4635,6 +4578,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       hideLeadingIcon: hideLeadingIcon,
       iconTooltip: iconTooltip?.tr(context),
       tooltipTitle: tooltipTitle.tr(context),
+      tooltipMaxWidth: tooltipMaxWidth,
       subtitleColor: subtitleColor,
       child: Theme(
         data: Theme.of(context).copyWith(
@@ -5340,6 +5284,33 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return '${months ?? 0} mois';
   }
 
+  String _resolveFinancedCrmMaturityBucket({String? fallbackBucket}) {
+    final fallback = financedCrmMaturityBuckets.contains(fallbackBucket)
+        ? fallbackBucket!
+        : financedCrmMaturityBuckets.first;
+    if (_maturityDate == null) {
+      return fallback;
+    }
+
+    final residualMonths = _positiveMonthDifference(
+      DateTime.now(),
+      _maturityDate!,
+    );
+    if (residualMonths <= 12) {
+      return '<=1 an';
+    }
+    if (residualMonths <= 36) {
+      return '1-3 ans';
+    }
+    if (residualMonths <= 60) {
+      return '3-5 ans';
+    }
+    if (residualMonths <= 120) {
+      return '5-10 ans';
+    }
+    return '>10 ans';
+  }
+
   void _syncDateController(
     TextEditingController controller,
     DateTime? value,
@@ -5395,6 +5366,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       resolvedSovereignSpecialCase,
       sovereignPreferentialZeroWeight: _sovereignPreferentialZeroWeight,
     );
+    final resolvedFinancedCrmMaturityBucket =
+        _resolveFinancedCrmMaturityBucket(fallbackBucket: _maturityBucket);
     return ExposureDraft(
       id: trimmedId.isEmpty ? widget.initialDraft?.id : trimmedId,
       counterpartyName: _nameController.text.trim(),
@@ -5416,7 +5389,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       issuerType: _crmMode == 'CRM financee' ? _issuerType : '',
       issuerRating: _crmMode == 'CRM financee' ? _issuerRating : '',
       maturityBucket: _crmMode == 'CRM financee'
-          ? _maturityBucket
+          ? resolvedFinancedCrmMaturityBucket
           : financedCrmMaturityBuckets.first,
       fxHaircut: _crmMode == 'CRM financee' ? fxHaircut : 0.0,
       convertibleMainIndex:
@@ -5424,7 +5397,22 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       opcvmHighestHaircut:
           _crmMode == 'CRM financee' ? _opcvmHighestHaircut : 0.30,
       basketItems: _crmMode == 'CRM financee'
-          ? List<FinancedCrmBasketItem>.from(_basketItems)
+          ? _basketItems
+              .map(
+                (item) => FinancedCrmBasketItem(
+                  collateralType: item.collateralType,
+                  value: item.value,
+                  currency: item.currency,
+                  issuerRole: item.issuerRole,
+                  rating: item.rating,
+                  residualMaturityBucket: _resolveFinancedCrmMaturityBucket(
+                    fallbackBucket: item.residualMaturityBucket,
+                  ),
+                  convertibleMainIndex: item.convertibleMainIndex,
+                  opcvmHighestHaircut: item.opcvmHighestHaircut,
+                ),
+              )
+              .toList(growable: false)
           : const [],
       guarantorName: _crmMode == 'CRM non financee'
           ? _guarantorNameController.text.trim()
@@ -5577,6 +5565,7 @@ class _CompactFieldCard extends StatelessWidget {
     this.hideLeadingIcon = false,
     this.iconTooltip,
     this.tooltipTitle = 'Critères',
+    this.tooltipMaxWidth = 350,
     this.subtitleColor,
     required this.child,
   });
@@ -5589,6 +5578,7 @@ class _CompactFieldCard extends StatelessWidget {
   final bool hideLeadingIcon;
   final String? iconTooltip;
   final String tooltipTitle;
+  final double tooltipMaxWidth;
   final Color? subtitleColor;
   final Widget child;
 
@@ -5716,7 +5706,7 @@ class _CompactFieldCard extends StatelessWidget {
   }) {
     return Tooltip(
       richMessage: _buildTooltipContent(title, message),
-      constraints: const BoxConstraints(maxWidth: 350),
+      constraints: BoxConstraints(maxWidth: tooltipMaxWidth),
       waitDuration: const Duration(milliseconds: 140),
       showDuration: const Duration(seconds: 12),
       preferBelow: false,
