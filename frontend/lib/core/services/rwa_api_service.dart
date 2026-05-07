@@ -14,7 +14,6 @@ import 'api_client.dart';
 
 /// Service principal qui orchestre les appels API et les données mockées.
 class RwaApiService {
-<<<<<<< HEAD
   RwaApiService({
     this.useMockData = true,
     String? baseUrl,
@@ -24,22 +23,9 @@ class RwaApiService {
               baseUrl: baseUrl ??
                   const String.fromEnvironment(
                     'RWA_API_BASE_URL',
-                    defaultValue: 'http://localhost:8002',
+                    defaultValue: 'http://localhost:8001',
                   ),
             );
-=======
-  RwaApiService({this.useMockData = true, String? baseUrl, ApiClient? client})
-    : _client =
-          client ??
-          ApiClient(
-            baseUrl:
-                baseUrl ??
-                const String.fromEnvironment(
-                  'RWA_API_BASE_URL',
-                  defaultValue: 'http://localhost:8001',
-                ),
-          );
->>>>>>> 22f62014f09a5e8febb394d05b890fb16a724dc8
 
   final bool useMockData;
   final ApiClient _client;
@@ -508,9 +494,8 @@ class RwaApiService {
       }
     }
 
-    final exposures = _exposures
-        .map((item) => ExposureRecord.fromJson(item))
-        .toList();
+    final exposures =
+        _exposures.map((item) => ExposureRecord.fromJson(item)).toList();
     return _withDelay(
       ExposureModuleData(
         exposures: exposures,
@@ -560,67 +545,58 @@ class RwaApiService {
       try {
         final response = Map<String, dynamic>.from(
           await _client.post('/expositions', {
-                'id': draft.id,
-                'analysis_date': draft.analysisDate
-                    .toIso8601String()
-                    .split('T')
-                    .first,
-                'grant_date': draft.grantDate
-                    ?.toIso8601String()
-                    .split('T')
-                    .first,
-                'maturity_date': draft.maturityDate
-                    ?.toIso8601String()
-                    .split('T')
-                    .first,
-                'counterparty_name': draft.counterpartyName,
-                'country': draft.country,
-                'country_rating': draft.countryRating,
-                'category': draft.backendCategory,
-                'rating': draft.rating,
-                'gross_amount': draft.grossAmount,
-                'currency': draft.currency,
-                'status': draft.status,
-                'sovereign_special_case': draft.sovereignSpecialCase,
-                'sovereign_preferential_zero_weight':
-                    draft.sovereignPreferentialZeroWeight,
-                'sovereign_oce_established': draft.sovereignOceEstablished,
-                'sovereign_oce_note': draft.sovereignOceNote,
-                'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
-                'public_body_non_public_activity':
-                    draft.publicBodyFinancesNonPublicActivity,
-                'bmd_high_quality_case': draft.bmdHighQualityCase,
-                'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
-                'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
-                'bmd_listed_institution_fcfa_case':
-                    draft.bmdListedInstitutionFcfaCase,
-                'bank_institution_case': draft.bankInstitutionCase,
-                'other_asset_type': draft.otherAssetType,
-                'off_balance_risk_level': draft.offBalanceRiskLevel,
-                'retail_eligibility_criteria_satisfied':
-                    draft.retailEligibilityCriteriaSatisfied,
-                'residential_mortgage_eligible':
-                    draft.residentialMortgageEligible,
-                'commercial_real_estate_eligible':
-                    draft.commercialRealEstateEligible,
-                'defaulted_exposure_initial_risk_weight':
-                    draft.defaultedExposureInitialRiskWeight,
-                'defaulted_exposure_residential_mortgage_in_default':
-                    draft.defaultedExposureResidentialMortgageInDefault,
-                'defaulted_exposure_provision_at_least_twenty_percent':
-                    draft.defaultedExposureProvisionAtLeastTwentyPercent,
-                'enterprise_exceeds_bceao_degradation_threshold':
-                    draft.enterpriseExceedsBceaoDegradationThreshold,
-                'enterprise_prudential_procedure':
-                    draft.enterprisePrudentialProcedure,
-                'enterprise_investment_firm_without_banking_law':
-                    draft.enterpriseInvestmentFirmWithoutBankingLaw,
-                'crm_type': draft.backendCrmType,
-                'crm_coverage_percent': _effectiveCrmCoverage(draft),
-                'crm_details': draft.crmDetailsJson,
-                'comment': draft.comment,
-              })
-              as Map,
+            'id': draft.id,
+            'analysis_date':
+                draft.analysisDate.toIso8601String().split('T').first,
+            'grant_date': draft.grantDate?.toIso8601String().split('T').first,
+            'maturity_date':
+                draft.maturityDate?.toIso8601String().split('T').first,
+            'counterparty_name': draft.counterpartyName,
+            'country': draft.country,
+            'country_rating': draft.countryRating,
+            'category': draft.backendCategory,
+            'rating': draft.rating,
+            'gross_amount': draft.grossAmount,
+            'currency': draft.currency,
+            'status': draft.status,
+            'sovereign_special_case': draft.sovereignSpecialCase,
+            'sovereign_preferential_zero_weight':
+                draft.sovereignPreferentialZeroWeight,
+            'sovereign_oce_established': draft.sovereignOceEstablished,
+            'sovereign_oce_note': draft.sovereignOceNote,
+            'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
+            'public_body_non_public_activity':
+                draft.publicBodyFinancesNonPublicActivity,
+            'bmd_high_quality_case': draft.bmdHighQualityCase,
+            'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
+            'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
+            'bmd_listed_institution_fcfa_case':
+                draft.bmdListedInstitutionFcfaCase,
+            'bank_institution_case': draft.bankInstitutionCase,
+            'other_asset_type': draft.otherAssetType,
+            'off_balance_risk_level': draft.offBalanceRiskLevel,
+            'retail_eligibility_criteria_satisfied':
+                draft.retailEligibilityCriteriaSatisfied,
+            'residential_mortgage_eligible': draft.residentialMortgageEligible,
+            'commercial_real_estate_eligible':
+                draft.commercialRealEstateEligible,
+            'defaulted_exposure_initial_risk_weight':
+                draft.defaultedExposureInitialRiskWeight,
+            'defaulted_exposure_residential_mortgage_in_default':
+                draft.defaultedExposureResidentialMortgageInDefault,
+            'defaulted_exposure_provision_at_least_twenty_percent':
+                draft.defaultedExposureProvisionAtLeastTwentyPercent,
+            'enterprise_exceeds_bceao_degradation_threshold':
+                draft.enterpriseExceedsBceaoDegradationThreshold,
+            'enterprise_prudential_procedure':
+                draft.enterprisePrudentialProcedure,
+            'enterprise_investment_firm_without_banking_law':
+                draft.enterpriseInvestmentFirmWithoutBankingLaw,
+            'crm_type': draft.backendCrmType,
+            'crm_coverage_percent': _effectiveCrmCoverage(draft),
+            'crm_details': draft.crmDetailsJson,
+            'comment': draft.comment,
+          }) as Map,
         );
         _notifyPortfolioChanged();
         return ExposureRecord.fromJson(response);
@@ -646,67 +622,58 @@ class RwaApiService {
       try {
         final response = Map<String, dynamic>.from(
           await _client.put('/expositions/$id', {
-                'id': id,
-                'analysis_date': draft.analysisDate
-                    .toIso8601String()
-                    .split('T')
-                    .first,
-                'grant_date': draft.grantDate
-                    ?.toIso8601String()
-                    .split('T')
-                    .first,
-                'maturity_date': draft.maturityDate
-                    ?.toIso8601String()
-                    .split('T')
-                    .first,
-                'counterparty_name': draft.counterpartyName,
-                'country': draft.country,
-                'country_rating': draft.countryRating,
-                'category': draft.backendCategory,
-                'rating': draft.rating,
-                'gross_amount': draft.grossAmount,
-                'currency': draft.currency,
-                'status': draft.status,
-                'sovereign_special_case': draft.sovereignSpecialCase,
-                'sovereign_preferential_zero_weight':
-                    draft.sovereignPreferentialZeroWeight,
-                'sovereign_oce_established': draft.sovereignOceEstablished,
-                'sovereign_oce_note': draft.sovereignOceNote,
-                'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
-                'public_body_non_public_activity':
-                    draft.publicBodyFinancesNonPublicActivity,
-                'bmd_high_quality_case': draft.bmdHighQualityCase,
-                'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
-                'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
-                'bmd_listed_institution_fcfa_case':
-                    draft.bmdListedInstitutionFcfaCase,
-                'bank_institution_case': draft.bankInstitutionCase,
-                'other_asset_type': draft.otherAssetType,
-                'off_balance_risk_level': draft.offBalanceRiskLevel,
-                'retail_eligibility_criteria_satisfied':
-                    draft.retailEligibilityCriteriaSatisfied,
-                'residential_mortgage_eligible':
-                    draft.residentialMortgageEligible,
-                'commercial_real_estate_eligible':
-                    draft.commercialRealEstateEligible,
-                'defaulted_exposure_initial_risk_weight':
-                    draft.defaultedExposureInitialRiskWeight,
-                'defaulted_exposure_residential_mortgage_in_default':
-                    draft.defaultedExposureResidentialMortgageInDefault,
-                'defaulted_exposure_provision_at_least_twenty_percent':
-                    draft.defaultedExposureProvisionAtLeastTwentyPercent,
-                'enterprise_exceeds_bceao_degradation_threshold':
-                    draft.enterpriseExceedsBceaoDegradationThreshold,
-                'enterprise_prudential_procedure':
-                    draft.enterprisePrudentialProcedure,
-                'enterprise_investment_firm_without_banking_law':
-                    draft.enterpriseInvestmentFirmWithoutBankingLaw,
-                'crm_type': draft.backendCrmType,
-                'crm_coverage_percent': _effectiveCrmCoverage(draft),
-                'crm_details': draft.crmDetailsJson,
-                'comment': draft.comment,
-              })
-              as Map,
+            'id': id,
+            'analysis_date':
+                draft.analysisDate.toIso8601String().split('T').first,
+            'grant_date': draft.grantDate?.toIso8601String().split('T').first,
+            'maturity_date':
+                draft.maturityDate?.toIso8601String().split('T').first,
+            'counterparty_name': draft.counterpartyName,
+            'country': draft.country,
+            'country_rating': draft.countryRating,
+            'category': draft.backendCategory,
+            'rating': draft.rating,
+            'gross_amount': draft.grossAmount,
+            'currency': draft.currency,
+            'status': draft.status,
+            'sovereign_special_case': draft.sovereignSpecialCase,
+            'sovereign_preferential_zero_weight':
+                draft.sovereignPreferentialZeroWeight,
+            'sovereign_oce_established': draft.sovereignOceEstablished,
+            'sovereign_oce_note': draft.sovereignOceNote,
+            'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
+            'public_body_non_public_activity':
+                draft.publicBodyFinancesNonPublicActivity,
+            'bmd_high_quality_case': draft.bmdHighQualityCase,
+            'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
+            'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
+            'bmd_listed_institution_fcfa_case':
+                draft.bmdListedInstitutionFcfaCase,
+            'bank_institution_case': draft.bankInstitutionCase,
+            'other_asset_type': draft.otherAssetType,
+            'off_balance_risk_level': draft.offBalanceRiskLevel,
+            'retail_eligibility_criteria_satisfied':
+                draft.retailEligibilityCriteriaSatisfied,
+            'residential_mortgage_eligible': draft.residentialMortgageEligible,
+            'commercial_real_estate_eligible':
+                draft.commercialRealEstateEligible,
+            'defaulted_exposure_initial_risk_weight':
+                draft.defaultedExposureInitialRiskWeight,
+            'defaulted_exposure_residential_mortgage_in_default':
+                draft.defaultedExposureResidentialMortgageInDefault,
+            'defaulted_exposure_provision_at_least_twenty_percent':
+                draft.defaultedExposureProvisionAtLeastTwentyPercent,
+            'enterprise_exceeds_bceao_degradation_threshold':
+                draft.enterpriseExceedsBceaoDegradationThreshold,
+            'enterprise_prudential_procedure':
+                draft.enterprisePrudentialProcedure,
+            'enterprise_investment_firm_without_banking_law':
+                draft.enterpriseInvestmentFirmWithoutBankingLaw,
+            'crm_type': draft.backendCrmType,
+            'crm_coverage_percent': _effectiveCrmCoverage(draft),
+            'crm_details': draft.crmDetailsJson,
+            'comment': draft.comment,
+          }) as Map,
         );
         _notifyPortfolioChanged();
         return ExposureRecord.fromJson(response);
@@ -750,10 +717,9 @@ class RwaApiService {
       try {
         final response = Map<String, dynamic>.from(
           await _client.post('/expositions/delete', {
-                'ids': normalizedIds,
-                'reindex_ids': reindexIds,
-              })
-              as Map,
+            'ids': normalizedIds,
+            'reindex_ids': reindexIds,
+          }) as Map,
         );
         _notifyPortfolioChanged();
         return response;
@@ -775,9 +741,8 @@ class RwaApiService {
     _exposures.removeWhere(
       (item) => normalizedIds.contains((item['id'] ?? '').toString()),
     );
-    final renumberedIds = reindexIds
-        ? _reindexMockExposureIds()
-        : <String, String>{};
+    final renumberedIds =
+        reindexIds ? _reindexMockExposureIds() : <String, String>{};
     _notifyPortfolioChanged();
     return {
       'requested_ids': normalizedIds,
@@ -832,12 +797,11 @@ class RwaApiService {
       try {
         final response = Map<String, dynamic>.from(
           await _client.uploadBytes(
-                '/expositions/import/upload',
-                bytes,
-                filename,
-                fields: {'mode': mode},
-              )
-              as Map<String, dynamic>,
+            '/expositions/import/upload',
+            bytes,
+            filename,
+            fields: {'mode': mode},
+          ) as Map<String, dynamic>,
         );
         _notifyPortfolioChanged();
         return response;
@@ -869,11 +833,10 @@ class RwaApiService {
       try {
         return Map<String, dynamic>.from(
           await _client.uploadBytes(
-                '/expositions/import/upload/inspect',
-                bytes,
-                filename,
-              )
-              as Map,
+            '/expositions/import/upload/inspect',
+            bytes,
+            filename,
+          ) as Map,
         );
       } catch (_) {
         if (!enableOfflineFallback) rethrow;
@@ -938,9 +901,8 @@ class RwaApiService {
     }
 
     // Les données mock sont converties avant agrégation pour rester proches du mode réel.
-    final items = _offBalance
-        .map((item) => OffBalanceRecord.fromJson(item))
-        .toList();
+    final items =
+        _offBalance.map((item) => OffBalanceRecord.fromJson(item)).toList();
     return _withDelay(
       OffBalanceModuleData(
         items: items,
@@ -963,8 +925,7 @@ class RwaApiService {
 
     // Quelques règles simples suffisent ici pour produire un scénario crédible côté UI.
     final ccf = _lookupCcf(draft.engagementType);
-    final category =
-        draft.counterpartyId.startsWith('CP002') ||
+    final category = draft.counterpartyId.startsWith('CP002') ||
             draft.counterpartyId.startsWith('CP006')
         ? 'Banques'
         : 'Entreprises';
@@ -1032,7 +993,7 @@ class RwaApiService {
       averageCoverage: items.isEmpty
           ? 0.0
           : items.fold<double>(0.0, (sum, item) => sum + item.coverageRatio) /
-                items.length,
+              items.length,
     );
     return _withDelay(
       CrmModuleData(highlight: highlight, items: items, summary: summary),
@@ -1048,9 +1009,8 @@ class RwaApiService {
     // Les trois tables sont servies ensemble car elles alimentent tous les écrans métiers.
     return _withDelay(
       ReferentielsModuleData(
-        riskWeights: _riskWeights
-            .map((item) => RiskWeightRow.fromJson(item))
-            .toList(),
+        riskWeights:
+            _riskWeights.map((item) => RiskWeightRow.fromJson(item)).toList(),
         ccfTable: _ccfTable.map((item) => CcfRow.fromJson(item)).toList(),
         ratings: _ratings.map((item) => RatingRow.fromJson(item)).toList(),
       ),
@@ -1130,9 +1090,8 @@ class RwaApiService {
 
   DashboardSnapshot _buildMockDashboard() {
     // Les modèles sont d'abord reconstruits pour réutiliser les mêmes objets que l'UI.
-    final exposureModels = _exposures
-        .map((item) => ExposureRecord.fromJson(item))
-        .toList();
+    final exposureModels =
+        _exposures.map((item) => ExposureRecord.fromJson(item)).toList();
     final valuationDate = _resolveValuationDate(exposureModels);
     // Les agrégats principaux servent ensuite à tous les KPI et graphiques.
     final gross = exposureModels.fold<double>(
@@ -1552,21 +1511,19 @@ class RwaApiService {
   }
 
   Map<String, String> _reindexMockExposureIds() {
-    final orderedIds =
-        _exposures
-            .map((item) => (item['id'] ?? '').toString())
-            .where((identifier) {
-              if (!identifier.startsWith('CP')) {
-                return false;
-              }
-              return int.tryParse(identifier.substring(2)) != null;
-            })
-            .toList(growable: false)
-          ..sort((left, right) {
-            final leftIndex = int.parse(left.substring(2));
-            final rightIndex = int.parse(right.substring(2));
-            return leftIndex.compareTo(rightIndex);
-          });
+    final orderedIds = _exposures
+        .map((item) => (item['id'] ?? '').toString())
+        .where((identifier) {
+      if (!identifier.startsWith('CP')) {
+        return false;
+      }
+      return int.tryParse(identifier.substring(2)) != null;
+    }).toList(growable: false)
+      ..sort((left, right) {
+        final leftIndex = int.parse(left.substring(2));
+        final rightIndex = int.parse(right.substring(2));
+        return leftIndex.compareTo(rightIndex);
+      });
 
     final renumberedIds = <String, String>{};
     for (var index = 0; index < orderedIds.length; index++) {
@@ -1668,18 +1625,17 @@ class RwaApiService {
       );
     }
 
-    final entries =
-        totals.entries
-            .map(
-              (entry) => DistributionEntry(
-                label: entry.key,
-                amount: entry.value,
-                percentage: global == 0 ? 0.0 : entry.value / global,
-              ),
-            )
-            .toList()
-          // Les pays sont ensuite triés pour ne conserver que les plus contributeurs.
-          ..sort((a, b) => b.amount.compareTo(a.amount));
+    final entries = totals.entries
+        .map(
+          (entry) => DistributionEntry(
+            label: entry.key,
+            amount: entry.value,
+            percentage: global == 0 ? 0.0 : entry.value / global,
+          ),
+        )
+        .toList()
+      // Les pays sont ensuite triés pour ne conserver que les plus contributeurs.
+      ..sort((a, b) => b.amount.compareTo(a.amount));
 
     return entries.take(5).toList();
   }
@@ -1772,12 +1728,10 @@ class RwaApiService {
       for (var index = 0; index < exposures.length; index++) {
         final exposure = exposures[index];
         // Chaque catégorie reçoit un rythme d'amortissement simple pour matérialiser la décroissance.
-        final pace =
-            _amortizationPaceForCategory(exposure.categoryLabel) +
+        final pace = _amortizationPaceForCategory(exposure.categoryLabel) +
             (index % 3) * 0.006;
-        final remainingFactor = (1 - (pace * monthIndex))
-            .clamp(0.42, 1.0)
-            .toDouble();
+        final remainingFactor =
+            (1 - (pace * monthIndex)).clamp(0.42, 1.0).toDouble();
         projectedRwa += exposure.rwa * remainingFactor;
       }
 

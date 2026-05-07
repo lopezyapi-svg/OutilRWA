@@ -1503,21 +1503,6 @@ class FinancedCrmSnapshot {
 
 class ExposureCrmDetails {
   const ExposureCrmDetails({
-<<<<<<< HEAD
-    required this.mode,
-    required this.label,
-    required this.collateralValue,
-    required this.issuerType,
-    required this.issuerRating,
-    required this.maturityBucket,
-    required this.fxHaircut,
-    required this.guarantorName,
-    required this.guarantorCategory,
-    required this.guarantorRating,
-    required this.guarantorCountry,
-    required this.guarantorCountryRating,
-    required this.coveragePercent,
-=======
     this.mode = 'Aucune',
     this.label = 'Aucune',
     this.collateralValue = 0,
@@ -1545,8 +1530,9 @@ class ExposureCrmDetails {
     this.guarantorName = '',
     this.guarantorCategory = '',
     this.guarantorRating = '',
+    this.guarantorCountry = '',
+    this.guarantorCountryRating = '',
     this.coveragePercent = 0,
->>>>>>> 22f62014f09a5e8febb394d05b890fb16a724dc8
   });
 
   final String mode;
@@ -1632,7 +1618,8 @@ class ExposureCrmDetails {
       guarantorCategory: (json?['guarantor_category'] ?? '') as String,
       guarantorRating: (json?['guarantor_rating'] ?? '') as String,
       guarantorCountry: (json?['guarantor_country'] ?? '') as String,
-      guarantorCountryRating: (json?['guarantor_country_rating'] ?? '') as String,
+      guarantorCountryRating:
+          (json?['guarantor_country_rating'] ?? '') as String,
       coveragePercent: ((json?['coverage_percent'] ??
               json?['crm_coverage_percent'] ??
               0) as num)
@@ -2133,14 +2120,11 @@ class ExposureDraft {
       'guarantor_name': guarantorName,
       'guarantor_category': guarantorCategory.prudentialLabel,
       'guarantor_rating': guarantorRating,
-<<<<<<< HEAD
       'guarantor_country': guarantorCountry,
       'guarantor_country_rating': guarantorCountryRating,
-      'coverage_percent': crmCoveragePercent,
-=======
-      'coverage_percent':
-          financedSnapshot?.coveragePercent ?? crmCoveragePercent,
->>>>>>> 22f62014f09a5e8febb394d05b890fb16a724dc8
+      'coverage_percent': crmMode == 'CRM financee'
+          ? financedSnapshot?.coveragePercent ?? crmCoveragePercent
+          : crmCoveragePercent,
     };
   }
 }

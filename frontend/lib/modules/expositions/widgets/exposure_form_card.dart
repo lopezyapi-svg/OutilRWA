@@ -453,13 +453,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   late String _maturityBucket;
   late String _guarantorCategoryCode;
   late String _guarantorRating;
-<<<<<<< HEAD
   late String _guarantorCountryRating;
-=======
   late bool _convertibleMainIndex;
   late double _opcvmHighestHaircut;
   List<FinancedCrmBasketItem> _basketItems = const [];
->>>>>>> 22f62014f09a5e8febb394d05b890fb16a724dc8
   DateTime? _grantDate;
   DateTime? _maturityDate;
 
@@ -620,6 +617,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _status = draft?.status ?? 'Active';
     _crmMode = draft?.crmMode ?? 'Aucune';
     _lastSelectedCrmMode = _crmMode == 'Aucune' ? 'CRM financee' : _crmMode;
+    if (_isOffBalanceCategory && _crmMode != 'Aucune') {
+      _lastSelectedCrmMode = _crmMode;
+      _crmMode = 'Aucune';
+    }
     _crmType = _nonFinancedCrmTypes.contains(draft?.crmType)
         ? draft!.crmType
         : 'Garantie etatique';
@@ -654,7 +655,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       draft?.guarantorRating,
       preferred: 'AAA',
     );
-<<<<<<< HEAD
     _guarantorCountryRating = _resolveRatingValue(
       draft?.guarantorCountryRating,
       preferred: 'Non noté',
@@ -664,11 +664,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _coveredAmountController = TextEditingController(
       text: coveredAmt > 0 ? coveredAmt.toStringAsFixed(0) : '',
     );
-=======
-    _coverage = draft?.crmCoveragePercent ?? 0.0;
     _syncFinancedCollateralCurrencyToExposureIfNeeded();
     _syncBasketCollateralController();
->>>>>>> 22f62014f09a5e8febb394d05b890fb16a724dc8
   }
 
   @override
@@ -728,8 +725,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }
 
   double get _computedCoverage {
-    final gross = double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
-    final covered = double.tryParse(_coveredAmountController.text.replaceAll(',', '.')) ?? 0.0;
+    final gross =
+        double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
+    final covered =
+        double.tryParse(_coveredAmountController.text.replaceAll(',', '.')) ??
+            0.0;
     return gross > 0 ? (covered / gross).clamp(0.0, 1.0) : 0.0;
   }
 
@@ -1443,27 +1443,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 10,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  summaryAccentStart,
-                  summaryAccentEnd,
-                ],
-              ),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-              ),
-            ),
-          ),
-          Padding(
+      child: LayoutBuilder(
+        builder: (context, outerConstraints) {
+          final hasBoundedOuterHeight = outerConstraints.maxHeight.isFinite;
+          final summaryBody = Padding(
             padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -1476,11 +1459,27 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     ? availableWidth
                     : (availableWidth - spacing * (columns - 1)) / columns;
                 final hasBoundedHeight = constraints.maxHeight.isFinite;
+                final kpiGrid = Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: [
+                    for (final item in items)
+                      SizedBox(
+                        width: item.fullSpan ? availableWidth : itemWidth,
+                        child: _HeroKpiCard(
+                          label: item.label,
+                          value: item.value,
+                          icon: item.icon,
+                          accent: item.accent,
+                          highlighted: item.highlighted,
+                          compact: true,
+                        ),
+                      ),
+                  ],
+                );
 
-                return ConstrainedBox(
-                  constraints: hasBoundedHeight
-                      ? BoxConstraints(minHeight: constraints.maxHeight)
-                      : const BoxConstraints(),
+                return SizedBox(
+                  height: hasBoundedHeight ? constraints.maxHeight : null,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1540,31 +1539,48 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      Wrap(
-                        spacing: spacing,
-                        runSpacing: spacing,
-                        children: [
-                          for (final item in items)
-                            SizedBox(
-                              width: item.fullSpan ? availableWidth : itemWidth,
-                              child: _HeroKpiCard(
-                                label: item.label,
-                                value: item.value,
-                                icon: item.icon,
-                                accent: item.accent,
-                                compact: true,
-                              ),
-                            ),
-                        ],
-                      ),
-                      if (hasBoundedHeight) const Spacer(),
+                      if (hasBoundedHeight)
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: kpiGrid,
+                          ),
+                        )
+                      else
+                        kpiGrid,
                     ],
                   ),
                 );
               },
             ),
-          ),
-        ],
+          );
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 10,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      summaryAccentStart,
+                      summaryAccentEnd,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(8),
+                    topRight: Radius.circular(8),
+                  ),
+                ),
+              ),
+              if (hasBoundedOuterHeight)
+                Expanded(child: summaryBody)
+              else
+                summaryBody,
+            ],
+          );
+        },
       ),
     );
   }
@@ -1867,6 +1883,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           content: _buildCategoryStepBody(context),
         );
       case 3:
+        final showCrmQuestion = !_isOffBalanceCategory;
         return _FinancialDataStepScreen(
           title: _stepMetas[3].title,
           subtitle: _stepMetas[3].subtitle,
@@ -1919,28 +1936,29 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 }),
               ),
             ),
-            _buildFieldCard(
-              context: context,
-              title: 'CRM existe ?',
-              subtitle: 'Presence d une couverture',
-              icon: Icons.handshake_outlined,
-              child: DropdownButtonFormField<String>(
-                value: _crmExists ? 'OUI' : 'NON',
-                decoration: _fieldDecoration(context),
-                items: const ['OUI', 'NON']
-                    .map(
-                      (item) => DropdownMenuItem(
-                        value: item,
-                        child: Text(item),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  final nextValue = value ?? 'NON';
-                  _setCrmExists(nextValue == 'OUI');
-                },
+            if (showCrmQuestion)
+              _buildFieldCard(
+                context: context,
+                title: 'CRM existe ?',
+                subtitle: 'Presence d une couverture',
+                icon: Icons.handshake_outlined,
+                child: DropdownButtonFormField<String>(
+                  value: _crmExists ? 'OUI' : 'NON',
+                  decoration: _fieldDecoration(context),
+                  items: const ['OUI', 'NON']
+                      .map(
+                        (item) => DropdownMenuItem(
+                          value: item,
+                          child: Text(item),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    final nextValue = value ?? 'NON';
+                    _setCrmExists(nextValue == 'OUI');
+                  },
+                ),
               ),
-            ),
           ],
           helper: const SizedBox.shrink(),
         );
@@ -2162,6 +2180,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _enterpriseExceedsBceaoDegradationThreshold = null;
         _enterprisePrudentialProcedure = null;
         _enterpriseInvestmentFirmWithoutBankingLaw = null;
+      }
+      if (_isOffBalanceCategory) {
+        if (_crmMode != 'Aucune') {
+          _lastSelectedCrmMode = _crmMode;
+        }
+        _crmMode = 'Aucune';
+        _crmSelectionStage = true;
       }
       if ((_isBmdCategory || _isBankInstitutionCategory) &&
           !prudentialRatings.contains(_rating)) {
@@ -3631,6 +3656,34 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       'CRM non financee' => 'Non financee',
       _ => 'Aucune',
     };
+    final eadKpi = _KpiData(
+      label: context.tr('EAD'),
+      value: compactCurrencyForDisplay(
+        preview.ead,
+        fromCurrency: _currency,
+        toCurrency: displayCurrency,
+      ),
+      icon: Icons.account_balance_wallet_outlined,
+      accent: AppTheme.accent,
+    );
+    final rwaKpi = _KpiData(
+      label: context.tr('RWA'),
+      value: compactCurrencyForDisplay(
+        preview.rwa,
+        fromCurrency: _currency,
+        toCurrency: displayCurrency,
+      ),
+      icon: Icons.analytics_outlined,
+      accent: const Color(0xFF3B82F6),
+      highlighted: true,
+      fullSpan: isOffBalance,
+    );
+    final creditCoverage = (double.tryParse(_coveredAmountController.text
+                .replaceAll(' ', '')
+                .replaceAll(',', '.')) ??
+            0.0)
+        .clamp(0.0, double.infinity);
+
     return [
       _KpiData(
         label: context.tr('Contrepartie'),
@@ -3678,16 +3731,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         icon: Icons.payments_outlined,
         accent: const Color(0xFF0284C7),
       ),
-      _KpiData(
-        label: context.tr('EAD'),
-        value: compactCurrencyForDisplay(
-          preview.ead,
-          fromCurrency: _currency,
-          toCurrency: displayCurrency,
-        ),
-        icon: Icons.account_balance_wallet_outlined,
-        accent: AppTheme.accent,
-      ),
+      if (_crmMode != 'CRM non financee') eadKpi,
       if (isOffBalance)
         _KpiData(
           label: context.tr('Niveau de risque'),
@@ -3702,32 +3746,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         accent:
             isOffBalance ? const Color(0xFF2563EB) : const Color(0xFFF59E0B),
       ),
-      _KpiData(
-        label: context.tr('RWA'),
-        value: compactCurrencyForDisplay(
-          preview.rwa,
-          fromCurrency: _currency,
-          toCurrency: displayCurrency,
-        ),
-        icon: Icons.analytics_outlined,
-        accent: const Color(0xFF0F766E),
-        fullSpan: isOffBalance,
-      ),
+      if (_crmMode != 'CRM non financee') rwaKpi,
       if (_crmMode == 'CRM non financee') ...[
-        _KpiData(
-          label: context.tr('Montant du credit'),
-          value: compactCurrencyForDisplay(
-            preview.ead,
-            fromCurrency: _currency,
-            toCurrency: displayCurrency,
-          ),
-          icon: Icons.account_balance_outlined,
-          accent: const Color(0xFF2563EB),
-        ),
         _KpiData(
           label: context.tr('% Couverture'),
           value: _formatPercent(preview.ead > 0
-              ? ((double.tryParse(_coveredAmountController.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0.0) / preview.ead).clamp(0.0, 1.0)
+              ? (creditCoverage / preview.ead).clamp(0.0, 1.0)
               : 0.0),
           icon: Icons.pie_chart_outline_rounded,
           accent: const Color(0xFF0891B2),
@@ -3735,26 +3759,22 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _KpiData(
           label: context.tr('Part non couverte'),
           value: compactCurrencyForDisplay(
-            (preview.ead - (double.tryParse(_coveredAmountController.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0.0)).clamp(0.0, double.infinity),
+            (preview.ead - creditCoverage).clamp(0.0, double.infinity),
             fromCurrency: _currency,
             toCurrency: displayCurrency,
           ),
           icon: Icons.remove_circle_outline_rounded,
           accent: const Color(0xFFDC2626),
         ),
+        eadKpi,
+        rwaKpi,
       ],
     ];
   }
 
   Widget _buildCrmDynamicBody(BuildContext context) {
     if (_isOffBalanceCategory) {
-      return _InfoBanner(
-        icon: Icons.rule_folder_outlined,
-        accent: const Color(0xFF2563EB),
-        text: context.tr(
-          'Le FCEC est déterminé automatiquement selon le niveau de risque hors bilan sélectionné.',
-        ),
-      );
+      return const SizedBox.shrink();
     }
 
     if (_crmMode == 'Aucune') {
@@ -3914,7 +3934,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               hint: context.tr('Montant couvert'),
             ),
             onChanged: (_) => setState(() {}),
-            validator: _crmMode == 'CRM non financee' ? _requiredValidator : null,
+            validator:
+                _crmMode == 'CRM non financee' ? _requiredValidator : null,
           ),
         ),
       ],
@@ -5072,6 +5093,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _fxHaircutController.text =
           ((draft?.fxHaircut ?? 0) * 100).toStringAsFixed(2);
       _guarantorNameController.text = draft?.guarantorName ?? '';
+      _guarantorCountryController.text = draft?.guarantorCountry ?? '';
       _categoryCode =
           exposureCategories.any((item) => item.code == draft?.categoryCode)
               ? draft!.categoryCode
@@ -5188,6 +5210,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _status = draft?.status ?? 'Active';
       _crmMode = draft?.crmMode ?? 'Aucune';
       _lastSelectedCrmMode = _crmMode == 'Aucune' ? 'CRM financee' : _crmMode;
+      if (_categoryCode == 'l' && _crmMode != 'Aucune') {
+        _lastSelectedCrmMode = _crmMode;
+        _crmMode = 'Aucune';
+      }
       _crmType = _nonFinancedCrmTypes.contains(draft?.crmType)
           ? draft!.crmType
           : 'Garantie etatique';
@@ -5226,8 +5252,15 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _coerceGuarantorRating(draft?.guarantorRating),
         preferred: 'AAA',
       );
+      _guarantorCountryRating = _resolveRatingValue(
+        draft?.guarantorCountryRating,
+        preferred: 'Non noté',
+      );
+      _syncFinancedCollateralCurrencyToExposureIfNeeded();
+      _syncBasketCollateralController();
       final resetGrossAmt = draft?.grossAmount ?? 0.0;
-      final resetCoveredAmt = (draft?.crmCoveragePercent ?? 0.0) * resetGrossAmt;
+      final resetCoveredAmt =
+          (draft?.crmCoveragePercent ?? 0.0) * resetGrossAmt;
       _coveredAmountController.text =
           resetCoveredAmt > 0 ? resetCoveredAmt.toStringAsFixed(0) : '';
     });
@@ -5589,7 +5622,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           : '',
       guarantorCountryRating:
           _crmMode == 'CRM non financee' ? _guarantorCountryRating : '',
-      crmCoveragePercent: _crmMode == 'CRM non financee' ? _computedCoverage : 0.0,
+      crmCoveragePercent:
+          _crmMode == 'CRM non financee' ? _computedCoverage : 0.0,
       comment: comment,
       analysisDate: widget.initialDraft?.analysisDate ?? DateTime.now(),
       grantDate: _grantDate,
@@ -5648,6 +5682,7 @@ class _KpiData {
     required this.value,
     required this.icon,
     required this.accent,
+    this.highlighted = false,
     this.fullSpan = false,
   });
 
@@ -5655,6 +5690,7 @@ class _KpiData {
   final String value;
   final IconData icon;
   final Color accent;
+  final bool highlighted;
   final bool fullSpan;
 }
 
@@ -6564,6 +6600,7 @@ class _HeroKpiCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.accent,
+    this.highlighted = false,
     this.compact = false,
   });
 
@@ -6571,11 +6608,13 @@ class _HeroKpiCard extends StatelessWidget {
   final String value;
   final IconData icon;
   final Color accent;
+  final bool highlighted;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final isDark = _isExposureDark(context);
+    final gradientBase = isDark ? const Color(0xFF0F172A) : Colors.white;
     final cardPadding = compact
         ? const EdgeInsets.fromLTRB(7, 7, 7, 7)
         : const EdgeInsets.fromLTRB(9, 8, 9, 8);
@@ -6583,28 +6622,57 @@ class _HeroKpiCard extends StatelessWidget {
     final iconBoxSize = compact ? 20.0 : 22.0;
     final labelFontSize = compact ? 7.6 : 8.2;
     final valueFontSize = compact ? 9.2 : 10.2;
-    final cardBackground = compact
-        ? (isDark ? const Color(0xFF172740) : const Color(0xFFF9FBFF))
-        : (isDark ? const Color(0xFF14233D) : Colors.white);
-    final cardBorderColor = compact
-        ? (isDark ? const Color(0xFF324A6A) : const Color(0xFFC9D8F3))
-        : _wizardBorderColor(context);
-    final cardShadowColor = compact
-        ? (isDark ? const Color(0x22000000) : const Color(0x160B3D91))
-        : (isDark ? const Color(0x22000000) : const Color(0x080F172A));
+    final highlightBackground =
+        isDark ? const Color(0xFF15345F) : const Color(0xFFE1EEFF);
+    final highlightBorderColor =
+        isDark ? const Color(0xFF5C95F2) : const Color(0xFF78AFFF);
+    final highlightLabelColor =
+        isDark ? const Color(0xFFF1D29A) : const Color(0xFFB56A1E);
+    final highlightValueColor =
+        isDark ? const Color(0xFFFFE2B8) : const Color(0xFF8A4B12);
+    final cardBackground = highlighted
+        ? highlightBackground
+        : compact
+            ? (isDark ? const Color(0xFF172740) : const Color(0xFFF9FBFF))
+            : (isDark ? const Color(0xFF14233D) : Colors.white);
+    final cardGradient = highlighted
+        ? LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.lerp(accent, gradientBase, isDark ? 0.62 : 0.46)!,
+              Color.lerp(accent, gradientBase, isDark ? 0.84 : 0.74)!,
+            ],
+          )
+        : null;
+    final cardBorderColor = highlighted
+        ? Color.lerp(highlightBorderColor, accent, isDark ? 0.58 : 0.82)!
+        : compact
+            ? (isDark ? const Color(0xFF324A6A) : const Color(0xFFC9D8F3))
+            : _wizardBorderColor(context);
+    final cardShadowColor = highlighted
+        ? accent.withOpacity(isDark ? 0.16 : 0.12)
+        : compact
+            ? (isDark ? const Color(0x22000000) : const Color(0x160B3D91))
+            : (isDark ? const Color(0x22000000) : const Color(0x080F172A));
     final cardRadius = compact ? 6.0 : _exposureFormRadius;
-    final labelColor = compact && !isDark
-        ? const Color(0xFF5B6F98)
-        : _wizardMutedColor(context);
-    final valueColor = compact && !isDark
-        ? const Color(0xFF1B2559)
-        : _wizardBodyTitleColor(context);
+    final labelColor = highlighted
+        ? highlightLabelColor
+        : compact && !isDark
+            ? const Color(0xFF5B6F98)
+            : _wizardMutedColor(context);
+    final valueColor = highlighted
+        ? highlightValueColor
+        : compact && !isDark
+            ? const Color(0xFF1B2559)
+            : _wizardBodyTitleColor(context);
 
     return Container(
       padding: cardPadding,
       constraints: BoxConstraints(minHeight: compact ? 50 : 58),
       decoration: BoxDecoration(
         color: cardBackground,
+        gradient: cardGradient,
         borderRadius: BorderRadius.circular(cardRadius),
         border: Border.all(
           color: cardBorderColor,
@@ -6625,7 +6693,22 @@ class _HeroKpiCard extends StatelessWidget {
             width: iconBoxSize,
             height: iconBoxSize,
             decoration: BoxDecoration(
-              color: accent.withAlpha(compact ? 24 : 26),
+              color: highlighted ? null : accent.withAlpha(compact ? 24 : 26),
+              gradient: highlighted
+                  ? LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        accent.withOpacity(isDark ? 0.34 : 0.24),
+                        accent.withOpacity(isDark ? 0.20 : 0.12),
+                      ],
+                    )
+                  : null,
+              border: highlighted
+                  ? Border.all(
+                      color: accent.withOpacity(isDark ? 0.22 : 0.14),
+                    )
+                  : null,
               borderRadius: BorderRadius.circular(cardRadius),
             ),
             child: Icon(icon, size: iconSize, color: accent),
