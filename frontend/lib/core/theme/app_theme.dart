@@ -73,7 +73,7 @@ class AppTheme {
         color: surfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(radius)),
+          borderRadius: const BorderRadius.all(Radius.circular(radius)),
           side: BorderSide(color: borderColor),
         ),
       ),
@@ -123,14 +123,14 @@ class AppTheme {
           borderSide: const BorderSide(color: danger),
         ),
       ),
-      scrollbarTheme: ScrollbarThemeData(
+      scrollbarTheme: const ScrollbarThemeData(
         radius: Radius.circular(999),
         minThumbLength: 36.0,
-        thumbColor: const WidgetStatePropertyAll<Color?>(Color(0xCC234A84)),
-        trackColor: const WidgetStatePropertyAll<Color?>(Colors.transparent),
+        thumbColor: WidgetStatePropertyAll<Color?>(Color(0xCC234A84)),
+        trackColor: WidgetStatePropertyAll<Color?>(Colors.transparent),
         trackBorderColor:
-            const WidgetStatePropertyAll<Color?>(Colors.transparent),
-        thickness: const WidgetStatePropertyAll<double?>(3.0),
+            WidgetStatePropertyAll<Color?>(Colors.transparent),
+        thickness: WidgetStatePropertyAll<double?>(3.0),
         crossAxisMargin: 2.0,
         mainAxisMargin: 6.0,
       ),

@@ -12,6 +12,16 @@ String _normalizeExposureLabel(String value) {
       .replaceAll('ê', 'e')
       .replaceAll('à', 'a')
       .replaceAll('â', 'a')
+      .replaceAll('î', 'i')
+      .replaceAll('ï', 'i')
+      .replaceAll('ô', 'o')
+      .replaceAll('û', 'u')
+      .replaceAll('ç', 'c')
+      .replaceAll('é', 'e')
+      .replaceAll('è', 'e')
+      .replaceAll('ê', 'e')
+      .replaceAll('à', 'a')
+      .replaceAll('â', 'a')
       .replaceAll('ô', 'o')
       .replaceAll('î', 'i')
       .replaceAll('ï', 'i')
@@ -1113,7 +1123,7 @@ double lookupPrudentialRiskWeight(
 const List<String> uemoaCountries = [
   'Benin',
   'Burkina Faso',
-  'Cote d Ivoire',
+  "Cote d'Ivoire",
   'Guinee-Bissau',
   'Mali',
   'Niger',
@@ -1361,6 +1371,19 @@ String _normalizeCountry(String value) {
       .replaceAll('ç', 'c')
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
+}
+
+String canonicalCountryName(String? value, {String fallback = ''}) {
+  final normalized = _normalizeCountry(value ?? '');
+  if (normalized.isEmpty) {
+    return fallback;
+  }
+  for (final country in worldCountries) {
+    if (_normalizeCountry(country) == normalized) {
+      return country;
+    }
+  }
+  return fallback;
 }
 
 String computeZone(String country) {
@@ -1698,7 +1721,7 @@ class ExposureRecord {
     required this.otherAssetType,
     required this.offBalanceRiskLevel,
     required this.retailEligibilityCriteriaSatisfied,
-    required bool? residentialMortgageEligible,
+    required this.residentialMortgageEligible,
     required bool? commercialRealEstateEligible,
     required this.enterpriseExceedsBceaoDegradationThreshold,
     required this.enterprisePrudentialProcedure,
@@ -1706,8 +1729,7 @@ class ExposureRecord {
     required this.defaultedExposureInitialRiskWeight,
     required this.defaultedExposureResidentialMortgageInDefault,
     required this.defaultedExposureProvisionAtLeastTwentyPercent,
-  })  : residentialMortgageEligible = residentialMortgageEligible,
-        commercialRealEstateEligible = commercialRealEstateEligible;
+  })  : commercialRealEstateEligible = commercialRealEstateEligible;
 
   final String id;
   final DateTime analysisDate;
@@ -2648,7 +2670,9 @@ String _normalizeMaturityBucket(String value) {
   if (normalized == '1-3ans' || normalized == '1a3ans') return '1-3 ans';
   if (normalized == '3-5ans' ||
       normalized == '1a5ans' ||
-      normalized == '1-5ans') return '3-5 ans';
+      normalized == '1-5ans') {
+    return '3-5 ans';
+  }
   if (normalized == '5-10ans') return '5-10 ans';
   if (normalized == '>10ans' || normalized == '>5ans') return '>10 ans';
   return value;

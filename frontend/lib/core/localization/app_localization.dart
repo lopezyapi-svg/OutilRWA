@@ -234,10 +234,19 @@ const Map<String, String> _englishTranslations = {
   'Indicateurs attendus': 'Expected indicators',
   'Fermer': 'Close',
   'Exposition totale brute': 'Gross exposure',
+  'Risque residuel': 'Residual risk',
+  'Exposition brute - Garanties': 'Gross exposure - Guarantees',
   'RWA total': 'Total RWA',
   'Capital minimum requis': 'Minimum capital required',
   'Ratio de solvabilite': 'Solvency ratio',
   'Densité RWA': 'RWA density',
+  'Taux de défaut': 'Default rate',
+  'Encours de défaut / Exposition brute': 'Defaulted outstanding / Gross exposure',
+  'Densité RWA du portefeuille': 'Portfolio RWA density',
+  'RWA total / Exposition totale brute': 'Total RWA / Gross exposure',
+  'RWA / Exposition brute': 'RWA / Gross exposure',
+  'Risque faible': 'Low risk',
+  'Risque moyen': 'Medium risk',
   'Profil de maturité des RWA': 'RWA maturity profile',
   "Vue prévisionnelle de l'amortissement et de la libération projetés des RWA.":
       'Forward view of projected amortization and RWA release.',
@@ -423,7 +432,6 @@ const Map<String, String> _englishTranslations = {
   'LEADER DE L\'ALM EN AFRIQUE SUBSAHARIENNE': 'SUB-SAHARAN AFRICA ALM LEADER',
   'Recherche rapide': 'Quick search',
   'Erreur: {{error}}': 'Error: {{error}}',
-  'Risque moyen': 'Average risk',
   'Trajectoire RWA': 'RWA trajectory',
   'Cette période concentre la baisse la plus marquée de la trajectoire. Le stock RWA se détend plus vite, ce qui accélère la libération du capital réglementaire.':
       'This period concentrates the sharpest decline in the trajectory. The RWA stock eases faster, which accelerates regulatory capital release.',
@@ -502,8 +510,8 @@ const Map<String, String> _englishTranslations = {
   '(e) entreprises': '(e) corporates',
   '(f) clientele de detail': '(f) retail clients',
   "(g) prêts garantis par l'immo R":
-      "(g) residential real-estate secured loans",
-  "(h) prêts garantis par l'immo C": "(h) commercial real-estate secured loans",
+      '(g) residential real-estate secured loans',
+  "(h) prêts garantis par l'immo C": '(h) commercial real-estate secured loans',
   '(i) creances en souffrance': '(i) past-due exposures',
   '(j) creances a risque eleve': '(j) high-risk exposures',
   '(j) créances à risque élevé': '(j) high-risk exposures',
@@ -566,7 +574,7 @@ const Map<String, String> _englishTranslations = {
   'L’exposition concerne-t-elle l’une des institutions suivantes : BIRD, SFI, BAsD, BAD, BERD, BEI, FEI, BNI, BDC, BIsD, BDCE, AMGI ou BOAD libellée et financée en FCFA ?':
       'Does this exposure concern one of the following institutions denominated and funded in FCFA: IBRD, IFC, AfDB, ADB, EBRD, EIB, EIF, NIB, CDB, IsDB, ECDB, MIGA or BOAD?',
   "BIRD : Banque internationale pour la reconstruction et le développement\nSFI : Société financière internationale\nBAsD : Banque asiatique de développement\nBAD : Banque africaine de développement\nBERD : Banque européenne pour la reconstruction et le développement\nBEI : Banque européenne d'investissement\nFEI : Fonds européen d'investissement\nBNI : Banque nordique d'investissement\nBDC : Banque de développement des Caraïbes\nBIsD : Banque islamique de développement\nBDCE : Banque de développement des Caraïbes orientales\nAMGI : Agence multilatérale de garantie des investissements\nBOAD : Banque ouest-africaine de développement":
-      "IBRD: International Bank for Reconstruction and Development\nIFC: International Finance Corporation\nAsDB: Asian Development Bank\nAfDB: African Development Bank\nEBRD: European Bank for Reconstruction and Development\nEIB: European Investment Bank\nEIF: European Investment Fund\nNIB: Nordic Investment Bank\nCDB: Caribbean Development Bank\nIsDB: Islamic Development Bank\nECDB: Eastern Caribbean Development Bank\nMIGA: Multilateral Investment Guarantee Agency\nBOAD: West African Development Bank",
+      'IBRD: International Bank for Reconstruction and Development\nIFC: International Finance Corporation\nAsDB: Asian Development Bank\nAfDB: African Development Bank\nEBRD: European Bank for Reconstruction and Development\nEIB: European Investment Bank\nEIF: European Investment Fund\nNIB: Nordic Investment Bank\nCDB: Caribbean Development Bank\nIsDB: Islamic Development Bank\nECDB: Eastern Caribbean Development Bank\nMIGA: Multilateral Investment Guarantee Agency\nBOAD: West African Development Bank',
   'Notation de la BMD': 'MDB rating',
   'Pondération automatique selon la notation sélectionnée.':
       'Automatic risk weight based on the selected rating.',
@@ -585,7 +593,7 @@ const Map<String, String> _englishTranslations = {
   "Une pondération supérieure à 100 % est exigée lorsque le taux brut de dégradation du portefeuille entreprise dépasse sur deux trimestres consécutifs un seuil fixé par instruction de la BCEAO.\n\nUne pondération plus élevée est appliquée, lorsqu'une entreprise établie dans l'UMOA est soumise à une procédure de traitement prudentiel résultant de la production, par l'entreprise elle-même ou par son commissaire au compte, d'informations financières erronées.\n\n[[NOTE]]On entend par taux brut de dégradation du portefeuille, le rapport entre l'encours des créances en souffrance brutes telles que défini aux paragraphes 152 à 160 et le portefeuille de crédit brut de l'établissement. S'agissant des entreprises, le taux brut de dégradation du portefeuille est le rapport entre l'encours des créances en souffrance brutes enregistré au titre du portefeuille entreprises et l'encours total des crédits bruts octroyés à ce segment.":
       "A risk weight above 100% is required when the gross deterioration rate of the corporate portfolio exceeds, for two consecutive quarters, a threshold set by BCEAO instruction.\n\nA higher risk weight is applied when an undertaking established in WAEMU is subject to a prudential treatment procedure resulting from the production, by the undertaking itself or by its statutory auditor, of inaccurate financial information.\n\n[[NOTE]]The gross deterioration rate of the portfolio means the ratio between the outstanding amount of gross non-performing claims as defined in paragraphs 152 to 160 and the institution's gross credit portfolio. For corporates, it is the ratio between the outstanding amount of gross non-performing claims recorded for the corporate portfolio and the total outstanding amount of gross loans granted to that segment.",
   "Les expositions sur les entreprises d'investissement, autres que celles soumises à la loi uniforme portant réglementation bancaire doivent être pondérées, conformément aux règles afférentes aux créances sur les entreprises.\n\nEn outre, les expositions sur les entreprises non notées ne peuvent être affectées d’une pondération plus favorable que celle portant sur l’Etat dans lequel ces entreprises ont leur siège social.":
-      "Exposures to investment firms, other than those subject to the uniform banking regulation law, must be risk-weighted in accordance with the rules applicable to claims on corporates.\n\nFurthermore, exposures to unrated corporates may not receive a more favorable risk weight than that applied to the State in which those corporates have their registered office.",
+      'Exposures to investment firms, other than those subject to the uniform banking regulation law, must be risk-weighted in accordance with the rules applicable to claims on corporates.\n\nFurthermore, exposures to unrated corporates may not receive a more favorable risk weight than that applied to the State in which those corporates have their registered office.',
   'Le souverain est-il établi par les OCE ?':
       'Is the sovereign established by the OCEs?',
   'Sous-cas des souverains non notés': 'Unrated sovereign sub-case',
@@ -635,7 +643,6 @@ const Map<String, String> _englishTranslations = {
       'excluding commitments subject to 250% and excluding high-risk assets subject to 150%.',
   'Niveau de risque hors bilan': 'Off-balance-sheet risk level',
   'Niveau de risque': 'Risk level',
-  'Risque faible': 'Low risk',
   'Risque mineur': 'Minor risk',
   'Risque très élevé': 'Very high risk',
   'engagements révocables sans condition, à tout moment, sans préavis ou caducs automatiquement.':

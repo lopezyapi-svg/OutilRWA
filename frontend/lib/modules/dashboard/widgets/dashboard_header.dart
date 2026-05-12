@@ -146,10 +146,10 @@ class _CalendarPill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
+              const Icon(
                 Icons.calendar_month_rounded,
                 size: 14,
-                color: const Color(0xFF234A84),
+                color: Color(0xFF234A84),
               ),
               const SizedBox(width: 8),
               Text(

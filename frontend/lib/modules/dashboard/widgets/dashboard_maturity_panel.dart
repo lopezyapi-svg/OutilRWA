@@ -123,8 +123,8 @@ class _DashboardMaturityPanelState extends State<DashboardMaturityPanel> {
                         label: primaryLabel,
                       ),
                       _LegendItem(
-                        color: Color(0xFFF39B4A),
-                        accentColor: Color(0xFFF2B572),
+                        color: const Color(0xFFF39B4A),
+                        accentColor: const Color(0xFFF2B572),
                         label: context.tr('Amortissement mensuel'),
                       ),
                       _LegendItem(
@@ -161,8 +161,8 @@ class _DashboardMaturityPanelState extends State<DashboardMaturityPanel> {
                               label: primaryLabel,
                             ),
                             _LegendItem(
-                              color: Color(0xFFF39B4A),
-                              accentColor: Color(0xFFF2B572),
+                              color: const Color(0xFFF39B4A),
+                              accentColor: const Color(0xFFF2B572),
                               label: context.tr('Amortissement mensuel'),
                             ),
                             _LegendItem(
@@ -500,11 +500,11 @@ class _MetricModeChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: selected
-              ? color.withOpacity(isDark ? 0.20 : 0.12)
+              ? color.withValues(alpha: isDark ? 0.20 : 0.12)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: selected ? color.withOpacity(0.48) : Colors.transparent,
+            color: selected ? color.withValues(alpha: 0.48) : Colors.transparent,
           ),
         ),
         child: Text(
@@ -596,7 +596,7 @@ List<_MaturityComputedPoint> _buildComputedPoints(
         description: AppLocalizations.translate(
           'Cette période concentre la baisse la plus marquée de la trajectoire. Le stock RWA se détend plus vite, ce qui accélère la libération du capital réglementaire.',
         ),
-        color: Color(0xFFF39B4A),
+        color: const Color(0xFFF39B4A),
         icon: Icons.bolt_rounded,
       );
     } else if (index == forecastStart) {
@@ -605,7 +605,7 @@ List<_MaturityComputedPoint> _buildComputedPoints(
         description: AppLocalizations.translate(
           "A partir de ce point, la courbe devient prévisionnelle. La lecture doit être comprise comme une estimation du rythme futur d'amortissement et de relâchement des RWA.",
         ),
-        color: Color(0xFF4C7CDD),
+        color: const Color(0xFF4C7CDD),
         icon: Icons.timeline_rounded,
       );
     } else if (index == source.length - 1) {
@@ -614,7 +614,7 @@ List<_MaturityComputedPoint> _buildComputedPoints(
         description: AppLocalizations.translate(
           "Ce point représente l'horizon de projection disponible dans le dashboard. Il permet d'estimer le niveau résiduel de RWA à la fin de la séquence observée.",
         ),
-        color: Color(0xFF1BAA63),
+        color: const Color(0xFF1BAA63),
         icon: Icons.flag_rounded,
       );
     }
@@ -764,7 +764,7 @@ class _MaturityCurvePainter extends CustomPainter {
       ..strokeWidth = 1;
     final deltaGuidePaint = Paint()
       ..color = (isDark ? const Color(0xFF2C3B59) : const Color(0xFFDDE6F4))
-          .withOpacity(0.9)
+          .withValues(alpha: 0.9)
       ..strokeWidth = 1;
 
     for (var i = 0; i < 4; i++) {
@@ -815,7 +815,7 @@ class _MaturityCurvePainter extends CustomPainter {
     _drawGlowPath(
       canvas,
       primarySolidPath,
-      primaryEndColor.withOpacity(isDark ? 0.22 : 0.14),
+      primaryEndColor.withValues(alpha: isDark ? 0.22 : 0.14),
       strokeWidth: 6.2,
       blurSigma: 8,
     );
@@ -834,7 +834,7 @@ class _MaturityCurvePainter extends CustomPainter {
     );
 
     final forecastPrimaryPaint = Paint()
-      ..color = primaryEndColor.withOpacity(0.95)
+      ..color = primaryEndColor.withValues(alpha: 0.95)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round
@@ -844,7 +844,7 @@ class _MaturityCurvePainter extends CustomPainter {
     canvas.drawPath(
       deltaSolidPath,
       Paint()
-        ..color = deltaColor.withOpacity(0.92)
+        ..color = deltaColor.withValues(alpha: 0.92)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
         ..strokeCap = StrokeCap.round
@@ -854,7 +854,7 @@ class _MaturityCurvePainter extends CustomPainter {
       canvas,
       deltaForecastPath,
       Paint()
-        ..color = deltaColor.withOpacity(0.78)
+        ..color = deltaColor.withValues(alpha: 0.78)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.3
         ..strokeCap = StrokeCap.round
@@ -874,7 +874,7 @@ class _MaturityCurvePainter extends CustomPainter {
           Offset(mainPoint.dx, mainRect.top - 4),
           Offset(mainPoint.dx, chartRect.bottom + 6),
           Paint()
-            ..color = primaryEndColor.withOpacity(isDark ? 0.20 : 0.12)
+            ..color = primaryEndColor.withValues(alpha: isDark ? 0.20 : 0.12)
             ..strokeWidth = 1,
         );
       }
@@ -886,7 +886,7 @@ class _MaturityCurvePainter extends CustomPainter {
           _formatChartValue(points[index].delta, unitScale, signed: true),
           deltaPoint.translate(0, -11),
           TextStyle(
-            color: deltaColor.withOpacity(active ? 1 : 0.88),
+            color: deltaColor.withValues(alpha: active ? 1 : 0.88),
             fontSize: active ? 7.3 : 6.8,
             fontWeight: FontWeight.w800,
           ),
@@ -918,7 +918,7 @@ class _MaturityCurvePainter extends CustomPainter {
         canvas.drawCircle(
           mainPoint,
           active ? 10.5 : 8.6,
-          Paint()..color = primaryEndColor.withOpacity(active ? 0.12 : 0.07),
+          Paint()..color = primaryEndColor.withValues(alpha: active ? 0.12 : 0.07),
         );
       }
 
@@ -1074,12 +1074,12 @@ class _MaturityCurvePainter extends CustomPainter {
 
     canvas.drawRRect(
       rect,
-      Paint()..color = color.withOpacity(isDark ? 0.16 : 0.10),
+      Paint()..color = color.withValues(alpha: isDark ? 0.16 : 0.10),
     );
     canvas.drawRRect(
       rect,
       Paint()
-        ..color = color.withOpacity(isDark ? 0.32 : 0.22)
+        ..color = color.withValues(alpha: isDark ? 0.32 : 0.22)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1,
     );

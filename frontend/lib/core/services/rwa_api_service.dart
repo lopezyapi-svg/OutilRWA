@@ -23,7 +23,7 @@ class RwaApiService {
               baseUrl: baseUrl ??
                   const String.fromEnvironment(
                     'RWA_API_BASE_URL',
-                    defaultValue: 'http://localhost:8001',
+                    defaultValue: 'http://localhost:8000',
                   ),
             );
 
@@ -1119,7 +1119,13 @@ class RwaApiService {
           0.0,
           (sum, item) => sum + (item.grossAmount * item.crmCoveragePercent),
         );
+    final residualRisk =
+        (gross - coveredGross).clamp(0.0, double.infinity).toDouble();
     final coveredExposureRatio = gross == 0 ? 0.0 : coveredGross / gross;
+    final defaultGross = exposureModels
+        .where((item) => item.isDefaultLike)
+        .fold<double>(0.0, (sum, item) => sum + item.grossAmount);
+    final defaultRate = gross == 0 ? 0.0 : defaultGross / gross;
     final averageRiskRate = totalEad == 0 ? 0.0 : rwa / totalEad;
     final ownFunds = capital * 1.42;
     final solvencyRatio = rwa == 0 ? 0.0 : ownFunds / rwa;
@@ -1127,9 +1133,11 @@ class RwaApiService {
     // Ces valeurs sont rangées par clé pour simplifier l'assemblage des cartes.
     final metricValues = <String, double>{
       'encours': gross,
+      'risque_residuel': residualRisk,
       'rwa': rwa,
       'capital': capital,
       'taux_risque': averageRiskRate,
+      'taux_defaut': defaultRate,
       'solvabilite': solvencyRatio,
       'crm': coveredExposureRatio,
     };
@@ -1141,6 +1149,12 @@ class RwaApiService {
           label: 'Exposition totale brute',
           value: metricValues['encours']!,
           growthRate: 0.028,
+        ),
+        _buildMetric(
+          key: 'risque_residuel',
+          label: 'Risque residuel',
+          value: metricValues['risque_residuel']!,
+          growthRate: 0.0,
         ),
         _buildMetric(
           key: 'rwa',
@@ -1159,6 +1173,12 @@ class RwaApiService {
           label: 'Taux de risque moyen',
           value: metricValues['taux_risque']!,
           growthRate: -0.008,
+        ),
+        _buildMetric(
+          key: 'taux_defaut',
+          label: 'Taux de defaut',
+          value: metricValues['taux_defaut']!,
+          growthRate: 0.0,
         ),
         _buildMetric(
           key: 'solvabilite',
@@ -1627,8 +1647,12 @@ class RwaApiService {
     final global = exposures.fold<double>(0.0, (sum, item) => sum + item.rwa);
     for (final exposure in exposures) {
       // La concentration géographique se lit ici à partir du RWA par pays.
-      totals.update(
+      final country = canonicalCountryName(
         exposure.counterparty.country,
+        fallback: exposure.counterparty.country,
+      );
+      totals.update(
+        country,
         (value) => value + exposure.rwa,
         ifAbsent: () => exposure.rwa,
       );

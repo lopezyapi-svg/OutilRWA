@@ -54,9 +54,13 @@ class _DashboardKpiStripState extends State<DashboardKpiStrip> {
         final itemCount = math.max(widget.items.length, 1);
         final fluidWidth =
             (constraints.maxWidth - (gap * (itemCount - 1))) / itemCount;
-        final baseCardWidth = fluidWidth >= 101.0 ? (fluidWidth - 20) : 90.0;
+        final baseCardWidth = fluidWidth >= 101.0 ? fluidWidth : 90.0;
+        bool usesRiskInterpretation(DashboardKpiItem item) {
+          return item.label == 'Densité RWA';
+        }
+
         double widthFor(DashboardKpiItem item) {
-          if (item.label == 'Densité RWA') {
+          if (usesRiskInterpretation(item)) {
             return baseCardWidth + 95;
           }
           return baseCardWidth;
@@ -70,8 +74,8 @@ class _DashboardKpiStripState extends State<DashboardKpiStrip> {
             for (var index = 0; index < widget.items.length; index++) ...[
               SizedBox(
                 width: widthFor(widget.items[index]),
-                height: widget.items[index].label == 'Densité RWA' ? 114 : 114,
-                child: widget.items[index].label == 'Densité RWA'
+                height: 120,
+                child: usesRiskInterpretation(widget.items[index])
                     ? _DensityMiniCard(
                         item: widget.items[index],
                         selected: _selectedIndex == index,
@@ -232,7 +236,7 @@ class _KpiCardState extends State<_KpiCard> {
                       TextSpan(
                         text: '  $suffixPart',
                         style: TextStyle(
-                          color: mutedColor.withOpacity(0.76),
+                          color: mutedColor.withValues(alpha: 0.76),
                           fontSize: 9.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -247,7 +251,7 @@ class _KpiCardState extends State<_KpiCard> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: mutedColor.withOpacity(0.92),
+                    color: mutedColor.withValues(alpha: 0.92),
                     fontSize: 7.6,
                     fontWeight: FontWeight.w700,
                     height: 1,
@@ -290,9 +294,9 @@ class _KpiCardState extends State<_KpiCard> {
     final titleColor = isDark ? AppTheme.darkText : AppTheme.text;
     final mutedColor = isDark ? AppTheme.darkMuted : AppTheme.muted;
     final iconSurface =
-        isDark ? accent.withOpacity(0.10) : accent.withOpacity(0.06);
+        isDark ? accent.withValues(alpha: 0.10) : accent.withValues(alpha: 0.06);
     final iconTint =
-        isDark ? accent.withOpacity(0.78) : accent.withOpacity(0.58);
+        isDark ? accent.withValues(alpha: 0.78) : accent.withValues(alpha: 0.58);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -308,16 +312,16 @@ class _KpiCardState extends State<_KpiCard> {
             borderRadius: BorderRadius.circular(5),
             border: Border.all(
               color: (widget.selected || _hovered)
-                  ? accent.withOpacity(0.48)
-                  : borderColor.withOpacity(0.82),
+                  ? accent.withValues(alpha: 0.48)
+                  : borderColor.withValues(alpha: 0.82),
               width: (widget.selected || _hovered) ? 1.3 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withOpacity(_hovered ? 0.14 : 0.10)
-                    : const Color(0xFFB7C6DE).withOpacity(
-                        _hovered ? 0.16 : 0.10,
+                    ? Colors.black.withValues(alpha: _hovered ? 0.14 : 0.10)
+                    : const Color(0xFFB7C6DE).withValues(
+                        alpha: _hovered ? 0.16 : 0.10,
                       ),
                 blurRadius: _hovered ? 20 : 14,
                 offset: Offset(0, _hovered ? 8 : 6),
@@ -340,9 +344,9 @@ class _KpiCardState extends State<_KpiCard> {
                 final fcfaFont =
                     math.max(9.2, math.min(10.4, cardHeight * 0.090));
                 final titleFont =
-                    math.max(8.2, math.min(9.2, cardHeight * 0.078));
+                    math.max(9.4, math.min(10.6, cardHeight * 0.090));
                 final helperFont =
-                    math.max(7.0, math.min(7.6, cardHeight * 0.066));
+                    math.max(7.8, math.min(8.6, cardHeight * 0.074));
                 final valueGap = math.max(2.0, cardHeight * 0.035);
                 final accentGap = math.max(2.0, cardHeight * 0.025);
                 final unitPart = _unitPart;
@@ -388,7 +392,7 @@ class _KpiCardState extends State<_KpiCard> {
                       right: 14,
                       child: Icon(
                         Icons.drag_indicator_rounded,
-                        color: mutedColor.withOpacity(0.65),
+                        color: mutedColor.withValues(alpha: 0.65),
                         size: 14,
                       ),
                     ),
@@ -404,9 +408,9 @@ class _KpiCardState extends State<_KpiCard> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                accent.withOpacity(0.00),
-                                accent.withOpacity(isDark ? 0.04 : 0.045),
-                                accent.withOpacity(isDark ? 0.08 : 0.09),
+                                accent.withValues(alpha: 0.00),
+                                accent.withValues(alpha: isDark ? 0.04 : 0.045),
+                                accent.withValues(alpha: isDark ? 0.08 : 0.09),
                               ],
                               stops: const [0.20, 0.58, 1.0],
                             ),
@@ -429,7 +433,7 @@ class _KpiCardState extends State<_KpiCard> {
                               shape: BoxShape.circle,
                               color: iconSurface,
                               border: Border.all(
-                                color: accent.withOpacity(isDark ? 0.16 : 0.10),
+                                color: accent.withValues(alpha: isDark ? 0.16 : 0.10),
                               ),
                             ),
                             child: Icon(
@@ -472,7 +476,7 @@ class _KpiCardState extends State<_KpiCard> {
                                         TextSpan(
                                           text: '  $suffixPart',
                                           style: TextStyle(
-                                            color: mutedColor.withOpacity(0.76),
+                                            color: mutedColor.withValues(alpha: 0.76),
                                             fontSize: fcfaFont,
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -490,7 +494,7 @@ class _KpiCardState extends State<_KpiCard> {
                                       child: Text(
                                         hoverFullValue,
                                         style: TextStyle(
-                                          color: mutedColor.withOpacity(0.92),
+                                          color: mutedColor.withValues(alpha: 0.92),
                                           fontSize: math.max(
                                             7.0,
                                             helperFont + 0.2,
@@ -545,7 +549,7 @@ class _KpiCardState extends State<_KpiCard> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color:
-                                  mutedColor.withOpacity(isDark ? 0.96 : 0.92),
+                                  mutedColor.withValues(alpha: isDark ? 0.96 : 0.92),
                               fontSize: helperFont,
                               fontWeight: FontWeight.w600,
                               height: 1.1,
@@ -592,6 +596,17 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
   Color get _accent => widget.item.gradient.first;
 
   _DensityMiniLevel get _activeLevel {
+    final hint = (widget.item.valueHint ?? '').toLowerCase();
+    if (hint.contains('élev') || hint.contains('elev')) {
+      return _DensityMiniLevel.high;
+    }
+    if (hint.contains('moyen')) {
+      return _DensityMiniLevel.medium;
+    }
+    if (hint.contains('faible')) {
+      return _DensityMiniLevel.low;
+    }
+
     final value = _densityPercent;
     if (value >= 70) {
       return _DensityMiniLevel.high;
@@ -674,16 +689,16 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
             borderRadius: BorderRadius.circular(5),
             border: Border.all(
               color: (widget.selected || _hovered)
-                  ? _accent.withOpacity(0.48)
-                  : borderColor.withOpacity(0.82),
+                  ? _accent.withValues(alpha: 0.48)
+                  : borderColor.withValues(alpha: 0.82),
               width: (widget.selected || _hovered) ? 1.3 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withOpacity(_hovered ? 0.14 : 0.10)
-                    : const Color(0xFFB7C6DE).withOpacity(
-                        _hovered ? 0.16 : 0.10,
+                    ? Colors.black.withValues(alpha: _hovered ? 0.14 : 0.10)
+                    : const Color(0xFFB7C6DE).withValues(
+                        alpha: _hovered ? 0.16 : 0.10,
                       ),
                 blurRadius: _hovered ? 20 : 14,
                 offset: Offset(0, _hovered ? 8 : 6),
@@ -730,7 +745,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                   right: 12,
                   child: Icon(
                     Icons.drag_indicator_rounded,
-                    color: mutedColor.withOpacity(0.65),
+                    color: mutedColor.withValues(alpha: 0.65),
                     size: 15,
                   ),
                 ),
@@ -746,9 +761,9 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            _accent.withOpacity(0.00),
-                            _accent.withOpacity(isDark ? 0.035 : 0.04),
-                            _accent.withOpacity(isDark ? 0.075 : 0.08),
+                            _accent.withValues(alpha: 0.00),
+                            _accent.withValues(alpha: isDark ? 0.035 : 0.04),
+                            _accent.withValues(alpha: isDark ? 0.075 : 0.08),
                           ],
                           stops: const [0.20, 0.58, 1.0],
                         ),
@@ -801,19 +816,19 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                       height: iconDisk,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: _accent.withOpacity(
-                                          isDark ? 0.09 : 0.05,
+                                        color: _accent.withValues(
+                                          alpha: isDark ? 0.09 : 0.05,
                                         ),
                                         border: Border.all(
-                                          color: _accent.withOpacity(
-                                            isDark ? 0.16 : 0.10,
+                                          color: _accent.withValues(
+                                            alpha: isDark ? 0.16 : 0.10,
                                           ),
                                         ),
                                       ),
                                       child: Icon(
                                         widget.item.icon,
-                                        color: _accent.withOpacity(
-                                          isDark ? 0.78 : 0.58,
+                                        color: _accent.withValues(
+                                          alpha: isDark ? 0.78 : 0.58,
                                         ),
                                         size: iconSize,
                                       ),
@@ -825,7 +840,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            context.tr('Densité RWA'),
+                                            widget.item.label.tr(context),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
@@ -841,8 +856,8 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
-                                              color: mutedColor.withOpacity(
-                                                isDark ? 0.94 : 0.88,
+                                              color: mutedColor.withValues(
+                                                alpha: isDark ? 0.94 : 0.88,
                                               ),
                                               fontSize: helperFont,
                                               fontWeight: FontWeight.w600,
@@ -989,8 +1004,8 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                   ),
                                                   decoration: BoxDecoration(
                                                     color: activeLevelData.color
-                                                        .withOpacity(
-                                                      isDark ? 0.12 : 0.06,
+                                                        .withValues(
+                                                      alpha: isDark ? 0.12 : 0.06,
                                                     ),
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -998,8 +1013,8 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                     border: Border.all(
                                                       color: activeLevelData
                                                           .color
-                                                          .withOpacity(
-                                                        isDark ? 0.52 : 0.40,
+                                                          .withValues(
+                                                        alpha: isDark ? 0.52 : 0.40,
                                                       ),
                                                     ),
                                                   ),
@@ -1120,14 +1135,14 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                               BorderRadius.circular(10),
                                           border: Border.all(
                                             color:
-                                                levels[index].color.withOpacity(
-                                                      isDark ? 0.28 : 0.22,
+                                                levels[index].color.withValues(
+                                                      alpha: isDark ? 0.28 : 0.22,
                                                     ),
                                           ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                isDark ? 0.22 : 0.10,
+                                              color: Colors.black.withValues(
+                                                alpha: isDark ? 0.22 : 0.10,
                                               ),
                                               blurRadius: 16,
                                               offset: const Offset(0, 6),
@@ -1145,8 +1160,8 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                 ? levels[index].color
                                                 : levels[index]
                                                     .color
-                                                    .withOpacity(
-                                                      isDark ? 0.10 : 0.05,
+                                                    .withValues(
+                                                      alpha: isDark ? 0.10 : 0.05,
                                                     ),
                                             borderRadius:
                                                 BorderRadius.circular(7),
@@ -1156,7 +1171,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                   ? levels[index].color
                                                   : levels[index]
                                                       .color
-                                                      .withOpacity(0.16),
+                                                      .withValues(alpha: 0.16),
                                             ),
                                           ),
                                           child: Row(
@@ -1217,11 +1232,11 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                                     .level ==
                                                                 activeLevel
                                                             ? Colors.white
-                                                                .withOpacity(
-                                                                    0.86)
+                                                                .withValues(
+                                                                    alpha: 0.86)
                                                             : mutedColor
-                                                                .withOpacity(
-                                                                isDark
+                                                                .withValues(
+                                                                alpha: isDark
                                                                     ? 0.94
                                                                     : 0.88,
                                                               ),
@@ -1355,12 +1370,12 @@ class _KpiAmbientMotionPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final t = progress * math.pi * 2;
-    final gridColor = accent.withOpacity(isDark ? 0.028 : 0.018);
-    final wickColor = accent.withOpacity(isDark ? 0.08 : 0.055);
-    final barColor = accent.withOpacity(isDark ? 0.065 : 0.045);
-    final lineColor = accent.withOpacity(isDark ? 0.10 : 0.07);
-    final markerGlow = accent.withOpacity(isDark ? 0.05 : 0.03);
-    final markerColor = accent.withOpacity(isDark ? 0.24 : 0.16);
+    final gridColor = accent.withValues(alpha: isDark ? 0.028 : 0.018);
+    final wickColor = accent.withValues(alpha: isDark ? 0.08 : 0.055);
+    final barColor = accent.withValues(alpha: isDark ? 0.065 : 0.045);
+    final lineColor = accent.withValues(alpha: isDark ? 0.10 : 0.07);
+    final markerGlow = accent.withValues(alpha: isDark ? 0.05 : 0.03);
+    final markerColor = accent.withValues(alpha: isDark ? 0.24 : 0.16);
     final chartRect = Rect.fromLTWH(
       0,
       compact ? size.height * 0.12 : size.height * 0.14,

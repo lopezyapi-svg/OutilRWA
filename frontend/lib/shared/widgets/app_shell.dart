@@ -135,8 +135,8 @@ class _AppShellState extends State<AppShell> {
                             child: Container(
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? const Color(0xFF0F1B31).withOpacity(0.92)
-                                    : Colors.white.withOpacity(0.80),
+                                    ? const Color(0xFF0F1B31).withValues(alpha: 0.92)
+                                    : Colors.white.withValues(alpha: 0.80),
                                 borderRadius: BorderRadius.circular(
                                   AppTheme.radius,
                                 ),
@@ -254,7 +254,7 @@ class _DecorativeBackdrop extends StatelessWidget {
             colors: dark
                 ? const [Color(0x224C8FFF), Color(0x004C8FFF)]
                 : const [Color(0x33BCA7FF), Color(0x00BCA7FF)],
-            offset: Offset(-110, -100),
+            offset: const Offset(-110, -100),
           ),
           _BackdropOrb(
             alignment: Alignment.centerRight,
@@ -262,7 +262,7 @@ class _DecorativeBackdrop extends StatelessWidget {
             colors: dark
                 ? const [Color(0x1C7E6CFF), Color(0x007E6CFF)]
                 : const [Color(0x33C3A6FF), Color(0x00C3A6FF)],
-            offset: Offset(130, 0),
+            offset: const Offset(130, 0),
           ),
           _BackdropOrb(
             alignment: Alignment.bottomLeft,
@@ -270,7 +270,7 @@ class _DecorativeBackdrop extends StatelessWidget {
             colors: dark
                 ? const [Color(0x1423A6FF), Color(0x0023A6FF)]
                 : const [Color(0x33A6FFE3), Color(0x00A6FFE3)],
-            offset: Offset(-60, 90),
+            offset: const Offset(-60, 90),
           ),
         ],
       ),
@@ -357,8 +357,8 @@ class _WorkspaceTopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF0F1B31).withOpacity(0.94)
-            : Colors.white.withOpacity(0.90),
+            ? const Color(0xFF0F1B31).withValues(alpha: 0.94)
+            : Colors.white.withValues(alpha: 0.90),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
@@ -1305,8 +1305,8 @@ class _LanguageFlag extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
           ),
           child: switch (language) {
-            AppLanguage.francais => CustomPaint(painter: _FrenchFlagPainter()),
-            AppLanguage.anglais => CustomPaint(painter: _UnionJackPainter()),
+            AppLanguage.francais => const CustomPaint(painter: _FrenchFlagPainter()),
+            AppLanguage.anglais => const CustomPaint(painter: _UnionJackPainter()),
           },
         ),
       ),

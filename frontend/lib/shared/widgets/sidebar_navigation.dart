@@ -103,8 +103,8 @@ class _CompactSidebar extends StatelessWidget {
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF0F1B31).withOpacity(0.96)
-            : Colors.white.withOpacity(0.92),
+            ? const Color(0xFF0F1B31).withValues(alpha: 0.96)
+            : Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark ? const Color(0xFF22304B) : const Color(0xFFE5E8F5),
@@ -290,8 +290,8 @@ class _ExpandedSidebar extends StatelessWidget {
           padding: EdgeInsets.all(panelPadding),
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF0F1B31).withOpacity(0.97)
-                : Colors.white.withOpacity(0.96),
+                ? const Color(0xFF0F1B31).withValues(alpha: 0.97)
+                : Colors.white.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
               color: isDark ? const Color(0xFF22304B) : const Color(0xFFE5E8F5),

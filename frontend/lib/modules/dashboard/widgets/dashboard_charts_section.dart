@@ -25,7 +25,7 @@ class DashboardChartsSection extends StatelessWidget {
     required this.maturityPoints,
     required this.maturityView,
     required this.onMaturityViewChanged,
-    required this.averageRiskWeight,
+    required this.densityRwa,
     required this.coveredRatio,
   });
 
@@ -37,7 +37,7 @@ class DashboardChartsSection extends StatelessWidget {
   final List<DashboardProjectionPoint> maturityPoints;
   final DashboardMaturityView maturityView;
   final ValueChanged<DashboardMaturityView> onMaturityViewChanged;
-  final double averageRiskWeight;
+  final double densityRwa;
   final double coveredRatio;
 
   @override
@@ -74,7 +74,7 @@ class DashboardChartsSection extends StatelessWidget {
                         const SizedBox(height: 6),
                         Expanded(
                           child: _CreditGaugeCard(
-                            averageRiskWeight: averageRiskWeight,
+                            densityRwa: densityRwa,
                             compact: true,
                           ),
                         ),
@@ -338,7 +338,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final barTrackColor = isDark
-        ? const Color(0xFF22304B).withOpacity(0.34)
+        ? const Color(0xFF22304B).withValues(alpha: 0.34)
         : const Color(0xFFEEF2F7);
     final rankedGrossEntries = [...widget.grossEntries]
       ..sort((left, right) => right.amount.compareTo(left.amount));
@@ -593,8 +593,8 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                                     gradient: LinearGradient(
                                                       colors: [
                                                         color,
-                                                        color.withOpacity(
-                                                          isActive
+                                                        color.withValues(
+                                                          alpha: isActive
                                                               ? 0.82
                                                               : 0.62,
                                                         ),
@@ -604,8 +604,8 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                                         ? [
                                                             BoxShadow(
                                                               color: color
-                                                                  .withOpacity(
-                                                                0.18,
+                                                                  .withValues(
+                                                                alpha: 0.18,
                                                               ),
                                                               blurRadius: 8,
                                                               offset:
@@ -784,7 +784,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                               ? dashboardTitleColor(isDark)
                                               : dashboardTitleColor(
                                                   isDark,
-                                                ).withOpacity(0.88),
+                                                ).withValues(alpha: 0.88),
                                           fontSize: 6.7,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -939,7 +939,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                         ? dashboardTitleColor(isDark)
                                         : dashboardTitleColor(
                                             isDark,
-                                          ).withOpacity(0.9),
+                                          ).withValues(alpha: 0.9),
                                     fontSize: 7.7,
                                     fontWeight: FontWeight.w700,
                                     height: 1.15,
@@ -1003,30 +1003,30 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
 
   String _getExposureLabel(String label) {
     const exposureLabels = {
-      "sovereign": "Souverains",
-      "public_admin": "Organismes pub. hors Adm c",
-      "bmd": "Expositions sur les BMD",
-      "financial": "Institutions financières",
-      "corporate": "Entreprises",
-      "retail": "Clientèle de détail",
-      "real_estate_r": "Prêts garantis par l'immobilier R",
-      "real_estate_c": "Prêts garantis par l'immobilier C",
-      "impaired": "Créances en souffrance",
-      "high_risk": "Créances à risque élevé",
-      "other_assets": "Autres actifs",
-      "off_balance": "Hors bilan",
-      "souverains": "Souverains",
-      "organismes pub. hors Adm c": "Organismes pub. hors Adm c",
-      "Expositions sur les BMD": "Expositions sur les BMD",
-      "institutions financières": "Institutions financières",
-      "entreprises": "Entreprises",
-      "clientèle de détail": "Clientèle de détail",
+      'sovereign': 'Souverains',
+      'public_admin': 'Organismes pub. hors Adm c',
+      'bmd': 'Expositions sur les BMD',
+      'financial': 'Institutions financières',
+      'corporate': 'Entreprises',
+      'retail': 'Clientèle de détail',
+      'real_estate_r': "Prêts garantis par l'immobilier R",
+      'real_estate_c': "Prêts garantis par l'immobilier C",
+      'impaired': 'Créances en souffrance',
+      'high_risk': 'Créances à risque élevé',
+      'other_assets': 'Autres actifs',
+      'off_balance': 'Hors bilan',
+      'souverains': 'Souverains',
+      'organismes pub. hors Adm c': 'Organismes pub. hors Adm c',
+      'Expositions sur les BMD': 'Expositions sur les BMD',
+      'institutions financières': 'Institutions financières',
+      'entreprises': 'Entreprises',
+      'clientèle de détail': 'Clientèle de détail',
       "prêts garantis par l'immo R": "Prêts garantis par l'immo R",
       "prêts garantis par l'immo C": "Prêts garantis par l'immo C",
-      "créances en souffrance": "Créances en souffrance",
-      "créances à risque élevé": "Créances à risque élevé",
-      "autres actifs": "Autres actifs",
-      "Hors bilan": "Hors bilan",
+      'créances en souffrance': 'Créances en souffrance',
+      'créances à risque élevé': 'Créances à risque élevé',
+      'autres actifs': 'Autres actifs',
+      'Hors bilan': 'Hors bilan',
     };
 
     // Cette table protège l'affichage contre les variantes de libellés entrantes.
@@ -1086,22 +1086,22 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
 
   Color _getCrmColor(String label) {
     switch (label.toLowerCase()) {
-      case "crm financé":
-      case "crm finance":
-      case "crm financee":
-      case "financed":
-      case "financé":
+      case 'crm financé':
+      case 'crm finance':
+      case 'crm financee':
+      case 'financed':
+      case 'financé':
         return const Color(0xFF2D6CDF); // Bleu
-      case "crm non financé":
-      case "crm non finance":
-      case "crm non financee":
-      case "unfinanced":
-      case "non financé":
+      case 'crm non financé':
+      case 'crm non finance':
+      case 'crm non financee':
+      case 'unfinanced':
+      case 'non financé':
         return const Color(0xFFE24A4A); // Rouge
-      case "sans crm":
-      case "aucune":
-      case "no crm":
-      case "pas de crm":
+      case 'sans crm':
+      case 'aucune':
+      case 'no crm':
+      case 'pas de crm':
         return const Color(0xFF00C853); // Vert pur
       default:
         return const Color(0xFF6B7280);
@@ -1110,23 +1110,23 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
 
   String _getCrmLabel(String label) {
     switch (label.toLowerCase()) {
-      case "crm financé":
-      case "crm finance":
-      case "crm financee":
-      case "financed":
-      case "financé":
-        return AppLocalizations.translate("CRM financee");
-      case "crm non financé":
-      case "crm non finance":
-      case "crm non financee":
-      case "unfinanced":
-      case "non financé":
-        return AppLocalizations.translate("CRM non financee");
-      case "sans crm":
-      case "aucune":
-      case "no crm":
-      case "pas de crm":
-        return AppLocalizations.translate("Aucune");
+      case 'crm financé':
+      case 'crm finance':
+      case 'crm financee':
+      case 'financed':
+      case 'financé':
+        return AppLocalizations.translate('CRM financee');
+      case 'crm non financé':
+      case 'crm non finance':
+      case 'crm non financee':
+      case 'unfinanced':
+      case 'non financé':
+        return AppLocalizations.translate('CRM non financee');
+      case 'sans crm':
+      case 'aucune':
+      case 'no crm':
+      case 'pas de crm':
+        return AppLocalizations.translate('Aucune');
       default:
         return label;
     }
@@ -1134,23 +1134,23 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
 
   String _getCrmChipLabel(String label) {
     switch (label.toLowerCase()) {
-      case "crm financé":
-      case "crm finance":
-      case "crm financee":
-      case "financed":
-      case "financé":
-        return AppLocalizations.translate("CRM financee");
-      case "crm non financé":
-      case "crm non finance":
-      case "crm non financee":
-      case "unfinanced":
-      case "non financé":
-        return AppLocalizations.translate("CRM non financee");
-      case "sans crm":
-      case "aucune":
-      case "no crm":
-      case "pas de crm":
-        return AppLocalizations.translate("Aucune");
+      case 'crm financé':
+      case 'crm finance':
+      case 'crm financee':
+      case 'financed':
+      case 'financé':
+        return AppLocalizations.translate('CRM financee');
+      case 'crm non financé':
+      case 'crm non finance':
+      case 'crm non financee':
+      case 'unfinanced':
+      case 'non financé':
+        return AppLocalizations.translate('CRM non financee');
+      case 'sans crm':
+      case 'aucune':
+      case 'no crm':
+      case 'pas de crm':
+        return AppLocalizations.translate('Aucune');
       default:
         return label;
     }
@@ -1216,7 +1216,7 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
 
     return DashboardPanel(
       title: 'Répartition totale par type de CRM',
-      subtitle: "Attenuation du risque de crédit ( CRM )",
+      subtitle: 'Attenuation du risque de crédit ( CRM )',
       child: SizedBox(
         height: 146,
         child: Column(
@@ -1332,22 +1332,22 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                           ),
                           decoration: BoxDecoration(
                             color: isActive
-                                ? color.withOpacity(isDark ? 0.90 : 0.92)
+                                ? color.withValues(alpha: isDark ? 0.90 : 0.92)
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(2),
                             border: Border.all(
                               color: isActive
                                   ? color
-                                  : color.withOpacity(
-                                      isDark ? 0.58 : 0.32,
+                                  : color.withValues(
+                                      alpha: isDark ? 0.58 : 0.32,
                                     ),
                               width: isActive ? 1.35 : 1,
                             ),
                             boxShadow: isActive
                                 ? [
                                     BoxShadow(
-                                      color: color.withOpacity(
-                                        isDark ? 0.34 : 0.28,
+                                      color: color.withValues(
+                                        alpha: isDark ? 0.34 : 0.28,
                                       ),
                                       blurRadius: 18,
                                       offset: const Offset(0, 6),
@@ -1544,7 +1544,7 @@ class _CountriesCardState extends State<_CountriesCard> {
                   ? (isDark ? const Color(0xFF152842) : const Color(0xFFF5F9FF))
                   : Colors.transparent;
               final rowBorder = isActive
-                  ? color.withOpacity(isDark ? 0.34 : 0.22)
+                  ? color.withValues(alpha: isDark ? 0.34 : 0.22)
                   : Colors.transparent;
               final trackColor =
                   isDark ? const Color(0xFF14233D) : const Color(0xFFEEF3F9);
@@ -1558,7 +1558,7 @@ class _CountriesCardState extends State<_CountriesCard> {
               final percentColor =
                   isActive ? color : dashboardTitleColor(isDark);
               final labelColor = isActive
-                  ? color.withOpacity(isDark ? 0.96 : 0.88)
+                  ? color.withValues(alpha: isDark ? 0.96 : 0.88)
                   : dashboardTitleColor(isDark);
 
               return Expanded(
@@ -1642,8 +1642,8 @@ class _CountriesCardState extends State<_CountriesCard> {
                                   boxShadow: isActive
                                       ? [
                                           BoxShadow(
-                                            color: color.withOpacity(
-                                              0.12,
+                                            color: color.withValues(
+                                              alpha: 0.12,
                                             ),
                                             blurRadius: 12,
                                             offset: const Offset(0, 5),
@@ -1712,8 +1712,8 @@ class _CountriesCardState extends State<_CountriesCard> {
                                                     begin: Alignment.centerLeft,
                                                     end: Alignment.centerRight,
                                                     colors: [
-                                                      color.withOpacity(
-                                                        isActive
+                                                      color.withValues(
+                                                        alpha: isActive
                                                             ? math.min(
                                                                 1.0,
                                                                 fillOpacity +
@@ -1726,8 +1726,8 @@ class _CountriesCardState extends State<_CountriesCard> {
                                                         Colors.white,
                                                         lowValue ? 0.36 : 0.18,
                                                       )!
-                                                          .withOpacity(
-                                                        isActive
+                                                          .withValues(
+                                                        alpha: isActive
                                                             ? math.min(
                                                                 1.0,
                                                                 fillOpacity +
@@ -1741,8 +1741,8 @@ class _CountriesCardState extends State<_CountriesCard> {
                                                       ? [
                                                           BoxShadow(
                                                             color: color
-                                                                .withOpacity(
-                                                              0.18,
+                                                                .withValues(
+                                                              alpha: 0.18,
                                                             ),
                                                             blurRadius: 10,
                                                             offset:
@@ -1776,8 +1776,8 @@ class _CountriesCardState extends State<_CountriesCard> {
                                             style: TextStyle(
                                               color:
                                                   dashboardSubtitleColor(isDark)
-                                                      .withOpacity(
-                                                isActive
+                                                      .withValues(
+                                                alpha: isActive
                                                     ? 1
                                                     : (lowValue ? 0.78 : 0.94),
                                               ),
@@ -1808,14 +1808,14 @@ class _CountriesCardState extends State<_CountriesCard> {
   }
 }
 
-/// Carte qui affiche la jauge de qualité de crédit moyenne.
+/// Carte qui affiche la jauge de densité RWA.
 class _CreditGaugeCard extends StatefulWidget {
   const _CreditGaugeCard({
-    required this.averageRiskWeight,
+    required this.densityRwa,
     this.compact = false,
   });
 
-  final double averageRiskWeight;
+  final double densityRwa;
   final bool compact;
 
   @override
@@ -1847,11 +1847,12 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardHeight = widget.compact ? 172.0 : 335.0;
     final diskSize = widget.compact ? 48.0 : 96.0;
-    // La jauge convertit le ratio métier en échelle visuelle de 0 à 150%.
-    final baseValue =
-        (widget.averageRiskWeight * 100).clamp(0.0, 150.0).toDouble();
+    // La densité RWA arrive déjà en pourcentage métier.
+    final baseValue = widget.densityRwa.clamp(0.0, 150.0).toDouble();
     final displayValue = baseValue;
-    final qualityLabel = _getQualityLabel(displayValue);
+    final densityLabel = _getDensityLabel(displayValue);
+    final activeLevel = _getDensityLevel(displayValue);
+    final activeColor = _getDensityColor(displayValue);
 
     return AnimatedBuilder(
       animation: _pulseController,
@@ -1871,7 +1872,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Qualité de crédit moyenne",
+                  'Densité RWA',
                   style: TextStyle(
                     color: dashboardTitleColor(isDark),
                     fontSize: 9.9,
@@ -1880,97 +1881,101 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                 ),
                 const SizedBox(height: 4),
                 Expanded(
-                  child: Center(
-                    child: SizedBox(
-                      width: 210,
-                      child: CustomPaint(
-                        painter: _GaugePainter(
-                          value: displayValue,
-                          isDark: isDark,
-                          pulse: pulse,
-                        ),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final compactDiskTop =
-                                (constraints.maxHeight * 0.80) - (diskSize / 2);
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: SizedBox(
+                            width: 188,
+                            child: CustomPaint(
+                              painter: _GaugePainter(
+                                value: displayValue,
+                                isDark: isDark,
+                                pulse: pulse,
+                              ),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final compactDiskTop =
+                                      (constraints.maxHeight * 0.80) -
+                                          (diskSize / 2);
 
-                            return Stack(
-                              children: [
-                                Positioned(
-                                  top: compactDiskTop,
-                                  left: 0,
-                                  right: 0,
-                                  child: Center(
-                                    child: Container(
-                                      width: diskSize,
-                                      height: diskSize,
-                                      decoration: BoxDecoration(
-                                        color: isDark
-                                            ? const Color(0xFF101C32)
-                                            : const Color(0xFFFFFFFF),
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: isDark
-                                              ? const Color(0xFF243756)
-                                              : const Color(0xFFE8ECF4),
-                                          width: 1,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: isDark
-                                                ? const Color(0x33040A16)
-                                                : const Color(0x180F172A),
-                                            blurRadius: 6,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            "${displayValue.toStringAsFixed(1)}%",
-                                            style: TextStyle(
-                                              color: dashboardTitleColor(
-                                                isDark,
+                                  return Stack(
+                                    children: [
+                                      Positioned(
+                                        top: compactDiskTop,
+                                        left: 0,
+                                        right: 0,
+                                        child: Center(
+                                          child: Container(
+                                            width: diskSize,
+                                            height: diskSize,
+                                            decoration: BoxDecoration(
+                                              color: isDark
+                                                  ? const Color(0xFF101C32)
+                                                  : const Color(0xFFFFFFFF),
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color: isDark
+                                                    ? const Color(0xFF243756)
+                                                    : const Color(0xFFE8ECF4),
+                                                width: 1,
                                               ),
-                                              fontSize: 9.4,
-                                              fontWeight: FontWeight.w900,
-                                              letterSpacing: -0.8,
-                                              height: 0.9,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: isDark
+                                                      ? const Color(0x33040A16)
+                                                      : const Color(0x180F172A),
+                                                  blurRadius: 6,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  '${displayValue.toStringAsFixed(1)}%',
+                                                  style: TextStyle(
+                                                    color: dashboardTitleColor(
+                                                      isDark,
+                                                    ),
+                                                    fontSize: 9.4,
+                                                    fontWeight: FontWeight.w900,
+                                                    letterSpacing: -0.8,
+                                                    height: 0.9,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  densityLabel,
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: activeColor,
+                                                    fontSize: 5.3,
+                                                    fontWeight: FontWeight.w900,
+                                                    height: 1,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            qualityLabel,
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: displayValue <= 50
-                                                  ? const Color(0xFF2FBF71)
-                                                  : displayValue <= 100
-                                                      ? const Color(
-                                                          0xFFF59E0B,
-                                                        )
-                                                      : const Color(
-                                                          0xFFE04F5F,
-                                                        ),
-                                              fontSize: 5.3,
-                                              fontWeight: FontWeight.w900,
-                                              height: 1,
-                                            ),
-                                          ),
-                                        ],
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 6),
+                      _DensityRiskLegend(
+                        activeLevel: activeLevel,
+                        isDark: isDark,
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -1979,9 +1984,9 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
         }
 
         return DashboardPanel(
-          title: "Qualité de crédit moyenne du portefeuille",
+          title: 'Densité RWA du portefeuille',
           subtitle:
-              "Vue dynamique de la qualité de crédit à travers le risque pondéré moyen",
+              'RWA total / Exposition totale brute',
           child: SizedBox(
             height: cardHeight,
             width: double.infinity,
@@ -2028,7 +2033,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                                 ),
                                 BoxShadow(
                                   color: const Color(0xFF234A84)
-                                      .withOpacity(isDark ? 0.10 : 0.05),
+                                      .withValues(alpha: isDark ? 0.10 : 0.05),
                                   blurRadius: 18 + (pulse * 8),
                                   offset: const Offset(0, 0),
                                 ),
@@ -2038,7 +2043,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  "${displayValue.toStringAsFixed(1)}%",
+                                  '${displayValue.toStringAsFixed(1)}%',
                                   style: TextStyle(
                                     color: dashboardTitleColor(isDark),
                                     fontSize: widget.compact ? 12 : 16,
@@ -2049,13 +2054,9 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                                 ),
                                 SizedBox(height: widget.compact ? 4 : 6),
                                 Text(
-                                  qualityLabel,
+                                  densityLabel,
                                   style: TextStyle(
-                                    color: displayValue <= 50
-                                        ? const Color(0xFF2FBF71)
-                                        : displayValue <= 100
-                                            ? const Color(0xFFF59E0B)
-                                            : const Color(0xFFE04F5F),
+                                    color: activeColor,
                                     fontSize: widget.compact ? 7.4 : 9.5,
                                     fontWeight: FontWeight.w900,
                                     fontStyle: FontStyle.italic,
@@ -2065,7 +2066,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                                 if (!widget.compact) ...[
                                   const SizedBox(height: 6),
                                   Text(
-                                    "Pondération moyenne",
+                                    'RWA / Exposition brute',
                                     style: TextStyle(
                                       color: dashboardSubtitleColor(isDark),
                                       fontSize: 7,
@@ -2089,14 +2090,330 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
     );
   }
 
-  String _getQualityLabel(double value) {
+  String _getDensityLabel(double value) {
     if (value <= 50) {
-      return "Qualité excellente";
+      return 'Risque faible';
     }
     if (value <= 100) {
-      return "Qualité bonne";
+      return 'Risque moyen';
     }
-    return "Qualité faible";
+    return 'Risque élevé';
+  }
+
+  _DensityRiskLevel _getDensityLevel(double value) {
+    if (value <= 50) {
+      return _DensityRiskLevel.low;
+    }
+    if (value <= 100) {
+      return _DensityRiskLevel.medium;
+    }
+    return _DensityRiskLevel.high;
+  }
+
+  Color _getDensityColor(double value) {
+    return switch (_getDensityLevel(value)) {
+      _DensityRiskLevel.low => const Color(0xFF2FBF71),
+      _DensityRiskLevel.medium => const Color(0xFFF59E0B),
+      _DensityRiskLevel.high => const Color(0xFFE04F5F),
+    };
+  }
+}
+
+enum _DensityRiskLevel {
+  low,
+  medium,
+  high,
+}
+
+class _DensityRiskLegend extends StatefulWidget {
+  const _DensityRiskLegend({
+    required this.activeLevel,
+    required this.isDark,
+  });
+
+  final _DensityRiskLevel activeLevel;
+  final bool isDark;
+
+  @override
+  State<_DensityRiskLegend> createState() => _DensityRiskLegendState();
+}
+
+class _DensityRiskLegendState extends State<_DensityRiskLegend> {
+  _DensityRiskLevel? _hoveredLevel;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleColor = dashboardTitleColor(widget.isDark);
+    final mutedColor = dashboardSubtitleColor(widget.isDark);
+    final displayedLevel = _hoveredLevel ?? widget.activeLevel;
+    final levels = [
+      (
+        level: _DensityRiskLevel.low,
+        label: context.tr('Faible'),
+        helper: context.tr('peu risqué'),
+        headline: context.tr('Risque faible (densité)'),
+        detail: context.tr(
+          'Le risque faible désigne un portefeuille dont la consommation en RWA reste modérée. Il traduit en général une qualité de crédit saine et une pression limitée sur le capital réglementaire.',
+        ),
+        advice: context.tr(
+          'Maintenir la qualité des contreparties, préserver les garanties efficaces et suivre les concentrations par secteur.',
+        ),
+        color: const Color(0xFF2FBF71),
+        icon: Icons.verified_user_outlined,
+      ),
+      (
+        level: _DensityRiskLevel.medium,
+        label: context.tr('Moyen'),
+        helper: context.tr('normal'),
+        headline: context.tr('Risque moyen (densité)'),
+        detail: context.tr(
+          'Le risque moyen correspond à une situation équilibrée, mais plus sensible aux variations de qualité de crédit. Il nécessite une surveillance régulière car les RWA peuvent augmenter plus rapidement en cas de dégradation.',
+        ),
+        advice: context.tr(
+          'Renforcer le suivi des expositions sensibles, revoir les couvertures disponibles et anticiper les besoins en capital.',
+        ),
+        color: const Color(0xFFF59E0B),
+        icon: Icons.account_balance_outlined,
+      ),
+      (
+        level: _DensityRiskLevel.high,
+        label: context.tr('Élevé'),
+        helper: context.tr('alerte'),
+        headline: context.tr('Risque élevé (densité)'),
+        detail: context.tr(
+          'Le risque élevé décrit un portefeuille plus exigeant en capital et plus exposé aux détériorations de notation. Il signale une vulnérabilité accrue et appelle une attention prioritaire sur les expositions concernées.',
+        ),
+        advice: context.tr(
+          'Prioriser les actions de réduction de RWA, sécuriser les expositions les plus lourdes et renforcer rapidement les mécanismes de couverture.',
+        ),
+        color: const Color(0xFFE04F5F),
+        icon: Icons.warning_amber_rounded,
+      ),
+    ];
+
+    return SizedBox(
+      width: 92,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.tr('Interprétation'),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: titleColor,
+              fontSize: 7.1,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 5),
+          for (var index = 0; index < levels.length; index++) ...[
+            Tooltip(
+              richMessage: TextSpan(
+                children: [
+                  TextSpan(
+                    text: '${levels[index].headline} : ',
+                    style: TextStyle(
+                      color: levels[index].color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      height: 1.35,
+                    ),
+                  ),
+                  TextSpan(
+                    text: levels[index].detail,
+                    style: TextStyle(
+                      color: widget.isDark
+                          ? const Color(0xFFF8FBFF)
+                          : const Color(0xFF173055),
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
+                  ),
+                  TextSpan(
+                    text: '\n\n${context.tr('Astuce')} : ',
+                    style: TextStyle(
+                      color: widget.isDark
+                          ? const Color(0xFFB8C9E6)
+                          : const Color(0xFF5E759A),
+                      fontSize: 10.4,
+                      fontWeight: FontWeight.w800,
+                      height: 1.35,
+                    ),
+                  ),
+                  TextSpan(
+                    text: levels[index].advice,
+                    style: TextStyle(
+                      color: widget.isDark
+                          ? const Color(0xFFF8FBFF)
+                          : const Color(0xFF173055),
+                      fontSize: 10.4,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+              waitDuration: const Duration(milliseconds: 120),
+              showDuration: const Duration(seconds: 5),
+              preferBelow: false,
+              verticalOffset: 10,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              constraints: const BoxConstraints(maxWidth: 280),
+              decoration: BoxDecoration(
+                color: widget.isDark ? const Color(0xFF122038) : Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: levels[index]
+                      .color
+                      .withValues(alpha: widget.isDark ? 0.30 : 0.24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(
+                      alpha: widget.isDark ? 0.24 : 0.12,
+                    ),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                onEnter: (_) => setState(() {
+                  _hoveredLevel = levels[index].level;
+                }),
+                onExit: (_) => setState(() {
+                  _hoveredLevel = null;
+                }),
+                child: _DensityRiskTile(
+                  active: levels[index].level == displayedLevel,
+                  current: levels[index].level == widget.activeLevel,
+                  color: levels[index].color,
+                  icon: levels[index].icon,
+                  label: levels[index].label,
+                  helper: levels[index].helper,
+                  mutedColor: mutedColor,
+                  isDark: widget.isDark,
+                ),
+              ),
+            ),
+            if (index != levels.length - 1) const SizedBox(height: 4),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DensityRiskTile extends StatelessWidget {
+  const _DensityRiskTile({
+    required this.active,
+    required this.current,
+    required this.color,
+    required this.icon,
+    required this.label,
+    required this.helper,
+    required this.mutedColor,
+    required this.isDark,
+  });
+
+  final bool active;
+  final bool current;
+  final Color color;
+  final IconData icon;
+  final String label;
+  final String helper;
+  final Color mutedColor;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOut,
+      scale: active ? 1.02 : 1,
+      alignment: Alignment.centerLeft,
+      child: AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      height: 31,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: active ? color : color.withValues(alpha: isDark ? 0.10 : 0.05),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(
+          color: current || active ? color : color.withValues(alpha: 0.18),
+          width: current ? 1.2 : 1,
+        ),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: isDark ? 0.24 : 0.18),
+                  blurRadius: 9,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            width: current ? 6 : 4,
+            height: current ? 6 : 4,
+            decoration: BoxDecoration(
+              color: active ? Colors.white : color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Icon(
+            icon,
+            color: active ? Colors.white : color,
+            size: 11,
+          ),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: active ? Colors.white : color,
+                    fontSize: 6.1,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  helper,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: active
+                        ? Colors.white.withValues(alpha: 0.86)
+                        : mutedColor.withValues(alpha: isDark ? 0.94 : 0.88),
+                    fontSize: 5.2,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      ),
+    );
   }
 }
 
@@ -2127,7 +2444,7 @@ class _LegendStatTile extends StatelessWidget {
             : Colors.transparent,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
-          color: active ? color.withOpacity(0.32) : Colors.transparent,
+          color: active ? color.withValues(alpha: 0.32) : Colors.transparent,
         ),
       ),
       child: Row(
@@ -2180,7 +2497,7 @@ class _RangePill extends StatelessWidget {
     return Container(
       height: 26,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Center(
@@ -2285,7 +2602,7 @@ class _ExposureHorizontalGridPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final gridPaint = Paint()
       ..color = isDark
-          ? const Color(0xFF22304B).withOpacity(0.42)
+          ? const Color(0xFF22304B).withValues(alpha: 0.42)
           : const Color(0xFFD9E2EF)
       ..strokeWidth = 0.8;
 
@@ -2339,7 +2656,7 @@ class _CrmDonutPainter extends CustomPainter {
       final segmentOpacity = hasActiveSegment && !isActive ? 0.42 : 1.0;
 
       final paint = Paint()
-        ..color = segment.color.withOpacity(segmentOpacity)
+        ..color = segment.color.withValues(alpha: segmentOpacity)
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.butt
@@ -2449,8 +2766,8 @@ class _GaugePainter extends CustomPainter {
     );
     final baselinePaint = Paint()
       ..color = isDark
-          ? const Color(0xFF121D30).withOpacity(0.78)
-          : Colors.white.withOpacity(0.96)
+          ? const Color(0xFF121D30).withValues(alpha: 0.78)
+          : Colors.white.withValues(alpha: 0.96)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 5.5
       ..strokeCap = StrokeCap.square;
@@ -2510,12 +2827,12 @@ class _GaugePainter extends CustomPainter {
       tip,
       18 + (pulse * 5),
       Paint()
-        ..color = const Color(0xFF234A84).withOpacity(0.05 + (pulse * 0.05)),
+        ..color = const Color(0xFF234A84).withValues(alpha: 0.05 + (pulse * 0.05)),
     );
     canvas.drawCircle(
       tip,
       14,
-      Paint()..color = const Color(0xFF234A84).withOpacity(0.12),
+      Paint()..color = const Color(0xFF234A84).withValues(alpha: 0.12),
     );
     canvas.drawCircle(
       tip,
@@ -2533,7 +2850,7 @@ class _GaugePainter extends CustomPainter {
       tip,
       8,
       Paint()
-        ..color = const Color(0xFF234A84).withOpacity(0.24)
+        ..color = const Color(0xFF234A84).withValues(alpha: 0.24)
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.9,
     );
@@ -2620,7 +2937,7 @@ class _GaugePainter extends CustomPainter {
         adjustedDashStart,
         adjustedDashEnd,
         Paint()
-          ..color = tick.color.withOpacity(0.95)
+          ..color = tick.color.withValues(alpha: 0.95)
           ..strokeWidth = tick.value % 50 == 0 ? 2.2 : 1.6
           ..strokeCap = StrokeCap.round,
       );
@@ -2630,7 +2947,7 @@ class _GaugePainter extends CustomPainter {
       }
 
       textPainter.text = TextSpan(
-        text: "${tick.value.toInt()}",
+        text: '${tick.value.toInt()}',
         style: TextStyle(
           color: tick.color,
           fontSize: tick.value % 50 == 0 ? 9.4 : 8.3,
@@ -2663,12 +2980,12 @@ class _GaugePainter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: isDark
             ? [
-                const Color(0xFFA8C7FF).withOpacity(0.12 + (pulse * 0.04)),
-                const Color(0xFFA8C7FF).withOpacity(0.0),
+                const Color(0xFFA8C7FF).withValues(alpha: 0.12 + (pulse * 0.04)),
+                const Color(0xFFA8C7FF).withValues(alpha: 0.0),
               ]
             : [
-                const Color(0xFFBFD8FF).withOpacity(0.20 + (pulse * 0.05)),
-                const Color(0xFFBFD8FF).withOpacity(0.0),
+                const Color(0xFFBFD8FF).withValues(alpha: 0.20 + (pulse * 0.05)),
+                const Color(0xFFBFD8FF).withValues(alpha: 0.0),
               ],
       ).createShader(
         Rect.fromLTWH(
@@ -2685,12 +3002,12 @@ class _GaugePainter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: isDark
             ? [
-                const Color(0xFF193252).withOpacity(0.34 + (pulse * 0.04)),
-                const Color(0xFF11213C).withOpacity(0.08),
+                const Color(0xFF193252).withValues(alpha: 0.34 + (pulse * 0.04)),
+                const Color(0xFF11213C).withValues(alpha: 0.08),
               ]
             : [
-                const Color(0xFFF1F6FF).withOpacity(0.92),
-                const Color(0xFFDDEAFF).withOpacity(0.68 + (pulse * 0.04)),
+                const Color(0xFFF1F6FF).withValues(alpha: 0.92),
+                const Color(0xFFDDEAFF).withValues(alpha: 0.68 + (pulse * 0.04)),
               ],
       ).createShader(
         Rect.fromLTWH(
@@ -2703,8 +3020,8 @@ class _GaugePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     final innerShadowPaint = Paint()
       ..color = isDark
-          ? const Color.fromARGB(255, 106, 136, 197).withOpacity(0.14)
-          : const Color.fromARGB(255, 141, 189, 248).withOpacity(0.12)
+          ? const Color.fromARGB(255, 106, 136, 197).withValues(alpha: 0.14)
+          : const Color.fromARGB(255, 141, 189, 248).withValues(alpha: 0.12)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.5;
     // Le fond intérieur reste volontairement en demi-cercle supérieur pour accompagner l'arc principal.
