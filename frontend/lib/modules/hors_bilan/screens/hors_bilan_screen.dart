@@ -56,13 +56,19 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
         final data = snapshot.data!;
         final items = data.items.where((item) {
           final matchesSearch = _searchController.text.isEmpty ||
-              item.id.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-              item.counterpartyName.toLowerCase().contains(_searchController.text.toLowerCase());
-          final matchesType = _selectedType == 'Tous' || item.engagementType == _selectedType;
+              item.id
+                  .toLowerCase()
+                  .contains(_searchController.text.toLowerCase()) ||
+              item.counterpartyName
+                  .toLowerCase()
+                  .contains(_searchController.text.toLowerCase());
+          final matchesType =
+              _selectedType == 'Tous' || item.engagementType == _selectedType;
           return matchesSearch && matchesType;
         }).toList();
         final options = {
-          for (final item in data.items) item.counterpartyId: item.counterpartyName,
+          for (final item in data.items)
+            item.counterpartyId: item.counterpartyName,
         };
 
         return SingleChildScrollView(
@@ -72,7 +78,8 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
             children: [
               const PageHeader(
                 title: 'Hors Bilan',
-                subtitle: 'Gestion des engagements hors bilan avec application des CCF et calcul des RWA.',
+                subtitle:
+                    'Gestion des engagements hors bilan avec application des CCF et calcul des RWA.',
               ),
               const SizedBox(height: AppTheme.spacing),
               LayoutBuilder(
@@ -109,12 +116,22 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
                                 SizedBox(
                                   width: 180,
                                   child: DropdownButtonFormField<String>(
-                                    value: _selectedType,
-                                    items: ['Tous', ...data.items.map((item) => item.engagementType).toSet()]
-                                        .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+                                    initialValue: _selectedType,
+                                    isExpanded: true,
+                                    menuMaxHeight: 320,
+                                    items: [
+                                      'Tous',
+                                      ...data.items
+                                          .map((item) => item.engagementType)
+                                          .toSet()
+                                    ]
+                                        .map((item) => DropdownMenuItem(
+                                            value: item, child: Text(item)))
                                         .toList(),
-                                    onChanged: (value) => setState(() => _selectedType = value ?? 'Tous'),
-                                    decoration: const InputDecoration(labelText: 'Type'),
+                                    onChanged: (value) => setState(
+                                        () => _selectedType = value ?? 'Tous'),
+                                    decoration: const InputDecoration(
+                                        labelText: 'Type'),
                                   ),
                                 ),
                               ],
@@ -127,7 +144,9 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
                       const SizedBox(height: AppTheme.spacing),
                       LayoutBuilder(
                         builder: (context, inner) {
-                          final width = inner.maxWidth > 960 ? (inner.maxWidth - 20) / 3 : inner.maxWidth;
+                          final width = inner.maxWidth > 960
+                              ? (inner.maxWidth - 20) / 3
+                              : inner.maxWidth;
                           return Wrap(
                             spacing: AppTheme.spacing,
                             runSpacing: AppTheme.spacing,
@@ -185,7 +204,8 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
                           children: [
                             form,
                             const SizedBox(height: AppTheme.spacing),
-                            SizedBox(width: double.infinity, child: tableSection),
+                            SizedBox(
+                                width: double.infinity, child: tableSection),
                           ],
                         );
                 },

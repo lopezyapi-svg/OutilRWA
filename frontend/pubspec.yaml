@@ -19,6 +19,7 @@ dependencies:
   intl: ^0.20.2
   lottie: ^3.1.2
   pdf: ^3.11.1
+  flutter_svg: ^2.0.10+1
 
 dev_dependencies:
   flutter_test:
@@ -30,5 +31,6 @@ flutter:
   assets:
     - assets/images/heymanns_logo.png
     - assets/images/rwa_credit.png
+    - assets/images/manage_money_bro.svg
     - assets/lotties/import_loader.json
     - assets/lotties/rwa_dashboard.json

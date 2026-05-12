@@ -2355,6 +2355,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       categoryCode: 'e',
       rating: _ratings.contains('BBB') ? 'BBB' : _ratings.first,
       grossAmount: 1000000,
+      loanTotalAmount: 1000000,
+      onBalanceExposureAmount: 1000000,
       currency: _displayCurrency,
       status: 'Active',
       crmMode: 'Aucune',

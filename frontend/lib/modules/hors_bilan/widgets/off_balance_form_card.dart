@@ -32,7 +32,9 @@ class _OffBalanceFormCardState extends State<OffBalanceFormCard> {
   @override
   void initState() {
     super.initState();
-    _counterpartyId = widget.counterpartyOptions.isEmpty ? '' : widget.counterpartyOptions.keys.first;
+    _counterpartyId = widget.counterpartyOptions.isEmpty
+        ? ''
+        : widget.counterpartyOptions.keys.first;
   }
 
   @override
@@ -47,38 +49,54 @@ class _OffBalanceFormCardState extends State<OffBalanceFormCard> {
     return SectionCard(
       title: 'Ajouter Engagement Hors Bilan',
       child: widget.counterpartyOptions.isEmpty
-          ? const Text('Aucune contrepartie disponible pour la saisie hors bilan.')
+          ? const Text(
+              'Aucune contrepartie disponible pour la saisie hors bilan.')
           : Form(
               key: _formKey,
               child: Column(
                 children: [
                   DropdownButtonFormField<String>(
-                    value: _counterpartyId,
-                    decoration: const InputDecoration(labelText: 'Contrepartie'),
+                    initialValue: _counterpartyId,
+                    isExpanded: true,
+                    menuMaxHeight: 320,
+                    decoration:
+                        const InputDecoration(labelText: 'Contrepartie'),
                     items: widget.counterpartyOptions.entries
-                        .map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value)))
+                        .map((entry) => DropdownMenuItem(
+                            value: entry.key, child: Text(entry.value)))
                         .toList(),
-                    onChanged: (value) => setState(() => _counterpartyId = value ?? _counterpartyId),
+                    onChanged: (value) => setState(
+                        () => _counterpartyId = value ?? _counterpartyId),
                   ),
                   const SizedBox(height: AppTheme.spacing),
                   DropdownButtonFormField<String>(
-                    value: _engagementType,
-                    decoration: const InputDecoration(labelText: 'Nature d\'engagement'),
+                    initialValue: _engagementType,
+                    isExpanded: true,
+                    menuMaxHeight: 320,
+                    decoration: const InputDecoration(
+                        labelText: 'Nature d\'engagement'),
                     items: const [
                       'Credit documentaire',
                       'Lignes de credit',
                       'Instruments financiers',
                       'Garanties financieres',
                       'Engagement de garantie',
-                    ].map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-                    onChanged: (value) => setState(() => _engagementType = value ?? _engagementType),
+                    ]
+                        .map((item) =>
+                            DropdownMenuItem(value: item, child: Text(item)))
+                        .toList(),
+                    onChanged: (value) => setState(
+                        () => _engagementType = value ?? _engagementType),
                   ),
                   const SizedBox(height: AppTheme.spacing),
                   TextFormField(
                     controller: _amountController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Montant nominal'),
-                    validator: (value) => double.tryParse(value ?? '') == null ? 'Montant invalide' : null,
+                    decoration:
+                        const InputDecoration(labelText: 'Montant nominal'),
+                    validator: (value) => double.tryParse(value ?? '') == null
+                        ? 'Montant invalide'
+                        : null,
                   ),
                   const SizedBox(height: AppTheme.spacing),
                   TextFormField(

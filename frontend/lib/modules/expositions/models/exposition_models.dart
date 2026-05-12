@@ -1671,6 +1671,8 @@ class ExposureRecord {
     this.maturityDate,
     required this.counterparty,
     required this.grossAmount,
+    this.loanTotalAmount,
+    this.onBalanceExposureAmount,
     required this.currency,
     required this.crmType,
     required this.crmCoveragePercent,
@@ -1713,6 +1715,8 @@ class ExposureRecord {
   final DateTime? maturityDate;
   final CounterpartyModel counterparty;
   final double grossAmount;
+  final double? loanTotalAmount;
+  final double? onBalanceExposureAmount;
   final String currency;
   final String crmType;
   final double crmCoveragePercent;
@@ -1761,6 +1765,7 @@ class ExposureRecord {
       json['counterparty'] as Map<String, dynamic>,
     );
     final categoryCode = exposureCategoryByName(counterparty.category).code;
+    final grossAmount = (json['gross_amount'] as num).toDouble();
     final crmType = (json['crm_type'] ?? 'Aucune') as String;
     final crmCoveragePercent =
         (json['crm_coverage_percent'] as num? ?? 0).toDouble();
@@ -1797,7 +1802,10 @@ class ExposureRecord {
           ? null
           : DateTime.parse(json['maturity_date'] as String),
       counterparty: counterparty,
-      grossAmount: (json['gross_amount'] as num).toDouble(),
+      grossAmount: grossAmount,
+      loanTotalAmount: (json['loan_total_amount'] as num?)?.toDouble(),
+      onBalanceExposureAmount:
+          (json['on_balance_exposure_amount'] as num?)?.toDouble(),
       currency: (json['currency'] ?? 'XOF') as String,
       crmType: crmType,
       crmCoveragePercent: crmCoveragePercent == 0
@@ -1862,6 +1870,14 @@ class ExposureRecord {
   }
 
   ExposureDraft toDraft() {
+    final resolvedOnBalanceExposureAmount =
+        onBalanceExposureAmount ?? (categoryCode == 'l' ? 0.0 : grossAmount);
+    final resolvedLoanTotalAmount = loanTotalAmount ??
+        (categoryCode == 'l'
+            ? grossAmount
+            : (grossAmount >= resolvedOnBalanceExposureAmount
+                ? grossAmount
+                : resolvedOnBalanceExposureAmount));
     return ExposureDraft(
       id: id,
       counterpartyName: counterparty.name,
@@ -1870,6 +1886,8 @@ class ExposureRecord {
       categoryCode: categoryCode,
       rating: counterparty.rating,
       grossAmount: grossAmount,
+      loanTotalAmount: resolvedLoanTotalAmount,
+      onBalanceExposureAmount: resolvedOnBalanceExposureAmount,
       currency: currency,
       status: status,
       crmMode: crmDetails.mode == 'Aucune' ? 'Aucune' : crmDetails.mode,
@@ -1968,6 +1986,8 @@ class ExposureDraft {
     required this.categoryCode,
     required this.rating,
     required this.grossAmount,
+    required this.loanTotalAmount,
+    required this.onBalanceExposureAmount,
     required this.currency,
     required this.status,
     required this.crmMode,
@@ -2023,6 +2043,8 @@ class ExposureDraft {
   final String categoryCode;
   final String rating;
   final double grossAmount;
+  final double loanTotalAmount;
+  final double onBalanceExposureAmount;
   final String currency;
   final String status;
   final String crmMode;
@@ -2073,6 +2095,10 @@ class ExposureDraft {
   ExposureCategoryOption get category => exposureCategoryByCode(categoryCode);
   ExposureCategoryOption get guarantorCategory =>
       exposureCategoryByCode(guarantorCategoryCode);
+  double get offBalanceExposureAmount {
+    final value = loanTotalAmount - onBalanceExposureAmount;
+    return value <= 0 ? 0.0 : value;
+  }
 
   String get backendCategory => category.prudentialLabel;
 
@@ -2569,11 +2595,12 @@ ExposureComputation computeDraftMetrics(ExposureDraft draft) {
   final amount = draft.grossAmount;
   if (draft.categoryCode == 'l') {
     final fcec = lookupOffBalanceFcec(draft.offBalanceRiskLevel);
-    final rwa = amount * fcec;
+    final ead = amount * fcec;
+    final rwa = ead;
     return ExposureComputation(
       originalRw: fcec,
       finalRw: fcec,
-      ead: amount,
+      ead: ead,
       rwa: rwa,
       capital: rwa * 0.08,
       effectiveCoverage: 0.0,

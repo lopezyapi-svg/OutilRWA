@@ -1,6 +1,7 @@
 // Ce fichier affiche le parcours guide de creation et d'edition des expositions.
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
@@ -11,6 +12,8 @@ import '../models/exposition_models.dart';
 
 const double _exposureFormRadius = 5;
 const double _wizardBorderWidth = 1.0;
+const String _wizardPanelIllustrationAsset =
+    'assets/images/manage_money_bro.svg';
 
 bool _isExposureDark(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark;
@@ -380,9 +383,15 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       icon: Icons.account_balance_wallet_outlined,
     ),
     _WizardStepMeta(
-      shortLabel: 'CRM',
-      title: 'CRM & gestion du risque',
-      subtitle: 'Couverture et attenuation du risque',
+      shortLabel: 'CRM ?',
+      title: 'Existence de CRM',
+      subtitle: 'Présence d une couverture',
+      icon: Icons.help_outline_rounded,
+    ),
+    _WizardStepMeta(
+      shortLabel: 'Type CRM',
+      title: 'Type de CRM',
+      subtitle: 'Nature de l attenuation du risque',
       icon: Icons.handshake_outlined,
     ),
     _WizardStepMeta(
@@ -412,6 +421,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   final TextEditingController _maturityDateController = TextEditingController();
   final ScrollController _rightPanelScrollController = ScrollController();
   late final TextEditingController _amountController;
+  late final TextEditingController _onBalanceAmountController;
   late final TextEditingController _commentController;
   late final TextEditingController _collateralController;
   late final TextEditingController _fxHaircutController;
@@ -444,7 +454,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   late String _currency;
   late String _status;
   late String _crmMode;
-  late String _lastSelectedCrmMode;
+  bool? _crmExistsAnswer;
   late String _crmType;
   late String _collateralType;
   late String _collateralCurrency;
@@ -491,7 +501,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _grantDateController.text = _formatDateForField(_grantDate);
     _maturityDateController.text = _formatDateForField(_maturityDate);
     _amountController = TextEditingController(
-      text: (draft?.grossAmount ?? 1000000).toStringAsFixed(0),
+      text: (draft?.loanTotalAmount ?? 1000000).toStringAsFixed(0),
+    );
+    _onBalanceAmountController = TextEditingController(
+      text: (draft?.onBalanceExposureAmount ?? 1000000).toStringAsFixed(0),
     );
     _commentController = TextEditingController(text: draft?.comment ?? '');
     _collateralController = TextEditingController(
@@ -616,11 +629,14 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _currency = _resolveCurrency(draft?.currency);
     _status = draft?.status ?? 'Active';
     _crmMode = draft?.crmMode ?? 'Aucune';
-    _lastSelectedCrmMode = _crmMode == 'Aucune' ? 'CRM financee' : _crmMode;
     if (_isOffBalanceCategory && _crmMode != 'Aucune') {
-      _lastSelectedCrmMode = _crmMode;
       _crmMode = 'Aucune';
     }
+    _crmExistsAnswer = _isOffBalanceCategory
+        ? false
+        : (draft == null
+            ? (_crmMode == 'Aucune' ? null : true)
+            : _crmMode != 'Aucune');
     _crmType = _nonFinancedCrmTypes.contains(draft?.crmType)
         ? draft!.crmType
         : 'Garantie etatique';
@@ -690,6 +706,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _maturityDateController.dispose();
     _rightPanelScrollController.dispose();
     _amountController.dispose();
+    _onBalanceAmountController.dispose();
     _commentController.dispose();
     _collateralController.dispose();
     _fxHaircutController.dispose();
@@ -724,9 +741,34 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return fallback;
   }
 
+  double? get _loanTotalAmountInput => _parseDecimal(_amountController.text);
+
+  double? get _onBalanceExposureAmountInput =>
+      _parseDecimal(_onBalanceAmountController.text);
+
+  double get _derivedOffBalanceExposureAmount {
+    final loanTotalAmount = _loanTotalAmountInput ?? 0.0;
+    final onBalanceExposureAmount = _onBalanceExposureAmountInput ?? 0.0;
+    final value = loanTotalAmount - onBalanceExposureAmount;
+    return value <= 0 ? 0.0 : value;
+  }
+
+  double _resolveEffectiveGrossAmount({
+    required double loanTotalAmount,
+    required double onBalanceExposureAmount,
+  }) {
+    if (_isOffBalanceCategory) {
+      final value = loanTotalAmount - onBalanceExposureAmount;
+      return value <= 0 ? 0.0 : value;
+    }
+    return onBalanceExposureAmount <= 0 ? 0.0 : onBalanceExposureAmount;
+  }
+
   double get _computedCoverage {
-    final gross =
-        double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
+    final gross = _resolveEffectiveGrossAmount(
+      loanTotalAmount: _loanTotalAmountInput ?? 0.0,
+      onBalanceExposureAmount: _onBalanceExposureAmountInput ?? 0.0,
+    );
     final covered =
         double.tryParse(_coveredAmountController.text.replaceAll(',', '.')) ??
             0.0;
@@ -808,11 +850,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }
 
   FinancedCrmSnapshot get _financedCrmSnapshotPreview {
-    final amount = _parseDecimal(_amountController.text) ?? 0.0;
+    final loanTotalAmount = _loanTotalAmountInput ?? 0.0;
+    final onBalanceExposureAmount = _onBalanceExposureAmountInput ?? 0.0;
     final collateral = _parseDecimal(_collateralController.text) ?? 0.0;
     return computeFinancedCrmSnapshot(
       _draftFromValues(
-        grossAmount: amount,
+        loanTotalAmount: loanTotalAmount,
+        onBalanceExposureAmount: onBalanceExposureAmount,
         collateralValue: collateral,
         fxHaircut: 0.0,
         comment: _commentController.text,
@@ -1423,6 +1467,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
     return Container(
       width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -1459,6 +1504,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     ? availableWidth
                     : (availableWidth - spacing * (columns - 1)) / columns;
                 final hasBoundedHeight = constraints.maxHeight.isFinite;
+                final illustrationWidth = availableWidth >= 430
+                    ? 250.0
+                    : availableWidth >= 340
+                        ? 220.0
+                        : 176.0;
                 final kpiGrid = Wrap(
                   spacing: spacing,
                   runSpacing: spacing,
@@ -1480,73 +1530,92 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
                 return SizedBox(
                   height: hasBoundedHeight ? constraints.maxHeight : null,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Stack(
                     children: [
-                      Row(
+                      Positioned(
+                        right: -10,
+                        bottom: hasBoundedHeight ? -8 : 8,
+                        child: IgnorePointer(
+                          child: Opacity(
+                            opacity: isDark ? 0.10 : 0.17,
+                            child: SvgPicture.asset(
+                              _wizardPanelIllustrationAsset,
+                              width: illustrationWidth,
+                              fit: BoxFit.contain,
+                              excludeFromSemantics: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: summaryIconBackground,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: summaryIconBorder,
-                                width: 1,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: summaryIconBackground,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: summaryIconBorder,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.insights_rounded,
+                                  size: 22,
+                                  color: Color(0xFF2563EB),
+                                ),
                               ),
-                            ),
-                            child: const Icon(
-                              Icons.insights_rounded,
-                              size: 22,
-                              color: Color(0xFF2563EB),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Synthèse',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 15.8,
-                                        color: summaryTitleColor,
-                                        height: 1.05,
-                                      ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Synthèse',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 15.8,
+                                            color: summaryTitleColor,
+                                            height: 1.05,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 7),
+                                    Text(
+                                      'Lecture rapide du profil RWA, des expositions et des échéances.',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 10.5,
+                                            color: summaryBodyColor,
+                                            height: 1.45,
+                                          ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 7),
-                                Text(
-                                  'Lecture rapide du profil RWA, des expositions et des échéances.',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 10.5,
-                                        color: summaryBodyColor,
-                                        height: 1.45,
-                                      ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 16),
+                          if (hasBoundedHeight)
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: kpiGrid,
+                              ),
+                            )
+                          else
+                            kpiGrid,
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      if (hasBoundedHeight)
-                        Expanded(
-                          child: SingleChildScrollView(
-                            child: kpiGrid,
-                          ),
-                        )
-                      else
-                        kpiGrid,
                     ],
                   ),
                 );
@@ -1608,10 +1677,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 _StepOverviewChip(
                   number: visibleIndex + 1,
                   isActive: visibleIndex + 1 == _currentStep,
-                  isCompleted: visibleIndex + 1 < _currentStep ||
-                      (!_crmExists &&
-                          visibleIndex + 1 == 4 &&
-                          _currentStep > 4),
+                  isCompleted: visibleIndex + 1 < _currentStep,
                 ),
                 if (visibleIndex < visibleStepCount - 1)
                   const SizedBox(width: 6),
@@ -1883,7 +1949,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           content: _buildCategoryStepBody(context),
         );
       case 3:
-        final showCrmQuestion = !_isOffBalanceCategory;
         return _FinancialDataStepScreen(
           title: _stepMetas[3].title,
           subtitle: _stepMetas[3].subtitle,
@@ -1891,26 +1956,35 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           fields: [
             _buildFieldCard(
               context: context,
-              title: 'Montant brut',
-              subtitle: 'Montant de l exposition',
+              title: 'Montant total du prêt',
+              subtitle: 'Montant brut de l opération',
               icon: Icons.payments_outlined,
               child: TextFormField(
                 controller: _amountController,
                 decoration: _fieldDecoration(
                   context,
-                  hint: context.tr('Montant brut'),
+                  hint: context.tr('Montant total du prêt'),
                 ),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  final parsed = _parseDecimal(value);
-                  if (parsed == null) {
-                    return context.tr('Montant invalide');
-                  }
-                  return parsed <= 0
-                      ? context.tr('Montant positif requis')
-                      : null;
-                },
+                validator: _amountValidator,
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            _buildFieldCard(
+              context: context,
+              title: 'Montant d exposition au bilan',
+              subtitle: 'Part déjà inscrite au bilan',
+              icon: Icons.account_balance_wallet_outlined,
+              child: TextFormField(
+                controller: _onBalanceAmountController,
+                decoration: _fieldDecoration(
+                  context,
+                  hint: context.tr('Montant d exposition au bilan'),
+                ),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                validator: _onBalanceAmountValidator,
                 onChanged: (_) => setState(() {}),
               ),
             ),
@@ -1936,37 +2010,58 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 }),
               ),
             ),
-            if (showCrmQuestion)
-              _buildFieldCard(
-                context: context,
-                title: 'CRM existe ?',
-                subtitle: 'Presence d une couverture',
-                icon: Icons.handshake_outlined,
-                child: DropdownButtonFormField<String>(
-                  value: _crmExists ? 'OUI' : 'NON',
-                  decoration: _fieldDecoration(context),
-                  items: const ['OUI', 'NON']
-                      .map(
-                        (item) => DropdownMenuItem(
-                          value: item,
-                          child: Text(item),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    final nextValue = value ?? 'NON';
-                    _setCrmExists(nextValue == 'OUI');
-                  },
+            _buildFieldCard(
+              context: context,
+              title: 'Montant d exposition au hors bilan',
+              subtitle: 'Déduit du prêt total et de l exposition au bilan',
+              icon: Icons.calculate_outlined,
+              child: InputDecorator(
+                decoration: _fieldDecoration(context),
+                child: Text(
+                  _formatReadonlyAmount(_derivedOffBalanceExposureAmount),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF1E3A8A),
+                      ),
                 ),
               ),
+            ),
           ],
           helper: const SizedBox.shrink(),
         );
       case 4:
+        return _CrmChoiceStepScreen(
+          title: _stepMetas[4].title,
+          subtitle: 'Qualification initiale de la couverture',
+          questionText: 'Cette exposition bénéficie-t-elle d une CRM ?',
+          selectedMode: _crmExistsAnswer == null
+              ? ''
+              : (_crmExistsAnswer! ? 'OUI' : 'NON'),
+          choices: const [
+            _ChoiceCardData(
+              value: 'OUI',
+              label: 'Oui',
+              subtitle: 'Avec couverture',
+              icon: Icons.check_circle_rounded,
+              accent: Color(0xFF00C853),
+            ),
+            _ChoiceCardData(
+              value: 'NON',
+              label: 'Non',
+              subtitle: 'Sans couverture',
+              icon: Icons.cancel_rounded,
+              accent: Color(0xFFFF3B30),
+            ),
+          ],
+          onModeChanged: (value) => _setCrmExistsAnswer(value == 'OUI'),
+        );
+      case 5:
         if (_crmSelectionStage) {
           return _CrmChoiceStepScreen(
-            title: _stepMetas[4].title,
-            subtitle: 'Choisissez d abord le type de CRM',
+            title: _stepMetas[5].title,
+            subtitle: 'Indiquez si la CRM est financée ou non financée',
             selectedMode: _crmMode,
             choices: [
               _ChoiceCardData(
@@ -1985,7 +2080,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             onModeChanged: (value) {
               setState(() {
                 _crmMode = value;
-                _lastSelectedCrmMode = value;
               });
             },
           );
@@ -2008,10 +2102,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           tooltipTitle: 'CRM financée',
           child: _buildCrmDynamicBody(context),
         );
-      case 5:
+      case 6:
         return _CommentStepScreen(
-          title: _stepMetas[5].title,
-          subtitle: _stepMetas[5].subtitle,
+          title: _stepMetas[6].title,
+          subtitle: _stepMetas[6].subtitle,
           formKey: _commentFormKey,
           commentField: TextFormField(
             controller: _commentController,
@@ -2024,10 +2118,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             ),
           ),
         );
-      case 6:
+      case 7:
         return _FinalDecisionStepScreen(
-          title: _stepMetas[6].title,
-          subtitle: _stepMetas[6].subtitle,
+          title: _stepMetas[7].title,
+          subtitle: _stepMetas[7].subtitle,
           submitting: _submitting,
           onConfirm: _submit,
           onBack: _goBack,
@@ -2119,6 +2213,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
   void _handleCategoryChanged(String? value) {
     final nextCode = value ?? _categoryCode;
+    final wasOffBalanceCategory = _isOffBalanceCategory;
     setState(() {
       _categoryCode = nextCode;
       if (!_isSovereignCategory) {
@@ -2182,11 +2277,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _enterpriseInvestmentFirmWithoutBankingLaw = null;
       }
       if (_isOffBalanceCategory) {
-        if (_crmMode != 'Aucune') {
-          _lastSelectedCrmMode = _crmMode;
-        }
+        _crmExistsAnswer = false;
         _crmMode = 'Aucune';
         _crmSelectionStage = true;
+      } else if (wasOffBalanceCategory && _crmMode == 'Aucune') {
+        _crmExistsAnswer = null;
       }
       if ((_isBmdCategory || _isBankInstitutionCategory) &&
           !prudentialRatings.contains(_rating)) {
@@ -3646,7 +3741,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final residualMaturityMonths = _maturityDate != null
         ? _positiveMonthDifference(DateTime.now(), _maturityDate!)
         : null;
-    final grossAmount = _parseDecimal(_amountController.text) ?? 0.0;
+    final loanTotalAmount = _loanTotalAmountInput ?? 0.0;
+    final onBalanceExposureAmount = _onBalanceExposureAmountInput ?? 0.0;
+    final offBalanceExposureAmount = _derivedOffBalanceExposureAmount;
     final isOffBalance = _isOffBalanceCategory;
     final counterpartyName = _nameController.text.trim();
     final residenceCountry = _countryController.text.trim();
@@ -3654,7 +3751,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final crmTypeLabel = switch (_crmMode) {
       'CRM financee' => 'Financee',
       'CRM non financee' => 'Non financee',
-      _ => 'Aucune',
+      _ => !_requiresCrmFlow
+          ? 'Non applicable'
+          : (_crmExistsAnswer == false ? 'Aucune' : 'À définir'),
     };
     final eadKpi = _KpiData(
       label: context.tr('EAD'),
@@ -3674,7 +3773,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         toCurrency: displayCurrency,
       ),
       icon: Icons.analytics_outlined,
-      accent: const Color(0xFF3B82F6),
+      accent: const Color(0xFF2563EB),
       highlighted: true,
       fullSpan: isOffBalance,
     );
@@ -3722,14 +3821,34 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         accent: const Color(0xFF7C3AED),
       ),
       _KpiData(
-        label: context.tr('Montant brut'),
+        label: context.tr('Montant total du prêt'),
         value: compactCurrencyForDisplay(
-          grossAmount,
+          loanTotalAmount,
           fromCurrency: _currency,
           toCurrency: displayCurrency,
         ),
         icon: Icons.payments_outlined,
         accent: const Color(0xFF0284C7),
+      ),
+      _KpiData(
+        label: context.tr('Exposition au bilan'),
+        value: compactCurrencyForDisplay(
+          onBalanceExposureAmount,
+          fromCurrency: _currency,
+          toCurrency: displayCurrency,
+        ),
+        icon: Icons.account_balance_wallet_outlined,
+        accent: const Color(0xFF0F766E),
+      ),
+      _KpiData(
+        label: context.tr('Exposition hors bilan'),
+        value: compactCurrencyForDisplay(
+          offBalanceExposureAmount,
+          fromCurrency: _currency,
+          toCurrency: displayCurrency,
+        ),
+        icon: Icons.calculate_outlined,
+        accent: const Color(0xFF1D4ED8),
       ),
       if (_crmMode != 'CRM non financee') eadKpi,
       if (isOffBalance)
@@ -4821,18 +4940,26 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     if (!_validateCurrentStep()) {
       return;
     }
-    if (_currentStep == 3 && !_crmExists) {
-      await _goToStep(5);
+    if (_currentStep == 3 && !_requiresCrmFlow) {
+      await _goToStep(6);
       return;
     }
-    if (_currentStep == 3 && _crmExists) {
-      setState(() {
-        _crmSelectionStage = true;
-      });
+    if (_currentStep == 3 && _requiresCrmFlow) {
       await _goToStep(4);
       return;
     }
-    if (_currentStep == 4 && _crmSelectionStage) {
+    if (_currentStep == 4 && _crmExistsAnswer == false) {
+      await _goToStep(6);
+      return;
+    }
+    if (_currentStep == 4 && _crmExistsAnswer == true) {
+      setState(() {
+        _crmSelectionStage = true;
+      });
+      await _goToStep(5);
+      return;
+    }
+    if (_currentStep == 5 && _crmSelectionStage) {
       setState(() {
         _crmSelectionStage = false;
         _resetRightPanelStickyState();
@@ -4857,7 +4984,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       return;
     }
     FocusScope.of(context).unfocus();
-    if (_currentStep == 4 && !_crmSelectionStage) {
+    if (_currentStep == 5 && !_crmSelectionStage) {
       setState(() {
         _crmSelectionStage = true;
         _resetRightPanelStickyState();
@@ -4870,22 +4997,29 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       });
       return;
     }
-    if (_currentStep == 5 && _crmExists) {
+    if (_currentStep == 6 && _requiresCrmFlow && _crmExistsAnswer == true) {
       setState(() {
         _crmSelectionStage = false;
       });
+      await _goToStep(5);
+      return;
+    }
+    if (_currentStep == 6 && _requiresCrmFlow && _crmExistsAnswer == false) {
       await _goToStep(4);
       return;
     }
     final previousStep =
-        (_currentStep == 5 && !_crmExists) ? 3 : _currentStep - 1;
+        (_currentStep == 6 && !_requiresCrmFlow) ? 3 : _currentStep - 1;
     await _goToStep(previousStep);
   }
 
   Future<void> _goToStep(int target) async {
     var boundedTarget = target.clamp(1, _stepMetas.length - 1);
-    if (!_crmExists && boundedTarget == 4) {
-      boundedTarget = 5;
+    if (!_requiresCrmFlow && (boundedTarget == 4 || boundedTarget == 5)) {
+      boundedTarget = 6;
+    }
+    if (_crmExistsAnswer == false && boundedTarget == 5) {
+      boundedTarget = 6;
     }
     if (_currentStep == boundedTarget) {
       return;
@@ -4963,7 +5097,22 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _pendingRightPanelScrollDirection = null;
   }
 
-  bool get _crmExists => _crmMode != 'Aucune';
+  bool get _requiresCrmFlow => !_isOffBalanceCategory;
+
+  bool get _hasAnsweredCrmExistsQuestion => _crmExistsAnswer != null;
+
+  bool get _hasSelectedCrmMode =>
+      _crmMode == 'CRM financee' || _crmMode == 'CRM non financee';
+
+  void _setCrmExistsAnswer(bool exists) {
+    setState(() {
+      _crmExistsAnswer = exists;
+      if (!exists) {
+        _crmMode = 'Aucune';
+        _crmSelectionStage = true;
+      }
+    });
+  }
 
   String _coerceGuarantorRating(String? value) {
     if (widget.ratings.contains(value)) {
@@ -4975,23 +5124,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return widget.ratings.isNotEmpty ? widget.ratings.first : '';
   }
 
-  void _setCrmExists(bool exists) {
-    setState(() {
-      if (exists) {
-        if (_crmMode == 'Aucune') {
-          _crmMode = _lastSelectedCrmMode;
-        }
-        _crmSelectionStage = true;
-      } else {
-        if (_crmMode != 'Aucune') {
-          _lastSelectedCrmMode = _crmMode;
-        }
-        _crmMode = 'Aucune';
-        _crmSelectionStage = true;
-      }
-    });
-  }
-
   Color _currentStepAccent() {
     switch (_currentStep) {
       case 1:
@@ -5001,10 +5133,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       case 3:
         return const Color(0xFF0F766E);
       case 4:
-        return const Color(0xFF0891B2);
+        return const Color(0xFF2563EB);
       case 5:
-        return const Color(0xFFF59E0B);
+        return const Color(0xFF0891B2);
       case 6:
+        return const Color(0xFFF59E0B);
+      case 7:
         return const Color(0xFF16A34A);
       default:
         return const Color(0xFF7C3AED);
@@ -5086,7 +5220,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _syncDateController(_grantDateController, _grantDate);
       _syncDateController(_maturityDateController, _maturityDate);
       _amountController.text =
-          (draft?.grossAmount ?? 1000000).toStringAsFixed(0);
+          (draft?.loanTotalAmount ?? 1000000).toStringAsFixed(0);
+      _onBalanceAmountController.text =
+          (draft?.onBalanceExposureAmount ?? 1000000).toStringAsFixed(0);
       _commentController.text = draft?.comment ?? '';
       _collateralController.text =
           (draft?.collateralValue ?? 0).toStringAsFixed(0);
@@ -5209,11 +5345,14 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _currency = draft?.currency ?? 'XOF';
       _status = draft?.status ?? 'Active';
       _crmMode = draft?.crmMode ?? 'Aucune';
-      _lastSelectedCrmMode = _crmMode == 'Aucune' ? 'CRM financee' : _crmMode;
       if (_categoryCode == 'l' && _crmMode != 'Aucune') {
-        _lastSelectedCrmMode = _crmMode;
         _crmMode = 'Aucune';
       }
+      _crmExistsAnswer = _categoryCode == 'l'
+          ? false
+          : (draft == null
+              ? (_crmMode == 'Aucune' ? null : true)
+              : _crmMode != 'Aucune');
       _crmType = _nonFinancedCrmTypes.contains(draft?.crmType)
           ? draft!.crmType
           : 'Garantie etatique';
@@ -5267,13 +5406,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }
 
   bool _validateFinancedCrmInputs() {
-    final grossAmount = _parseDecimal(_amountController.text);
-    if (grossAmount == null || grossAmount <= 0) {
+    final onBalanceExposureAmount = _onBalanceExposureAmountInput;
+    if (onBalanceExposureAmount == null || onBalanceExposureAmount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             context.tr(
-              'Le montant brut de l exposition doit être strictement positif.',
+              'Le montant d exposition au bilan doit être strictement positif.',
             ),
           ),
         ),
@@ -5359,9 +5498,33 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         }
         return true;
       case 3:
-        return _financialFormKey.currentState?.validate() ?? true;
+        final isValid = _financialFormKey.currentState?.validate() ?? true;
+        if (!isValid) {
+          return false;
+        }
+        return _validateFinancialAmounts();
       case 4:
+        if (!_hasAnsweredCrmExistsQuestion) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Indiquer si une CRM existe ou non.'),
+            ),
+          );
+          return false;
+        }
+        return true;
+      case 5:
         if (_crmSelectionStage) {
+          if (!_hasSelectedCrmMode) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Choisir si la CRM est financée ou non financée.',
+                ),
+              ),
+            );
+            return false;
+          }
           return true;
         }
         final isValid = _crmFormKey.currentState?.validate() ?? true;
@@ -5372,7 +5535,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           return _validateFinancedCrmInputs();
         }
         return true;
-      case 5:
+      case 6:
         return _commentFormKey.currentState?.validate() ?? true;
       default:
         return true;
@@ -5380,13 +5543,14 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }
 
   _ExposurePreview _buildPreview() {
-    final amount =
-        double.tryParse(_amountController.text.replaceAll(',', '.')) ?? 0.0;
+    final loanTotalAmount = _loanTotalAmountInput ?? 0.0;
+    final onBalanceExposureAmount = _onBalanceExposureAmountInput ?? 0.0;
     final collateral =
         double.tryParse(_collateralController.text.replaceAll(',', '.')) ?? 0.0;
     final metrics = computeDraftMetrics(
       _draftFromValues(
-        grossAmount: amount,
+        loanTotalAmount: loanTotalAmount,
+        onBalanceExposureAmount: onBalanceExposureAmount,
         collateralValue: collateral,
         fxHaircut: 0.0,
         comment: _commentController.text,
@@ -5404,11 +5568,14 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       return;
     }
 
-    final grossAmount = _parseDecimal(_amountController.text);
+    final loanTotalAmount = _loanTotalAmountInput;
+    final onBalanceExposureAmount = _onBalanceExposureAmountInput;
     final collateralValue = _crmMode == 'CRM financee'
         ? _parseDecimal(_collateralController.text)
         : 0.0;
-    if (grossAmount == null || collateralValue == null) {
+    if (loanTotalAmount == null ||
+        onBalanceExposureAmount == null ||
+        collateralValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.tr('Verifier les montants saisis.'))),
       );
@@ -5418,7 +5585,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     setState(() => _submitting = true);
     try {
       final draft = _draftFromValues(
-        grossAmount: grossAmount,
+        loanTotalAmount: loanTotalAmount,
+        onBalanceExposureAmount: onBalanceExposureAmount,
         collateralValue: collateralValue,
         fxHaircut: 0.0,
         comment: _commentController.text.trim(),
@@ -5457,6 +5625,53 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       return context.tr('Montant invalide');
     }
     return parsed <= 0 ? context.tr('Montant positif requis') : null;
+  }
+
+  String? _onBalanceAmountValidator(String? value) {
+    final parsed = _parseDecimal(value);
+    if (parsed == null) {
+      return context.tr('Montant invalide');
+    }
+    if (parsed < 0) {
+      return context.tr('Montant positif requis');
+    }
+    final loanTotalAmount = _loanTotalAmountInput;
+    if (loanTotalAmount != null && parsed > loanTotalAmount) {
+      return 'Le montant au bilan ne peut pas dépasser le montant total du prêt.';
+    }
+    return null;
+  }
+
+  bool _validateFinancialAmounts() {
+    final loanTotalAmount = _loanTotalAmountInput;
+    final onBalanceExposureAmount = _onBalanceExposureAmountInput;
+    if (loanTotalAmount == null || onBalanceExposureAmount == null) {
+      return false;
+    }
+    if (onBalanceExposureAmount > loanTotalAmount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Le montant au bilan ne peut pas dépasser le montant total du prêt.',
+          ),
+        ),
+      );
+      return false;
+    }
+    final effectiveGrossAmount = _resolveEffectiveGrossAmount(
+      loanTotalAmount: loanTotalAmount,
+      onBalanceExposureAmount: onBalanceExposureAmount,
+    );
+    if (effectiveGrossAmount <= 0) {
+      final message = _isOffBalanceCategory
+          ? 'Le montant d exposition au hors bilan doit être strictement positif.'
+          : 'Le montant d exposition au bilan doit être strictement positif.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return false;
+    }
+    return true;
   }
 
   String _formatDateForField(DateTime? value) {
@@ -5549,7 +5764,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }
 
   ExposureDraft _draftFromValues({
-    required double grossAmount,
+    required double loanTotalAmount,
+    required double onBalanceExposureAmount,
     required double collateralValue,
     required double fxHaircut,
     required String comment,
@@ -5565,6 +5781,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     );
     final resolvedFinancedCrmMaturityBucket =
         _resolveFinancedCrmMaturityBucket(fallbackBucket: _maturityBucket);
+    final grossAmount = _resolveEffectiveGrossAmount(
+      loanTotalAmount: loanTotalAmount,
+      onBalanceExposureAmount: onBalanceExposureAmount,
+    );
     return ExposureDraft(
       id: trimmedId.isEmpty ? widget.initialDraft?.id : trimmedId,
       counterpartyName: _nameController.text.trim(),
@@ -5573,6 +5793,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       categoryCode: _categoryCode,
       rating: _rating,
       grossAmount: grossAmount,
+      loanTotalAmount: loanTotalAmount,
+      onBalanceExposureAmount: onBalanceExposureAmount,
       currency: _currency,
       status: _status,
       crmMode: _crmMode,
@@ -5700,12 +5922,14 @@ class _ChoiceCardData {
     required this.label,
     required this.icon,
     required this.accent,
+    this.subtitle = '',
   });
 
   final String value;
   final String label;
   final IconData icon;
   final Color accent;
+  final String subtitle;
 }
 
 class _IntroActionButton extends StatelessWidget {
@@ -6157,6 +6381,7 @@ class _CrmChoiceStepScreen extends StatelessWidget {
   const _CrmChoiceStepScreen({
     required this.title,
     required this.subtitle,
+    this.questionText,
     required this.selectedMode,
     required this.choices,
     required this.onModeChanged,
@@ -6164,37 +6389,100 @@ class _CrmChoiceStepScreen extends StatelessWidget {
 
   final String title;
   final String subtitle;
+  final String? questionText;
   final String selectedMode;
   final List<_ChoiceCardData> choices;
   final ValueChanged<String> onModeChanged;
 
   @override
   Widget build(BuildContext context) {
+    final isBinaryQuestion = choices.length == 2 &&
+        choices.any((item) => item.value == 'OUI') &&
+        choices.any((item) => item.value == 'NON');
+    final questionAccent =
+        isBinaryQuestion ? const Color(0xFF2563EB) : const Color(0xFF0F766E);
+    final headerIcon =
+        isBinaryQuestion ? Icons.fact_check_outlined : Icons.handshake_outlined;
+    final headerAccent =
+        isBinaryQuestion ? const Color(0xFF2563EB) : const Color(0xFF0F766E);
+    final resolvedQuestionText = questionText ?? subtitle;
     return _StepSurface(
       title: title,
       subtitle: subtitle,
-      icon: Icons.handshake_outlined,
-      accent: const Color(0xFF0F766E),
+      icon: headerIcon,
+      accent: headerAccent,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 260),
-        child: Center(
-          child: Wrap(
-            alignment: WrapAlignment.center,
-            runAlignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 14,
-            runSpacing: 14,
-            children: [
-              for (final item in choices)
-                _ModeChoiceCard(
-                  label: item.label,
-                  icon: item.icon,
-                  accent: item.accent,
-                  selected: selectedMode == item.value,
-                  onTap: () => onModeChanged(item.value),
+        constraints: const BoxConstraints(minHeight: 320),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                color: questionAccent.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(
+                  color: questionAccent.withOpacity(0.16),
+                  width: _wizardBorderWidth,
                 ),
-            ],
-          ),
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        resolvedQuestionText,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: _wizardBodyTitleColor(context),
+                              fontSize: 15.2,
+                              height: 1.22,
+                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isBinaryQuestion
+                            ? 'Sélectionnez une réponse pour continuer.'
+                            : 'Choisissez l option la plus adaptée.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _wizardMutedColor(context),
+                              fontSize: 11.1,
+                              fontWeight: FontWeight.w600,
+                              height: 1.25,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Center(
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                runAlignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 16,
+                runSpacing: 16,
+                children: [
+                  for (final item in choices)
+                    _ModeChoiceCard(
+                      label: item.label,
+                      subtitle: item.subtitle,
+                      icon: item.icon,
+                      accent: item.accent,
+                      selected: selectedMode == item.value,
+                      onTap: () => onModeChanged(item.value),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -6623,13 +6911,11 @@ class _HeroKpiCard extends StatelessWidget {
     final labelFontSize = compact ? 7.6 : 8.2;
     final valueFontSize = compact ? 9.2 : 10.2;
     final highlightBackground =
-        isDark ? const Color(0xFF15345F) : const Color(0xFFE1EEFF);
+        isDark ? const Color(0xFF1D4ED8) : const Color(0xFF3B82F6);
     final highlightBorderColor =
-        isDark ? const Color(0xFF5C95F2) : const Color(0xFF78AFFF);
-    final highlightLabelColor =
-        isDark ? const Color(0xFFF1D29A) : const Color(0xFFB56A1E);
-    final highlightValueColor =
-        isDark ? const Color(0xFFFFE2B8) : const Color(0xFF8A4B12);
+        isDark ? const Color(0xFF1D4ED8) : const Color(0xFF3B82F6);
+    final highlightLabelColor = const Color(0xFFDCE9FF);
+    final highlightValueColor = Colors.white;
     final cardBackground = highlighted
         ? highlightBackground
         : compact
@@ -6640,18 +6926,18 @@ class _HeroKpiCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Color.lerp(accent, gradientBase, isDark ? 0.62 : 0.46)!,
-              Color.lerp(accent, gradientBase, isDark ? 0.84 : 0.74)!,
+              isDark ? const Color(0xFF2563EB) : const Color(0xFF4F8DF8),
+              isDark ? const Color(0xFF1D4ED8) : const Color(0xFF2563EB),
             ],
           )
         : null;
     final cardBorderColor = highlighted
-        ? Color.lerp(highlightBorderColor, accent, isDark ? 0.58 : 0.82)!
+        ? Colors.transparent
         : compact
             ? (isDark ? const Color(0xFF324A6A) : const Color(0xFFC9D8F3))
             : _wizardBorderColor(context);
     final cardShadowColor = highlighted
-        ? accent.withOpacity(isDark ? 0.16 : 0.12)
+        ? const Color(0x3D2563EB)
         : compact
             ? (isDark ? const Color(0x22000000) : const Color(0x160B3D91))
             : (isDark ? const Color(0x22000000) : const Color(0x080F172A));
@@ -6676,13 +6962,13 @@ class _HeroKpiCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(cardRadius),
         border: Border.all(
           color: cardBorderColor,
-          width: _wizardBorderWidth,
+          width: highlighted ? 0 : _wizardBorderWidth,
         ),
         boxShadow: [
           BoxShadow(
             color: cardShadowColor,
-            blurRadius: compact ? 8 : 4,
-            offset: const Offset(0, 1),
+            blurRadius: highlighted ? 20 : (compact ? 8 : 4),
+            offset: highlighted ? const Offset(0, 10) : const Offset(0, 1),
           ),
         ],
       ),
@@ -6699,19 +6985,23 @@ class _HeroKpiCard extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        accent.withOpacity(isDark ? 0.34 : 0.24),
-                        accent.withOpacity(isDark ? 0.20 : 0.12),
+                        Colors.white.withOpacity(isDark ? 0.18 : 0.22),
+                        Colors.white.withOpacity(isDark ? 0.08 : 0.12),
                       ],
                     )
                   : null,
               border: highlighted
                   ? Border.all(
-                      color: accent.withOpacity(isDark ? 0.22 : 0.14),
+                      color: Colors.white.withOpacity(isDark ? 0.10 : 0.14),
                     )
                   : null,
               borderRadius: BorderRadius.circular(cardRadius),
             ),
-            child: Icon(icon, size: iconSize, color: accent),
+            child: Icon(
+              icon,
+              size: iconSize,
+              color: highlighted ? Colors.white : accent,
+            ),
           ),
           SizedBox(width: compact ? 7 : 8),
           Expanded(
@@ -6809,6 +7099,7 @@ class _StepOverviewChip extends StatelessWidget {
 class _ModeChoiceCard extends StatelessWidget {
   const _ModeChoiceCard({
     required this.label,
+    required this.subtitle,
     required this.icon,
     required this.accent,
     required this.selected,
@@ -6816,6 +7107,7 @@ class _ModeChoiceCard extends StatelessWidget {
   });
 
   final String label;
+  final String subtitle;
   final IconData icon;
   final Color accent;
   final bool selected;
@@ -6824,67 +7116,126 @@ class _ModeChoiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = _isExposureDark(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(_exposureFormRadius),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: 206,
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: selected
-              ? accent.withOpacity(isDark ? 0.16 : 0.10)
-              : (isDark ? const Color(0xFF13233C) : const Color(0xFFFBFCFE)),
-          borderRadius: BorderRadius.circular(_exposureFormRadius),
-          border: Border.all(
-            color: selected
-                ? accent.withOpacity(0.58)
-                : (isDark ? const Color(0xFF2B3B56) : const Color(0xFFDDE6F2)),
-            width: selected ? 1.0 : _wizardBorderWidth,
-          ),
-          boxShadow: [
-            BoxShadow(
+    final cardShadow = selected
+        ? accent.withOpacity(isDark ? 0.10 : 0.06)
+        : (isDark ? const Color(0x22000000) : const Color(0x0D94A3B8));
+    return SizedBox(
+      width: 206,
+      height: 86,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(5),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF13233C) : Colors.white,
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(
               color: selected
-                  ? accent.withOpacity(isDark ? 0.12 : 0.08)
+                  ? accent.withOpacity(0.72)
                   : (isDark
-                      ? const Color(0x22000000)
-                      : const Color(0x0A8AA3C2)),
-              blurRadius: selected ? 14 : 10,
-              offset: const Offset(0, 3),
+                      ? const Color(0xFF2B3B56)
+                      : const Color(0xFFDDE6F2)),
+              width: selected ? 1.3 : _wizardBorderWidth,
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: selected
-                    ? accent.withOpacity(0.12)
-                    : (isDark
-                        ? const Color(0xFF1A2A45)
-                        : const Color(0xFFF1F5F9)),
-                borderRadius: BorderRadius.circular(_exposureFormRadius),
+            boxShadow: [
+              BoxShadow(
+                color: cardShadow,
+                blurRadius: selected ? 22 : 16,
+                offset: const Offset(0, 10),
               ),
-              child: Icon(
-                icon,
-                size: 18,
-                color: selected ? accent : _wizardMutedColor(context),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? accent.withOpacity(0.12)
+                      : (isDark
+                          ? const Color(0xFF1A2A45)
+                          : const Color(0xFFF4F7FB)),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: selected
+                      ? accent
+                      : accent.withOpacity(isDark ? 0.92 : 0.82),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: selected ? accent : _wizardBodyTitleColor(context),
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11.8,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: _wizardBodyTitleColor(context),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                          ),
+                    ),
+                    if (subtitle.trim().isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: _wizardMutedColor(context),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 10.2,
+                              height: 1.1,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: selected
+                      ? accent.withOpacity(0.10)
+                      : (isDark
+                          ? const Color(0xFF162133)
+                          : const Color(0xFFF8FAFC)),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: selected
+                        ? accent.withOpacity(0.72)
+                        : (isDark
+                            ? const Color(0xFF40506A)
+                            : const Color(0xFFC9D5E5)),
+                    width: 1.2,
                   ),
-            ),
-          ],
+                ),
+                child: Icon(
+                  selected
+                      ? Icons.check_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: selected ? 13 : 12,
+                  color: selected
+                      ? accent
+                      : (isDark
+                          ? const Color(0xFF6B7A92)
+                          : const Color(0xFFB6C4D8)),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
