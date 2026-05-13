@@ -11,11 +11,10 @@ import '../../core/utils/currency_conversion.dart';
 import 'rwa_tool_logo.dart';
 import 'sidebar_navigation.dart';
 
-const double _sidebarToggleButtonWidth = 34;
-const double _sidebarToggleButtonHeight = 34;
+const double _sidebarToggleButtonWidth = 42;
+const double _sidebarToggleButtonHeight = 42;
 const double _sidebarToggleButtonRadius = 8;
 const double _desktopPanelGap = 8;
-const Duration _desktopSidebarAnimationDuration = Duration(milliseconds: 160);
 
 /// Coquille principale de l'application avec top bar, sidebar et contenu.
 class AppShell extends StatefulWidget {
@@ -104,9 +103,7 @@ class _AppShellState extends State<AppShell> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            AnimatedContainer(
-                              duration: _desktopSidebarAnimationDuration,
-                              curve: Curves.easeOutCubic,
+                            SizedBox(
                               width: sidebarWidth,
                               child: RepaintBoundary(
                                 child: Align(
@@ -158,9 +155,7 @@ class _AppShellState extends State<AppShell> {
                             ),
                           ],
                         ),
-                        AnimatedPositioned(
-                          duration: _desktopSidebarAnimationDuration,
-                          curve: Curves.easeOutCubic,
+                        Positioned(
                           top: 10,
                           left: toggleLeft,
                           child: _SidebarToggleButton(
