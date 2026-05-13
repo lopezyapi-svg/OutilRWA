@@ -24,7 +24,7 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8001
 ```
 
 Si `python -m venv .venv` echoue sous Windows, verifie que Python est bien installe hors alias `WindowsApps`, puis recree le venv avec l'interprete reel.
@@ -36,6 +36,25 @@ cd frontend
 flutter pub get
 flutter run
 ```
+
+## Generation d'un executable Windows
+
+Le projet peut maintenant etre livre sous forme d'un installateur `.exe` Windows qui embarque:
+
+- le frontend Flutter Windows
+- le backend Python FastAPI compile en executable
+- la base SQLite et les fichiers runtime dans `AppData\Local\RWA Calculator`
+
+Commande de build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build_windows_package.ps1
+```
+
+Artefacts generes:
+
+- `dist\RWA_Calculator_Setup.exe` : installateur a transmettre
+- `dist\RWA Calculator Portable\` : version portable deja assemblee
 
 ## Arborescence
 

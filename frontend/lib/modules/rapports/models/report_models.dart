@@ -1,4 +1,6 @@
 // Ce fichier decrit les donnees du module rapports.
+import '../../../core/utils/currency_conversion.dart';
+
 /// Ligne détaillée d'un rapport exportable.
 class ReportLine {
   const ReportLine({
@@ -64,7 +66,7 @@ class ReportRecord {
       createdAt: DateTime.parse(json['created_at'] as String),
       period: json['period'] as String,
       reportType: json['report_type'] as String,
-      currency: json['currency'] as String,
+      currency: normalizeCurrencyCode(json['currency'] as String),
       exposureScope: json['exposure_scope'] as String,
       includeCategoryChart: json['include_category_chart'] as bool,
       includeRatingChart: json['include_rating_chart'] as bool,

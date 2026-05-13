@@ -1,5 +1,7 @@
 // Ce fichier decrit les donnees et regles du module expositions.
 
+import '../../../core/utils/currency_conversion.dart';
+
 String _normalizeExposureLabel(String value) {
   return value
       .trim()
@@ -341,7 +343,6 @@ bool hasSovereignPriorityZeroWeightCase(
 }
 
 const Map<String, double> currencyRatesInXaf = {
-  'XAF': 1.0,
   'XOF': 1.0,
   'EUR': 655.957,
   'USD': 600.0,
@@ -429,8 +430,8 @@ String coerceFinancedCrmCollateralRating(String rating) {
 }
 
 String normalizeFinancedCrmCurrency(String currency) {
-  final normalized = currency.trim().toUpperCase();
-  if (['XOF', 'XAF', 'FCFA'].contains(normalized)) {
+  final normalized = normalizeCurrencyCode(currency);
+  if (normalized == 'XOF' || currency.trim().toUpperCase() == 'FCFA') {
     return 'FCFA';
   }
   return normalized;
@@ -1405,6 +1406,54 @@ const List<String> managedCountries = [
   'Ghana',
 ];
 
+const Map<String, String> _countryDisplayOverrides = {
+  'algerie': 'Algérie',
+  'armenie': 'Arménie',
+  'azerbaidjan': 'Azerbaïdjan',
+  'bahrein': 'Bahreïn',
+  'benin': 'Bénin',
+  'bielorussie': 'Biélorussie',
+  'bosnie herzegovine': 'Bosnie-Herzégovine',
+  'bresil': 'Brésil',
+  'coree du nord': 'Corée du Nord',
+  'coree du sud': 'Corée du Sud',
+  'cote d ivoire': "Côte d'Ivoire",
+  'egypte': 'Égypte',
+  'emirats arabes unis': 'Émirats arabes unis',
+  'equateur': 'Équateur',
+  'erythree': 'Érythrée',
+  'etats unis': 'États-Unis',
+  'ethiopie': 'Éthiopie',
+  'georgie': 'Géorgie',
+  'grece': 'Grèce',
+  'guinee': 'Guinée',
+  'guinee bissau': 'Guinée-Bissau',
+  'guinee equatoriale': 'Guinée équatoriale',
+  'haiti': 'Haïti',
+  'iles marshall': 'Îles Marshall',
+  'iles salomon': 'Îles Salomon',
+  'indonesie': 'Indonésie',
+  'koweit': 'Koweït',
+  'macedoine du nord': 'Macédoine du Nord',
+  'nepal': 'Népal',
+  'norvege': 'Norvège',
+  'nouvelle zelande': 'Nouvelle-Zélande',
+  'ouzbekistan': 'Ouzbékistan',
+  'perou': 'Pérou',
+  'republique centrafricaine': 'République centrafricaine',
+  'republique democratique du congo': 'République démocratique du Congo',
+  'republique dominicaine': 'République dominicaine',
+  'republique tcheque': 'République tchèque',
+  'sao tome et principe': 'Sao Tomé-et-Principe',
+  'senegal': 'Sénégal',
+  'slovenie': 'Slovénie',
+  'suede': 'Suède',
+  'taiwan': 'Taïwan',
+  'thailande': 'Thaïlande',
+  'trinite et tobago': 'Trinité-et-Tobago',
+  'yemen': 'Yémen',
+};
+
 String _normalizeCountry(String value) {
   return value
       .toLowerCase()
@@ -1424,6 +1473,10 @@ String _normalizeCountry(String value) {
       .trim();
 }
 
+String normalizedCountryName(String? value) {
+  return _normalizeCountry(value ?? '');
+}
+
 String canonicalCountryName(String? value, {String fallback = ''}) {
   final normalized = _normalizeCountry(value ?? '');
   if (normalized.isEmpty) {
@@ -1435,6 +1488,16 @@ String canonicalCountryName(String? value, {String fallback = ''}) {
     }
   }
   return fallback;
+}
+
+String displayCountryName(String? value, {String fallback = ''}) {
+  final fallbackValue = fallback.isNotEmpty ? fallback : (value ?? '');
+  final canonical = canonicalCountryName(value, fallback: fallbackValue);
+  final normalized = _normalizeCountry(canonical);
+  if (normalized.isEmpty) {
+    return fallbackValue;
+  }
+  return _countryDisplayOverrides[normalized] ?? canonical;
 }
 
 String computeZone(String country) {
@@ -1453,8 +1516,8 @@ double convertAmount(
   required String fromCurrency,
   required String toCurrency,
 }) {
-  final normalizedFrom = fromCurrency.toUpperCase();
-  final normalizedTo = toCurrency.toUpperCase();
+  final normalizedFrom = normalizeCurrencyCode(fromCurrency);
+  final normalizedTo = normalizeCurrencyCode(toCurrency);
   final fromRate = currencyRatesInXaf[normalizedFrom] ?? 1.0;
   final toRate = currencyRatesInXaf[normalizedTo] ?? 1.0;
   final amountInXaf = amount * fromRate;
@@ -1516,7 +1579,7 @@ class FinancedCrmBasketItem {
       collateralType: (json?['collateral_type'] ??
           financedCrmCollateralTypes.first) as String,
       value: ((json?['value'] ?? 0) as num).toDouble(),
-      currency: (json?['currency'] ?? 'XOF') as String,
+      currency: normalizeCurrencyCode((json?['currency'] ?? 'XOF') as String),
       issuerRole:
           (json?['issuer_role'] ?? financedCrmIssuerRoleOptions.last) as String,
       rating: coerceFinancedCrmCollateralRating(
@@ -1645,7 +1708,9 @@ class ExposureCrmDetails {
       mode: (json?['mode'] ?? 'Aucune') as String,
       label: (json?['label'] ?? '') as String,
       collateralValue: ((json?['collateral_value'] ?? 0) as num).toDouble(),
-      collateralCurrency: (json?['collateral_currency'] ?? 'XOF') as String,
+      collateralCurrency: normalizeCurrencyCode(
+        (json?['collateral_currency'] ?? 'XOF') as String,
+      ),
       collateralType: (json?['collateral_type'] ??
           'Liquidités dans la même devise') as String,
       issuerType: (json?['issuer_type'] ?? '') as String,
@@ -1667,7 +1732,9 @@ class ExposureCrmDetails {
           )
           .toList(growable: false)),
       fxHaircut: ((json?['fx_haircut'] ?? 0) as num).toDouble(),
-      exposureCurrency: (json?['exposure_currency'] ?? 'XOF') as String,
+      exposureCurrency: normalizeCurrencyCode(
+        (json?['exposure_currency'] ?? 'XOF') as String,
+      ),
       riskWeight: ((json?['risk_weight'] ??
               json?['rw_determined'] ??
               json?['final_rw'] ??
@@ -1790,7 +1857,7 @@ class ExposureRecord {
     required this.defaultedExposureInitialRiskWeight,
     required this.defaultedExposureResidentialMortgageInDefault,
     required this.defaultedExposureProvisionAtLeastTwentyPercent,
-  })  : commercialRealEstateEligible = commercialRealEstateEligible;
+  }) : commercialRealEstateEligible = commercialRealEstateEligible;
 
   final String id;
   final DateTime analysisDate;
@@ -1912,7 +1979,7 @@ class ExposureRecord {
       eadTotalAmount: (json['ead_total_amount'] as num?)?.toDouble(),
       rwaEbAmount: (json['rwa_eb_amount'] as num?)?.toDouble(),
       rwaHbAmount: (json['rwa_hb_amount'] as num?)?.toDouble(),
-      currency: (json['currency'] ?? 'XOF') as String,
+      currency: normalizeCurrencyCode((json['currency'] ?? 'XOF') as String),
       crmType: crmType,
       crmCoveragePercent: crmCoveragePercent == 0
           ? crmDetails.coveragePercent
@@ -2533,6 +2600,11 @@ _FinancedCrmCollateralOutcome _evaluateSingleFinancedCollateral({
   }
 
   final normalizedRating = normalizeFinancedCrmCollateralRating(rating);
+  final collateralValueInExposureCurrency = convertAmount(
+    collateralValue,
+    fromCurrency: collateralCurrency,
+    toCurrency: exposureCurrency,
+  ).clamp(0.0, double.infinity).toDouble();
   double hc = 0.0;
   var eligible = true;
   var reason = '';
@@ -2607,7 +2679,7 @@ _FinancedCrmCollateralOutcome _evaluateSingleFinancedCollateral({
     collateralCurrency: collateralCurrency,
   );
   final cva = eligible
-      ? (collateralValue * (1 - hc - hfx))
+      ? (collateralValueInExposureCurrency * (1 - hc - hfx))
           .clamp(0.0, double.infinity)
           .toDouble()
       : 0.0;
@@ -2615,7 +2687,7 @@ _FinancedCrmCollateralOutcome _evaluateSingleFinancedCollateral({
   return _FinancedCrmCollateralOutcome(
     eligible: eligible,
     reason: reason,
-    value: collateralValue,
+    value: collateralValueInExposureCurrency,
     hc: hc,
     hfx: hfx,
     cva: cva,
@@ -2651,10 +2723,10 @@ FinancedCrmSnapshot computeFinancedCrmSnapshot(ExposureDraft draft) {
         convertibleMainIndex: item.convertibleMainIndex,
         opcvmHighestHaircut: item.opcvmHighestHaircut,
       );
-      totalValue += item.value;
+      totalValue += itemOutcome.value;
       totalCva += itemOutcome.cva;
-      weightedHc += item.value * itemOutcome.hc;
-      weightedHfx += item.value * itemOutcome.hfx;
+      weightedHc += itemOutcome.value * itemOutcome.hc;
+      weightedHfx += itemOutcome.value * itemOutcome.hfx;
       if (!itemOutcome.eligible && itemOutcome.reason.isNotEmpty) {
         ineligibleReasons.add(itemOutcome.reason);
       }

@@ -23,7 +23,7 @@ class RwaApiService {
               baseUrl: baseUrl ??
                   const String.fromEnvironment(
                     'RWA_API_BASE_URL',
-                    defaultValue: 'http://localhost:8000',
+                    defaultValue: 'http://127.0.0.1:8001',
                   ),
             );
 
@@ -33,6 +33,13 @@ class RwaApiService {
   final StreamController<int> _portfolioRefreshController =
       StreamController<int>.broadcast();
   int _portfolioRefreshTick = 0;
+  Future<DashboardSnapshot>? _dashboardFuture;
+  Future<ExposureModuleData>? _expositionsFuture;
+  Future<OffBalanceModuleData>? _horsBilanFuture;
+  Future<CrmModuleData>? _crmFuture;
+  Future<ReferentielsModuleData>? _referentielsFuture;
+  Future<ReportsModuleData>? _reportsFuture;
+  Future<List<GlobalSearchEntry>>? _globalSearchCatalogFuture;
 
   Stream<int> get portfolioRefreshStream => _portfolioRefreshController.stream;
 
@@ -458,49 +465,94 @@ class RwaApiService {
   }
 
   void _notifyPortfolioChanged() {
+    _invalidatePortfolioCaches();
     if (_portfolioRefreshController.isClosed) {
       return;
     }
     _portfolioRefreshController.add(++_portfolioRefreshTick);
   }
 
-  Future<DashboardSnapshot> fetchDashboard() async {
-    if (!useMockData) {
-      // En mode réel, on délègue entièrement l'assemblage au backend.
-      final json = await _client.get('/dashboard') as Map<String, dynamic>;
-      return DashboardSnapshot.fromJson(json);
+  void _invalidatePortfolioCaches() {
+    _dashboardFuture = null;
+    _expositionsFuture = null;
+    _horsBilanFuture = null;
+    _crmFuture = null;
+    _reportsFuture = null;
+    _globalSearchCatalogFuture = null;
+  }
+
+  Future<T> _memoizeFuture<T>({
+    required Future<T>? cached,
+    required Future<T>? Function() getCache,
+    required void Function(Future<T>? value) setCache,
+    required Future<T> Function() load,
+  }) {
+    if (cached != null) {
+      return cached;
     }
-    // En mode démo, on reconstruit un snapshot cohérent à partir des jeux locaux.
-    return _withDelay(_buildMockDashboard());
+
+    final future = load();
+    setCache(future);
+    future.then<void>((_) {}, onError: (_) {
+      if (identical(getCache(), future)) {
+        setCache(null);
+      }
+    });
+    return future;
+  }
+
+  Future<DashboardSnapshot> fetchDashboard() async {
+    return _memoizeFuture<DashboardSnapshot>(
+      cached: _dashboardFuture,
+      getCache: () => _dashboardFuture,
+      setCache: (value) => _dashboardFuture = value,
+      load: () async {
+        if (!useMockData) {
+          // En mode réel, on délègue entièrement l'assemblage au backend.
+          final json = await _client.get('/dashboard') as Map<String, dynamic>;
+          return DashboardSnapshot.fromJson(json);
+        }
+        // En mode démo, on reconstruit un snapshot cohérent à partir des jeux locaux.
+        return _withDelay(_buildMockDashboard());
+      },
+    );
   }
 
   Future<ExposureModuleData> fetchExpositionsModule() async {
-    if (!useMockData) {
-      try {
-        final exposuresJson =
-            await _client.get('/expositions') as List<dynamic>;
-        final summaryJson =
-            await _client.get('/expositions/summary') as Map<String, dynamic>;
-        return ExposureModuleData(
-          exposures: exposuresJson
-              .map(
-                (item) => ExposureRecord.fromJson(item as Map<String, dynamic>),
-              )
-              .toList(),
-          summary: ExposureSummary.fromJson(summaryJson),
-        );
-      } catch (_) {
-        if (!enableOfflineFallback) rethrow;
-      }
-    }
+    return _memoizeFuture<ExposureModuleData>(
+      cached: _expositionsFuture,
+      getCache: () => _expositionsFuture,
+      setCache: (value) => _expositionsFuture = value,
+      load: () async {
+        if (!useMockData) {
+          try {
+            final exposuresJson =
+                await _client.get('/expositions') as List<dynamic>;
+            final summaryJson = await _client.get('/expositions/summary')
+                as Map<String, dynamic>;
+            return ExposureModuleData(
+              exposures: exposuresJson
+                  .map(
+                    (item) =>
+                        ExposureRecord.fromJson(item as Map<String, dynamic>),
+                  )
+                  .toList(),
+              summary: ExposureSummary.fromJson(summaryJson),
+            );
+          } catch (_) {
+            if (!enableOfflineFallback) rethrow;
+          }
+        }
 
-    final exposures =
-        _exposures.map((item) => ExposureRecord.fromJson(item)).toList();
-    return _withDelay(
-      ExposureModuleData(
-        exposures: exposures,
-        summary: _computeExposureSummary(exposures),
-      ),
+        final exposures =
+            _exposures.map((item) => ExposureRecord.fromJson(item)).toList();
+        return _withDelay(
+          ExposureModuleData(
+            exposures: exposures,
+            summary: _computeExposureSummary(exposures),
+          ),
+        );
+      },
     );
   }
 
@@ -853,29 +905,37 @@ class RwaApiService {
   }
 
   Future<OffBalanceModuleData> fetchHorsBilanModule() async {
-    if (!useMockData) {
-      // Le hors bilan suit le même découpage détail + synthèse.
-      final itemsJson = await _client.get('/hors-bilan') as List<dynamic>;
-      final summaryJson =
-          await _client.get('/hors-bilan/summary') as Map<String, dynamic>;
-      return OffBalanceModuleData(
-        items: itemsJson
-            .map(
-              (item) => OffBalanceRecord.fromJson(item as Map<String, dynamic>),
-            )
-            .toList(),
-        summary: OffBalanceSummary.fromJson(summaryJson),
-      );
-    }
+    return _memoizeFuture<OffBalanceModuleData>(
+      cached: _horsBilanFuture,
+      getCache: () => _horsBilanFuture,
+      setCache: (value) => _horsBilanFuture = value,
+      load: () async {
+        if (!useMockData) {
+          // Le hors bilan suit le même découpage détail + synthèse.
+          final itemsJson = await _client.get('/hors-bilan') as List<dynamic>;
+          final summaryJson =
+              await _client.get('/hors-bilan/summary') as Map<String, dynamic>;
+          return OffBalanceModuleData(
+            items: itemsJson
+                .map(
+                  (item) =>
+                      OffBalanceRecord.fromJson(item as Map<String, dynamic>),
+                )
+                .toList(),
+            summary: OffBalanceSummary.fromJson(summaryJson),
+          );
+        }
 
-    // Les données mock sont converties avant agrégation pour rester proches du mode réel.
-    final items =
-        _offBalance.map((item) => OffBalanceRecord.fromJson(item)).toList();
-    return _withDelay(
-      OffBalanceModuleData(
-        items: items,
-        summary: _computeOffBalanceSummary(items),
-      ),
+        // Les données mock sont converties avant agrégation pour rester proches du mode réel.
+        final items =
+            _offBalance.map((item) => OffBalanceRecord.fromJson(item)).toList();
+        return _withDelay(
+          OffBalanceModuleData(
+            items: items,
+            summary: _computeOffBalanceSummary(items),
+          ),
+        );
+      },
     );
   }
 
@@ -888,6 +948,7 @@ class RwaApiService {
         'nominal_amount': draft.nominalAmount,
         'comment': draft.comment,
       });
+      _notifyPortfolioChanged();
       return;
     }
 
@@ -919,97 +980,136 @@ class RwaApiService {
       'capital': ead * rw * 0.08,
       'comment': draft.comment,
     });
+    _notifyPortfolioChanged();
   }
 
   Future<CrmModuleData> fetchCrmModule() async {
-    if (!useMockData) {
-      final json = await _client.get('/crm') as Map<String, dynamic>;
-      return CrmModuleData.fromJson(json);
-    }
+    return _memoizeFuture<CrmModuleData>(
+      cached: _crmFuture,
+      getCache: () => _crmFuture,
+      setCache: (value) => _crmFuture = value,
+      load: () async {
+        if (!useMockData) {
+          final json = await _client.get('/crm') as Map<String, dynamic>;
+          return CrmModuleData.fromJson(json);
+        }
 
-    final items = _crmItems.map((item) => CrmRecord.fromJson(item)).toList();
-    // Le premier scénario sert de highlight par défaut pour garder une bannière vivante.
-    final highlight = items.isEmpty
-        ? null
-        : CrmHighlight(
-            borrowerName: items.first.borrowerName,
-            borrowerRw: items.first.borrowerRw,
-            guarantorName: items.first.guarantorName,
-            guarantorRw: items.first.guarantorRw,
-            finalRw: items.first.finalRw,
-            label: 'RWA reduit',
-          );
-    // Le résumé CRM consolide les effets avant/après et la couverture moyenne.
-    final summary = CrmSummary(
-      totalExpositions: items.fold<double>(
-        0.0,
-        (sum, item) => sum + item.grossAmount,
-      ),
-      totalEad: items.fold<double>(0.0, (sum, item) => sum + item.ead),
-      totalRwaBefore: items.fold<double>(
-        0.0,
-        (sum, item) => sum + item.rwaBefore,
-      ),
-      totalRwaAfter: items.fold<double>(
-        0.0,
-        (sum, item) => sum + item.rwaAfter,
-      ),
-      totalCapitalAfter: items.fold<double>(
-        0.0,
-        (sum, item) => sum + item.capitalAfter,
-      ),
-      averageCoverage: items.isEmpty
-          ? 0.0
-          : items.fold<double>(0.0, (sum, item) => sum + item.coverageRatio) /
-              items.length,
-    );
-    return _withDelay(
-      CrmModuleData(highlight: highlight, items: items, summary: summary),
+        final items =
+            _crmItems.map((item) => CrmRecord.fromJson(item)).toList();
+        // Le premier scénario sert de highlight par défaut pour garder une bannière vivante.
+        final highlight = items.isEmpty
+            ? null
+            : CrmHighlight(
+                borrowerName: items.first.borrowerName,
+                borrowerRw: items.first.borrowerRw,
+                guarantorName: items.first.guarantorName,
+                guarantorRw: items.first.guarantorRw,
+                finalRw: items.first.finalRw,
+                label: 'RWA reduit',
+              );
+        // Le résumé CRM consolide les effets avant/après et la couverture moyenne.
+        final summary = CrmSummary(
+          totalExpositions: items.fold<double>(
+            0.0,
+            (sum, item) => sum + item.grossAmount,
+          ),
+          totalEad: items.fold<double>(0.0, (sum, item) => sum + item.ead),
+          totalRwaBefore: items.fold<double>(
+            0.0,
+            (sum, item) => sum + item.rwaBefore,
+          ),
+          totalRwaAfter: items.fold<double>(
+            0.0,
+            (sum, item) => sum + item.rwaAfter,
+          ),
+          totalCapitalAfter: items.fold<double>(
+            0.0,
+            (sum, item) => sum + item.capitalAfter,
+          ),
+          averageCoverage: items.isEmpty
+              ? 0.0
+              : items.fold<double>(
+                    0.0,
+                    (sum, item) => sum + item.coverageRatio,
+                  ) /
+                  items.length,
+        );
+        return _withDelay(
+          CrmModuleData(highlight: highlight, items: items, summary: summary),
+        );
+      },
     );
   }
 
   Future<ReferentielsModuleData> fetchReferentiels() async {
-    if (!useMockData) {
-      final json = await _client.get('/referentiels') as Map<String, dynamic>;
-      return ReferentielsModuleData.fromJson(json);
-    }
+    return _memoizeFuture<ReferentielsModuleData>(
+      cached: _referentielsFuture,
+      getCache: () => _referentielsFuture,
+      setCache: (value) => _referentielsFuture = value,
+      load: () async {
+        if (!useMockData) {
+          final json =
+              await _client.get('/referentiels') as Map<String, dynamic>;
+          return ReferentielsModuleData.fromJson(json);
+        }
 
-    // Les trois tables sont servies ensemble car elles alimentent tous les écrans métiers.
-    return _withDelay(
-      ReferentielsModuleData(
-        riskWeights:
-            _riskWeights.map((item) => RiskWeightRow.fromJson(item)).toList(),
-        ccfTable: _ccfTable.map((item) => CcfRow.fromJson(item)).toList(),
-        ratings: _ratings.map((item) => RatingRow.fromJson(item)).toList(),
-      ),
+        // Les trois tables sont servies ensemble car elles alimentent tous les écrans métiers.
+        return _withDelay(
+          ReferentielsModuleData(
+            riskWeights: _riskWeights
+                .map((item) => RiskWeightRow.fromJson(item))
+                .toList(),
+            ccfTable: _ccfTable.map((item) => CcfRow.fromJson(item)).toList(),
+            ratings: _ratings.map((item) => RatingRow.fromJson(item)).toList(),
+          ),
+        );
+      },
     );
   }
 
   Future<ReportsModuleData> fetchReports() async {
-    if (!useMockData) {
-      final json = await _client.get('/rapports') as List<dynamic>;
-      return ReportsModuleData(
-        reports: json
-            .map((item) => ReportRecord.fromJson(item as Map<String, dynamic>))
-            .toList(),
-      );
-    }
+    return _memoizeFuture<ReportsModuleData>(
+      cached: _reportsFuture,
+      getCache: () => _reportsFuture,
+      setCache: (value) => _reportsFuture = value,
+      load: () async {
+        if (!useMockData) {
+          final json = await _client.get('/rapports') as List<dynamic>;
+          return ReportsModuleData(
+            reports: json
+                .map(
+                  (item) => ReportRecord.fromJson(item as Map<String, dynamic>),
+                )
+                .toList(),
+          );
+        }
 
-    return _withDelay(
-      ReportsModuleData(
-        reports: _reports.map((item) => ReportRecord.fromJson(item)).toList(),
-      ),
+        return _withDelay(
+          ReportsModuleData(
+            reports:
+                _reports.map((item) => ReportRecord.fromJson(item)).toList(),
+          ),
+        );
+      },
     );
   }
 
   Future<List<GlobalSearchEntry>> fetchGlobalSearchCatalog() async {
-    // La recherche globale repose toujours sur un catalogue déjà structuré.
-    return _withDelay(_buildGlobalSearchCatalog());
+    return _memoizeFuture<List<GlobalSearchEntry>>(
+      cached: _globalSearchCatalogFuture,
+      getCache: () => _globalSearchCatalogFuture,
+      setCache: (value) => _globalSearchCatalogFuture = value,
+      load: () async {
+        // La recherche globale repose toujours sur un catalogue déjà structuré.
+        return _withDelay(_buildGlobalSearchCatalog());
+      },
+    );
   }
 
   Future<void> generateReport(ReportDraft draft) async {
     if (!useMockData) {
       await _client.post('/rapports', draft.toJson());
+      _reportsFuture = null;
       return;
     }
 
@@ -1054,6 +1154,7 @@ class RwaApiService {
       'exports': {'pdf': '/exports/$id.pdf', 'excel': '/exports/$id.xlsx'},
       'lines': draft.reportType == 'Detaille' ? lines : lines.take(5).toList(),
     });
+    _reportsFuture = null;
   }
 
   DashboardSnapshot _buildMockDashboard() {

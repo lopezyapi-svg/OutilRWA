@@ -24,20 +24,21 @@ class RisqueOperationnelScreen extends StatelessWidget {
         children: [
           const PageHeader(
             title: 'Risque opérationnel',
-            subtitle: 'Suivi des incidents et des controles internes liés aux processus.',
+            subtitle:
+                'Suivi des incidents et des controles internes liés aux processus.',
           ),
           const SizedBox(height: AppTheme.spacing),
           _InfoCard(
             title: 'Principaux indicateurs opérationnels',
             content:
-                'Métriques sur les pertes, les incidents et la qualité des processus. ' 
+                'Métriques sur les pertes, les incidents et la qualité des processus. '
                 'L’objectif est de limiter l’impact opérationnel sur les résultats.',
           ),
           const SizedBox(height: AppTheme.spacing),
           _InfoCard(
             title: 'Conseils pratiques',
             content:
-                'Renforcez les controles clés, formalisez les procédures et surveillez ' 
+                'Renforcez les controles clés, formalisez les procédures et surveillez '
                 'les événements opérationnels récurrents pour réduire les risques.',
           ),
         ],

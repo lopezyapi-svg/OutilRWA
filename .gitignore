@@ -17,6 +17,7 @@ frontend/.idea/
 # Sorties generales.
 build/
 dist/
+.build/
 # IDE
 .vscode/
 
@@ -35,4 +36,3 @@ tmp/
 # Fichiers de test locaux
 backend/_excel_source_test.xlsx
 backend/_excel_recalc_test.vbs
-

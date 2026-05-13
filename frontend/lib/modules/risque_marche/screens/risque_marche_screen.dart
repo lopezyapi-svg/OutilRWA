@@ -24,20 +24,20 @@ class RisqueMarcheScreen extends StatelessWidget {
         children: [
           const PageHeader(
             title: 'Risque de marché',
-            subtitle: 'Evaluation des tendances de marché et impacts sur le portefeuille.',
+            subtitle:
+                'Evaluation des tendances de marché et impacts sur le portefeuille.',
           ),
           const SizedBox(height: AppTheme.spacing),
           _InfoCard(
             title: 'Synthèse du risque de marché',
             content:
-                'Analyse des variations de taux, des changes et des prix des actifs. ' 
+                'Analyse des variations de taux, des changes et des prix des actifs. '
                 'Identifiez les sensibilités principales et surveillez les expositions critiques.',
           ),
           const SizedBox(height: AppTheme.spacing),
           _InfoCard(
             title: 'Recommandations',
-            content:
-                'Vérifiez la concentration sectorielle et géographique. ' 
+            content: 'Vérifiez la concentration sectorielle et géographique. '
                 'Privilégiez les couvertures adaptées aux expositions sensibles aux taux et changes.',
           ),
         ],

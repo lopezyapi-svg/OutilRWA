@@ -12,6 +12,7 @@ import '../../../core/localization/app_localization.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../../shared/widgets/section_card.dart';
@@ -87,7 +88,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   @override
   void initState() {
     super.initState();
-    _displayCurrency = widget.displayCurrencyListenable.value;
+    _displayCurrency =
+        normalizeCurrencyCode(widget.displayCurrencyListenable.value);
     widget.displayCurrencyListenable.addListener(_handleDisplayCurrencyChanged);
     _future = _refresh();
     _portfolioRefreshSubscription =
@@ -113,7 +115,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   void _handleDisplayCurrencyChanged() {
-    final nextCurrency = widget.displayCurrencyListenable.value;
+    final nextCurrency =
+        normalizeCurrencyCode(widget.displayCurrencyListenable.value);
     if (!mounted || _displayCurrency == nextCurrency) return;
     setState(() {
       _displayCurrency = nextCurrency;
@@ -1070,6 +1073,60 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     );
   }
 
+  double _loanTotalAmountValue(ExposureRecord row) {
+    final onBalanceAmount = row.onBalanceExposureAmount ?? row.grossAmount;
+    final loanTotalAmount = row.loanTotalAmount;
+    if (loanTotalAmount != null) {
+      return loanTotalAmount;
+    }
+    return row.grossAmount >= onBalanceAmount
+        ? row.grossAmount
+        : onBalanceAmount;
+  }
+
+  double _onBalanceAmountValue(ExposureRecord row) {
+    return row.onBalanceExposureAmount ?? row.grossAmount;
+  }
+
+  double _offBalanceAmountValue(ExposureRecord row) {
+    final offBalanceAmount = row.offBalanceExposureAmount;
+    if (offBalanceAmount != null) {
+      return offBalanceAmount;
+    }
+    final derivedAmount =
+        _loanTotalAmountValue(row) - _onBalanceAmountValue(row);
+    return derivedAmount > 0 ? derivedAmount : 0.0;
+  }
+
+  double _eadBilanAmountValue(ExposureRecord row) {
+    return row.eadBilanAmount ?? row.ead;
+  }
+
+  double _eadHbAmountValue(ExposureRecord row) {
+    return row.eadHbAmount ?? _offBalanceAmountValue(row);
+  }
+
+  double _eadHbCcfAmountValue(ExposureRecord row) {
+    return row.eadHbCcfAmount ?? 0.0;
+  }
+
+  double _eadTotalAmountValue(ExposureRecord row) {
+    return row.eadTotalAmount ?? row.ead;
+  }
+
+  double _rwaHbAmountValue(ExposureRecord row) {
+    return row.rwaHbAmount ?? 0.0;
+  }
+
+  double _rwaEbAmountValue(ExposureRecord row) {
+    final rwaEbAmount = row.rwaEbAmount;
+    if (rwaEbAmount != null) {
+      return rwaEbAmount;
+    }
+    final derivedAmount = row.rwa - _rwaHbAmountValue(row);
+    return derivedAmount > 0 ? derivedAmount : 0.0;
+  }
+
   double _rwPercentValue(ExposureRecord row) {
     return (row.finalRw * 100).clamp(0.0, double.infinity).toDouble();
   }
@@ -1094,12 +1151,49 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   String _compactCrmValue(String value) {
     switch (value) {
       case 'CRM financee':
-        return 'Financee';
+        return 'Financée';
       case 'CRM non financee':
-        return 'Non financee';
+        return 'Non financée';
       default:
         return value;
     }
+  }
+
+  String _displayExposureCategory(String value) {
+    final cleaned = value
+        .replaceFirst(RegExp(r'^\([a-z]\)\s*', caseSensitive: false), '')
+        .trim();
+    if (cleaned.isEmpty) {
+      return value;
+    }
+    return cleaned
+        .split(RegExp(r'\s+'))
+        .map(_capitalizeExposureCategoryWord)
+        .join(' ');
+  }
+
+  String _capitalizeExposureCategoryWord(String word) {
+    if (word.isEmpty) {
+      return word;
+    }
+    if (word.contains("'")) {
+      return word.split("'").map(_capitalizeExposureCategorySegment).join("'");
+    }
+    return _capitalizeExposureCategorySegment(word);
+  }
+
+  String _capitalizeExposureCategorySegment(String value) {
+    if (value.isEmpty) {
+      return value;
+    }
+    if (value.toUpperCase() == value) {
+      return value;
+    }
+    return '${value[0].toUpperCase()}${value.substring(1)}';
+  }
+
+  String _displayCountry(String value) {
+    return displayCountryName(value, fallback: value);
   }
 
   String _compactGeoValue(ExposureRecord row) {
@@ -1107,7 +1201,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       'Hors zone' => 'HZ',
       _ => row.zone,
     };
-    return '${row.counterparty.country} / $zone';
+    return '${_displayCountry(row.counterparty.country)} / $zone';
   }
 
   int? _exposureIdOrder(String id) {
@@ -1281,9 +1375,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   String _crmTypeTableValue(ExposureRecord row) {
     switch (row.crmModeLabel) {
       case 'CRM financee':
-        return 'financee';
+        return 'Financée';
       case 'CRM non financee':
-        return 'non financee';
+        return 'Non financée';
       default:
         return 'aucune';
     }
@@ -1293,8 +1387,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     switch (key) {
       case 'select':
         return '';
+      case 'analysis_date':
+        return "Date d'analyse";
       case 'id':
-        return 'ID_Exposition';
+        return 'ID Exposition';
       case 'grant_date':
         return "Date d'octroi";
       case 'maturity_date':
@@ -1306,13 +1402,13 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'counterparty':
         return 'Contrepartie';
       case 'counterparty_rating':
-        return 'Notation_externe_contrepartie';
+        return 'Notation externe contrepartie';
       case 'country':
-        return 'Pays_contrepartie';
+        return 'Pays contrepartie';
       case 'country_rating':
-        return 'Notation_externe_pays';
+        return 'Notation externe pays';
       case 'country_rw':
-        return 'Pondération_pays';
+        return 'Pondération pays';
       case 'geo':
         return 'Geo';
       case 'source_currency':
@@ -1323,20 +1419,34 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         return 'Notation';
       case 'gross':
         return 'Montant_exposition_brut';
+      case 'loan_total':
+        return 'PRÊT TOTAL';
+      case 'on_balance_amount':
+        return 'Montant exposition brut au bilan';
+      case 'off_balance_amount':
+        return "Montant d'exposition au HB";
       case 'crm_exists':
-        return 'CRM_existe';
+        return 'CRM existe';
       case 'crm_type':
-        return 'Type_CRM';
+        return 'Type CRM';
       case 'ead_bilan':
-        return 'EAD_bilan';
+        return 'EAD bilan';
+      case 'ead_hb':
+        return 'EAD HB';
+      case 'ead_hb_ccf':
+        return 'EAD HB ccf';
       case 'ead_total':
-        return 'EAD_Total';
+        return 'EAD Total';
       case 'rw':
         return 'Pondération (RW)';
+      case 'rwa_eb':
+        return 'RWA EB';
+      case 'rwa_hb':
+        return 'RWA HB';
       case 'rwa':
-        return 'RWA_crédit';
+        return 'RWA crédit';
       case 'capital':
-        return 'Capital_min_reg';
+        return 'Capital min req';
       case 'crm':
         return 'CRM';
       default:
@@ -1366,6 +1476,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   String? _sortKeyForColumn(String key) {
     switch (key) {
+      case 'analysis_date':
       case 'id':
       case 'grant_date':
       case 'maturity_date':
@@ -1380,11 +1491,18 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'category':
       case 'rating':
       case 'gross':
+      case 'loan_total':
+      case 'on_balance_amount':
+      case 'off_balance_amount':
       case 'crm_exists':
       case 'crm_type':
       case 'ead_bilan':
+      case 'ead_hb':
+      case 'ead_hb_ccf':
       case 'ead_total':
       case 'rw':
+      case 'rwa_eb':
+      case 'rwa_hb':
       case 'rwa':
       case 'capital':
         return key;
@@ -1606,6 +1724,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             });
           },
         );
+      case 'analysis_date':
+        return _tableText(_formatExposureDate(row.analysisDate), width);
       case 'id':
         return _tableText(row.id, width);
       case 'grant_date':
@@ -1621,7 +1741,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'counterparty_rating':
         return _tableText(row.counterparty.rating, width);
       case 'country':
-        return _tableText(row.counterparty.country, width);
+        return _tableText(_displayCountry(row.counterparty.country), width);
       case 'country_rating':
         return _tableText(row.counterparty.countryRating, width);
       case 'country_rw':
@@ -1632,7 +1752,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'source_currency':
         return _tableText(row.currency, width);
       case 'category':
-        return _tableText(row.categoryLabel, width);
+        return _tableText(_displayExposureCategory(row.categoryLabel), width);
       case 'rating':
         return _tableText(row.ratingLabel.tr(context), width);
       case 'gross':
@@ -1641,14 +1761,49 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           currencyCode: _displayCurrency,
           width: width,
         );
+      case 'loan_total':
+        return _tableAmountText(
+          _convertRowAmount(_loanTotalAmountValue(row), row.currency),
+          currencyCode: _displayCurrency,
+          width: width,
+        );
+      case 'on_balance_amount':
+        return _tableAmountText(
+          _convertRowAmount(_onBalanceAmountValue(row), row.currency),
+          currencyCode: _displayCurrency,
+          width: width,
+        );
+      case 'off_balance_amount':
+        return _tableAmountText(
+          _convertRowAmount(_offBalanceAmountValue(row), row.currency),
+          currencyCode: _displayCurrency,
+          width: width,
+        );
       case 'crm_exists':
         return _tableText(_crmExistsLabel(row), width);
       case 'crm_type':
         return _tableText(_crmTypeTableValue(row), width);
       case 'ead_bilan':
+        return _tableAmountText(
+          _convertRowAmount(_eadBilanAmountValue(row), row.currency),
+          currencyCode: _displayCurrency,
+          width: width,
+        );
+      case 'ead_hb':
+        return _tableAmountText(
+          _convertRowAmount(_eadHbAmountValue(row), row.currency),
+          currencyCode: _displayCurrency,
+          width: width,
+        );
+      case 'ead_hb_ccf':
+        return _tableAmountText(
+          _convertRowAmount(_eadHbCcfAmountValue(row), row.currency),
+          currencyCode: _displayCurrency,
+          width: width,
+        );
       case 'ead_total':
         return _tableAmountText(
-          _convertRowAmount(row.ead, row.currency),
+          _convertRowAmount(_eadTotalAmountValue(row), row.currency),
           currencyCode: _displayCurrency,
           width: width,
         );
@@ -1663,6 +1818,18 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             color: _rwGaugeColor(rwPercent),
             fontWeight: FontWeight.w800,
           ),
+        );
+      case 'rwa_eb':
+        return _tableAmountText(
+          _convertRowAmount(_rwaEbAmountValue(row), row.currency),
+          currencyCode: _displayCurrency,
+          width: width,
+        );
+      case 'rwa_hb':
+        return _tableAmountText(
+          _convertRowAmount(_rwaHbAmountValue(row), row.currency),
+          currencyCode: _displayCurrency,
+          width: width,
         );
       case 'rwa':
         return _tableAmountText(
@@ -1738,9 +1905,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF101C32) : const Color(0xFFF7F9FD),
         borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(
-          color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7ECF5),
-        ),
       ),
       child: Theme(
         data: _compactControlsTheme(theme),
@@ -2011,6 +2175,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     String? hint,
     required List<String> items,
     required ValueChanged<String?> onChanged,
+    String Function(String item)? displayTextBuilder,
   }) {
     return DropdownButtonFormField<String>(
       value: value,
@@ -2025,56 +2190,64 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         labelText: label.tr(context),
         hintText: hint?.tr(context),
       ),
-      selectedItemBuilder: (context) => items
-          .map(
-            (item) => Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                item.tr(context),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 9.8,
-                    ),
-              ),
+      selectedItemBuilder: (context) => items.map(
+        (item) {
+          final displayText = displayTextBuilder?.call(item) ?? item;
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              displayText.tr(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9.8,
+                  ),
             ),
-          )
-          .toList(),
-      items: items
-          .map(
-            (item) => DropdownMenuItem<String>(
-              value: item,
-              child: Text(
-                item.tr(context),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 9.8,
-                    ),
-              ),
+          );
+        },
+      ).toList(),
+      items: items.map(
+        (item) {
+          final displayText = displayTextBuilder?.call(item) ?? item;
+          return DropdownMenuItem<String>(
+            value: item,
+            child: Text(
+              displayText.tr(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 9.8,
+                  ),
             ),
-          )
-          .toList(),
+          );
+        },
+      ).toList(),
       onChanged: onChanged,
     );
   }
 
   List<String> get _countryFilterOptions {
     final options = <String>['Toutes'];
-    final current = _countryFilterController.text.trim();
-    if (current.isNotEmpty &&
-        current != 'Toutes' &&
-        !options.contains(current)) {
-      options.add(current);
+    final seen = <String>{};
+
+    void addCountry(String raw) {
+      final candidate = canonicalCountryName(raw, fallback: raw).trim();
+      final key = normalizedCountryName(candidate);
+      if (candidate.isEmpty || key.isEmpty || seen.contains(key)) {
+        return;
+      }
+      seen.add(key);
+      options.add(candidate);
+    }
+
+    addCountry(_countryFilterController.text.trim());
+    for (final row in _allRows) {
+      addCountry(row.counterparty.country);
     }
     for (final raw in worldCountries) {
-      final country = raw.trim();
-      if (country.isEmpty || options.contains(country)) {
-        continue;
-      }
-      options.add(country);
+      addCountry(raw);
     }
     return options;
   }
@@ -2151,10 +2324,15 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             child: _buildCompactDropdownField(
               value: _countryFilterController.text.trim().isEmpty
                   ? null
-                  : _countryFilterController.text.trim(),
+                  : canonicalCountryName(
+                      _countryFilterController.text.trim(),
+                      fallback: _countryFilterController.text.trim(),
+                    ),
               label: 'Pays',
               hint: 'Pays de résidence',
               items: _countryFilterOptions,
+              displayTextBuilder: (item) =>
+                  item == 'Toutes' ? item : _displayCountry(item),
               onChanged: (value) => setState(() {
                 _countryFilterController.text =
                     value == null || value == 'Toutes' ? '' : value;
@@ -2174,6 +2352,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               'Toutes',
               ...exposureCategories.map((item) => item.prudentialLabel),
             ],
+            displayTextBuilder: (item) =>
+                item == 'Toutes' ? item : _displayExposureCategory(item),
             onChanged: (value) =>
                 setState(() => _categoryFilter = value ?? 'Toutes'),
           ),
@@ -2249,7 +2429,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     final idFilter = _idFilterController.text.trim().toLowerCase();
     final counterpartyFilter =
         _counterpartyFilterController.text.trim().toLowerCase();
-    final countryFilter = _countryFilterController.text.trim().toLowerCase();
+    final countryFilter = normalizedCountryName(
+      _countryFilterController.text.trim(),
+    );
 
     final rows = _allRows.where((row) {
       final matchesId =
@@ -2257,7 +2439,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       final matchesCounterparty = counterpartyFilter.isEmpty ||
           row.counterparty.name.toLowerCase().contains(counterpartyFilter);
       final matchesCountry = countryFilter.isEmpty ||
-          row.counterparty.country.toLowerCase().contains(countryFilter);
+          normalizedCountryName(row.counterparty.country)
+              .contains(countryFilter);
       final matchesCategory =
           _categoryFilter == 'Toutes' || row.categoryLabel == _categoryFilter;
       final matchesZone = _zoneFilter == 'Toutes' || row.zone == _zoneFilter;
@@ -2278,6 +2461,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     if (_sortColumnKey != null) {
       rows.sort((left, right) {
         final comparison = switch (_sortColumnKey) {
+          'analysis_date' =>
+            _compareNullableDates(left.analysisDate, right.analysisDate),
           'id' => _compareExposureIds(left.id, right.id),
           'grant_date' =>
             _compareNullableDates(left.grantDate, right.grantDate),
@@ -2299,24 +2484,54 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             left.counterparty.name.compareTo(right.counterparty.name),
           'counterparty_rating' => _compareRatings(
               left.counterparty.rating, right.counterparty.rating),
-          'country' =>
-            left.counterparty.country.compareTo(right.counterparty.country),
+          'country' => _displayCountry(left.counterparty.country)
+              .compareTo(_displayCountry(right.counterparty.country)),
           'country_rating' => _compareRatings(left.counterparty.countryRating,
               right.counterparty.countryRating),
           'country_rw' => _countryRiskWeightValue(left)
               .compareTo(_countryRiskWeightValue(right)),
           'source_currency' => left.currency.compareTo(right.currency),
-          'category' => left.categoryLabel.compareTo(right.categoryLabel),
+          'category' => _displayExposureCategory(left.categoryLabel)
+              .compareTo(_displayExposureCategory(right.categoryLabel)),
           'rating' => _compareRatings(left.ratingLabel, right.ratingLabel),
+          'loan_total' =>
+            _convertRowAmount(_loanTotalAmountValue(left), left.currency)
+                .compareTo(_convertRowAmount(
+                    _loanTotalAmountValue(right), right.currency)),
+          'on_balance_amount' =>
+            _convertRowAmount(_onBalanceAmountValue(left), left.currency)
+                .compareTo(_convertRowAmount(
+                    _onBalanceAmountValue(right), right.currency)),
+          'off_balance_amount' =>
+            _convertRowAmount(_offBalanceAmountValue(left), left.currency)
+                .compareTo(_convertRowAmount(
+                    _offBalanceAmountValue(right), right.currency)),
           'crm_exists' =>
             _crmExistsLabel(left).compareTo(_crmExistsLabel(right)),
           'crm_type' =>
             _crmTypeTableValue(left).compareTo(_crmTypeTableValue(right)),
-          'ead_bilan' => _convertRowAmount(left.ead, left.currency)
-              .compareTo(_convertRowAmount(right.ead, right.currency)),
-          'ead_total' => _convertRowAmount(left.ead, left.currency)
-              .compareTo(_convertRowAmount(right.ead, right.currency)),
+          'ead_bilan' =>
+            _convertRowAmount(_eadBilanAmountValue(left), left.currency)
+                .compareTo(_convertRowAmount(
+                    _eadBilanAmountValue(right), right.currency)),
+          'ead_hb' => _convertRowAmount(_eadHbAmountValue(left), left.currency)
+              .compareTo(
+                  _convertRowAmount(_eadHbAmountValue(right), right.currency)),
+          'ead_hb_ccf' =>
+            _convertRowAmount(_eadHbCcfAmountValue(left), left.currency)
+                .compareTo(_convertRowAmount(
+                    _eadHbCcfAmountValue(right), right.currency)),
+          'ead_total' =>
+            _convertRowAmount(_eadTotalAmountValue(left), left.currency)
+                .compareTo(_convertRowAmount(
+                    _eadTotalAmountValue(right), right.currency)),
           'rw' => left.finalRw.compareTo(right.finalRw),
+          'rwa_eb' => _convertRowAmount(_rwaEbAmountValue(left), left.currency)
+              .compareTo(
+                  _convertRowAmount(_rwaEbAmountValue(right), right.currency)),
+          'rwa_hb' => _convertRowAmount(_rwaHbAmountValue(left), left.currency)
+              .compareTo(
+                  _convertRowAmount(_rwaHbAmountValue(right), right.currency)),
           'rwa' => _convertRowAmount(left.rwa, left.currency)
               .compareTo(_convertRowAmount(right.rwa, right.currency)),
           'capital' => _convertRowAmount(left.capital, left.currency)
@@ -2356,12 +2571,11 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   String get _displayCurrencyLabel {
-    switch (_displayCurrency.toUpperCase()) {
+    switch (normalizeCurrencyCode(_displayCurrency)) {
       case 'XOF':
-      case 'XAF':
         return 'FCFA';
       default:
-        return _displayCurrency.toUpperCase();
+        return normalizeCurrencyCode(_displayCurrency);
     }
   }
 
@@ -2493,10 +2707,12 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     _upsertLocalExposure(savedRecord);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
+        backgroundColor: const Color(0xFF16A34A),
         content: Text(
           isCreateMode
-              ? context.tr('Exposition ajoutee.')
+              ? context.tr('Exposition ajoutee avec succes.')
               : context.tr('Exposition mise a jour.'),
+          style: const TextStyle(color: Colors.white),
         ),
       ),
     );
@@ -2972,28 +3188,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   Future<Uint8List> _buildVisibleTablePdf(List<ExposureRecord> rows) async {
     final document = pw.Document();
-    const pdfColumnKeys = <String>[
-      'id',
-      'grant_date',
-      'maturity_date',
-      'exposure_maturity',
-      'residual_maturity',
-      'counterparty',
-      'counterparty_rating',
-      'country',
-      'country_rating',
-      'country_rw',
-      'category',
-      'rw',
-      'gross',
-      'source_currency',
-      'crm_exists',
-      'crm_type',
-      'ead_bilan',
-      'ead_total',
-      'rwa',
-      'capital',
-    ];
+    final pdfColumnKeys = _fullTableColumnKeys
+        .where((key) => key != 'select')
+        .toList(growable: false);
     final headers = pdfColumnKeys
         .map((key) => _columnLabelForKey(key, _ExposureTableMode.full))
         .toList(growable: false);
@@ -3094,6 +3291,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   pw.Widget _pdfCellForColumn(ExposureRecord row, String key) {
     switch (key) {
+      case 'analysis_date':
+        return _pdfTableCell(_formatExposureDate(row.analysisDate));
       case 'id':
         return _pdfTableCell(row.id);
       case 'grant_date':
@@ -3109,13 +3308,13 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'counterparty_rating':
         return _pdfTableCell(row.counterparty.rating);
       case 'country':
-        return _pdfTableCell(row.counterparty.country);
+        return _pdfTableCell(_displayCountry(row.counterparty.country));
       case 'country_rating':
         return _pdfTableCell(row.counterparty.countryRating);
       case 'country_rw':
         return _pdfTableCell(_formatRiskWeight(_countryRiskWeightValue(row)));
       case 'category':
-        return _pdfTableCell(row.categoryLabel);
+        return _pdfTableCell(_displayExposureCategory(row.categoryLabel));
       case 'rw':
         return _pdfTableCell(
           _formatRiskWeight(row.finalRw),
@@ -3128,6 +3327,24 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             _convertRowAmount(row.grossAmount, row.currency),
           ),
         );
+      case 'loan_total':
+        return _pdfTableCell(
+          AppFormatters.compactNumber(
+            _convertRowAmount(_loanTotalAmountValue(row), row.currency),
+          ),
+        );
+      case 'on_balance_amount':
+        return _pdfTableCell(
+          AppFormatters.compactNumber(
+            _convertRowAmount(_onBalanceAmountValue(row), row.currency),
+          ),
+        );
+      case 'off_balance_amount':
+        return _pdfTableCell(
+          AppFormatters.compactNumber(
+            _convertRowAmount(_offBalanceAmountValue(row), row.currency),
+          ),
+        );
       case 'source_currency':
         return _pdfTableCell(row.currency);
       case 'crm_exists':
@@ -3135,10 +3352,39 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'crm_type':
         return _pdfTableCell(_crmTypeTableValue(row));
       case 'ead_bilan':
+        return _pdfTableCell(
+          AppFormatters.compactNumber(
+            _convertRowAmount(_eadBilanAmountValue(row), row.currency),
+          ),
+        );
+      case 'ead_hb':
+        return _pdfTableCell(
+          AppFormatters.compactNumber(
+            _convertRowAmount(_eadHbAmountValue(row), row.currency),
+          ),
+        );
+      case 'ead_hb_ccf':
+        return _pdfTableCell(
+          AppFormatters.compactNumber(
+            _convertRowAmount(_eadHbCcfAmountValue(row), row.currency),
+          ),
+        );
       case 'ead_total':
         return _pdfTableCell(
           AppFormatters.compactNumber(
-            _convertRowAmount(row.ead, row.currency),
+            _convertRowAmount(_eadTotalAmountValue(row), row.currency),
+          ),
+        );
+      case 'rwa_eb':
+        return _pdfTableCell(
+          AppFormatters.compactNumber(
+            _convertRowAmount(_rwaEbAmountValue(row), row.currency),
+          ),
+        );
+      case 'rwa_hb':
+        return _pdfTableCell(
+          AppFormatters.compactNumber(
+            _convertRowAmount(_rwaHbAmountValue(row), row.currency),
           ),
         );
       case 'rwa':

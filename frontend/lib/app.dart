@@ -27,6 +27,8 @@ class RwaApp extends StatefulWidget {
 
 /// Etat interne qui mémorise le module courant et le mode de thème.
 class _RwaAppState extends State<RwaApp> {
+  static const int _maxRetainedModules = 3;
+
   final RwaApiService _api = RwaApiService(useMockData: false);
   final ValueNotifier<String> _portfolioDisplayCurrency = ValueNotifier<String>(
     'XOF',
@@ -37,7 +39,7 @@ class _RwaAppState extends State<RwaApp> {
   AppModule _selectedModule = AppModule.dashboard;
   ThemeMode _themeMode = ThemeMode.light;
   final Map<AppModule, Widget> _screenCache = {};
-  final Set<AppModule> _visitedModules = {AppModule.dashboard};
+  final List<AppModule> _retainedModules = [AppModule.dashboard];
 
   @override
   void initState() {
@@ -100,15 +102,33 @@ class _RwaAppState extends State<RwaApp> {
     if (!mounted) return;
     setState(() {
       _screenCache.clear();
-      _visitedModules.add(_selectedModule);
+      _retainedModules
+        ..clear()
+        ..add(_selectedModule);
     });
   }
 
   void _selectModule(AppModule module) {
     setState(() {
       _selectedModule = module;
-      _visitedModules.add(module);
+      _retainModule(module);
     });
+  }
+
+  void _retainModule(AppModule module) {
+    _retainedModules.remove(module);
+    _retainedModules.add(module);
+
+    while (_retainedModules.length > _maxRetainedModules) {
+      final removalIndex = _retainedModules.indexWhere(
+        (candidate) => candidate != _selectedModule,
+      );
+      if (removalIndex == -1) {
+        break;
+      }
+      final removedModule = _retainedModules.removeAt(removalIndex);
+      _screenCache.remove(removedModule);
+    }
   }
 
   Widget _screenFor(AppModule module) {
@@ -136,9 +156,10 @@ class _RwaAppState extends State<RwaApp> {
   }
 
   Widget _buildSelectedScreen() {
-    final visibleModules = AppModule.values
-        .where((module) => _visitedModules.contains(module))
-        .toList(growable: false);
+    final visibleModules = List<AppModule>.of(_retainedModules, growable: true);
+    if (!visibleModules.contains(_selectedModule)) {
+      visibleModules.add(_selectedModule);
+    }
     return IndexedStack(
       index: visibleModules.indexOf(_selectedModule),
       children: [

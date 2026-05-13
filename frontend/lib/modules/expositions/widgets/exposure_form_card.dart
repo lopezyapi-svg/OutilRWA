@@ -9,7 +9,6 @@ import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/formatters.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../models/exposition_models.dart';
 
@@ -118,6 +117,10 @@ List<String> _expandTooltipMessageLines(String message) {
       lines.add('');
       continue;
     }
+    if (line.startsWith('[[CARD]]')) {
+      lines.add(line);
+      continue;
+    }
     if (line.startsWith('[[NOTE]]')) {
       final noteText = line.replaceFirst('[[NOTE]]', '').trimLeft();
       lines.add('[[NOTE]]${_normalizeTooltipSentence(noteText)}');
@@ -130,6 +133,81 @@ List<String> _expandTooltipMessageLines(String message) {
     lines.addAll(segments.map(_normalizeTooltipSentence));
   }
   return lines;
+}
+
+InlineSpan _buildTooltipCardSpan(String line) {
+  final payload = line.replaceFirst('[[CARD]]', '').trimLeft();
+  final parts = payload.split('|').map((part) => part.trim()).toList();
+  final title = parts.isNotEmpty ? _capitalizeTooltipText(parts[0]) : '';
+  final description = parts.length > 1 ? parts[1] : '';
+  final formula = parts.length > 2 ? parts[2] : '';
+
+  return WidgetSpan(
+    child: Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+        decoration: BoxDecoration(
+          color: const Color(0xFF172845),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: const Color(0xFF2D4B7A),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 11.4,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.2,
+              ),
+            ),
+            if (description.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: const TextStyle(
+                  fontSize: 10.9,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFFE8EEF9),
+                  height: 1.35,
+                ),
+              ),
+            ],
+            if (formula.isNotEmpty) ...[
+              const SizedBox(height: 7),
+              const Text(
+                'Formule',
+                style: TextStyle(
+                  fontSize: 10.0,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF8FB4FF),
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                formula,
+                style: const TextStyle(
+                  fontSize: 10.8,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 InlineSpan _buildModernTooltipContent(String title, String message) {
@@ -157,6 +235,10 @@ InlineSpan _buildModernTooltipContent(String title, String message) {
       spans.add(const TextSpan(text: '\n'));
       continue;
     }
+    if (line.startsWith('[[CARD]]')) {
+      spans.add(_buildTooltipCardSpan(line));
+      continue;
+    }
     final isNote = line.startsWith('[[NOTE]]');
     if (isNote) {
       final noteText = line.replaceFirst('[[NOTE]]', '').trimLeft();
@@ -182,6 +264,12 @@ InlineSpan _buildModernTooltipContent(String title, String message) {
     if (hasLabelValueFormat) {
       final label = line.substring(0, separatorIndex).trim();
       final detail = line.substring(separatorIndex + 1).trim();
+      final shouldBreakDetailLine = detail.startsWith('[[BREAK]]');
+      final normalizedDetail = _normalizeTooltipSentence(
+        shouldBreakDetailLine
+            ? detail.replaceFirst('[[BREAK]]', '').trimLeft()
+            : detail,
+      );
       spans.add(
         TextSpan(
           children: [
@@ -204,8 +292,9 @@ InlineSpan _buildModernTooltipContent(String title, String message) {
               ),
             ),
             TextSpan(
-              text:
-                  ' : ${_normalizeTooltipSentence(detail)}${index == lines.length - 1 ? '' : '\n'}',
+              text: shouldBreakDetailLine
+                  ? ' :\n  $normalizedDetail${index == lines.length - 1 ? '' : '\n'}'
+                  : ' : $normalizedDetail${index == lines.length - 1 ? '' : '\n'}',
               style: const TextStyle(
                 fontSize: 11.2,
                 fontWeight: FontWeight.w500,
@@ -273,7 +362,7 @@ class ExposureFormCard extends StatefulWidget {
 }
 
 class _ExposureFormCardState extends State<ExposureFormCard> {
-  static const List<String> _supportedCurrencies = ['XOF', 'XAF', 'EUR', 'USD'];
+  static const List<String> _supportedCurrencies = ['XOF', 'EUR', 'USD'];
   static const String _bmdCriteriaTooltip =
       '(a) excellente notation long terme (majoritairement AAA)\n'
       '(b) actionnariat composé en grande partie de souverains ≥ AA- ou financement surtout par capital versé\n'
@@ -320,11 +409,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   static const String _offBalanceVeryHighRiskTooltip =
       'opérations assimilables à des pensions, repo ou prêts de titres ; cessions d’actifs avec recours, affacturage ou escompte ; engagements d’achat d’actifs à terme ; dépôts à terme contre terme ; fraction non versée d’actions ou titres partiellement libérés ; autres éléments hors bilan non classés.';
   static const String _offBalanceFcecTooltip =
-      'Définition : Les éléments de hors bilan recouvrent les garanties, les engagements, les instruments dérivés et d’autres accords contractuels non comptabilisés au bilan.\n\n'
-      'Approche standard : Dans l’approche standard, chaque élément de hors bilan est converti en équivalent risque de crédit (ERC) au moyen d’un facteur de conversion en équivalent crédit (FCEC) qui sert à établir une projection de l’exposition potentielle au risque.\n\n'
-      'Calcul de l’ERC : Le montant ERC d’une transaction de hors bilan est calculé en multipliant le montant correspondant à la portion non utilisée par le FCEC y relatif.\n\n'
-      'Calcul des APR : Pour obtenir les APR de crédit sur les engagements de hors bilan, le montant ERC ainsi défini est ensuite multiplié par la pondération du risque qui dépend du type de contrepartie et de sa notation.\n\n'
-      'Catégories de FCEC : Les FCEC applicables aux éléments de hors bilan sont répartis en cinq (5) catégories définies par ordre croissant selon le niveau de risque potentiel de la transaction.';
+      'Définition : [[BREAK]]Les éléments de hors bilan recouvrent les garanties, les engagements, les instruments dérivés et d’autres accords contractuels non comptabilisés au bilan.\n\n'
+      'Approche standard : [[BREAK]]Dans l’approche standard, chaque élément de hors bilan est converti en équivalent risque de crédit (ERC) au moyen d’un facteur de conversion en équivalent crédit (FCEC) qui sert à établir une projection de l’exposition potentielle au risque.\n\n'
+      'Calcul de l’ERC : [[BREAK]]Le montant ERC d’une transaction de hors bilan est calculé en multipliant le montant correspondant à la portion non utilisée par le FCEC y relatif.\n\n'
+      'Calcul des APR : [[BREAK]]Pour obtenir les APR de crédit sur les engagements de hors bilan, le montant ERC ainsi défini est ensuite multiplié par la pondération du risque qui dépend du type de contrepartie et de sa notation.\n\n'
+      'Catégories de FCEC : [[BREAK]]Les FCEC applicables aux éléments de hors bilan sont répartis en cinq (5) catégories définies par ordre croissant selon le niveau de risque potentiel de la transaction.';
   static const String _residentialMortgageCriteriaTooltip =
       'Ratio Prêt/Valeur (LTV) ≤ 90 %\n'
       'Ratio de couverture du service de la dette ≤ 40 %\n'
@@ -337,18 +426,18 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   static const String _collateralValueTooltip =
       'Montant de la sûreté ou du collatéral reçu. Cette valeur sera corrigée par les décotes réglementaires avant d être déduite de l exposition.';
   static const String _automaticHaircutsTooltip =
-      'HE : HE correspond à la décote appliquée à l exposition. Dans notre cas actuel, l exposition est un crédit classique déjà catégorisé. La décote HE est donc fixée à 0 %. Elle pourrait être différente pour certaines opérations de marché ou expositions sous forme de titres.\n'
-      'HC : HC est la décote appliquée à la sûreté. Elle dépend du type de sûreté, de la notation, du type d émetteur et de la durée résiduelle du titre reçu en garantie.\n'
-      'Hfx : Hfx correspond à la décote appliquée lorsqu il existe une différence de devise entre l exposition et la sûreté. Elle est de 8 % en cas d asymétrie de devises. Toutefois, entre le FCFA et l euro, elle est de 0 %.';
+      "He : [[BREAK]]Décote appliquée à l'exposition. Elle peut varier selon la nature de l'opération ou de l'exposition.\n"
+      'Hc : [[BREAK]]Décote appliquée à la sûreté selon le type, la note, l émetteur et la maturité.\n'
+      'Hfx : [[BREAK]]Décote de change. 0 % si même devise ou paire FCFA/EUR, sinon 8 %.';
   static const String _convertibleMainIndexTooltip =
       "Choisissez Oui si l'obligation convertible reçue en garantie est incluse dans un indice principal reconnu.\n"
       'Choisissez Non dans le cas contraire.\n'
-      'La décote HC est de 20 % si Oui, contre 30 % si Non.';
+      'La décote Hc est de 20 % si Oui, contre 30 % si Non.';
   static const String _financedCrmCalculationTooltip =
-      'EVA : EVA est l exposition ajustée après application de la décote HE : EVA = Montant brut de l exposition × (1 + HE).\n'
-      'CVA : CVA est la valeur ajustée de la sûreté après application des décotes HC et Hfx : CVA = Valeur de la sûreté × (1 - HC - Hfx).\n'
-      'EAD après CRM financée : L EAD après CRM financée correspond à l exposition nette après prise en compte de la sûreté : EAD = max(0, EVA - CVA).\n'
-      'Valeur de la sûreté : Montant de la sûreté ou du collatéral reçu. Cette valeur sera corrigée par les décotes réglementaires avant d être déduite de l exposition.';
+      '[[CARD]]Eva|Exposition ajustée après décote He|Eva = Montant brut de l exposition × (1 + He)\n'
+      '[[CARD]]Cva|Valeur ajustée de la sûreté après décotes Hc et Hfx|Cva = Valeur de la sûreté × (1 - Hc - Hfx)\n'
+      '[[CARD]]EAD après CRM financée|Exposition nette après prise en compte de la sûreté|EAD = max(0, Eva - Cva)\n'
+      '[[CARD]]Valeur de la sûreté|Montant du collatéral reçu avant application des décotes réglementaires|Valeur de la sûreté = Montant du collatéral reçu';
   static const String _basketTooltip =
       'Lorsque la sûreté est composée de plusieurs actifs, la décote globale est calculée comme la somme pondérée des décotes de chaque actif.';
   static const List<String> _nonFinancedCrmTypes = [
@@ -380,8 +469,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     ),
     _WizardStepMeta(
       shortLabel: 'Categorie',
-      title: 'Categorie prudentielle',
-      subtitle: 'Type d exposition et ponderation',
+      title: 'Catégorie d\'exposition',
+      subtitle: 'Type d\'exposition et pondération',
       icon: Icons.account_tree_outlined,
     ),
     _WizardStepMeta(
@@ -643,7 +732,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _enterpriseInvestmentFirmWithoutBankingLaw = null;
     }
     _currency = _initialSelectedValue(
-      draft?.currency.trim().toUpperCase(),
+      normalizeCurrencyCode(draft?.currency ?? ''),
       options: _supportedCurrencies,
     );
     _status = draft?.status ?? 'Active';
@@ -667,7 +756,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       options: financedCrmCollateralTypes,
     );
     _collateralCurrency = _initialSelectedValue(
-      draft?.collateralCurrency.trim().toUpperCase(),
+      normalizeCurrencyCode(draft?.collateralCurrency ?? ''),
       options: _supportedCurrencies,
     );
     _issuerType = _initialSelectedValue(
@@ -717,7 +806,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       return;
     }
     _currency = _initialSelectedValue(
-      PortfolioCurrencyScope.maybeOf(context, fallback: _currency),
+      normalizeCurrencyCode(
+        PortfolioCurrencyScope.maybeOf(context, fallback: _currency),
+      ),
       options: _supportedCurrencies,
     );
     _didResolveScopedCurrency = true;
@@ -820,6 +911,15 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   double? get _onBalanceExposureAmountInput =>
       _parseDecimal(_onBalanceAmountController.text);
 
+  bool get _hasInvalidOnBalanceAmount {
+    final loanTotalAmount = _loanTotalAmountInput;
+    final onBalanceExposureAmount = _onBalanceExposureAmountInput;
+    if (loanTotalAmount == null || onBalanceExposureAmount == null) {
+      return false;
+    }
+    return onBalanceExposureAmount > loanTotalAmount;
+  }
+
   double get _derivedOffBalanceExposureAmount {
     final loanTotalAmount = _loanTotalAmountInput ?? 0.0;
     final onBalanceExposureAmount = _onBalanceExposureAmountInput ?? 0.0;
@@ -871,32 +971,42 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
   List<String> get _availableCountryOptions {
     final unique = <String>[];
-    final current = _countryController.text.trim();
-    if (current.isNotEmpty) {
-      unique.add(current);
-    }
-    for (final raw in worldCountries) {
-      final value = raw.trim();
-      if (value.isEmpty || unique.contains(value)) {
-        continue;
+    final seen = <String>{};
+
+    void addCountry(String raw) {
+      final value = canonicalCountryName(raw, fallback: raw).trim();
+      final key = normalizedCountryName(value);
+      if (value.isEmpty || key.isEmpty || seen.contains(key)) {
+        return;
       }
+      seen.add(key);
       unique.add(value);
+    }
+
+    addCountry(_countryController.text.trim());
+    for (final raw in worldCountries) {
+      addCountry(raw);
     }
     return unique;
   }
 
   List<String> get _availableGuarantorCountryOptions {
     final unique = <String>[];
-    final current = _guarantorCountryController.text.trim();
-    if (current.isNotEmpty) {
-      unique.add(current);
-    }
-    for (final raw in worldCountries) {
-      final value = raw.trim();
-      if (value.isEmpty || unique.contains(value)) {
-        continue;
+    final seen = <String>{};
+
+    void addCountry(String raw) {
+      final value = canonicalCountryName(raw, fallback: raw).trim();
+      final key = normalizedCountryName(value);
+      if (value.isEmpty || key.isEmpty || seen.contains(key)) {
+        return;
       }
+      seen.add(key);
       unique.add(value);
+    }
+
+    addCountry(_guarantorCountryController.text.trim());
+    for (final raw in worldCountries) {
+      addCountry(raw);
     }
     return unique;
   }
@@ -925,10 +1035,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   List<String> get _availableCurrencyOptions {
     final values = <String>{..._supportedCurrencies};
     if (_currency.trim().isNotEmpty) {
-      values.add(_currency);
+      values.add(normalizeCurrencyCode(_currency));
     }
     if (_collateralCurrency.trim().isNotEmpty) {
-      values.add(_collateralCurrency);
+      values.add(normalizeCurrencyCode(_collateralCurrency));
     }
     return values.toList()..sort();
   }
@@ -948,22 +1058,46 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     );
   }
 
-  String _formatReadonlyAmount(double amount) {
-    return amount <= 0
-        ? '0'
-        : AppFormatters.currency(amount, currencyCode: _currency);
+  String _formatReadonlyAmount(
+    double amount, {
+    String? sourceCurrency,
+    String? targetCurrency,
+  }) {
+    final resolvedSourceCurrency =
+        normalizeCurrencyCode(sourceCurrency ?? _currency);
+    final resolvedTargetCurrency =
+        normalizeCurrencyCode(targetCurrency ?? _currency);
+    return formatCurrencyForDisplay(
+      amount,
+      fromCurrency: resolvedSourceCurrency,
+      toCurrency: resolvedTargetCurrency,
+    );
   }
 
-  double get _basketTotalValue => _basketItems.fold<double>(
+  double _convertBasketItemAmount(
+    FinancedCrmBasketItem item, {
+    required String toCurrency,
+  }) {
+    return convertAmount(
+      item.value,
+      fromCurrency: item.currency,
+      toCurrency: toCurrency,
+    );
+  }
+
+  double get _basketTotalInExposureCurrency => _basketItems.fold<double>(
         0.0,
-        (total, item) => total + item.value,
+        (total, item) =>
+            total + _convertBasketItemAmount(item, toCurrency: _currency),
       );
 
   void _syncBasketCollateralController() {
     if (!financedCrmCollateralIsBasket(_collateralType)) {
       return;
     }
-    _collateralController.text = _basketTotalValue.toStringAsFixed(0);
+    final decimals = normalizeCurrencyCode(_currency) == 'XOF' ? 0 : 2;
+    _collateralController.text =
+        _basketTotalInExposureCurrency.toStringAsFixed(decimals);
   }
 
   void _syncFinancedCollateralCurrencyToExposureIfNeeded() {
@@ -1045,6 +1179,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   List<DropdownMenuItem<String>> _stringDropdownItems(
     List<String> items, {
     bool translate = false,
+    String Function(String item)? displayTextBuilder,
   }) {
     final unique = <String>[];
     for (final raw in items) {
@@ -1058,7 +1193,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         .map(
           (item) => DropdownMenuItem<String>(
             value: item,
-            child: _dropdownLabel(item, translate: translate),
+            child: _dropdownLabel(
+              displayTextBuilder?.call(item) ?? item,
+              translate: translate,
+            ),
           ),
         )
         .toList(growable: false);
@@ -1067,6 +1205,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   List<Widget> _selectedStringDropdownItems(
     List<String> items, {
     bool translate = false,
+    String Function(String item)? displayTextBuilder,
   }) {
     final unique = <String>[];
     for (final raw in items) {
@@ -1080,7 +1219,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         .map(
           (item) => Align(
             alignment: Alignment.centerLeft,
-            child: _dropdownLabel(item, translate: translate),
+            child: _dropdownLabel(
+              displayTextBuilder?.call(item) ?? item,
+              translate: translate,
+            ),
           ),
         )
         .toList(growable: false);
@@ -1114,6 +1256,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         spans.add(const TextSpan(text: '\n'));
         continue;
       }
+      if (line.startsWith('[[CARD]]')) {
+        spans.add(_buildTooltipCardSpan(line));
+        continue;
+      }
       final isNote = line.startsWith('[[NOTE]]');
       if (isNote) {
         final noteText = line.replaceFirst('[[NOTE]]', '').trimLeft();
@@ -1139,6 +1285,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       if (hasLabelValueFormat) {
         final label = line.substring(0, separatorIndex).trim();
         final detail = line.substring(separatorIndex + 1).trim();
+        final shouldBreakDetailLine = detail.startsWith('[[BREAK]]');
+        final normalizedDetail = _normalizeTooltipSentence(
+          shouldBreakDetailLine
+              ? detail.replaceFirst('[[BREAK]]', '').trimLeft()
+              : detail,
+        );
         spans.add(
           TextSpan(
             children: [
@@ -1161,8 +1313,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 ),
               ),
               TextSpan(
-                text:
-                    ' : ${_normalizeTooltipSentence(detail)}${index == lines.length - 1 ? '' : '\n'}',
+                text: shouldBreakDetailLine
+                    ? ' :\n  $normalizedDetail${index == lines.length - 1 ? '' : '\n'}'
+                    : ' : $normalizedDetail${index == lines.length - 1 ? '' : '\n'}',
                 style: const TextStyle(
                   fontSize: 11.2,
                   fontWeight: FontWeight.w500,
@@ -1217,7 +1370,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       showDuration: const Duration(seconds: 12),
       preferBelow: false,
       verticalOffset: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      textAlign: TextAlign.start,
+      padding: const EdgeInsets.fromLTRB(5, 12, 14, 12),
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1C34),
@@ -2035,7 +2189,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               child: DropdownButtonFormField<String>(
                 value: _countryController.text.trim().isEmpty
                     ? null
-                    : _countryController.text.trim(),
+                    : canonicalCountryName(
+                        _countryController.text.trim(),
+                        fallback: _countryController.text.trim(),
+                      ),
                 isExpanded: true,
                 menuMaxHeight: 320,
                 decoration: _fieldDecoration(
@@ -2047,8 +2204,16 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   return country.isEmpty ? context.tr('Champ requis') : null;
                 },
                 selectedItemBuilder: (context) =>
-                    _selectedStringDropdownItems(_availableCountryOptions),
-                items: _stringDropdownItems(_availableCountryOptions),
+                    _selectedStringDropdownItems(
+                      _availableCountryOptions,
+                      displayTextBuilder: (item) =>
+                          displayCountryName(item, fallback: item),
+                    ),
+                items: _stringDropdownItems(
+                  _availableCountryOptions,
+                  displayTextBuilder: (item) =>
+                      displayCountryName(item, fallback: item),
+                ),
                 onChanged: (value) {
                   if (value == null) {
                     return;
@@ -2190,14 +2355,14 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           fields: [
             _buildFieldCard(
               context: context,
-              title: 'Montant total du prêt',
+              title: 'Montant d\'exposition',
               subtitle: "Montant brut de l'opération",
               icon: Icons.payments_outlined,
               child: TextFormField(
                 controller: _amountController,
                 decoration: _fieldDecoration(
                   context,
-                  hint: context.tr('Montant total du prêt'),
+                  hint: context.tr('Montant d\'exposition'),
                 ),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
@@ -2207,14 +2372,14 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             ),
             _buildFieldCard(
               context: context,
-              title: 'Montant d exposition au bilan',
+              title: 'Montant d\'exposition au bilan',
               subtitle: 'Part déjà inscrite au bilan',
               icon: Icons.account_balance_wallet_outlined,
               child: TextFormField(
                 controller: _onBalanceAmountController,
                 decoration: _fieldDecoration(
                   context,
-                  hint: context.tr('Montant d exposition au bilan'),
+                  hint: context.tr('Montant d\'exposition au bilan'),
                 ),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
@@ -2235,7 +2400,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   hint: context.tr('Choisir une option'),
                 ),
                 validator: _requiredSelectionValidator,
-                items: const ['XOF', 'XAF', 'EUR', 'USD']
+                items: const ['XOF', 'EUR', 'USD']
                     .map(
                       (item) => DropdownMenuItem(
                         value: item,
@@ -2251,19 +2416,38 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             ),
             _buildFieldCard(
               context: context,
-              title: 'Montant d exposition au hors bilan',
-              subtitle: 'Déduit du prêt total et de l exposition au bilan',
+              title: 'Montant d\'exposition hors bilan',
+              subtitle:
+                  'Déduit du montant d\'exposition et de l\'exposition au bilan',
               icon: Icons.calculate_outlined,
               child: InputDecorator(
-                decoration: _fieldDecoration(context),
+                decoration: _fieldDecoration(
+                  context,
+                  errorText:
+                      _hasInvalidOnBalanceAmount ? 'Valeur incorrecte' : null,
+                ),
                 child: Text(
-                  _formatReadonlyAmount(_derivedOffBalanceExposureAmount),
+                  _hasInvalidOnBalanceAmount
+                      ? 'Valeur incorrecte'
+                      : _formatReadonlyAmount(
+                          _derivedOffBalanceExposureAmount,
+                          sourceCurrency: _currency,
+                          targetCurrency: displayCurrency,
+                        ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1E3A8A),
-                      ),
+                  style: (_hasInvalidOnBalanceAmount
+                          ? Theme.of(context).textTheme.bodySmall
+                          : Theme.of(context).textTheme.titleMedium)
+                      ?.copyWith(
+                    fontWeight: _hasInvalidOnBalanceAmount
+                        ? FontWeight.w600
+                        : FontWeight.w700,
+                    fontSize: _hasInvalidOnBalanceAmount ? 10.5 : null,
+                    color: _hasInvalidOnBalanceAmount
+                        ? AppTheme.danger
+                        : const Color(0xFF1E3A8A),
+                  ),
                 ),
               ),
             ),
@@ -2586,6 +2770,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _offBalanceRiskLevel = null;
       }
     });
+    _financialFormKey.currentState?.validate();
   }
 
   void _handleEnterpriseBceaoDegradationChanged(bool? value) {
@@ -2708,9 +2893,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _StepGridFullWidth(
         child: _buildFieldCard(
           context: context,
-          title: 'Categorie prudentielle',
-          subtitle: 'Type d exposition',
+          title: 'Catégorie d\'exposition',
+          subtitle: '',
           icon: Icons.account_tree_outlined,
+          hideHeader: true,
           child: DropdownButtonFormField<String>(
             value: _selectedValueOrNull(
               _categoryCode,
@@ -3732,7 +3918,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             ? null
             : lookupOffBalanceFcec(_offBalanceRiskLevel);
     final counterpartyName = _nameController.text.trim();
-    final residenceCountry = _countryController.text.trim();
+    final residenceCountry = displayCountryName(
+      _countryController.text.trim(),
+      fallback: _countryController.text.trim(),
+    );
     final detectedZone = _detectedCountryZone;
     final crmTypeLabel = switch (_crmMode) {
       'CRM financee' => 'Financée',
@@ -3807,7 +3996,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         accent: const Color(0xFF7C3AED),
       ),
       _KpiData(
-        label: context.tr('Montant total du prêt'),
+        label: context.tr('Montant d\'exposition'),
         value: compactCurrencyForDisplay(
           loanTotalAmount,
           fromCurrency: _currency,
@@ -3817,7 +4006,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         accent: const Color(0xFF0284C7),
       ),
       _KpiData(
-        label: context.tr('Exposition au bilan'),
+        label: context.tr('Montant d\'exposition au bilan'),
         value: compactCurrencyForDisplay(
           onBalanceExposureAmount,
           fromCurrency: _currency,
@@ -3827,7 +4016,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         accent: const Color(0xFF0F766E),
       ),
       _KpiData(
-        label: context.tr('Exposition hors bilan'),
+        label: context.tr('Montant d\'exposition hors bilan'),
         value: compactCurrencyForDisplay(
           offBalanceExposureAmount,
           fromCurrency: _currency,
@@ -4025,7 +4214,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           child: DropdownButtonFormField<String>(
             value: _guarantorCountryController.text.trim().isEmpty
                 ? null
-                : _guarantorCountryController.text.trim(),
+                : canonicalCountryName(
+                    _guarantorCountryController.text.trim(),
+                    fallback: _guarantorCountryController.text.trim(),
+                  ),
             isExpanded: true,
             menuMaxHeight: 320,
             decoration: _fieldDecoration(
@@ -4041,8 +4233,14 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 : null,
             selectedItemBuilder: (context) => _selectedStringDropdownItems(
               _availableGuarantorCountryOptions,
+              displayTextBuilder: (item) =>
+                  displayCountryName(item, fallback: item),
             ),
-            items: _stringDropdownItems(_availableGuarantorCountryOptions),
+            items: _stringDropdownItems(
+              _availableGuarantorCountryOptions,
+              displayTextBuilder: (item) =>
+                  displayCountryName(item, fallback: item),
+            ),
             onChanged: (value) {
               if (value == null) {
                 return;
@@ -4101,6 +4299,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }
 
   Widget _buildFinancedCrmBody(BuildContext context) {
+    final displayCurrency = PortfolioCurrencyScope.maybeOf(
+      context,
+      fallback: _currency,
+    );
     final snapshot = _financedCrmSnapshotPreview;
     final isBasket = financedCrmCollateralIsBasket(_collateralType);
     final showIssuerRole = financedCrmCollateralRequiresIssuerRole(
@@ -4112,7 +4314,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final showOpcvmHaircut =
         financedCrmCollateralSupportsOpcvmHaircut(_collateralType);
     final collateralAmount = isBasket
-        ? _basketTotalValue
+        ? _basketTotalInExposureCurrency
         : (_parseDecimal(_collateralController.text) ?? 0.0);
 
     final regulatoryFields = <Widget>[
@@ -4328,18 +4530,18 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             _StepGridFullWidth(
               child: _buildFieldCard(
                 context: context,
-                title: 'Décotes automatiques',
-                subtitle: 'HE, HC et Hfx calculées',
+                title: 'Décotes',
+                subtitle: 'He, Hc et Hfx calculées',
                 icon: Icons.percent_rounded,
                 inlineTooltip: _automaticHaircutsTooltip,
-                tooltipTitle: 'HE, HC et Hfx',
+                tooltipTitle: 'He, Hc et Hfx',
                 tooltipMaxWidth: 280,
                 child: Row(
                   children: [
                     Expanded(
                       child: _buildReadonlyMetricCard(
                         context: context,
-                        label: 'HE',
+                        label: 'He',
                         value: _formatPercent(snapshot.he),
                         icon: Icons.percent_rounded,
                         accent: const Color(0xFF2563EB),
@@ -4350,7 +4552,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     Expanded(
                       child: _buildReadonlyMetricCard(
                         context: context,
-                        label: 'HC',
+                        label: 'Hc',
                         value: _formatPercent(snapshot.hc),
                         icon: Icons.shield_moon_outlined,
                         accent: const Color(0xFFF59E0B),
@@ -4376,7 +4578,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               child: _buildFieldCard(
                 context: context,
                 title: 'Calcul CRM financée',
-                subtitle: 'Résultat automatique',
                 icon: Icons.calculate_outlined,
                 inlineTooltip: _financedCrmCalculationTooltip,
                 tooltipTitle: 'Calcul CRM financée',
@@ -4385,16 +4586,24 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   children: [
                     _buildReadonlyMetricCard(
                       context: context,
-                      label: 'EVA',
-                      value: _formatReadonlyAmount(snapshot.eva),
+                      label: 'Eva',
+                      value: _formatReadonlyAmount(
+                        snapshot.eva,
+                        sourceCurrency: _currency,
+                        targetCurrency: displayCurrency,
+                      ),
                       icon: Icons.exposure_plus_1_outlined,
                       accent: const Color(0xFF2563EB),
                       compact: true,
                     ),
                     _buildReadonlyMetricCard(
                       context: context,
-                      label: 'CVA',
-                      value: _formatReadonlyAmount(snapshot.cva),
+                      label: 'Cva',
+                      value: _formatReadonlyAmount(
+                        snapshot.cva,
+                        sourceCurrency: _currency,
+                        targetCurrency: displayCurrency,
+                      ),
                       icon: Icons.savings_outlined,
                       accent: const Color(0xFF0F766E),
                       compact: true,
@@ -4404,6 +4613,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       label: 'EAD après CRM financée',
                       value: _formatReadonlyAmount(
                         snapshot.eadAfterFinancedCrm,
+                        sourceCurrency: _currency,
+                        targetCurrency: displayCurrency,
                       ),
                       icon: Icons.account_balance_wallet_outlined,
                       accent: const Color(0xFF7C3AED),
@@ -4412,7 +4623,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     _buildReadonlyMetricCard(
                       context: context,
                       label: 'RWA final',
-                      value: _formatReadonlyAmount(snapshot.rwaFinal),
+                      value: _formatReadonlyAmount(
+                        snapshot.rwaFinal,
+                        sourceCurrency: _currency,
+                        targetCurrency: displayCurrency,
+                      ),
                       icon: Icons.analytics_outlined,
                       accent: const Color(0xFFF59E0B),
                       compact: true,
@@ -4420,7 +4635,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     _buildReadonlyMetricCard(
                       context: context,
                       label: 'Gain CRM',
-                      value: _formatReadonlyAmount(snapshot.crmGain),
+                      value: _formatReadonlyAmount(
+                        snapshot.crmGain,
+                        sourceCurrency: _currency,
+                        targetCurrency: displayCurrency,
+                      ),
                       icon: Icons.trending_down_outlined,
                       accent: const Color(0xFF16A34A),
                       compact: true,
@@ -4428,7 +4647,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     _buildReadonlyMetricCard(
                       context: context,
                       label: 'Valeur de la sûreté',
-                      value: _formatReadonlyAmount(collateralAmount),
+                      value: _formatReadonlyAmount(
+                        collateralAmount,
+                        sourceCurrency: isBasket ? _currency : _collateralCurrency,
+                        targetCurrency: displayCurrency,
+                      ),
                       icon: Icons.account_balance_outlined,
                       accent: const Color(0xFF0891B2),
                       compact: true,
@@ -4461,7 +4684,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 child: _InfoBanner(
                   icon: Icons.pie_chart_outline_rounded,
                   accent: const Color(0xFF0F766E),
-                  text: 'La sûreté couvre partiellement l exposition.',
+                  text: "La sûreté couvre partiellement l'exposition.",
                 ),
               ),
           ],
@@ -4563,6 +4786,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return Tooltip(
       message: message,
       preferBelow: false,
+      textAlign: TextAlign.start,
+      padding: const EdgeInsets.fromLTRB(5, 8, 12, 8),
       decoration: BoxDecoration(
         color: const Color(0xFF172544),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
@@ -4599,9 +4824,15 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final showOpcvmHaircut = financedCrmCollateralSupportsOpcvmHaircut(
       item.collateralType,
     );
-    final basketWeight = _basketTotalValue <= 0
+    final basketItemValueInExposureCurrency = _convertBasketItemAmount(
+      item,
+      toCurrency: _currency,
+    );
+    final basketWeight = _basketTotalInExposureCurrency <= 0
         ? 0.0
-        : (item.value / _basketTotalValue).clamp(0.0, 1.0).toDouble();
+        : (basketItemValueInExposureCurrency / _basketTotalInExposureCurrency)
+            .clamp(0.0, 1.0)
+            .toDouble();
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
@@ -4696,8 +4927,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 subtitle: '',
                 icon: Icons.currency_exchange_outlined,
                 child: DropdownButtonFormField<String>(
-                  value: _availableCurrencyOptions.contains(item.currency)
-                      ? item.currency
+                  value: _availableCurrencyOptions.contains(
+                    normalizeCurrencyCode(item.currency),
+                  )
+                      ? normalizeCurrencyCode(item.currency)
                       : _collateralCurrency,
                   isExpanded: true,
                   decoration: _fieldDecoration(context),
@@ -4874,7 +5107,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   Widget _buildFieldCard({
     required BuildContext context,
     required String title,
-    required String subtitle,
+    String subtitle = '',
     required IconData icon,
     String? inlineTooltip,
     bool placeInlineTooltipBeforeTitle = false,
@@ -4883,6 +5116,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     String tooltipTitle = 'Critères',
     double tooltipMaxWidth = 350,
     Color? subtitleColor,
+    bool hideHeader = false,
     required Widget child,
   }) {
     final compactTextStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -4902,6 +5136,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       tooltipTitle: tooltipTitle.tr(context),
       tooltipMaxWidth: tooltipMaxWidth,
       subtitleColor: subtitleColor,
+      hideHeader: hideHeader,
       child: Theme(
         data: Theme.of(context).copyWith(
           textTheme: Theme.of(context).textTheme.copyWith(
@@ -4919,6 +5154,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     BuildContext context, {
     String? hint,
     Widget? suffixIcon,
+    String? errorText,
   }) {
     final restingBorderColor = _isExposureDark(context)
         ? const Color(0x88334862)
@@ -4929,6 +5165,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
     return InputDecoration(
       hintText: hint,
+      errorText: errorText,
       isDense: true,
       filled: true,
       fillColor: _wizardInputFillColor(context),
@@ -5394,7 +5631,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _enterpriseInvestmentFirmWithoutBankingLaw = null;
       }
       _currency = _initialSelectedValue(
-        draft?.currency.trim().toUpperCase(),
+        normalizeCurrencyCode(draft?.currency ?? ''),
         options: _supportedCurrencies,
       );
       _status = draft?.status ?? 'Active';
@@ -5418,7 +5655,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         options: financedCrmCollateralTypes,
       );
       _collateralCurrency = _initialSelectedValue(
-        draft?.collateralCurrency.trim().toUpperCase(),
+        normalizeCurrencyCode(draft?.collateralCurrency ?? ''),
         options: _supportedCurrencies,
       );
       _issuerType = _initialSelectedValue(
@@ -5633,7 +5870,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final loanTotalAmount = _loanTotalAmountInput;
     final onBalanceExposureAmount = _onBalanceExposureAmountInput;
     final collateralValue = _crmMode == 'CRM financee'
-        ? (_parseDecimal(_collateralController.text) ?? _basketTotalValue)
+        ? (_parseDecimal(_collateralController.text) ??
+            _basketTotalInExposureCurrency)
         : 0.0;
     if (loanTotalAmount == null || onBalanceExposureAmount == null) {
       return null;
@@ -5787,8 +6025,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     );
     if (effectiveGrossAmount <= 0) {
       final message = _isOffBalanceCategory
-          ? 'Le montant d exposition au hors bilan doit être strictement positif.'
-          : 'Le montant d exposition au bilan doit être strictement positif.';
+          ? 'Le montant d\'exposition hors bilan doit être strictement positif.'
+          : 'Le montant d\'exposition au bilan doit être strictement positif.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
@@ -6123,6 +6361,7 @@ class _CompactFieldCard extends StatelessWidget {
     this.tooltipTitle = 'Critères',
     this.tooltipMaxWidth = 350,
     this.subtitleColor,
+    this.hideHeader = false,
     required this.child,
   });
 
@@ -6136,6 +6375,7 @@ class _CompactFieldCard extends StatelessWidget {
   final String tooltipTitle;
   final double tooltipMaxWidth;
   final Color? subtitleColor;
+  final bool hideHeader;
   final Widget child;
 
   InlineSpan _buildTooltipContent(String title, String message) {
@@ -6163,6 +6403,10 @@ class _CompactFieldCard extends StatelessWidget {
         spans.add(const TextSpan(text: '\n'));
         continue;
       }
+      if (line.startsWith('[[CARD]]')) {
+        spans.add(_buildTooltipCardSpan(line));
+        continue;
+      }
       final isNote = line.startsWith('[[NOTE]]');
       if (isNote) {
         final noteText = line.replaceFirst('[[NOTE]]', '').trimLeft();
@@ -6188,6 +6432,12 @@ class _CompactFieldCard extends StatelessWidget {
       if (hasLabelValueFormat) {
         final label = line.substring(0, separatorIndex).trim();
         final detail = line.substring(separatorIndex + 1).trim();
+        final shouldBreakDetailLine = detail.startsWith('[[BREAK]]');
+        final normalizedDetail = _normalizeTooltipSentence(
+          shouldBreakDetailLine
+              ? detail.replaceFirst('[[BREAK]]', '').trimLeft()
+              : detail,
+        );
         spans.add(
           TextSpan(
             children: [
@@ -6210,8 +6460,9 @@ class _CompactFieldCard extends StatelessWidget {
                 ),
               ),
               TextSpan(
-                text:
-                    ' : ${_normalizeTooltipSentence(detail)}${index == lines.length - 1 ? '' : '\n'}',
+                text: shouldBreakDetailLine
+                    ? ' :\n  $normalizedDetail${index == lines.length - 1 ? '' : '\n'}'
+                    : ' : $normalizedDetail${index == lines.length - 1 ? '' : '\n'}',
                 style: const TextStyle(
                   fontSize: 11.2,
                   fontWeight: FontWeight.w500,
@@ -6267,7 +6518,8 @@ class _CompactFieldCard extends StatelessWidget {
       showDuration: const Duration(seconds: 12),
       preferBelow: false,
       verticalOffset: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      textAlign: TextAlign.start,
+      padding: const EdgeInsets.fromLTRB(5, 12, 14, 12),
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1C34),
@@ -6313,95 +6565,98 @@ class _CompactFieldCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              if (!hideLeadingIcon) ...[
-                if (iconTooltip != null && iconTooltip!.trim().isNotEmpty)
-                  _buildModernTooltip(
-                    context: context,
-                    title: tooltipTitle,
-                    message: iconTooltip!,
-                    child: iconBadge,
-                  )
-                else
-                  iconBadge,
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (placeInlineTooltipBeforeTitle &&
-                            inlineTooltip != null &&
-                            inlineTooltip!.trim().isNotEmpty) ...[
-                          _buildModernTooltip(
-                            context: context,
-                            title: tooltipTitle,
-                            message: inlineTooltip!,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 1.5),
-                              child: Icon(
-                                Icons.info_outline_rounded,
-                                size: 14,
-                                color: AppTheme.accent,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: _wizardBodyTitleColor(context),
-                                  fontSize: 10.8,
+          if (!hideHeader) ...[
+            Row(
+              children: [
+                if (!hideLeadingIcon) ...[
+                  if (iconTooltip != null && iconTooltip!.trim().isNotEmpty)
+                    _buildModernTooltip(
+                      context: context,
+                      title: tooltipTitle,
+                      message: iconTooltip!,
+                      child: iconBadge,
+                    )
+                  else
+                    iconBadge,
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (placeInlineTooltipBeforeTitle &&
+                              inlineTooltip != null &&
+                              inlineTooltip!.trim().isNotEmpty) ...[
+                            _buildModernTooltip(
+                              context: context,
+                              title: tooltipTitle,
+                              message: inlineTooltip!,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 1.5),
+                                child: Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 14,
+                                  color: AppTheme.accent,
                                 ),
-                          ),
-                        ),
-                        if (inlineTooltip != null &&
-                            inlineTooltip!.trim().isNotEmpty &&
-                            !placeInlineTooltipBeforeTitle) ...[
-                          const SizedBox(width: 6),
-                          _buildModernTooltip(
-                            context: context,
-                            title: tooltipTitle,
-                            message: inlineTooltip!,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 1.5),
-                              child: Icon(
-                                Icons.info_outline_rounded,
-                                size: 14,
-                                color: AppTheme.accent,
                               ),
                             ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    if (subtitle.trim().isNotEmpty) ...[
-                      const SizedBox(height: 1),
-                      Text(
-                        subtitle,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: subtitleColor ??
-                                  _wizardSubtleMutedColor(context),
-                              fontSize: 9.1,
+                            const SizedBox(width: 6),
+                          ],
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: _wizardBodyTitleColor(context),
+                                    fontSize: 10.8,
+                                  ),
                             ),
+                          ),
+                          if (inlineTooltip != null &&
+                              inlineTooltip!.trim().isNotEmpty &&
+                              !placeInlineTooltipBeforeTitle) ...[
+                            const SizedBox(width: 6),
+                            _buildModernTooltip(
+                              context: context,
+                              title: tooltipTitle,
+                              message: inlineTooltip!,
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 1.5),
+                                child: Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 14,
+                                  color: AppTheme.accent,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
+                      if (subtitle.trim().isNotEmpty) ...[
+                        const SizedBox(height: 1),
+                        Text(
+                          subtitle,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: subtitleColor ??
+                                        _wizardSubtleMutedColor(context),
+                                    fontSize: 9.1,
+                                  ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 9),
+              ],
+            ),
+            const SizedBox(height: 9),
+          ],
           child,
         ],
       ),
@@ -6489,6 +6744,7 @@ class _FinancialDataStepScreen extends StatelessWidget {
       accent: const Color(0xFF0F766E),
       child: Form(
         key: formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -6867,10 +7123,8 @@ class _StepSurface extends StatelessWidget {
                             showDuration: const Duration(seconds: 12),
                             preferBelow: false,
                             verticalOffset: 18,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
+                            textAlign: TextAlign.start,
+                            padding: const EdgeInsets.fromLTRB(5, 12, 14, 12),
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               color: const Color(0xFF0F1C34),
@@ -7180,16 +7434,19 @@ class _StepOverviewChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = _isExposureDark(context);
+    const activeBlue = Color(0xFF2563EB);
+    const completedGreen = Color(0xFF22C55E);
     final accent = isActive
-        ? AppTheme.accent
+        ? activeBlue
         : isCompleted
-            ? const Color(0xFF0F766E)
+            ? completedGreen
             : const Color(0xFF94A3B8);
     final background = isActive
-        ? (isDark ? const Color(0xFF152A4D) : const Color(0xFFEEF4FF))
+        ? activeBlue
         : isCompleted
-            ? (isDark ? const Color(0xFF102B27) : const Color(0xFFEEF8F4))
+            ? completedGreen
             : (isDark ? const Color(0xFF13233C) : const Color(0xFFF8FAFC));
+    final textColor = isActive || isCompleted ? Colors.white : accent;
 
     return Container(
       width: 28,
@@ -7199,9 +7456,9 @@ class _StepOverviewChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: isActive
-              ? (isDark ? const Color(0xFF335596) : const Color(0xFFCFE0FF))
+              ? activeBlue
               : isCompleted
-                  ? (isDark ? const Color(0xFF1F5448) : const Color(0xFFCFEBDD))
+                  ? completedGreen
                   : (isDark
                       ? const Color(0xFF2B3B56)
                       : const Color(0xFFE2E8F0)),
@@ -7212,7 +7469,7 @@ class _StepOverviewChip extends StatelessWidget {
       child: Text(
         '$number',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: accent,
+              color: textColor,
               fontWeight: FontWeight.w800,
               fontSize: 9,
             ),

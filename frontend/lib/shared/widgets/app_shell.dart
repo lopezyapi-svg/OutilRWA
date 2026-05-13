@@ -7,11 +7,15 @@ import '../../core/localization/app_localization.dart';
 import '../../core/models/global_search_entry.dart';
 import '../../core/services/rwa_api_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/currency_conversion.dart';
 import 'rwa_tool_logo.dart';
 import 'sidebar_navigation.dart';
 
-const double _sidebarToggleButtonWidth = 30;
+const double _sidebarToggleButtonWidth = 34;
+const double _sidebarToggleButtonHeight = 34;
+const double _sidebarToggleButtonRadius = 8;
 const double _desktopPanelGap = 8;
+const Duration _desktopSidebarAnimationDuration = Duration(milliseconds: 160);
 
 /// Coquille principale de l'application avec top bar, sidebar et contenu.
 class AppShell extends StatefulWidget {
@@ -45,7 +49,7 @@ class _AppShellState extends State<AppShell> {
   static const double _screenSpacing = AppTheme.spacing;
   static const double _compactSidebarWidth = 60;
   static const double _expandedSidebarWidth = 220;
-  bool _isSidebarCompact = true;
+  bool _isSidebarCompact = false;
 
   @override
   Widget build(BuildContext context) {
@@ -101,13 +105,14 @@ class _AppShellState extends State<AppShell> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             AnimatedContainer(
-                              duration: const Duration(milliseconds: 220),
+                              duration: _desktopSidebarAnimationDuration,
                               curve: Curves.easeOutCubic,
                               width: sidebarWidth,
                               child: RepaintBoundary(
                                 child: Align(
                                   alignment: Alignment.centerLeft,
                                   child: _DesktopSidebarFrame(
+                                    compact: _isSidebarCompact,
                                     width: sidebarWidth,
                                     selectedModule: widget.selectedModule,
                                     onSelectModule: widget.onSelectModule,
@@ -137,8 +142,8 @@ class _AppShellState extends State<AppShell> {
                                         color: isDark
                                             ? const Color(0x33040A16)
                                             : const Color(0x120F172A),
-                                        blurRadius: 24,
-                                        offset: const Offset(0, 12),
+                                        blurRadius: 16,
+                                        offset: const Offset(0, 8),
                                       ),
                                     ],
                                   ),
@@ -154,9 +159,9 @@ class _AppShellState extends State<AppShell> {
                           ],
                         ),
                         AnimatedPositioned(
-                          duration: const Duration(milliseconds: 220),
+                          duration: _desktopSidebarAnimationDuration,
                           curve: Curves.easeOutCubic,
-                          top: 16,
+                          top: 10,
                           left: toggleLeft,
                           child: _SidebarToggleButton(
                             compact: _isSidebarCompact,
@@ -474,11 +479,13 @@ class _ShellBrand extends StatelessWidget {
 /// Cadre qui positionne la sidebar sur desktop.
 class _DesktopSidebarFrame extends StatelessWidget {
   const _DesktopSidebarFrame({
+    required this.compact,
     required this.width,
     required this.selectedModule,
     required this.onSelectModule,
   });
 
+  final bool compact;
   final double width;
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
@@ -492,7 +499,7 @@ class _DesktopSidebarFrame extends StatelessWidget {
           child: SidebarNavigation(
             selectedModule: selectedModule,
             onSelectModule: onSelectModule,
-            compact: false,
+            compact: compact,
             showBrand: false,
             contentTopInset: 0,
           ),
@@ -513,28 +520,34 @@ class _SidebarToggleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Material(
-      color: isDark ? const Color(0xFF14233D) : Colors.white,
-      borderRadius: BorderRadius.circular(AppTheme.radius),
-      elevation: 4,
-      shadowColor: isDark ? const Color(0x33040A16) : const Color(0x150F172A),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        child: Container(
-          width: _sidebarToggleButtonWidth,
-          height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppTheme.radius),
-            border: Border.all(
-              color: isDark ? const Color(0xFF2A3C5E) : const Color(0xFFD9E4F6),
+    return Tooltip(
+      message: compact ? 'Ouvrir le menu' : 'Réduire le menu',
+      child: Material(
+        color: isDark ? const Color(0xFF14233D) : Colors.white,
+        borderRadius: BorderRadius.circular(_sidebarToggleButtonRadius),
+        elevation: 3,
+        shadowColor: isDark ? const Color(0x33040A16) : const Color(0x150F172A),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(_sidebarToggleButtonRadius),
+          child: Container(
+            width: _sidebarToggleButtonWidth,
+            height: _sidebarToggleButtonHeight,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(_sidebarToggleButtonRadius),
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF2A3C5E) : const Color(0xFFD9E4F6),
+              ),
             ),
-          ),
-          child: Icon(
-            compact ? Icons.chevron_right_rounded : Icons.chevron_left_rounded,
-            color: isDark ? const Color(0xFFD7E3FA) : const Color(0xFF47619C),
-            size: 16,
+            child: Icon(
+              compact
+                  ? Icons.chevron_right_rounded
+                  : Icons.chevron_left_rounded,
+              color: isDark ? const Color(0xFFD7E3FA) : const Color(0xFF47619C),
+              size: 15,
+            ),
           ),
         ),
       ),
@@ -1035,11 +1048,14 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
     return ValueListenableBuilder<String>(
       valueListenable: selectedCurrencyListenable,
       builder: (context, selectedCurrency, _) {
+        final normalizedSelectedCurrency =
+            normalizeCurrencyCode(selectedCurrency);
         return PopupMenuButton<String>(
           tooltip: context.tr("Devise par défaut de l'application"),
           onSelected: (value) {
-            if (value == selectedCurrency) return;
-            selectedCurrencyListenable.value = value;
+            final normalizedValue = normalizeCurrencyCode(value);
+            if (normalizedValue == normalizedSelectedCurrency) return;
+            selectedCurrencyListenable.value = normalizedValue;
           },
           offset: const Offset(0, 38),
           color: isDark ? const Color(0xFF14233D) : Colors.white,
@@ -1054,11 +1070,6 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
               value: 'XOF',
               height: 40,
               child: Text(context.tr('XOF - FCFA BCEAO')),
-            ),
-            PopupMenuItem<String>(
-              value: 'XAF',
-              height: 40,
-              child: Text(context.tr('XAF - FCFA BEAC')),
             ),
             PopupMenuItem<String>(
               value: 'EUR',
@@ -1115,7 +1126,7 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
                   ),
                   const SizedBox(width: 3),
                   Text(
-                    selectedCurrency.toUpperCase(),
+                    normalizedSelectedCurrency,
                     style: TextStyle(
                       color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
                       fontSize: 8.2,
