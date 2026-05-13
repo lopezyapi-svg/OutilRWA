@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
+import 'dashboard_kpi_strip.dart';
 import 'dashboard_maturity_panel.dart';
 import 'dashboard_panel.dart';
 import 'dashboard_theme.dart';
@@ -25,8 +26,8 @@ class DashboardChartsSection extends StatelessWidget {
     required this.maturityPoints,
     required this.maturityView,
     required this.onMaturityViewChanged,
-    required this.averageRiskWeight,
     required this.coveredRatio,
+    required this.densityItem,
   });
 
   final String displayCurrency;
@@ -37,14 +38,14 @@ class DashboardChartsSection extends StatelessWidget {
   final List<DashboardProjectionPoint> maturityPoints;
   final DashboardMaturityView maturityView;
   final ValueChanged<DashboardMaturityView> onMaturityViewChanged;
-  final double averageRiskWeight;
   final double coveredRatio;
+  final DashboardKpiItem densityItem;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // La première ligne regroupe la structure du portefeuille et la répartition CRM.
+        // La première ligne regroupe la structure du portefeuille, le CRM et la densité RWA.
         final primaryChartsRow = SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SizedBox(
@@ -73,9 +74,8 @@ class DashboardChartsSection extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Expanded(
-                          child: _CreditGaugeCard(
-                            averageRiskWeight: averageRiskWeight,
-                            compact: true,
+                          child: DashboardDensityCard.fromItem(
+                            item: densityItem,
                           ),
                         ),
                       ],
@@ -1809,8 +1809,9 @@ class _CountriesCardState extends State<_CountriesCard> {
 }
 
 /// Carte qui affiche la jauge de qualité de crédit moyenne.
-class _CreditGaugeCard extends StatefulWidget {
-  const _CreditGaugeCard({
+class DashboardCreditGaugeCard extends StatefulWidget {
+  const DashboardCreditGaugeCard({
+    super.key,
     required this.averageRiskWeight,
     this.compact = false,
   });
@@ -1819,11 +1820,12 @@ class _CreditGaugeCard extends StatefulWidget {
   final bool compact;
 
   @override
-  State<_CreditGaugeCard> createState() => _CreditGaugeCardState();
+  State<DashboardCreditGaugeCard> createState() =>
+      _DashboardCreditGaugeCardState();
 }
 
 /// Etat interne qui anime légèrement la jauge pour la rendre plus vivante.
-class _CreditGaugeCardState extends State<_CreditGaugeCard>
+class _DashboardCreditGaugeCardState extends State<DashboardCreditGaugeCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
 

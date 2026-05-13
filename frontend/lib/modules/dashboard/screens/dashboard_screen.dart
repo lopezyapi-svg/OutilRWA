@@ -109,6 +109,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           rwaMetric.value,
           grossMetric.value,
         );
+        final densityKpi = DashboardKpiItem(
+          label: 'Densité RWA',
+          value: '${densityRwa.toStringAsFixed(1)}%',
+          delta: '',
+          icon: Icons.query_stats_rounded,
+          gradient: _densityRwaGradient(densityRwa),
+          helper: 'RWA total / Exposition totale brute',
+          valueHint: _densityRwaHint(densityRwa),
+        );
 
         final kpis = [
           DashboardKpiItem(
@@ -164,15 +173,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             gradient: const [Color(0xFF22B8CF), Color(0xFF0F9FB8)],
             helper: 'Fonds propres / RWA',
           ),
-          DashboardKpiItem(
-            label: 'Densité RWA',
-            value: '${densityRwa.toStringAsFixed(1)}%',
-            delta: '',
-            icon: Icons.query_stats_rounded,
-            gradient: _densityRwaGradient(densityRwa),
-            helper: 'RWA total / Exposition totale brute',
-            valueHint: _densityRwaHint(densityRwa),
-          ),
         ];
 
         // Les graphiques reprennent désormais uniquement les catégories réellement présentes dans les données chargées.
@@ -206,7 +206,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 8),
               // Le bandeau KPI résume immédiatement les agrégats clés du portefeuille.
-              DashboardKpiStrip(items: kpis),
+              DashboardKpiStrip(
+                items: kpis,
+                trailingCard: DashboardCreditGaugeCard(
+                  averageRiskWeight: riskMetric.value,
+                  compact: true,
+                ),
+              ),
               const SizedBox(height: 8),
               // La zone centrale combine les vues de structure, concentration et mitigation.
               DashboardChartsSection(
@@ -219,8 +225,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 maturityView: _maturityView,
                 onMaturityViewChanged: (view) =>
                     setState(() => _maturityView = view),
-                averageRiskWeight: riskMetric.value,
                 coveredRatio: crmMetric.value,
+                densityItem: densityKpi,
               ),
             ],
           ),

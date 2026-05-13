@@ -100,11 +100,6 @@ const List<ExposureCategoryOption> exposureCategories = [
     label: 'Autres actifs',
     prudentialLabel: '(k) autres actifs',
   ),
-  ExposureCategoryOption(
-    code: 'l',
-    label: 'Hors bilan',
-    prudentialLabel: '(l) Hors bilan',
-  ),
 ];
 
 const List<String> financedCrmIssuerTypes = [
@@ -376,6 +371,13 @@ ExposureCategoryOption exposureCategoryByCode(String code) {
 
 ExposureCategoryOption exposureCategoryByName(String label) {
   final normalized = _normalizeExposureLabel(label);
+  if (normalized == _normalizeExposureLabel('Hors bilan') ||
+      normalized == _normalizeExposureLabel('(l) Hors bilan')) {
+    return exposureCategories.firstWhere(
+      (item) => item.code == 'e',
+      orElse: () => exposureCategories[4],
+    );
+  }
   return exposureCategories.firstWhere(
     (item) =>
         _normalizeExposureLabel(item.label) == normalized ||
@@ -554,6 +556,17 @@ double lookupCountryRatingRiskWeight(String countryRating) {
     default:
       return 1.0;
   }
+}
+
+double lookupUnratedCounterpartyRiskWeight({
+  String? countryRating,
+  bool oceEstablished = false,
+  String oceNote = '',
+}) {
+  if (oceEstablished) {
+    return lookupSovereignOceRiskWeight(oceNote);
+  }
+  return lookupCountryRatingRiskWeight(countryRating ?? 'Non noté');
 }
 
 bool _shouldApplyUnratedCounterpartyCountryFloor(String categoryCode) {
@@ -929,10 +942,12 @@ double lookupPrudentialRiskWeight(
       )) {
     return finalize(0.0);
   }
-  if (categoryCode == 'a' &&
-      ratingBucket == 'Non noté' &&
-      sovereignOceEstablished) {
-    return finalize(lookupSovereignOceRiskWeight(sovereignOceNote));
+  if (categoryCode == 'a' && ratingBucket == 'Non noté') {
+    return lookupUnratedCounterpartyRiskWeight(
+      countryRating: countryRating,
+      oceEstablished: sovereignOceEstablished,
+      oceNote: sovereignOceNote,
+    );
   }
   if (categoryCode == 'b' &&
       hasPublicBodyPreferentialUemoaCase(
@@ -950,6 +965,15 @@ double lookupPrudentialRiskWeight(
       'e',
       rating,
       countryRating: countryRating,
+      sovereignOceEstablished: sovereignOceEstablished,
+      sovereignOceNote: sovereignOceNote,
+    );
+  }
+  if (categoryCode == 'b' && ratingBucket == 'Non noté') {
+    return lookupUnratedCounterpartyRiskWeight(
+      countryRating: countryRating,
+      oceEstablished: sovereignOceEstablished,
+      oceNote: sovereignOceNote,
     );
   }
   if (categoryCode == 'c' &&
@@ -961,6 +985,13 @@ double lookupPrudentialRiskWeight(
       )) {
     return finalize(0.0);
   }
+  if (categoryCode == 'c' && ratingBucket == 'Non noté') {
+    return lookupUnratedCounterpartyRiskWeight(
+      countryRating: countryRating,
+      oceEstablished: sovereignOceEstablished,
+      oceNote: sovereignOceNote,
+    );
+  }
   if (categoryCode == 'd') {
     final resolvedBankInstitutionCase =
         coerceBankInstitutionCase(bankInstitutionCase);
@@ -969,6 +1000,13 @@ double lookupPrudentialRiskWeight(
     }
     if (resolvedBankInstitutionCase == bankInstitutionWeakPrudentialCase) {
       return finalize(2.5);
+    }
+    if (ratingBucket == 'Non noté') {
+      return lookupUnratedCounterpartyRiskWeight(
+        countryRating: countryRating,
+        oceEstablished: sovereignOceEstablished,
+        oceNote: sovereignOceNote,
+      );
     }
     if (resolvedBankInstitutionCase == bankInstitutionEligibleCategoriesCase) {
       return finalize(lookupBankInstitutionRiskWeight(
@@ -979,6 +1017,15 @@ double lookupPrudentialRiskWeight(
     }
   }
   if (categoryCode == 'e') {
+    if (ratingBucket == 'Non noté' &&
+        enterpriseExceedsBceaoDegradationThreshold != true &&
+        enterprisePrudentialProcedure != true) {
+      return lookupUnratedCounterpartyRiskWeight(
+        countryRating: countryRating,
+        oceEstablished: sovereignOceEstablished,
+        oceNote: sovereignOceNote,
+      );
+    }
     return finalize(lookupEnterpriseRiskWeight(
       rating,
       enterpriseExceedsBceaoDegradationThreshold:
@@ -997,6 +1044,8 @@ double lookupPrudentialRiskWeight(
         'e',
         rating,
         countryRating: countryRating,
+        sovereignOceEstablished: sovereignOceEstablished,
+        sovereignOceNote: sovereignOceNote,
         enterpriseExceedsBceaoDegradationThreshold:
             enterpriseExceedsBceaoDegradationThreshold,
         enterprisePrudentialProcedure: enterprisePrudentialProcedure,
@@ -1023,6 +1072,8 @@ double lookupPrudentialRiskWeight(
         'e',
         rating,
         countryRating: countryRating,
+        sovereignOceEstablished: sovereignOceEstablished,
+        sovereignOceNote: sovereignOceNote,
         enterpriseExceedsBceaoDegradationThreshold:
             enterpriseExceedsBceaoDegradationThreshold,
         enterprisePrudentialProcedure: enterprisePrudentialProcedure,
@@ -1673,6 +1724,16 @@ class ExposureRecord {
     required this.grossAmount,
     this.loanTotalAmount,
     this.onBalanceExposureAmount,
+    this.offBalanceExposureAmount,
+    this.exposureMaturityMonths,
+    this.residualMaturityMonths,
+    this.countryRiskWeight,
+    this.eadBilanAmount,
+    this.eadHbAmount,
+    this.eadHbCcfAmount,
+    this.eadTotalAmount,
+    this.rwaEbAmount,
+    this.rwaHbAmount,
     required this.currency,
     required this.crmType,
     required this.crmCoveragePercent,
@@ -1717,6 +1778,16 @@ class ExposureRecord {
   final double grossAmount;
   final double? loanTotalAmount;
   final double? onBalanceExposureAmount;
+  final double? offBalanceExposureAmount;
+  final int? exposureMaturityMonths;
+  final int? residualMaturityMonths;
+  final double? countryRiskWeight;
+  final double? eadBilanAmount;
+  final double? eadHbAmount;
+  final double? eadHbCcfAmount;
+  final double? eadTotalAmount;
+  final double? rwaEbAmount;
+  final double? rwaHbAmount;
   final String currency;
   final String crmType;
   final double crmCoveragePercent;
@@ -1806,6 +1877,19 @@ class ExposureRecord {
       loanTotalAmount: (json['loan_total_amount'] as num?)?.toDouble(),
       onBalanceExposureAmount:
           (json['on_balance_exposure_amount'] as num?)?.toDouble(),
+      offBalanceExposureAmount:
+          (json['off_balance_exposure_amount'] as num?)?.toDouble(),
+      exposureMaturityMonths:
+          (json['exposure_maturity_months'] as num?)?.toInt(),
+      residualMaturityMonths:
+          (json['residual_maturity_months'] as num?)?.toInt(),
+      countryRiskWeight: (json['country_risk_weight'] as num?)?.toDouble(),
+      eadBilanAmount: (json['ead_bilan_amount'] as num?)?.toDouble(),
+      eadHbAmount: (json['ead_hb_amount'] as num?)?.toDouble(),
+      eadHbCcfAmount: (json['ead_hb_ccf_amount'] as num?)?.toDouble(),
+      eadTotalAmount: (json['ead_total_amount'] as num?)?.toDouble(),
+      rwaEbAmount: (json['rwa_eb_amount'] as num?)?.toDouble(),
+      rwaHbAmount: (json['rwa_hb_amount'] as num?)?.toDouble(),
       currency: (json['currency'] ?? 'XOF') as String,
       crmType: crmType,
       crmCoveragePercent: crmCoveragePercent == 0
@@ -2244,6 +2328,23 @@ double _lookupOriginalRiskWeightForDraft(ExposureDraft draft) {
   );
 }
 
+double _resolvedOnBalanceAmountForDraft(ExposureDraft draft) {
+  if (draft.categoryCode == 'l') {
+    return 0.0;
+  }
+  return draft.onBalanceExposureAmount < 0
+      ? 0.0
+      : draft.onBalanceExposureAmount;
+}
+
+double _resolvedOffBalanceCcfAmountForDraft(ExposureDraft draft) {
+  final offBalanceAmount = draft.offBalanceExposureAmount;
+  if (offBalanceAmount <= 0) {
+    return 0.0;
+  }
+  return offBalanceAmount * lookupOffBalanceFcec(draft.offBalanceRiskLevel);
+}
+
 class _FinancedCrmCollateralOutcome {
   const _FinancedCrmCollateralOutcome({
     required this.eligible,
@@ -2501,9 +2602,11 @@ _FinancedCrmCollateralOutcome _evaluateSingleFinancedCollateral({
 
 FinancedCrmSnapshot computeFinancedCrmSnapshot(ExposureDraft draft) {
   final riskWeight = _lookupOriginalRiskWeightForDraft(draft);
-  final exposureAmount = draft.grossAmount < 0 ? 0.0 : draft.grossAmount;
+  final onBalanceAmount = _resolvedOnBalanceAmountForDraft(draft);
+  final offBalanceCcfAmount = _resolvedOffBalanceCcfAmountForDraft(draft);
+  final exposureAmount = onBalanceAmount + offBalanceCcfAmount;
   const he = 0.0;
-  final eva = exposureAmount * (1 + he);
+  final eva = exposureAmount * (1 - he);
 
   _FinancedCrmCollateralOutcome outcome;
   if (financedCrmCollateralIsBasket(draft.collateralType) &&
@@ -2563,10 +2666,22 @@ FinancedCrmSnapshot computeFinancedCrmSnapshot(ExposureDraft draft) {
     );
   }
 
-  final eadAfterFinancedCrm = outcome.eligible
-      ? (eva - outcome.cva).clamp(0.0, double.infinity).toDouble()
-      : exposureAmount;
-  final rwaFinal = eadAfterFinancedCrm * riskWeight;
+  final eadBilanAmount = outcome.eligible
+      ? (onBalanceAmount * (1 - he) - outcome.cva)
+          .clamp(0.0, double.infinity)
+          .toDouble()
+      : onBalanceAmount;
+  final eadHbCcfAmount = outcome.eligible
+      ? (offBalanceCcfAmount * (1 - he) - outcome.cva)
+          .clamp(0.0, double.infinity)
+          .toDouble()
+      : offBalanceCcfAmount;
+  final eadAfterFinancedCrm =
+      (eadBilanAmount + eadHbCcfAmount).clamp(0.0, double.infinity).toDouble();
+  final rwaFinal =
+      ((eadBilanAmount * riskWeight) + (eadHbCcfAmount * riskWeight))
+          .clamp(0.0, double.infinity)
+          .toDouble();
   final crmGain = (exposureAmount - eadAfterFinancedCrm)
       .clamp(0.0, double.infinity)
       .toDouble();
@@ -2592,10 +2707,12 @@ FinancedCrmSnapshot computeFinancedCrmSnapshot(ExposureDraft draft) {
 
 ExposureComputation computeDraftMetrics(ExposureDraft draft) {
   final originalRw = _lookupOriginalRiskWeightForDraft(draft);
-  final amount = draft.grossAmount;
+  final onBalanceAmount = _resolvedOnBalanceAmountForDraft(draft);
+  final offBalanceCcfAmount = _resolvedOffBalanceCcfAmountForDraft(draft);
+  final amount = onBalanceAmount + offBalanceCcfAmount;
   if (draft.categoryCode == 'l') {
     final fcec = lookupOffBalanceFcec(draft.offBalanceRiskLevel);
-    final ead = amount * fcec;
+    final ead = draft.grossAmount * fcec;
     final rwa = ead;
     return ExposureComputation(
       originalRw: fcec,
@@ -2624,10 +2741,10 @@ ExposureComputation computeDraftMetrics(ExposureDraft draft) {
       draft.guarantorCategoryCode,
       draft.guarantorRating.isEmpty ? draft.rating : draft.guarantorRating,
     );
-    finalRw = ((effectiveCoverage * guarantorRw) +
-            ((1 - effectiveCoverage) * originalRw))
-        .clamp(0.0, 1.5)
-        .toDouble();
+    final coveredEad = ead * effectiveCoverage;
+    final uncoveredEad = (ead - coveredEad).clamp(0.0, double.infinity);
+    final rwa = (coveredEad * guarantorRw) + (uncoveredEad * originalRw);
+    finalRw = ead == 0 ? 0.0 : (rwa / ead).clamp(0.0, 1.5).toDouble();
   }
 
   final rwa = ead * finalRw;

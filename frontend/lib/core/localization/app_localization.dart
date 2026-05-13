@@ -328,6 +328,10 @@ const Map<String, String> _englishTranslations = {
   'Hors bilan': 'Off-balance sheet',
   'CRM financee': 'Funded CRM',
   'CRM non financee': 'Unfunded CRM',
+  'Parametres de la surete financee': 'Funded collateral parameters',
+  'Parametres de la garantie non financee': 'Unfunded guarantee parameters',
+  'Financée': 'Funded',
+  'Non financée': 'Unfunded',
   'Aucune': 'None',
   'Grille prudentielle de saisie, import, modification et suivi RWA avec zone UEMOA/CEMAC automatique.':
       'Prudential grid for data entry, import, updates and RWA monitoring with automatic UEMOA/CEMAC zoning.',
@@ -417,6 +421,7 @@ const Map<String, String> _englishTranslations = {
   'RW brut': 'Gross RW',
   'EAD': 'EAD',
   'RW final': 'Final RW',
+  'Pondération de la contrepartie (RW)': 'Counterparty risk weight (RW)',
   'RWA': 'RWA',
   'Verifier les montants saisis.': 'Please verify the entered amounts.',
   'Echec de l enregistrement: {{error}}': 'Save failed: {{error}}',
@@ -648,8 +653,9 @@ const Map<String, String> _englishTranslations = {
       'note issuance facilities (NIFs) and revolving underwriting facilities (RUFs); direct credit substitutes, debt guarantees and acceptances.',
   'opérations assimilables à des pensions, repo ou prêts de titres ; cessions d’actifs avec recours, affacturage ou escompte ; engagements d’achat d’actifs à terme ; dépôts à terme contre terme ; fraction non versée d’actions ou titres partiellement libérés ; autres éléments hors bilan non classés.':
       'transactions similar to repos or securities lending; asset sales with recourse, factoring or discounting; forward asset purchase commitments; back-to-back term deposits; unpaid portion of shares or partially paid securities; other unclassified off-balance-sheet items.',
-  'Le FCEC est déterminé automatiquement selon le niveau de risque hors bilan sélectionné.':
-      'The CCF is determined automatically according to the selected off-balance-sheet risk level.',
+  'FCEC et hors bilan': 'CCF and off-balance sheet',
+  'Définition : Les éléments de hors bilan recouvrent les garanties, les engagements, les instruments dérivés et d’autres accords contractuels non comptabilisés au bilan.\n\nApproche standard : Dans l’approche standard, chaque élément de hors bilan est converti en équivalent risque de crédit (ERC) au moyen d’un facteur de conversion en équivalent crédit (FCEC) qui sert à établir une projection de l’exposition potentielle au risque.\n\nCalcul de l’ERC : Le montant ERC d’une transaction de hors bilan est calculé en multipliant le montant correspondant à la portion non utilisée par le FCEC y relatif.\n\nCalcul des APR : Pour obtenir les APR de crédit sur les engagements de hors bilan, le montant ERC ainsi défini est ensuite multiplié par la pondération du risque qui dépend du type de contrepartie et de sa notation.\n\nCatégories de FCEC : Les FCEC applicables aux éléments de hors bilan sont répartis en cinq (5) catégories définies par ordre croissant selon le niveau de risque potentiel de la transaction.':
+      'Definition: Off-balance-sheet items include guarantees, commitments, derivative instruments and other contractual arrangements not recognized on the balance sheet.\n\nStandardized approach: Under the standardized approach, each off-balance-sheet item is converted into a credit risk equivalent amount (CRE) using a credit conversion factor (CCF) to estimate the potential exposure to risk.\n\nCRE calculation: The CRE amount of an off-balance-sheet transaction is calculated by multiplying the amount corresponding to the unused portion by the related CCF.\n\nRWA calculation: To obtain credit RWA on off-balance-sheet commitments, the resulting CRE amount is then multiplied by the risk weight, which depends on the counterparty type and its rating.\n\nCCF categories: The CCFs applicable to off-balance-sheet items are divided into five (5) categories, defined in ascending order according to the potential risk level of the transaction.',
   'Ponderation appliquee': 'Applied risk weight',
 };
 
@@ -678,4 +684,9 @@ const Map<String, String> _frenchTranslations = {
   'Risque élevé (densité)': 'Risque élevé',
   'Dashboard': 'Tableau de bord',
   'Exposures': 'Expositions',
+  'CRM financee': 'CRM financée',
+  'CRM non financee': 'CRM non financée',
+  'Parametres de la surete financee': 'Paramètres de la sûreté financée',
+  'Parametres de la garantie non financee':
+      'Paramètres de la garantie non financée',
 };

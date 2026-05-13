@@ -10,6 +10,9 @@ import '../../core/theme/app_theme.dart';
 import 'rwa_tool_logo.dart';
 import 'sidebar_navigation.dart';
 
+const double _sidebarToggleButtonWidth = 30;
+const double _desktopPanelGap = 8;
+
 /// Coquille principale de l'application avec top bar, sidebar et contenu.
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -42,7 +45,6 @@ class _AppShellState extends State<AppShell> {
   static const double _screenSpacing = AppTheme.spacing;
   static const double _compactSidebarWidth = 60;
   static const double _expandedSidebarWidth = 220;
-  static const double _sidebarToggleReserve = 20;
   bool _isSidebarCompact = true;
 
   @override
@@ -61,17 +63,15 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildDesktopShell() {
-    final sidebarWidth = _isSidebarCompact
-        ? _compactSidebarWidth
-        : _expandedSidebarWidth;
-    final sidebarAreaWidth = sidebarWidth + _sidebarToggleReserve;
-    final toggleLeft = sidebarWidth - 10;
+    final sidebarWidth =
+        _isSidebarCompact ? _compactSidebarWidth : _expandedSidebarWidth;
+    final toggleLeft =
+        sidebarWidth + (_desktopPanelGap / 2) - (_sidebarToggleButtonWidth / 2);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF091224)
-          : const Color(0xFFEAE9F8),
+      backgroundColor:
+          isDark ? const Color(0xFF091224) : const Color(0xFFEAE9F8),
       body: Stack(
         children: [
           // Ce fond reste fixe derrière tout l'espace de travail.
@@ -94,18 +94,18 @@ class _AppShellState extends State<AppShell> {
                   ),
                   const SizedBox(height: AppTheme.spacing),
                   Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    child: Stack(
+                      clipBehavior: Clip.none,
                       children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOutCubic,
-                          width: sidebarAreaWidth,
-                          child: RepaintBoundary(
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Align(
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 220),
+                              curve: Curves.easeOutCubic,
+                              width: sidebarWidth,
+                              child: RepaintBoundary(
+                                child: Align(
                                   alignment: Alignment.centerLeft,
                                   child: _DesktopSidebarFrame(
                                     width: sidebarWidth,
@@ -113,54 +113,55 @@ class _AppShellState extends State<AppShell> {
                                     onSelectModule: widget.onSelectModule,
                                   ),
                                 ),
-                                AnimatedPositioned(
-                                  duration: const Duration(milliseconds: 220),
-                                  curve: Curves.easeOutCubic,
-                                  top: 16,
-                                  left: toggleLeft,
-                                  child: _SidebarToggleButton(
-                                    compact: _isSidebarCompact,
-                                    onTap: () => setState(
-                                      () => _isSidebarCompact =
-                                          !_isSidebarCompact,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
-                        Expanded(
-                          child: RepaintBoundary(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF0F1B31).withOpacity(0.92)
-                                    : Colors.white.withOpacity(0.80),
-                                borderRadius: BorderRadius.circular(
-                                  AppTheme.radius,
-                                ),
-                                border: Border.all(
-                                  color: isDark
-                                      ? const Color(0xFF22304B)
-                                      : const Color(0xFFE5E8F5),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
+                            const SizedBox(width: _desktopPanelGap),
+                            Expanded(
+                              child: RepaintBoundary(
+                                child: Container(
+                                  decoration: BoxDecoration(
                                     color: isDark
-                                        ? const Color(0x33040A16)
-                                        : const Color(0x120F172A),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 12),
+                                        ? const Color(0xFF0F1B31)
+                                            .withOpacity(0.92)
+                                        : Colors.white.withOpacity(0.80),
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radius,
+                                    ),
+                                    border: Border.all(
+                                      color: isDark
+                                          ? const Color(0xFF22304B)
+                                          : const Color(0xFFE5E8F5),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: isDark
+                                            ? const Color(0x33040A16)
+                                            : const Color(0x120F172A),
+                                        blurRadius: 24,
+                                        offset: const Offset(0, 12),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                  AppTheme.radius,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radius,
+                                    ),
+                                    child: widget.child,
+                                  ),
                                 ),
-                                child: widget.child,
                               ),
+                            ),
+                          ],
+                        ),
+                        AnimatedPositioned(
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOutCubic,
+                          top: 16,
+                          left: toggleLeft,
+                          child: _SidebarToggleButton(
+                            compact: _isSidebarCompact,
+                            onTap: () => setState(
+                              () => _isSidebarCompact = !_isSidebarCompact,
                             ),
                           ),
                         ),
@@ -180,9 +181,8 @@ class _AppShellState extends State<AppShell> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF091224)
-          : const Color(0xFFF0F2F8),
+      backgroundColor:
+          isDark ? const Color(0xFF091224) : const Color(0xFFF0F2F8),
       // Sur mobile, la navigation passe dans un drawer pour conserver de l'espace utile.
       drawer: Drawer(
         child: SidebarNavigation(
@@ -520,7 +520,7 @@ class _SidebarToggleButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Container(
-          width: 30,
+          width: _sidebarToggleButtonWidth,
           height: 32,
           alignment: Alignment.center,
           decoration: BoxDecoration(
@@ -604,15 +604,13 @@ class _GlobalSearchFieldState extends State<_GlobalSearchField> {
 
     final normalizedQuery = _normalize(query);
     // Chaque résultat reçoit un score simple pour remonter les correspondances les plus utiles.
-    final scored =
-        _catalog
-            .map(
-              (entry) =>
-                  (entry: entry, score: _scoreEntry(entry, normalizedQuery)),
-            )
-            .where((item) => item.score > 0)
-            .toList()
-          ..sort((a, b) => b.score.compareTo(a.score));
+    final scored = _catalog
+        .map(
+          (entry) => (entry: entry, score: _scoreEntry(entry, normalizedQuery)),
+        )
+        .where((item) => item.score > 0)
+        .toList()
+      ..sort((a, b) => b.score.compareTo(a.score));
 
     return scored.take(10).map((item) => item.entry).toList(growable: false);
   }
@@ -683,7 +681,8 @@ class _GlobalSearchFieldState extends State<_GlobalSearchField> {
       displayStringForOption: (entry) => entry.title,
       optionsBuilder: _buildOptions,
       onSelected: _selectEntry,
-      fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+      fieldViewBuilder:
+          (context, textEditingController, focusNode, onFieldSubmitted) {
         return SizedBox(
           height: 30,
           child: TextField(
@@ -727,26 +726,25 @@ class _GlobalSearchFieldState extends State<_GlobalSearchField> {
                       ),
                     )
                   : (textEditingController.text.isEmpty
-                        ? null
-                        : IconButton(
-                            // Le bouton efface rapidement la requête sans quitter le champ.
-                            onPressed: () {
-                              textEditingController.clear();
-                              setState(() {});
-                            },
-                            splashRadius: 14,
-                            icon: Icon(
-                              Icons.close_rounded,
-                              size: 14,
-                              color: isDark
-                                  ? const Color(0xFF8FA0BC)
-                                  : AppTheme.muted,
-                            ),
-                          )),
+                      ? null
+                      : IconButton(
+                          // Le bouton efface rapidement la requête sans quitter le champ.
+                          onPressed: () {
+                            textEditingController.clear();
+                            setState(() {});
+                          },
+                          splashRadius: 14,
+                          icon: Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: isDark
+                                ? const Color(0xFF8FA0BC)
+                                : AppTheme.muted,
+                          ),
+                        )),
               filled: true,
-              fillColor: isDark
-                  ? const Color(0xFF14233D)
-                  : const Color(0xFFF7F8FD),
+              fillColor:
+                  isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 10,
                 vertical: 6,
@@ -945,18 +943,14 @@ class _ThemeModePill extends StatelessWidget {
     final tooltip = isDarkMode
         ? context.tr('Passer en mode clair')
         : context.tr('Passer en mode sombre');
-    final icon = isDarkMode
-        ? Icons.dark_mode_rounded
-        : Icons.light_mode_rounded;
-    final iconColor = isDarkMode
-        ? const Color(0xFFF4F7FF)
-        : const Color(0xFF234A84);
-    final backgroundColor = isDark
-        ? const Color(0xFF14233D)
-        : const Color(0xFFF7F8FD);
-    final borderColor = isDark
-        ? const Color(0xFF22304B)
-        : const Color(0xFFE7EAF5);
+    final icon =
+        isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded;
+    final iconColor =
+        isDarkMode ? const Color(0xFFF4F7FF) : const Color(0xFF234A84);
+    final backgroundColor =
+        isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD);
+    final borderColor =
+        isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5);
 
     return Tooltip(
       message: tooltip,
@@ -1100,9 +1094,8 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
               height: 16,
               padding: const EdgeInsets.symmetric(horizontal: 5),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF14233D)
-                    : const Color(0xFFF7F8FD),
+                color:
+                    isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(
                   color: isDark
@@ -1205,9 +1198,8 @@ class _LanguagePicker extends StatelessWidget {
               height: 20,
               padding: const EdgeInsets.symmetric(horizontal: 5),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF14233D)
-                    : const Color(0xFFF7F8FD),
+                color:
+                    isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(
                   color: isDark
@@ -1541,9 +1533,11 @@ class _TopBar extends StatelessWidget {
           Text(
             selectedModule.title.tr(context),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: isDark ? const Color(0xFFF2F6FF) : const Color(0xFF1E2337),
-            ),
+                  fontWeight: FontWeight.w800,
+                  color: isDark
+                      ? const Color(0xFFF2F6FF)
+                      : const Color(0xFF1E2337),
+                ),
           ),
           const Spacer(),
           const Icon(Icons.notifications_none_rounded, color: AppTheme.muted),

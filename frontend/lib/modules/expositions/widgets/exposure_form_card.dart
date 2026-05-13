@@ -1,9 +1,12 @@
 // Ce fichier affiche le parcours guide de creation et d'edition des expositions.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/localization/app_localization.dart';
+import '../../../core/services/rwa_api_service.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -248,6 +251,7 @@ InlineSpan _buildModernTooltipContent(String title, String message) {
 class ExposureFormCard extends StatefulWidget {
   const ExposureFormCard({
     super.key,
+    required this.api,
     required this.onSubmit,
     required this.onCancel,
     required this.ratings,
@@ -256,6 +260,7 @@ class ExposureFormCard extends StatefulWidget {
     this.submitLabel = 'Enregistrer',
   });
 
+  final RwaApiService api;
   final Future<void> Function(ExposureDraft draft) onSubmit;
   final VoidCallback onCancel;
   final List<String> ratings;
@@ -304,9 +309,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       "Une pondération supérieure à 100 % est exigée lorsque le taux brut de dégradation du portefeuille entreprise dépasse sur deux trimestres consécutifs un seuil fixé par instruction de la BCEAO.\n\n"
       "Une pondération plus élevée est appliquée, lorsqu'une entreprise établie dans l'UMOA est soumise à une procédure de traitement prudentiel résultant de la production, par l'entreprise elle-même ou par son commissaire au compte, d'informations financières erronées.\n\n"
       "[[NOTE]]On entend par taux brut de dégradation du portefeuille, le rapport entre l'encours des créances en souffrance brutes telles que défini aux paragraphes 152 à 160 et le portefeuille de crédit brut de l'établissement. S'agissant des entreprises, le taux brut de dégradation du portefeuille est le rapport entre l'encours des créances en souffrance brutes enregistré au titre du portefeuille entreprises et l'encours total des crédits bruts octroyés à ce segment.";
-  static const String _enterpriseUnratedTooltip =
-      "Les expositions sur les entreprises d'investissement, autres que celles soumises à la loi uniforme portant réglementation bancaire doivent être pondérées, conformément aux règles afférentes aux créances sur les entreprises.\n\n"
-      "En outre, les expositions sur les entreprises non notées ne peuvent être affectées d’une pondération plus favorable que celle portant sur l’Etat dans lequel ces entreprises ont leur siège social.";
   static const String _offBalanceLowRiskTooltip =
       'engagements révocables sans condition, à tout moment, sans préavis ou caducs automatiquement.';
   static const String _offBalanceMinorRiskTooltip =
@@ -317,6 +319,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       'facilités d’émission d’effets (FEE) et facilités de prise ferme renouvelables (FPR) ; substituts directs de crédit, garanties d’endettement, acceptations.';
   static const String _offBalanceVeryHighRiskTooltip =
       'opérations assimilables à des pensions, repo ou prêts de titres ; cessions d’actifs avec recours, affacturage ou escompte ; engagements d’achat d’actifs à terme ; dépôts à terme contre terme ; fraction non versée d’actions ou titres partiellement libérés ; autres éléments hors bilan non classés.';
+  static const String _offBalanceFcecTooltip =
+      'Définition : Les éléments de hors bilan recouvrent les garanties, les engagements, les instruments dérivés et d’autres accords contractuels non comptabilisés au bilan.\n\n'
+      'Approche standard : Dans l’approche standard, chaque élément de hors bilan est converti en équivalent risque de crédit (ERC) au moyen d’un facteur de conversion en équivalent crédit (FCEC) qui sert à établir une projection de l’exposition potentielle au risque.\n\n'
+      'Calcul de l’ERC : Le montant ERC d’une transaction de hors bilan est calculé en multipliant le montant correspondant à la portion non utilisée par le FCEC y relatif.\n\n'
+      'Calcul des APR : Pour obtenir les APR de crédit sur les engagements de hors bilan, le montant ERC ainsi défini est ensuite multiplié par la pondération du risque qui dépend du type de contrepartie et de sa notation.\n\n'
+      'Catégories de FCEC : Les FCEC applicables aux éléments de hors bilan sont répartis en cinq (5) catégories définies par ordre croissant selon le niveau de risque potentiel de la transaction.';
   static const String _residentialMortgageCriteriaTooltip =
       'Ratio Prêt/Valeur (LTV) ≤ 90 %\n'
       'Ratio de couverture du service de la dette ≤ 40 %\n'
@@ -367,13 +375,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _WizardStepMeta(
       shortLabel: 'Identite',
       title: 'Informations principales',
-      subtitle: 'Contrepartie, pays et dates',
+      subtitle: 'Contrepartie, pays, dates et notation',
       icon: Icons.badge_outlined,
     ),
     _WizardStepMeta(
       shortLabel: 'Categorie',
       title: 'Categorie prudentielle',
-      subtitle: 'Type d exposition, notation et ponderation',
+      subtitle: 'Type d exposition et ponderation',
       icon: Icons.account_tree_outlined,
     ),
     _WizardStepMeta(
@@ -474,9 +482,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   late final TextEditingController _coveredAmountController;
   bool _sovereignPreferentialZeroWeight = false;
   bool _sovereignPriorityQuestionAnsweredYes = false;
-  bool _sovereignOceEstablished = false;
+  bool? _sovereignOceEstablished;
   bool _crmSelectionStage = true;
   bool _submitting = false;
+  int _backendPreviewRequestId = 0;
+  _ExposurePreview? _backendPreview;
+  String? _generatedExposureId;
   bool _showStickyStepHeader = false;
   bool _expandStickyStepHeader = false;
   ScrollDirection _rightPanelScrollDirection = ScrollDirection.idle;
@@ -490,25 +501,33 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   void initState() {
     super.initState();
     final draft = widget.initialDraft;
+    final isBlankDraft = _isBlankInitialDraft(draft);
     _nameController = TextEditingController(
-      text: draft?.counterpartyName ?? 'Nouvelle contrepartie',
+      text: draft?.counterpartyName ?? '',
     );
-    _exposureIdController.text = draft?.id ?? '';
-    _countryController =
-        TextEditingController(text: draft?.country ?? 'Cameroun');
+    _generatedExposureId = isBlankDraft ? draft?.id : null;
+    _exposureIdController.text = isBlankDraft ? '' : (draft?.id ?? '');
+    _countryController = TextEditingController(text: draft?.country ?? '');
     _grantDate = draft?.grantDate;
     _maturityDate = draft?.maturityDate;
     _grantDateController.text = _formatDateForField(_grantDate);
     _maturityDateController.text = _formatDateForField(_maturityDate);
     _amountController = TextEditingController(
-      text: (draft?.loanTotalAmount ?? 1000000).toStringAsFixed(0),
+      text: draft?.loanTotalAmount == null || draft!.loanTotalAmount <= 0
+          ? ''
+          : draft.loanTotalAmount.toStringAsFixed(0),
     );
     _onBalanceAmountController = TextEditingController(
-      text: (draft?.onBalanceExposureAmount ?? 1000000).toStringAsFixed(0),
+      text: draft?.onBalanceExposureAmount == null ||
+              draft!.onBalanceExposureAmount <= 0
+          ? ''
+          : draft.onBalanceExposureAmount.toStringAsFixed(0),
     );
     _commentController = TextEditingController(text: draft?.comment ?? '');
     _collateralController = TextEditingController(
-      text: (draft?.collateralValue ?? 0).toStringAsFixed(0),
+      text: draft?.collateralValue == null || draft!.collateralValue <= 0
+          ? ''
+          : draft.collateralValue.toStringAsFixed(0),
     );
     _fxHaircutController = TextEditingController(
       text: ((draft?.fxHaircut ?? 0) * 100).toStringAsFixed(2),
@@ -520,25 +539,19 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _categoryCode =
         exposureCategories.any((item) => item.code == draft?.categoryCode)
             ? draft!.categoryCode
-            : 'e';
-    _countryRating = _resolveRatingValue(
+            : '';
+    _countryRating = _initialSelectedValue(
       draft?.countryRating,
-      preferred: 'Non noté',
+      options: _availableRatings,
     );
-    _rating = _resolveRatingValue(
+    _rating = _initialSelectedValue(
       draft?.rating,
-      preferred: (_categoryCode == 'a' ||
-              _categoryCode == 'b' ||
-              _categoryCode == 'c' ||
-              _categoryCode == 'd' ||
-              _categoryCode == 'e')
-          ? 'Non noté'
-          : 'BBB',
       options: _counterpartyRatingOptionsForCategory(_categoryCode),
     );
     if ((_categoryCode == 'a' || _categoryCode == 'c') &&
+        _rating.isNotEmpty &&
         !prudentialRatings.contains(_rating)) {
-      _rating = 'Non noté';
+      _rating = '';
     }
     _sovereignSpecialCase = coerceSovereignSpecialCase(
       draft?.sovereignSpecialCase,
@@ -552,10 +565,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _sovereignPriorityQuestionAnsweredYes =
         _sovereignSpecialCase != sovereignNoSpecialCase ||
             _sovereignPreferentialZeroWeight;
-    _sovereignOceEstablished = draft?.sovereignOceEstablished ?? false;
-    _sovereignOceNote = sovereignOceNotes.contains(draft?.sovereignOceNote)
+    _sovereignOceEstablished = _rating == 'Non noté' && draft != null
+        ? (draft.sovereignOceEstablished || draft.sovereignOceNote.isNotEmpty)
+        : null;
+    _sovereignOceNote = _rating == 'Non noté' &&
+            sovereignOceNotes.contains(draft?.sovereignOceNote)
         ? draft!.sovereignOceNote
-        : sovereignOceNotes.first;
+        : '';
     _publicBodyUemoaFcfaCase = draft?.publicBodyUemoaFcfaCase;
     _publicBodyFinancesNonPublicActivity =
         draft?.publicBodyFinancesNonPublicActivity;
@@ -571,7 +587,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     );
     _offBalanceRiskLevel = coerceOffBalanceRiskLevel(
       draft?.offBalanceRiskLevel,
-      fallbackToVeryHigh: _categoryCode == 'l' && draft != null,
+      fallbackToVeryHigh: _shouldAskOffBalanceRiskLevel && draft != null,
     );
     _retailEligibilityCriteriaSatisfied =
         draft?.retailEligibilityCriteriaSatisfied;
@@ -604,7 +620,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     if (_categoryCode != 'k') {
       _otherAssetType = null;
     }
-    if (!_isOffBalanceCategory) {
+    if (!_shouldAskOffBalanceRiskLevel) {
       _offBalanceRiskLevel = null;
     }
     if (!_isRetailCategory) {
@@ -626,7 +642,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _enterprisePrudentialProcedure = null;
       _enterpriseInvestmentFirmWithoutBankingLaw = null;
     }
-    _currency = _resolveCurrency(draft?.currency);
+    _currency = _initialSelectedValue(
+      draft?.currency.trim().toUpperCase(),
+      options: _supportedCurrencies,
+    );
     _status = draft?.status ?? 'Active';
     _crmMode = draft?.crmMode ?? 'Aucune';
     if (_isOffBalanceCategory && _crmMode != 'Aucune') {
@@ -634,28 +653,35 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     }
     _crmExistsAnswer = _isOffBalanceCategory
         ? false
-        : (draft == null
-            ? (_crmMode == 'Aucune' ? null : true)
-            : _crmMode != 'Aucune');
-    _crmType = _nonFinancedCrmTypes.contains(draft?.crmType)
-        ? draft!.crmType
-        : 'Garantie etatique';
-    _collateralType = financedCrmCollateralTypes.contains(draft?.collateralType)
-        ? draft!.collateralType
-        : financedCrmCollateralTypes.first;
-    _collateralCurrency = _resolveCurrency(
-      draft?.collateralCurrency,
-      fallback: _currency,
+        : (isBlankDraft
+            ? null
+            : (draft == null
+                ? (_crmMode == 'Aucune' ? null : true)
+                : _crmMode != 'Aucune'));
+    _crmType = _initialSelectedValue(
+      draft?.crmType,
+      options: _nonFinancedCrmTypes,
     );
-    _issuerType = financedCrmIssuerRoleOptions.contains(draft?.issuerType)
-        ? draft!.issuerType
-        : financedCrmIssuerRoleOptions.last;
-    _issuerRating = draft?.issuerRating != null
-        ? coerceFinancedCrmCollateralRating(draft!.issuerRating)
-        : financedCrmDebtRatings.last;
-    _maturityBucket = financedCrmMaturityBuckets.contains(draft?.maturityBucket)
-        ? draft!.maturityBucket
-        : financedCrmMaturityBuckets.first;
+    _collateralType = _initialSelectedValue(
+      draft?.collateralType,
+      options: financedCrmCollateralTypes,
+    );
+    _collateralCurrency = _initialSelectedValue(
+      draft?.collateralCurrency.trim().toUpperCase(),
+      options: _supportedCurrencies,
+    );
+    _issuerType = _initialSelectedValue(
+      draft?.issuerType,
+      options: financedCrmIssuerRoleOptions,
+    );
+    _issuerRating = _initialSelectedValue(
+      draft?.issuerRating,
+      options: financedCrmDebtRatings,
+    );
+    _maturityBucket = _initialSelectedValue(
+      draft?.maturityBucket,
+      options: financedCrmMaturityBuckets,
+    );
     _convertibleMainIndex = draft?.convertibleMainIndex ?? true;
     _opcvmHighestHaircut =
         coerceFinancedCrmOpcvmHaircut(draft?.opcvmHighestHaircut);
@@ -663,17 +689,17 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             .map((item) => FinancedCrmBasketItem.fromJson(item.toJson()))
             .toList(growable: true) ??
         <FinancedCrmBasketItem>[];
-    _guarantorCategoryCode =
-        guarantorEligibleCategoryCodes.contains(draft?.guarantorCategoryCode)
-            ? draft!.guarantorCategoryCode
-            : guarantorEligibleCategoryCodes.first;
-    _guarantorRating = _resolveRatingValue(
-      draft?.guarantorRating,
-      preferred: 'AAA',
+    _guarantorCategoryCode = _initialSelectedValue(
+      draft?.guarantorCategoryCode,
+      options: guarantorEligibleCategoryCodes,
     );
-    _guarantorCountryRating = _resolveRatingValue(
+    _guarantorRating = _initialSelectedValue(
+      draft?.guarantorRating,
+      options: _availableRatings,
+    );
+    _guarantorCountryRating = _initialSelectedValue(
       draft?.guarantorCountryRating,
-      preferred: 'Non noté',
+      options: _availableRatings,
     );
     final grossAmt = draft?.grossAmount ?? 0.0;
     final coveredAmt = (draft?.crmCoveragePercent ?? 0.0) * grossAmt;
@@ -687,12 +713,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_didResolveScopedCurrency || widget.initialDraft?.currency != null) {
+    if (_didResolveScopedCurrency || widget.initialDraft == null) {
       return;
     }
-    _currency = _resolveCurrency(
+    _currency = _initialSelectedValue(
       PortfolioCurrencyScope.maybeOf(context, fallback: _currency),
-      fallback: _currency,
+      options: _supportedCurrencies,
     );
     _didResolveScopedCurrency = true;
   }
@@ -719,7 +745,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   List<String> get _availableRatings {
     final unique = <String>[];
     for (final raw in widget.ratings) {
-      final value = raw.trim();
+      final value = _normalizeRatingLabel(raw);
       if (value.isEmpty || unique.contains(value)) {
         continue;
       }
@@ -729,16 +755,64 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       return unique;
     }
     return prudentialRatings
+        .map(_normalizeRatingLabel)
         .where((item) => item.trim().isNotEmpty)
         .toList(growable: false);
   }
 
-  String _resolveCurrency(String? value, {String fallback = 'XOF'}) {
-    final normalized = value?.trim().toUpperCase();
-    if (normalized != null && _supportedCurrencies.contains(normalized)) {
-      return normalized;
+  String _normalizeRatingLabel(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return '';
     }
-    return fallback;
+    switch (trimmed.toUpperCase()) {
+      case 'NON_NOTE':
+      case 'NON NOTE':
+      case 'NON NOTÉ':
+      case 'NON NOTEE':
+        return 'Non noté';
+      case '<_B-':
+        return '< B-';
+      default:
+        return trimmed;
+    }
+  }
+
+  String _initialSelectedValue(
+    String? value, {
+    required List<String> options,
+  }) {
+    final trimmed = _normalizeRatingLabel(value?.trim() ?? '');
+    if (trimmed.isNotEmpty && options.contains(trimmed)) {
+      return trimmed;
+    }
+    return '';
+  }
+
+  String? _selectedValueOrNull(
+    String? value,
+    List<String> options,
+  ) {
+    final trimmed = _normalizeRatingLabel(value?.trim() ?? '');
+    if (trimmed.isEmpty || !options.contains(trimmed)) {
+      return null;
+    }
+    return trimmed;
+  }
+
+  bool _isBlankInitialDraft(ExposureDraft? draft) {
+    if (draft == null) {
+      return false;
+    }
+    return draft.counterpartyName.trim().isEmpty &&
+        draft.country.trim().isEmpty &&
+        draft.countryRating.trim().isEmpty &&
+        draft.categoryCode.trim().isEmpty &&
+        draft.rating.trim().isEmpty &&
+        draft.loanTotalAmount <= 0 &&
+        draft.onBalanceExposureAmount <= 0 &&
+        draft.currency.trim().isEmpty &&
+        draft.crmMode == 'Aucune';
   }
 
   double? get _loanTotalAmountInput => _parseDecimal(_amountController.text);
@@ -753,6 +827,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return value <= 0 ? 0.0 : value;
   }
 
+  bool get _shouldAskOffBalanceRiskLevel =>
+      _derivedOffBalanceExposureAmount > 0;
+
   double _resolveEffectiveGrossAmount({
     required double loanTotalAmount,
     required double onBalanceExposureAmount,
@@ -765,29 +842,18 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }
 
   double get _computedCoverage {
-    final gross = _resolveEffectiveGrossAmount(
-      loanTotalAmount: _loanTotalAmountInput ?? 0.0,
-      onBalanceExposureAmount: _onBalanceExposureAmountInput ?? 0.0,
-    );
+    final gross = _isOffBalanceCategory
+        ? _derivedOffBalanceExposureAmount *
+            lookupOffBalanceFcec(_offBalanceRiskLevel)
+        : (_onBalanceExposureAmountInput ?? 0.0) +
+            (_derivedOffBalanceExposureAmount > 0
+                ? _derivedOffBalanceExposureAmount *
+                    lookupOffBalanceFcec(_offBalanceRiskLevel)
+                : 0.0);
     final covered =
         double.tryParse(_coveredAmountController.text.replaceAll(',', '.')) ??
             0.0;
     return gross > 0 ? (covered / gross).clamp(0.0, 1.0) : 0.0;
-  }
-
-  String _resolveRatingValue(
-    String? value, {
-    String? preferred,
-    List<String>? options,
-  }) {
-    final ratings = options ?? _availableRatings;
-    if (value != null && ratings.contains(value)) {
-      return value;
-    }
-    if (preferred != null && ratings.contains(preferred)) {
-      return preferred;
-    }
-    return ratings.first;
   }
 
   List<String> _counterpartyRatingOptionsForCategory(String categoryCode) {
@@ -806,6 +872,22 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   List<String> get _availableCountryOptions {
     final unique = <String>[];
     final current = _countryController.text.trim();
+    if (current.isNotEmpty) {
+      unique.add(current);
+    }
+    for (final raw in worldCountries) {
+      final value = raw.trim();
+      if (value.isEmpty || unique.contains(value)) {
+        continue;
+      }
+      unique.add(value);
+    }
+    return unique;
+  }
+
+  List<String> get _availableGuarantorCountryOptions {
+    final unique = <String>[];
+    final current = _guarantorCountryController.text.trim();
     if (current.isNotEmpty) {
       unique.add(current);
     }
@@ -841,11 +923,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }
 
   List<String> get _availableCurrencyOptions {
-    final values = <String>{
-      ..._supportedCurrencies,
-      _currency,
-      _collateralCurrency
-    };
+    final values = <String>{..._supportedCurrencies};
+    if (_currency.trim().isNotEmpty) {
+      values.add(_currency);
+    }
+    if (_collateralCurrency.trim().isNotEmpty) {
+      values.add(_collateralCurrency);
+    }
     return values.toList()..sort();
   }
 
@@ -895,13 +979,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _collateralCurrency = _currency;
       }
       if (!financedCrmCollateralRequiresIssuerRole(_collateralType)) {
-        _issuerType = financedCrmIssuerRoleOptions.last;
+        _issuerType = '';
       }
       if (!financedCrmCollateralRequiresRating(_collateralType)) {
-        _issuerRating = financedCrmDebtRatings.last;
+        _issuerRating = '';
       }
       if (!financedCrmCollateralRequiresResidualMaturity(_collateralType)) {
-        _maturityBucket = financedCrmMaturityBuckets.first;
+        _maturityBucket = '';
       }
       if (!financedCrmCollateralSupportsConvertibleIndexQuestion(
           _collateralType)) {
@@ -949,8 +1033,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     String text, {
     bool translate = false,
   }) {
+    final normalizedText = _normalizeRatingLabel(text);
     return Text(
-      translate ? text.tr(context) : text,
+      translate ? normalizedText.tr(context) : normalizedText,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       softWrap: false,
@@ -1313,8 +1398,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
     return Row(
       children: [
-        Expanded(child: label),
-        const SizedBox(width: 8),
         _buildBankInstitutionInfoTooltip(
           title: item,
           message: tooltipMessage,
@@ -1333,7 +1416,56 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             ),
           ),
         ),
+        const SizedBox(width: 8),
+        Expanded(child: label),
       ],
+    );
+  }
+
+  Widget _buildFinancialStepHelper(BuildContext context) {
+    if (!_shouldAskOffBalanceRiskLevel) {
+      return const SizedBox.shrink();
+    }
+
+    return _buildFieldCard(
+      context: context,
+      title: 'Niveau de risque hors bilan',
+      subtitle: '',
+      icon: Icons.rule_folder_outlined,
+      inlineTooltip: _offBalanceFcecTooltip,
+      tooltipTitle: 'FCEC et hors bilan',
+      tooltipMaxWidth: 460,
+      child: DropdownButtonFormField<String>(
+        value: _offBalanceRiskLevel,
+        isExpanded: true,
+        decoration: _fieldDecoration(
+          context,
+          hint: context.tr('Choisir une option'),
+        ),
+        validator: (value) => value == null || value.trim().isEmpty
+            ? context.tr('Champ requis')
+            : null,
+        selectedItemBuilder: (context) => offBalanceRiskLevelOptions
+            .map(
+              (item) => Align(
+                alignment: Alignment.centerLeft,
+                child: _offBalanceRiskLevelDropdownLabel(item),
+              ),
+            )
+            .toList(growable: false),
+        items: offBalanceRiskLevelOptions
+            .map(
+              (item) => DropdownMenuItem<String>(
+                value: item,
+                child: _offBalanceRiskLevelDropdownLabel(
+                  item,
+                  includeInfoIcon: true,
+                ),
+              ),
+            )
+            .toList(growable: false),
+        onChanged: _handleOffBalanceRiskLevelChanged,
+      ),
     );
   }
 
@@ -1815,7 +1947,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 enableInteractiveSelection: false,
                 decoration: _fieldDecoration(
                   context,
-                  hint: context.tr('Genere automatiquement'),
+                  hint: _generatedExposureId?.isNotEmpty == true
+                      ? _generatedExposureId!
+                      : context.tr('Genere automatiquement'),
                 ),
               ),
             ),
@@ -1836,6 +1970,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     color: Color(0xFF7A8AA4),
                   ),
                 ),
+                validator: (_) =>
+                    _grantDate == null ? context.tr('Champ requis') : null,
                 onTap: () => _pickDate(
                   currentValue: _grantDate,
                   onChanged: (value) {
@@ -1869,7 +2005,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     color: Color(0xFF7A8AA4),
                   ),
                 ),
-                validator: (value) {
+                validator: (_) {
+                  if (_maturityDate == null) {
+                    return context.tr('Champ requis');
+                  }
                   if (_grantDate != null &&
                       _maturityDate != null &&
                       _maturityDate!.isBefore(_grantDate!)) {
@@ -1926,19 +2065,114 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               subtitle: 'Pays de residence',
               icon: Icons.flag_circle_outlined,
               child: DropdownButtonFormField<String>(
-                value: _resolveRatingValue(
-                  _countryRating,
-                  preferred: 'Non noté',
-                ),
+                value: _selectedValueOrNull(_countryRating, _availableRatings),
                 isExpanded: true,
-                decoration: _fieldDecoration(context),
+                decoration: _fieldDecoration(
+                  context,
+                  hint: context.tr('Choisir une option'),
+                ),
+                validator: _requiredSelectionValidator,
                 selectedItemBuilder: (context) =>
                     _selectedStringDropdownItems(_availableRatings),
                 items: _stringDropdownItems(_availableRatings),
                 onChanged: (value) =>
-                    setState(() => _countryRating = value ?? _countryRating),
+                    setState(() => _countryRating = value ?? ''),
               ),
             ),
+            _StepGridFullWidth(
+              child: _buildFieldCard(
+                context: context,
+                title: 'Notation de la contrepartie',
+                subtitle: 'Note de credit',
+                icon: Icons.stars_outlined,
+                child: DropdownButtonFormField<String>(
+                  value: _selectedValueOrNull(_rating, _availableRatings),
+                  isExpanded: true,
+                  decoration: _fieldDecoration(
+                    context,
+                    hint: context.tr('Choisir une option'),
+                  ),
+                  validator: _requiredSelectionValidator,
+                  selectedItemBuilder: (context) =>
+                      _selectedStringDropdownItems(_availableRatings),
+                  items: _stringDropdownItems(_availableRatings),
+                  onChanged: _handleCounterpartyRatingChanged,
+                ),
+              ),
+            ),
+            if (_shouldAskCounterpartyOceQuestion)
+              _StepGridFullWidth(
+                child: _buildFieldCard(
+                  context: context,
+                  title: "La contrepartie est-elle notée par l'OCE ?",
+                  subtitle:
+                      'Si non, la pondération sera déduite de la notation du pays de résidence',
+                  icon: Icons.fact_check_outlined,
+                  child: DropdownButtonFormField<bool>(
+                    value: _sovereignOceEstablished,
+                    isExpanded: true,
+                    decoration: _fieldDecoration(
+                      context,
+                      hint: context.tr('Choisir une option'),
+                    ),
+                    validator: (value) =>
+                        _shouldAskCounterpartyOceQuestion && value == null
+                            ? context.tr('Champ requis')
+                            : null,
+                    items: [
+                      DropdownMenuItem<bool>(
+                        value: true,
+                        child: Text(context.tr('Oui')),
+                      ),
+                      DropdownMenuItem<bool>(
+                        value: false,
+                        child: Text(context.tr('Non')),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _sovereignOceEstablished = value;
+                        if (value != true) {
+                          _sovereignOceNote = '';
+                        }
+                      });
+                    },
+                  ),
+                ),
+              ),
+            if (_shouldShowCounterpartyOceNote)
+              _buildFieldCard(
+                context: context,
+                title: 'Note OCE',
+                subtitle: 'Échelle de 0 à 7',
+                icon: Icons.filter_8_outlined,
+                child: DropdownButtonFormField<String>(
+                  value: _selectedValueOrNull(
+                      _sovereignOceNote, sovereignOceNotes),
+                  isExpanded: true,
+                  decoration: _fieldDecoration(
+                    context,
+                    hint: context.tr('Choisir une option'),
+                  ),
+                  validator: _requiredSelectionValidator,
+                  selectedItemBuilder: (context) =>
+                      _selectedStringDropdownItems(sovereignOceNotes),
+                  items: _stringDropdownItems(sovereignOceNotes),
+                  onChanged: (value) => setState(
+                    () => _sovereignOceNote = value ?? '',
+                  ),
+                ),
+              )
+            else if (_shouldAskCounterpartyOceQuestion &&
+                _sovereignOceEstablished == false)
+              _StepGridFullWidth(
+                child: _InfoBanner(
+                  icon: Icons.public_outlined,
+                  accent: const Color(0xFF2563EB),
+                  text:
+                      'La pondération sera déduite de la notation du pays de résidence.',
+                ),
+              ),
           ],
         );
       case 2:
@@ -1957,7 +2191,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             _buildFieldCard(
               context: context,
               title: 'Montant total du prêt',
-              subtitle: 'Montant brut de l opération',
+              subtitle: "Montant brut de l'opération",
               icon: Icons.payments_outlined,
               child: TextFormField(
                 controller: _amountController,
@@ -1968,7 +2202,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 validator: _amountValidator,
-                onChanged: (_) => setState(() {}),
+                onChanged: _handleFinancialAmountsChanged,
               ),
             ),
             _buildFieldCard(
@@ -1985,7 +2219,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 validator: _onBalanceAmountValidator,
-                onChanged: (_) => setState(() {}),
+                onChanged: _handleFinancialAmountsChanged,
               ),
             ),
             _buildFieldCard(
@@ -1994,8 +2228,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               subtitle: 'Devise de saisie',
               icon: Icons.currency_exchange_outlined,
               child: DropdownButtonFormField<String>(
-                value: _currency,
-                decoration: _fieldDecoration(context),
+                value:
+                    _selectedValueOrNull(_currency, _availableCurrencyOptions),
+                decoration: _fieldDecoration(
+                  context,
+                  hint: context.tr('Choisir une option'),
+                ),
+                validator: _requiredSelectionValidator,
                 items: const ['XOF', 'XAF', 'EUR', 'USD']
                     .map(
                       (item) => DropdownMenuItem(
@@ -2005,7 +2244,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     )
                     .toList(),
                 onChanged: (value) => setState(() {
-                  _currency = value ?? _currency;
+                  _currency = value ?? '';
                   _syncFinancedCollateralCurrencyToExposureIfNeeded();
                 }),
               ),
@@ -2029,7 +2268,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               ),
             ),
           ],
-          helper: const SizedBox.shrink(),
+          helper: _buildFinancialStepHelper(context),
         );
       case 4:
         return _CrmChoiceStepScreen(
@@ -2139,10 +2378,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   bool get _isResidentialMortgageCategory => _categoryCode == 'g';
   bool get _isCommercialRealEstateCategory => _categoryCode == 'h';
   bool get _isDefaultedExposureCategory => _categoryCode == 'i';
-  bool get _isHighRiskExposureCategory => _categoryCode == 'j';
   bool get _isOtherAssetsCategory => _categoryCode == 'k';
   bool get _isOffBalanceCategory => _categoryCode == 'l';
   bool get _isEnterpriseCategory => _categoryCode == 'e';
+  bool get _shouldAskCounterpartyOceQuestion =>
+      _rating == 'Non noté' && !_sovereignPriorityQuestionAnsweredYes;
+  bool get _shouldShowCounterpartyOceNote =>
+      _shouldAskCounterpartyOceQuestion && _sovereignOceEstablished == true;
   bool get _usesRetailEnterpriseLogic =>
       _isRetailCategory && _retailEligibilityCriteriaSatisfied == false;
   bool get _usesCommercialRealEstateEnterpriseLogic =>
@@ -2151,38 +2393,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _isEnterpriseCategory ||
       _usesRetailEnterpriseLogic ||
       _usesCommercialRealEstateEnterpriseLogic;
-  bool get _hasSovereignPriorityCase =>
-      _isSovereignCategory &&
-      hasSovereignPriorityZeroWeightCase(
-        _sovereignSpecialCase,
-        sovereignPreferentialZeroWeight: _sovereignPreferentialZeroWeight,
-      );
-  bool get _usesPublicBodyEnterpriseLogic =>
-      _isPublicBodyCategory &&
-      hasPublicBodyEnterpriseOverride(
-        _publicBodyUemoaFcfaCase,
-        _publicBodyFinancesNonPublicActivity,
-      );
-  bool get _hasBmdPriorityCase =>
-      _isBmdCategory &&
-      hasBmdPriorityZeroWeightCase(
-        bmdHighQualityCase: _bmdHighQualityCase,
-        bmdUemoaFcfaCase: _bmdUemoaFcfaCase,
-        bmdUemoaCriteriaSatisfied: _bmdUemoaCriteriaSatisfied,
-        bmdListedInstitutionFcfaCase: _bmdListedInstitutionFcfaCase,
-      );
   bool get _shouldShowBmdListedInstitutionQuestion =>
       _isBmdCategory &&
       _bmdHighQualityCase == false &&
       ((_bmdUemoaFcfaCase == true && _bmdUemoaCriteriaSatisfied == false) ||
           _bmdUemoaFcfaCase == false);
-  bool get _shouldShowBmdRatingField =>
-      _isBmdCategory &&
-      !_hasBmdPriorityCase &&
-      _bmdHighQualityCase == false &&
-      _bmdUemoaFcfaCase != null &&
-      (_bmdUemoaFcfaCase == false || _bmdUemoaCriteriaSatisfied != null) &&
-      _bmdListedInstitutionFcfaCase == false;
   bool get _usesBankInstitutionMatrix =>
       _isBankInstitutionCategory &&
       _bankInstitutionCase == bankInstitutionEligibleCategoriesCase;
@@ -2193,11 +2408,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _isEnterpriseLikeCategory &&
       _enterpriseExceedsBceaoDegradationThreshold == false &&
       _enterprisePrudentialProcedure == false;
-  bool get _shouldShowEnterpriseRatingField =>
-      _isEnterpriseLikeCategory &&
-      _enterpriseExceedsBceaoDegradationThreshold == false &&
-      _enterprisePrudentialProcedure == false &&
-      _enterpriseInvestmentFirmWithoutBankingLaw != null;
   bool get _usesDefaultedExposureCarryForward =>
       _isDefaultedExposureCategory &&
       (_defaultedExposureInitialRiskWeight ?? 0) > 1.0;
@@ -2220,8 +2430,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _sovereignSpecialCase = sovereignNoSpecialCase;
         _sovereignPreferentialZeroWeight = false;
         _sovereignPriorityQuestionAnsweredYes = false;
-        _sovereignOceEstablished = false;
-        _sovereignOceNote = sovereignOceNotes.first;
       } else {
         _sovereignSpecialCase = coerceSovereignSpecialCase(
           _sovereignSpecialCase,
@@ -2235,7 +2443,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             _sovereignSpecialCase != sovereignNoSpecialCase ||
                 _sovereignPreferentialZeroWeight;
         if (!sovereignRatingOptions.contains(_rating)) {
-          _rating = 'Non noté';
+          _rating = '';
         }
       }
       if (!_isPublicBodyCategory) {
@@ -2253,9 +2461,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       }
       if (!_isOtherAssetsCategory) {
         _otherAssetType = null;
-      }
-      if (!_isOffBalanceCategory) {
-        _offBalanceRiskLevel = null;
       }
       if (!_isRetailCategory) {
         _retailEligibilityCriteriaSatisfied = null;
@@ -2285,11 +2490,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       }
       if ((_isBmdCategory || _isBankInstitutionCategory) &&
           !prudentialRatings.contains(_rating)) {
-        _rating = 'Non noté';
+        _rating = '';
       }
       if (_isEnterpriseLikeCategory &&
           !enterpriseRatingOptions.contains(_rating)) {
-        _rating = 'Non noté';
+        _rating = '';
       }
     });
   }
@@ -2358,7 +2563,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     setState(() {
       _bankInstitutionCase = resolvedValue;
       if (_usesBankInstitutionMatrix && !prudentialRatings.contains(_rating)) {
-        _rating = 'Non noté';
+        _rating = '';
       }
     });
   }
@@ -2372,6 +2577,14 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   void _handleOffBalanceRiskLevelChanged(String? value) {
     setState(() {
       _offBalanceRiskLevel = coerceOffBalanceRiskLevel(value);
+    });
+  }
+
+  void _handleFinancialAmountsChanged(String _) {
+    setState(() {
+      if (!_shouldAskOffBalanceRiskLevel) {
+        _offBalanceRiskLevel = null;
+      }
     });
   }
 
@@ -2408,7 +2621,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _enterprisePrudentialProcedure = null;
         _enterpriseInvestmentFirmWithoutBankingLaw = null;
       } else if (!enterpriseRatingOptions.contains(_rating)) {
-        _rating = 'Non noté';
+        _rating = '';
       }
     });
   }
@@ -2427,7 +2640,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _enterprisePrudentialProcedure = null;
         _enterpriseInvestmentFirmWithoutBankingLaw = null;
       } else if (!enterpriseRatingOptions.contains(_rating)) {
-        _rating = 'Non noté';
+        _rating = '';
       }
     });
   }
@@ -2464,86 +2677,30 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       if (!answeredYes) {
         _sovereignSpecialCase = sovereignNoSpecialCase;
         _sovereignPreferentialZeroWeight = false;
-        _sovereignOceEstablished = false;
-        _sovereignOceNote = sovereignOceNotes.first;
+        _sovereignOceEstablished = null;
+        _sovereignOceNote = '';
       } else if (_sovereignSpecialCase == sovereignNoSpecialCase) {
         _sovereignSpecialCase = sovereignLegacySpecialCase;
         _sovereignPreferentialZeroWeight = true;
-        _sovereignOceEstablished = false;
-        _sovereignOceNote = sovereignOceNotes.first;
+        _sovereignOceEstablished = null;
+        _sovereignOceNote = '';
       }
     });
   }
 
   void _handleCounterpartyRatingChanged(String? value) {
-    final nextRating = value ?? _rating;
+    final nextRating = value ?? '';
     setState(() {
+      final wasUnrated = _rating == 'Non noté';
       _rating = nextRating;
       if (_rating != 'Non noté') {
-        _sovereignOceEstablished = false;
-        _sovereignOceNote = sovereignOceNotes.first;
+        _sovereignOceEstablished = null;
+        _sovereignOceNote = '';
+      } else if (!wasUnrated) {
+        _sovereignOceEstablished = null;
+        _sovereignOceNote = '';
       }
     });
-  }
-
-  Widget _buildSovereignOceQuestionCard(BuildContext context) {
-    return _buildFieldCard(
-      context: context,
-      title: 'Le souverain est-il établi par les OCE ?',
-      subtitle: '',
-      icon: Icons.fact_check_outlined,
-      child: CheckboxListTile(
-        value: _sovereignOceEstablished,
-        dense: true,
-        contentPadding: EdgeInsets.zero,
-        controlAffinity: ListTileControlAffinity.leading,
-        title: Text(
-          context.tr('Oui'),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 10.8,
-                fontWeight: FontWeight.w600,
-                color: _wizardBodyTitleColor(context),
-              ),
-        ),
-        onChanged: (value) {
-          setState(() {
-            _sovereignOceEstablished = value ?? false;
-            if (!_sovereignOceEstablished) {
-              _sovereignOceNote = sovereignOceNotes.first;
-            }
-          });
-        },
-      ),
-    );
-  }
-
-  Widget _buildSovereignRatingAndOceRow(
-    BuildContext context,
-    Widget ratingCard,
-  ) {
-    return _StepGridFullWidth(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < 760) {
-            return Column(
-              children: [
-                ratingCard,
-                const SizedBox(height: 12),
-                _buildSovereignOceQuestionCard(context),
-              ],
-            );
-          }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: ratingCard),
-              const SizedBox(width: 12),
-              Expanded(child: _buildSovereignOceQuestionCard(context)),
-            ],
-          );
-        },
-      ),
-    );
   }
 
   Widget _buildCategoryStepBody(BuildContext context) {
@@ -2555,14 +2712,18 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Type d exposition',
           icon: Icons.account_tree_outlined,
           child: DropdownButtonFormField<String>(
-            value: exposureCategories.any((item) => item.code == _categoryCode)
-                ? _categoryCode
-                : 'e',
+            value: _selectedValueOrNull(
+              _categoryCode,
+              exposureCategories
+                  .map((item) => item.code)
+                  .toList(growable: false),
+            ),
             isExpanded: true,
-            decoration: _fieldDecoration(context),
-            validator: (value) => value == null || value.trim().isEmpty
-                ? context.tr('Champ requis')
-                : null,
+            decoration: _fieldDecoration(
+              context,
+              hint: context.tr('Choisir une option'),
+            ),
+            validator: _requiredSelectionValidator,
             selectedItemBuilder: (context) => exposureCategories
                 .map(
                   (item) => Align(
@@ -2902,50 +3063,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   )
                   .toList(growable: false),
               onChanged: _handleOtherAssetTypeChanged,
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (_isOffBalanceCategory) {
-      cards.add(
-        _StepGridFullWidth(
-          child: _buildFieldCard(
-            context: context,
-            title: 'Niveau de risque hors bilan',
-            subtitle: '',
-            icon: Icons.assessment_outlined,
-            child: DropdownButtonFormField<String>(
-              value: _offBalanceRiskLevel,
-              isExpanded: true,
-              decoration: _fieldDecoration(
-                context,
-                hint: context.tr('Choisir une option'),
-              ),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? context.tr('Champ requis')
-                  : null,
-              selectedItemBuilder: (context) => offBalanceRiskLevelOptions
-                  .map(
-                    (item) => Align(
-                      alignment: Alignment.centerLeft,
-                      child: _offBalanceRiskLevelDropdownLabel(item),
-                    ),
-                  )
-                  .toList(growable: false),
-              items: offBalanceRiskLevelOptions
-                  .map(
-                    (item) => DropdownMenuItem<String>(
-                      value: item,
-                      child: _offBalanceRiskLevelDropdownLabel(
-                        item,
-                        includeInfoIcon: true,
-                      ),
-                    ),
-                  )
-                  .toList(growable: false),
-              onChanged: _handleOffBalanceRiskLevelChanged,
             ),
           ),
         ),
@@ -3337,142 +3454,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       );
     }
 
-    final shouldShowRatingField =
-        (_isSovereignCategory && !_sovereignPriorityQuestionAnsweredYes) ||
-            (_isPublicBodyCategory &&
-                (_publicBodyUemoaFcfaCase == false ||
-                    _usesPublicBodyEnterpriseLogic)) ||
-            (_isBmdCategory && _shouldShowBmdRatingField) ||
-            (_isBankInstitutionCategory && _usesBankInstitutionMatrix) ||
-            _shouldShowEnterpriseRatingField ||
-            (!_isSovereignCategory &&
-                !_isPublicBodyCategory &&
-                !_isBmdCategory &&
-                !_isBankInstitutionCategory &&
-                !_isEnterpriseCategory &&
-                !_isRetailCategory &&
-                !_isResidentialMortgageCategory &&
-                !_isCommercialRealEstateCategory &&
-                !_isDefaultedExposureCategory &&
-                !_isHighRiskExposureCategory &&
-                !_isOtherAssetsCategory &&
-                !_isOffBalanceCategory);
-    final ratingOptions = _isSovereignCategory ||
-            _isPublicBodyCategory ||
-            _isBmdCategory ||
-            _isBankInstitutionCategory
-        ? prudentialRatings
-        : _isEnterpriseLikeCategory
-            ? enterpriseRatingOptions
-            : _availableRatings;
-
-    if (shouldShowRatingField) {
-      final ratingCard = _buildFieldCard(
-        context: context,
-        title: _isEnterpriseLikeCategory
-            ? "Notation de l'entreprise"
-            : _isBankInstitutionCategory
-                ? 'Notation de l institution'
-                : _isSovereignCategory
-                    ? 'Notation de la contrepartie'
-                    : _isBmdCategory
-                        ? 'Notation de la BMD'
-                        : _usesPublicBodyEnterpriseLogic
-                            ? 'Notation de la contrepartie'
-                            : _isPublicBodyCategory
-                                ? 'Notation de l organisme public'
-                                : 'Notation de la contrepartie',
-        subtitle: _isEnterpriseLikeCategory
-            ? ''
-            : _isBankInstitutionCategory
-                ? ''
-                : _isSovereignCategory
-                    ? 'Notation externe'
-                    : _isBmdCategory
-                        ? 'Pondération automatique selon la notation sélectionnée.'
-                        : _usesPublicBodyEnterpriseLogic
-                            ? 'Traitement comme une entreprise'
-                            : _isPublicBodyCategory
-                                ? 'Ponderation automatique'
-                                : 'Note de credit',
-        icon: Icons.stars_outlined,
-        inlineTooltip:
-            _isEnterpriseLikeCategory ? _enterpriseUnratedTooltip : null,
-        tooltipTitle: _isEnterpriseLikeCategory ? 'Article 134' : 'Critères',
-        child: DropdownButtonFormField<String>(
-          value: _resolveRatingValue(
-            _rating,
-            options: ratingOptions,
-            preferred: (_isSovereignCategory ||
-                    _isPublicBodyCategory ||
-                    _isBmdCategory ||
-                    _isEnterpriseLikeCategory ||
-                    _isBankInstitutionCategory)
-                ? 'Non noté'
-                : 'BBB',
-          ),
-          isExpanded: true,
-          decoration: _fieldDecoration(context),
-          validator: (value) {
-            if ((_isSovereignCategory ||
-                    _isPublicBodyCategory ||
-                    _isBmdCategory ||
-                    _isEnterpriseLikeCategory ||
-                    _isBankInstitutionCategory) &&
-                (value == null || value.trim().isEmpty)) {
-              return context.tr('Champ requis');
-            }
-            return null;
-          },
-          selectedItemBuilder: (context) =>
-              _selectedStringDropdownItems(ratingOptions),
-          items: _stringDropdownItems(ratingOptions),
-          onChanged: _handleCounterpartyRatingChanged,
-        ),
-      );
-      if (_isSovereignCategory && !_sovereignPriorityQuestionAnsweredYes) {
-        if (_rating == 'Non noté') {
-          cards.add(_buildSovereignRatingAndOceRow(context, ratingCard));
-        } else {
-          cards.add(_StepGridFullWidth(child: ratingCard));
-        }
-      } else {
-        cards.add(
-          (_isBankInstitutionCategory || _isEnterpriseLikeCategory)
-              ? _StepGridFullWidth(child: ratingCard)
-              : ratingCard,
-        );
-      }
-    }
-
-    if (_isSovereignCategory &&
-        !_hasSovereignPriorityCase &&
-        _rating == 'Non noté' &&
-        _sovereignOceEstablished) {
-      cards.add(
-        _buildFieldCard(
-          context: context,
-          title: 'Note OCE',
-          subtitle: 'Échelle de 0 à 7',
-          icon: Icons.filter_8_outlined,
-          child: DropdownButtonFormField<String>(
-            value: sovereignOceNotes.contains(_sovereignOceNote)
-                ? _sovereignOceNote
-                : sovereignOceNotes.first,
-            isExpanded: true,
-            decoration: _fieldDecoration(context),
-            selectedItemBuilder: (context) => _selectedStringDropdownItems(
-              sovereignOceNotes,
-            ),
-            items: _stringDropdownItems(sovereignOceNotes),
-            onChanged: (value) => setState(
-              () => _sovereignOceNote = value ?? _sovereignOceNote,
-            ),
-          ),
-        ),
-      );
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3745,12 +3726,17 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final onBalanceExposureAmount = _onBalanceExposureAmountInput ?? 0.0;
     final offBalanceExposureAmount = _derivedOffBalanceExposureAmount;
     final isOffBalance = _isOffBalanceCategory;
+    final hasOffBalanceExposure = offBalanceExposureAmount > 0;
+    final selectedOffBalanceFcec =
+        _offBalanceRiskLevel == null || _offBalanceRiskLevel!.trim().isEmpty
+            ? null
+            : lookupOffBalanceFcec(_offBalanceRiskLevel);
     final counterpartyName = _nameController.text.trim();
     final residenceCountry = _countryController.text.trim();
     final detectedZone = _detectedCountryZone;
     final crmTypeLabel = switch (_crmMode) {
-      'CRM financee' => 'Financee',
-      'CRM non financee' => 'Non financee',
+      'CRM financee' => 'Financée',
+      'CRM non financee' => 'Non financée',
       _ => !_requiresCrmFlow
           ? 'Non applicable'
           : (_crmExistsAnswer == false ? 'Aucune' : 'À définir'),
@@ -3851,20 +3837,31 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         accent: const Color(0xFF1D4ED8),
       ),
       if (_crmMode != 'CRM non financee') eadKpi,
-      if (isOffBalance)
+      if (hasOffBalanceExposure)
         _KpiData(
-          label: context.tr('Niveau de risque'),
+          label: context.tr('Niveau de risque hors bilan'),
           value: _offBalanceRiskLevel ?? '-',
           icon: Icons.warning_amber_rounded,
           accent: const Color(0xFFDC2626),
         ),
       _KpiData(
-        label: isOffBalance ? context.tr('FCEC') : context.tr('RW final'),
+        label: isOffBalance
+            ? context.tr('FCEC')
+            : context.tr('Pondération de la contrepartie (RW)'),
         value: _formatPercent(preview.finalRw),
         icon: isOffBalance ? Icons.rule_folder_outlined : Icons.tune_rounded,
         accent:
             isOffBalance ? const Color(0xFF2563EB) : const Color(0xFFF59E0B),
       ),
+      if (!isOffBalance && hasOffBalanceExposure)
+        _KpiData(
+          label: context.tr('FCEC'),
+          value: selectedOffBalanceFcec == null
+              ? '-'
+              : _formatPercent(selectedOffBalanceFcec),
+          icon: Icons.rule_folder_outlined,
+          accent: const Color(0xFF2563EB),
+        ),
       if (_crmMode != 'CRM non financee') rwaKpi,
       if (_crmMode == 'CRM non financee') ...[
         _KpiData(
@@ -3918,11 +3915,15 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Garantie ou assurance',
           icon: Icons.workspace_premium_outlined,
           child: DropdownButtonFormField<String>(
-            value: _nonFinancedCrmTypes.contains(_crmType)
-                ? _crmType
-                : _nonFinancedCrmTypes.first,
+            value: _selectedValueOrNull(_crmType, _nonFinancedCrmTypes),
             isExpanded: true,
-            decoration: _fieldDecoration(context),
+            decoration: _fieldDecoration(
+              context,
+              hint: context.tr('Choisir une option'),
+            ),
+            validator: _crmMode == 'CRM non financee'
+                ? _requiredSelectionValidator
+                : null,
             selectedItemBuilder: (context) => _selectedStringDropdownItems(
               _nonFinancedCrmTypes,
               translate: true,
@@ -3931,7 +3932,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               _nonFinancedCrmTypes,
               translate: true,
             ),
-            onChanged: (value) => setState(() => _crmType = value ?? _crmType),
+            onChanged: (value) => setState(() => _crmType = value ?? ''),
           ),
         ),
         _buildFieldCard(
@@ -3955,12 +3956,18 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Profil prudentiel',
           icon: Icons.apartment_outlined,
           child: DropdownButtonFormField<String>(
-            value:
-                guarantorEligibleCategoryCodes.contains(_guarantorCategoryCode)
-                    ? _guarantorCategoryCode
-                    : guarantorEligibleCategoryCodes.first,
+            value: _selectedValueOrNull(
+              _guarantorCategoryCode,
+              guarantorEligibleCategoryCodes,
+            ),
             isExpanded: true,
-            decoration: _fieldDecoration(context),
+            decoration: _fieldDecoration(
+              context,
+              hint: context.tr('Choisir une option'),
+            ),
+            validator: _crmMode == 'CRM non financee'
+                ? _requiredSelectionValidator
+                : null,
             selectedItemBuilder: (context) => guarantorEligibleCategories
                 .map(
                   (item) => Align(
@@ -3984,7 +3991,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 )
                 .toList(),
             onChanged: (value) => setState(
-              () => _guarantorCategoryCode = value ?? _guarantorCategoryCode,
+              () => _guarantorCategoryCode = value ?? '',
             ),
           ),
         ),
@@ -3994,17 +4001,20 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Notation prise en compte',
           icon: Icons.star_border_rounded,
           child: DropdownButtonFormField<String>(
-            value: _resolveRatingValue(
-              _guarantorRating,
-              preferred: 'AAA',
-            ),
+            value: _selectedValueOrNull(_guarantorRating, _availableRatings),
             isExpanded: true,
-            decoration: _fieldDecoration(context),
+            decoration: _fieldDecoration(
+              context,
+              hint: context.tr('Choisir une option'),
+            ),
+            validator: _crmMode == 'CRM non financee'
+                ? _requiredSelectionValidator
+                : null,
             selectedItemBuilder: (context) =>
                 _selectedStringDropdownItems(_availableRatings),
             items: _stringDropdownItems(_availableRatings),
             onChanged: (value) =>
-                setState(() => _guarantorRating = value ?? _guarantorRating),
+                setState(() => _guarantorRating = value ?? ''),
           ),
         ),
         _buildFieldCard(
@@ -4012,12 +4022,35 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           title: 'Pays de residence du garant',
           subtitle: '',
           icon: Icons.flag_outlined,
-          child: TextFormField(
-            controller: _guarantorCountryController,
+          child: DropdownButtonFormField<String>(
+            value: _guarantorCountryController.text.trim().isEmpty
+                ? null
+                : _guarantorCountryController.text.trim(),
+            isExpanded: true,
+            menuMaxHeight: 320,
             decoration: _fieldDecoration(
               context,
-              hint: context.tr('Pays du garant'),
+              hint: context.tr('Selectionner le pays du garant'),
             ),
+            validator: _crmMode == 'CRM non financee'
+                ? (value) {
+                    final country =
+                        (value ?? _guarantorCountryController.text).trim();
+                    return country.isEmpty ? context.tr('Champ requis') : null;
+                  }
+                : null,
+            selectedItemBuilder: (context) => _selectedStringDropdownItems(
+              _availableGuarantorCountryOptions,
+            ),
+            items: _stringDropdownItems(_availableGuarantorCountryOptions),
+            onChanged: (value) {
+              if (value == null) {
+                return;
+              }
+              setState(() {
+                _guarantorCountryController.text = value;
+              });
+            },
           ),
         ),
         _buildFieldCard(
@@ -4026,17 +4059,23 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: '',
           icon: Icons.public_outlined,
           child: DropdownButtonFormField<String>(
-            value: _resolveRatingValue(
+            value: _selectedValueOrNull(
               _guarantorCountryRating,
-              preferred: 'Non noté',
+              _availableRatings,
             ),
             isExpanded: true,
-            decoration: _fieldDecoration(context),
+            decoration: _fieldDecoration(
+              context,
+              hint: context.tr('Choisir une option'),
+            ),
+            validator: _crmMode == 'CRM non financee'
+                ? _requiredSelectionValidator
+                : null,
             selectedItemBuilder: (context) =>
                 _selectedStringDropdownItems(_availableRatings),
             items: _stringDropdownItems(_availableRatings),
             onChanged: (value) => setState(
-              () => _guarantorCountryRating = value ?? _guarantorCountryRating,
+              () => _guarantorCountryRating = value ?? '',
             ),
           ),
         ),
@@ -4044,7 +4083,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           context: context,
           title: 'Part couverte',
           subtitle: '',
-          icon: Icons.verified_outlined,
+          icon: Icons.gpp_good_outlined,
           child: TextFormField(
             controller: _coveredAmountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -4085,17 +4124,20 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: 'Rôle réglementaire',
             icon: Icons.apartment_outlined,
             child: DropdownButtonFormField<String>(
-              value: financedCrmIssuerRoleOptions.contains(_issuerType)
-                  ? _issuerType
-                  : financedCrmIssuerRoleOptions.last,
+              value: _selectedValueOrNull(
+                _issuerType,
+                financedCrmIssuerRoleOptions,
+              ),
               isExpanded: true,
-              decoration: _fieldDecoration(context),
+              decoration: _fieldDecoration(
+                context,
+                hint: context.tr('Choisir une option'),
+              ),
+              validator: _requiredSelectionValidator,
               selectedItemBuilder: (context) =>
                   _selectedStringDropdownItems(financedCrmIssuerRoleOptions),
               items: _stringDropdownItems(financedCrmIssuerRoleOptions),
-              onChanged: (value) => setState(
-                () => _issuerType = value ?? financedCrmIssuerRoleOptions.last,
-              ),
+              onChanged: (value) => setState(() => _issuerType = value ?? ''),
             ),
           ),
         ),
@@ -4106,17 +4148,17 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Notation externe',
           icon: Icons.workspace_premium_outlined,
           child: DropdownButtonFormField<String>(
-            value: financedCrmDebtRatings.contains(_issuerRating)
-                ? _issuerRating
-                : financedCrmDebtRatings.last,
+            value: _selectedValueOrNull(_issuerRating, financedCrmDebtRatings),
             isExpanded: true,
-            decoration: _fieldDecoration(context),
+            decoration: _fieldDecoration(
+              context,
+              hint: context.tr('Choisir une option'),
+            ),
+            validator: _requiredSelectionValidator,
             selectedItemBuilder: (context) =>
                 _selectedStringDropdownItems(financedCrmDebtRatings),
             items: _stringDropdownItems(financedCrmDebtRatings),
-            onChanged: (value) => setState(
-              () => _issuerRating = value ?? financedCrmDebtRatings.last,
-            ),
+            onChanged: (value) => setState(() => _issuerRating = value ?? ''),
           ),
         ),
       if (showConvertibleIndexQuestion)
@@ -4208,19 +4250,23 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       subtitle: 'Nature du collatéral',
                       icon: Icons.widgets_outlined,
                       child: DropdownButtonFormField<String>(
-                        value:
-                            financedCrmCollateralTypes.contains(_collateralType)
-                                ? _collateralType
-                                : financedCrmCollateralTypes.first,
+                        value: _selectedValueOrNull(
+                          _collateralType,
+                          financedCrmCollateralTypes,
+                        ),
                         isExpanded: true,
-                        decoration: _fieldDecoration(context),
+                        decoration: _fieldDecoration(
+                          context,
+                          hint: context.tr('Choisir une option'),
+                        ),
+                        validator: _crmMode == 'CRM financee'
+                            ? _requiredSelectionValidator
+                            : null,
                         selectedItemBuilder: (context) =>
                             _selectedStringDropdownItems(
                                 financedCrmCollateralTypes),
                         items: _stringDropdownItems(financedCrmCollateralTypes),
-                        onChanged: (value) => _setCollateralType(
-                          value ?? financedCrmCollateralTypes.first,
-                        ),
+                        onChanged: (value) => _setCollateralType(value ?? ''),
                       ),
                     ),
                   ],
@@ -4942,6 +4988,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     }
     if (_currentStep == 3 && !_requiresCrmFlow) {
       await _goToStep(6);
+      unawaited(_refreshBackendPreview());
       return;
     }
     if (_currentStep == 3 && _requiresCrmFlow) {
@@ -4950,6 +4997,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     }
     if (_currentStep == 4 && _crmExistsAnswer == false) {
       await _goToStep(6);
+      unawaited(_refreshBackendPreview());
       return;
     }
     if (_currentStep == 4 && _crmExistsAnswer == true) {
@@ -4970,6 +5018,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         }
         _rightPanelScrollController.jumpTo(0);
       });
+      return;
+    }
+    if (_currentStep == 5 && !_crmSelectionStage) {
+      await _goToStep(6);
+      unawaited(_refreshBackendPreview());
       return;
     }
     if (_currentStep == _stepMetas.length - 1) {
@@ -5114,16 +5167,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     });
   }
 
-  String _coerceGuarantorRating(String? value) {
-    if (widget.ratings.contains(value)) {
-      return value!;
-    }
-    if (widget.ratings.contains('AAA')) {
-      return 'AAA';
-    }
-    return widget.ratings.isNotEmpty ? widget.ratings.first : '';
-  }
-
   Color _currentStepAccent() {
     switch (_currentStep) {
       case 1:
@@ -5207,25 +5250,36 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
   void _resetDraftValues() {
     final draft = widget.initialDraft;
+    final isBlankDraft = _isBlankInitialDraft(draft);
     setState(() {
-      _nameController.text = draft?.counterpartyName ?? 'Nouvelle contrepartie';
-      _exposureIdController.text = draft?.id ?? '';
-      _countryController.text = draft?.country ?? 'Cameroun';
-      _countryRating = _resolveRatingValue(
+      _backendPreviewRequestId += 1;
+      _backendPreview = null;
+      _nameController.text = draft?.counterpartyName ?? '';
+      _generatedExposureId = isBlankDraft ? draft?.id : null;
+      _exposureIdController.text = isBlankDraft ? '' : (draft?.id ?? '');
+      _countryController.text = draft?.country ?? '';
+      _countryRating = _initialSelectedValue(
         draft?.countryRating,
-        preferred: 'Non noté',
+        options: _availableRatings,
       );
       _grantDate = draft?.grantDate;
       _maturityDate = draft?.maturityDate;
       _syncDateController(_grantDateController, _grantDate);
       _syncDateController(_maturityDateController, _maturityDate);
       _amountController.text =
-          (draft?.loanTotalAmount ?? 1000000).toStringAsFixed(0);
+          draft?.loanTotalAmount == null || draft!.loanTotalAmount <= 0
+              ? ''
+              : draft.loanTotalAmount.toStringAsFixed(0);
       _onBalanceAmountController.text =
-          (draft?.onBalanceExposureAmount ?? 1000000).toStringAsFixed(0);
+          draft?.onBalanceExposureAmount == null ||
+                  draft!.onBalanceExposureAmount <= 0
+              ? ''
+              : draft.onBalanceExposureAmount.toStringAsFixed(0);
       _commentController.text = draft?.comment ?? '';
       _collateralController.text =
-          (draft?.collateralValue ?? 0).toStringAsFixed(0);
+          draft?.collateralValue == null || draft!.collateralValue <= 0
+              ? ''
+              : draft.collateralValue.toStringAsFixed(0);
       _fxHaircutController.text =
           ((draft?.fxHaircut ?? 0) * 100).toStringAsFixed(2);
       _guarantorNameController.text = draft?.guarantorName ?? '';
@@ -5233,26 +5287,20 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _categoryCode =
           exposureCategories.any((item) => item.code == draft?.categoryCode)
               ? draft!.categoryCode
-              : 'e';
-      _rating = _resolveRatingValue(
+              : '';
+      _rating = _initialSelectedValue(
         draft?.rating,
-        preferred: (_categoryCode == 'a' ||
-                _categoryCode == 'b' ||
-                _categoryCode == 'c' ||
-                _categoryCode == 'd' ||
-                _categoryCode == 'e')
-            ? 'Non noté'
-            : 'BBB',
         options: _counterpartyRatingOptionsForCategory(_categoryCode),
       );
       if ((_categoryCode == 'a' ||
               _categoryCode == 'c' ||
               _categoryCode == 'd') &&
+          _rating.isNotEmpty &&
           !prudentialRatings.contains(_rating)) {
-        _rating = 'Non noté';
+        _rating = '';
       }
       if (_categoryCode == 'e' && !enterpriseRatingOptions.contains(_rating)) {
-        _rating = 'Non noté';
+        _rating = '';
       }
       _bankInstitutionCase =
           coerceBankInstitutionCase(draft?.bankInstitutionCase);
@@ -5268,10 +5316,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _sovereignPriorityQuestionAnsweredYes =
           _sovereignSpecialCase != sovereignNoSpecialCase ||
               _sovereignPreferentialZeroWeight;
-      _sovereignOceEstablished = draft?.sovereignOceEstablished ?? false;
-      _sovereignOceNote = sovereignOceNotes.contains(draft?.sovereignOceNote)
+      _sovereignOceEstablished = _rating == 'Non noté' && draft != null
+          ? (draft.sovereignOceEstablished || draft.sovereignOceNote.isNotEmpty)
+          : null;
+      _sovereignOceNote = _rating == 'Non noté' &&
+              sovereignOceNotes.contains(draft?.sovereignOceNote)
           ? draft!.sovereignOceNote
-          : sovereignOceNotes.first;
+          : '';
       _publicBodyUemoaFcfaCase = draft?.publicBodyUemoaFcfaCase;
       _publicBodyFinancesNonPublicActivity =
           draft?.publicBodyFinancesNonPublicActivity;
@@ -5287,7 +5338,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       );
       _offBalanceRiskLevel = coerceOffBalanceRiskLevel(
         draft?.offBalanceRiskLevel,
-        fallbackToVeryHigh: _categoryCode == 'l' && draft != null,
+        fallbackToVeryHigh: _shouldAskOffBalanceRiskLevel && draft != null,
       );
       _retailEligibilityCriteriaSatisfied =
           draft?.retailEligibilityCriteriaSatisfied;
@@ -5320,7 +5371,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       if (_categoryCode != 'k') {
         _otherAssetType = null;
       }
-      if (_categoryCode != 'l') {
+      if (!_shouldAskOffBalanceRiskLevel) {
         _offBalanceRiskLevel = null;
       }
       if (_categoryCode != 'f') {
@@ -5342,7 +5393,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         _enterprisePrudentialProcedure = null;
         _enterpriseInvestmentFirmWithoutBankingLaw = null;
       }
-      _currency = draft?.currency ?? 'XOF';
+      _currency = _initialSelectedValue(
+        draft?.currency.trim().toUpperCase(),
+        options: _supportedCurrencies,
+      );
       _status = draft?.status ?? 'Active';
       _crmMode = draft?.crmMode ?? 'Aucune';
       if (_categoryCode == 'l' && _crmMode != 'Aucune') {
@@ -5350,30 +5404,35 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       }
       _crmExistsAnswer = _categoryCode == 'l'
           ? false
-          : (draft == null
-              ? (_crmMode == 'Aucune' ? null : true)
-              : _crmMode != 'Aucune');
-      _crmType = _nonFinancedCrmTypes.contains(draft?.crmType)
-          ? draft!.crmType
-          : 'Garantie etatique';
-      _collateralType =
-          financedCrmCollateralTypes.contains(draft?.collateralType)
-              ? draft!.collateralType
-              : financedCrmCollateralTypes.first;
-      _collateralCurrency = _resolveCurrency(
-        draft?.collateralCurrency,
-        fallback: _currency,
+          : (isBlankDraft
+              ? null
+              : (draft == null
+                  ? (_crmMode == 'Aucune' ? null : true)
+                  : _crmMode != 'Aucune'));
+      _crmType = _initialSelectedValue(
+        draft?.crmType,
+        options: _nonFinancedCrmTypes,
       );
-      _issuerType = financedCrmIssuerRoleOptions.contains(draft?.issuerType)
-          ? draft!.issuerType
-          : financedCrmIssuerRoleOptions.last;
-      _issuerRating = draft?.issuerRating != null
-          ? coerceFinancedCrmCollateralRating(draft!.issuerRating)
-          : financedCrmDebtRatings.last;
-      _maturityBucket =
-          financedCrmMaturityBuckets.contains(draft?.maturityBucket)
-              ? draft!.maturityBucket
-              : financedCrmMaturityBuckets.first;
+      _collateralType = _initialSelectedValue(
+        draft?.collateralType,
+        options: financedCrmCollateralTypes,
+      );
+      _collateralCurrency = _initialSelectedValue(
+        draft?.collateralCurrency.trim().toUpperCase(),
+        options: _supportedCurrencies,
+      );
+      _issuerType = _initialSelectedValue(
+        draft?.issuerType,
+        options: financedCrmIssuerRoleOptions,
+      );
+      _issuerRating = _initialSelectedValue(
+        draft?.issuerRating,
+        options: financedCrmDebtRatings,
+      );
+      _maturityBucket = _initialSelectedValue(
+        draft?.maturityBucket,
+        options: financedCrmMaturityBuckets,
+      );
       _convertibleMainIndex = draft?.convertibleMainIndex ?? true;
       _opcvmHighestHaircut =
           coerceFinancedCrmOpcvmHaircut(draft?.opcvmHighestHaircut);
@@ -5383,17 +5442,17 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               )
               .toList(growable: true) ??
           <FinancedCrmBasketItem>[];
-      _guarantorCategoryCode =
-          guarantorEligibleCategoryCodes.contains(draft?.guarantorCategoryCode)
-              ? draft!.guarantorCategoryCode
-              : guarantorEligibleCategoryCodes.first;
-      _guarantorRating = _resolveRatingValue(
-        _coerceGuarantorRating(draft?.guarantorRating),
-        preferred: 'AAA',
+      _guarantorCategoryCode = _initialSelectedValue(
+        draft?.guarantorCategoryCode,
+        options: guarantorEligibleCategoryCodes,
       );
-      _guarantorCountryRating = _resolveRatingValue(
+      _guarantorRating = _initialSelectedValue(
+        draft?.guarantorRating,
+        options: _availableRatings,
+      );
+      _guarantorCountryRating = _initialSelectedValue(
         draft?.guarantorCountryRating,
-        preferred: 'Non noté',
+        options: _availableRatings,
       );
       _syncFinancedCollateralCurrencyToExposureIfNeeded();
       _syncBasketCollateralController();
@@ -5543,6 +5602,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }
 
   _ExposurePreview _buildPreview() {
+    if (_currentStep >= 6 && _backendPreview != null) {
+      return _backendPreview!;
+    }
+    return _buildLocalPreview();
+  }
+
+  _ExposurePreview _buildLocalPreview() {
     final loanTotalAmount = _loanTotalAmountInput ?? 0.0;
     final onBalanceExposureAmount = _onBalanceExposureAmountInput ?? 0.0;
     final collateral =
@@ -5561,6 +5627,53 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       finalRw: metrics.finalRw,
       rwa: metrics.rwa,
     );
+  }
+
+  ExposureDraft? _buildCurrentDraftOrNull() {
+    final loanTotalAmount = _loanTotalAmountInput;
+    final onBalanceExposureAmount = _onBalanceExposureAmountInput;
+    final collateralValue = _crmMode == 'CRM financee'
+        ? (_parseDecimal(_collateralController.text) ?? _basketTotalValue)
+        : 0.0;
+    if (loanTotalAmount == null || onBalanceExposureAmount == null) {
+      return null;
+    }
+    return _draftFromValues(
+      loanTotalAmount: loanTotalAmount,
+      onBalanceExposureAmount: onBalanceExposureAmount,
+      collateralValue: collateralValue,
+      fxHaircut: 0.0,
+      comment: _commentController.text.trim(),
+    );
+  }
+
+  Future<void> _refreshBackendPreview() async {
+    final draft = _buildCurrentDraftOrNull();
+    if (draft == null) {
+      return;
+    }
+    final requestId = ++_backendPreviewRequestId;
+    if (mounted) {
+      setState(() => _backendPreview = null);
+    }
+    try {
+      final preview = await widget.api.previewExposure(draft);
+      if (!mounted || requestId != _backendPreviewRequestId) {
+        return;
+      }
+      setState(() {
+        _backendPreview = _ExposurePreview(
+          ead: preview.ead,
+          finalRw: preview.finalRw,
+          rwa: preview.rwa,
+        );
+      });
+    } catch (_) {
+      if (!mounted || requestId != _backendPreviewRequestId) {
+        return;
+      }
+      setState(() => _backendPreview = null);
+    }
   }
 
   Future<void> _submit() async {
@@ -5617,6 +5730,16 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return (value == null || value.trim().isEmpty)
         ? context.tr('Champ requis')
         : null;
+  }
+
+  String? _requiredSelectionValidator<T>(T? value) {
+    if (value == null) {
+      return context.tr('Champ requis');
+    }
+    if (value is String && value.trim().isEmpty) {
+      return context.tr('Champ requis');
+    }
+    return null;
   }
 
   String? _amountValidator(String? value) {
@@ -5786,7 +5909,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       onBalanceExposureAmount: onBalanceExposureAmount,
     );
     return ExposureDraft(
-      id: trimmedId.isEmpty ? widget.initialDraft?.id : trimmedId,
+      id: trimmedId.isEmpty
+          ? (_generatedExposureId ?? widget.initialDraft?.id)
+          : trimmedId,
       counterpartyName: _nameController.text.trim(),
       country: _countryController.text.trim(),
       countryRating: _countryRating,
@@ -5852,7 +5977,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       maturityDate: _maturityDate,
       sovereignSpecialCase: resolvedSovereignSpecialCase,
       sovereignPreferentialZeroWeight: sovereignPreferentialZeroWeight,
-      sovereignOceEstablished: _sovereignOceEstablished,
+      sovereignOceEstablished: _sovereignOceEstablished == true,
       sovereignOceNote: _sovereignOceNote,
       publicBodyUemoaFcfaCase: _publicBodyUemoaFcfaCase,
       publicBodyFinancesNonPublicActivity: _publicBodyFinancesNonPublicActivity,
@@ -6447,7 +6572,7 @@ class _CrmChoiceStepScreen extends StatelessWidget {
                       Text(
                         isBinaryQuestion
                             ? 'Sélectionnez une réponse pour continuer.'
-                            : 'Choisissez l option la plus adaptée.',
+                            : "Choisir l'option la plus adaptée.",
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: _wizardMutedColor(context),
@@ -7222,17 +7347,13 @@ class _ModeChoiceCard extends StatelessWidget {
                     width: 1.2,
                   ),
                 ),
-                child: Icon(
-                  selected
-                      ? Icons.check_rounded
-                      : Icons.radio_button_unchecked_rounded,
-                  size: selected ? 13 : 12,
-                  color: selected
-                      ? accent
-                      : (isDark
-                          ? const Color(0xFF6B7A92)
-                          : const Color(0xFFB6C4D8)),
-                ),
+                child: selected
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 13,
+                        color: accent,
+                      )
+                    : const SizedBox.shrink(),
               ),
             ],
           ),

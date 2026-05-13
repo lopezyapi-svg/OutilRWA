@@ -540,66 +540,66 @@ class RwaApiService {
     throw UnsupportedError('L export Excel n est pas disponible en mode demo.');
   }
 
+  Map<String, dynamic> _buildExposurePayload(ExposureDraft draft) {
+    return {
+      'id': draft.id,
+      'analysis_date': draft.analysisDate.toIso8601String().split('T').first,
+      'grant_date': draft.grantDate?.toIso8601String().split('T').first,
+      'maturity_date': draft.maturityDate?.toIso8601String().split('T').first,
+      'counterparty_name': draft.counterpartyName,
+      'country': draft.country,
+      'country_rating': draft.countryRating,
+      'category': draft.backendCategory,
+      'rating': draft.rating,
+      'gross_amount': draft.grossAmount,
+      'loan_total_amount': draft.loanTotalAmount,
+      'on_balance_exposure_amount': draft.onBalanceExposureAmount,
+      'off_balance_exposure_amount': draft.offBalanceExposureAmount,
+      'currency': draft.currency,
+      'status': draft.status,
+      'sovereign_special_case': draft.sovereignSpecialCase,
+      'sovereign_preferential_zero_weight':
+          draft.sovereignPreferentialZeroWeight,
+      'sovereign_oce_established': draft.sovereignOceEstablished,
+      'sovereign_oce_note': draft.sovereignOceNote,
+      'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
+      'public_body_non_public_activity':
+          draft.publicBodyFinancesNonPublicActivity,
+      'bmd_high_quality_case': draft.bmdHighQualityCase,
+      'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
+      'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
+      'bmd_listed_institution_fcfa_case': draft.bmdListedInstitutionFcfaCase,
+      'bank_institution_case': draft.bankInstitutionCase,
+      'other_asset_type': draft.otherAssetType,
+      'off_balance_risk_level': draft.offBalanceRiskLevel,
+      'retail_eligibility_criteria_satisfied':
+          draft.retailEligibilityCriteriaSatisfied,
+      'residential_mortgage_eligible': draft.residentialMortgageEligible,
+      'commercial_real_estate_eligible': draft.commercialRealEstateEligible,
+      'defaulted_exposure_initial_risk_weight':
+          draft.defaultedExposureInitialRiskWeight,
+      'defaulted_exposure_residential_mortgage_in_default':
+          draft.defaultedExposureResidentialMortgageInDefault,
+      'defaulted_exposure_provision_at_least_twenty_percent':
+          draft.defaultedExposureProvisionAtLeastTwentyPercent,
+      'enterprise_exceeds_bceao_degradation_threshold':
+          draft.enterpriseExceedsBceaoDegradationThreshold,
+      'enterprise_prudential_procedure': draft.enterprisePrudentialProcedure,
+      'enterprise_investment_firm_without_banking_law':
+          draft.enterpriseInvestmentFirmWithoutBankingLaw,
+      'crm_type': draft.backendCrmType,
+      'crm_coverage_percent': _effectiveCrmCoverage(draft),
+      'crm_details': draft.crmDetailsJson,
+      'comment': draft.comment,
+    };
+  }
+
   Future<ExposureRecord> createExposure(ExposureDraft draft) async {
     if (!useMockData) {
       try {
         final response = Map<String, dynamic>.from(
-          await _client.post('/expositions', {
-            'id': draft.id,
-            'analysis_date':
-                draft.analysisDate.toIso8601String().split('T').first,
-            'grant_date': draft.grantDate?.toIso8601String().split('T').first,
-            'maturity_date':
-                draft.maturityDate?.toIso8601String().split('T').first,
-            'counterparty_name': draft.counterpartyName,
-            'country': draft.country,
-            'country_rating': draft.countryRating,
-            'category': draft.backendCategory,
-            'rating': draft.rating,
-            'gross_amount': draft.grossAmount,
-            'loan_total_amount': draft.loanTotalAmount,
-            'on_balance_exposure_amount': draft.onBalanceExposureAmount,
-            'off_balance_exposure_amount': draft.offBalanceExposureAmount,
-            'currency': draft.currency,
-            'status': draft.status,
-            'sovereign_special_case': draft.sovereignSpecialCase,
-            'sovereign_preferential_zero_weight':
-                draft.sovereignPreferentialZeroWeight,
-            'sovereign_oce_established': draft.sovereignOceEstablished,
-            'sovereign_oce_note': draft.sovereignOceNote,
-            'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
-            'public_body_non_public_activity':
-                draft.publicBodyFinancesNonPublicActivity,
-            'bmd_high_quality_case': draft.bmdHighQualityCase,
-            'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
-            'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
-            'bmd_listed_institution_fcfa_case':
-                draft.bmdListedInstitutionFcfaCase,
-            'bank_institution_case': draft.bankInstitutionCase,
-            'other_asset_type': draft.otherAssetType,
-            'off_balance_risk_level': draft.offBalanceRiskLevel,
-            'retail_eligibility_criteria_satisfied':
-                draft.retailEligibilityCriteriaSatisfied,
-            'residential_mortgage_eligible': draft.residentialMortgageEligible,
-            'commercial_real_estate_eligible':
-                draft.commercialRealEstateEligible,
-            'defaulted_exposure_initial_risk_weight':
-                draft.defaultedExposureInitialRiskWeight,
-            'defaulted_exposure_residential_mortgage_in_default':
-                draft.defaultedExposureResidentialMortgageInDefault,
-            'defaulted_exposure_provision_at_least_twenty_percent':
-                draft.defaultedExposureProvisionAtLeastTwentyPercent,
-            'enterprise_exceeds_bceao_degradation_threshold':
-                draft.enterpriseExceedsBceaoDegradationThreshold,
-            'enterprise_prudential_procedure':
-                draft.enterprisePrudentialProcedure,
-            'enterprise_investment_firm_without_banking_law':
-                draft.enterpriseInvestmentFirmWithoutBankingLaw,
-            'crm_type': draft.backendCrmType,
-            'crm_coverage_percent': _effectiveCrmCoverage(draft),
-            'crm_details': draft.crmDetailsJson,
-            'comment': draft.comment,
-          }) as Map,
+          await _client.post('/expositions', _buildExposurePayload(draft))
+              as Map,
         );
         _notifyPortfolioChanged();
         return ExposureRecord.fromJson(response);
@@ -624,62 +624,8 @@ class RwaApiService {
     if (!useMockData) {
       try {
         final response = Map<String, dynamic>.from(
-          await _client.put('/expositions/$id', {
-            'id': id,
-            'analysis_date':
-                draft.analysisDate.toIso8601String().split('T').first,
-            'grant_date': draft.grantDate?.toIso8601String().split('T').first,
-            'maturity_date':
-                draft.maturityDate?.toIso8601String().split('T').first,
-            'counterparty_name': draft.counterpartyName,
-            'country': draft.country,
-            'country_rating': draft.countryRating,
-            'category': draft.backendCategory,
-            'rating': draft.rating,
-            'gross_amount': draft.grossAmount,
-            'loan_total_amount': draft.loanTotalAmount,
-            'on_balance_exposure_amount': draft.onBalanceExposureAmount,
-            'off_balance_exposure_amount': draft.offBalanceExposureAmount,
-            'currency': draft.currency,
-            'status': draft.status,
-            'sovereign_special_case': draft.sovereignSpecialCase,
-            'sovereign_preferential_zero_weight':
-                draft.sovereignPreferentialZeroWeight,
-            'sovereign_oce_established': draft.sovereignOceEstablished,
-            'sovereign_oce_note': draft.sovereignOceNote,
-            'public_body_uemoa_fcfa_case': draft.publicBodyUemoaFcfaCase,
-            'public_body_non_public_activity':
-                draft.publicBodyFinancesNonPublicActivity,
-            'bmd_high_quality_case': draft.bmdHighQualityCase,
-            'bmd_uemoa_fcfa_case': draft.bmdUemoaFcfaCase,
-            'bmd_uemoa_criteria_satisfied': draft.bmdUemoaCriteriaSatisfied,
-            'bmd_listed_institution_fcfa_case':
-                draft.bmdListedInstitutionFcfaCase,
-            'bank_institution_case': draft.bankInstitutionCase,
-            'other_asset_type': draft.otherAssetType,
-            'off_balance_risk_level': draft.offBalanceRiskLevel,
-            'retail_eligibility_criteria_satisfied':
-                draft.retailEligibilityCriteriaSatisfied,
-            'residential_mortgage_eligible': draft.residentialMortgageEligible,
-            'commercial_real_estate_eligible':
-                draft.commercialRealEstateEligible,
-            'defaulted_exposure_initial_risk_weight':
-                draft.defaultedExposureInitialRiskWeight,
-            'defaulted_exposure_residential_mortgage_in_default':
-                draft.defaultedExposureResidentialMortgageInDefault,
-            'defaulted_exposure_provision_at_least_twenty_percent':
-                draft.defaultedExposureProvisionAtLeastTwentyPercent,
-            'enterprise_exceeds_bceao_degradation_threshold':
-                draft.enterpriseExceedsBceaoDegradationThreshold,
-            'enterprise_prudential_procedure':
-                draft.enterprisePrudentialProcedure,
-            'enterprise_investment_firm_without_banking_law':
-                draft.enterpriseInvestmentFirmWithoutBankingLaw,
-            'crm_type': draft.backendCrmType,
-            'crm_coverage_percent': _effectiveCrmCoverage(draft),
-            'crm_details': draft.crmDetailsJson,
-            'comment': draft.comment,
-          }) as Map,
+          await _client.put('/expositions/$id', _buildExposurePayload(draft))
+              as Map,
         );
         _notifyPortfolioChanged();
         return ExposureRecord.fromJson(response);
@@ -697,6 +643,22 @@ class RwaApiService {
     }
     _notifyPortfolioChanged();
     return ExposureRecord.fromJson(replacement);
+  }
+
+  Future<ExposureRecord> previewExposure(ExposureDraft draft) async {
+    if (!useMockData) {
+      final response = Map<String, dynamic>.from(
+        await _client.post('/expositions/preview', _buildExposurePayload(draft))
+            as Map,
+      );
+      return ExposureRecord.fromJson(response);
+    }
+
+    final previewId =
+        draft.id?.isNotEmpty == true ? draft.id! : 'PREVIEW_EXPOSITION';
+    return _withDelay(
+      ExposureRecord.fromJson(_buildExposureMapFromDraft(draft, previewId)),
+    );
   }
 
   Future<Map<String, dynamic>> deleteExposures(

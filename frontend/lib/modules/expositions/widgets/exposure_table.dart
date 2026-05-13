@@ -48,7 +48,7 @@ class ExposureTable extends StatelessWidget {
             cells: [
               DataCell(Text(row.id)),
               DataCell(Text(row.counterparty.name)),
-              DataCell(Text(row.counterparty.category)),
+              DataCell(Text(row.categoryLabel)),
               DataCell(Text(row.counterparty.rating)),
               DataCell(Text(row.counterparty.country)),
               DataCell(Text(formatCurrencyForDisplay(

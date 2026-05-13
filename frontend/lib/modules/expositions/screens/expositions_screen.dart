@@ -49,7 +49,7 @@ class ExpositionsScreen extends StatefulWidget {
 }
 
 class _ExpositionsScreenState extends State<ExpositionsScreen> {
-  static const double _mainTableMinWidth = 3180;
+  static const double _mainTableMinWidth = 4300;
   static const double _controlGap = 8;
   static const double _filterControlHeight = 30;
   static const double _textFilterControlHeight = 44;
@@ -763,6 +763,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   static const List<String> _fullTableColumnKeys = [
     'select',
+    'analysis_date',
     'id',
     'grant_date',
     'maturity_date',
@@ -775,12 +776,18 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     'country_rw',
     'category',
     'rw',
-    'gross',
+    'loan_total',
+    'on_balance_amount',
+    'off_balance_amount',
     'source_currency',
     'crm_exists',
     'crm_type',
     'ead_bilan',
+    'ead_hb',
+    'ead_hb_ccf',
     'ead_total',
+    'rwa_eb',
+    'rwa_hb',
     'rwa',
     'capital',
   ];
@@ -823,24 +830,31 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   static const List<double> _mainTableWidthWeights = [
     0.32,
+    0.88,
     0.82,
     0.98,
     1.02,
-    1.18,
-    1.16,
+    1.12,
+    1.12,
     1.48,
     1.12,
-    1.02,
+    1.08,
     1.08,
     0.95,
     1.32,
     0.92,
-    1.22,
+    1.20,
+    1.20,
+    1.20,
     0.60,
     0.86,
     0.94,
     1.02,
     1.02,
+    1.02,
+    1.02,
+    1.02,
+    1.08,
     1.08,
     1.10,
   ];
@@ -1040,6 +1054,22 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     );
   }
 
+  Widget _tableOptionalAmountText(
+    double? value, {
+    required String currencyCode,
+    required double width,
+    String fallback = 'ND',
+  }) {
+    if (value == null) {
+      return _tableText(fallback, width);
+    }
+    return _tableAmountText(
+      value,
+      currencyCode: currencyCode,
+      width: width,
+    );
+  }
+
   double _rwPercentValue(ExposureRecord row) {
     return (row.finalRw * 100).clamp(0.0, double.infinity).toDouble();
   }
@@ -1221,18 +1251,21 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   String _exposureMaturityLabel(ExposureRecord row) {
     return _formatDurationMonths(
-      _durationInMonths(row.grantDate, row.maturityDate),
+      row.exposureMaturityMonths ??
+          _durationInMonths(row.grantDate, row.maturityDate),
     );
   }
 
   String _residualMaturityLabel(ExposureRecord row) {
     return _formatDurationMonths(
-      _durationInMonths(row.analysisDate, row.maturityDate),
+      row.residualMaturityMonths ??
+          _durationInMonths(row.analysisDate, row.maturityDate),
     );
   }
 
   double _countryRiskWeightValue(ExposureRecord row) {
-    return lookupPrudentialRiskWeight('a', row.counterparty.countryRating);
+    return row.countryRiskWeight ??
+        lookupPrudentialRiskWeight('a', row.counterparty.countryRating);
   }
 
   String _formatRiskWeight(double value) {
@@ -1973,8 +2006,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   Widget _buildCompactDropdownField({
-    required String value,
+    required String? value,
     required String label,
+    String? hint,
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
@@ -1989,6 +2023,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           ),
       decoration: InputDecoration(
         labelText: label.tr(context),
+        hintText: hint?.tr(context),
       ),
       selectedItemBuilder: (context) => items
           .map(
@@ -2024,6 +2059,24 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           .toList(),
       onChanged: onChanged,
     );
+  }
+
+  List<String> get _countryFilterOptions {
+    final options = <String>['Toutes'];
+    final current = _countryFilterController.text.trim();
+    if (current.isNotEmpty &&
+        current != 'Toutes' &&
+        !options.contains(current)) {
+      options.add(current);
+    }
+    for (final raw in worldCountries) {
+      final country = raw.trim();
+      if (country.isEmpty || options.contains(country)) {
+        continue;
+      }
+      options.add(country);
+    }
+    return options;
   }
 
   Widget _buildCompactTextField({
@@ -2083,11 +2136,31 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       ),
       _buildResponsiveField(
         flex: 12,
-        child: _buildCompactTextField(
-          controller: _countryFilterController,
-          label: 'Pays',
-          hint: 'Pays de résidence',
-          height: _textFilterControlHeight,
+        child: Theme(
+          data: _compactControlsTheme(
+            Theme.of(context),
+            minHeight: _filterControlHeight,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            labelFontSize: 8.8,
+            floatingLabelFontSize: 8.8,
+            hintFontSize: 9.8,
+          ),
+          child: SizedBox(
+            height: _filterControlHeight,
+            child: _buildCompactDropdownField(
+              value: _countryFilterController.text.trim().isEmpty
+                  ? null
+                  : _countryFilterController.text.trim(),
+              label: 'Pays',
+              hint: 'Pays de résidence',
+              items: _countryFilterOptions,
+              onChanged: (value) => setState(() {
+                _countryFilterController.text =
+                    value == null || value == 'Toutes' ? '' : value;
+              }),
+            ),
+          ),
         ),
       ),
       _buildResponsiveField(
@@ -2349,28 +2422,30 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     final nextExposureId = await widget.api.fetchNextExposureId();
     final draft = ExposureDraft(
       id: nextExposureId,
-      counterpartyName: 'Nouvelle contrepartie',
-      country: 'Cote d\'Ivoire',
-      countryRating: 'Non noté',
-      categoryCode: 'e',
-      rating: _ratings.contains('BBB') ? 'BBB' : _ratings.first,
-      grossAmount: 1000000,
-      loanTotalAmount: 1000000,
-      onBalanceExposureAmount: 1000000,
-      currency: _displayCurrency,
+      counterpartyName: '',
+      country: '',
+      countryRating: '',
+      categoryCode: '',
+      rating: '',
+      grossAmount: 0,
+      loanTotalAmount: 0,
+      onBalanceExposureAmount: 0,
+      currency: '',
       status: 'Active',
       crmMode: 'Aucune',
-      crmType: 'Garantie etatique',
+      crmType: '',
       collateralValue: 0,
-      issuerType: financedCrmIssuerTypes.first,
-      issuerRating: _ratings.contains('AAA') ? 'AAA' : _ratings.first,
-      maturityBucket: financedCrmMaturityBuckets.first,
+      collateralCurrency: '',
+      collateralType: '',
+      issuerType: '',
+      issuerRating: '',
+      maturityBucket: '',
       fxHaircut: 0,
       guarantorName: '',
-      guarantorCategoryCode: 'a',
-      guarantorRating: _ratings.contains('AAA') ? 'AAA' : _ratings.first,
+      guarantorCategoryCode: '',
+      guarantorRating: '',
       guarantorCountry: '',
-      guarantorCountryRating: 'Non noté',
+      guarantorCountryRating: '',
       crmCoveragePercent: 0,
       comment: '',
       analysisDate: DateTime.now(),
@@ -2447,6 +2522,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                   child: Material(
                     elevation: 16,
                     child: ExposureFormCard(
+                      api: widget.api,
                       initialDraft: draft,
                       ratings: _ratings,
                       title: isCreateMode
