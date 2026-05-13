@@ -974,8 +974,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
 
     return DashboardPanel(
       title: "Repartition de l'exposition par catégorie",
-      subtitle:
-          "Lecture directe de l'exposition brute et du RWA par segment d'exposition.",
+      subtitle: '',
       child: SizedBox(
         height: 308,
         child: Row(
@@ -1216,7 +1215,7 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
 
     return DashboardPanel(
       title: 'Répartition totale par type de CRM',
-      subtitle: 'Attenuation du risque de crédit ( CRM )',
+      subtitle: '',
       child: SizedBox(
         height: 146,
         child: Column(
@@ -1526,7 +1525,7 @@ class _CountriesCardState extends State<_CountriesCard> {
 
     return DashboardPanel(
       title: "Top 5 de l'encours total par pays UEMOA",
-      subtitle: "Lecture directe de l'encours total par pays UEMOA.",
+      subtitle: '',
       child: SizedBox(
         height: 258,
         child: Column(
@@ -2213,10 +2212,10 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
               richMessage: TextSpan(
                 children: [
                   TextSpan(
-                    text: '${levels[index].headline} : ',
+                    text: '${levels[index].headline} :\n',
                     style: TextStyle(
                       color: levels[index].color,
-                      fontSize: 11,
+                      fontSize: 10.2,
                       fontWeight: FontWeight.w900,
                       height: 1.35,
                     ),
@@ -2227,18 +2226,18 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
                       color: widget.isDark
                           ? const Color(0xFFF8FBFF)
                           : const Color(0xFF173055),
-                      fontSize: 10.5,
+                      fontSize: 9.4,
                       fontWeight: FontWeight.w600,
                       height: 1.35,
                     ),
                   ),
                   TextSpan(
-                    text: '\n\n${context.tr('Astuce')} : ',
+                    text: '\n\n${context.tr('Astuce')} :\n',
                     style: TextStyle(
                       color: widget.isDark
                           ? const Color(0xFFB8C9E6)
                           : const Color(0xFF5E759A),
-                      fontSize: 10.4,
+                      fontSize: 9.4,
                       fontWeight: FontWeight.w800,
                       height: 1.35,
                     ),
@@ -2249,7 +2248,7 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
                       color: widget.isDark
                           ? const Color(0xFFF8FBFF)
                           : const Color(0xFF173055),
-                      fontSize: 10.4,
+                      fontSize: 9.4,
                       fontWeight: FontWeight.w600,
                       height: 1.35,
                     ),

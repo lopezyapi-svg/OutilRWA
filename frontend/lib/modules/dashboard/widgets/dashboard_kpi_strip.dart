@@ -346,7 +346,7 @@ class _KpiCardState extends State<_KpiCard> {
                 final titleFont =
                     math.max(9.4, math.min(10.6, cardHeight * 0.090));
                 final helperFont =
-                    math.max(7.8, math.min(8.6, cardHeight * 0.074));
+                    math.max(6.8, math.min(7.8, cardHeight * 0.062));
                 final valueGap = math.max(2.0, cardHeight * 0.035);
                 final accentGap = math.max(2.0, cardHeight * 0.025);
                 final unitPart = _unitPart;
