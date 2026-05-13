@@ -35,13 +35,9 @@ class DashboardKpiStrip extends StatefulWidget {
   const DashboardKpiStrip({
     super.key,
     required this.items,
-    this.trailingCard,
-    this.trailingCardWidth,
   });
 
   final List<DashboardKpiItem> items;
-  final Widget? trailingCard;
-  final double? trailingCardWidth;
 
   @override
   State<DashboardKpiStrip> createState() => _DashboardKpiStripState();
@@ -55,17 +51,16 @@ class _DashboardKpiStripState extends State<DashboardKpiStrip> {
     return LayoutBuilder(
       builder: (context, constraints) {
         const gap = 12.0;
-        final itemCount = math.max(
-          widget.items.length + (widget.trailingCard != null ? 1 : 0),
-          1,
-        );
+        final itemCount = math.max(widget.items.length, 1);
         final fluidWidth =
             (constraints.maxWidth - (gap * (itemCount - 1))) / itemCount;
-        final baseCardWidth = fluidWidth >= 101.0 ? (fluidWidth - 20) : 90.0;
-        final trailingCardWidth =
-            widget.trailingCardWidth ?? baseCardWidth + 95;
+        final baseCardWidth = fluidWidth >= 101.0 ? fluidWidth : 90.0;
+        bool usesRiskInterpretation(DashboardKpiItem item) {
+          return item.label == 'Densité RWA';
+        }
+
         double widthFor(DashboardKpiItem item) {
-          if (item.label == 'Densité RWA') {
+          if (usesRiskInterpretation(item)) {
             return baseCardWidth + 95;
           }
           return baseCardWidth;
@@ -73,16 +68,15 @@ class _DashboardKpiStripState extends State<DashboardKpiStrip> {
 
         final totalWidth =
             widget.items.fold<double>(0, (sum, item) => sum + widthFor(item)) +
-                (widget.trailingCard != null ? trailingCardWidth : 0) +
-                (gap * math.max(itemCount - 1, 0));
+                (gap * math.max(widget.items.length - 1, 0));
         final cards = Row(
           children: [
             for (var index = 0; index < widget.items.length; index++) ...[
               SizedBox(
                 width: widthFor(widget.items[index]),
-                height: widget.items[index].label == 'Densité RWA' ? 114 : 114,
-                child: widget.items[index].label == 'Densité RWA'
-                    ? DashboardDensityCard.fromItem(
+                height: 120,
+                child: usesRiskInterpretation(widget.items[index])
+                    ? _DensityMiniCard(
                         item: widget.items[index],
                         selected: _selectedIndex == index,
                         onTap: () => setState(() => _selectedIndex = index),
@@ -93,16 +87,8 @@ class _DashboardKpiStripState extends State<DashboardKpiStrip> {
                         onTap: () => setState(() => _selectedIndex = index),
                       ),
               ),
-              if (index != widget.items.length - 1 ||
-                  widget.trailingCard != null)
-                const SizedBox(width: gap),
+              if (index != widget.items.length - 1) const SizedBox(width: gap),
             ],
-            if (widget.trailingCard != null)
-              SizedBox(
-                width: trailingCardWidth,
-                height: 114,
-                child: widget.trailingCard,
-              ),
           ],
         );
 
@@ -250,7 +236,7 @@ class _KpiCardState extends State<_KpiCard> {
                       TextSpan(
                         text: '  $suffixPart',
                         style: TextStyle(
-                          color: mutedColor.withOpacity(0.76),
+                          color: mutedColor.withValues(alpha: 0.76),
                           fontSize: 9.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -265,7 +251,7 @@ class _KpiCardState extends State<_KpiCard> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: mutedColor.withOpacity(0.92),
+                    color: mutedColor.withValues(alpha: 0.92),
                     fontSize: 7.6,
                     fontWeight: FontWeight.w700,
                     height: 1,
@@ -308,9 +294,9 @@ class _KpiCardState extends State<_KpiCard> {
     final titleColor = isDark ? AppTheme.darkText : AppTheme.text;
     final mutedColor = isDark ? AppTheme.darkMuted : AppTheme.muted;
     final iconSurface =
-        isDark ? accent.withOpacity(0.10) : accent.withOpacity(0.06);
+        isDark ? accent.withValues(alpha: 0.10) : accent.withValues(alpha: 0.06);
     final iconTint =
-        isDark ? accent.withOpacity(0.78) : accent.withOpacity(0.58);
+        isDark ? accent.withValues(alpha: 0.78) : accent.withValues(alpha: 0.58);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -326,16 +312,16 @@ class _KpiCardState extends State<_KpiCard> {
             borderRadius: BorderRadius.circular(5),
             border: Border.all(
               color: (widget.selected || _hovered)
-                  ? accent.withOpacity(0.48)
-                  : borderColor.withOpacity(0.82),
+                  ? accent.withValues(alpha: 0.48)
+                  : borderColor.withValues(alpha: 0.82),
               width: (widget.selected || _hovered) ? 1.3 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withOpacity(_hovered ? 0.14 : 0.10)
-                    : const Color(0xFFB7C6DE).withOpacity(
-                        _hovered ? 0.16 : 0.10,
+                    ? Colors.black.withValues(alpha: _hovered ? 0.14 : 0.10)
+                    : const Color(0xFFB7C6DE).withValues(
+                        alpha: _hovered ? 0.16 : 0.10,
                       ),
                 blurRadius: _hovered ? 20 : 14,
                 offset: Offset(0, _hovered ? 8 : 6),
@@ -358,9 +344,9 @@ class _KpiCardState extends State<_KpiCard> {
                 final fcfaFont =
                     math.max(9.2, math.min(10.4, cardHeight * 0.090));
                 final titleFont =
-                    math.max(8.2, math.min(9.2, cardHeight * 0.078));
+                    math.max(9.4, math.min(10.6, cardHeight * 0.090));
                 final helperFont =
-                    math.max(7.0, math.min(7.6, cardHeight * 0.066));
+                    math.max(7.8, math.min(8.6, cardHeight * 0.074));
                 final valueGap = math.max(2.0, cardHeight * 0.035);
                 final accentGap = math.max(2.0, cardHeight * 0.025);
                 final unitPart = _unitPart;
@@ -406,7 +392,7 @@ class _KpiCardState extends State<_KpiCard> {
                       right: 14,
                       child: Icon(
                         Icons.drag_indicator_rounded,
-                        color: mutedColor.withOpacity(0.65),
+                        color: mutedColor.withValues(alpha: 0.65),
                         size: 14,
                       ),
                     ),
@@ -422,9 +408,9 @@ class _KpiCardState extends State<_KpiCard> {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                accent.withOpacity(0.00),
-                                accent.withOpacity(isDark ? 0.04 : 0.045),
-                                accent.withOpacity(isDark ? 0.08 : 0.09),
+                                accent.withValues(alpha: 0.00),
+                                accent.withValues(alpha: isDark ? 0.04 : 0.045),
+                                accent.withValues(alpha: isDark ? 0.08 : 0.09),
                               ],
                               stops: const [0.20, 0.58, 1.0],
                             ),
@@ -447,7 +433,7 @@ class _KpiCardState extends State<_KpiCard> {
                               shape: BoxShape.circle,
                               color: iconSurface,
                               border: Border.all(
-                                color: accent.withOpacity(isDark ? 0.16 : 0.10),
+                                color: accent.withValues(alpha: isDark ? 0.16 : 0.10),
                               ),
                             ),
                             child: Icon(
@@ -490,7 +476,7 @@ class _KpiCardState extends State<_KpiCard> {
                                         TextSpan(
                                           text: '  $suffixPart',
                                           style: TextStyle(
-                                            color: mutedColor.withOpacity(0.76),
+                                            color: mutedColor.withValues(alpha: 0.76),
                                             fontSize: fcfaFont,
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -508,7 +494,7 @@ class _KpiCardState extends State<_KpiCard> {
                                       child: Text(
                                         hoverFullValue,
                                         style: TextStyle(
-                                          color: mutedColor.withOpacity(0.92),
+                                          color: mutedColor.withValues(alpha: 0.92),
                                           fontSize: math.max(
                                             7.0,
                                             helperFont + 0.2,
@@ -563,7 +549,7 @@ class _KpiCardState extends State<_KpiCard> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color:
-                                  mutedColor.withOpacity(isDark ? 0.96 : 0.92),
+                                  mutedColor.withValues(alpha: isDark ? 0.96 : 0.92),
                               fontSize: helperFont,
                               fontWeight: FontWeight.w600,
                               height: 1.1,
@@ -583,57 +569,44 @@ class _KpiCardState extends State<_KpiCard> {
   }
 }
 
-class DashboardDensityCard extends StatefulWidget {
-  const DashboardDensityCard({
-    super.key,
-    required this.densityPercent,
-    required this.icon,
-    required this.gradient,
-    required this.helper,
-    this.valueHint,
-    this.selected = false,
-    this.onTap,
+class _DensityMiniCard extends StatefulWidget {
+  const _DensityMiniCard({
+    required this.item,
+    required this.selected,
+    required this.onTap,
   });
 
-  factory DashboardDensityCard.fromItem({
-    Key? key,
-    required DashboardKpiItem item,
-    bool selected = false,
-    VoidCallback? onTap,
-  }) {
-    final normalized = item.value.replaceAll('%', '').replaceAll(',', '.');
-    return DashboardDensityCard(
-      key: key,
-      densityPercent: double.tryParse(normalized) ?? 0.0,
-      icon: item.icon,
-      gradient: item.gradient,
-      helper: item.helper,
-      valueHint: item.valueHint,
-      selected: selected,
-      onTap: onTap,
-    );
-  }
-
-  final double densityPercent;
-  final IconData icon;
-  final List<Color> gradient;
-  final String helper;
-  final String? valueHint;
+  final DashboardKpiItem item;
   final bool selected;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
 
   @override
-  State<DashboardDensityCard> createState() => _DashboardDensityCardState();
+  State<_DensityMiniCard> createState() => _DensityMiniCardState();
 }
 
-class _DashboardDensityCardState extends State<DashboardDensityCard> {
+class _DensityMiniCardState extends State<_DensityMiniCard> {
   bool _hovered = false;
 
-  double get _densityPercent => widget.densityPercent;
+  double get _densityPercent {
+    final normalized =
+        widget.item.value.replaceAll('%', '').replaceAll(',', '.');
+    return double.tryParse(normalized) ?? 0.0;
+  }
 
-  Color get _accent => widget.gradient.first;
+  Color get _accent => widget.item.gradient.first;
 
   _DensityMiniLevel get _activeLevel {
+    final hint = (widget.item.valueHint ?? '').toLowerCase();
+    if (hint.contains('élev') || hint.contains('elev')) {
+      return _DensityMiniLevel.high;
+    }
+    if (hint.contains('moyen')) {
+      return _DensityMiniLevel.medium;
+    }
+    if (hint.contains('faible')) {
+      return _DensityMiniLevel.low;
+    }
+
     final value = _densityPercent;
     if (value >= 70) {
       return _DensityMiniLevel.high;
@@ -716,16 +689,16 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
             borderRadius: BorderRadius.circular(5),
             border: Border.all(
               color: (widget.selected || _hovered)
-                  ? _accent.withOpacity(0.48)
-                  : borderColor.withOpacity(0.82),
+                  ? _accent.withValues(alpha: 0.48)
+                  : borderColor.withValues(alpha: 0.82),
               width: (widget.selected || _hovered) ? 1.3 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: isDark
-                    ? Colors.black.withOpacity(_hovered ? 0.14 : 0.10)
-                    : const Color(0xFFB7C6DE).withOpacity(
-                        _hovered ? 0.16 : 0.10,
+                    ? Colors.black.withValues(alpha: _hovered ? 0.14 : 0.10)
+                    : const Color(0xFFB7C6DE).withValues(
+                        alpha: _hovered ? 0.16 : 0.10,
                       ),
                 blurRadius: _hovered ? 20 : 14,
                 offset: Offset(0, _hovered ? 8 : 6),
@@ -772,7 +745,7 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                   right: 12,
                   child: Icon(
                     Icons.drag_indicator_rounded,
-                    color: mutedColor.withOpacity(0.65),
+                    color: mutedColor.withValues(alpha: 0.65),
                     size: 15,
                   ),
                 ),
@@ -788,9 +761,9 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            _accent.withOpacity(0.00),
-                            _accent.withOpacity(isDark ? 0.035 : 0.04),
-                            _accent.withOpacity(isDark ? 0.075 : 0.08),
+                            _accent.withValues(alpha: 0.00),
+                            _accent.withValues(alpha: isDark ? 0.035 : 0.04),
+                            _accent.withValues(alpha: isDark ? 0.075 : 0.08),
                           ],
                           stops: const [0.20, 0.58, 1.0],
                         ),
@@ -808,9 +781,9 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                         math.max(18.0, math.min(22.0, cardHeight * 0.20));
                     final iconSize = math.max(10.0, iconDisk * 0.46);
                     final titleFont =
-                        math.max(9.4, math.min(9.9, cardHeight * 0.086));
+                        math.max(7.8, math.min(8.2, cardHeight * 0.072));
                     final helperFont =
-                        math.max(6.2, math.min(6.6, cardHeight * 0.058));
+                        math.max(5.4, math.min(5.8, cardHeight * 0.050));
                     final valueFont =
                         math.max(17.0, math.min(18.5, cardHeight * 0.155));
                     final chipFont =
@@ -822,9 +795,9 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                     final levelHelperFont =
                         math.max(5.0, math.min(5.3, cardHeight * 0.046));
                     final gaugeWidth =
-                        math.max(78.0, math.min(92.0, cardHeight * 0.78));
+                        math.max(70.0, math.min(82.0, cardHeight * 0.70));
                     final gaugeHeight =
-                        math.max(32.0, math.min(38.0, cardHeight * 0.33));
+                        math.max(29.0, math.min(34.0, cardHeight * 0.29));
 
                     return Padding(
                       padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
@@ -843,19 +816,19 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                                       height: iconDisk,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: _accent.withOpacity(
-                                          isDark ? 0.09 : 0.05,
+                                        color: _accent.withValues(
+                                          alpha: isDark ? 0.09 : 0.05,
                                         ),
                                         border: Border.all(
-                                          color: _accent.withOpacity(
-                                            isDark ? 0.16 : 0.10,
+                                          color: _accent.withValues(
+                                            alpha: isDark ? 0.16 : 0.10,
                                           ),
                                         ),
                                       ),
                                       child: Icon(
-                                        widget.icon,
-                                        color: _accent.withOpacity(
-                                          isDark ? 0.78 : 0.58,
+                                        widget.item.icon,
+                                        color: _accent.withValues(
+                                          alpha: isDark ? 0.78 : 0.58,
                                         ),
                                         size: iconSize,
                                       ),
@@ -867,7 +840,7 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            context.tr('Densité RWA'),
+                                            widget.item.label.tr(context),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
@@ -879,12 +852,12 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                                           ),
                                           const SizedBox(height: 1),
                                           Text(
-                                            widget.helper.tr(context),
+                                            widget.item.helper.tr(context),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
-                                              color: mutedColor.withOpacity(
-                                                isDark ? 0.94 : 0.88,
+                                              color: mutedColor.withValues(
+                                                alpha: isDark ? 0.94 : 0.88,
                                               ),
                                               fontSize: helperFont,
                                               fontWeight: FontWeight.w600,
@@ -897,17 +870,14 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 10),
-                                  child: Text(
-                                    '${_densityPercent.toStringAsFixed(1)}%',
-                                    style: TextStyle(
-                                      color: titleColor,
-                                      fontSize: valueFont,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.7,
-                                      height: 0.92,
-                                    ),
+                                Text(
+                                  '${_densityPercent.toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    color: titleColor,
+                                    fontSize: valueFont,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.7,
+                                    height: 0.92,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -942,7 +912,7 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                                         ),
                                         const SizedBox(height: 3),
                                         Text(
-                                          (widget.valueHint ??
+                                          (widget.item.valueHint ??
                                                   'Risque moyen (densité)')
                                               .tr(context),
                                           maxLines: 1,
@@ -968,341 +938,326 @@ class _DashboardDensityCardState extends State<DashboardDensityCard> {
                             flex: 4,
                             child: Align(
                               alignment: Alignment.topLeft,
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 16),
-                                child: SizedBox(
-                                  width: 98,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        context.tr('Interprétation'),
-                                        style: TextStyle(
-                                          color: titleColor,
-                                          fontSize: sectionTitleFont,
-                                          fontWeight: FontWeight.w800,
-                                          height: 1.03,
-                                        ),
+                              child: SizedBox(
+                                width: 98,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.tr('Interprétation'),
+                                      style: TextStyle(
+                                        color: titleColor,
+                                        fontSize: sectionTitleFont,
+                                        fontWeight: FontWeight.w800,
+                                        height: 1.03,
                                       ),
-                                      const SizedBox(height: 4),
-                                      for (var index = 0;
-                                          index < levels.length;
-                                          index++) ...[
-                                        Tooltip(
-                                          richMessage: TextSpan(
-                                            children: [
-                                              TextSpan(
-                                                text:
-                                                    '${levels[index].headline} : ',
-                                                style: TextStyle(
-                                                  color: levels[index].color,
-                                                  fontSize: 8.2,
-                                                  fontWeight: FontWeight.w800,
-                                                  height: 1.35,
-                                                ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    for (var index = 0;
+                                        index < levels.length;
+                                        index++) ...[
+                                      Tooltip(
+                                        richMessage: TextSpan(
+                                          children: [
+                                            TextSpan(
+                                              text:
+                                                  '${levels[index].headline} : ',
+                                              style: TextStyle(
+                                                color: levels[index].color,
+                                                fontSize: 8.2,
+                                                fontWeight: FontWeight.w800,
+                                                height: 1.35,
                                               ),
-                                              TextSpan(
-                                                text: levels[index].detail,
-                                                style: TextStyle(
-                                                  color: isDark
-                                                      ? const Color(0xFFF8FBFF)
-                                                      : const Color(0xFF173055),
-                                                  fontSize: 8.1,
-                                                  fontWeight: FontWeight.w600,
-                                                  height: 1.35,
-                                                ),
+                                            ),
+                                            TextSpan(
+                                              text: levels[index].detail,
+                                              style: TextStyle(
+                                                color: isDark
+                                                    ? const Color(0xFFF8FBFF)
+                                                    : const Color(0xFF173055),
+                                                fontSize: 8.1,
+                                                fontWeight: FontWeight.w600,
+                                                height: 1.35,
                                               ),
-                                              TextSpan(
-                                                text: '\n\n',
-                                                style: TextStyle(
-                                                  color: isDark
-                                                      ? const Color(0xFFB8C9E6)
-                                                      : const Color(0xFF5E759A),
-                                                  fontSize: 8.5,
-                                                  fontWeight: FontWeight.w700,
-                                                  height: 1.4,
-                                                ),
+                                            ),
+                                            TextSpan(
+                                              text: '\n\n',
+                                              style: TextStyle(
+                                                color: isDark
+                                                    ? const Color(0xFFB8C9E6)
+                                                    : const Color(0xFF5E759A),
+                                                fontSize: 8.5,
+                                                fontWeight: FontWeight.w700,
+                                                height: 1.4,
                                               ),
-                                              WidgetSpan(
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                    bottom: 6,
+                                            ),
+                                            WidgetSpan(
+                                              child: Padding(
+                                                padding: const EdgeInsets.only(
+                                                  bottom: 6,
+                                                ),
+                                                child: Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 5,
                                                   ),
-                                                  child: Container(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                      horizontal: 8,
-                                                      vertical: 5,
+                                                  decoration: BoxDecoration(
+                                                    color: activeLevelData.color
+                                                        .withValues(
+                                                      alpha: isDark ? 0.12 : 0.06,
                                                     ),
-                                                    decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    border: Border.all(
                                                       color: activeLevelData
                                                           .color
-                                                          .withOpacity(
-                                                        isDark ? 0.12 : 0.06,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              8),
-                                                      border: Border.all(
-                                                        color: activeLevelData
-                                                            .color
-                                                            .withOpacity(
-                                                          isDark ? 0.52 : 0.40,
-                                                        ),
+                                                          .withValues(
+                                                        alpha: isDark ? 0.52 : 0.40,
                                                       ),
                                                     ),
-                                                    child: RichText(
-                                                      text: TextSpan(
-                                                        children: [
-                                                          TextSpan(
-                                                            text:
-                                                                '${context.tr('Actuel')} : ',
-                                                            style: TextStyle(
-                                                              color: isDark
-                                                                  ? const Color(
-                                                                      0xFFB8C9E6,
-                                                                    )
-                                                                  : const Color(
-                                                                      0xFF5E759A,
-                                                                    ),
-                                                              fontSize: 8.0,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w700,
-                                                              height: 1.2,
-                                                            ),
+                                                  ),
+                                                  child: RichText(
+                                                    text: TextSpan(
+                                                      children: [
+                                                        TextSpan(
+                                                          text:
+                                                              '${context.tr('Actuel')} : ',
+                                                          style: TextStyle(
+                                                            color: isDark
+                                                                ? const Color(
+                                                                    0xFFB8C9E6,
+                                                                  )
+                                                                : const Color(
+                                                                    0xFF5E759A,
+                                                                  ),
+                                                            fontSize: 8.0,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            height: 1.2,
                                                           ),
-                                                          TextSpan(
-                                                            text:
-                                                                '${_densityPercent.toStringAsFixed(1)}% ',
-                                                            style: TextStyle(
-                                                              color: isDark
-                                                                  ? const Color(
-                                                                      0xFFF8FBFF,
-                                                                    )
-                                                                  : const Color(
-                                                                      0xFF173055,
-                                                                    ),
-                                                              fontSize: 8.1,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w800,
-                                                              height: 1.2,
-                                                            ),
+                                                        ),
+                                                        TextSpan(
+                                                          text:
+                                                              '${_densityPercent.toStringAsFixed(1)}% ',
+                                                          style: TextStyle(
+                                                            color: isDark
+                                                                ? const Color(
+                                                                    0xFFF8FBFF,
+                                                                  )
+                                                                : const Color(
+                                                                    0xFF173055,
+                                                                  ),
+                                                            fontSize: 8.1,
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                            height: 1.2,
                                                           ),
-                                                          TextSpan(
-                                                            text:
-                                                                '• ${activeLevelData.headline}',
-                                                            style: TextStyle(
-                                                              color:
-                                                                  activeLevelData
-                                                                      .color,
-                                                              fontSize: 8.1,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w800,
-                                                              height: 1.2,
-                                                            ),
-                                                          ),
-                                                          TextSpan(
-                                                            text:
-                                                                '\n${context.tr('Astuce')} : ',
-                                                            style: TextStyle(
-                                                              color: isDark
-                                                                  ? const Color(
-                                                                      0xFFB8C9E6,
-                                                                    )
-                                                                  : const Color(
-                                                                      0xFF5E759A,
-                                                                    ),
-                                                              fontSize: 8.0,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w700,
-                                                              height: 1.4,
-                                                            ),
-                                                          ),
-                                                          TextSpan(
-                                                            text:
+                                                        ),
+                                                        TextSpan(
+                                                          text:
+                                                              '• ${activeLevelData.headline}',
+                                                          style: TextStyle(
+                                                            color:
                                                                 activeLevelData
-                                                                    .advice,
-                                                            style: TextStyle(
-                                                              color: isDark
-                                                                  ? const Color(
-                                                                      0xFFF8FBFF,
-                                                                    )
-                                                                  : const Color(
-                                                                      0xFF173055,
-                                                                    ),
-                                                              fontSize: 8.0,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              height: 1.4,
-                                                            ),
+                                                                    .color,
+                                                            fontSize: 8.1,
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                            height: 1.2,
                                                           ),
-                                                        ],
-                                                      ),
+                                                        ),
+                                                        TextSpan(
+                                                          text:
+                                                              '\n${context.tr('Astuce')} : ',
+                                                          style: TextStyle(
+                                                            color: isDark
+                                                                ? const Color(
+                                                                    0xFFB8C9E6,
+                                                                  )
+                                                                : const Color(
+                                                                    0xFF5E759A,
+                                                                  ),
+                                                            fontSize: 8.0,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            height: 1.4,
+                                                          ),
+                                                        ),
+                                                        TextSpan(
+                                                          text: activeLevelData
+                                                              .advice,
+                                                          style: TextStyle(
+                                                            color: isDark
+                                                                ? const Color(
+                                                                    0xFFF8FBFF,
+                                                                  )
+                                                                : const Color(
+                                                                    0xFF173055,
+                                                                  ),
+                                                            fontSize: 8.0,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            height: 1.4,
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
                                                 ),
                                               ),
-                                            ],
+                                            ),
+                                          ],
+                                        ),
+                                        waitDuration: const Duration(
+                                          milliseconds: 120,
+                                        ),
+                                        showDuration:
+                                            const Duration(seconds: 4),
+                                        preferBelow: false,
+                                        verticalOffset: 10,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 8,
+                                        ),
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                        ),
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 240,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? const Color(0xFF122038)
+                                              : Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          border: Border.all(
+                                            color:
+                                                levels[index].color.withValues(
+                                                      alpha: isDark ? 0.28 : 0.22,
+                                                    ),
                                           ),
-                                          waitDuration: const Duration(
-                                            milliseconds: 120,
-                                          ),
-                                          showDuration:
-                                              const Duration(seconds: 4),
-                                          preferBelow: false,
-                                          verticalOffset: 10,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: isDark ? 0.22 : 0.10,
+                                              ),
+                                              blurRadius: 16,
+                                              offset: const Offset(0, 6),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 8,
-                                          ),
-                                          margin: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                          ),
-                                          constraints: const BoxConstraints(
-                                            maxWidth: 240,
+                                            horizontal: 6,
+                                            vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: isDark
-                                                ? const Color(0xFF122038)
-                                                : Colors.white,
+                                            color: levels[index].level ==
+                                                    activeLevel
+                                                ? levels[index].color
+                                                : levels[index]
+                                                    .color
+                                                    .withValues(
+                                                      alpha: isDark ? 0.10 : 0.05,
+                                                    ),
                                             borderRadius:
-                                                BorderRadius.circular(10),
+                                                BorderRadius.circular(7),
                                             border: Border.all(
-                                              color: levels[index]
-                                                  .color
-                                                  .withOpacity(
-                                                    isDark ? 0.28 : 0.22,
-                                                  ),
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(
-                                                  isDark ? 0.22 : 0.10,
-                                                ),
-                                                blurRadius: 16,
-                                                offset: const Offset(0, 6),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
                                               color: levels[index].level ==
                                                       activeLevel
                                                   ? levels[index].color
                                                   : levels[index]
                                                       .color
-                                                      .withOpacity(
-                                                        isDark ? 0.10 : 0.05,
-                                                      ),
-                                              borderRadius:
-                                                  BorderRadius.circular(7),
-                                              border: Border.all(
-                                                color: levels[index].level ==
-                                                        activeLevel
-                                                    ? levels[index].color
-                                                    : levels[index]
-                                                        .color
-                                                        .withOpacity(0.16),
-                                              ),
+                                                      .withValues(alpha: 0.16),
                                             ),
-                                            child: Row(
-                                              children: [
-                                                Container(
-                                                  width: 6,
-                                                  height: 6,
-                                                  decoration: BoxDecoration(
-                                                    color: levels[index]
-                                                                .level ==
-                                                            activeLevel
-                                                        ? Colors.white
-                                                        : levels[index].color,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Icon(
-                                                  levels[index].icon,
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 6,
+                                                height: 6,
+                                                decoration: BoxDecoration(
                                                   color: levels[index].level ==
                                                           activeLevel
                                                       ? Colors.white
                                                       : levels[index].color,
-                                                  size: 11,
+                                                  shape: BoxShape.circle,
                                                 ),
-                                                const SizedBox(width: 5),
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      Text(
-                                                        levels[index].label,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        style: TextStyle(
-                                                          color: levels[index]
-                                                                      .level ==
-                                                                  activeLevel
-                                                              ? Colors.white
-                                                              : levels[index]
-                                                                  .color,
-                                                          fontSize:
-                                                              levelLabelFont,
-                                                          fontWeight:
-                                                              FontWeight.w800,
-                                                          height: 1,
-                                                        ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Icon(
+                                                levels[index].icon,
+                                                color: levels[index].level ==
+                                                        activeLevel
+                                                    ? Colors.white
+                                                    : levels[index].color,
+                                                size: 11,
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      levels[index].label,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        color: levels[index]
+                                                                    .level ==
+                                                                activeLevel
+                                                            ? Colors.white
+                                                            : levels[index]
+                                                                .color,
+                                                        fontSize:
+                                                            levelLabelFont,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        height: 1,
                                                       ),
-                                                      const SizedBox(height: 1),
-                                                      Text(
-                                                        levels[index].helper,
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        style: TextStyle(
-                                                          color: levels[index]
-                                                                      .level ==
-                                                                  activeLevel
-                                                              ? Colors.white
-                                                                  .withOpacity(
-                                                                      0.86)
-                                                              : mutedColor
-                                                                  .withOpacity(
-                                                                  isDark
-                                                                      ? 0.94
-                                                                      : 0.88,
-                                                                ),
-                                                          fontSize:
-                                                              levelHelperFont,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          height: 1,
-                                                        ),
+                                                    ),
+                                                    const SizedBox(height: 1),
+                                                    Text(
+                                                      levels[index].helper,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        color: levels[index]
+                                                                    .level ==
+                                                                activeLevel
+                                                            ? Colors.white
+                                                                .withValues(
+                                                                    alpha: 0.86)
+                                                            : mutedColor
+                                                                .withValues(
+                                                                alpha: isDark
+                                                                    ? 0.94
+                                                                    : 0.88,
+                                                              ),
+                                                        fontSize:
+                                                            levelHelperFont,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        height: 1,
                                                       ),
-                                                    ],
-                                                  ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
-                                            ),
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                        if (index != levels.length - 1)
-                                          const SizedBox(height: 3),
-                                      ],
+                                      ),
+                                      if (index != levels.length - 1)
+                                        const SizedBox(height: 3),
                                     ],
-                                  ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -1415,12 +1370,12 @@ class _KpiAmbientMotionPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final t = progress * math.pi * 2;
-    final gridColor = accent.withOpacity(isDark ? 0.028 : 0.018);
-    final wickColor = accent.withOpacity(isDark ? 0.08 : 0.055);
-    final barColor = accent.withOpacity(isDark ? 0.065 : 0.045);
-    final lineColor = accent.withOpacity(isDark ? 0.10 : 0.07);
-    final markerGlow = accent.withOpacity(isDark ? 0.05 : 0.03);
-    final markerColor = accent.withOpacity(isDark ? 0.24 : 0.16);
+    final gridColor = accent.withValues(alpha: isDark ? 0.028 : 0.018);
+    final wickColor = accent.withValues(alpha: isDark ? 0.08 : 0.055);
+    final barColor = accent.withValues(alpha: isDark ? 0.065 : 0.045);
+    final lineColor = accent.withValues(alpha: isDark ? 0.10 : 0.07);
+    final markerGlow = accent.withValues(alpha: isDark ? 0.05 : 0.03);
+    final markerColor = accent.withValues(alpha: isDark ? 0.24 : 0.16);
     final chartRect = Rect.fromLTWH(
       0,
       compact ? size.height * 0.12 : size.height * 0.14,

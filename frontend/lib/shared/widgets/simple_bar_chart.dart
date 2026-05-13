@@ -39,13 +39,13 @@ class SimpleBarChart extends StatelessWidget {
                 const SizedBox(height: 10),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 400),
-                  height: 160.0 * (entry.percentage.clamp(0.08, 1.0) as double),
+                  height: 160.0 * (entry.percentage.clamp(0.08, 1.0)),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppTheme.radius),
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [color, color.withOpacity(0.65)],
+                      colors: [color, color.withValues(alpha: 0.65)],
                     ),
                   ),
                 ),

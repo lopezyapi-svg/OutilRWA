@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date
+import unicodedata
 
 from app.core.calculations import convert_currency_amount, safe_ratio
 from app.dashboard.models import (
@@ -128,6 +129,40 @@ def _normalize_row(row: ExposureView) -> dict[str, object]:
     }
 
 
+def _text_key(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    return normalized.encode("ascii", "ignore").decode("ascii").lower()
+
+
+def _country_key(value: str) -> str:
+    return _text_key(value).replace("'", " ").replace("-", " ").strip()
+
+
+def _canonical_country_label(value: str) -> str:
+    aliases = {
+        "cote d ivoire": "Côte d'Ivoire",
+        "senegal": "Sénégal",
+        "benin": "Bénin",
+        "guinee bissau": "Guinée-Bissau",
+        "guinee equatoriale": "Guinée équatoriale",
+    }
+    normalized = " ".join(_country_key(value).split())
+    return aliases.get(normalized, value.strip())
+
+
+def _is_defaulted_exposure(row: ExposureView, category: str) -> bool:
+    status_key = _text_key(row.status)
+    category_key = _text_key(category)
+    raw_category_key = _text_key(row.counterparty.category)
+    return (
+        "defaut" in status_key
+        or "defaut" in category_key
+        or "souffrance" in category_key
+        or "defaut" in raw_category_key
+        or "souffrance" in raw_category_key
+    )
+
+
 def _build_country_distribution(buckets: dict[str, float]) -> list[DistributionEntry]:
     total = sum(buckets.values())
     entries = sorted(
@@ -187,12 +222,19 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     rwa_total = sum(float(row["rwa"]) for row in exposure_rows)
     capital_total = sum(float(row["capital"]) for row in exposure_rows)
     risk_ratio = safe_ratio(rwa_total, gross_total if gross_total > 0 else ead_total)
+    default_gross_total = sum(
+        float(row["gross_amount"])
+        for row in exposure_rows
+        if _is_defaulted_exposure(row["row"], str(row["category"]))
+    )
+    default_rate = safe_ratio(default_gross_total, gross_total)
     solvency_ratio = safe_ratio(capital_total * 1.35, rwa_total)
     crm_gross = sum(
         float(row["gross_amount"]) * row["row"].crm_coverage_percent
         for row in exposure_rows
         if row["crm_mode"] != "Aucune"
     )
+    residual_risk = max(gross_total - crm_gross, 0.0)
     covered_ratio = safe_ratio(crm_gross, gross_total)
 
     portfolio_rows = [
@@ -223,7 +265,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         crm_mode = str(item["crm_mode"])
         category_buckets[category] += float(item["gross_amount"])
         rwa_category_buckets[category] += float(item["rwa"])
-        country_buckets[row.counterparty.country] += float(item["rwa"])
+        country_buckets[_canonical_country_label(row.counterparty.country)] += float(item["rwa"])
         crm_buckets[crm_mode] += float(item["gross_amount"])
         rating_buckets[rating] += float(item["gross_amount"])
 
@@ -236,9 +278,11 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     projection_base = rwa_total
     metrics = [
         _build_metric("encours", "Exposition totale brute", gross_total),
+        _build_metric("risque_residuel", "Risque residuel", residual_risk),
         _build_metric("rwa", "RWA", rwa_total),
         _build_metric("capital", "Capital", capital_total),
         _build_metric("taux_risque", "Taux de risque", risk_ratio),
+        _build_metric("taux_defaut", "Taux de defaut", default_rate),
         _build_metric("solvabilite", "Solvabilite", solvency_ratio),
         _build_metric("crm", "Couverture CRM", covered_ratio),
     ]

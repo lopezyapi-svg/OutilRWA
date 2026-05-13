@@ -100,23 +100,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         // On récupère les métriques attendues par les cartes du bandeau supérieur.
         final grossMetric = _metric(metrics, 'encours');
+        final residualRiskMetric = _metric(metrics, 'risque_residuel');
         final rwaMetric = _metric(metrics, 'rwa');
         final capitalMetric = _metric(metrics, 'capital');
-        final riskMetric = _metric(metrics, 'taux_risque');
+        final defaultRateMetric = _metric(metrics, 'taux_defaut');
         final solvencyMetric = _metric(metrics, 'solvabilite');
         final crmMetric = _metric(metrics, 'crm');
         final densityRwa = _densityRwaPercent(
           rwaMetric.value,
           grossMetric.value,
-        );
-        final densityKpi = DashboardKpiItem(
-          label: 'Densité RWA',
-          value: '${densityRwa.toStringAsFixed(1)}%',
-          delta: '',
-          icon: Icons.query_stats_rounded,
-          gradient: _densityRwaGradient(densityRwa),
-          helper: 'RWA total / Exposition totale brute',
-          valueHint: _densityRwaHint(densityRwa),
         );
 
         final kpis = [
@@ -166,12 +158,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
             helper: 'Exigence a 8%',
           ),
           DashboardKpiItem(
+            label: 'Risque residuel',
+            value: _dashboardKpiCurrencyValue(
+              residualRiskMetric.value,
+              displayCurrency,
+            ),
+            fullValue: formatCurrencyForDisplay(
+              residualRiskMetric.value,
+              toCurrency: displayCurrency,
+            ),
+            delta: residualRiskMetric.variation,
+            icon: Icons.security_outlined,
+            gradient: const [Color(0xFFF59E0B), Color(0xFFD97706)],
+            helper: 'Exposition brute - Garanties',
+          ),
+          DashboardKpiItem(
             label: 'Ratio de solvabilite',
             value: dashboardCompactPercent(solvencyMetric.value),
             delta: solvencyMetric.variation,
             icon: Icons.analytics_outlined,
             gradient: const [Color(0xFF22B8CF), Color(0xFF0F9FB8)],
             helper: 'Fonds propres / RWA',
+          ),
+          DashboardKpiItem(
+            label: 'Taux de défaut',
+            value: dashboardCompactPercent(defaultRateMetric.value),
+            delta: '',
+            icon: Icons.report_problem_outlined,
+            gradient: _defaultRateGradient(defaultRateMetric.value),
+            helper: 'Encours de défaut / Exposition brute',
+            valueHint: _defaultRateHint(defaultRateMetric.value),
           ),
         ];
 
@@ -206,13 +222,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 8),
               // Le bandeau KPI résume immédiatement les agrégats clés du portefeuille.
-              DashboardKpiStrip(
-                items: kpis,
-                trailingCard: DashboardCreditGaugeCard(
-                  averageRiskWeight: riskMetric.value,
-                  compact: true,
-                ),
-              ),
+              DashboardKpiStrip(items: kpis),
               const SizedBox(height: 8),
               // La zone centrale combine les vues de structure, concentration et mitigation.
               DashboardChartsSection(
@@ -225,8 +235,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 maturityView: _maturityView,
                 onMaturityViewChanged: (view) =>
                     setState(() => _maturityView = view),
+                densityRwa: densityRwa,
                 coveredRatio: crmMetric.value,
-                densityItem: densityKpi,
               ),
             ],
           ),
@@ -279,6 +289,28 @@ String _densityRwaHint(double densityPercent) {
     return 'Risque moyen (densité)';
   }
   return 'Risque faible (densité)';
+}
+
+List<Color> _defaultRateGradient(double defaultRate) {
+  final defaultPercent = defaultRate * 100;
+  if (defaultPercent >= 10) {
+    return const [Color(0xFFFF6B6B), Color(0xFFFF4766)];
+  }
+  if (defaultPercent >= 5) {
+    return const [Color(0xFFFFAA2A), Color(0xFFFF7A21)];
+  }
+  return const [Color(0xFF39C97A), Color(0xFF22A863)];
+}
+
+String _defaultRateHint(double defaultRate) {
+  final defaultPercent = defaultRate * 100;
+  if (defaultPercent >= 10) {
+    return 'Risque élevé';
+  }
+  if (defaultPercent >= 5) {
+    return 'Risque moyen';
+  }
+  return 'Risque faible';
 }
 
 List<DistributionEntry> _completeCrmDistribution(

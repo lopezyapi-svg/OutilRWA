@@ -102,7 +102,7 @@ class _ReportFilterCardState extends State<ReportFilterCard> {
     return SizedBox(
       width: 200,
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(labelText: label),
         items: values.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
         onChanged: (newValue) {

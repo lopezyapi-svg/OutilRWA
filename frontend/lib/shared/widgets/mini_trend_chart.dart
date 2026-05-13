@@ -45,7 +45,7 @@ class _MiniTrendPainter extends CustomPainter {
     final span = (maxValue - minValue).abs() < 0.0001 ? 1.0 : maxValue - minValue;
 
     final fillPaint = Paint()
-      ..color = color.withOpacity(0.08)
+      ..color = color.withValues(alpha: 0.08)
       ..style = PaintingStyle.fill;
     final linePaint = Paint()
       ..color = color
