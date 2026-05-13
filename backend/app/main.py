@@ -1,6 +1,7 @@
 """Point d'entree principal de l'API FastAPI."""
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +18,24 @@ from database.services.exposure_sync_service import exposure_sync_service
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title=settings.app_name, version=settings.app_version)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Gère le démarrage et l'arrêt de l'application."""
+    # Startup
+    database_manager.initialize()
+    try:
+        exposure_sync_service.backfill_reference_fields_from_excel()
+    except Exception:
+        logger.exception(
+            "Le backfill des dates/reference Expositions depuis Excel a échoué."
+        )
+    yield
+    # Shutdown
+    logger.info("Application en cours d'arrêt...")
+
+
+app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,19 +50,6 @@ app.include_router(hors_bilan_router)
 app.include_router(crm_router)
 app.include_router(referentiels_router)
 app.include_router(rapports_router)
-
-
-@app.on_event("startup")
-def initialize_local_storage() -> None:
-    """Initialise SQLite au démarrage."""
-
-    database_manager.initialize()
-    try:
-        exposure_sync_service.backfill_reference_fields_from_excel()
-    except Exception:
-        logger.exception(
-            "Le backfill des dates/reference Expositions depuis Excel a échoué."
-        )
 
 
 @app.get("/")
