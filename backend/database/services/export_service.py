@@ -7,14 +7,15 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 
 from app.core.excel_repository import excel_repository
+from app.core.runtime_paths import exports_dir
 from database.repositories.exposure_repository import exposure_repository
 from database.repositories.off_balance_repository import off_balance_repository
 
 
-EXPORTS_DIR = Path(__file__).resolve().parents[2] / "data" / "exports"
+EXPORTS_DIR = exports_dir()
 
 
 class ExportService:
@@ -29,14 +30,9 @@ class ExportService:
         """Construit un classeur Excel complet basé sur le vrai modèle RWA."""
 
         source_path = excel_repository.source_path
-        if not source_path.exists():
-            raise FileNotFoundError(
-                f"Modèle Excel introuvable: {source_path}"
-            )
-
         exposures = exposure_repository.list_exposures()
         off_balance_rows = off_balance_repository.list_commitments()
-        workbook = load_workbook(source_path)
+        workbook = self._load_export_workbook(source_path)
         try:
             self._fill_template_sheet(workbook[self._TEMPLATE_SHEET], exposures)
             self._fill_crm_financed_sheet(
@@ -69,6 +65,96 @@ class ExportService:
         )
         export_path.write_bytes(self.export_excel_workbook_bytes())
         return export_path
+
+    def _load_export_workbook(self, source_path: Path):
+        if source_path.exists():
+            return load_workbook(source_path)
+        return self._build_fallback_workbook()
+
+    def _build_fallback_workbook(self):
+        workbook = Workbook()
+        template_sheet = workbook.active
+        template_sheet.title = self._TEMPLATE_SHEET
+        template_sheet.append(
+            [
+                "Date d'analyse",
+                "ID_Exposition",
+                "Date d'octroi",
+                "Date d'échéance",
+                "Maturité de l'exposition",
+                "Maturité résiduelle",
+                "Contrepartie",
+                "Notation_externe_contrepartie",
+                "Pays_contrepartie",
+                "Notation_externe_pays",
+                "Pondération_pays",
+                "Catégorie d'exposition",
+                "Pondération (RW)",
+                "PRÊT TOTAL",
+                "Montant_exposition_but_au_bilan",
+                "Montant d'exposition au HB",
+                "Devise",
+                "CRM_existe",
+                "Type_CRM",
+                "EAD_bilan",
+                "EAD_HB",
+                "EAD_HB_ccf",
+                "EAD_Total",
+                "RWA_EB",
+                "RWA_HB",
+                "RWA_crédit",
+                "Capital_min_reg",
+            ]
+        )
+        workbook.create_sheet(self._CRM_FINANCED_SHEET).append(
+            [
+                "ID_Exposition",
+                "Valeur_Collatéral",
+                "Type_emetteur",
+                "Notation",
+                "Bloc",
+                "Maturite",
+                "HE",
+                "HC",
+                "Hfx",
+                "Eva_EB",
+                "Eva_HB",
+                "Cva",
+            ]
+        )
+        workbook.create_sheet(self._CRM_NON_FINANCED_SHEET).append(
+            [
+                "ID_Exposition",
+                "Nom du garant",
+                "Note_garant",
+                "Pays_garant",
+                "Notation_externe_pays_garant",
+                "Pondération_pays_garant",
+                "Catégorie du garant",
+                "Pondération du garant",
+                "% Exp_couverte",
+                "% Exp_non_couverte",
+                "Part couverte",
+                "Part non couverte",
+                "RWA_crédit",
+            ]
+        )
+        workbook.create_sheet(self._OFF_BALANCE_SHEET).append(
+            [
+                "ID_Exposition",
+                "Catégorie Hors bilan",
+                "Facteur_conversion (CCF)",
+                "EAD_HB_ccf",
+            ]
+        )
+        for sheet_name in (
+            self._TEMPLATE_SHEET,
+            self._CRM_FINANCED_SHEET,
+            self._CRM_NON_FINANCED_SHEET,
+            self._OFF_BALANCE_SHEET,
+        ):
+            workbook[sheet_name].freeze_panes = "A2"
+        return workbook
 
     def _clear_sheet_values(self, sheet, *, max_columns: int) -> None:
         """Efface les valeurs d'une feuille en conservant sa structure."""

@@ -13,6 +13,13 @@ import unicodedata
 
 from openpyxl import Workbook, load_workbook
 
+from app.core.runtime_paths import (
+    app_data_root,
+    default_excel_source_path,
+    ensure_seed_data_file,
+    exports_dir,
+)
+
 
 def _resolve_excel_source_path() -> Path:
     desktop_candidates = (
@@ -28,13 +35,13 @@ def _resolve_excel_source_path() -> Path:
         )
     if workbook_candidates:
         return max(workbook_candidates, key=lambda path: path.stat().st_mtime)
-    return Path(r"C:\Users\hp\OneDrive\Desktop\BASE_CALCUL_RWA_v2_pers-21-04-2026.xlsx")
+    return default_excel_source_path()
 
 
 EXCEL_SOURCE_PATH = _resolve_excel_source_path()
-APP_DATA_PATH = Path(__file__).resolve().parents[2] / "data"
-EXPOSURE_METADATA_PATH = APP_DATA_PATH / "exposure_metadata.json"
-EXPOSURE_EXPORTS_PATH = APP_DATA_PATH / "exports"
+APP_DATA_PATH = app_data_root()
+EXPOSURE_METADATA_PATH = ensure_seed_data_file("exposure_metadata.json")
+EXPOSURE_EXPORTS_PATH = exports_dir()
 EXPECTED_SHEETS = (
     "Template données",
     "LISTE",

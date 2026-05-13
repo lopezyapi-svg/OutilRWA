@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../utils/currency_conversion.dart';
+
 class PortfolioCurrencyScope extends InheritedNotifier<ValueNotifier<String>> {
   const PortfolioCurrencyScope({
     super.key,
@@ -16,12 +18,12 @@ class PortfolioCurrencyScope extends InheritedNotifier<ValueNotifier<String>> {
   }
 
   static String of(BuildContext context) {
-    return listenableOf(context).value;
+    return normalizeCurrencyCode(listenableOf(context).value);
   }
 
   static String maybeOf(BuildContext context, {String fallback = 'XOF'}) {
     final scope =
         context.dependOnInheritedWidgetOfExactType<PortfolioCurrencyScope>();
-    return scope?.notifier?.value ?? fallback;
+    return normalizeCurrencyCode(scope?.notifier?.value ?? fallback);
   }
 }

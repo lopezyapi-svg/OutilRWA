@@ -127,7 +127,6 @@ const Map<String, String> _englishTranslations = {
   'Passer en mode sombre': 'Switch to dark mode',
   "Devise d'affichage du portefeuille": 'Portfolio display currency',
   'XOF - FCFA BCEAO': 'XOF - BCEAO CFA franc',
-  'XAF - FCFA BEAC': 'XAF - BEAC CFA franc',
   'EUR - Euro': 'EUR - Euro',
   'USD - Dollar americain': 'USD - US dollar',
   'Langue': 'Language',
@@ -241,7 +240,8 @@ const Map<String, String> _englishTranslations = {
   'Ratio de solvabilite': 'Solvency ratio',
   'Densité RWA': 'RWA density',
   'Taux de défaut': 'Default rate',
-  'Encours de défaut / Exposition brute': 'Defaulted outstanding / Gross exposure',
+  'Encours de défaut / Exposition brute':
+      'Defaulted outstanding / Gross exposure',
   'Densité RWA du portefeuille': 'Portfolio RWA density',
   'RWA total / Exposition totale brute': 'Total RWA / Gross exposure',
   'RWA / Exposition brute': 'RWA / Gross exposure',
@@ -363,7 +363,7 @@ const Map<String, String> _englishTranslations = {
   'Zone': 'Zone',
   'Hors zone': 'Outside zone',
   'Type CRM': 'CRM type',
-  'Exposition ajoutee.': 'Exposure added.',
+  'Exposition ajoutee avec succes.': 'Exposure added successfully.',
   'Exposition mise a jour.': 'Exposure updated.',
   'Modifier l exposition': 'Edit exposure',
   'Ajouter': 'Add',
@@ -661,8 +661,8 @@ const Map<String, String> _englishTranslations = {
   'opérations assimilables à des pensions, repo ou prêts de titres ; cessions d’actifs avec recours, affacturage ou escompte ; engagements d’achat d’actifs à terme ; dépôts à terme contre terme ; fraction non versée d’actions ou titres partiellement libérés ; autres éléments hors bilan non classés.':
       'transactions similar to repos or securities lending; asset sales with recourse, factoring or discounting; forward asset purchase commitments; back-to-back term deposits; unpaid portion of shares or partially paid securities; other unclassified off-balance-sheet items.',
   'FCEC et hors bilan': 'CCF and off-balance sheet',
-  'Définition : Les éléments de hors bilan recouvrent les garanties, les engagements, les instruments dérivés et d’autres accords contractuels non comptabilisés au bilan.\n\nApproche standard : Dans l’approche standard, chaque élément de hors bilan est converti en équivalent risque de crédit (ERC) au moyen d’un facteur de conversion en équivalent crédit (FCEC) qui sert à établir une projection de l’exposition potentielle au risque.\n\nCalcul de l’ERC : Le montant ERC d’une transaction de hors bilan est calculé en multipliant le montant correspondant à la portion non utilisée par le FCEC y relatif.\n\nCalcul des APR : Pour obtenir les APR de crédit sur les engagements de hors bilan, le montant ERC ainsi défini est ensuite multiplié par la pondération du risque qui dépend du type de contrepartie et de sa notation.\n\nCatégories de FCEC : Les FCEC applicables aux éléments de hors bilan sont répartis en cinq (5) catégories définies par ordre croissant selon le niveau de risque potentiel de la transaction.':
-      'Definition: Off-balance-sheet items include guarantees, commitments, derivative instruments and other contractual arrangements not recognized on the balance sheet.\n\nStandardized approach: Under the standardized approach, each off-balance-sheet item is converted into a credit risk equivalent amount (CRE) using a credit conversion factor (CCF) to estimate the potential exposure to risk.\n\nCRE calculation: The CRE amount of an off-balance-sheet transaction is calculated by multiplying the amount corresponding to the unused portion by the related CCF.\n\nRWA calculation: To obtain credit RWA on off-balance-sheet commitments, the resulting CRE amount is then multiplied by the risk weight, which depends on the counterparty type and its rating.\n\nCCF categories: The CCFs applicable to off-balance-sheet items are divided into five (5) categories, defined in ascending order according to the potential risk level of the transaction.',
+  'Définition : [[BREAK]]Les éléments de hors bilan recouvrent les garanties, les engagements, les instruments dérivés et d’autres accords contractuels non comptabilisés au bilan.\n\nApproche standard : [[BREAK]]Dans l’approche standard, chaque élément de hors bilan est converti en équivalent risque de crédit (ERC) au moyen d’un facteur de conversion en équivalent crédit (FCEC) qui sert à établir une projection de l’exposition potentielle au risque.\n\nCalcul de l’ERC : [[BREAK]]Le montant ERC d’une transaction de hors bilan est calculé en multipliant le montant correspondant à la portion non utilisée par le FCEC y relatif.\n\nCalcul des APR : [[BREAK]]Pour obtenir les APR de crédit sur les engagements de hors bilan, le montant ERC ainsi défini est ensuite multiplié par la pondération du risque qui dépend du type de contrepartie et de sa notation.\n\nCatégories de FCEC : [[BREAK]]Les FCEC applicables aux éléments de hors bilan sont répartis en cinq (5) catégories définies par ordre croissant selon le niveau de risque potentiel de la transaction.':
+      'Definition: [[BREAK]]Off-balance-sheet items include guarantees, commitments, derivative instruments and other contractual arrangements not recognized on the balance sheet.\n\nStandardized approach: [[BREAK]]Under the standardized approach, each off-balance-sheet item is converted into a credit risk equivalent amount (CRE) using a credit conversion factor (CCF) to estimate the potential exposure to risk.\n\nCRE calculation: [[BREAK]]The CRE amount of an off-balance-sheet transaction is calculated by multiplying the amount corresponding to the unused portion by the related CCF.\n\nRWA calculation: [[BREAK]]To obtain credit RWA on off-balance-sheet commitments, the resulting CRE amount is then multiplied by the risk weight, which depends on the counterparty type and its rating.\n\nCCF categories: [[BREAK]]The CCFs applicable to off-balance-sheet items are divided into five (5) categories, defined in ascending order according to the potential risk level of the transaction.',
   'Ponderation appliquee': 'Applied risk weight',
 };
 

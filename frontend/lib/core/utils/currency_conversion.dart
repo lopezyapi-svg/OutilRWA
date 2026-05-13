@@ -2,18 +2,25 @@ import 'formatters.dart';
 
 const Map<String, double> _currencyRatesInXof = {
   'XOF': 1.0,
-  'XAF': 1.0,
   'EUR': 655.957,
   'USD': 600.0,
 };
+
+String normalizeCurrencyCode(String currencyCode) {
+  final normalized = currencyCode.trim().toUpperCase();
+  if (normalized == 'XAF' || normalized == 'FCFA') {
+    return 'XOF';
+  }
+  return normalized;
+}
 
 double convertCurrencyAmount(
   double amount, {
   required String fromCurrency,
   required String toCurrency,
 }) {
-  final normalizedFrom = fromCurrency.toUpperCase();
-  final normalizedTo = toCurrency.toUpperCase();
+  final normalizedFrom = normalizeCurrencyCode(fromCurrency);
+  final normalizedTo = normalizeCurrencyCode(toCurrency);
   final fromRate = _currencyRatesInXof[normalizedFrom] ?? 1.0;
   final toRate = _currencyRatesInXof[normalizedTo] ?? 1.0;
   final amountInXof = amount * fromRate;
@@ -21,9 +28,8 @@ double convertCurrencyAmount(
 }
 
 String displayCurrencyLabel(String currencyCode) {
-  switch (currencyCode.toUpperCase()) {
+  switch (normalizeCurrencyCode(currencyCode)) {
     case 'XOF':
-    case 'XAF':
       return 'FCFA';
     case 'EUR':
       return 'EUR';

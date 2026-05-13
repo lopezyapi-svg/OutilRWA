@@ -1,4 +1,6 @@
 // Ce fichier porte la racine de l'application et la navigation principale.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -36,6 +38,7 @@ class _RwaAppState extends State<RwaApp> {
   );
   AppModule _selectedModule = AppModule.dashboard;
   ThemeMode _themeMode = ThemeMode.light;
+  final PageStorageBucket _pageStorageBucket = PageStorageBucket();
   final Map<AppModule, Widget> _screenCache = {};
   final Set<AppModule> _visitedModules = {AppModule.dashboard};
 
@@ -44,6 +47,9 @@ class _RwaAppState extends State<RwaApp> {
     super.initState();
     AppLocalizations.setCurrentLanguage(_appLanguage.value);
     _appLanguage.addListener(_handleLanguageChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_preloadPrimaryModules());
+    });
   }
 
   @override
@@ -111,27 +117,33 @@ class _RwaAppState extends State<RwaApp> {
     });
   }
 
+  Future<void> _preloadPrimaryModules() async {
+    _warmFuture(_api.fetchReferentiels());
+    _warmFuture(_api.fetchExpositionsModule());
+    _warmFuture(_api.fetchReports());
+    _warmFuture(_api.fetchGlobalSearchCatalog());
+  }
+
+  void _warmFuture<T>(Future<T> future) {
+    future.then<void>((_) {}, onError: (_) {
+      // Le préchargement reste opportuniste et ne doit jamais bloquer l'UI.
+    });
+  }
+
   Widget _screenFor(AppModule module) {
     return _screenCache.putIfAbsent(module, () {
-      switch (module) {
-        case AppModule.dashboard:
-          return DashboardScreen(api: _api);
-        case AppModule.expositions:
-          return ExpositionsScreen(
+      return switch (module) {
+        AppModule.dashboard => DashboardScreen(api: _api),
+        AppModule.expositions => ExpositionsScreen(
             api: _api,
             displayCurrencyListenable: _portfolioDisplayCurrency,
-          );
-        case AppModule.risqueMarche:
-          return RisqueMarcheScreen(api: _api);
-        case AppModule.risqueOperationnel:
-          return RisqueOperationnelScreen(api: _api);
-        case AppModule.analyse:
-          return AnalyseScreen(api: _api);
-        case AppModule.referentiels:
-          return ReferentielsScreen(api: _api);
-        case AppModule.rapports:
-          return RapportsScreen(api: _api);
-      }
+          ),
+        AppModule.risqueMarche => RisqueMarcheScreen(api: _api),
+        AppModule.risqueOperationnel => RisqueOperationnelScreen(api: _api),
+        AppModule.analyse => AnalyseScreen(api: _api),
+        AppModule.referentiels => ReferentielsScreen(api: _api),
+        AppModule.rapports => RapportsScreen(api: _api),
+      };
     });
   }
 
@@ -139,12 +151,19 @@ class _RwaAppState extends State<RwaApp> {
     final visibleModules = AppModule.values
         .where((module) => _visitedModules.contains(module))
         .toList(growable: false);
-    return IndexedStack(
-      index: visibleModules.indexOf(_selectedModule),
-      children: [
-        for (final module in visibleModules)
-          KeyedSubtree(key: ValueKey(module), child: _screenFor(module)),
-      ],
+
+    return PageStorage(
+      bucket: _pageStorageBucket,
+      child: IndexedStack(
+        index: visibleModules.indexOf(_selectedModule),
+        children: [
+          for (final module in visibleModules)
+            KeyedSubtree(
+              key: PageStorageKey<String>(module.name),
+              child: _screenFor(module),
+            ),
+        ],
+      ),
     );
   }
 }

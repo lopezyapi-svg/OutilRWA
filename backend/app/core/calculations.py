@@ -8,11 +8,17 @@ from app.core.config import settings
 
 
 _CURRENCY_RATES_IN_XAF = {
-    "XAF": 1.0,
     "XOF": 1.0,
     "EUR": 655.957,
     "USD": 600.0,
 }
+
+
+def _normalize_currency_code(currency: str) -> str:
+    normalized = (currency or "XOF").strip().upper()
+    if normalized in {"XAF", "FCFA"}:
+        return "XOF"
+    return normalized or "XOF"
 
 
 def bucketize_rating(rating: str) -> str:
@@ -107,8 +113,8 @@ def convert_currency_amount(
 ) -> float:
     """Convertit un montant entre devises avec le barème partagé frontend/backend."""
 
-    normalized_from = (from_currency or "XOF").upper()
-    normalized_to = (to_currency or "XOF").upper()
+    normalized_from = _normalize_currency_code(from_currency)
+    normalized_to = _normalize_currency_code(to_currency)
     from_rate = _CURRENCY_RATES_IN_XAF.get(normalized_from, 1.0)
     to_rate = _CURRENCY_RATES_IN_XAF.get(normalized_to, 1.0)
     return (amount * from_rate) / to_rate

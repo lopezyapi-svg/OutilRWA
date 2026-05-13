@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from app.core.calculations import calculate_capital
+from app.core.calculations import calculate_capital, convert_currency_amount
 from app.expositions.models import (
     Counterparty,
     ExposureCreate,
@@ -833,14 +833,27 @@ def _evaluate_single_financed_collateral(
         eligible = False
         reason = "Cette sûreté n est pas éligible à la réduction réglementaire."
 
+    collateral_value_in_exposure_currency = max(
+        0.0,
+        convert_currency_amount(
+            collateral_value,
+            from_currency=collateral_currency,
+            to_currency=exposure_currency,
+        ),
+    )
     hfx = lookup_financed_crm_hfx(exposure_currency, collateral_currency)
     cva = (
-        max(collateral_value * max(0.0, 1.0 - hc - hfx), 0.0) if eligible else 0.0
+        max(
+            collateral_value_in_exposure_currency * max(0.0, 1.0 - hc - hfx),
+            0.0,
+        )
+        if eligible
+        else 0.0
     )
     return {
         "eligible": eligible,
         "reason": reason,
-        "value": collateral_value,
+        "value": collateral_value_in_exposure_currency,
         "hc": hc,
         "hfx": hfx,
         "cva": cva,
@@ -897,10 +910,10 @@ def compute_financed_crm_details(
                     row.get("opcvm_highest_haircut", 0.30) or 0.30
                 ),
             )
-            total_value += item_value
+            total_value += float(outcome["value"])
             total_cva += float(outcome["cva"])
-            weighted_hc += item_value * float(outcome["hc"])
-            weighted_hfx += item_value * float(outcome["hfx"])
+            weighted_hc += float(outcome["value"]) * float(outcome["hc"])
+            weighted_hfx += float(outcome["value"]) * float(outcome["hfx"])
             if not outcome["eligible"] and outcome["reason"]:
                 ineligible_reasons.append(str(outcome["reason"]))
         denominator = total_value if total_value > 0 else 1.0

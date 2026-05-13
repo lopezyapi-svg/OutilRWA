@@ -11,13 +11,18 @@ import sqlite3
 from threading import Lock
 from typing import Iterator
 
+from app.core.runtime_paths import (
+    app_data_root,
+    backups_dir,
+    ensure_seed_data_file,
+    resource_path,
+)
 
-BASE_DIR = Path(__file__).resolve().parents[1]
-DATA_DIR = BASE_DIR / "data"
-BACKUP_DIR = DATA_DIR / "backups"
-DATABASE_PATH = DATA_DIR / "rwa_data.db"
-SCHEMA_PATH = Path(__file__).resolve().parent / "schema.sql"
-MIGRATIONS_DIR = Path(__file__).resolve().parent / "migrations"
+DATA_DIR = app_data_root()
+BACKUP_DIR = backups_dir()
+DATABASE_PATH = ensure_seed_data_file("rwa_data.db")
+SCHEMA_PATH = resource_path("database", "schema.sql")
+MIGRATIONS_DIR = resource_path("database", "migrations")
 
 
 def utcnow_iso() -> str:

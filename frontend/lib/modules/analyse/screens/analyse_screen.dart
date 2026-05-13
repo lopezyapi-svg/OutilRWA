@@ -23,7 +23,8 @@ class AnalyseScreen extends StatelessWidget {
         children: [
           const PageHeader(
             title: 'Analyse',
-            subtitle: 'Recommendations à partir des expositions et des risques.',
+            subtitle:
+                'Recommendations à partir des expositions et des risques.',
           ),
           const SizedBox(height: AppTheme.spacing),
           _AdviceCard(
@@ -36,7 +37,7 @@ class AnalyseScreen extends StatelessWidget {
           _AdviceCard(
             title: 'Actions recommandées',
             content:
-                'Priorisez les dispositifs de couverture et de mitigation. ' 
+                'Priorisez les dispositifs de couverture et de mitigation. '
                 'Renforcez la surveillance des expositions sensibles et formalisez les plans de correction.',
           ),
         ],

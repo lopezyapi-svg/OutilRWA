@@ -27,42 +27,9 @@ class SidebarNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      _MenuEntry(
-        AppModule.dashboard,
-        Icons.space_dashboard_rounded,
-        'Tableau de bord',
-      ),
-      _MenuEntry(
-        AppModule.expositions,
-        Icons.table_chart_rounded,
-        'Expositions',
-      ),
-      _MenuEntry(
-        AppModule.risqueMarche,
-        Icons.show_chart_rounded,
-        'Risque de marché',
-      ),
-      _MenuEntry(
-        AppModule.risqueOperationnel,
-        Icons.shield_outlined,
-        'Risque opérationnel',
-      ),
-      _MenuEntry(
-        AppModule.analyse,
-        Icons.analytics_outlined,
-        'Analyse',
-      ),
-      _MenuEntry(
-        AppModule.referentiels,
-        Icons.menu_book_rounded,
-        'Referentiels',
-      ),
-    ];
-
     if (compact) {
       return _CompactSidebar(
-        items: items,
+        items: _sidebarItems,
         selectedModule: selectedModule,
         onSelectModule: onSelectModule,
         contentTopInset: contentTopInset,
@@ -70,7 +37,7 @@ class SidebarNavigation extends StatelessWidget {
     }
 
     return _ExpandedSidebar(
-      items: items,
+      items: _sidebarItems,
       selectedModule: selectedModule,
       onSelectModule: onSelectModule,
       showBrand: showBrand,
@@ -87,6 +54,39 @@ class _MenuEntry {
   final IconData icon;
   final String label;
 }
+
+const List<_MenuEntry> _sidebarItems = [
+  _MenuEntry(
+    AppModule.dashboard,
+    Icons.space_dashboard_rounded,
+    'Tableau de bord',
+  ),
+  _MenuEntry(
+    AppModule.expositions,
+    Icons.table_chart_rounded,
+    'Expositions',
+  ),
+  _MenuEntry(
+    AppModule.risqueMarche,
+    Icons.show_chart_rounded,
+    'Risque de marché',
+  ),
+  _MenuEntry(
+    AppModule.risqueOperationnel,
+    Icons.shield_outlined,
+    'Risque opérationnel',
+  ),
+  _MenuEntry(
+    AppModule.analyse,
+    Icons.analytics_outlined,
+    'Analyse',
+  ),
+  _MenuEntry(
+    AppModule.referentiels,
+    Icons.menu_book_rounded,
+    'Referentiels',
+  ),
+];
 
 /// Variante compacte de la sidebar affichant surtout les icônes.
 class _CompactSidebar extends StatelessWidget {
@@ -120,8 +120,8 @@ class _CompactSidebar extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isDark ? const Color(0x33040A16) : const Color(0x120F172A),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -130,18 +130,19 @@ class _CompactSidebar extends StatelessWidget {
           const SizedBox(height: 2),
           if (contentTopInset > 0) SizedBox(height: contentTopInset),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: items
-                    .map(
-                      (entry) => _CompactNavButton(
-                        entry: entry,
-                        selected: selectedModule == entry.module,
-                        onTap: () => onSelectModule(entry.module),
-                      ),
-                    )
-                    .toList(),
-              ),
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              physics: const ClampingScrollPhysics(),
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final entry = items[index];
+                return _CompactNavButton(
+                  entry: entry,
+                  selected: selectedModule == entry.module,
+                  onTap: () => onSelectModule(entry.module),
+                );
+              },
             ),
           ),
           const SizedBox(height: 6),
@@ -199,69 +200,62 @@ class _CompactNavButton extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final iconColor = isDark ? const Color(0xFFB8C8E8) : _sidebarDeepBlue;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Tooltip(
-        message: entry.module.title.tr(context),
-        waitDuration: const Duration(milliseconds: 220),
-        showDuration: const Duration(seconds: 2),
-        preferBelow: false,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0F172A), Color(0xFF6C5CFD)],
+    return Tooltip(
+      message: entry.module.title.tr(context),
+      waitDuration: const Duration(milliseconds: 180),
+      showDuration: const Duration(seconds: 2),
+      preferBelow: false,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF6C5CFD)],
+        ),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x220F172A),
+            blurRadius: 14,
+            offset: Offset(0, 4),
           ),
+        ],
+      ),
+      textStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 10,
+        fontWeight: FontWeight.w700,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(AppTheme.radius),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x220F172A),
-              blurRadius: 16,
-              offset: Offset(0, 5),
-            ),
-          ],
-        ),
-        textStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(AppTheme.radius),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: selected
+                  ? (isDark ? const Color(0xFF162742) : const Color(0xFFF1F5FF))
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppTheme.radius),
+              border: Border.all(
                 color: selected
                     ? (isDark
-                          ? const Color(0xFF162742)
-                          : const Color(0xFFF1F5FF))
+                        ? const Color(0xFF34537F)
+                        : const Color(0xFFD7E2FF))
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(AppTheme.radius),
-                border: Border.all(
-                  color: selected
-                      ? (isDark
-                            ? const Color(0xFF34537F)
-                            : const Color(0xFFD7E2FF))
-                      : Colors.transparent,
-                ),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: isDark
-                              ? const Color(0x22040A16)
-                              : const Color(0x142F55D4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
               ),
-              child: Icon(entry.icon, size: 16, color: iconColor),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: isDark
+                            ? const Color(0x22040A16)
+                            : const Color(0x142F55D4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ]
+                  : null,
             ),
+            child: Icon(entry.icon, size: 16, color: iconColor),
           ),
         ),
       ),
@@ -306,11 +300,10 @@ class _ExpandedSidebar extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: isDark
-                    ? const Color(0x33040A16)
-                    : const Color(0x120F172A),
-                blurRadius: 22,
-                offset: const Offset(0, 10),
+                color:
+                    isDark ? const Color(0x33040A16) : const Color(0x120F172A),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -327,27 +320,28 @@ class _ExpandedSidebar extends StatelessWidget {
                 const SizedBox(height: 10),
               ],
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: items
-                        .map(
-                          (entry) => _ExpandedNavTile(
-                            entry: entry,
-                            selected: selectedModule == entry.module,
-                            onTap: () => onSelectModule(entry.module),
-                          ),
-                        )
-                        .toList(),
-                  ),
+                child: ListView.separated(
+                  padding: EdgeInsets.zero,
+                  physics: const ClampingScrollPhysics(),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  itemBuilder: (context, index) {
+                    final entry = items[index];
+                    return _ExpandedNavTile(
+                      entry: entry,
+                      selected: selectedModule == entry.module,
+                      showLabel: !isCondensed,
+                      onTap: () => onSelectModule(entry.module),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 6),
               Divider(
                 height: 1,
                 thickness: 1,
-                color: isDark
-                    ? const Color(0xFF22304B)
-                    : const Color(0xFFE5ECFA),
+                color:
+                    isDark ? const Color(0xFF22304B) : const Color(0xFFE5ECFA),
               ),
               const SizedBox(height: 10),
               if (isCondensed) ...[
@@ -500,11 +494,13 @@ class _ExpandedNavTile extends StatelessWidget {
   const _ExpandedNavTile({
     required this.entry,
     required this.selected,
+    required this.showLabel,
     required this.onTap,
   });
 
   final _MenuEntry entry;
   final bool selected;
+  final bool showLabel;
   final VoidCallback onTap;
 
   @override
@@ -522,7 +518,7 @@ class _ExpandedNavTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(tileRadius),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 120),
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
           decoration: BoxDecoration(
@@ -537,52 +533,41 @@ class _ExpandedNavTile extends StatelessWidget {
               width: 0.6,
             ),
           ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final showLabel = constraints.maxWidth >= 120;
-
-              if (!showLabel) {
-                return Center(
-                  child: Icon(entry.icon, size: 17, color: iconColor),
-                );
-              }
-
-              return Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? (isDark
+          child: !showLabel
+              ? Center(child: Icon(entry.icon, size: 17, color: iconColor))
+              : Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? (isDark
                                 ? const Color(0xFF1C3154)
                                 : const Color(0xFFDDEBFF))
-                          : (isDark
+                            : (isDark
                                 ? const Color(0xFF14233D)
                                 : const Color(0xFFF7FAFF)),
-                      borderRadius: BorderRadius.circular(AppTheme.radius),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
+                      ),
+                      child: Icon(entry.icon, size: 15, color: iconColor),
                     ),
-                    child: Icon(entry.icon, size: 15, color: iconColor),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      entry.label.tr(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 11,
-                        fontWeight: selected
-                            ? FontWeight.w800
-                            : FontWeight.w700,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        entry.label.tr(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 11,
+                          fontWeight:
+                              selected ? FontWeight.w800 : FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
+                  ],
+                ),
         ),
       ),
     );
