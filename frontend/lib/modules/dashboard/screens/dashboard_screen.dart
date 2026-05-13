@@ -128,21 +128,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             helper: 'Exposition brute',
           ),
           DashboardKpiItem(
-            label: 'Risque residuel',
-            value: _dashboardKpiCurrencyValue(
-              residualRiskMetric.value,
-              displayCurrency,
-            ),
-            fullValue: formatCurrencyForDisplay(
-              residualRiskMetric.value,
-              toCurrency: displayCurrency,
-            ),
-            delta: residualRiskMetric.variation,
-            icon: Icons.security_outlined,
-            gradient: const [Color(0xFFF59E0B), Color(0xFFD97706)],
-            helper: 'Exposition brute - Garanties',
-          ),
-          DashboardKpiItem(
             label: 'RWA total',
             value: _dashboardKpiCurrencyValue(
               rwaMetric.value,
@@ -171,6 +156,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icons.account_balance_outlined,
             gradient: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
             helper: 'Exigence a 8%',
+          ),
+          DashboardKpiItem(
+            label: 'Risque residuel',
+            value: _dashboardKpiCurrencyValue(
+              residualRiskMetric.value,
+              displayCurrency,
+            ),
+            fullValue: formatCurrencyForDisplay(
+              residualRiskMetric.value,
+              toCurrency: displayCurrency,
+            ),
+            delta: residualRiskMetric.variation,
+            icon: Icons.security_outlined,
+            gradient: const [Color(0xFFF59E0B), Color(0xFFD97706)],
+            helper: 'Exposition brute - Garanties',
           ),
           DashboardKpiItem(
             label: 'Ratio de solvabilite',
