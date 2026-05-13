@@ -1878,6 +1878,16 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                     fontWeight: FontWeight.w900,
                   ),
                 ),
+                const SizedBox(height: 3),
+                Text(
+                  'RWA total / Exposition totale brute',
+                  style: TextStyle(
+                    color: dashboardSubtitleColor(isDark),
+                    fontSize: 7.5,
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Expanded(
                   child: Row(
@@ -2206,7 +2216,7 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
               height: 1,
             ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 3),
           for (var index = 0; index < levels.length; index++) ...[
             Tooltip(
               richMessage: TextSpan(
@@ -2300,7 +2310,7 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
                 ),
               ),
             ),
-            if (index != levels.length - 1) const SizedBox(height: 4),
+            if (index != levels.length - 1) const SizedBox(height: 2),
           ],
         ],
       ),
@@ -2339,7 +2349,7 @@ class _DensityRiskTile extends StatelessWidget {
       child: AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-      height: 31,
+      height: 25,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: active ? color : color.withValues(alpha: isDark ? 0.10 : 0.05),
