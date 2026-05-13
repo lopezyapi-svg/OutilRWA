@@ -1223,30 +1223,6 @@ class RwaApiService {
         searchIndex: 'capital minimum solvabilite coussin prudentiel',
       ),
       const GlobalSearchEntry(
-        id: 'off-balance-ead',
-        title: 'EAD hors bilan',
-        subtitle: 'Encours convertis apres application des CCF',
-        section: 'Hors Bilan',
-        module: AppModule.horsBilan,
-        searchIndex: 'hors bilan ead ccf engagement conversion',
-      ),
-      const GlobalSearchEntry(
-        id: 'off-balance-capital',
-        title: 'Capital hors bilan',
-        subtitle: 'Besoin en fonds propres sur les engagements',
-        section: 'Hors Bilan',
-        module: AppModule.horsBilan,
-        searchIndex: 'hors bilan capital engagement rwa ccf',
-      ),
-      const GlobalSearchEntry(
-        id: 'crm-reduction',
-        title: 'Reduction RWA CRM',
-        subtitle: 'Impact des garanties sur les actifs ponderes',
-        section: 'CRM',
-        module: AppModule.crm,
-        searchIndex: 'crm garantie reduction rwa mitigation couverture',
-      ),
-      const GlobalSearchEntry(
         id: 'reports-history',
         title: 'Rapports recents',
         subtitle: 'Historique des generations et exports',
@@ -1279,35 +1255,6 @@ class RwaApiService {
               '${item['id']} ${counterparty['name']} ${counterparty['category']} ${counterparty['country']} ${counterparty['rating']} ${item['comment']} ${item['crm_type']}',
         );
       }),
-    );
-
-    entries.addAll(
-      _offBalance.map(
-        (item) => GlobalSearchEntry(
-          id: 'off-balance-${item['id']}',
-          title: item['counterparty_name'] as String,
-          subtitle: '${item['id']} • ${item['engagement_type']}',
-          section: 'Hors Bilan',
-          module: AppModule.horsBilan,
-          searchIndex:
-              '${item['id']} ${item['counterparty_name']} ${item['engagement_type']} ${item['category']} ${item['rating']} ${item['comment']}',
-        ),
-      ),
-    );
-
-    // Les scénarios CRM enrichissent aussi la recherche transversale.
-    entries.addAll(
-      _crmItems.map(
-        (item) => GlobalSearchEntry(
-          id: 'crm-${item['id']}',
-          title: item['borrower_name'] as String,
-          subtitle: '${item['id']} • Garant ${item['guarantor_name']}',
-          section: 'CRM',
-          module: AppModule.crm,
-          searchIndex:
-              '${item['id']} ${item['borrower_name']} ${item['guarantor_name']} ${item['guarantee_type']} ${item['borrower_category']} ${item['guarantor_category']}',
-        ),
-      ),
     );
 
     // Les référentiels RW, CCF et notations complètent le catalogue.
@@ -1378,10 +1325,12 @@ class RwaApiService {
         return 'encours rwa capital ratio couverture crm';
       case AppModule.expositions:
         return 'expositions portefeuille contreparties import edition';
-      case AppModule.horsBilan:
-        return 'hors bilan engagements ccf ead rwa';
-      case AppModule.crm:
-        return 'crm garanties mitigations analyse risques';
+      case AppModule.risqueMarche:
+        return 'risque marche taux changes prix volatilite';
+      case AppModule.risqueOperationnel:
+        return 'risque operationnel incidents controles processus';
+      case AppModule.analyse:
+        return 'analyse recommandations conseils strategie';
       case AppModule.referentiels:
         return 'referentiels rw ccf notations tables';
       case AppModule.rapports:

@@ -3,8 +3,9 @@
 enum AppModule {
   dashboard,
   expositions,
-  horsBilan,
-  crm,
+  risqueMarche,
+  risqueOperationnel,
+  analyse,
   referentiels,
   rapports,
 }
@@ -17,10 +18,12 @@ extension AppModuleLabel on AppModule {
         return 'Dashboard';
       case AppModule.expositions:
         return 'Expositions';
-      case AppModule.horsBilan:
-        return 'Hors Bilan';
-      case AppModule.crm:
-        return 'CRM';
+      case AppModule.risqueMarche:
+        return 'Risque de marché';
+      case AppModule.risqueOperationnel:
+        return 'Risque opérationnel';
+      case AppModule.analyse:
+        return 'Analyse';
       case AppModule.referentiels:
         return 'Référentiels';
       case AppModule.rapports:
@@ -34,10 +37,12 @@ extension AppModuleLabel on AppModule {
         return 'Pilotage global des encours, RWA, capital et couverture CRM.';
       case AppModule.expositions:
         return 'Saisie, import, edition et suivi detaille des expositions du portefeuille.';
-      case AppModule.horsBilan:
-        return 'Gestion des engagements hors bilan avec application des CCF et calcul des RWA.';
-      case AppModule.crm:
-        return 'Analyse des garanties, mitigations et impacts sur les RWA.';
+      case AppModule.risqueMarche:
+        return 'Evaluation des tensions de marché et des risques associés au portefeuille.';
+      case AppModule.risqueOperationnel:
+        return 'Cartographie des risques operationnels et des controles internes.';
+      case AppModule.analyse:
+        return 'Conseils et recommandations basés sur les expositions et les risques.';
       case AppModule.referentiels:
         return 'Référentiels, tables RW, CCF et notations de calcul.';
       case AppModule.rapports:

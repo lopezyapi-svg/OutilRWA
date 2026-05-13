@@ -317,9 +317,11 @@ IconData _iconForModule(AppModule module) {
       return Icons.grid_view_rounded;
     case AppModule.expositions:
       return Icons.inventory_2_outlined;
-    case AppModule.horsBilan:
-      return Icons.account_balance_wallet_outlined;
-    case AppModule.crm:
+    case AppModule.risqueMarche:
+      return Icons.show_chart_rounded;
+    case AppModule.risqueOperationnel:
+      return Icons.shield_outlined;
+    case AppModule.analyse:
       return Icons.analytics_outlined;
     case AppModule.referentiels:
       return Icons.menu_book_outlined;

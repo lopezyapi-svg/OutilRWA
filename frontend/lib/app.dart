@@ -8,12 +8,13 @@ import 'core/localization/app_localization.dart';
 import 'core/services/rwa_api_service.dart';
 import 'core/state/portfolio_currency_scope.dart';
 import 'core/theme/app_theme.dart';
-import 'modules/crm/screens/crm_screen.dart';
+import 'modules/analyse/screens/analyse_screen.dart';
 import 'modules/dashboard/screens/dashboard_screen.dart';
 import 'modules/expositions/screens/expositions_screen.dart';
-import 'modules/hors_bilan/screens/hors_bilan_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/referentiels/screens/referentiels_screen.dart';
+import 'modules/risque_marche/screens/risque_marche_screen.dart';
+import 'modules/risque_operationnel/screens/risque_operationnel_screen.dart';
 import 'shared/widgets/app_shell.dart';
 
 /// Widget racine qui pilote le thème et la navigation principale.
@@ -120,10 +121,12 @@ class _RwaAppState extends State<RwaApp> {
             api: _api,
             displayCurrencyListenable: _portfolioDisplayCurrency,
           );
-        case AppModule.horsBilan:
-          return HorsBilanScreen(api: _api);
-        case AppModule.crm:
-          return CrmScreen(api: _api);
+        case AppModule.risqueMarche:
+          return RisqueMarcheScreen(api: _api);
+        case AppModule.risqueOperationnel:
+          return RisqueOperationnelScreen(api: _api);
+        case AppModule.analyse:
+          return AnalyseScreen(api: _api);
         case AppModule.referentiels:
           return ReferentielsScreen(api: _api);
         case AppModule.rapports:

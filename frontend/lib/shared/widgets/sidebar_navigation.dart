@@ -39,17 +39,25 @@ class SidebarNavigation extends StatelessWidget {
         'Expositions',
       ),
       _MenuEntry(
-        AppModule.horsBilan,
-        Icons.account_balance_wallet_outlined,
-        'Hors Bilan',
+        AppModule.risqueMarche,
+        Icons.show_chart_rounded,
+        'Risque de marché',
       ),
-      _MenuEntry(AppModule.crm, Icons.shield_outlined, 'CRM'),
+      _MenuEntry(
+        AppModule.risqueOperationnel,
+        Icons.shield_outlined,
+        'Risque opérationnel',
+      ),
+      _MenuEntry(
+        AppModule.analyse,
+        Icons.analytics_outlined,
+        'Analyse',
+      ),
       _MenuEntry(
         AppModule.referentiels,
         Icons.menu_book_rounded,
         'Referentiels',
       ),
-      _MenuEntry(AppModule.rapports, Icons.assessment_outlined, 'Rapports'),
     ];
 
     if (compact) {
