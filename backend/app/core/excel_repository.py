@@ -14,7 +14,24 @@ import unicodedata
 from openpyxl import Workbook, load_workbook
 
 
-EXCEL_SOURCE_PATH = Path(r"C:\Users\hp\OneDrive\Desktop\BASE_CALCUL_RWA_v2_pers-21-04-2026.xlsx")
+def _resolve_excel_source_path() -> Path:
+    desktop_candidates = (
+        Path.home() / "OneDrive" / "Desktop",
+        Path.home() / "Desktop",
+    )
+    workbook_candidates: list[Path] = []
+    for desktop in desktop_candidates:
+        if not desktop.exists():
+            continue
+        workbook_candidates.extend(
+            path for path in desktop.glob("BASE_CALCUL_RWA*.xlsx") if path.is_file()
+        )
+    if workbook_candidates:
+        return max(workbook_candidates, key=lambda path: path.stat().st_mtime)
+    return Path(r"C:\Users\hp\OneDrive\Desktop\BASE_CALCUL_RWA_v2_pers-21-04-2026.xlsx")
+
+
+EXCEL_SOURCE_PATH = _resolve_excel_source_path()
 APP_DATA_PATH = Path(__file__).resolve().parents[2] / "data"
 EXPOSURE_METADATA_PATH = APP_DATA_PATH / "exposure_metadata.json"
 EXPOSURE_EXPORTS_PATH = APP_DATA_PATH / "exports"
@@ -41,26 +58,39 @@ EXPECTED_SHEETS = (
 )
 EXPECTED_COLUMNS_BY_SHEET: dict[str, tuple[str, ...]] = {
     "Template données": (
-        "ID_Exposition",
         "Date d'analyse",
+        "ID_Exposition",
+        "Date d'octroi",
+        "Date d'échéance",
+        "Maturité de l'exposition",
+        "Maturité résiduelle",
         "Contrepartie",
-        "Pays_contrepartie",
-        "Catégorie d'exposition",
         "Notation_externe_contrepartie",
-        "Montant_exposition_brut",
-        "EAD_bilan",
-        "EAD_Total",
+        "Pays_contrepartie",
+        "Notation_externe_pays",
+        "Pondération_pays",
+        "Catégorie d'exposition",
         "Pondération (RW)",
-        "RWA_crédit",
-        "Capital_min_reg",
+        "PRÊT TOTAL",
+        "Montant_exposition_but_au_bilan",
+        "Montant d'exposition au HB",
+        "Devise",
         "CRM_existe",
         "Type_CRM",
+        "EAD_bilan",
+        "EAD_HB",
+        "EAD_HB_ccf",
+        "EAD_Total",
+        "RWA_EB",
+        "RWA_HB",
+        "RWA_crédit",
+        "Capital_min_reg",
     ),
     "Traitement_HB": (
         "ID_Exposition",
         "Catégorie Hors bilan",
-        "Montant_exposition_hb",
         "Facteur_conversion (CCF)",
+        "EAD_HB_ccf",
     ),
     "CRM_non_financee": (
         "ID_Exposition",
@@ -73,9 +103,16 @@ EXPECTED_COLUMNS_BY_SHEET: dict[str, tuple[str, ...]] = {
     ),
     "CRM_financée": (
         "ID_Exposition",
+        "Valeur_Collatéral",
         "Type_emetteur",
         "Notation",
-        "Eva",
+        "Bloc",
+        "Maturite",
+        "HE",
+        "HC",
+        "Hfx",
+        "Eva_EB",
+        "Eva_HB",
         "Cva",
     ),
 }
@@ -141,6 +178,24 @@ def _as_float(value: Any) -> float:
         return float(compact)
     except ValueError:
         return 0.0
+
+
+def _as_optional_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip()
+    if not text:
+        return None
+    lowered = _normalize_for_key(text)
+    if lowered in {"nd", "non eligible", "n/a", "na", "none"}:
+        return None
+    compact = text.replace("\u202f", "").replace(" ", "").replace(",", ".")
+    try:
+        return float(compact)
+    except ValueError:
+        return None
 
 
 def _as_date(value: Any) -> date:
@@ -214,13 +269,22 @@ def _normalize_country_display(country: str) -> str:
 
 def _crm_mode_from_type(crm_type: str) -> str:
     normalized = _normalize_for_key(crm_type)
-    if not normalized or normalized in {"aucune", "sans crm"}:
+    if not normalized or normalized in {"aucune", "sans crm", "non eligible"}:
         return "Aucune"
     if "non financ" in normalized or "garantie" in normalized or "assurance" in normalized:
         return "CRM non financee"
     if "cash" in normalized or "collateral" in normalized or "financee" in normalized:
         return "CRM financee"
     return "CRM non financee"
+
+
+def _months_between(start: date | None, end: date | None) -> int | None:
+    if start is None or end is None:
+        return None
+    months = (end.year - start.year) * 12 + (end.month - start.month)
+    if end.day < start.day:
+        months -= 1
+    return max(months, 0)
 
 
 def _as_yes_no(value: bool) -> str:
@@ -527,20 +591,36 @@ class ExcelRepository:
         row_values = {
             "Date d'analyse": item["analysis_date"],
             "ID_Exposition": exposure_id,
+            "Date d'octroi": item.get("grant_date"),
+            "Date d'échéance": item.get("maturity_date"),
+            "Maturité de l'exposition": item.get("exposure_maturity_months")
+            or _months_between(item.get("grant_date"), item.get("maturity_date")),
+            "Maturité résiduelle": item.get("residual_maturity_months")
+            or _months_between(item.get("analysis_date"), item.get("maturity_date")),
             "Contrepartie": item["counterparty_name"],
-            "Pays_contrepartie": item["country"],
-            "Catégorie d'exposition": item["category_raw"],
             "Notation_externe_contrepartie": item["rating"],
-            "Montant_exposition_brut": item["gross_amount"],
-            "Devise": item.get("currency", "XOF"),
-            "CRM_existe": _as_yes_no(item.get("crm_exists", False)),
-            "Type_CRM": item["crm_type"],
-            "EAD_bilan": item["ead"],
-            "EAD_Total": item["ead"],
+            "Pays_contrepartie": item["country"],
+            "Notation_externe_pays": item.get("country_rating", "Non noté"),
+            "Pondération_pays": item.get("country_risk_weight"),
+            "Catégorie d'exposition": item["category_raw"],
             "Pondération (RW)": item["final_rw"],
+            "PRÊT TOTAL": item.get("loan_total_amount", item["gross_amount"]),
+            "Montant_exposition_but_au_bilan": item.get(
+                "on_balance_exposure_amount",
+                item["gross_amount"],
+            ),
+            "Montant d'exposition au HB": item.get("off_balance_exposure_amount", 0.0),
+            "Devise": item.get("currency", "XOF"),
+            "CRM_existe": "OUI" if item.get("crm_exists", False) else "NON",
+            "Type_CRM": item["crm_type"],
+            "EAD_bilan": item.get("ead_bilan_amount", item["ead"]),
+            "EAD_HB": item.get("ead_hb_amount"),
+            "EAD_HB_ccf": item.get("ead_hb_ccf_amount"),
+            "EAD_Total": item.get("ead_total_amount", item["ead"]),
+            "RWA_EB": item.get("rwa_eb_amount"),
+            "RWA_HB": item.get("rwa_hb_amount"),
             "RWA_crédit": item["rwa"],
             "Capital_min_reg": item["capital"],
-            "Commentaire": item.get("comment") or "",
         }
         if template_row is None:
             template_row = self._append_row(template_sheet, template_headers, row_values)
@@ -624,8 +704,8 @@ class ExcelRepository:
             {
                 "ID_Exposition": item["counterparty_id"],
                 "Catégorie Hors bilan": item["engagement_type"],
-                "Montant_exposition_hb": item["nominal_amount"],
                 "Facteur_conversion (CCF)": item["ccf"],
+                "EAD_HB_ccf": item.get("ead"),
             },
         )
         commitment_id = f"HB{row_index - 1:03d}"
@@ -687,13 +767,57 @@ class ExcelRepository:
             row.get("Date d'échéance")
         )
         crm_type = _as_clean_text(row.get("Type_CRM")) or "Sans CRM"
-        gross_amount = _as_float(row.get("Montant_exposition_brut"))
-        ead_bilan = _as_float(row.get("EAD_bilan"))
-        stored_rw = _as_float(row.get("Pondération (RW)"))
+        loan_total_amount = _as_optional_float(row.get("PRÊT TOTAL"))
+        on_balance_exposure_amount = _as_optional_float(
+            row.get("Montant_exposition_but_au_bilan")
+        )
+        off_balance_exposure_amount = _as_optional_float(
+            row.get("Montant d'exposition au HB")
+        )
+        country_risk_weight = _as_optional_float(row.get("Pondération_pays"))
+        ead_bilan_amount = _as_optional_float(row.get("EAD_bilan"))
+        ead_hb_amount = _as_optional_float(row.get("EAD_HB"))
+        ead_hb_ccf_amount = _as_optional_float(row.get("EAD_HB_ccf"))
+        ead_total_amount = _as_optional_float(row.get("EAD_Total"))
+        rwa_eb_amount = _as_optional_float(row.get("RWA_EB"))
+        rwa_hb_amount = _as_optional_float(row.get("RWA_HB"))
+        rwa_credit_amount = _as_optional_float(row.get("RWA_crédit"))
+        capital_amount = _as_optional_float(row.get("Capital_min_reg"))
+        stored_rw = _as_optional_float(row.get("Pondération (RW)")) or 0.0
+        gross_amount = on_balance_exposure_amount or loan_total_amount or 0.0
+        exposure_maturity_months = (
+            int(raw_value)
+            if (raw_value := _as_optional_float(row.get("Maturité de l'exposition"))) is not None
+            else _months_between(grant_date, maturity_date)
+        )
+        residual_maturity_months = (
+            int(raw_value)
+            if (raw_value := _as_optional_float(row.get("Maturité résiduelle"))) is not None
+            else _months_between(_as_date(row.get("Date d'analyse")), maturity_date)
+        )
         is_off_balance = _normalize_for_key(raw_category).startswith("(l) hors bilan")
-        ead = 0.0 if is_off_balance else ead_bilan
-        rwa = 0.0 if is_off_balance else _as_float(row.get("RWA_crédit")) or round(ead_bilan * stored_rw, 2)
-        capital = 0.0 if is_off_balance else round(rwa * 0.08, 2)
+        computed_ead_total = (
+            ead_total_amount
+            if ead_total_amount is not None
+            else (
+                (ead_bilan_amount or 0.0) + (ead_hb_ccf_amount or 0.0)
+                if ead_bilan_amount is not None or ead_hb_ccf_amount is not None
+                else ead_bilan_amount
+            )
+        )
+        ead = 0.0 if is_off_balance else (computed_ead_total or 0.0)
+        rwa = 0.0 if is_off_balance else (
+            rwa_credit_amount
+            if rwa_credit_amount is not None
+            else (
+                ((rwa_eb_amount or 0.0) + (rwa_hb_amount or 0.0))
+                if rwa_eb_amount is not None or rwa_hb_amount is not None
+                else round((computed_ead_total or 0.0) * stored_rw, 2)
+            )
+        )
+        capital = 0.0 if is_off_balance else (
+            capital_amount if capital_amount is not None else round(rwa * 0.08, 2)
+        )
         crm_coverage_percent = _as_float(metadata.get("crm_coverage_percent"))
         crm_mode = _crm_mode_from_type(crm_type)
         crm_details = metadata.get("crm_details")
@@ -716,10 +840,15 @@ class ExcelRepository:
                 )
             elif crm_mode == "CRM financee" and crm_fin_row is not None:
                 coverage_amount = max(
-                    _as_float(crm_fin_row.get("Eva")) - _as_float(crm_fin_row.get("Cva")),
+                    (
+                        _as_float(crm_fin_row.get("Eva_EB"))
+                        + _as_float(crm_fin_row.get("Eva_HB"))
+                    )
+                    - _as_float(crm_fin_row.get("Cva")),
                     0.0,
                 )
-                coverage = 0.0 if gross_amount == 0 else min(coverage_amount / gross_amount, 1.0)
+                coverage_base = loan_total_amount or gross_amount
+                coverage = 0.0 if coverage_base == 0 else min(coverage_amount / coverage_base, 1.0)
                 crm_coverage_percent = coverage
                 crm_details.update(
                     {
@@ -737,6 +866,20 @@ class ExcelRepository:
         ead = _as_float(metadata.get("ead")) or ead
         rwa = _as_float(metadata.get("rwa")) or rwa
         capital = _as_float(metadata.get("capital")) or capital
+        source_fields = {
+            "loan_total_amount": loan_total_amount,
+            "on_balance_exposure_amount": on_balance_exposure_amount,
+            "off_balance_exposure_amount": off_balance_exposure_amount,
+            "exposure_maturity_months": exposure_maturity_months,
+            "residual_maturity_months": residual_maturity_months,
+            "country_risk_weight": country_risk_weight,
+            "ead_bilan_amount": ead_bilan_amount,
+            "ead_hb_amount": ead_hb_amount,
+            "ead_hb_ccf_amount": ead_hb_ccf_amount,
+            "ead_total_amount": ead_total_amount,
+            "rwa_eb_amount": rwa_eb_amount,
+            "rwa_hb_amount": rwa_hb_amount,
+        }
         return {
             "id": exposure_id,
             "analysis_date": _as_date(row.get("Date d'analyse")),
@@ -750,6 +893,8 @@ class ExcelRepository:
             "category_standard": _standard_category_from_raw(raw_category),
             "rating": rating,
             "gross_amount": gross_amount,
+            **source_fields,
+            "source_fields": source_fields,
             "currency": _as_clean_text(metadata.get("currency")) or _as_clean_text(row.get("Devise")) or "XOF",
             "status": _as_clean_text(metadata.get("status")) or "Active",
             "crm_exists": (_normalize_for_key(_as_clean_text(row.get("CRM_existe")) or "") == "oui"),
@@ -811,11 +956,31 @@ class ExcelRepository:
                 exposure_metadata=self._metadata_for_exposure(exposure_id),
             )
             ccf = _as_float(hb_row.get("Facteur_conversion (CCF)"))
-            hb_amount = _as_float(hb_row.get("Montant_exposition_hb"))
+            hb_amount = (
+                _as_optional_float(template.get("Montant d'exposition au HB"))
+                or exposure.get("off_balance_exposure_amount")
+                or 0.0
+            )
             nominal = hb_amount if hb_amount > 0 else exposure["gross_amount"]
-            ead = round(nominal * ccf, 2)
-            risk_weight = exposure["original_rw"] if exposure["original_rw"] > 0 else exposure["final_rw"]
-            rwa = round(ead * risk_weight, 2)
+            ead = _as_optional_float(hb_row.get("EAD_HB_ccf"))
+            if ead is None:
+                ead = round(nominal * ccf, 2)
+            rwa = (
+                _as_optional_float(template.get("RWA_HB"))
+                or exposure.get("rwa_hb_amount")
+                or 0.0
+            )
+            risk_weight = (
+                round(rwa / ead, 6)
+                if ead > 0 and rwa > 0
+                else (
+                    exposure["original_rw"]
+                    if exposure["original_rw"] > 0
+                    else exposure["final_rw"]
+                )
+            )
+            if rwa <= 0:
+                rwa = round(ead * risk_weight, 2)
             capital = round(rwa * 0.08, 2)
             commitment_id = f"HB{index:03d}"
             rows.append(

@@ -852,6 +852,8 @@ def compute_financed_crm_details(
     *,
     risk_weight: float,
     crm_details: dict[str, Any],
+    on_balance_exposure_amount: float,
+    ead_hb_ccf_before_crm: float,
 ) -> dict[str, Any]:
     exposure_currency = str(crm_details.get("exposure_currency") or payload.currency or "XOF")
     collateral_value = float(crm_details.get("collateral_value", 0.0) or 0.0)
@@ -868,9 +870,10 @@ def compute_financed_crm_details(
     )
     basket_items = list(crm_details.get("basket_items") or [])
 
-    gross_amount = float(payload.gross_amount or 0.0)
     he = 0.0
-    eva = gross_amount * (1 + he)
+    eva_eb = max(0.0, on_balance_exposure_amount) * (1 - he)
+    eva_hb = max(0.0, ead_hb_ccf_before_crm) * (1 - he)
+    eva = eva_eb + eva_hb
 
     if collateral_type == "Panier d actifs" and basket_items:
         total_value = 0.0
@@ -927,10 +930,21 @@ def compute_financed_crm_details(
         hfx = float(outcome["hfx"])
         cva = float(outcome["cva"]) if eligible else 0.0
 
-    ead_after_financed_crm = max(0.0, eva - cva) if eligible else gross_amount
-    rwa_final = ead_after_financed_crm * risk_weight
-    crm_gain = max(0.0, gross_amount - ead_after_financed_crm)
-    coverage_percent = clamp_ratio(crm_gain / gross_amount) if gross_amount > 0 else 0.0
+    if eligible:
+        ead_bilan_amount = max(0.0, eva_eb - cva)
+        ead_hb_ccf_amount = max(0.0, eva_hb - cva)
+    else:
+        ead_bilan_amount = max(0.0, on_balance_exposure_amount)
+        ead_hb_ccf_amount = max(0.0, ead_hb_ccf_before_crm)
+    ead_before_crm = max(0.0, on_balance_exposure_amount) + max(
+        0.0, ead_hb_ccf_before_crm
+    )
+    ead_after_financed_crm = ead_bilan_amount + ead_hb_ccf_amount
+    rwa_eb_amount = ead_bilan_amount * risk_weight
+    rwa_hb_amount = ead_hb_ccf_amount * risk_weight
+    rwa_final = rwa_eb_amount + rwa_hb_amount
+    crm_gain = max(0.0, ead_before_crm - ead_after_financed_crm)
+    coverage_percent = clamp_ratio(crm_gain / ead_before_crm) if ead_before_crm > 0 else 0.0
 
     return {
         "mode": "CRM financee",
@@ -952,9 +966,15 @@ def compute_financed_crm_details(
         "he": he,
         "hc": hc,
         "hfx": hfx,
+        "eva_eb": eva_eb,
+        "eva_hb": eva_hb,
         "eva": eva,
         "cva": cva,
+        "ead_bilan_amount": ead_bilan_amount,
+        "ead_hb_ccf_amount": ead_hb_ccf_amount,
         "ead_after_financed_crm": ead_after_financed_crm,
+        "rwa_eb_amount": rwa_eb_amount,
+        "rwa_hb_amount": rwa_hb_amount,
         "rwa_final": rwa_final,
         "crm_gain": crm_gain,
         "coverage_percent": coverage_percent,
@@ -1000,6 +1020,48 @@ def clamp_ratio(value: float) -> float:
     return max(0.0, min(value, 1.0))
 
 
+def resolve_exposure_components(
+    payload: ExposureCreate,
+    *,
+    category_code: str,
+) -> dict[str, float | str | None]:
+    gross_amount = float(payload.gross_amount or 0.0)
+    loan_total_amount = (
+        float(payload.loan_total_amount)
+        if payload.loan_total_amount is not None
+        else gross_amount
+    )
+    default_on_balance_amount = 0.0 if category_code == "l" else gross_amount
+    on_balance_exposure_amount = (
+        float(payload.on_balance_exposure_amount)
+        if payload.on_balance_exposure_amount is not None
+        else default_on_balance_amount
+    )
+    off_balance_exposure_amount = (
+        float(payload.off_balance_exposure_amount)
+        if payload.off_balance_exposure_amount is not None
+        else max(loan_total_amount - on_balance_exposure_amount, 0.0)
+    )
+    resolved_off_balance_risk_level = coerce_off_balance_risk_level(
+        payload.off_balance_risk_level,
+        fallback_to_very_high=category_code == "l" or off_balance_exposure_amount > 0,
+    )
+    off_balance_fcec = (
+        lookup_off_balance_fcec(resolved_off_balance_risk_level)
+        if off_balance_exposure_amount > 0
+        else 0.0
+    )
+    ead_hb_ccf_before_crm = off_balance_exposure_amount * off_balance_fcec
+    return {
+        "loan_total_amount": loan_total_amount,
+        "on_balance_exposure_amount": max(0.0, on_balance_exposure_amount),
+        "off_balance_exposure_amount": max(0.0, off_balance_exposure_amount),
+        "resolved_off_balance_risk_level": resolved_off_balance_risk_level,
+        "off_balance_fcec": off_balance_fcec,
+        "ead_hb_ccf_before_crm": max(0.0, ead_hb_ccf_before_crm),
+    }
+
+
 def crm_details_payload(payload: ExposureCreate) -> dict[str, Any]:
     crm_details = model_dump(payload.crm_details)
     crm_mode = crm_details.get("mode") or crm_mode_from_type(payload.crm_type)
@@ -1029,6 +1091,16 @@ def crm_details_payload(payload: ExposureCreate) -> dict[str, Any]:
 
 
 def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: dict[str, Any]) -> dict[str, float]:
+    exposure_components = resolve_exposure_components(
+        payload,
+        category_code=category_code,
+    )
+    on_balance_exposure_amount = float(
+        exposure_components["on_balance_exposure_amount"] or 0.0
+    )
+    ead_hb_ccf_before_crm = float(
+        exposure_components["ead_hb_ccf_before_crm"] or 0.0
+    )
     original_rw = lookup_prudential_risk_weight(
         category_code,
         payload.rating,
@@ -1065,19 +1137,32 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
         maturity_date=payload.maturity_date,
     )
     final_rw = original_rw
-    gross_amount = payload.gross_amount
-    ead = gross_amount
+    ead_bilan_amount = on_balance_exposure_amount
+    ead_hb_ccf_amount = ead_hb_ccf_before_crm
+    ead = ead_bilan_amount + ead_hb_ccf_amount
+    rwa_eb_amount = 0.0
+    rwa_hb_amount = 0.0
     effective_coverage = 0.0
     guarantor_rw = 0.0
     haircut = 0.0
 
     if category_code == "l":
-        rwa = round(ead * final_rw, 2)
+        ead_bilan_amount = 0.0
+        ead_hb_ccf_amount = float(payload.gross_amount or 0.0) * final_rw
+        ead = ead_hb_ccf_amount
+        rwa_eb_amount = 0.0
+        rwa_hb_amount = ead
+        rwa = round(rwa_eb_amount + rwa_hb_amount, 2)
         capital = calculate_capital(rwa)
         return {
             "original_rw": round(original_rw, 4),
             "final_rw": round(final_rw, 4),
             "ead": round(ead, 2),
+            "ead_bilan_amount": round(ead_bilan_amount, 2),
+            "ead_hb_ccf_amount": round(ead_hb_ccf_amount, 2),
+            "ead_total_amount": round(ead, 2),
+            "rwa_eb_amount": round(rwa_eb_amount, 2),
+            "rwa_hb_amount": round(rwa_hb_amount, 2),
             "rwa": rwa,
             "capital": capital,
             "effective_coverage": 0.0,
@@ -1090,28 +1175,44 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
             payload,
             risk_weight=original_rw,
             crm_details=crm_details,
+            on_balance_exposure_amount=on_balance_exposure_amount,
+            ead_hb_ccf_before_crm=ead_hb_ccf_before_crm,
         )
         crm_details.update(financed_details)
         effective_coverage = float(financed_details["coverage_percent"])
         haircut = float(financed_details["hc"])
+        ead_bilan_amount = float(financed_details["ead_bilan_amount"])
+        ead_hb_ccf_amount = float(financed_details["ead_hb_ccf_amount"])
         ead = float(financed_details["ead_after_financed_crm"])
+        rwa_eb_amount = float(financed_details["rwa_eb_amount"])
+        rwa_hb_amount = float(financed_details["rwa_hb_amount"])
         final_rw = original_rw
     elif crm_details["mode"] == "CRM non financee":
         effective_coverage = clamp_ratio(float(crm_details.get("coverage_percent", payload.crm_coverage_percent)))
         guarantor_category = resolve_category(str(crm_details.get("guarantor_category") or "Souverains"))
         guarantor_rating = str(crm_details.get("guarantor_rating") or payload.rating)
         guarantor_rw = lookup_prudential_risk_weight(guarantor_category["code"], guarantor_rating)
-        covered_ead = gross_amount * effective_coverage
-        uncovered_ead = gross_amount - covered_ead
-        rwa = (covered_ead * guarantor_rw) + (uncovered_ead * guarantor_rw)
-        final_rw = 0.0 if gross_amount == 0 else max(0.0, min(rwa / gross_amount, 1.5))
+        covered_ead = ead * effective_coverage
+        uncovered_ead = max(0.0, ead - covered_ead)
+        rwa = (uncovered_ead * original_rw) + (covered_ead * guarantor_rw)
+        final_rw = 0.0 if ead == 0 else max(0.0, min(rwa / ead, 1.5))
+        rwa_eb_amount = ead_bilan_amount * final_rw
+        rwa_hb_amount = ead_hb_ccf_amount * final_rw
+    else:
+        rwa_eb_amount = ead_bilan_amount * final_rw
+        rwa_hb_amount = ead_hb_ccf_amount * final_rw
 
-    rwa = round(ead * final_rw, 2)
+    rwa = round(rwa_eb_amount + rwa_hb_amount, 2)
     capital = calculate_capital(rwa)
     return {
         "original_rw": round(original_rw, 4),
         "final_rw": round(final_rw, 4),
         "ead": round(ead, 2),
+        "ead_bilan_amount": round(ead_bilan_amount, 2),
+        "ead_hb_ccf_amount": round(ead_hb_ccf_amount, 2),
+        "ead_total_amount": round(ead, 2),
+        "rwa_eb_amount": round(rwa_eb_amount, 2),
+        "rwa_hb_amount": round(rwa_hb_amount, 2),
         "rwa": rwa,
         "capital": capital,
         "effective_coverage": round(effective_coverage, 4),
@@ -1123,13 +1224,44 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
 def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str, Any]:
     category = resolve_category(payload.category)
     crm_details = crm_details_payload(payload)
+    exposure_components = resolve_exposure_components(
+        payload,
+        category_code=category["code"],
+    )
     metrics = compute_metrics(payload, category["code"], crm_details)
     crm_details["coverage_percent"] = metrics["effective_coverage"]
     crm_details["haircut"] = metrics["haircut"]
+    exposure_maturity_months = (
+        compute_initial_maturity_months(payload.grant_date, payload.maturity_date)
+        if payload.grant_date is not None and payload.maturity_date is not None
+        else None
+    )
+    residual_maturity_months = (
+        compute_initial_maturity_months(payload.analysis_date, payload.maturity_date)
+        if payload.maturity_date is not None
+        else None
+    )
+    country_risk_weight = lookup_country_rating_risk_weight(payload.country_rating)
+    source_fields = {
+        "loan_total_amount": exposure_components["loan_total_amount"],
+        "on_balance_exposure_amount": exposure_components["on_balance_exposure_amount"],
+        "off_balance_exposure_amount": exposure_components["off_balance_exposure_amount"],
+        "exposure_maturity_months": exposure_maturity_months,
+        "residual_maturity_months": residual_maturity_months,
+        "country_risk_weight": country_risk_weight,
+        "ead_bilan_amount": metrics["ead_bilan_amount"],
+        "ead_hb_amount": exposure_components["off_balance_exposure_amount"],
+        "ead_hb_ccf_amount": metrics["ead_hb_ccf_amount"],
+        "ead_total_amount": metrics["ead_total_amount"],
+        "rwa_eb_amount": metrics["rwa_eb_amount"],
+        "rwa_hb_amount": metrics["rwa_hb_amount"],
+    }
     if crm_details["mode"] == "CRM financee":
         crm_details["risk_weight"] = metrics["original_rw"]
         crm_details["rwa_final"] = metrics["rwa"]
         crm_details["ead_after_financed_crm"] = metrics["ead"]
+        crm_details["eva_eb"] = crm_details.get("eva_eb", 0.0)
+        crm_details["eva_hb"] = crm_details.get("eva_hb", 0.0)
     return {
         "id": exposure_id,
         "analysis_date": payload.analysis_date,
@@ -1143,6 +1275,8 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
         "category_standard": category["legacy"],
         "rating": payload.rating,
         "gross_amount": payload.gross_amount,
+        **source_fields,
+        "source_fields": source_fields,
         "currency": payload.currency or "XOF",
         "status": payload.status or "Active",
         "sovereign_special_case": normalize_sovereign_special_case(
@@ -1165,10 +1299,7 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
             payload.other_asset_type,
             fallback_to_undefined=category["code"] == "k",
         ),
-        "off_balance_risk_level": coerce_off_balance_risk_level(
-            payload.off_balance_risk_level,
-            fallback_to_very_high=category["code"] == "l",
-        ),
+        "off_balance_risk_level": exposure_components["resolved_off_balance_risk_level"],
         "retail_eligibility_criteria_satisfied":
             payload.retail_eligibility_criteria_satisfied,
         "residential_mortgage_eligible": payload.residential_mortgage_eligible,
@@ -1222,6 +1353,18 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
         maturity_date=record.get("maturity_date"),
         counterparty=counterparty,
         gross_amount=record["gross_amount"],
+        loan_total_amount=record.get("loan_total_amount"),
+        on_balance_exposure_amount=record.get("on_balance_exposure_amount"),
+        off_balance_exposure_amount=record.get("off_balance_exposure_amount"),
+        exposure_maturity_months=record.get("exposure_maturity_months"),
+        residual_maturity_months=record.get("residual_maturity_months"),
+        country_risk_weight=record.get("country_risk_weight"),
+        ead_bilan_amount=record.get("ead_bilan_amount"),
+        ead_hb_amount=record.get("ead_hb_amount"),
+        ead_hb_ccf_amount=record.get("ead_hb_ccf_amount"),
+        ead_total_amount=record.get("ead_total_amount"),
+        rwa_eb_amount=record.get("rwa_eb_amount"),
+        rwa_hb_amount=record.get("rwa_hb_amount"),
         currency=record.get("currency", "XOF"),
         status=record.get("status", "Active"),
         sovereign_special_case=normalize_sovereign_special_case(
@@ -1292,6 +1435,20 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
 def view_to_exposure_record(view: ExposureView) -> dict[str, Any]:
     category = resolve_category(view.counterparty.category)
     crm_details = model_dump(view.crm_details)
+    source_fields = {
+        "loan_total_amount": view.loan_total_amount,
+        "on_balance_exposure_amount": view.on_balance_exposure_amount,
+        "off_balance_exposure_amount": view.off_balance_exposure_amount,
+        "exposure_maturity_months": view.exposure_maturity_months,
+        "residual_maturity_months": view.residual_maturity_months,
+        "country_risk_weight": view.country_risk_weight,
+        "ead_bilan_amount": view.ead_bilan_amount,
+        "ead_hb_amount": view.ead_hb_amount,
+        "ead_hb_ccf_amount": view.ead_hb_ccf_amount,
+        "ead_total_amount": view.ead_total_amount,
+        "rwa_eb_amount": view.rwa_eb_amount,
+        "rwa_hb_amount": view.rwa_hb_amount,
+    }
     return {
         "id": view.id,
         "analysis_date": view.analysis_date,
@@ -1305,6 +1462,8 @@ def view_to_exposure_record(view: ExposureView) -> dict[str, Any]:
         "category_standard": category["legacy"],
         "rating": view.counterparty.rating,
         "gross_amount": view.gross_amount,
+        **source_fields,
+        "source_fields": source_fields,
         "currency": view.currency,
         "status": view.status,
         "sovereign_special_case": view.sovereign_special_case,

@@ -9,7 +9,7 @@ from typing import Any
 
 from openpyxl import load_workbook
 
-from app.core.excel_repository import EXCEL_SOURCE_PATH
+from app.core.excel_repository import excel_repository
 from database.repositories.exposure_repository import exposure_repository
 from database.repositories.off_balance_repository import off_balance_repository
 
@@ -28,14 +28,15 @@ class ExportService:
     def export_excel_workbook_bytes(self) -> bytes:
         """Construit un classeur Excel complet basé sur le vrai modèle RWA."""
 
-        if not EXCEL_SOURCE_PATH.exists():
+        source_path = excel_repository.source_path
+        if not source_path.exists():
             raise FileNotFoundError(
-                f"Modèle Excel introuvable: {EXCEL_SOURCE_PATH}"
+                f"Modèle Excel introuvable: {source_path}"
             )
 
         exposures = exposure_repository.list_exposures()
         off_balance_rows = off_balance_repository.list_commitments()
-        workbook = load_workbook(EXCEL_SOURCE_PATH)
+        workbook = load_workbook(source_path)
         try:
             self._fill_template_sheet(workbook[self._TEMPLATE_SHEET], exposures)
             self._fill_crm_financed_sheet(
@@ -118,6 +119,27 @@ class ExportService:
         except ValueError:
             return default
 
+    def _coerce_optional_float(self, value: Any) -> float | None:
+        if value in (None, ""):
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        text = str(value).strip().replace(" ", "").replace(",", ".")
+        if not text:
+            return None
+        try:
+            return float(text)
+        except ValueError:
+            return None
+
+    def _months_between(self, start: date | None, end: date | None) -> int | None:
+        if start is None or end is None:
+            return None
+        months = (end.year - start.year) * 12 + (end.month - start.month)
+        if end.day < start.day:
+            months -= 1
+        return max(months, 0)
+
     def _coverage_ratio(self, exposure: dict[str, Any]) -> float:
         return min(
             max(self._coerce_float(exposure.get("crm_coverage_percent")), 0.0),
@@ -125,19 +147,14 @@ class ExportService:
         )
 
     def _crm_type_label(self, exposure: dict[str, Any]) -> str:
-        crm_mode = str(exposure.get("crm_mode") or "")
-        if crm_mode == "CRM financee":
-            return "CRM financee"
-        if crm_mode == "CRM non financee":
-            return "CRM non financee"
-        return ""
+        return str(exposure.get("crm_type") or "")
 
     def _fill_template_sheet(
         self,
         sheet,
         exposures: list[dict[str, Any]],
     ) -> None:
-        self._clear_sheet_values(sheet, max_columns=21)
+        self._clear_sheet_values(sheet, max_columns=27)
 
         for row_index, exposure in enumerate(exposures, start=2):
             analysis_date = self._coerce_excel_date(exposure.get("analysis_date"))
@@ -145,6 +162,14 @@ class ExportService:
             maturity_date = self._coerce_excel_date(exposure.get("maturity_date"))
             identifier = str(exposure["id"])
             crm_exists = bool(exposure.get("crm_exists"))
+            exposure_maturity = exposure.get("exposure_maturity_months")
+            residual_maturity = exposure.get("residual_maturity_months")
+            loan_total_amount = exposure.get("loan_total_amount", exposure.get("gross_amount"))
+            on_balance_amount = exposure.get("on_balance_exposure_amount", exposure.get("gross_amount"))
+            off_balance_amount = exposure.get("off_balance_exposure_amount")
+            country_risk_weight = self._coerce_optional_float(
+                exposure.get("country_risk_weight")
+            )
             self._write_row(
                 sheet,
                 row_index,
@@ -153,30 +178,35 @@ class ExportService:
                     identifier,
                     grant_date,
                     maturity_date,
-                    (
-                        f'=IF(OR(C{row_index}="",D{row_index}="",D{row_index}<C{row_index}),'
-                        f'0,DATEDIF(C{row_index},D{row_index},"m"))'
-                    ),
-                    (
-                        f'=IF(OR(A{row_index}="",D{row_index}="",D{row_index}<A{row_index}),'
-                        f'0,DATEDIF(A{row_index},D{row_index},"m"))'
-                    ),
+                    exposure_maturity
+                    if exposure_maturity is not None
+                    else self._months_between(grant_date, maturity_date),
+                    residual_maturity
+                    if residual_maturity is not None
+                    else self._months_between(analysis_date, maturity_date),
                     str(exposure.get("counterparty_name") or ""),
                     str(exposure.get("rating") or ""),
                     str(exposure.get("country") or ""),
                     str(exposure.get("country_rating") or "Non noté"),
-                    (
-                        f'=IFERROR(INDEX(Ref_Ponderation!$B$3:$B$20,'
-                        f'MATCH(TRIM(J{row_index}),Ref_Ponderation!$A$3:$A$20,0)),"")'
-                    ),
+                    country_risk_weight,
                     str(exposure.get("category_raw") or ""),
                     self._coerce_float(exposure.get("final_rw")),
-                    self._coerce_float(exposure.get("gross_amount")),
+                    self._coerce_optional_float(loan_total_amount),
+                    self._coerce_optional_float(on_balance_amount),
+                    self._coerce_optional_float(off_balance_amount),
                     str(exposure.get("currency") or "XOF"),
                     "OUI" if crm_exists else "NON",
                     self._crm_type_label(exposure),
-                    self._coerce_float(exposure.get("ead")),
-                    self._coerce_float(exposure.get("ead")),
+                    self._coerce_optional_float(
+                        exposure.get("ead_bilan_amount", exposure.get("ead"))
+                    ),
+                    self._coerce_optional_float(exposure.get("ead_hb_amount")),
+                    self._coerce_optional_float(exposure.get("ead_hb_ccf_amount")),
+                    self._coerce_optional_float(
+                        exposure.get("ead_total_amount", exposure.get("ead"))
+                    ),
+                    self._coerce_optional_float(exposure.get("rwa_eb_amount")),
+                    self._coerce_optional_float(exposure.get("rwa_hb_amount")),
                     self._coerce_float(exposure.get("rwa")),
                     self._coerce_float(exposure.get("capital")),
                 ],
@@ -187,7 +217,7 @@ class ExportService:
         sheet,
         exposures: list[dict[str, Any]],
     ) -> None:
-        self._clear_sheet_values(sheet, max_columns=11)
+        self._clear_sheet_values(sheet, max_columns=12)
 
         row_index = 2
         for exposure in exposures:
@@ -196,6 +226,8 @@ class ExportService:
                 continue
 
             collateral_value = self._coerce_float(crm_details.get("collateral_value"))
+            eva_eb = self._coerce_optional_float(crm_details.get("eva_eb"))
+            eva_hb = self._coerce_optional_float(crm_details.get("eva_hb"))
             self._write_row(
                 sheet,
                 row_index,
@@ -204,13 +236,18 @@ class ExportService:
                     collateral_value,
                     str(crm_details.get("issuer_type") or ""),
                     str(crm_details.get("issuer_rating") or ""),
-                    "",
+                    str(crm_details.get("label") or exposure.get("crm_type") or ""),
                     str(crm_details.get("maturity_bucket") or ""),
-                    0.0,
-                    self._coerce_float(crm_details.get("haircut")),
-                    self._coerce_float(crm_details.get("fx_haircut")),
-                    collateral_value,
-                    0.0,
+                    self._coerce_float(crm_details.get("he")),
+                    self._coerce_float(crm_details.get("hc")),
+                    self._coerce_float(crm_details.get("hfx")),
+                    eva_eb if eva_eb is not None else self._coerce_optional_float(
+                        exposure.get("on_balance_exposure_amount")
+                    ),
+                    eva_hb if eva_hb is not None else self._coerce_optional_float(
+                        exposure.get("off_balance_exposure_amount")
+                    ),
+                    self._coerce_float(crm_details.get("cva")),
                 ],
             )
             row_index += 1
@@ -270,7 +307,7 @@ class ExportService:
                     str(row.get("counterparty_id") or ""),
                     str(row.get("engagement_type") or ""),
                     self._coerce_float(row.get("ccf")),
-                    self._coerce_float(row.get("nominal_amount")),
+                    self._coerce_float(row.get("ead")),
                 ],
             )
 

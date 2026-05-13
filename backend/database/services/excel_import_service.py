@@ -488,17 +488,31 @@ class ExcelImportService:
                 try:
                     ccf = float(hb_row.get("Facteur_conversion (CCF)") or 1.0)
                     nominal_amount = float(
-                        hb_row.get("Montant_exposition_hb")
+                        support_record.get("off_balance_exposure_amount")
+                        or support_record.get("loan_total_amount")
                         or support_record.get("gross_amount")
                         or 0.0
                     )
-                    risk_weight = float(
-                        support_record.get("original_rw")
-                        or support_record.get("final_rw")
+                    ead = float(
+                        hb_row.get("EAD_HB_ccf")
+                        or support_record.get("ead_hb_ccf_amount")
+                        or round(nominal_amount * ccf, 2)
+                    )
+                    rwa = float(
+                        support_record.get("rwa_hb_amount")
                         or 0.0
                     )
-                    ead = round(nominal_amount * ccf, 2)
-                    rwa = round(ead * risk_weight, 2)
+                    risk_weight = (
+                        round(rwa / ead, 6)
+                        if ead > 0 and rwa > 0
+                        else float(
+                            support_record.get("original_rw")
+                            or support_record.get("final_rw")
+                            or 0.0
+                        )
+                    )
+                    if rwa <= 0:
+                        rwa = round(ead * risk_weight, 2)
                 except Exception as exc:
                     errors.append(
                         {

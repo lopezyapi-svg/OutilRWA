@@ -114,6 +114,7 @@ class ExposureRepository:
                 e.rwa,
                 e.capital,
                 e.comment,
+                e.source_fields_json,
                 cf.collateral_value,
                 cf.collateral_currency,
                 cf.collateral_type,
@@ -273,6 +274,7 @@ class ExposureRepository:
                     rwa,
                     capital,
                     comment,
+                    source_fields_json,
                     created_at,
                     updated_at
                 ) VALUES (
@@ -280,7 +282,7 @@ class ExposureRepository:
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?
+                    ?, ?, ?, ?
                 )
                 ON CONFLICT(id) DO UPDATE SET
                     counterparty_id = excluded.counterparty_id,
@@ -323,6 +325,7 @@ class ExposureRepository:
                     rwa = excluded.rwa,
                     capital = excluded.capital,
                     comment = excluded.comment,
+                    source_fields_json = excluded.source_fields_json,
                     updated_at = excluded.updated_at
                 """,
                 [
@@ -420,6 +423,10 @@ class ExposureRepository:
                         float(record.get("rwa", 0.0) or 0.0),
                         float(record.get("capital", 0.0) or 0.0),
                         record.get("comment"),
+                        json.dumps(
+                            record.get("source_fields") or {},
+                            ensure_ascii=False,
+                        ),
                         now,
                         now,
                     )
@@ -701,6 +708,12 @@ class ExposureRepository:
         )
 
     def _row_to_record(self, row: dict[str, Any]) -> dict[str, Any]:
+        try:
+            source_fields = json.loads(str(row.get("source_fields_json") or "{}"))
+            if not isinstance(source_fields, dict):
+                source_fields = {}
+        except json.JSONDecodeError:
+            source_fields = {}
         crm_mode = str(row.get("crm_mode") or "Aucune")
         if crm_mode == "CRM financee":
             crm_details = {
@@ -789,6 +802,8 @@ class ExposureRepository:
             "category_standard": str(row.get("category_standard") or "Entreprises"),
             "rating": _normalize_rating_label(row.get("rating")),
             "gross_amount": float(row.get("gross_amount", 0.0) or 0.0),
+            **source_fields,
+            "source_fields": source_fields,
             "currency": str(row.get("currency") or "XOF"),
             "status": str(row.get("status") or "Active"),
             "sovereign_special_case": str(row.get("sovereign_special_case") or ""),

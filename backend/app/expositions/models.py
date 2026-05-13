@@ -80,6 +80,18 @@ class ExposureCreate(BaseModel):
     category: str = Field(..., description="Categorie d'exposition.")
     rating: str = Field(..., description="Notation de la contrepartie.")
     gross_amount: float = Field(..., description="Montant brut de l'exposition.")
+    loan_total_amount: float | None = Field(
+        default=None,
+        description="Montant total du prêt ou de l'exposition.",
+    )
+    on_balance_exposure_amount: float | None = Field(
+        default=None,
+        description="Montant de l'exposition au bilan.",
+    )
+    off_balance_exposure_amount: float | None = Field(
+        default=None,
+        description="Montant de l'exposition hors bilan.",
+    )
     currency: str = Field(default="XOF", description="Devise source de l'exposition.")
     status: str = Field(default="Active", description="Statut de gestion de l'exposition.")
     sovereign_special_case: str = Field(
@@ -185,6 +197,18 @@ class ExposureView(BaseModel):
     maturity_date: date | None = None
     counterparty: Counterparty
     gross_amount: float
+    loan_total_amount: float | None = None
+    on_balance_exposure_amount: float | None = None
+    off_balance_exposure_amount: float | None = None
+    exposure_maturity_months: int | None = None
+    residual_maturity_months: int | None = None
+    country_risk_weight: float | None = None
+    ead_bilan_amount: float | None = None
+    ead_hb_amount: float | None = None
+    ead_hb_ccf_amount: float | None = None
+    ead_total_amount: float | None = None
+    rwa_eb_amount: float | None = None
+    rwa_hb_amount: float | None = None
     currency: str = "XOF"
     status: str = "Active"
     sovereign_special_case: str = ""

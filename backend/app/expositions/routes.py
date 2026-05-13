@@ -27,6 +27,7 @@ from app.expositions.services import (
     inspect_uploaded_workbook,
     import_uploaded_workbook,
     list_expositions,
+    preview_exposition,
     update_exposition,
 )
 
@@ -61,6 +62,13 @@ def post_exposition(payload: ExposureCreate) -> ExposureView:
     """Cree une exposition au bilan."""
 
     return create_exposition(payload)
+
+
+@router.post("/preview", response_model=ExposureView)
+def post_exposition_preview(payload: ExposureCreate) -> ExposureView:
+    """Calcule une exposition sans l'enregistrer."""
+
+    return preview_exposition(payload)
 
 
 @router.get("/next-id")

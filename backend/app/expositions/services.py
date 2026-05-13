@@ -59,6 +59,14 @@ def create_exposition(payload: ExposureCreate) -> ExposureView:
     return exposure_record_to_view(record)
 
 
+def preview_exposition(payload: ExposureCreate) -> ExposureView:
+    """Calcule une exposition sans la persister."""
+
+    preview_id = payload.id or "PREVIEW"
+    record = build_exposure_record(payload, preview_id)
+    return exposure_record_to_view(record)
+
+
 def update_exposition(exposure_id: str, payload: ExposureCreate) -> ExposureView:
     """Met à jour une exposition existante et la persiste dans SQLite."""
 
@@ -94,7 +102,11 @@ def get_exposition_summary() -> ExposureSummary:
     rows = list_expositions()
     totals = aggregate_portfolio(
         {
-            "gross_amount": convert_currency_amount(row.gross_amount, from_currency=row.currency, to_currency="XOF"),
+            "gross_amount": convert_currency_amount(
+                row.loan_total_amount if row.loan_total_amount is not None else row.gross_amount,
+                from_currency=row.currency,
+                to_currency="XOF",
+            ),
             "ead": convert_currency_amount(row.ead, from_currency=row.currency, to_currency="XOF"),
             "rwa": convert_currency_amount(row.rwa, from_currency=row.currency, to_currency="XOF"),
             "capital": convert_currency_amount(row.capital, from_currency=row.currency, to_currency="XOF"),

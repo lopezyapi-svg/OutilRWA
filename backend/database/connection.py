@@ -173,6 +173,12 @@ class DatabaseManager:
             column_name="defaulted_exposure_provision_at_least_twenty_percent",
             column_definition="INTEGER",
         )
+        self._ensure_table_column(
+            connection,
+            table_name="exposures",
+            column_name="source_fields_json",
+            column_definition="TEXT NOT NULL DEFAULT '{}'",
+        )
         for column_name, column_definition in (
             ("collateral_currency", "TEXT NOT NULL DEFAULT 'XOF'"),
             (

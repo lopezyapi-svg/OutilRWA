@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS exposures (
     rwa REAL NOT NULL DEFAULT 0,
     capital REAL NOT NULL DEFAULT 0,
     comment TEXT,
+    source_fields_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY(counterparty_id) REFERENCES counterparties(id) ON DELETE CASCADE
