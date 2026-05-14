@@ -11,6 +11,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../../core/localization/app_localization.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -172,7 +173,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                         child: PageHeader(
                           title: 'Expositions',
                           subtitle:
-                              'Grille prudentielle de saisie, import, modification et suivi RWA avec zone UEMOA/CEMAC automatique.',
+                              'Saisissez, importez et suivez les expositions avec calcul automatique des zones UEMOA/CEMAC.',
                           titleFontSize: 22,
                           subtitleFontSize: 11,
                           crossAxisAlignment: CrossAxisAlignment.end,
@@ -251,7 +252,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                         ],
                         _buildFloatingIconButton(
                           onPressed: isScreenBusy ? null : _openCreatePanel,
-                          tooltip: context.tr('Ajouter une exposition'),
+                          tooltip: context.tr('Créer une exposition'),
                           backgroundColor: AppTheme.accent,
                           foregroundColor: Colors.white,
                           icon: Icons.add,
@@ -612,10 +613,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         Expanded(
           child: _buildCompactSummaryCard(
             context,
-            label: 'Lignes',
+            label: 'Expositions',
             value: '$visibleCount',
             detail: context.tr(
-              '{{count}} select.',
+              '{{count}} sélectionnée(s)',
               args: {'count': _selectedIds.length},
             ),
             icon: Icons.segment_rounded,
@@ -629,7 +630,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             label: 'Exposition totale brute',
             value:
                 '${AppFormatters.compactNumber(summary.totalExpositions)} $_displayCurrencyLabel',
-            detail: 'Vue cour.',
+            detail: 'Périmètre filtré',
             icon: Icons.account_balance_wallet_outlined,
             color: AppTheme.sidebarLight,
           ),
@@ -650,10 +651,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         Expanded(
           child: _buildCompactSummaryCard(
             context,
-            label: 'Capital min.',
+            label: 'Capital requis',
             value:
                 '${AppFormatters.compactNumber(summary.totalCapital)} $_displayCurrencyLabel',
-            detail: 'Exig. reg.',
+            detail: 'Exigence réglementaire',
             icon: Icons.account_balance_outlined,
             color: AppTheme.warning,
           ),
@@ -2644,7 +2645,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       grossAmount: 0,
       loanTotalAmount: 0,
       onBalanceExposureAmount: 0,
-      currency: '',
+      currency: _displayCurrency,
       status: 'Active',
       crmMode: 'Aucune',
       crmType: '',
@@ -2722,6 +2723,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     ExposureDraft draft, {
     required bool isCreateMode,
   }) async {
+    final routeCurrencyNotifier = widget.displayCurrencyListenable;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (routeContext) {
@@ -2737,24 +2739,29 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                   height: double.infinity,
                   child: Material(
                     elevation: 16,
-                    child: ExposureFormCard(
-                      api: widget.api,
-                      initialDraft: draft,
-                      ratings: _ratings,
-                      title: isCreateMode
-                          ? 'Ajouter une exposition'
-                          : 'Modifier l exposition',
-                      submitLabel: isCreateMode ? 'Ajouter' : 'Mettre a jour',
-                      onCancel: () => Navigator.of(routeContext).pop(),
-                      onSubmit: (submittedDraft) async {
-                        await _saveDraft(
-                          submittedDraft,
-                          isCreateMode: isCreateMode,
-                        );
-                        if (mounted && routeContext.mounted) {
-                          Navigator.of(routeContext).pop();
-                        }
-                      },
+                    child: PortfolioCurrencyScope(
+                      notifier: routeCurrencyNotifier,
+                      child: ExposureFormCard(
+                        api: widget.api,
+                        initialDraft: draft,
+                        ratings: _ratings,
+                        title: isCreateMode
+                            ? 'Créer une exposition'
+                            : "Mettre à jour l'exposition",
+                        submitLabel: isCreateMode
+                            ? "Enregistrer l'exposition"
+                            : 'Enregistrer les modifications',
+                        onCancel: () => Navigator.of(routeContext).pop(),
+                        onSubmit: (submittedDraft) async {
+                          await _saveDraft(
+                            submittedDraft,
+                            isCreateMode: isCreateMode,
+                          );
+                          if (mounted && routeContext.mounted) {
+                            Navigator.of(routeContext).pop();
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),

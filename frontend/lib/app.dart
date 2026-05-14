@@ -1,6 +1,4 @@
 // Ce fichier porte la racine de l'application et la navigation principale.
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -47,9 +45,6 @@ class _RwaAppState extends State<RwaApp> {
     super.initState();
     AppLocalizations.setCurrentLanguage(_appLanguage.value);
     _appLanguage.addListener(_handleLanguageChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_preloadPrimaryModules());
-    });
   }
 
   @override
@@ -114,19 +109,6 @@ class _RwaAppState extends State<RwaApp> {
     setState(() {
       _selectedModule = module;
       _visitedModules.add(module);
-    });
-  }
-
-  Future<void> _preloadPrimaryModules() async {
-    _warmFuture(_api.fetchReferentiels());
-    _warmFuture(_api.fetchExpositionsModule());
-    _warmFuture(_api.fetchReports());
-    _warmFuture(_api.fetchGlobalSearchCatalog());
-  }
-
-  void _warmFuture<T>(Future<T> future) {
-    future.then<void>((_) {}, onError: (_) {
-      // Le préchargement reste opportuniste et ne doit jamais bloquer l'UI.
     });
   }
 

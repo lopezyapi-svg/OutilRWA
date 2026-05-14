@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import logging
 from pathlib import Path
+from threading import Lock, Thread
 from typing import Any
 
 from app.core.excel_repository import excel_repository
 from database.connection import database_manager, utcnow_iso
 from database.repositories.exposure_repository import exposure_repository
+
+logger = logging.getLogger(__name__)
+
+_SYNC_METADATA_KEYS = (
+    "active_excel_source_path",
+    "last_exposure_reference_backfill_at",
+    "last_exposure_reference_source_mtime",
+    "last_upload_import_at",
+)
 
 
 def _has_value(value: Any) -> bool:
@@ -18,10 +30,42 @@ def _has_value(value: Any) -> bool:
     return True
 
 
+def _parse_utc_datetime(value: Any) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    normalized = text.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _parse_float(value: Any) -> float | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
 class ExposureSyncService:
     """Complète SQLite avec les dates/référentiels portés par le classeur source."""
 
-    def backfill_reference_fields_from_excel(self) -> dict[str, Any]:
+    def __init__(self) -> None:
+        self._state_lock = Lock()
+        self._is_running = False
+
+    def schedule_reference_fields_backfill(
+        self,
+        *,
+        force: bool = False,
+    ) -> dict[str, Any]:
         source_path = excel_repository.source_path
         if not source_path.exists():
             return {
@@ -30,6 +74,48 @@ class ExposureSyncService:
                 "source_path": str(source_path),
                 "updated_count": 0,
             }
+        if not force:
+            skip_payload = self._build_skip_payload_if_fresh(source_path)
+            if skip_payload is not None:
+                return skip_payload
+
+        with self._state_lock:
+            if self._is_running:
+                return {
+                    "status": "already_running",
+                    "source_path": str(source_path),
+                }
+            self._is_running = True
+
+        Thread(
+            target=self._run_backfill_job,
+            kwargs={"force": force},
+            name="exposure-reference-backfill",
+            daemon=True,
+        ).start()
+        return {
+            "status": "scheduled",
+            "source_path": str(source_path),
+        }
+
+    def backfill_reference_fields_from_excel(
+        self,
+        *,
+        force: bool = False,
+    ) -> dict[str, Any]:
+        source_path = excel_repository.source_path
+        if not source_path.exists():
+            return {
+                "status": "skipped",
+                "reason": "excel_source_not_found",
+                "source_path": str(source_path),
+                "updated_count": 0,
+            }
+
+        if not force:
+            skip_payload = self._build_skip_payload_if_fresh(source_path)
+            if skip_payload is not None:
+                return skip_payload
 
         workbook_index = excel_repository.exposure_template_fields_by_id()
         sqlite_records = exposure_repository.list_exposures()
@@ -103,7 +189,80 @@ class ExposureSyncService:
             "source_path": str(source_path),
             "matched_count": matched_count,
             "updated_count": len(records_to_update),
-            "backup_path": str(backup_path) if backup_path is not None else None,
+                "backup_path": str(backup_path) if backup_path is not None else None,
+        }
+
+    def _run_backfill_job(self, *, force: bool) -> None:
+        try:
+            result = self.backfill_reference_fields_from_excel(force=force)
+            logger.info(
+                "Backfill Expositions terminé: statut=%s source=%s",
+                result.get("status"),
+                result.get("source_path"),
+            )
+        except Exception:
+            logger.exception(
+                "Le backfill asynchrone des champs Expositions depuis Excel a échoué."
+            )
+        finally:
+            with self._state_lock:
+                self._is_running = False
+
+    def _build_skip_payload_if_fresh(self, source_path: Path) -> dict[str, Any] | None:
+        metadata = self._read_sync_metadata()
+        if not metadata:
+            return None
+
+        active_source_path = str(metadata.get("active_excel_source_path") or "").strip()
+        if active_source_path != str(source_path):
+            return None
+
+        last_backfill_at = _parse_utc_datetime(
+            metadata.get("last_exposure_reference_backfill_at")
+        )
+        if last_backfill_at is None:
+            return None
+
+        last_upload_import_at = _parse_utc_datetime(metadata.get("last_upload_import_at"))
+        if last_upload_import_at is not None and last_upload_import_at > last_backfill_at:
+            return None
+
+        current_mtime = source_path.stat().st_mtime
+        stored_mtime = _parse_float(metadata.get("last_exposure_reference_source_mtime"))
+        if stored_mtime is not None and abs(current_mtime - stored_mtime) < 0.001:
+            return {
+                "status": "skipped",
+                "reason": "excel_source_unchanged",
+                "source_path": str(source_path),
+                "updated_count": 0,
+            }
+
+        current_mtime_dt = datetime.fromtimestamp(current_mtime, tz=timezone.utc)
+        if current_mtime_dt <= last_backfill_at:
+            return {
+                "status": "skipped",
+                "reason": "excel_source_not_modified_since_last_backfill",
+                "source_path": str(source_path),
+                "updated_count": 0,
+            }
+
+        return None
+
+    def _read_sync_metadata(self) -> dict[str, str]:
+        placeholders = ", ".join("?" for _ in _SYNC_METADATA_KEYS)
+        with database_manager.connect() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT key, value
+                FROM app_metadata
+                WHERE key IN ({placeholders})
+                """,
+                _SYNC_METADATA_KEYS,
+            ).fetchall()
+        return {
+            str(row["key"]): str(row["value"])
+            for row in rows
+            if row["key"] is not None and row["value"] is not None
         }
 
     def _write_sync_metadata(
@@ -119,6 +278,7 @@ class ExposureSyncService:
             "last_exposure_reference_backfill_at": utcnow_iso(),
             "last_exposure_reference_backfill_count": str(updated_count),
             "last_exposure_reference_match_count": str(matched_count),
+            "last_exposure_reference_source_mtime": f"{source_path.stat().st_mtime:.6f}",
             "storage_backend": "sqlite",
         }
         if connection is not None:

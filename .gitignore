@@ -13,6 +13,7 @@ frontend/.flutter-plugins-dependencies
 frontend/.packages
 frontend/build/
 frontend/.idea/
+frontend/flutter_webserver*.log
 
 # Sorties generales.
 build/

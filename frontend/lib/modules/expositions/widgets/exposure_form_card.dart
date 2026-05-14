@@ -345,8 +345,8 @@ class ExposureFormCard extends StatefulWidget {
     required this.onCancel,
     required this.ratings,
     this.initialDraft,
-    this.title = 'Nouvelle exposition',
-    this.submitLabel = 'Enregistrer',
+    this.title = 'Nouvelle exposition prudentielle',
+    this.submitLabel = "Enregistrer l'exposition",
   });
 
   final RwaApiService api;
@@ -456,51 +456,51 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   ];
   static const List<_WizardStepMeta> _stepMetas = [
     _WizardStepMeta(
-      shortLabel: 'Apercu',
-      title: 'Introduction & apercu',
-      subtitle: 'Contexte et indicateurs RWA',
+      shortLabel: 'Aperçu',
+      title: "Vue d'ensemble du dossier",
+      subtitle: 'Repères prudentiels et indicateurs RWA',
       icon: Icons.shield_outlined,
     ),
     _WizardStepMeta(
-      shortLabel: 'Identite',
-      title: 'Informations principales',
+      shortLabel: 'Identité',
+      title: 'Identification de la contrepartie',
       subtitle: 'Contrepartie, pays, dates et notation',
       icon: Icons.badge_outlined,
     ),
     _WizardStepMeta(
-      shortLabel: 'Categorie',
+      shortLabel: 'Catégorie',
       title: 'Catégorie d\'exposition',
-      subtitle: 'Type d\'exposition et pondération',
+      subtitle: 'Classe prudentielle et pondération',
       icon: Icons.account_tree_outlined,
     ),
     _WizardStepMeta(
       shortLabel: 'Finance',
-      title: 'Donnees financieres',
-      subtitle: 'Montant et devise',
+      title: 'Paramètres financiers',
+      subtitle: 'Montants, ventilation et devise',
       icon: Icons.account_balance_wallet_outlined,
     ),
     _WizardStepMeta(
       shortLabel: 'CRM ?',
-      title: 'Existence de CRM',
-      subtitle: 'Présence d une couverture',
+      title: 'Présence d\'une CRM',
+      subtitle: 'Vérification de la protection de crédit',
       icon: Icons.help_outline_rounded,
     ),
     _WizardStepMeta(
       shortLabel: 'Type CRM',
-      title: 'Type de CRM',
-      subtitle: 'Nature de l attenuation du risque',
+      title: 'Mécanisme de CRM',
+      subtitle: 'Garantie, sûreté ou substitution de risque',
       icon: Icons.handshake_outlined,
     ),
     _WizardStepMeta(
-      shortLabel: 'Comment.',
-      title: 'Commentaire & finalisation',
-      subtitle: 'Analyse metier et remarques',
+      shortLabel: 'Analyse',
+      title: 'Commentaires et points d\'attention',
+      subtitle: 'Observations métier et validation interne',
       icon: Icons.edit_note_outlined,
     ),
     _WizardStepMeta(
       shortLabel: 'Valider',
       title: 'Validation finale',
-      subtitle: 'Confirmer ou annuler l ajout',
+      subtitle: 'Contrôler puis enregistrer l\'exposition',
       icon: Icons.task_alt_outlined,
     ),
   ];
@@ -2203,12 +2203,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   final country = (value ?? _countryController.text).trim();
                   return country.isEmpty ? context.tr('Champ requis') : null;
                 },
-                selectedItemBuilder: (context) =>
-                    _selectedStringDropdownItems(
-                      _availableCountryOptions,
-                      displayTextBuilder: (item) =>
-                          displayCountryName(item, fallback: item),
-                    ),
+                selectedItemBuilder: (context) => _selectedStringDropdownItems(
+                  _availableCountryOptions,
+                  displayTextBuilder: (item) =>
+                      displayCountryName(item, fallback: item),
+                ),
                 items: _stringDropdownItems(
                   _availableCountryOptions,
                   displayTextBuilder: (item) =>
@@ -2545,6 +2544,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         return _FinalDecisionStepScreen(
           title: _stepMetas[7].title,
           subtitle: _stepMetas[7].subtitle,
+          submitLabel: widget.submitLabel,
           submitting: _submitting,
           onConfirm: _submit,
           onBack: _goBack,
@@ -3786,7 +3786,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   const SizedBox(height: 1),
                   Text(
                     context.tr(
-                      'Parcours guide en plusieurs etapes pour une saisie claire, rapide et metier.',
+                      "Renseignez la contrepartie, les montants, le traitement CRM et les impacts prudentiels avant d'enregistrer l'exposition.",
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -4649,7 +4649,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       label: 'Valeur de la sûreté',
                       value: _formatReadonlyAmount(
                         collateralAmount,
-                        sourceCurrency: isBasket ? _currency : _collateralCurrency,
+                        sourceCurrency:
+                            isBasket ? _currency : _collateralCurrency,
                         targetCurrency: displayCurrency,
                       ),
                       icon: Icons.account_balance_outlined,
@@ -6945,6 +6946,7 @@ class _FinalDecisionStepScreen extends StatelessWidget {
   const _FinalDecisionStepScreen({
     required this.title,
     required this.subtitle,
+    required this.submitLabel,
     required this.submitting,
     required this.onConfirm,
     required this.onBack,
@@ -6952,6 +6954,7 @@ class _FinalDecisionStepScreen extends StatelessWidget {
 
   final String title;
   final String subtitle;
+  final String submitLabel;
   final bool submitting;
   final Future<void> Function() onConfirm;
   final Future<void> Function() onBack;
@@ -7019,7 +7022,7 @@ class _FinalDecisionStepScreen extends StatelessWidget {
                       )
                     : const Icon(Icons.task_alt_rounded, size: 18),
                 label: Text(
-                  context.tr('Ajouter l exposition'),
+                  submitLabel.tr(context),
                   style: const TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 12,

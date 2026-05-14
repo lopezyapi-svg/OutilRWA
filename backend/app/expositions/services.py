@@ -41,10 +41,10 @@ def list_expositions(search: str | None = None, category: str | None = None) -> 
     """Liste les expositions avec filtres simples."""
 
     try:
-        exposure_sync_service.backfill_reference_fields_from_excel()
+        exposure_sync_service.schedule_reference_fields_backfill()
     except Exception:
         logger.exception(
-            "Le backfill des maturites Expositions depuis Excel a echoue.",
+            "La planification du backfill des maturites Expositions a echoue.",
         )
 
     return [exposure_record_to_view(item) for item in exposure_repository.list_exposures(search=search, category=category)]

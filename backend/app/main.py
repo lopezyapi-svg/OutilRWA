@@ -25,10 +25,10 @@ async def lifespan(app: FastAPI):
     # Startup
     database_manager.initialize()
     try:
-        exposure_sync_service.backfill_reference_fields_from_excel()
+        exposure_sync_service.schedule_reference_fields_backfill()
     except Exception:
         logger.exception(
-            "Le backfill des dates/reference Expositions depuis Excel a échoué."
+            "La planification du backfill des dates/reference Expositions a échoué."
         )
     yield
     # Shutdown

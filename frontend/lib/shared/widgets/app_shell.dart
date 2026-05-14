@@ -11,10 +11,12 @@ import '../../core/utils/currency_conversion.dart';
 import 'rwa_tool_logo.dart';
 import 'sidebar_navigation.dart';
 
-const double _sidebarToggleButtonWidth = 42;
-const double _sidebarToggleButtonHeight = 42;
-const double _sidebarToggleButtonRadius = 8;
+const double _sidebarToggleButtonWidth = 28;
+const double _sidebarToggleButtonHeight = 28;
+const double _sidebarToggleHitArea = 42;
+const double _sidebarToggleButtonRadius = 6;
 const double _desktopPanelGap = 8;
+const Duration _desktopSidebarAnimationDuration = Duration(milliseconds: 220);
 
 /// Coquille principale de l'application avec top bar, sidebar et contenu.
 class AppShell extends StatefulWidget {
@@ -46,9 +48,9 @@ class AppShell extends StatefulWidget {
 /// Etat interne qui pilote la recherche, la sidebar et la top bar.
 class _AppShellState extends State<AppShell> {
   static const double _screenSpacing = AppTheme.spacing;
-  static const double _compactSidebarWidth = 60;
-  static const double _expandedSidebarWidth = 220;
-  bool _isSidebarCompact = false;
+  static const double _desktopRailWidth = 60;
+  static const double _desktopOverlayWidth = 220;
+  bool _isSidebarOverlayOpen = false;
 
   @override
   Widget build(BuildContext context) {
@@ -66,10 +68,11 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildDesktopShell() {
-    final sidebarWidth =
-        _isSidebarCompact ? _compactSidebarWidth : _expandedSidebarWidth;
-    final toggleLeft =
-        sidebarWidth + (_desktopPanelGap / 2) - (_sidebarToggleButtonWidth / 2);
+    final toggleLeft = _isSidebarOverlayOpen
+        ? _desktopOverlayWidth - (_sidebarToggleHitArea / 2)
+        : _desktopRailWidth +
+            (_desktopPanelGap / 2) -
+            (_sidebarToggleHitArea / 2);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -104,15 +107,16 @@ class _AppShellState extends State<AppShell> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             SizedBox(
-                              width: sidebarWidth,
+                              width: _desktopRailWidth,
                               child: RepaintBoundary(
                                 child: Align(
                                   alignment: Alignment.centerLeft,
                                   child: _DesktopSidebarFrame(
-                                    compact: _isSidebarCompact,
-                                    width: sidebarWidth,
+                                    compact: true,
+                                    width: _desktopRailWidth,
                                     selectedModule: widget.selectedModule,
-                                    onSelectModule: widget.onSelectModule,
+                                    onSelectModule:
+                                        _handleDesktopModuleSelection,
                                   ),
                                 ),
                               ),
@@ -155,14 +159,60 @@ class _AppShellState extends State<AppShell> {
                             ),
                           ],
                         ),
-                        Positioned(
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            ignoring: !_isSidebarOverlayOpen,
+                            child: AnimatedOpacity(
+                              duration: _desktopSidebarAnimationDuration,
+                              curve: Curves.easeOutCubic,
+                              opacity: _isSidebarOverlayOpen ? 1 : 0,
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: _closeDesktopSidebarOverlay,
+                                child: ColoredBox(
+                                  color: isDark
+                                      ? const Color(0x22040A16)
+                                      : const Color(0x120F172A),
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        AnimatedPositioned(
+                          duration: _desktopSidebarAnimationDuration,
+                          curve: Curves.easeOutCubic,
+                          top: 0,
+                          bottom: 0,
+                          left: _isSidebarOverlayOpen
+                              ? 0
+                              : -(_desktopOverlayWidth + AppTheme.spacing),
+                          child: IgnorePointer(
+                            ignoring: !_isSidebarOverlayOpen,
+                            child: AnimatedOpacity(
+                              duration: _desktopSidebarAnimationDuration,
+                              curve: Curves.easeOutCubic,
+                              opacity: _isSidebarOverlayOpen ? 1 : 0,
+                              child: RepaintBoundary(
+                                child: _DesktopSidebarFrame(
+                                  compact: false,
+                                  width: _desktopOverlayWidth,
+                                  selectedModule: widget.selectedModule,
+                                  onSelectModule: _handleDesktopModuleSelection,
+                                  showBrand: false,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        AnimatedPositioned(
+                          duration: _desktopSidebarAnimationDuration,
+                          curve: Curves.easeOutCubic,
                           top: 10,
                           left: toggleLeft,
                           child: _SidebarToggleButton(
-                            compact: _isSidebarCompact,
-                            onTap: () => setState(
-                              () => _isSidebarCompact = !_isSidebarCompact,
-                            ),
+                            compact: !_isSidebarOverlayOpen,
+                            onTap: _toggleDesktopSidebarOverlay,
                           ),
                         ),
                       ],
@@ -175,6 +225,24 @@ class _AppShellState extends State<AppShell> {
         ],
       ),
     );
+  }
+
+  void _toggleDesktopSidebarOverlay() {
+    setState(() => _isSidebarOverlayOpen = !_isSidebarOverlayOpen);
+  }
+
+  void _closeDesktopSidebarOverlay() {
+    if (!_isSidebarOverlayOpen) {
+      return;
+    }
+    setState(() => _isSidebarOverlayOpen = false);
+  }
+
+  void _handleDesktopModuleSelection(AppModule module) {
+    widget.onSelectModule(module);
+    if (_isSidebarOverlayOpen) {
+      setState(() => _isSidebarOverlayOpen = false);
+    }
   }
 
   Widget _buildMobileShell() {
@@ -478,12 +546,14 @@ class _DesktopSidebarFrame extends StatelessWidget {
     required this.width,
     required this.selectedModule,
     required this.onSelectModule,
+    this.showBrand = false,
   });
 
   final bool compact;
   final double width;
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
+  final bool showBrand;
 
   @override
   Widget build(BuildContext context) {
@@ -495,7 +565,7 @@ class _DesktopSidebarFrame extends StatelessWidget {
             selectedModule: selectedModule,
             onSelectModule: onSelectModule,
             compact: compact,
-            showBrand: false,
+            showBrand: showBrand,
             contentTopInset: 0,
           ),
         ),
@@ -517,31 +587,43 @@ class _SidebarToggleButton extends StatelessWidget {
 
     return Tooltip(
       message: compact ? 'Ouvrir le menu' : 'Réduire le menu',
-      child: Material(
-        color: isDark ? const Color(0xFF14233D) : Colors.white,
-        borderRadius: BorderRadius.circular(_sidebarToggleButtonRadius),
-        elevation: 3,
-        shadowColor: isDark ? const Color(0x33040A16) : const Color(0x150F172A),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(_sidebarToggleButtonRadius),
-          child: Container(
-            width: _sidebarToggleButtonWidth,
-            height: _sidebarToggleButtonHeight,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
+      child: SizedBox(
+        width: _sidebarToggleHitArea,
+        height: _sidebarToggleHitArea,
+        child: Center(
+          child: Material(
+            color: isDark ? const Color(0xFF14233D) : Colors.white,
+            borderRadius: BorderRadius.circular(_sidebarToggleButtonRadius),
+            elevation: 3,
+            shadowColor:
+                isDark ? const Color(0x33040A16) : const Color(0x150F172A),
+            child: InkWell(
+              onTap: onTap,
               borderRadius: BorderRadius.circular(_sidebarToggleButtonRadius),
-              border: Border.all(
-                color:
-                    isDark ? const Color(0xFF2A3C5E) : const Color(0xFFD9E4F6),
+              child: Container(
+                width: _sidebarToggleButtonWidth,
+                height: _sidebarToggleButtonHeight,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(
+                    _sidebarToggleButtonRadius,
+                  ),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF2A3C5E)
+                        : const Color(0xFFD9E4F6),
+                  ),
+                ),
+                child: Icon(
+                  compact
+                      ? Icons.chevron_right_rounded
+                      : Icons.chevron_left_rounded,
+                  color: isDark
+                      ? const Color(0xFFD7E3FA)
+                      : const Color(0xFF47619C),
+                  size: 13,
+                ),
               ),
-            ),
-            child: Icon(
-              compact
-                  ? Icons.chevron_right_rounded
-                  : Icons.chevron_left_rounded,
-              color: isDark ? const Color(0xFFD7E3FA) : const Color(0xFF47619C),
-              size: 15,
             ),
           ),
         ),
