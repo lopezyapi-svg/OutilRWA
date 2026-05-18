@@ -67,11 +67,8 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildDesktopShell() {
-    final toggleLeft = _isSidebarOverlayOpen
-        ? _desktopOverlayWidth - (_sidebarToggleHitArea / 2)
-        : _desktopRailWidth +
-            (_desktopPanelGap / 2) -
-            (_sidebarToggleHitArea / 2);
+    final sidebarWidth =
+        _isSidebarOverlayOpen ? _desktopOverlayWidth : _desktopRailWidth;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -99,119 +96,59 @@ class _AppShellState extends State<AppShell> {
                   ),
                   const SizedBox(height: AppTheme.spacing),
                   Expanded(
-                    child: Stack(
-                      clipBehavior: Clip.none,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            SizedBox(
-                              width: _desktopRailWidth,
-                              child: RepaintBoundary(
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: _DesktopSidebarFrame(
-                                    compact: true,
-                                    width: _desktopRailWidth,
-                                    selectedModule: widget.selectedModule,
-                                    onSelectModule:
-                                        _handleDesktopModuleSelection,
-                                  ),
-                                ),
-                              ),
+                        AnimatedContainer(
+                          duration: _desktopSidebarAnimationDuration,
+                          curve: Curves.easeOutCubic,
+                          width: sidebarWidth,
+                          child: RepaintBoundary(
+                            child: _DesktopSidebarFrame(
+                              compact: !_isSidebarOverlayOpen,
+                              width: sidebarWidth,
+                              selectedModule: widget.selectedModule,
+                              onSelectModule: _handleDesktopModuleSelection,
+                              showBrand: false,
+                              showToggleButton: true,
+                              onToggleSidebar: _toggleDesktopSidebarOverlay,
                             ),
-                            const SizedBox(width: _desktopPanelGap),
-                            Expanded(
-                              child: RepaintBoundary(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? const Color(0xFF0F1B31)
-                                            .withOpacity(0.92)
-                                        : Colors.white.withOpacity(0.80),
-                                    borderRadius: BorderRadius.circular(
-                                      AppTheme.radius,
-                                    ),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? const Color(0xFF22304B)
-                                          : const Color(0xFFE5E8F5),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: isDark
-                                            ? const Color(0x33040A16)
-                                            : const Color(0x120F172A),
-                                        blurRadius: 16,
-                                        offset: const Offset(0, 8),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(
-                                      AppTheme.radius,
-                                    ),
-                                    child: widget.child,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                        Positioned.fill(
-                          child: IgnorePointer(
-                            ignoring: !_isSidebarOverlayOpen,
-                            child: AnimatedOpacity(
-                              duration: _desktopSidebarAnimationDuration,
-                              curve: Curves.easeOutCubic,
-                              opacity: _isSidebarOverlayOpen ? 1 : 0,
-                              child: GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: _closeDesktopSidebarOverlay,
-                                child: ColoredBox(
+                        const SizedBox(width: _desktopPanelGap),
+                        Expanded(
+                          child: RepaintBoundary(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF0F1B31)
+                                        .withOpacity(0.92)
+                                    : Colors.white.withOpacity(0.80),
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radius,
+                                ),
+                                border: Border.all(
                                   color: isDark
-                                      ? const Color(0x22040A16)
-                                      : const Color(0x120F172A),
-                                  child: const SizedBox.expand(),
+                                      ? const Color(0xFF22304B)
+                                      : const Color(0xFFE5E8F5),
                                 ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: isDark
+                                        ? const Color(0x33040A16)
+                                        : const Color(0x120F172A),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radius,
+                                ),
+                                child: widget.child,
                               ),
                             ),
-                          ),
-                        ),
-                        AnimatedPositioned(
-                          duration: _desktopSidebarAnimationDuration,
-                          curve: Curves.easeOutCubic,
-                          top: 0,
-                          bottom: 0,
-                          left: _isSidebarOverlayOpen
-                              ? 0
-                              : -(_desktopOverlayWidth + AppTheme.spacing),
-                          child: IgnorePointer(
-                            ignoring: !_isSidebarOverlayOpen,
-                            child: AnimatedOpacity(
-                              duration: _desktopSidebarAnimationDuration,
-                              curve: Curves.easeOutCubic,
-                              opacity: _isSidebarOverlayOpen ? 1 : 0,
-                              child: RepaintBoundary(
-                                child: _DesktopSidebarFrame(
-                                  compact: false,
-                                  width: _desktopOverlayWidth,
-                                  selectedModule: widget.selectedModule,
-                                  onSelectModule: _handleDesktopModuleSelection,
-                                  showBrand: false,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        AnimatedPositioned(
-                          duration: _desktopSidebarAnimationDuration,
-                          curve: Curves.easeOutCubic,
-                          top: 10,
-                          left: toggleLeft,
-                          child: _SidebarToggleButton(
-                            compact: !_isSidebarOverlayOpen,
-                            onTap: _toggleDesktopSidebarOverlay,
                           ),
                         ),
                       ],
@@ -239,9 +176,6 @@ class _AppShellState extends State<AppShell> {
 
   void _handleDesktopModuleSelection(AppModule module) {
     widget.onSelectModule(module);
-    if (_isSidebarOverlayOpen) {
-      setState(() => _isSidebarOverlayOpen = false);
-    }
   }
 
   Widget _buildMobileShell() {
@@ -562,6 +496,8 @@ class _DesktopSidebarFrame extends StatelessWidget {
     required this.selectedModule,
     required this.onSelectModule,
     this.showBrand = false,
+    this.showToggleButton = false,
+    this.onToggleSidebar,
   });
 
   final bool compact;
@@ -569,21 +505,36 @@ class _DesktopSidebarFrame extends StatelessWidget {
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
   final bool showBrand;
+  final bool showToggleButton;
+  final VoidCallback? onToggleSidebar;
 
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
-      child: SizedBox(
-        width: width,
-        child: ClipRect(
-          child: SidebarNavigation(
-            selectedModule: selectedModule,
-            onSelectModule: onSelectModule,
-            compact: compact,
-            showBrand: showBrand,
-            contentTopInset: 0,
+      child: Stack(
+        children: [
+          SizedBox(
+            width: width,
+            child: ClipRect(
+              child: SidebarNavigation(
+                selectedModule: selectedModule,
+                onSelectModule: onSelectModule,
+                compact: compact,
+                showBrand: showBrand,
+                contentTopInset: compact ? 42 : 0,
+              ),
+            ),
           ),
-        ),
+          if (showToggleButton && onToggleSidebar != null)
+            Positioned(
+              top: 10,
+              right: 10,
+              child: _SidebarToggleButton(
+                compact: compact,
+                onTap: onToggleSidebar!,
+              ),
+            ),
+        ],
       ),
     );
   }
