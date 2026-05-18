@@ -1,6 +1,5 @@
 // Ce fichier affiche l'inventaire interactif des expositions.
 import 'dart:async';
-import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +14,7 @@ import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/utils/file_save.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../../referentiels/models/referentiels_models.dart';
@@ -171,7 +171,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                       Padding(
                         padding: EdgeInsets.only(left: 10),
                         child: PageHeader(
-                          title: 'Expositions',
+                          title: 'Risque de crédit',
                           subtitle:
                               'Saisissez, importez et suivez les expositions avec calcul automatique des zones UEMOA/CEMAC.',
                           titleFontSize: 22,
@@ -3155,8 +3155,11 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       return;
     }
 
-    final file = File(location.path);
-    await file.writeAsBytes(bytes, flush: true);
+    await saveBytesAtLocation(
+      location,
+      bytes,
+      requiredExtension: '.xlsx',
+    );
     if (!mounted) {
       return;
     }
@@ -3180,8 +3183,11 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       return;
     }
 
-    final file = File(location.path);
-    await file.writeAsBytes(pdfBytes, flush: true);
+    await saveBytesAtLocation(
+      location,
+      pdfBytes,
+      requiredExtension: '.pdf',
+    );
     if (!mounted) {
       return;
     }

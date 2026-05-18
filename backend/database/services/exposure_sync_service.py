@@ -5,10 +5,12 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import logging
 from pathlib import Path
+import shutil
 from threading import Lock, Thread
 from typing import Any
 
-from app.core.excel_repository import excel_repository
+from app.core.excel_repository import ExcelImportValidationError, excel_repository
+from app.core.runtime_paths import is_packaged_runtime, seed_data_path
 from database.connection import database_manager, utcnow_iso
 from database.repositories.exposure_repository import exposure_repository
 
@@ -117,7 +119,7 @@ class ExposureSyncService:
             if skip_payload is not None:
                 return skip_payload
 
-        workbook_index = excel_repository.exposure_template_fields_by_id()
+        workbook_index = self._load_workbook_index(source_path)
         sqlite_records = exposure_repository.list_exposures()
         if not sqlite_records:
             self._write_sync_metadata(
@@ -189,8 +191,49 @@ class ExposureSyncService:
             "source_path": str(source_path),
             "matched_count": matched_count,
             "updated_count": len(records_to_update),
-                "backup_path": str(backup_path) if backup_path is not None else None,
+            "backup_path": str(backup_path) if backup_path is not None else None,
         }
+
+    def _load_workbook_index(self, source_path: Path) -> dict[str, dict[str, Any]]:
+        try:
+            return excel_repository.exposure_template_fields_by_id()
+        except ExcelImportValidationError:
+            if not self._restore_packaged_workbook(source_path):
+                logger.warning(
+                    "Le classeur Excel local ne correspond pas au format complet attendu. "
+                    "Le backfill des references Expositions continue en mode compatibilite: %s",
+                    source_path,
+                )
+                return excel_repository.exposure_template_fields_by_id_relaxed()
+            return excel_repository.exposure_template_fields_by_id()
+
+    def _restore_packaged_workbook(self, source_path: Path) -> bool:
+        if not is_packaged_runtime():
+            return False
+
+        packaged_template_path = seed_data_path("modele_import_rwa.xlsx")
+        if not packaged_template_path.is_file():
+            return False
+
+        try:
+            if packaged_template_path.resolve() == source_path.resolve():
+                return False
+        except OSError:
+            return False
+
+        source_path.parent.mkdir(parents=True, exist_ok=True)
+        if source_path.exists():
+            backup_path = source_path.with_name(
+                f"{source_path.stem}_invalid_backup_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}{source_path.suffix}"
+            )
+            shutil.copy2(source_path, backup_path)
+
+        shutil.copy2(packaged_template_path, source_path)
+        logger.warning(
+            "Le modèle Excel local était invalide. Restauration depuis le modèle embarqué: %s",
+            packaged_template_path,
+        )
+        return True
 
     def _run_backfill_job(self, *, force: bool) -> None:
         try:

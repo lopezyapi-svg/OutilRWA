@@ -93,6 +93,7 @@ const Map<String, String> _englishTranslations = {
   'Dashboard': 'Dashboard',
   'Tableau de bord': 'Dashboard',
   'Expositions': 'Exposures',
+  'Risque de crédit': 'Credit risk',
   'Données de Marché': 'Market Data',
   'Données de mrché': 'Market Data',
   'Marché': 'Market',
@@ -100,6 +101,9 @@ const Map<String, String> _englishTranslations = {
   'Analyse & Risques': 'Analysis & Risk',
   'Stress Tests': 'Stress Tests',
   'Stress tests': 'Stress tests',
+  'Stress test': 'Stress test',
+  'ICAP': 'ICAP',
+  'Capital planing': 'Capital planning',
   'Simulation': 'Simulation',
   'Référentiels': 'Reference Data',
   'Referentiels': 'Reference Data',
@@ -115,6 +119,12 @@ const Map<String, String> _englishTranslations = {
       'Analysis of risk, collateral and RWA impacts.',
   'Stress tests prudentiels et sensibilités du portefeuille.':
       'Prudential stress tests and portfolio sensitivities.',
+  'Simulation de chocs et scénarios adverses sur le portefeuille et le capital.':
+      'Simulation of shocks and adverse scenarios on the portfolio and capital.',
+  'Evaluation interne de l’adéquation du capital et des besoins de solvabilité.':
+      'Internal assessment of capital adequacy and solvency needs.',
+  'Projection du capital, des besoins prudentiels et des marges de manoeuvre.':
+      'Projection of capital, prudential requirements and management headroom.',
   'Simulation de scénarios RWA et capital minimum.':
       'Simulation of RWA scenarios and minimum capital.',
   'Référentiels, tables RW, CCF et notations de calcul.':
@@ -715,6 +725,7 @@ const Map<String, String> _frenchTranslations = {
   'Risque élevé (densité)': 'Risque élevé',
   'Dashboard': 'Tableau de bord',
   'Exposures': 'Expositions',
+  'Credit risk': 'Risque de crédit',
   'CRM financee': 'CRM financée',
   'CRM non financee': 'CRM non financée',
   'Parametres de la surete financee': 'Paramètres de la sûreté financée',

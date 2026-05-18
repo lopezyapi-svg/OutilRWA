@@ -6,6 +6,9 @@ enum AppModule {
   risqueMarche,
   risqueOperationnel,
   analyse,
+  stressTest,
+  icap,
+  capitalPlaning,
   referentiels,
   rapports,
 }
@@ -17,13 +20,19 @@ extension AppModuleLabel on AppModule {
       case AppModule.dashboard:
         return 'Dashboard';
       case AppModule.expositions:
-        return 'Expositions';
+        return 'Risque de crédit';
       case AppModule.risqueMarche:
         return 'Risque de marché';
       case AppModule.risqueOperationnel:
         return 'Risque opérationnel';
       case AppModule.analyse:
         return 'Analyse';
+      case AppModule.stressTest:
+        return 'Stress test';
+      case AppModule.icap:
+        return 'ICAP';
+      case AppModule.capitalPlaning:
+        return 'Capital planing';
       case AppModule.referentiels:
         return 'Référentiels';
       case AppModule.rapports:
@@ -43,6 +52,12 @@ extension AppModuleLabel on AppModule {
         return 'Cartographie des risques operationnels et des controles internes.';
       case AppModule.analyse:
         return 'Conseils et recommandations basés sur les expositions et les risques.';
+      case AppModule.stressTest:
+        return 'Simulation de chocs et scénarios adverses sur le portefeuille et le capital.';
+      case AppModule.icap:
+        return 'Evaluation interne de l’adéquation du capital et des besoins de solvabilité.';
+      case AppModule.capitalPlaning:
+        return 'Projection du capital, des besoins prudentiels et des marges de manoeuvre.';
       case AppModule.referentiels:
         return 'Référentiels, tables RW, CCF et notations de calcul.';
       case AppModule.rapports:

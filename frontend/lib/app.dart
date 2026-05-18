@@ -9,12 +9,15 @@ import 'core/services/rwa_api_service.dart';
 import 'core/state/portfolio_currency_scope.dart';
 import 'core/theme/app_theme.dart';
 import 'modules/analyse/screens/analyse_screen.dart';
+import 'modules/capital_planing/screens/capital_planing_screen.dart';
 import 'modules/dashboard/screens/dashboard_screen.dart';
 import 'modules/expositions/screens/expositions_screen.dart';
+import 'modules/icap/screens/icap_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/referentiels/screens/referentiels_screen.dart';
 import 'modules/risque_marche/screens/risque_marche_screen.dart';
 import 'modules/risque_operationnel/screens/risque_operationnel_screen.dart';
+import 'modules/stress_test/screens/stress_test_screen.dart';
 import 'shared/widgets/app_shell.dart';
 
 /// Widget racine qui pilote le thème et la navigation principale.
@@ -67,7 +70,7 @@ class _RwaAppState extends State<RwaApp> {
           notifier: _appLanguage,
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'RWACalco',
+            title: 'Risk management',
             locale: appLanguage.locale,
             supportedLocales: AppLanguage.values
                 .map((language) => language.locale)
@@ -123,6 +126,9 @@ class _RwaAppState extends State<RwaApp> {
         AppModule.risqueMarche => RisqueMarcheScreen(api: _api),
         AppModule.risqueOperationnel => RisqueOperationnelScreen(api: _api),
         AppModule.analyse => AnalyseScreen(api: _api),
+        AppModule.stressTest => StressTestScreen(api: _api),
+        AppModule.icap => IcapScreen(api: _api),
+        AppModule.capitalPlaning => CapitalPlaningScreen(api: _api),
         AppModule.referentiels => ReferentielsScreen(api: _api),
         AppModule.rapports => RapportsScreen(api: _api),
       };

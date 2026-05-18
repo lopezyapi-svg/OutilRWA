@@ -8,7 +8,7 @@ import shutil
 import sys
 
 
-APP_FOLDER_NAME = "RWA Calculator"
+APP_FOLDER_NAME = "Risk management"
 PACKAGED_ENV_VAR = "RWA_PACKAGED"
 
 

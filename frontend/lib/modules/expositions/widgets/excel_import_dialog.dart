@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +6,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/utils/file_save.dart';
 
 Future<Map<String, dynamic>?> showExcelImportDialog(
   BuildContext context, {
@@ -154,8 +153,11 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
         ],
       );
       if (location == null) return;
-      final file = File(location.path);
-      await file.writeAsBytes(bytes, flush: true);
+      await saveBytesAtLocation(
+        location,
+        bytes,
+        requiredExtension: '.xlsx',
+      );
       if (mounted) {
         _showMessage('Modèle Excel enregistré.');
       }

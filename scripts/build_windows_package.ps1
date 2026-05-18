@@ -8,14 +8,15 @@ $distDir = Join-Path $repoRoot "dist"
 $buildDir = Join-Path $repoRoot ".build"
 $venvDir = Join-Path $buildDir "packaging-venv"
 $venvPython = Join-Path $venvDir "Scripts\python.exe"
-$portableDir = Join-Path $distDir "RWA Calculator Portable"
+$portableDir = Join-Path $distDir "Risk management Portable"
+$portableZipPath = Join-Path $distDir "Risk_Management_Portable.zip"
 $payloadDir = Join-Path $buildDir "installer-payload"
 $bundleZipPath = Join-Path $payloadDir "rwa_calculator_bundle.zip"
-$installerExePath = Join-Path $distDir "RWA_Calculator_Setup.exe"
+$installerExePath = Join-Path $distDir "Risk_Management_Setup.exe"
 $installerSourcePath = Join-Path $repoRoot "scripts\InstallerStub.cs"
 $installerBuildDir = Join-Path $buildDir "installer-build"
 $frontendBuildDir = Join-Path $frontendDir "build\windows\x64"
-$frontendBundleDir = Join-Path $frontendBuildDir "bundle"
+$windowsAppIconPath = Join-Path $frontendDir "windows\runner\resources\app_icon.ico"
 $embeddedPythonZipPath = Join-Path $buildDir "python-embed-amd64.zip"
 $backendPackageDir = Join-Path $buildDir "backend-package"
 $backendPythonDir = Join-Path $backendPackageDir "python"
@@ -87,6 +88,21 @@ function Resolve-CSharpCompilerPath {
     throw "csc.exe introuvable. Installez le .NET Framework developer pack ou Visual Studio."
 }
 
+function Resolve-FrontendBundlePath {
+    $candidates = @(
+        (Join-Path $frontendBuildDir "bundle")
+        (Join-Path $frontendBuildDir "runner\Release")
+    )
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path (Join-Path $candidate "rwa_calculator.exe")) {
+            return $candidate
+        }
+    }
+
+    throw "Executable Flutter introuvable. Emplacements testes : $($candidates -join ', ')"
+}
+
 function Get-PythonVersion {
     return (& $venvPython -c "import sys; print(sys.version.split()[0])").Trim()
 }
@@ -118,24 +134,6 @@ function Resolve-PreferredWorkbookPath {
         return $directCandidate
     }
 
-    $desktopCandidates = @(
-        (Join-Path $HOME "OneDrive\Desktop")
-        (Join-Path $HOME "Desktop")
-    )
-
-    $workbooks = foreach ($desktop in $desktopCandidates) {
-        if (Test-Path $desktop) {
-            Get-ChildItem $desktop -Filter "BASE_CALCUL_RWA*.xlsx" -File -ErrorAction SilentlyContinue
-        }
-    }
-
-    $preferredWorkbook = $workbooks |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1 -ExpandProperty FullName
-    if ($preferredWorkbook) {
-        return $preferredWorkbook
-    }
-
     return $null
 }
 
@@ -149,7 +147,26 @@ function Copy-BackendSeedData {
     $preferredWorkbook = Resolve-PreferredWorkbookPath
     if ($preferredWorkbook) {
         Copy-Item $preferredWorkbook (Join-Path $TargetDataDir "modele_import_rwa.xlsx") -Force
+        return
     }
+
+    $generatorScript = @'
+from pathlib import Path
+import sys
+
+repo_root = Path(sys.argv[1])
+target_path = Path(sys.argv[2])
+sys.path.insert(0, str(repo_root / "backend"))
+
+from database.services.excel_import_service import excel_import_service
+
+target_path.parent.mkdir(parents=True, exist_ok=True)
+target_path.write_bytes(excel_import_service.build_template_workbook())
+'@
+
+    $targetWorkbookPath = Join-Path $TargetDataDir "modele_import_rwa.xlsx"
+    & $venvPython -c $generatorScript $repoRoot $targetWorkbookPath
+    Assert-LastExitCode -Context "La generation du modele Excel embarque"
 }
 
 Ensure-Directory -Path $distDir
@@ -224,6 +241,7 @@ Invoke-Step -Title "Creation explicite du bundle Windows Flutter" -Action {
 }
 
 Invoke-Step -Title "Assemblage du livrable portable" -Action {
+    $frontendBundleDir = Resolve-FrontendBundlePath
     if (-not (Test-Path (Join-Path $frontendBundleDir "rwa_calculator.exe"))) {
         throw "Executable Flutter introuvable dans $frontendBundleDir"
     }
@@ -237,6 +255,14 @@ Invoke-Step -Title "Assemblage du livrable portable" -Action {
     New-CleanDirectory -Path $portableDir
     Copy-Item (Join-Path $frontendBundleDir "*") $portableDir -Recurse -Force
     Copy-Item $backendPackageDir (Join-Path $portableDir "backend") -Recurse -Force
+}
+
+Invoke-Step -Title "Compression du livrable portable" -Action {
+    if (Test-Path $portableZipPath) {
+        Remove-Item $portableZipPath -Force
+    }
+
+    Compress-Archive -Path (Join-Path $portableDir "*") -DestinationPath $portableZipPath -CompressionLevel Optimal
 }
 
 Invoke-Step -Title "Preparation du paquet d'installation" -Action {
@@ -268,6 +294,9 @@ Invoke-Step -Title "Compilation de l'installateur EXE autonome" -Action {
         "/reference:System.Windows.Forms.dll",
         "/reference:Microsoft.CSharp.dll"
     )
+    if (Test-Path $windowsAppIconPath) {
+        $compilerArguments += "/win32icon:$windowsAppIconPath"
+    }
     $compilerArguments += $installerSourcePath
 
     & $cscExe @compilerArguments
@@ -280,5 +309,7 @@ Invoke-Step -Title "Compilation de l'installateur EXE autonome" -Action {
 Write-Host ""
 Write-Host "Portable :" -ForegroundColor Green
 Write-Host "  $portableDir"
+Write-Host "Portable ZIP :" -ForegroundColor Green
+Write-Host "  $portableZipPath"
 Write-Host "Installateur EXE :" -ForegroundColor Green
 Write-Host "  $installerExePath"

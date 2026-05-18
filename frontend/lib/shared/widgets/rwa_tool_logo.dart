@@ -7,7 +7,7 @@ class RwaToolLogo extends StatelessWidget {
     this.size = 40,
   });
 
-  static const String _assetPath = 'assets/images/rwa_credit.png';
+  static const String _assetPath = 'assets/images/logo.png';
 
   final double size;
 

@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$appName = "RWA Calculator"
+$appName = "Risk management"
 $bundlePath = Join-Path $PSScriptRoot "rwa_calculator_bundle.zip"
 $installRoot = Join-Path $env:LOCALAPPDATA "Programs"
 $installDir = Join-Path $installRoot $appName
@@ -15,7 +15,7 @@ if (-not (Test-Path $bundlePath)) {
 }
 
 if (Get-Process -Name "rwa_calculator" -ErrorAction SilentlyContinue) {
-    throw "Fermez RWA Calculator avant de relancer l'installation."
+    throw "Fermez Risk management avant de relancer l'installation."
 }
 
 New-Item -ItemType Directory -Path $installRoot -Force | Out-Null

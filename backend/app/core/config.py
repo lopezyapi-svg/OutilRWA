@@ -7,7 +7,7 @@ from dataclasses import dataclass
 class Settings:
     """Contient les parametres simples utilises par l'API."""
 
-    app_name: str = "RWA Calculator API"
+    app_name: str = "Risk management API"
     app_version: str = "0.1.0"
     capital_ratio: float = 0.08
 

@@ -8,7 +8,6 @@ import '../../core/models/global_search_entry.dart';
 import '../../core/services/rwa_api_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/currency_conversion.dart';
-import 'rwa_tool_logo.dart';
 import 'sidebar_navigation.dart';
 
 const double _sidebarToggleButtonWidth = 28;
@@ -391,6 +390,12 @@ IconData _iconForModule(AppModule module) {
       return Icons.shield_outlined;
     case AppModule.analyse:
       return Icons.analytics_outlined;
+    case AppModule.stressTest:
+      return Icons.science_outlined;
+    case AppModule.icap:
+      return Icons.account_balance_outlined;
+    case AppModule.capitalPlaning:
+      return Icons.timeline_rounded;
     case AppModule.referentiels:
       return Icons.menu_book_outlined;
     case AppModule.rapports:
@@ -498,12 +503,22 @@ class _ShellBrand extends StatelessWidget {
           height: 40,
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF14233D) : const Color(0xFFF9FAFF),
-            borderRadius: BorderRadius.circular(AppTheme.radius),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isDark ? const Color(0xFF2A3C5E) : const Color(0xFFD9E4F6),
             ),
           ),
-          child: const RwaToolLogo(size: 40),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox.expand(
+              child: Image.asset(
+                'assets/images/logo.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                filterQuality: FilterQuality.high,
+              ),
+            ),
+          ),
         ),
         const SizedBox(width: 8),
         Column(
@@ -511,7 +526,7 @@ class _ShellBrand extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              context.tr('RWA Crédit'),
+              context.tr('Risk management'),
               style: TextStyle(
                 color: isDark
                     ? const Color(0xFFC9D6FF)

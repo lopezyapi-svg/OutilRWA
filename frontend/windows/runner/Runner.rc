@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "OutilRWA" "\0"
-            VALUE "FileDescription", "RWA Calculator" "\0"
+            VALUE "FileDescription", "Risk management" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "RWA Calculator" "\0"
+            VALUE "InternalName", "Risk management" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 OutilRWA. All rights reserved." "\0"
-            VALUE "OriginalFilename", "RWA Calculator.exe" "\0"
-            VALUE "ProductName", "RWA Calculator" "\0"
+            VALUE "OriginalFilename", "rwa_calculator.exe" "\0"
+            VALUE "ProductName", "Risk management" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

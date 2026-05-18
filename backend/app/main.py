@@ -56,4 +56,4 @@ app.include_router(rapports_router)
 def root() -> dict[str, str]:
     """Expose un message simple de sante de l'API."""
 
-    return {"message": "RWA Calculator API is running"}
+    return {"message": "Risk management API is running"}

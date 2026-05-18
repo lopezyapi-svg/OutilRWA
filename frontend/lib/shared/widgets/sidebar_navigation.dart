@@ -64,7 +64,7 @@ const List<_MenuEntry> _sidebarItems = [
   _MenuEntry(
     AppModule.expositions,
     Icons.table_chart_rounded,
-    'Expositions',
+    'Risque de crédit',
   ),
   _MenuEntry(
     AppModule.risqueMarche,
@@ -82,9 +82,19 @@ const List<_MenuEntry> _sidebarItems = [
     'Analyse',
   ),
   _MenuEntry(
-    AppModule.referentiels,
-    Icons.menu_book_rounded,
-    'Referentiels',
+    AppModule.stressTest,
+    Icons.science_outlined,
+    'Stress test',
+  ),
+  _MenuEntry(
+    AppModule.icap,
+    Icons.account_balance_outlined,
+    'ICAP',
+  ),
+  _MenuEntry(
+    AppModule.capitalPlaning,
+    Icons.timeline_rounded,
+    'Capital planing',
   ),
 ];
 
@@ -473,7 +483,7 @@ class _BrandHeader extends StatelessWidget {
         const SizedBox(width: AppTheme.spacing),
         Expanded(
           child: Text(
-            context.tr('RWA Crédit'),
+            context.tr('Risk management'),
             style: TextStyle(
               color: isDark
                   ? const Color(0xFFD7E3FA)

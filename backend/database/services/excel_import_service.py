@@ -12,7 +12,14 @@ from typing import Any
 
 from openpyxl import Workbook, load_workbook
 
-from app.core.excel_repository import excel_repository
+from app.core.excel_repository import (
+    EXPECTED_COLUMNS_BY_SHEET,
+    EXPECTED_INDICATORS_BY_SHEET,
+    EXPECTED_SHEETS,
+    REF_MIN_COLUMN_COUNT,
+    excel_repository,
+)
+from app.core.runtime_paths import seed_data_path
 from app.validators.excel_import_validator import (
     IMPORT_SHEET_SPECS,
     ExcelImportValidationError,
@@ -139,24 +146,33 @@ class ExcelImportService:
         return build_excel_import_spec()
 
     def build_template_workbook(self) -> bytes:
-        source_path = excel_repository.source_path
-        if source_path.exists():
-            workbook = load_workbook(source_path)
-            if "Guide" in workbook.sheetnames:
-                workbook.remove(workbook["Guide"])
-            output = BytesIO()
-            workbook.save(output)
-            workbook.close()
-            output.seek(0)
-            return output.getvalue()
+        template_candidates = (seed_data_path("modele_import_rwa.xlsx"),)
+        for candidate in template_candidates:
+            if candidate.is_file():
+                return candidate.read_bytes()
 
+        return self._build_fallback_template_workbook()
+
+    def _build_fallback_template_workbook(self) -> bytes:
         workbook = Workbook()
         default_sheet = workbook.active
         workbook.remove(default_sheet)
-        for spec in IMPORT_SHEET_SPECS:
-            sheet = workbook.create_sheet(spec.name)
-            if spec.required_columns:
-                sheet.append(list(spec.import_columns))
+
+        for sheet_name in EXPECTED_SHEETS:
+            sheet = workbook.create_sheet(sheet_name)
+            required_columns = EXPECTED_COLUMNS_BY_SHEET.get(sheet_name)
+            if required_columns:
+                sheet.append(list(required_columns))
+                sheet.freeze_panes = "A2"
+                continue
+
+            if sheet_name == "Ref_Ponderation":
+                indicator_row = [""] * REF_MIN_COLUMN_COUNT
+                for index, marker in enumerate(
+                    EXPECTED_INDICATORS_BY_SHEET["Ref_Ponderation"]
+                ):
+                    indicator_row[index] = marker
+                sheet.append(indicator_row)
                 sheet.freeze_panes = "A2"
 
         output = BytesIO()

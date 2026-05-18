@@ -1,6 +1,6 @@
 {
-    "name": "RWA Calculator",
-    "short_name": "RWA Calculator",
+    "name": "Risk management",
+    "short_name": "Risk management",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

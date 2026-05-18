@@ -16,4 +16,11 @@ std::string Utf8FromUtf16(const wchar_t* utf16_string);
 // encoded in UTF-8. Returns an empty std::vector<std::string> on failure.
 std::vector<std::string> GetCommandLineArguments();
 
+// Starts the packaged Python backend when needed and waits until it responds.
+// Returns false and populates |error_message| if startup fails.
+bool EnsureBackendServerRunning(std::wstring* error_message);
+
+// Stops the packaged Python backend if it was launched by this process.
+void StopManagedBackendServer();
+
 #endif  // RUNNER_UTILS_H_

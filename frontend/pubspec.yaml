@@ -30,6 +30,9 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/heymanns_logo.png
+    - assets/images/logo.png
+    - assets/images/logo_header.png
+    - assets/images/risk_management.png
     - assets/images/rwa_credit.png
     - assets/images/manage_money_bro.svg
     - assets/lotties/import_loader.json

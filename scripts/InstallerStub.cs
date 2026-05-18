@@ -9,7 +9,7 @@ namespace RwaCalculatorInstaller
 {
     internal static class Program
     {
-        private const string AppName = "RWA Calculator";
+        private const string AppName = "Risk management";
         private const string BundleResourceName = "RwaCalculator.Bundle.zip";
 
         [STAThread]
@@ -20,7 +20,7 @@ namespace RwaCalculatorInstaller
                 if (Process.GetProcessesByName("rwa_calculator").Length > 0)
                 {
                     MessageBox.Show(
-                        "Fermez RWA Calculator avant de lancer l'installation.",
+                        "Fermez Risk management avant de lancer l'installation.",
                         AppName,
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning

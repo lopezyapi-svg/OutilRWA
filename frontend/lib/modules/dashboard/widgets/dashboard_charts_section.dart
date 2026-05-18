@@ -1979,7 +1979,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                           ),
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 10),
                       _DensityRiskLegend(
                         activeLevel: activeLevel,
                         isDark: isDark,
@@ -1994,8 +1994,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
 
         return DashboardPanel(
           title: 'Densité RWA du portefeuille',
-          subtitle:
-              'RWA total / Exposition totale brute',
+          subtitle: 'RWA total / Exposition totale brute',
           child: SizedBox(
             height: cardHeight,
             width: double.infinity,
@@ -2201,7 +2200,7 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
     ];
 
     return SizedBox(
-      width: 92,
+      width: 104,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2216,7 +2215,7 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
               height: 1,
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 5),
           for (var index = 0; index < levels.length; index++) ...[
             Tooltip(
               richMessage: TextSpan(
@@ -2310,7 +2309,7 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
                 ),
               ),
             ),
-            if (index != levels.length - 1) const SizedBox(height: 2),
+            if (index != levels.length - 1) const SizedBox(height: 4),
           ],
         ],
       ),
@@ -2347,80 +2346,80 @@ class _DensityRiskTile extends StatelessWidget {
       scale: active ? 1.02 : 1,
       alignment: Alignment.centerLeft,
       child: AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      height: 25,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      decoration: BoxDecoration(
-        color: active ? color : color.withValues(alpha: isDark ? 0.10 : 0.05),
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(
-          color: current || active ? color : color.withValues(alpha: 0.18),
-          width: current ? 1.2 : 1,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        height: 29,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: active ? color : color.withValues(alpha: isDark ? 0.10 : 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: current || active ? color : color.withValues(alpha: 0.18),
+            width: current ? 1.2 : 1,
+          ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: isDark ? 0.24 : 0.18),
+                    blurRadius: 9,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
-        boxShadow: active
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: isDark ? 0.24 : 0.18),
-                  blurRadius: 9,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: current ? 6 : 4,
-            height: current ? 6 : 4,
-            decoration: BoxDecoration(
+        child: Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: current ? 6 : 4,
+              height: current ? 6 : 4,
+              decoration: BoxDecoration(
+                color: active ? Colors.white : color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Icon(
+              icon,
               color: active ? Colors.white : color,
-              shape: BoxShape.circle,
+              size: 11.5,
             ),
-          ),
-          const SizedBox(width: 5),
-          Icon(
-            icon,
-            color: active ? Colors.white : color,
-            size: 11,
-          ),
-          const SizedBox(width: 5),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: active ? Colors.white : color,
-                    fontSize: 6.1,
-                    fontWeight: FontWeight.w900,
-                    height: 1,
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: active ? Colors.white : color,
+                      fontSize: 6.5,
+                      fontWeight: FontWeight.w900,
+                      height: 1.05,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  helper,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: active
-                        ? Colors.white.withValues(alpha: 0.86)
-                        : mutedColor.withValues(alpha: isDark ? 0.94 : 0.88),
-                    fontSize: 5.2,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
+                  const SizedBox(height: 3),
+                  Text(
+                    helper,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: active
+                          ? Colors.white.withValues(alpha: 0.86)
+                          : mutedColor.withValues(alpha: isDark ? 0.94 : 0.88),
+                      fontSize: 5.4,
+                      fontWeight: FontWeight.w700,
+                      height: 1.05,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -2836,7 +2835,8 @@ class _GaugePainter extends CustomPainter {
       tip,
       18 + (pulse * 5),
       Paint()
-        ..color = const Color(0xFF234A84).withValues(alpha: 0.05 + (pulse * 0.05)),
+        ..color =
+            const Color(0xFF234A84).withValues(alpha: 0.05 + (pulse * 0.05)),
     );
     canvas.drawCircle(
       tip,
@@ -2989,11 +2989,13 @@ class _GaugePainter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: isDark
             ? [
-                const Color(0xFFA8C7FF).withValues(alpha: 0.12 + (pulse * 0.04)),
+                const Color(0xFFA8C7FF)
+                    .withValues(alpha: 0.12 + (pulse * 0.04)),
                 const Color(0xFFA8C7FF).withValues(alpha: 0.0),
               ]
             : [
-                const Color(0xFFBFD8FF).withValues(alpha: 0.20 + (pulse * 0.05)),
+                const Color(0xFFBFD8FF)
+                    .withValues(alpha: 0.20 + (pulse * 0.05)),
                 const Color(0xFFBFD8FF).withValues(alpha: 0.0),
               ],
       ).createShader(
@@ -3011,12 +3013,14 @@ class _GaugePainter extends CustomPainter {
         end: Alignment.bottomCenter,
         colors: isDark
             ? [
-                const Color(0xFF193252).withValues(alpha: 0.34 + (pulse * 0.04)),
+                const Color(0xFF193252)
+                    .withValues(alpha: 0.34 + (pulse * 0.04)),
                 const Color(0xFF11213C).withValues(alpha: 0.08),
               ]
             : [
                 const Color(0xFFF1F6FF).withValues(alpha: 0.92),
-                const Color(0xFFDDEAFF).withValues(alpha: 0.68 + (pulse * 0.04)),
+                const Color(0xFFDDEAFF)
+                    .withValues(alpha: 0.68 + (pulse * 0.04)),
               ],
       ).createShader(
         Rect.fromLTWH(

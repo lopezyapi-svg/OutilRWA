@@ -1432,6 +1432,12 @@ class RwaApiService {
         return 'risque operationnel incidents controles processus';
       case AppModule.analyse:
         return 'analyse recommandations conseils strategie';
+      case AppModule.stressTest:
+        return 'stress test scenarios chocs sensibilites rwa capital';
+      case AppModule.icap:
+        return 'icap adequation capital solvabilite pilotage interne';
+      case AppModule.capitalPlaning:
+        return 'capital planing planning projection budget prudentiel';
       case AppModule.referentiels:
         return 'referentiels rw ccf notations tables';
       case AppModule.rapports:

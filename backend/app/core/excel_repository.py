@@ -18,10 +18,14 @@ from app.core.runtime_paths import (
     default_excel_source_path,
     ensure_seed_data_file,
     exports_dir,
+    is_packaged_runtime,
 )
 
 
 def _resolve_excel_source_path() -> Path:
+    if is_packaged_runtime():
+        return default_excel_source_path()
+
     desktop_candidates = (
         Path.home() / "OneDrive" / "Desktop",
         Path.home() / "Desktop",
@@ -453,6 +457,60 @@ class ExcelRepository:
         workbook = load_workbook(path, data_only=True, read_only=True)
         try:
             return self._build_cache_from_workbook(workbook)
+        finally:
+            workbook.close()
+
+    def _index_exposure_template_fields(
+        self,
+        template_rows: list[dict[str, Any]],
+    ) -> dict[str, dict[str, Any]]:
+        indexed: dict[str, dict[str, Any]] = {}
+        for row in template_rows:
+            exposure_id = _as_clean_text(row.get("ID_Exposition")) or ""
+            if not exposure_id:
+                continue
+            indexed[exposure_id] = {
+                "grant_date": _as_optional_date(row.get("Date d'octroi")),
+                "maturity_date": _as_optional_date(row.get("Date d'échéance")),
+                "country_rating": _as_clean_text(row.get("Notation_externe_pays"))
+                or "Non noté",
+            }
+        return indexed
+
+    def _load_template_rows_without_full_validation(self) -> list[dict[str, Any]]:
+        workbook = load_workbook(self._path, data_only=True, read_only=True)
+        try:
+            if "Template données" not in workbook.sheetnames:
+                raise ExcelImportValidationError(
+                    {
+                        "error_code": "excel_structure_invalid",
+                        "message": "Le fichier Excel importé ne correspond pas au format attendu.",
+                        "missing_sheets": ["Template données"],
+                        "available_sheets": list(workbook.sheetnames),
+                    }
+                )
+
+            available_columns = [
+                header
+                for header in self._sheet_headers(workbook, "Template données")
+                if header
+            ]
+            if "ID_Exposition" not in available_columns:
+                raise ExcelImportValidationError(
+                    {
+                        "error_code": "excel_structure_invalid",
+                        "message": "Le fichier Excel importé ne correspond pas au format attendu.",
+                        "missing_columns_by_sheet": {
+                            "Template données": ["ID_Exposition"],
+                        },
+                        "available_columns_by_sheet": {
+                            "Template données": available_columns,
+                        },
+                        "available_sheets": list(workbook.sheetnames),
+                    }
+                )
+
+            return self._read_sheet_rows(workbook, "Template données")
         finally:
             workbook.close()
 
@@ -917,18 +975,11 @@ class ExcelRepository:
         }
 
     def exposure_template_fields_by_id(self) -> dict[str, dict[str, Any]]:
-        cache = self._load_cache()
-        indexed: dict[str, dict[str, Any]] = {}
-        for row in cache.template_rows:
-            exposure_id = _as_clean_text(row.get("ID_Exposition")) or ""
-            if not exposure_id:
-                continue
-            indexed[exposure_id] = {
-                "grant_date": _as_optional_date(row.get("Date d'octroi")),
-                "maturity_date": _as_optional_date(row.get("Date d'échéance")),
-                "country_rating": _as_clean_text(row.get("Notation_externe_pays")) or "Non noté",
-            }
-        return indexed
+        return self._index_exposure_template_fields(self._load_cache().template_rows)
+
+    def exposure_template_fields_by_id_relaxed(self) -> dict[str, dict[str, Any]]:
+        template_rows = self._load_template_rows_without_full_validation()
+        return self._index_exposure_template_fields(template_rows)
 
     def list_exposures(self) -> list[dict[str, Any]]:
         cache = self._load_cache()
