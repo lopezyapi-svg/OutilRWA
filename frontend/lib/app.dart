@@ -41,7 +41,6 @@ class _RwaAppState extends State<RwaApp> {
   ThemeMode _themeMode = ThemeMode.light;
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
   final Map<AppModule, Widget> _screenCache = {};
-  final Set<AppModule> _visitedModules = {AppModule.dashboard};
 
   @override
   void initState() {
@@ -104,14 +103,15 @@ class _RwaAppState extends State<RwaApp> {
     if (!mounted) return;
     setState(() {
       _screenCache.clear();
-      _visitedModules.add(_selectedModule);
     });
   }
 
   void _selectModule(AppModule module) {
+    if (module == _selectedModule) {
+      return;
+    }
     setState(() {
       _selectedModule = module;
-      _visitedModules.add(module);
     });
   }
 
@@ -136,21 +136,13 @@ class _RwaAppState extends State<RwaApp> {
   }
 
   Widget _buildSelectedScreen() {
-    final visibleModules = AppModule.values
-        .where((module) => _visitedModules.contains(module))
-        .toList(growable: false);
-
     return PageStorage(
       bucket: _pageStorageBucket,
-      child: IndexedStack(
-        index: visibleModules.indexOf(_selectedModule),
-        children: [
-          for (final module in visibleModules)
-            KeyedSubtree(
-              key: PageStorageKey<String>(module.name),
-              child: _screenFor(module),
-            ),
-        ],
+      // On ne garde plus tous les ecrans visites dans le layout pour eviter
+      // que la sidebar ou le shell relancent leur recalcul a chaque animation.
+      child: KeyedSubtree(
+        key: PageStorageKey<String>(_selectedModule.name),
+        child: _screenFor(_selectedModule),
       ),
     );
   }

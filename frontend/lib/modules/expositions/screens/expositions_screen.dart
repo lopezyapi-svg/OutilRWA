@@ -2230,7 +2230,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   List<String> get _countryFilterOptions {
-    final options = <String>['Toutes'];
+    final options = <String>['Tous'];
     final seen = <String>{};
 
     void addCountry(String raw) {
@@ -2333,10 +2333,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               hint: 'Pays de résidence',
               items: _countryFilterOptions,
               displayTextBuilder: (item) =>
-                  item == 'Toutes' ? item : _displayCountry(item),
+                  item == 'Tous' ? item : _displayCountry(item),
               onChanged: (value) => setState(() {
                 _countryFilterController.text =
-                    value == null || value == 'Toutes' ? '' : value;
+                    value == null || value == 'Tous' ? '' : value;
               }),
             ),
           ),

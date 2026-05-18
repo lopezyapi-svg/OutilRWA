@@ -15,6 +15,8 @@ const double _sidebarToggleButtonHeight = 28;
 const double _sidebarToggleHitArea = 42;
 const double _sidebarToggleButtonRadius = 6;
 const double _desktopPanelGap = 8;
+const double _desktopRailWidth = 54;
+const double _desktopOverlayWidth = 220;
 const Duration _desktopSidebarAnimationDuration = Duration(milliseconds: 220);
 
 /// Coquille principale de l'application avec top bar, sidebar et contenu.
@@ -47,8 +49,6 @@ class AppShell extends StatefulWidget {
 /// Etat interne qui pilote la recherche, la sidebar et la top bar.
 class _AppShellState extends State<AppShell> {
   static const double _screenSpacing = AppTheme.spacing;
-  static const double _desktopRailWidth = 60;
-  static const double _desktopOverlayWidth = 220;
   bool _isSidebarOverlayOpen = false;
 
   @override
@@ -168,6 +168,12 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _handleDesktopModuleSelection(AppModule module) {
+    if (_isSidebarOverlayOpen) {
+      setState(() => _isSidebarOverlayOpen = false);
+    }
+    if (module == widget.selectedModule) {
+      return;
+    }
     widget.onSelectModule(module);
   }
 
@@ -513,7 +519,7 @@ class _DesktopSidebarFrame extends StatelessWidget {
             compact: compact,
             showBrand: showBrand,
             contentTopInset: 0,
-            headerTrailing: showToggleButton && !compact && onToggleSidebar != null
+            headerTrailing: showToggleButton && onToggleSidebar != null
                 ? _SidebarToggleButton(
                     compact: compact,
                     onTap: onToggleSidebar!,

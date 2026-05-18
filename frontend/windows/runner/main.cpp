@@ -26,6 +26,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   }
 
   flutter::DartProject project(L"data");
+  // Prefer the low-power GPU on Windows to reduce ANGLE/EGL context-loss
+  // issues seen on some dual-GPU machines and unstable discrete drivers.
+  project.set_gpu_preference(flutter::GpuPreference::LowPowerPreference);
 
   std::vector<std::string> command_line_arguments =
       GetCommandLineArguments();

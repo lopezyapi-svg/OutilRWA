@@ -35,6 +35,7 @@ class SidebarNavigation extends StatelessWidget {
         selectedModule: selectedModule,
         onSelectModule: onSelectModule,
         contentTopInset: contentTopInset,
+        headerTrailing: headerTrailing,
       );
     }
 
@@ -51,53 +52,99 @@ class SidebarNavigation extends StatelessWidget {
 
 /// Structure interne qui décrit une entrée du menu latéral.
 class _MenuEntry {
-  const _MenuEntry(this.module, this.icon, this.label);
+  const _MenuEntry.leaf({
+    required this.module,
+    required this.icon,
+    required this.label,
+  }) : children = const [];
 
-  final AppModule module;
+  const _MenuEntry.group({
+    required this.icon,
+    required this.label,
+    required this.children,
+  }) : module = null;
+
+  final AppModule? module;
   final IconData icon;
   final String label;
+  final List<_MenuEntry> children;
+
+  bool get hasChildren => children.isNotEmpty;
+
+  bool matches(AppModule selectedModule) {
+    if (module == selectedModule) {
+      return true;
+    }
+    return children.any((child) => child.matches(selectedModule));
+  }
+
+  AppModule resolveTarget(AppModule selectedModule) {
+    if (module != null) {
+      return module!;
+    }
+
+    for (final child in children) {
+      if (child.matches(selectedModule)) {
+        return child.resolveTarget(selectedModule);
+      }
+    }
+
+    final fallbackModule = children.first.module;
+    if (fallbackModule == null) {
+      throw StateError('Le sous-menu ne contient aucun module navigable.');
+    }
+    return fallbackModule;
+  }
 }
 
+const List<_MenuEntry> _riskCreditChildren = [
+  _MenuEntry.leaf(
+    module: AppModule.dashboard,
+    icon: Icons.space_dashboard_rounded,
+    label: 'Tableau de bord',
+  ),
+  _MenuEntry.leaf(
+    module: AppModule.expositions,
+    icon: Icons.view_list_rounded,
+    label: 'Expositions',
+  ),
+];
+
 const List<_MenuEntry> _sidebarItems = [
-  _MenuEntry(
-    AppModule.dashboard,
-    Icons.space_dashboard_rounded,
-    'Tableau de bord',
+  _MenuEntry.group(
+    icon: Icons.table_chart_rounded,
+    label: 'Risque de crédit',
+    children: _riskCreditChildren,
   ),
-  _MenuEntry(
-    AppModule.expositions,
-    Icons.table_chart_rounded,
-    'Risque de crédit',
+  _MenuEntry.leaf(
+    module: AppModule.risqueMarche,
+    icon: Icons.show_chart_rounded,
+    label: 'Risque de marché',
   ),
-  _MenuEntry(
-    AppModule.risqueMarche,
-    Icons.show_chart_rounded,
-    'Risque de marché',
+  _MenuEntry.leaf(
+    module: AppModule.risqueOperationnel,
+    icon: Icons.shield_outlined,
+    label: 'Risque opérationnel',
   ),
-  _MenuEntry(
-    AppModule.risqueOperationnel,
-    Icons.shield_outlined,
-    'Risque opérationnel',
+  _MenuEntry.leaf(
+    module: AppModule.analyse,
+    icon: Icons.analytics_outlined,
+    label: 'Analyse',
   ),
-  _MenuEntry(
-    AppModule.analyse,
-    Icons.analytics_outlined,
-    'Analyse',
+  _MenuEntry.leaf(
+    module: AppModule.stressTest,
+    icon: Icons.science_outlined,
+    label: 'Stress test',
   ),
-  _MenuEntry(
-    AppModule.stressTest,
-    Icons.science_outlined,
-    'Stress test',
+  _MenuEntry.leaf(
+    module: AppModule.icap,
+    icon: Icons.account_balance_outlined,
+    label: 'ICAP',
   ),
-  _MenuEntry(
-    AppModule.icap,
-    Icons.account_balance_outlined,
-    'ICAP',
-  ),
-  _MenuEntry(
-    AppModule.capitalPlaning,
-    Icons.timeline_rounded,
-    'Capital planing',
+  _MenuEntry.leaf(
+    module: AppModule.capitalPlaning,
+    icon: Icons.timeline_rounded,
+    label: 'Capital planing',
   ),
 ];
 
@@ -108,20 +155,22 @@ class _CompactSidebar extends StatelessWidget {
     required this.selectedModule,
     required this.onSelectModule,
     required this.contentTopInset,
+    this.headerTrailing,
   });
 
   final List<_MenuEntry> items;
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
   final double contentTopInset;
+  final Widget? headerTrailing;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      width: 60,
-      padding: const EdgeInsets.all(6),
+      width: 54,
+      padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF0F1B31).withValues(alpha: 0.96)
@@ -142,6 +191,13 @@ class _CompactSidebar extends StatelessWidget {
         children: [
           const SizedBox(height: 2),
           if (contentTopInset > 0) SizedBox(height: contentTopInset),
+          if (headerTrailing != null) ...[
+            Align(
+              alignment: Alignment.center,
+              child: headerTrailing!,
+            ),
+            const SizedBox(height: 6),
+          ],
           Expanded(
             child: ListView.separated(
               padding: EdgeInsets.zero,
@@ -152,8 +208,10 @@ class _CompactSidebar extends StatelessWidget {
                 final entry = items[index];
                 return _CompactNavButton(
                   entry: entry,
-                  selected: selectedModule == entry.module,
-                  onTap: () => onSelectModule(entry.module),
+                  selected: entry.matches(selectedModule),
+                  onTap: () => onSelectModule(
+                    entry.resolveTarget(selectedModule),
+                  ),
                 );
               },
             ),
@@ -213,63 +271,39 @@ class _CompactNavButton extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final iconColor = isDark ? const Color(0xFFB8C8E8) : _sidebarDeepBlue;
 
-    return Tooltip(
-      message: entry.module.title.tr(context),
-      waitDuration: const Duration(milliseconds: 180),
-      showDuration: const Duration(seconds: 2),
-      preferBelow: false,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F172A), Color(0xFF6C5CFD)],
-        ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppTheme.radius),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x220F172A),
-            blurRadius: 14,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      textStyle: const TextStyle(
-        color: Colors.white,
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: selected
+                ? (isDark ? const Color(0xFF162742) : const Color(0xFFF1F5FF))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTheme.radius),
+            border: Border.all(
               color: selected
-                  ? (isDark ? const Color(0xFF162742) : const Color(0xFFF1F5FF))
+                  ? (isDark
+                      ? const Color(0xFF34537F)
+                      : const Color(0xFFD7E2FF))
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-              border: Border.all(
-                color: selected
-                    ? (isDark
-                        ? const Color(0xFF34537F)
-                        : const Color(0xFFD7E2FF))
-                    : Colors.transparent,
-              ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: isDark
-                            ? const Color(0x22040A16)
-                            : const Color(0x142F55D4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ]
-                  : null,
             ),
-            child: Icon(entry.icon, size: 16, color: iconColor),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: isDark
+                          ? const Color(0x22040A16)
+                          : const Color(0x142F55D4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
+          child: Icon(entry.icon, size: 16, color: iconColor),
         ),
       ),
     );
@@ -352,11 +386,22 @@ class _ExpandedSidebar extends StatelessWidget {
                   separatorBuilder: (_, __) => const SizedBox(height: 6),
                   itemBuilder: (context, index) {
                     final entry = items[index];
+                    if (entry.hasChildren) {
+                      return _ExpandedNavGroup(
+                        entry: entry,
+                        selectedModule: selectedModule,
+                        onSelectModule: onSelectModule,
+                        showLabel: !isCondensed,
+                      );
+                    }
+
                     return _ExpandedNavTile(
                       entry: entry,
-                      selected: selectedModule == entry.module,
+                      selected: entry.matches(selectedModule),
                       showLabel: !isCondensed,
-                      onTap: () => onSelectModule(entry.module),
+                      onTap: () => onSelectModule(
+                        entry.resolveTarget(selectedModule),
+                      ),
                     );
                   },
                 ),
@@ -380,6 +425,152 @@ class _ExpandedSidebar extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Groupe de navigation avec sous-éléments.
+class _ExpandedNavGroup extends StatefulWidget {
+  const _ExpandedNavGroup({
+    required this.entry,
+    required this.selectedModule,
+    required this.onSelectModule,
+    required this.showLabel,
+  });
+
+  final _MenuEntry entry;
+  final AppModule selectedModule;
+  final ValueChanged<AppModule> onSelectModule;
+  final bool showLabel;
+
+  @override
+  State<_ExpandedNavGroup> createState() => _ExpandedNavGroupState();
+}
+
+class _ExpandedNavGroupState extends State<_ExpandedNavGroup> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = widget.entry.matches(widget.selectedModule);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ExpandedNavGroup oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final wasSelected = oldWidget.entry.matches(oldWidget.selectedModule);
+    final isSelected = widget.entry.matches(widget.selectedModule);
+
+    if ((!wasSelected && isSelected) ||
+        (!oldWidget.showLabel && widget.showLabel && isSelected)) {
+      _isExpanded = true;
+    } else if (wasSelected && !isSelected) {
+      _isExpanded = false;
+    }
+  }
+
+  void _toggleExpanded() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (!widget.showLabel) {
+      return _ExpandedNavTile(
+        entry: widget.entry,
+        selected: widget.entry.matches(widget.selectedModule),
+        showLabel: false,
+        onTap: () => widget.onSelectModule(
+          widget.entry.resolveTarget(widget.selectedModule),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ExpandedNavTile(
+          entry: widget.entry,
+          selected: widget.entry.matches(widget.selectedModule),
+          showLabel: true,
+          trailing: Icon(
+            _isExpanded
+                ? Icons.keyboard_arrow_up_rounded
+                : Icons.keyboard_arrow_down_rounded,
+            size: 16,
+            color: isDark
+                ? const Color(0xFFD7E3FA)
+                : const Color(0xFF5270A7),
+          ),
+          onTap: _toggleExpanded,
+        ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeOutCubic,
+          child: _isExpanded
+              ? Padding(
+                  key: const ValueKey<String>('risk-credit-submenu'),
+                  padding: const EdgeInsets.only(left: 18, right: 4, bottom: 8),
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 10, 8),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF11203A).withValues(alpha: 0.96)
+                          : const Color(0xFFFDFDFE).withValues(alpha: 0.98),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF223754)
+                            : const Color(0xFFE8ECF6),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark
+                              ? const Color(0x18040A16)
+                              : const Color(0x0A0F172A),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          left: 7,
+                          top: 4,
+                          bottom: 6,
+                          child: Container(
+                            width: 1.1,
+                            color: isDark
+                                ? const Color(0xFF223754)
+                                : const Color(0xFFE3E8F2),
+                          ),
+                        ),
+                        Column(
+                          children: [
+                            for (final child in widget.entry.children)
+                              _ExpandedSubNavTile(
+                                entry: child,
+                                selected: child.matches(widget.selectedModule),
+                                onTap: () => widget.onSelectModule(
+                                  child.resolveTarget(widget.selectedModule),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 }
@@ -473,6 +664,89 @@ class _SidebarServiceCard extends StatelessWidget {
   }
 }
 
+/// Tuile d'un sous-menu de navigation.
+class _ExpandedSubNavTile extends StatelessWidget {
+  const _ExpandedSubNavTile({
+    required this.entry,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _MenuEntry entry;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor =
+        isDark ? const Color(0xFFD7E3FA) : const Color(0xFF345DA8);
+    final mutedColor =
+        isDark ? const Color(0xFF9FB2D6) : const Color(0xFF71829F);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected
+                ? (isDark ? const Color(0xFF172844) : const Color(0xFFF3F5F9))
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTheme.radius),
+            border: Border.all(
+              color: selected
+                  ? (isDark
+                      ? const Color(0xFF2D4B76)
+                      : const Color(0xFFE3E8F2))
+                  : Colors.transparent,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected ? accentColor : mutedColor,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  entry.label.tr(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected
+                        ? accentColor
+                        : (isDark
+                            ? const Color(0xFF9FB2D6)
+                            : const Color(0xFF6B7790)),
+                    fontSize: 10.2,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: accentColor,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// En-tête de marque affiché dans la sidebar ouverte.
 class _BrandHeader extends StatelessWidget {
   const _BrandHeader();
@@ -521,12 +795,14 @@ class _ExpandedNavTile extends StatelessWidget {
     required this.selected,
     required this.showLabel,
     required this.onTap,
+    this.trailing,
   });
 
   final _MenuEntry entry;
   final bool selected;
   final bool showLabel;
   final VoidCallback onTap;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -591,6 +867,10 @@ class _ExpandedNavTile extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (trailing != null) ...[
+                      const SizedBox(width: 6),
+                      trailing!,
+                    ],
                   ],
                 ),
         ),

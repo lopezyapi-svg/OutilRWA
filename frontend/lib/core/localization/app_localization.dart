@@ -391,6 +391,7 @@ const Map<String, String> _englishTranslations = {
   'Nom ou raison sociale': 'Name or legal entity',
   'Pays': 'Country',
   'Pays de résidence': 'Country of residence',
+  'Tous': 'All',
   'Catégorie': 'Category',
   'Toutes': 'All',
   'Zone': 'Zone',
