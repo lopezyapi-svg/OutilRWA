@@ -17,6 +17,7 @@ class SidebarNavigation extends StatelessWidget {
     this.compact = false,
     this.showBrand = true,
     this.contentTopInset = 0,
+    this.headerTrailing,
   });
 
   final AppModule selectedModule;
@@ -24,6 +25,7 @@ class SidebarNavigation extends StatelessWidget {
   final bool compact;
   final bool showBrand;
   final double contentTopInset;
+  final Widget? headerTrailing;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +44,7 @@ class SidebarNavigation extends StatelessWidget {
       onSelectModule: onSelectModule,
       showBrand: showBrand,
       contentTopInset: contentTopInset,
+      headerTrailing: headerTrailing,
     );
   }
 }
@@ -281,6 +284,7 @@ class _ExpandedSidebar extends StatelessWidget {
     required this.onSelectModule,
     required this.showBrand,
     required this.contentTopInset,
+    this.headerTrailing,
   });
 
   final List<_MenuEntry> items;
@@ -288,6 +292,7 @@ class _ExpandedSidebar extends StatelessWidget {
   final ValueChanged<AppModule> onSelectModule;
   final bool showBrand;
   final double contentTopInset;
+  final Widget? headerTrailing;
 
   @override
   Widget build(BuildContext context) {
@@ -326,7 +331,17 @@ class _ExpandedSidebar extends StatelessWidget {
                 const SizedBox(height: 12),
               ],
               if (!isCondensed) ...[
-                _SidebarSectionTitle(context.tr('Navigation')),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SidebarSectionTitle(context.tr('Navigation')),
+                    ),
+                    if (headerTrailing != null) ...[
+                      const SizedBox(width: 8),
+                      headerTrailing!,
+                    ],
+                  ],
+                ),
                 const SizedBox(height: 10),
               ],
               Expanded(

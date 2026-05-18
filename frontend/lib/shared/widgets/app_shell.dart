@@ -504,30 +504,23 @@ class _DesktopSidebarFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
-      child: Stack(
-        children: [
-          SizedBox(
-            width: width,
-            child: ClipRect(
-              child: SidebarNavigation(
-                selectedModule: selectedModule,
-                onSelectModule: onSelectModule,
-                compact: compact,
-                showBrand: showBrand,
-                contentTopInset: showToggleButton ? 42 : 0,
-              ),
-            ),
+      child: SizedBox(
+        width: width,
+        child: ClipRect(
+          child: SidebarNavigation(
+            selectedModule: selectedModule,
+            onSelectModule: onSelectModule,
+            compact: compact,
+            showBrand: showBrand,
+            contentTopInset: 0,
+            headerTrailing: showToggleButton && !compact && onToggleSidebar != null
+                ? _SidebarToggleButton(
+                    compact: compact,
+                    onTap: onToggleSidebar!,
+                  )
+                : null,
           ),
-          if (showToggleButton && onToggleSidebar != null)
-            Positioned(
-              top: 10,
-              right: 10,
-              child: _SidebarToggleButton(
-                compact: compact,
-                onTap: onToggleSidebar!,
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
