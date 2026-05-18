@@ -122,8 +122,8 @@ class _AppShellState extends State<AppShell> {
                               decoration: BoxDecoration(
                                 color: isDark
                                     ? const Color(0xFF0F1B31)
-                                        .withOpacity(0.92)
-                                    : Colors.white.withOpacity(0.80),
+                                        .withValues(alpha: 0.92)
+                                    : Colors.white.withValues(alpha: 0.80),
                                 borderRadius: BorderRadius.circular(
                                   AppTheme.radius,
                                 ),
@@ -165,13 +165,6 @@ class _AppShellState extends State<AppShell> {
 
   void _toggleDesktopSidebarOverlay() {
     setState(() => _isSidebarOverlayOpen = !_isSidebarOverlayOpen);
-  }
-
-  void _closeDesktopSidebarOverlay() {
-    if (!_isSidebarOverlayOpen) {
-      return;
-    }
-    setState(() => _isSidebarOverlayOpen = false);
   }
 
   void _handleDesktopModuleSelection(AppModule module) {
@@ -521,7 +514,7 @@ class _DesktopSidebarFrame extends StatelessWidget {
                 onSelectModule: onSelectModule,
                 compact: compact,
                 showBrand: showBrand,
-                contentTopInset: compact ? 42 : 0,
+                contentTopInset: showToggleButton ? 42 : 0,
               ),
             ),
           ),

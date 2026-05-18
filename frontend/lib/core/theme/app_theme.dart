@@ -1,6 +1,5 @@
 // Ce fichier centralise le theme visuel de l'application.
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Définit les couleurs, espacements et thèmes partagés de l'interface.
 class AppTheme {
@@ -52,14 +51,18 @@ class AppTheme {
     required Color mutedColor,
     required Color inputFillColor,
   }) {
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme().apply(
-      bodyColor: textColor,
-      displayColor: textColor,
-    );
+    final textTheme = ThemeData(
+      brightness: brightness,
+      fontFamily: 'Tenor Sans',
+    ).textTheme.apply(
+          bodyColor: textColor,
+          displayColor: textColor,
+        );
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      fontFamily: 'Tenor Sans',
       scaffoldBackgroundColor: scaffoldBackground,
       textTheme: textTheme,
       colorScheme: ColorScheme.fromSeed(
@@ -128,8 +131,7 @@ class AppTheme {
         minThumbLength: 36.0,
         thumbColor: WidgetStatePropertyAll<Color?>(Color(0xCC234A84)),
         trackColor: WidgetStatePropertyAll<Color?>(Colors.transparent),
-        trackBorderColor:
-            WidgetStatePropertyAll<Color?>(Colors.transparent),
+        trackBorderColor: WidgetStatePropertyAll<Color?>(Colors.transparent),
         thickness: WidgetStatePropertyAll<double?>(3.0),
         crossAxisMargin: 2.0,
         mainAxisMargin: 6.0,

@@ -14,7 +14,6 @@ dependencies:
     sdk: flutter
   desktop_drop: ^0.7.0
   file_selector: ^1.0.3
-  google_fonts: ^6.2.1
   http: ^1.2.2
   intl: ^0.20.2
   lottie: ^3.1.2
@@ -37,3 +36,7 @@ flutter:
     - assets/images/manage_money_bro.svg
     - assets/lotties/import_loader.json
     - assets/lotties/rwa_dashboard.json
+  fonts:
+    - family: Tenor Sans
+      fonts:
+        - asset: assets/fonts/TenorSans-Regular.ttf
