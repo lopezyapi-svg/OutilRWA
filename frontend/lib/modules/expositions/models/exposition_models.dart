@@ -51,66 +51,66 @@ const List<ExposureCategoryOption> exposureCategories = [
   ExposureCategoryOption(
     code: 'a',
     label: 'Souverains',
-    prudentialLabel: '(a) souverains',
+    prudentialLabel: ' souverains',
     legacyLabel: 'Souverains',
   ),
   ExposureCategoryOption(
     code: 'b',
     label: 'Organismes publics',
-    prudentialLabel: '(b) organismes pub. hors Adm c',
+    prudentialLabel: ' organismes pub. hors Adm c',
   ),
   ExposureCategoryOption(
     code: 'c',
     label: 'BMD',
-    prudentialLabel: '(c) Expositions sur les BMD',
+    prudentialLabel: ' Expositions sur les BMD',
   ),
   ExposureCategoryOption(
     code: 'd',
     label: 'Institutions financieres',
-    prudentialLabel: '(d) institutions financieres',
+    prudentialLabel: ' institutions financieres',
     legacyLabel: 'Banques',
   ),
   ExposureCategoryOption(
     code: 'e',
     label: 'Entreprises',
-    prudentialLabel: '(e) entreprises',
+    prudentialLabel: ' entreprises',
     legacyLabel: 'Entreprises',
   ),
   ExposureCategoryOption(
     code: 'f',
     label: 'Clientele de detail',
-    prudentialLabel: '(f) clientele de detail',
+    prudentialLabel: ' clientele de detail',
     legacyLabel: 'Particuliers',
   ),
   ExposureCategoryOption(
     code: 'g',
     label: 'Immobilier residentiel',
-    prudentialLabel: "(g) prêts garantis par l'immo R",
+    prudentialLabel: " prêts garantis par l'immo R",
     fixedRiskWeight: 0.35,
   ),
   ExposureCategoryOption(
     code: 'h',
     label: 'Immobilier commercial',
-    prudentialLabel: "(h) prêts garantis par l'immo C",
+    prudentialLabel: " prêts garantis par l'immo C",
     fixedRiskWeight: 0.75,
   ),
   ExposureCategoryOption(
     code: 'i',
     label: 'Creances en souffrance',
-    prudentialLabel: '(i) creances en souffrance',
+    prudentialLabel: ' creances en souffrance',
     fixedRiskWeight: 1.5,
   ),
   ExposureCategoryOption(
     code: 'j',
     label: 'Créances à risque élevé',
-    prudentialLabel: '(j) créances à risque élevé',
+    prudentialLabel: ' créances à risque élevé',
     legacyLabel: 'Risque eleve',
     fixedRiskWeight: 1.5,
   ),
   ExposureCategoryOption(
     code: 'k',
     label: 'Autres actifs',
-    prudentialLabel: '(k) autres actifs',
+    prudentialLabel: ' autres actifs',
   ),
 ];
 
@@ -1850,14 +1850,14 @@ class ExposureRecord {
     required this.offBalanceRiskLevel,
     required this.retailEligibilityCriteriaSatisfied,
     required this.residentialMortgageEligible,
-    required bool? commercialRealEstateEligible,
+    required this.commercialRealEstateEligible,
     required this.enterpriseExceedsBceaoDegradationThreshold,
     required this.enterprisePrudentialProcedure,
     required this.enterpriseInvestmentFirmWithoutBankingLaw,
     required this.defaultedExposureInitialRiskWeight,
     required this.defaultedExposureResidentialMortgageInDefault,
     required this.defaultedExposureProvisionAtLeastTwentyPercent,
-  }) : commercialRealEstateEligible = commercialRealEstateEligible;
+  });
 
   final String id;
   final DateTime analysisDate;

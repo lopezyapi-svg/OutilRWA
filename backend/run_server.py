@@ -30,7 +30,7 @@ def _configure_logging() -> None:
 def main() -> None:
     _configure_logging()
     host = os.environ.get("RWA_API_HOST", "127.0.0.1")
-    port = int(os.environ.get("RWA_API_PORT", "8001"))
+    port = int(os.environ.get("RWA_API_PORT", "8000"))
     log_level = os.environ.get("RWA_API_LOG_LEVEL", "warning")
     uvicorn.run(
         app,

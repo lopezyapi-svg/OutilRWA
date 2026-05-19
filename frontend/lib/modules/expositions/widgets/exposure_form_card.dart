@@ -374,28 +374,28 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       '(d) niveau adéquat de capital et de liquidité\n'
       '(e) politiques de crédit et gestion des risques prudentes';
   static const String _bmdInstitutionsTooltip =
-      "BIRD : Banque internationale pour la reconstruction et le développement\n"
-      "SFI : Société financière internationale\n"
-      "BAsD : Banque asiatique de développement\n"
-      "BAD : Banque africaine de développement\n"
-      "BERD : Banque européenne pour la reconstruction et le développement\n"
+      'BIRD : Banque internationale pour la reconstruction et le développement\n'
+      'SFI : Société financière internationale\n'
+      'BAsD : Banque asiatique de développement\n'
+      'BAD : Banque africaine de développement\n'
+      'BERD : Banque européenne pour la reconstruction et le développement\n'
       "BEI : Banque européenne d'investissement\n"
       "FEI : Fonds européen d'investissement\n"
       "BNI : Banque nordique d'investissement\n"
-      "BDC : Banque de développement des Caraïbes\n"
-      "BIsD : Banque islamique de développement\n"
-      "BDCE : Banque de développement des Caraïbes orientales\n"
-      "AMGI : Agence multilatérale de garantie des investissements\n"
-      "BOAD : Banque ouest-africaine de développement";
+      'BDC : Banque de développement des Caraïbes\n'
+      'BIsD : Banque islamique de développement\n'
+      'BDCE : Banque de développement des Caraïbes orientales\n'
+      'AMGI : Agence multilatérale de garantie des investissements\n'
+      'BOAD : Banque ouest-africaine de développement';
   static const String _bankInstitutionWeakPrudentialTooltip =
-      "L institution a des fonds propres négatifs, ne respecte pas les ratios de solvabilité, ou il s agit d une SFD non supervisée par la Commission Bancaire.";
+      'L institution a des fonds propres négatifs, ne respecte pas les ratios de solvabilité, ou il s agit d une SFD non supervisée par la Commission Bancaire.';
   static const String _bankInstitutionEligibleCategoriesTooltip =
-      "(a) les entreprises du secteur bancaire\n"
-      "(b) les services financiers des administrations de poste\n"
+      '(a) les entreprises du secteur bancaire\n'
+      '(b) les services financiers des administrations de poste\n'
       "(c) les caisses nationales d'épargne\n"
-      "(d) les autres institutions financières internationales.";
+      '(d) les autres institutions financières internationales.';
   static const String _enterpriseArticle133Tooltip =
-      "Une pondération supérieure à 100 % est exigée lorsque le taux brut de dégradation du portefeuille entreprise dépasse sur deux trimestres consécutifs un seuil fixé par instruction de la BCEAO.\n\n"
+      'Une pondération supérieure à 100 % est exigée lorsque le taux brut de dégradation du portefeuille entreprise dépasse sur deux trimestres consécutifs un seuil fixé par instruction de la BCEAO.\n\n'
       "Une pondération plus élevée est appliquée, lorsqu'une entreprise établie dans l'UMOA est soumise à une procédure de traitement prudentiel résultant de la production, par l'entreprise elle-même ou par son commissaire au compte, d'informations financières erronées.\n\n"
       "[[NOTE]]On entend par taux brut de dégradation du portefeuille, le rapport entre l'encours des créances en souffrance brutes telles que défini aux paragraphes 152 à 160 et le portefeuille de crédit brut de l'établissement. S'agissant des entreprises, le taux brut de dégradation du portefeuille est le rapport entre l'encours des créances en souffrance brutes enregistré au titre du portefeuille entreprises et l'encours total des crédits bruts octroyés à ce segment.";
   static const String _offBalanceLowRiskTooltip =
@@ -1590,7 +1590,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       tooltipTitle: 'FCEC et hors bilan',
       tooltipMaxWidth: 460,
       child: DropdownButtonFormField<String>(
-        value: _offBalanceRiskLevel,
+        initialValue: _offBalanceRiskLevel,
         isExpanded: true,
         decoration: _fieldDecoration(
           context,
@@ -2041,10 +2041,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       radius: const Radius.circular(999),
       crossAxisMargin: 1,
       mainAxisMargin: 4,
-      thumbColor: AppTheme.accent.withOpacity(
-        _isExposureDark(context) ? 0.9 : 0.72,
+      thumbColor: AppTheme.accent.withValues(
+        alpha: _isExposureDark(context) ? 0.9 : 0.72,
       ),
-      trackColor: _wizardBorderColor(context).withOpacity(0.55),
+      trackColor: _wizardBorderColor(context).withValues(alpha: 0.55),
       trackBorderColor: Colors.transparent,
       child: NotificationListener<ScrollNotification>(
         onNotification: _handleRightPanelScrollNotification,
@@ -2187,7 +2187,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               subtitle: 'Pays de residence',
               icon: Icons.public_outlined,
               child: DropdownButtonFormField<String>(
-                value: _countryController.text.trim().isEmpty
+                initialValue: _countryController.text.trim().isEmpty
                     ? null
                     : canonicalCountryName(
                         _countryController.text.trim(),
@@ -2229,7 +2229,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               subtitle: 'Pays de residence',
               icon: Icons.flag_circle_outlined,
               child: DropdownButtonFormField<String>(
-                value: _selectedValueOrNull(_countryRating, _availableRatings),
+                initialValue: _selectedValueOrNull(_countryRating, _availableRatings),
                 isExpanded: true,
                 decoration: _fieldDecoration(
                   context,
@@ -2250,7 +2250,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 subtitle: 'Note de credit',
                 icon: Icons.stars_outlined,
                 child: DropdownButtonFormField<String>(
-                  value: _selectedValueOrNull(_rating, _availableRatings),
+                  initialValue: _selectedValueOrNull(_rating, _availableRatings),
                   isExpanded: true,
                   decoration: _fieldDecoration(
                     context,
@@ -2273,7 +2273,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       'Si non, la pondération sera déduite de la notation du pays de résidence',
                   icon: Icons.fact_check_outlined,
                   child: DropdownButtonFormField<bool>(
-                    value: _sovereignOceEstablished,
+                    initialValue: _sovereignOceEstablished,
                     isExpanded: true,
                     decoration: _fieldDecoration(
                       context,
@@ -2311,7 +2311,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 subtitle: 'Échelle de 0 à 7',
                 icon: Icons.filter_8_outlined,
                 child: DropdownButtonFormField<String>(
-                  value: _selectedValueOrNull(
+                  initialValue: _selectedValueOrNull(
                       _sovereignOceNote, sovereignOceNotes),
                   isExpanded: true,
                   decoration: _fieldDecoration(
@@ -2329,10 +2329,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               )
             else if (_shouldAskCounterpartyOceQuestion &&
                 _sovereignOceEstablished == false)
-              _StepGridFullWidth(
+              const _StepGridFullWidth(
                 child: _InfoBanner(
                   icon: Icons.public_outlined,
-                  accent: const Color(0xFF2563EB),
+                  accent: Color(0xFF2563EB),
                   text:
                       'La pondération sera déduite de la notation du pays de résidence.',
                 ),
@@ -2392,7 +2392,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               subtitle: 'Devise de saisie',
               icon: Icons.currency_exchange_outlined,
               child: DropdownButtonFormField<String>(
-                value:
+                initialValue:
                     _selectedValueOrNull(_currency, _availableCurrencyOptions),
                 decoration: _fieldDecoration(
                   context,
@@ -2898,7 +2898,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           icon: Icons.account_tree_outlined,
           hideHeader: true,
           child: DropdownButtonFormField<String>(
-            value: _selectedValueOrNull(
+            initialValue: _selectedValueOrNull(
               _categoryCode,
               exposureCategories
                   .map((item) => item.code)
@@ -2948,7 +2948,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 'Organisme public hors administration centrale des Etats de l UEMOA',
             icon: Icons.account_balance_outlined,
             child: DropdownButtonFormField<bool>(
-              value: _publicBodyUemoaFcfaCase,
+              initialValue: _publicBodyUemoaFcfaCase,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -2979,7 +2979,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: '',
             icon: Icons.domain_verification_outlined,
             child: DropdownButtonFormField<bool>(
-              value: _publicBodyFinancesNonPublicActivity,
+              initialValue: _publicBodyFinancesNonPublicActivity,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3011,7 +3011,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: '',
             icon: Icons.account_balance_outlined,
             child: DropdownButtonFormField<bool>(
-              value: _sovereignPriorityQuestionAnsweredYes,
+              initialValue: _sovereignPriorityQuestionAnsweredYes,
               decoration: _fieldDecoration(context),
               items: [
                 DropdownMenuItem<bool>(
@@ -3043,7 +3043,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             hideLeadingIcon: true,
             subtitleColor: AppTheme.accent,
             child: DropdownButtonFormField<bool>(
-              value: _bmdHighQualityCase,
+              initialValue: _bmdHighQualityCase,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3075,7 +3075,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: '',
             icon: Icons.account_balance_outlined,
             child: DropdownButtonFormField<bool>(
-              value: _bmdUemoaFcfaCase,
+              initialValue: _bmdUemoaFcfaCase,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3109,7 +3109,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             icon: Icons.fact_check_outlined,
             inlineTooltip: _bmdCdeCriteriaTooltip,
             child: DropdownButtonFormField<bool>(
-              value: _bmdUemoaCriteriaSatisfied,
+              initialValue: _bmdUemoaCriteriaSatisfied,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3143,7 +3143,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             inlineTooltip: _bmdInstitutionsTooltip,
             tooltipTitle: 'Sigles',
             child: DropdownButtonFormField<bool>(
-              value: _bmdListedInstitutionFcfaCase,
+              initialValue: _bmdListedInstitutionFcfaCase,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3174,7 +3174,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: 'Choisir le traitement applicable',
             icon: Icons.account_balance_outlined,
             child: DropdownButtonFormField<String>(
-              value: _bankInstitutionCase,
+              initialValue: _bankInstitutionCase,
               isExpanded: true,
               decoration: _fieldDecoration(context,
                   hint: context.tr('Choisir une option')),
@@ -3220,7 +3220,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             tooltipTitle: 'Définition',
             placeInlineTooltipBeforeTitle: true,
             child: DropdownButtonFormField<String>(
-              value: _otherAssetType,
+              initialValue: _otherAssetType,
               isExpanded: true,
               decoration: _fieldDecoration(
                 context,
@@ -3262,12 +3262,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             context: context,
             title:
                 'L’exposition respecte-t-elle les critères de classement en clientèle de détail ?',
-            subtitle: "Consulter l’icône info pour voir les critères.",
+            subtitle: 'Consulter l’icône info pour voir les critères.',
             icon: Icons.groups_2_outlined,
             inlineTooltip: _retailCriteriaTooltip(context),
             tooltipTitle: 'Critères',
             child: DropdownButtonFormField<bool>(
-              value: _retailEligibilityCriteriaSatisfied,
+              initialValue: _retailEligibilityCriteriaSatisfied,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3308,13 +3308,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           child: _buildFieldCard(
             context: context,
             title:
-                "L’exposition respecte-t-elle les conditions d’éligibilité des prêts garantis par l’immobilier résidentiel ?",
-            subtitle: "Consulter l’icône info pour voir les critères.",
+                'L’exposition respecte-t-elle les conditions d’éligibilité des prêts garantis par l’immobilier résidentiel ?',
+            subtitle: 'Consulter l’icône info pour voir les critères.',
             icon: Icons.home_work_outlined,
             inlineTooltip: _residentialMortgageCriteriaTooltip,
             tooltipTitle: 'Critères',
             child: DropdownButtonFormField<bool>(
-              value: _residentialMortgageEligible,
+              initialValue: _residentialMortgageEligible,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3337,22 +3337,22 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
       if (_residentialMortgageEligible == false) {
         cards.add(
-          _StepGridFullWidth(
+          const _StepGridFullWidth(
             child: _InfoBanner(
               icon: Icons.swap_horiz_rounded,
-              accent: const Color(0xFFF59E0B),
+              accent: Color(0xFFF59E0B),
               text:
-                  "La pondération de 35 % n’est pas appliquée.\nSélectionner une catégorie prudentielle appropriée pour poursuivre.",
+                  'La pondération de 35 % n’est pas appliquée.\nSélectionner une catégorie prudentielle appropriée pour poursuivre.',
             ),
           ),
         );
       }
 
       cards.add(
-        _StepGridFullWidth(
+        const _StepGridFullWidth(
           child: _InfoBanner(
             icon: Icons.analytics_outlined,
-            accent: const Color(0xFF2563EB),
+            accent: Color(0xFF2563EB),
             text:
                 'La pondération peut être relevée au-delà de 35 % si la qualité du portefeuille global se dégrade selon les seuils BCEAO.',
           ),
@@ -3366,13 +3366,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           child: _buildFieldCard(
             context: context,
             title:
-                "L’exposition respecte-t-elle les conditions d’éligibilité de l’immobilier commercial ?",
-            subtitle: "Consulter l’icône info pour voir les critères.",
+                'L’exposition respecte-t-elle les conditions d’éligibilité de l’immobilier commercial ?',
+            subtitle: 'Consulter l’icône info pour voir les critères.',
             icon: Icons.business_outlined,
             inlineTooltip: _commercialRealEstateCriteriaTooltip,
             tooltipTitle: 'Critères',
             child: DropdownButtonFormField<bool>(
-              value: _commercialRealEstateEligible,
+              initialValue: _commercialRealEstateEligible,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3395,12 +3395,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
       if (_commercialRealEstateEligible == false) {
         cards.add(
-          _StepGridFullWidth(
+          const _StepGridFullWidth(
             child: _InfoBanner(
               icon: Icons.apartment_outlined,
-              accent: const Color(0xFFF59E0B),
+              accent: Color(0xFFF59E0B),
               text:
-                  "La pondération de 75 % n’est pas appliquée.\nL’exposition est traitée comme une créance sur une entreprise.",
+                  'La pondération de 75 % n’est pas appliquée.\nL’exposition est traitée comme une créance sur une entreprise.',
             ),
           ),
         );
@@ -3408,10 +3408,10 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
       if (_commercialRealEstateEligible == true) {
         cards.add(
-          _StepGridFullWidth(
+          const _StepGridFullWidth(
             child: _InfoBanner(
               icon: Icons.analytics_outlined,
-              accent: const Color(0xFF2563EB),
+              accent: Color(0xFF2563EB),
               text:
                   'La pondération peut être relevée au-delà de 75 % en cas de dégradation du portefeuille selon les règles applicables.',
             ),
@@ -3430,7 +3430,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: 'Sélectionner le niveau avant défaut',
             icon: Icons.percent_outlined,
             child: DropdownButtonFormField<double>(
-              value: _defaultedExposureInitialRiskWeight,
+              initialValue: _defaultedExposureInitialRiskWeight,
               isExpanded: true,
               decoration: _fieldDecoration(
                 context,
@@ -3467,7 +3467,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: '',
             icon: Icons.home_outlined,
             child: DropdownButtonFormField<bool>(
-              value: _defaultedExposureResidentialMortgageInDefault,
+              initialValue: _defaultedExposureResidentialMortgageInDefault,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3498,7 +3498,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: '',
             icon: Icons.inventory_2_outlined,
             child: DropdownButtonFormField<bool>(
-              value: _defaultedExposureProvisionAtLeastTwentyPercent,
+              initialValue: _defaultedExposureProvisionAtLeastTwentyPercent,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3522,12 +3522,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
     if (_usesDefaultedExposureCarryForward) {
       cards.add(
-        _StepGridFullWidth(
+        const _StepGridFullWidth(
           child: _InfoBanner(
             icon: Icons.sync_alt_outlined,
-            accent: const Color(0xFF2563EB),
+            accent: Color(0xFF2563EB),
             text:
-                "La même pondération que l’exposition avant défaut est conservée.",
+                'La même pondération que l’exposition avant défaut est conservée.',
           ),
         ),
       );
@@ -3544,7 +3544,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             inlineTooltip: _enterpriseArticle133Tooltip,
             tooltipTitle: 'Article 133',
             child: DropdownButtonFormField<bool>(
-              value: _enterpriseExceedsBceaoDegradationThreshold,
+              initialValue: _enterpriseExceedsBceaoDegradationThreshold,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               isExpanded: true,
               decoration: _fieldDecoration(
@@ -3582,7 +3582,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             inlineTooltip: _enterpriseArticle133Tooltip,
             tooltipTitle: 'Article 133',
             child: DropdownButtonFormField<bool>(
-              value: _enterprisePrudentialProcedure,
+              initialValue: _enterprisePrudentialProcedure,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               isExpanded: true,
               decoration: _fieldDecoration(
@@ -3618,7 +3618,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: 'Traitement spécifique',
             icon: Icons.corporate_fare_outlined,
             child: DropdownButtonFormField<bool>(
-              value: _enterpriseInvestmentFirmWithoutBankingLaw,
+              initialValue: _enterpriseInvestmentFirmWithoutBankingLaw,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               validator: (value) =>
@@ -3756,7 +3756,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 borderRadius: BorderRadius.circular(_exposureFormRadius),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF1E3A8A).withOpacity(0.12),
+                    color: const Color(0xFF1E3A8A).withValues(alpha: 0.12),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -3805,8 +3805,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               height: 34,
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF182944).withOpacity(0.98)
-                    : Colors.white.withOpacity(0.92),
+                    ? const Color(0xFF182944).withValues(alpha: 0.98)
+                    : Colors.white.withValues(alpha: 0.92),
                 borderRadius: BorderRadius.circular(_exposureFormRadius),
                 border: Border.all(
                   color: isDark
@@ -3836,8 +3836,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final isDark = _isExposureDark(context);
     return Positioned.fill(
       child: Container(
-        color: (isDark ? Colors.black : Colors.white).withOpacity(
-          isDark ? 0.36 : 0.46,
+        color: (isDark ? Colors.black : Colors.white).withValues(
+          alpha: isDark ? 0.36 : 0.46,
         ),
         alignment: Alignment.center,
         child: Container(
@@ -3849,7 +3849,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             border: _wizardBoxBorder(context),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -4104,7 +4104,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Garantie ou assurance',
           icon: Icons.workspace_premium_outlined,
           child: DropdownButtonFormField<String>(
-            value: _selectedValueOrNull(_crmType, _nonFinancedCrmTypes),
+            initialValue: _selectedValueOrNull(_crmType, _nonFinancedCrmTypes),
             isExpanded: true,
             decoration: _fieldDecoration(
               context,
@@ -4145,7 +4145,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Profil prudentiel',
           icon: Icons.apartment_outlined,
           child: DropdownButtonFormField<String>(
-            value: _selectedValueOrNull(
+            initialValue: _selectedValueOrNull(
               _guarantorCategoryCode,
               guarantorEligibleCategoryCodes,
             ),
@@ -4190,7 +4190,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Notation prise en compte',
           icon: Icons.star_border_rounded,
           child: DropdownButtonFormField<String>(
-            value: _selectedValueOrNull(_guarantorRating, _availableRatings),
+            initialValue: _selectedValueOrNull(_guarantorRating, _availableRatings),
             isExpanded: true,
             decoration: _fieldDecoration(
               context,
@@ -4212,7 +4212,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: '',
           icon: Icons.flag_outlined,
           child: DropdownButtonFormField<String>(
-            value: _guarantorCountryController.text.trim().isEmpty
+            initialValue: _guarantorCountryController.text.trim().isEmpty
                 ? null
                 : canonicalCountryName(
                     _guarantorCountryController.text.trim(),
@@ -4257,7 +4257,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: '',
           icon: Icons.public_outlined,
           child: DropdownButtonFormField<String>(
-            value: _selectedValueOrNull(
+            initialValue: _selectedValueOrNull(
               _guarantorCountryRating,
               _availableRatings,
             ),
@@ -4326,7 +4326,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             subtitle: 'Rôle réglementaire',
             icon: Icons.apartment_outlined,
             child: DropdownButtonFormField<String>(
-              value: _selectedValueOrNull(
+              initialValue: _selectedValueOrNull(
                 _issuerType,
                 financedCrmIssuerRoleOptions,
               ),
@@ -4350,7 +4350,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Notation externe',
           icon: Icons.workspace_premium_outlined,
           child: DropdownButtonFormField<String>(
-            value: _selectedValueOrNull(_issuerRating, financedCrmDebtRatings),
+            initialValue: _selectedValueOrNull(_issuerRating, financedCrmDebtRatings),
             isExpanded: true,
             decoration: _fieldDecoration(
               context,
@@ -4373,7 +4373,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             inlineTooltip: _convertibleMainIndexTooltip,
             tooltipTitle: 'Précision',
             child: DropdownButtonFormField<bool>(
-              value: _convertibleMainIndex,
+              initialValue: _convertibleMainIndex,
               isExpanded: true,
               decoration: _fieldDecoration(context),
               items: const [
@@ -4393,7 +4393,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           subtitle: 'Actif le plus risqué',
           icon: Icons.stacked_bar_chart_outlined,
           child: DropdownButtonFormField<double>(
-            value: coerceFinancedCrmOpcvmHaircut(_opcvmHighestHaircut),
+            initialValue: coerceFinancedCrmOpcvmHaircut(_opcvmHighestHaircut),
             isExpanded: true,
             decoration: _fieldDecoration(context),
             items: financedCrmOpcvmHaircutLevels
@@ -4452,7 +4452,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                       subtitle: 'Nature du collatéral',
                       icon: Icons.widgets_outlined,
                       child: DropdownButtonFormField<String>(
-                        value: _selectedValueOrNull(
+                        initialValue: _selectedValueOrNull(
                           _collateralType,
                           financedCrmCollateralTypes,
                         ),
@@ -4504,9 +4504,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      _InfoBanner(
+                      const _InfoBanner(
                         icon: Icons.info_outline,
-                        accent: const Color(0xFF0F766E),
+                        accent: Color(0xFF0F766E),
                         text:
                             'La devise, la pondération de chaque actif et la contribution au panier sont calculées ligne par ligne.',
                       ),
@@ -4672,19 +4672,19 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 ),
               )
             else if (snapshot.eadAfterFinancedCrm == 0)
-              _StepGridFullWidth(
+              const _StepGridFullWidth(
                 child: _InfoBanner(
                   icon: Icons.task_alt_outlined,
-                  accent: const Color(0xFF16A34A),
+                  accent: Color(0xFF16A34A),
                   text:
                       'La sûreté ajustée couvre entièrement l exposition ajustée.',
                 ),
               )
             else if (snapshot.cva > 0)
-              _StepGridFullWidth(
+              const _StepGridFullWidth(
                 child: _InfoBanner(
                   icon: Icons.pie_chart_outline_rounded,
-                  accent: const Color(0xFF0F766E),
+                  accent: Color(0xFF0F766E),
                   text: "La sûreté couvre partiellement l'exposition.",
                 ),
               ),
@@ -4726,7 +4726,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             width: iconBoxSize,
             height: iconBoxSize,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.10),
+              color: accent.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(_exposureFormRadius),
             ),
             child: Icon(icon, size: iconSize, color: accent),
@@ -4803,7 +4803,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         child: Icon(
           Icons.info_outline,
           size: compact ? 13 : 15,
-          color: Color(0xFF3B82F6),
+          color: const Color(0xFF3B82F6),
         ),
       ),
     );
@@ -4870,7 +4870,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 subtitle: '',
                 icon: Icons.widgets_outlined,
                 child: DropdownButtonFormField<String>(
-                  value:
+                  initialValue:
                       financedCrmCollateralTypes.contains(item.collateralType)
                           ? item.collateralType
                           : financedCrmCollateralTypes.first,
@@ -4928,7 +4928,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 subtitle: '',
                 icon: Icons.currency_exchange_outlined,
                 child: DropdownButtonFormField<String>(
-                  value: _availableCurrencyOptions.contains(
+                  initialValue: _availableCurrencyOptions.contains(
                     normalizeCurrencyCode(item.currency),
                   )
                       ? normalizeCurrencyCode(item.currency)
@@ -4965,7 +4965,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   subtitle: '',
                   icon: Icons.apartment_outlined,
                   child: DropdownButtonFormField<String>(
-                    value:
+                    initialValue:
                         financedCrmIssuerRoleOptions.contains(item.issuerRole)
                             ? item.issuerRole
                             : financedCrmIssuerRoleOptions.last,
@@ -4994,7 +4994,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   subtitle: '',
                   icon: Icons.workspace_premium_outlined,
                   child: DropdownButtonFormField<String>(
-                    value: financedCrmDebtRatings.contains(item.rating)
+                    initialValue: financedCrmDebtRatings.contains(item.rating)
                         ? item.rating
                         : financedCrmDebtRatings.last,
                     isExpanded: true,
@@ -5025,7 +5025,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     inlineTooltip: _convertibleMainIndexTooltip,
                     tooltipTitle: 'Précision',
                     child: DropdownButtonFormField<bool>(
-                      value: item.convertibleMainIndex,
+                      initialValue: item.convertibleMainIndex,
                       isExpanded: true,
                       decoration: _fieldDecoration(context),
                       items: const [
@@ -5059,7 +5059,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   subtitle: '',
                   icon: Icons.stacked_bar_chart_outlined,
                   child: DropdownButtonFormField<double>(
-                    value: coerceFinancedCrmOpcvmHaircut(
+                    initialValue: coerceFinancedCrmOpcvmHaircut(
                       item.opcvmHighestHaircut,
                     ),
                     isExpanded: true,
@@ -5445,7 +5445,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           BoxShadow(
             color: isDark ? const Color(0x22000000) : const Color(0x0A5B6B81),
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -5456,7 +5456,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             width: isExpanded ? 32 : 24,
             height: isExpanded ? 32 : 24,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.10),
+              color: accent.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(_exposureFormRadius),
             ),
             child: Icon(
@@ -6311,9 +6311,9 @@ class _IntroActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final background = filled ? accent : accent.withOpacity(0.08);
+    final background = filled ? accent : accent.withValues(alpha: 0.08);
     final foreground = filled ? Colors.white : accent;
-    final borderColor = filled ? accent : accent.withOpacity(0.22);
+    final borderColor = filled ? accent : accent.withValues(alpha: 0.22);
 
     return Material(
       color: Colors.transparent,
@@ -6332,7 +6332,7 @@ class _IntroActionButton extends StatelessWidget {
             boxShadow: filled
                 ? [
                     BoxShadow(
-                      color: accent.withOpacity(0.14),
+                      color: accent.withValues(alpha: 0.14),
                       blurRadius: 12,
                       offset: const Offset(0, 5),
                     ),
@@ -6595,8 +6595,8 @@ class _CompactFieldCard extends StatelessWidget {
                               context: context,
                               title: tooltipTitle,
                               message: inlineTooltip!,
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 1.5),
+                              child: const Padding(
+                                padding: EdgeInsets.only(top: 1.5),
                                 child: Icon(
                                   Icons.info_outline_rounded,
                                   size: 14,
@@ -6627,8 +6627,8 @@ class _CompactFieldCard extends StatelessWidget {
                               context: context,
                               title: tooltipTitle,
                               message: inlineTooltip!,
-                              child: Padding(
-                                padding: const EdgeInsets.only(top: 1.5),
+                              child: const Padding(
+                                padding: EdgeInsets.only(top: 1.5),
                                 child: Icon(
                                   Icons.info_outline_rounded,
                                   size: 14,
@@ -6802,10 +6802,10 @@ class _CrmChoiceStepScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
               decoration: BoxDecoration(
-                color: questionAccent.withOpacity(0.08),
+                color: questionAccent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(5),
                 border: Border.all(
-                  color: questionAccent.withOpacity(0.16),
+                  color: questionAccent.withValues(alpha: 0.16),
                   width: _wizardBorderWidth,
                 ),
               ),
@@ -7071,7 +7071,7 @@ class _StepSurface extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.16 : 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.03),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),
@@ -7087,7 +7087,7 @@ class _StepSurface extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.10),
+                  color: accent.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(_exposureFormRadius),
                 ),
                 child: Icon(icon, color: accent, size: 22),
@@ -7149,8 +7149,8 @@ class _StepSurface extends StatelessWidget {
                             ).textTheme.bodyMedium?.copyWith(
                                   color: Colors.white,
                                 ),
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 1.5),
+                            child: const Padding(
+                              padding: EdgeInsets.only(top: 1.5),
                               child: Icon(
                                 Icons.info_outline_rounded,
                                 size: 15,
@@ -7194,7 +7194,7 @@ class _StepGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final spacing = 10.0;
+        const spacing = 10.0;
         final columns = constraints.maxWidth >= 440 ? 2 : 1;
         final itemWidth = columns == 1
             ? constraints.maxWidth
@@ -7296,8 +7296,8 @@ class _HeroKpiCard extends StatelessWidget {
         isDark ? const Color(0xFF1D4ED8) : const Color(0xFF3B82F6);
     final highlightBorderColor =
         isDark ? const Color(0xFF1D4ED8) : const Color(0xFF3B82F6);
-    final highlightLabelColor = const Color(0xFFDCE9FF);
-    final highlightValueColor = Colors.white;
+    const highlightLabelColor = Color(0xFFDCE9FF);
+    const highlightValueColor = Colors.white;
     final cardBackground = highlighted
         ? highlightBackground
         : compact
@@ -7367,14 +7367,14 @@ class _HeroKpiCard extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withOpacity(isDark ? 0.18 : 0.22),
-                        Colors.white.withOpacity(isDark ? 0.08 : 0.12),
+                        Colors.white.withValues(alpha: isDark ? 0.18 : 0.22),
+                        Colors.white.withValues(alpha: isDark ? 0.08 : 0.12),
                       ],
                     )
                   : null,
               border: highlighted
                   ? Border.all(
-                      color: Colors.white.withOpacity(isDark ? 0.10 : 0.14),
+                      color: Colors.white.withValues(alpha: isDark ? 0.10 : 0.14),
                     )
                   : null,
               borderRadius: BorderRadius.circular(cardRadius),
@@ -7502,7 +7502,7 @@ class _ModeChoiceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = _isExposureDark(context);
     final cardShadow = selected
-        ? accent.withOpacity(isDark ? 0.10 : 0.06)
+        ? accent.withValues(alpha: isDark ? 0.10 : 0.06)
         : (isDark ? const Color(0x22000000) : const Color(0x0D94A3B8));
     return SizedBox(
       width: 206,
@@ -7519,7 +7519,7 @@ class _ModeChoiceCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(5),
             border: Border.all(
               color: selected
-                  ? accent.withOpacity(0.72)
+                  ? accent.withValues(alpha: 0.72)
                   : (isDark
                       ? const Color(0xFF2B3B56)
                       : const Color(0xFFDDE6F2)),
@@ -7541,7 +7541,7 @@ class _ModeChoiceCard extends StatelessWidget {
                 height: 40,
                 decoration: BoxDecoration(
                   color: selected
-                      ? accent.withOpacity(0.12)
+                      ? accent.withValues(alpha: 0.12)
                       : (isDark
                           ? const Color(0xFF1A2A45)
                           : const Color(0xFFF4F7FB)),
@@ -7552,7 +7552,7 @@ class _ModeChoiceCard extends StatelessWidget {
                   size: 20,
                   color: selected
                       ? accent
-                      : accent.withOpacity(isDark ? 0.92 : 0.82),
+                      : accent.withValues(alpha: isDark ? 0.92 : 0.82),
                 ),
               ),
               const SizedBox(width: 10),
@@ -7593,14 +7593,14 @@ class _ModeChoiceCard extends StatelessWidget {
                 height: 22,
                 decoration: BoxDecoration(
                   color: selected
-                      ? accent.withOpacity(0.10)
+                      ? accent.withValues(alpha: 0.10)
                       : (isDark
                           ? const Color(0xFF162133)
                           : const Color(0xFFF8FAFC)),
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: selected
-                        ? accent.withOpacity(0.72)
+                        ? accent.withValues(alpha: 0.72)
                         : (isDark
                             ? const Color(0xFF40506A)
                             : const Color(0xFFC9D5E5)),
@@ -7641,10 +7641,10 @@ class _InfoBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: accent.withOpacity(isDark ? 0.14 : 0.08),
+        color: accent.withValues(alpha: isDark ? 0.14 : 0.08),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
         border: Border.all(
-          color: accent.withOpacity(isDark ? 0.20 : 0.12),
+          color: accent.withValues(alpha: isDark ? 0.20 : 0.12),
           width: _wizardBorderWidth,
         ),
       ),

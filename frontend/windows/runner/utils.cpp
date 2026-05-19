@@ -19,7 +19,7 @@
 namespace {
 
 constexpr wchar_t kBackendHost[] = L"127.0.0.1";
-constexpr unsigned short kBackendPort = 8001;
+constexpr unsigned short kBackendPort = 8000;
 constexpr auto kBackendStartupTimeout = std::chrono::seconds(15);
 constexpr auto kBackendPollInterval = std::chrono::milliseconds(150);
 
@@ -223,7 +223,7 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
 
   ::SetEnvironmentVariableW(L"RWA_PACKAGED", L"1");
   ::SetEnvironmentVariableW(L"RWA_API_HOST", kBackendHost);
-  ::SetEnvironmentVariableW(L"RWA_API_PORT", L"8001");
+  ::SetEnvironmentVariableW(L"RWA_API_PORT", L"8000");
   ::SetEnvironmentVariableW(L"RWA_API_LOG_LEVEL", L"warning");
   ::SetEnvironmentVariableW(L"PYTHONUTF8", L"1");
 
@@ -339,7 +339,7 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
 
   if (error_message != nullptr) {
     *error_message =
-        L"Le backend embarque ne repond pas sur 127.0.0.1:8001. Consultez: " +
+        L"Le backend embarque ne repond pas sur 127.0.0.1:8000. Consultez: " +
         launch_log_path.wstring();
   }
   StopManagedBackendServer();

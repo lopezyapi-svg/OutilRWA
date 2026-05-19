@@ -17,24 +17,24 @@ class RisqueMarcheScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppTheme.spacing),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(AppTheme.spacing),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const PageHeader(
+          PageHeader(
             title: 'Risque de marché',
             subtitle:
                 'Evaluation des tendances de marché et impacts sur le portefeuille.',
           ),
-          const SizedBox(height: AppTheme.spacing),
+          SizedBox(height: AppTheme.spacing),
           _InfoCard(
             title: 'Synthèse du risque de marché',
             content:
                 'Analyse des variations de taux, des changes et des prix des actifs. '
                 'Identifiez les sensibilités principales et surveillez les expositions critiques.',
           ),
-          const SizedBox(height: AppTheme.spacing),
+          SizedBox(height: AppTheme.spacing),
           _InfoCard(
             title: 'Recommandations',
             content: 'Vérifiez la concentration sectorielle et géographique. '
@@ -66,7 +66,7 @@ class _InfoCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE6EAF5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),

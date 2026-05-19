@@ -23,7 +23,7 @@ class RwaApiService {
               baseUrl: baseUrl ??
                   const String.fromEnvironment(
                     'RWA_API_BASE_URL',
-                    defaultValue: 'http://127.0.0.1:8001',
+                    defaultValue: 'http://127.0.0.1:8000',
                   ),
             );
 

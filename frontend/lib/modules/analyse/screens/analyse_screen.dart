@@ -16,24 +16,24 @@ class AnalyseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppTheme.spacing),
+    return const SingleChildScrollView(
+      padding: EdgeInsets.all(AppTheme.spacing),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const PageHeader(
+          PageHeader(
             title: 'Analyse',
             subtitle:
                 'Recommendations à partir des expositions et des risques.',
           ),
-          const SizedBox(height: AppTheme.spacing),
+          SizedBox(height: AppTheme.spacing),
           _AdviceCard(
             title: 'Synthèse des observations',
             content:
                 'Le module d’analyse agrège les données des expositions, du risque de marché et du risque opérationnel. '
                 'Il aide à identifier les leviers d’amélioration et les zones de concentration.',
           ),
-          const SizedBox(height: AppTheme.spacing),
+          SizedBox(height: AppTheme.spacing),
           _AdviceCard(
             title: 'Actions recommandées',
             content:
@@ -66,7 +66,7 @@ class _AdviceCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE6EAF5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
