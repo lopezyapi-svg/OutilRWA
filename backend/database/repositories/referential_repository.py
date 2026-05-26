@@ -140,8 +140,8 @@ class ReferentialRepository:
         with database_manager.connect() as connection:
             rows = connection.execute(
                 """
-                SELECT id, segment, rating, risk_weight, approach
-                FROM risk_weight_references
+                SELECT id, segment, notation AS rating, ponderation AS risk_weight, approche AS approach
+                FROM baremes_ponderation
                 ORDER BY segment, id
                 """
             ).fetchall()
@@ -151,8 +151,8 @@ class ReferentialRepository:
         with database_manager.connect() as connection:
             rows = connection.execute(
                 """
-                SELECT id, engagement_type, ccf
-                FROM ccf_references
+                SELECT id, type_engagement AS engagement_type, ccf
+                FROM baremes_ccf
                 ORDER BY id
                 """
             ).fetchall()
@@ -162,9 +162,9 @@ class ReferentialRepository:
         with database_manager.connect() as connection:
             rows = connection.execute(
                 """
-                SELECT id, label, description, sort_order
-                FROM rating_references
-                ORDER BY sort_order, id
+                SELECT id, libelle AS label, description, ordre_tri AS sort_order
+                FROM references_notation
+                ORDER BY ordre_tri, id
                 """
             ).fetchall()
         return [RatingReference(**dict(row)) for row in rows]
@@ -187,15 +187,15 @@ class ReferentialRepository:
     ) -> None:
         manager = nullcontext(connection) if connection is not None else database_manager.transaction()
         with manager as active_connection:
-            active_connection.execute("DELETE FROM sovereign_country_references")
-            active_connection.execute("DELETE FROM rating_references")
-            active_connection.execute("DELETE FROM ccf_references")
-            active_connection.execute("DELETE FROM risk_weight_references")
+            active_connection.execute("DELETE FROM references_pays_souverains")
+            active_connection.execute("DELETE FROM references_notation")
+            active_connection.execute("DELETE FROM baremes_ccf")
+            active_connection.execute("DELETE FROM baremes_ponderation")
 
             if risk_weights:
                 active_connection.executemany(
                     """
-                    INSERT INTO risk_weight_references(id, segment, rating, risk_weight, approach)
+                    INSERT INTO baremes_ponderation(id, segment, notation, ponderation, approche)
                     VALUES (:id, :segment, :rating, :risk_weight, :approach)
                     """,
                     risk_weights,
@@ -203,7 +203,7 @@ class ReferentialRepository:
             if ccf_table:
                 active_connection.executemany(
                     """
-                    INSERT INTO ccf_references(id, engagement_type, ccf)
+                    INSERT INTO baremes_ccf(id, type_engagement, ccf)
                     VALUES (:id, :engagement_type, :ccf)
                     """,
                     ccf_table,
@@ -211,7 +211,7 @@ class ReferentialRepository:
             if ratings:
                 active_connection.executemany(
                     """
-                    INSERT INTO rating_references(id, label, description, sort_order)
+                    INSERT INTO references_notation(id, libelle, description, ordre_tri)
                     VALUES (:id, :label, :description, :sort_order)
                     """,
                     ratings,
@@ -219,7 +219,7 @@ class ReferentialRepository:
             if country_ratings:
                 active_connection.executemany(
                     """
-                    INSERT INTO sovereign_country_references(country, sovereign_rating, risk_weight)
+                    INSERT INTO references_pays_souverains(pays, notation_souveraine, ponderation)
                     VALUES (:country, :sovereign_rating, :risk_weight)
                     """,
                     country_ratings,
@@ -285,7 +285,7 @@ class ReferentialRepository:
 
     def is_empty(self) -> bool:
         with database_manager.connect() as connection:
-            row = connection.execute("SELECT COUNT(*) AS total FROM risk_weight_references").fetchone()
+            row = connection.execute("SELECT COUNT(*) AS total FROM baremes_ponderation").fetchone()
         return row is None or int(row["total"]) == 0
 
 

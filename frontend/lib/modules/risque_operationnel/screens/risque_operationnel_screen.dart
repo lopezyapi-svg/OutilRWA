@@ -1,7 +1,6 @@
 // Ecran du risque opérationnel.
 import 'package:flutter/material.dart';
 
-import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/page_header.dart';

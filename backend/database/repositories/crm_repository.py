@@ -45,11 +45,11 @@ class CrmRepository:
             for chunk in _chunked(exposure_ids):
                 placeholders = ", ".join("?" for _ in chunk)
                 active_connection.execute(
-                    f"DELETE FROM crm_financed WHERE exposure_id IN ({placeholders})",
+                    f"DELETE FROM crm_financee WHERE exposition_id IN ({placeholders})",
                     chunk,
                 )
                 active_connection.execute(
-                    f"DELETE FROM crm_non_financed WHERE exposure_id IN ({placeholders})",
+                    f"DELETE FROM crm_non_financee WHERE exposition_id IN ({placeholders})",
                     chunk,
                 )
 
@@ -120,56 +120,56 @@ class CrmRepository:
             if financed_rows:
                 active_connection.executemany(
                     """
-                    INSERT INTO crm_financed(
-                        exposure_id,
-                        collateral_value,
-                        collateral_currency,
-                        collateral_type,
-                        issuer_type,
-                        issuer_rating,
-                        maturity_bucket,
-                        convertible_main_index,
-                        opcvm_highest_haircut,
-                        basket_items_json,
-                        fx_haircut,
-                        haircut,
-                        exposure_currency,
-                        risk_weight,
+                    INSERT INTO crm_financee(
+                        exposition_id,
+                        valeur_collateral,
+                        devise_collateral,
+                        type_collateral,
+                        type_emetteur,
+                        notation_emetteur,
+                        tranche_maturite,
+                        convertible_indice_principal,
+                        opcvm_decote_max,
+                        elements_panier_json,
+                        decote_change,
+                        decote,
+                        devise_exposition,
+                        ponderation,
                         collateral_eligible,
-                        ineligibility_reason,
+                        motif_ineligibilite,
                         he,
                         hc,
                         hfx,
                         eva,
                         cva,
-                        ead_after_financed_crm,
+                        ead_apres_crm_financee,
                         rwa_final,
-                        crm_gain
+                        gain_crm
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(exposure_id) DO UPDATE SET
-                        collateral_value = excluded.collateral_value,
-                        collateral_currency = excluded.collateral_currency,
-                        collateral_type = excluded.collateral_type,
-                        issuer_type = excluded.issuer_type,
-                        issuer_rating = excluded.issuer_rating,
-                        maturity_bucket = excluded.maturity_bucket,
-                        convertible_main_index = excluded.convertible_main_index,
-                        opcvm_highest_haircut = excluded.opcvm_highest_haircut,
-                        basket_items_json = excluded.basket_items_json,
-                        fx_haircut = excluded.fx_haircut,
-                        haircut = excluded.haircut,
-                        exposure_currency = excluded.exposure_currency,
-                        risk_weight = excluded.risk_weight,
+                    ON CONFLICT(exposition_id) DO UPDATE SET
+                        valeur_collateral = excluded.valeur_collateral,
+                        devise_collateral = excluded.devise_collateral,
+                        type_collateral = excluded.type_collateral,
+                        type_emetteur = excluded.type_emetteur,
+                        notation_emetteur = excluded.notation_emetteur,
+                        tranche_maturite = excluded.tranche_maturite,
+                        convertible_indice_principal = excluded.convertible_indice_principal,
+                        opcvm_decote_max = excluded.opcvm_decote_max,
+                        elements_panier_json = excluded.elements_panier_json,
+                        decote_change = excluded.decote_change,
+                        decote = excluded.decote,
+                        devise_exposition = excluded.devise_exposition,
+                        ponderation = excluded.ponderation,
                         collateral_eligible = excluded.collateral_eligible,
-                        ineligibility_reason = excluded.ineligibility_reason,
+                        motif_ineligibilite = excluded.motif_ineligibilite,
                         he = excluded.he,
                         hc = excluded.hc,
                         hfx = excluded.hfx,
                         eva = excluded.eva,
                         cva = excluded.cva,
-                        ead_after_financed_crm = excluded.ead_after_financed_crm,
+                        ead_apres_crm_financee = excluded.ead_apres_crm_financee,
                         rwa_final = excluded.rwa_final,
-                        crm_gain = excluded.crm_gain
+                        gain_crm = excluded.gain_crm
                     """,
                     financed_rows,
                 )
@@ -177,26 +177,26 @@ class CrmRepository:
             if non_financed_rows:
                 active_connection.executemany(
                     """
-                    INSERT INTO crm_non_financed(
-                        exposure_id,
-                        guarantor_name,
-                        guarantor_category,
-                        guarantor_rating,
-                        guarantor_country,
-                        guarantor_country_rating,
-                        guarantor_country_rw,
-                        guarantor_rw,
-                        coverage_percent
+                    INSERT INTO crm_non_financee(
+                        exposition_id,
+                        nom_garant,
+                        categorie_garant,
+                        notation_garant,
+                        pays_garant,
+                        notation_pays_garant,
+                        ponderation_pays_garant,
+                        ponderation_garant,
+                        taux_couverture
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(exposure_id) DO UPDATE SET
-                        guarantor_name = excluded.guarantor_name,
-                        guarantor_category = excluded.guarantor_category,
-                        guarantor_rating = excluded.guarantor_rating,
-                        guarantor_country = excluded.guarantor_country,
-                        guarantor_country_rating = excluded.guarantor_country_rating,
-                        guarantor_country_rw = excluded.guarantor_country_rw,
-                        guarantor_rw = excluded.guarantor_rw,
-                        coverage_percent = excluded.coverage_percent
+                    ON CONFLICT(exposition_id) DO UPDATE SET
+                        nom_garant = excluded.nom_garant,
+                        categorie_garant = excluded.categorie_garant,
+                        notation_garant = excluded.notation_garant,
+                        pays_garant = excluded.pays_garant,
+                        notation_pays_garant = excluded.notation_pays_garant,
+                        ponderation_pays_garant = excluded.ponderation_pays_garant,
+                        ponderation_garant = excluded.ponderation_garant,
+                        taux_couverture = excluded.taux_couverture
                     """,
                     non_financed_rows,
                 )
@@ -205,39 +205,39 @@ class CrmRepository:
         query = """
             SELECT
                 e.id AS exposure_id,
-                cp.name AS borrower_name,
-                cp.category_standard AS borrower_category,
-                cp.rating AS borrower_rating,
-                e.gross_amount,
+                cp.nom AS borrower_name,
+                cp.categorie_standard AS borrower_category,
+                cp.notation AS borrower_rating,
+                e.montant_brut AS gross_amount,
                 e.crm_type AS guarantee_type,
                 e.crm_mode,
-                e.crm_label,
-                e.crm_coverage_percent,
-                e.original_rw AS borrower_rw,
-                e.final_rw,
+                e.crm_libelle AS crm_label,
+                e.crm_couverture_pct AS crm_coverage_percent,
+                e.ponderation_initiale AS borrower_rw,
+                e.ponderation_finale AS final_rw,
                 e.ead,
                 e.rwa,
                 e.capital,
-                cf.collateral_value,
-                cf.issuer_type,
-                cf.issuer_rating,
-                cf.maturity_bucket,
-                cf.fx_haircut,
-                cf.haircut,
-                cn.guarantor_name,
-                cn.guarantor_category,
-                cn.guarantor_rating,
-                cn.guarantor_rw
-            FROM exposures e
-            INNER JOIN counterparties cp ON cp.id = e.counterparty_id
-            LEFT JOIN crm_financed cf ON cf.exposure_id = e.id
-            LEFT JOIN crm_non_financed cn ON cn.exposure_id = e.id
+                cf.valeur_collateral AS collateral_value,
+                cf.type_emetteur AS issuer_type,
+                cf.notation_emetteur AS issuer_rating,
+                cf.tranche_maturite AS maturity_bucket,
+                cf.decote_change AS fx_haircut,
+                cf.decote AS haircut,
+                cn.nom_garant AS guarantor_name,
+                cn.categorie_garant AS guarantor_category,
+                cn.notation_garant AS guarantor_rating,
+                cn.ponderation_garant AS guarantor_rw
+            FROM expositions e
+            INNER JOIN contreparties cp ON cp.id = e.contrepartie_id
+            LEFT JOIN crm_financee cf ON cf.exposition_id = e.id
+            LEFT JOIN crm_non_financee cn ON cn.exposition_id = e.id
             WHERE e.crm_mode <> 'Aucune'
         """
         params: list[Any] = []
         if search:
             like = f"%{search.lower()}%"
-            query += " AND (LOWER(cp.name) LIKE ? OR LOWER(COALESCE(cn.guarantor_name, cf.issuer_type, '')) LIKE ?)"
+            query += " AND (LOWER(cp.nom) LIKE ? OR LOWER(COALESCE(cn.nom_garant, cf.type_emetteur, '')) LIKE ?)"
             params.extend([like, like])
         if guarantee_type:
             query += " AND LOWER(e.crm_type) = ?"

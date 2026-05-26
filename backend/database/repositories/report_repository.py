@@ -21,34 +21,34 @@ class ReportRepository:
                 """
                 SELECT
                     id,
-                    created_at,
-                    period,
-                    report_type,
-                    currency,
-                    exposure_scope,
-                    include_category_chart,
-                    include_rating_chart,
-                    export_pdf_path,
-                    export_excel_path
-                FROM reports
-                ORDER BY created_at DESC, id DESC
+                    cree_le         AS created_at,
+                    periode         AS period,
+                    type_rapport    AS report_type,
+                    devise          AS currency,
+                    perimetre_exposition AS exposure_scope,
+                    inclure_graphe_categorie AS include_category_chart,
+                    inclure_graphe_notation  AS include_rating_chart,
+                    chemin_export_pdf   AS export_pdf_path,
+                    chemin_export_excel AS export_excel_path
+                FROM rapports
+                ORDER BY cree_le DESC, id DESC
                 """
             ).fetchall()
 
             line_rows = connection.execute(
                 """
                 SELECT
-                    report_id,
-                    line_order,
+                    rapport_id      AS report_id,
+                    ordre_ligne     AS line_order,
                     source,
-                    item_id,
-                    counterparty,
-                    amount,
+                    element_id      AS item_id,
+                    contrepartie    AS counterparty,
+                    montant         AS amount,
                     ead,
                     rwa,
                     capital
-                FROM report_lines
-                ORDER BY report_id, line_order
+                FROM lignes_rapport
+                ORDER BY rapport_id, ordre_ligne
                 """
             ).fetchall()
 
@@ -87,7 +87,7 @@ class ReportRepository:
             rows = connection.execute(
                 """
                 SELECT id
-                FROM reports
+                FROM rapports
                 WHERE id LIKE 'RPT%'
                 """
             ).fetchall()
@@ -105,28 +105,28 @@ class ReportRepository:
         with manager as active_connection:
             active_connection.execute(
                 """
-                INSERT INTO reports(
+                INSERT INTO rapports(
                     id,
-                    created_at,
-                    period,
-                    report_type,
-                    currency,
-                    exposure_scope,
-                    include_category_chart,
-                    include_rating_chart,
-                    export_pdf_path,
-                    export_excel_path
+                    cree_le,
+                    periode,
+                    type_rapport,
+                    devise,
+                    perimetre_exposition,
+                    inclure_graphe_categorie,
+                    inclure_graphe_notation,
+                    chemin_export_pdf,
+                    chemin_export_excel
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
-                    created_at = excluded.created_at,
-                    period = excluded.period,
-                    report_type = excluded.report_type,
-                    currency = excluded.currency,
-                    exposure_scope = excluded.exposure_scope,
-                    include_category_chart = excluded.include_category_chart,
-                    include_rating_chart = excluded.include_rating_chart,
-                    export_pdf_path = excluded.export_pdf_path,
-                    export_excel_path = excluded.export_excel_path
+                    cree_le = excluded.cree_le,
+                    periode = excluded.periode,
+                    type_rapport = excluded.type_rapport,
+                    devise = excluded.devise,
+                    perimetre_exposition = excluded.perimetre_exposition,
+                    inclure_graphe_categorie = excluded.inclure_graphe_categorie,
+                    inclure_graphe_notation = excluded.inclure_graphe_notation,
+                    chemin_export_pdf = excluded.chemin_export_pdf,
+                    chemin_export_excel = excluded.chemin_export_excel
                 """,
                 (
                     str(report["id"]),
@@ -142,18 +142,18 @@ class ReportRepository:
                 ),
             )
             active_connection.execute(
-                "DELETE FROM report_lines WHERE report_id = ?",
+                "DELETE FROM lignes_rapport WHERE rapport_id = ?",
                 (str(report["id"]),),
             )
             active_connection.executemany(
                 """
-                INSERT INTO report_lines(
-                    report_id,
-                    line_order,
+                INSERT INTO lignes_rapport(
+                    rapport_id,
+                    ordre_ligne,
                     source,
-                    item_id,
-                    counterparty,
-                    amount,
+                    element_id,
+                    contrepartie,
+                    montant,
                     ead,
                     rwa,
                     capital

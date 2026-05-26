@@ -22,30 +22,30 @@ class OffBalanceRepository:
         query = """
             SELECT
                 hb.id,
-                hb.analysis_date,
-                hb.counterparty_id,
-                cp.name AS counterparty_name,
-                cp.category_standard AS category,
-                cp.rating,
-                hb.engagement_type,
-                hb.nominal_amount,
+                hb.date_analyse     AS analysis_date,
+                hb.contrepartie_id  AS counterparty_id,
+                cp.nom              AS counterparty_name,
+                cp.categorie_standard AS category,
+                cp.notation         AS rating,
+                hb.type_engagement  AS engagement_type,
+                hb.montant_nominal  AS nominal_amount,
                 hb.ccf,
                 hb.ead,
-                hb.risk_weight,
+                hb.ponderation      AS risk_weight,
                 hb.rwa,
                 hb.capital,
-                hb.comment
-            FROM off_balance_commitments hb
-            INNER JOIN counterparties cp ON cp.id = hb.counterparty_id
+                hb.commentaire      AS comment
+            FROM engagements_hors_bilan hb
+            INNER JOIN contreparties cp ON cp.id = hb.contrepartie_id
             WHERE 1 = 1
         """
         params: list[Any] = []
         if search:
             like = f"%{search.lower()}%"
-            query += " AND (LOWER(hb.id) LIKE ? OR LOWER(cp.name) LIKE ?)"
+            query += " AND (LOWER(hb.id) LIKE ? OR LOWER(cp.nom) LIKE ?)"
             params.extend([like, like])
         if engagement_type:
-            query += " AND hb.engagement_type = ?"
+            query += " AND hb.type_engagement = ?"
             params.append(engagement_type)
         query += " ORDER BY hb.id"
 
@@ -58,7 +58,7 @@ class OffBalanceRepository:
             rows = connection.execute(
                 """
                 SELECT id
-                FROM off_balance_commitments
+                FROM engagements_hors_bilan
                 WHERE id LIKE 'HB%'
                 """
             ).fetchall()
@@ -82,7 +82,7 @@ class OffBalanceRepository:
             for chunk in _chunked(normalized_ids):
                 placeholders = ", ".join("?" for _ in chunk)
                 rows = active_connection.execute(
-                    f"SELECT id FROM off_balance_commitments WHERE id IN ({placeholders})",
+                    f"SELECT id FROM engagements_hors_bilan WHERE id IN ({placeholders})",
                     chunk,
                 ).fetchall()
                 existing_ids.update(str(row["id"]) for row in rows)
@@ -103,33 +103,33 @@ class OffBalanceRepository:
             now = utcnow_iso()
             active_connection.executemany(
                 """
-                INSERT INTO off_balance_commitments(
+                INSERT INTO engagements_hors_bilan(
                     id,
-                    counterparty_id,
-                    analysis_date,
-                    engagement_type,
-                    nominal_amount,
+                    contrepartie_id,
+                    date_analyse,
+                    type_engagement,
+                    montant_nominal,
                     ccf,
                     ead,
-                    risk_weight,
+                    ponderation,
                     rwa,
                     capital,
-                    comment,
-                    created_at,
-                    updated_at
+                    commentaire,
+                    cree_le,
+                    modifie_le
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
-                    counterparty_id = excluded.counterparty_id,
-                    analysis_date = excluded.analysis_date,
-                    engagement_type = excluded.engagement_type,
-                    nominal_amount = excluded.nominal_amount,
+                    contrepartie_id = excluded.contrepartie_id,
+                    date_analyse = excluded.date_analyse,
+                    type_engagement = excluded.type_engagement,
+                    montant_nominal = excluded.montant_nominal,
                     ccf = excluded.ccf,
                     ead = excluded.ead,
-                    risk_weight = excluded.risk_weight,
+                    ponderation = excluded.ponderation,
                     rwa = excluded.rwa,
                     capital = excluded.capital,
-                    comment = excluded.comment,
-                    updated_at = excluded.updated_at
+                    commentaire = excluded.commentaire,
+                    modifie_le = excluded.modifie_le
                 """,
                 [
                     (
@@ -157,7 +157,7 @@ class OffBalanceRepository:
     def replace_all(self, records: list[dict[str, Any]], *, connection=None) -> list[dict[str, Any]]:
         manager = nullcontext(connection) if connection is not None else database_manager.transaction()
         with manager as active_connection:
-            active_connection.execute("DELETE FROM off_balance_commitments")
+            active_connection.execute("DELETE FROM engagements_hors_bilan")
             self.upsert_commitments(records, connection=active_connection)
         return [dict(record) for record in records]
 

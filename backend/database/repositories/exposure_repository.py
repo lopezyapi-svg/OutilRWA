@@ -62,106 +62,137 @@ def _format_exposure_id(index: int) -> str:
     return f"CP{index:03d}"
 
 
+# ── Requête SELECT principale avec tous les LEFT JOINs ───────────────────────
+
+_SELECT_EXPOSURES = """
+    SELECT
+        e.id,
+        e.date_analyse      AS analysis_date,
+        e.date_octroi       AS grant_date,
+        e.date_echeance     AS maturity_date,
+        cp.nom              AS counterparty_name,
+        cp.pays             AS country,
+        cp.notation_pays    AS country_rating,
+        cp.categorie_prudentielle AS category_raw,
+        cp.categorie_standard     AS category_standard,
+        e.type_prudentiel   AS prudential_type,
+        e.crm_type,
+        e.crm_mode,
+        e.crm_libelle       AS crm_label,
+        e.crm_existe        AS crm_exists,
+        e.crm_couverture_pct AS crm_coverage_percent,
+        cp.notation         AS rating,
+        e.montant_brut      AS gross_amount,
+        e.devise            AS currency,
+        e.statut            AS status,
+        -- Sous-entité souverain
+        es.cas_particulier            AS sovereign_special_case,
+        es.ponderation_zero_preferentiel AS sovereign_preferential_zero_weight,
+        es.oce_etabli                 AS sovereign_oce_established,
+        es.oce_note                   AS sovereign_oce_note,
+        -- Sous-entité organisme public
+        epb.cas_uemoa_fcfa            AS public_body_uemoa_fcfa_case,
+        epb.activite_non_publique     AS public_body_non_public_activity,
+        -- Sous-entité BMD
+        eb.cas_haute_qualite              AS bmd_high_quality_case,
+        eb.cas_uemoa_fcfa                 AS bmd_uemoa_fcfa_case,
+        eb.criteres_uemoa_satisfaits      AS bmd_uemoa_criteria_satisfied,
+        eb.cas_institution_listee_fcfa    AS bmd_listed_institution_fcfa_case,
+        -- Sous-entité banque
+        ebk.cas_institution               AS bank_institution_case,
+        -- Sous-entité autre actif
+        eoa.type_actif                    AS other_asset_type,
+        -- Sous-entité hors bilan (détail risque)
+        eob.niveau_risque                 AS off_balance_risk_level,
+        -- Sous-entité clientèle de détail
+        ert.criteres_eligibilite_satisfaits AS retail_eligibility_criteria_satisfied,
+        -- Sous-entité immobilier résidentiel
+        erm.eligible                      AS residential_mortgage_eligible,
+        -- Sous-entité immobilier commercial
+        ecr.eligible                      AS commercial_real_estate_eligible,
+        -- Sous-entité exposition en défaut
+        ed.ponderation_initiale               AS defaulted_exposure_initial_risk_weight,
+        ed.immo_residentiel_en_defaut         AS defaulted_exposure_residential_mortgage_in_default,
+        ed.provision_au_moins_vingt_pct       AS defaulted_exposure_provision_at_least_twenty_percent,
+        -- Sous-entité entreprise
+        ee.depasse_seuil_degradation_bceao    AS enterprise_exceeds_bceao_degradation_threshold,
+        ee.procedure_prudentielle             AS enterprise_prudential_procedure,
+        ee.sfi_hors_loi_bancaire              AS enterprise_investment_firm_without_banking_law,
+        -- Résultats de calcul
+        e.ponderation_initiale  AS original_rw,
+        e.ponderation_finale    AS final_rw,
+        e.ead,
+        e.rwa,
+        e.capital,
+        e.commentaire           AS comment,
+        e.champs_source_json    AS source_fields_json,
+        -- CRM financée
+        cf.valeur_collateral    AS collateral_value,
+        cf.devise_collateral    AS collateral_currency,
+        cf.type_collateral      AS collateral_type,
+        cf.type_emetteur        AS issuer_type,
+        cf.notation_emetteur    AS issuer_rating,
+        cf.tranche_maturite     AS maturity_bucket,
+        cf.convertible_indice_principal AS convertible_main_index,
+        cf.opcvm_decote_max     AS opcvm_highest_haircut,
+        cf.elements_panier_json AS basket_items_json,
+        cf.decote_change        AS fx_haircut,
+        cf.decote               AS haircut,
+        cf.devise_exposition    AS exposure_currency,
+        cf.ponderation          AS risk_weight,
+        cf.collateral_eligible,
+        cf.motif_ineligibilite  AS ineligibility_reason,
+        cf.he,
+        cf.hc,
+        cf.hfx,
+        cf.eva,
+        cf.cva,
+        cf.ead_apres_crm_financee AS ead_after_financed_crm,
+        cf.rwa_final,
+        cf.gain_crm             AS crm_gain,
+        -- CRM non financée
+        cn.nom_garant           AS guarantor_name,
+        cn.categorie_garant     AS guarantor_category,
+        cn.notation_garant      AS guarantor_rating,
+        cn.pays_garant          AS guarantor_country,
+        cn.notation_pays_garant AS guarantor_country_rating,
+        cn.ponderation_pays_garant AS guarantor_country_rw,
+        cn.ponderation_garant   AS guarantor_rw
+    FROM expositions e
+    INNER JOIN contreparties cp ON cp.id = e.contrepartie_id
+    LEFT JOIN exposition_souveraine          es  ON es.exposition_id  = e.id
+    LEFT JOIN exposition_organisme_public    epb ON epb.exposition_id = e.id
+    LEFT JOIN exposition_bmd                 eb  ON eb.exposition_id  = e.id
+    LEFT JOIN exposition_banque              ebk ON ebk.exposition_id = e.id
+    LEFT JOIN exposition_autre_actif         eoa ON eoa.exposition_id = e.id
+    LEFT JOIN exposition_hors_bilan_detail   eob ON eob.exposition_id = e.id
+    LEFT JOIN exposition_clientele_detail    ert ON ert.exposition_id = e.id
+    LEFT JOIN exposition_immo_residentiel    erm ON erm.exposition_id = e.id
+    LEFT JOIN exposition_immo_commercial     ecr ON ecr.exposition_id = e.id
+    LEFT JOIN exposition_souffrance          ed  ON ed.exposition_id  = e.id
+    LEFT JOIN exposition_entreprise          ee  ON ee.exposition_id  = e.id
+    LEFT JOIN exposition_risque_eleve        ehr ON ehr.exposition_id = e.id
+    LEFT JOIN crm_financee cf ON cf.exposition_id = e.id
+    LEFT JOIN crm_non_financee cn ON cn.exposition_id = e.id
+"""
+
+
 class ExposureRepository:
     """Persiste et lit les expositions depuis SQLite."""
 
     def list_exposures(self, search: str | None = None, category: str | None = None) -> list[dict[str, Any]]:
-        query = """
-            SELECT
-                e.id,
-                e.analysis_date,
-                e.grant_date,
-                e.maturity_date,
-                cp.name AS counterparty_name,
-                cp.country,
-                cp.country_rating,
-                cp.category_prudential AS category_raw,
-                cp.category_standard,
-                e.crm_type,
-                e.crm_mode,
-                e.crm_label,
-                e.crm_exists,
-                e.crm_coverage_percent,
-                cp.rating,
-                e.gross_amount,
-                e.currency,
-                e.status,
-                e.sovereign_special_case,
-                e.sovereign_preferential_zero_weight,
-                e.sovereign_oce_established,
-                e.sovereign_oce_note,
-                e.public_body_uemoa_fcfa_case,
-                e.public_body_non_public_activity,
-                e.bmd_high_quality_case,
-                e.bmd_uemoa_fcfa_case,
-                e.bmd_uemoa_criteria_satisfied,
-                e.bmd_listed_institution_fcfa_case,
-                e.bank_institution_case,
-                e.other_asset_type,
-                e.off_balance_risk_level,
-                e.retail_eligibility_criteria_satisfied,
-                e.residential_mortgage_eligible,
-                e.commercial_real_estate_eligible,
-                e.defaulted_exposure_initial_risk_weight,
-                e.defaulted_exposure_residential_mortgage_in_default,
-                e.defaulted_exposure_provision_at_least_twenty_percent,
-                e.enterprise_exceeds_bceao_degradation_threshold,
-                e.enterprise_prudential_procedure,
-                e.enterprise_investment_firm_without_banking_law,
-                e.original_rw,
-                e.final_rw,
-                e.ead,
-                e.rwa,
-                e.capital,
-                e.comment,
-                e.source_fields_json,
-                cf.collateral_value,
-                cf.collateral_currency,
-                cf.collateral_type,
-                cf.issuer_type,
-                cf.issuer_rating,
-                cf.maturity_bucket,
-                cf.convertible_main_index,
-                cf.opcvm_highest_haircut,
-                cf.basket_items_json,
-                cf.fx_haircut,
-                cf.haircut,
-                cf.exposure_currency,
-                cf.risk_weight,
-                cf.collateral_eligible,
-                cf.ineligibility_reason,
-                cf.he,
-                cf.hc,
-                cf.hfx,
-                cf.eva,
-                cf.cva,
-                cf.ead_after_financed_crm,
-                cf.rwa_final,
-                cf.crm_gain,
-                cn.guarantor_name,
-                cn.guarantor_category,
-                cn.guarantor_rating,
-                cn.guarantor_country,
-                cn.guarantor_country_rating,
-                cn.guarantor_country_rw,
-                cn.guarantor_rw
-            FROM exposures e
-            INNER JOIN counterparties cp ON cp.id = e.counterparty_id
-            LEFT JOIN crm_financed cf ON cf.exposure_id = e.id
-            LEFT JOIN crm_non_financed cn ON cn.exposure_id = e.id
-            WHERE 1 = 1
-        """
+        query = _SELECT_EXPOSURES + " WHERE 1 = 1"
         params: list[Any] = []
         if search:
             like = f"%{search.lower()}%"
-            query += " AND (LOWER(e.id) LIKE ? OR LOWER(cp.name) LIKE ? OR LOWER(cp.country) LIKE ?)"
+            query += " AND (LOWER(e.id) LIKE ? OR LOWER(cp.nom) LIKE ? OR LOWER(cp.pays) LIKE ?)"
             params.extend([like, like, like])
         if category:
             normalized_category = category.lower()
             query += """
                 AND (
-                    LOWER(cp.category_prudential) = ?
-                    OR LOWER(cp.category_standard) = ?
+                    LOWER(cp.categorie_prudentielle) = ?
+                    OR LOWER(cp.categorie_standard) = ?
                 )
             """
             params.extend([normalized_category, normalized_category])
@@ -180,7 +211,7 @@ class ExposureRepository:
 
     def count_exposures(self) -> int:
         with database_manager.connect() as connection:
-            row = connection.execute("SELECT COUNT(*) AS total FROM exposures").fetchone()
+            row = connection.execute("SELECT COUNT(*) AS total FROM expositions").fetchone()
         return int(row["total"]) if row is not None else 0
 
     def get_existing_ids(self, exposure_ids: list[str], *, connection=None) -> set[str]:
@@ -194,7 +225,7 @@ class ExposureRepository:
             for chunk in _chunked(normalized_ids):
                 placeholders = ", ".join("?" for _ in chunk)
                 rows = active_connection.execute(
-                    f"SELECT id FROM exposures WHERE id IN ({placeholders})",
+                    f"SELECT id FROM expositions WHERE id IN ({placeholders})",
                     chunk,
                 ).fetchall()
                 existing_ids.update(str(row["id"]) for row in rows)
@@ -206,11 +237,7 @@ class ExposureRepository:
     def next_exposure_id(self) -> str:
         with database_manager.connect() as connection:
             rows = connection.execute(
-                """
-                SELECT id
-                FROM exposures
-                WHERE id LIKE 'CP%'
-                """
+                "SELECT id FROM expositions WHERE id LIKE 'CP%'"
             ).fetchall()
         max_index = 0
         for row in rows:
@@ -230,108 +257,66 @@ class ExposureRepository:
         with manager as active_connection:
             now = utcnow_iso()
             self._upsert_counterparties(active_connection, records, now=now)
+            # Table principale exposures (colonnes de base uniquement)
             active_connection.executemany(
                 """
-                INSERT INTO exposures(
+                INSERT INTO expositions(
                     id,
-                    counterparty_id,
-                    analysis_date,
-                    grant_date,
-                    maturity_date,
-                    gross_amount,
-                    currency,
-                    status,
-                    sovereign_special_case,
-                    sovereign_preferential_zero_weight,
-                    sovereign_oce_established,
-                    sovereign_oce_note,
-                    public_body_uemoa_fcfa_case,
-                    public_body_non_public_activity,
-                    bmd_high_quality_case,
-                    bmd_uemoa_fcfa_case,
-                    bmd_uemoa_criteria_satisfied,
-                    bmd_listed_institution_fcfa_case,
-                    bank_institution_case,
-                    other_asset_type,
-                    off_balance_risk_level,
-                    retail_eligibility_criteria_satisfied,
-                    residential_mortgage_eligible,
-                    commercial_real_estate_eligible,
-                    defaulted_exposure_initial_risk_weight,
-                    defaulted_exposure_residential_mortgage_in_default,
-                    defaulted_exposure_provision_at_least_twenty_percent,
-                    enterprise_exceeds_bceao_degradation_threshold,
-                    enterprise_prudential_procedure,
-                    enterprise_investment_firm_without_banking_law,
-                    crm_exists,
+                    contrepartie_id,
+                    type_prudentiel,
+                    date_analyse,
+                    date_octroi,
+                    date_echeance,
+                    montant_brut,
+                    devise,
+                    statut,
+                    crm_existe,
                     crm_type,
                     crm_mode,
-                    crm_label,
-                    crm_coverage_percent,
-                    original_rw,
-                    final_rw,
+                    crm_libelle,
+                    crm_couverture_pct,
+                    ponderation_initiale,
+                    ponderation_finale,
                     ead,
                     rwa,
                     capital,
-                    comment,
-                    source_fields_json,
-                    created_at,
-                    updated_at
+                    commentaire,
+                    champs_source_json,
+                    cree_le,
+                    modifie_le
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?
                 )
                 ON CONFLICT(id) DO UPDATE SET
-                    counterparty_id = excluded.counterparty_id,
-                    analysis_date = excluded.analysis_date,
-                    grant_date = excluded.grant_date,
-                    maturity_date = excluded.maturity_date,
-                    gross_amount = excluded.gross_amount,
-                    currency = excluded.currency,
-                    status = excluded.status,
-                    sovereign_special_case = excluded.sovereign_special_case,
-                    sovereign_preferential_zero_weight = excluded.sovereign_preferential_zero_weight,
-                    sovereign_oce_established = excluded.sovereign_oce_established,
-                    sovereign_oce_note = excluded.sovereign_oce_note,
-                    public_body_uemoa_fcfa_case = excluded.public_body_uemoa_fcfa_case,
-                    public_body_non_public_activity = excluded.public_body_non_public_activity,
-                    bmd_high_quality_case = excluded.bmd_high_quality_case,
-                    bmd_uemoa_fcfa_case = excluded.bmd_uemoa_fcfa_case,
-                    bmd_uemoa_criteria_satisfied = excluded.bmd_uemoa_criteria_satisfied,
-                    bmd_listed_institution_fcfa_case = excluded.bmd_listed_institution_fcfa_case,
-                    bank_institution_case = excluded.bank_institution_case,
-                    other_asset_type = excluded.other_asset_type,
-                    off_balance_risk_level = excluded.off_balance_risk_level,
-                    retail_eligibility_criteria_satisfied = excluded.retail_eligibility_criteria_satisfied,
-                    residential_mortgage_eligible = excluded.residential_mortgage_eligible,
-                    commercial_real_estate_eligible = excluded.commercial_real_estate_eligible,
-                    defaulted_exposure_initial_risk_weight = excluded.defaulted_exposure_initial_risk_weight,
-                    defaulted_exposure_residential_mortgage_in_default = excluded.defaulted_exposure_residential_mortgage_in_default,
-                    defaulted_exposure_provision_at_least_twenty_percent = excluded.defaulted_exposure_provision_at_least_twenty_percent,
-                    enterprise_exceeds_bceao_degradation_threshold = excluded.enterprise_exceeds_bceao_degradation_threshold,
-                    enterprise_prudential_procedure = excluded.enterprise_prudential_procedure,
-                    enterprise_investment_firm_without_banking_law = excluded.enterprise_investment_firm_without_banking_law,
-                    crm_exists = excluded.crm_exists,
-                    crm_type = excluded.crm_type,
-                    crm_mode = excluded.crm_mode,
-                    crm_label = excluded.crm_label,
-                    crm_coverage_percent = excluded.crm_coverage_percent,
-                    original_rw = excluded.original_rw,
-                    final_rw = excluded.final_rw,
-                    ead = excluded.ead,
-                    rwa = excluded.rwa,
-                    capital = excluded.capital,
-                    comment = excluded.comment,
-                    source_fields_json = excluded.source_fields_json,
-                    updated_at = excluded.updated_at
+                    contrepartie_id      = excluded.contrepartie_id,
+                    type_prudentiel      = excluded.type_prudentiel,
+                    date_analyse         = excluded.date_analyse,
+                    date_octroi          = excluded.date_octroi,
+                    date_echeance        = excluded.date_echeance,
+                    montant_brut         = excluded.montant_brut,
+                    devise               = excluded.devise,
+                    statut               = excluded.statut,
+                    crm_existe           = excluded.crm_existe,
+                    crm_type             = excluded.crm_type,
+                    crm_mode             = excluded.crm_mode,
+                    crm_libelle          = excluded.crm_libelle,
+                    crm_couverture_pct   = excluded.crm_couverture_pct,
+                    ponderation_initiale = excluded.ponderation_initiale,
+                    ponderation_finale   = excluded.ponderation_finale,
+                    ead                  = excluded.ead,
+                    rwa                  = excluded.rwa,
+                    capital              = excluded.capital,
+                    commentaire          = excluded.commentaire,
+                    champs_source_json   = excluded.champs_source_json,
+                    modifie_le           = excluded.modifie_le
                 """,
                 [
                     (
                         str(record["id"]),
                         str(record["id"]),
+                        str(record.get("prudential_type") or record.get("category_raw") or "e"),
                         record["analysis_date"].isoformat()
                         if hasattr(record["analysis_date"], "isoformat")
                         else str(record["analysis_date"]),
@@ -354,64 +339,6 @@ class ExposureRepository:
                         float(record["gross_amount"]),
                         str(record.get("currency", "XOF")),
                         str(record.get("status", "Active")),
-                        str(record.get("sovereign_special_case") or ""),
-                        _bool_to_int(bool(record.get("sovereign_preferential_zero_weight"))),
-                        _bool_to_int(bool(record.get("sovereign_oce_established"))),
-                        str(record.get("sovereign_oce_note") or ""),
-                        _nullable_bool_to_int(record.get("public_body_uemoa_fcfa_case")),
-                        _nullable_bool_to_int(record.get("public_body_non_public_activity")),
-                        _nullable_bool_to_int(record.get("bmd_high_quality_case")),
-                        _nullable_bool_to_int(record.get("bmd_uemoa_fcfa_case")),
-                        _nullable_bool_to_int(record.get("bmd_uemoa_criteria_satisfied")),
-                        _nullable_bool_to_int(record.get("bmd_listed_institution_fcfa_case")),
-                        str(record.get("bank_institution_case") or "")
-                        or None,
-                        str(record.get("other_asset_type") or "") or None,
-                        str(record.get("off_balance_risk_level") or "") or None,
-                        _nullable_bool_to_int(
-                            record.get("retail_eligibility_criteria_satisfied")
-                        ),
-                        _nullable_bool_to_int(
-                            record.get("residential_mortgage_eligible")
-                        ),
-                        _nullable_bool_to_int(
-                            record.get("commercial_real_estate_eligible")
-                        ),
-                        (
-                            float(
-                                record.get(
-                                    "defaulted_exposure_initial_risk_weight", 0.0
-                                )
-                            )
-                            if record.get(
-                                "defaulted_exposure_initial_risk_weight"
-                            )
-                            is not None
-                            else None
-                        ),
-                        _nullable_bool_to_int(
-                            record.get(
-                                "defaulted_exposure_residential_mortgage_in_default"
-                            )
-                        ),
-                        _nullable_bool_to_int(
-                            record.get(
-                                "defaulted_exposure_provision_at_least_twenty_percent"
-                            )
-                        ),
-                        _nullable_bool_to_int(
-                            record.get(
-                                "enterprise_exceeds_bceao_degradation_threshold"
-                            )
-                        ),
-                        _nullable_bool_to_int(
-                            record.get("enterprise_prudential_procedure")
-                        ),
-                        _nullable_bool_to_int(
-                            record.get(
-                                "enterprise_investment_firm_without_banking_law"
-                            )
-                        ),
                         _bool_to_int(bool(record.get("crm_exists"))),
                         str(record.get("crm_type", "Aucune")),
                         str(record.get("crm_mode") or record.get("crm_details", {}).get("mode") or "Aucune"),
@@ -433,6 +360,9 @@ class ExposureRepository:
                     for record in records
                 ],
             )
+            # Sous-tables de type prudentiel
+            self._upsert_type_subtables(active_connection, records)
+            # CRM
             crm_repository.sync_exposures_crm(records, connection=active_connection)
             self._log_operation(
                 active_connection,
@@ -446,6 +376,178 @@ class ExposureRepository:
             )
         return [dict(record) for record in records]
 
+    def _upsert_type_subtables(self, connection, records: list[dict[str, Any]]) -> None:
+        """Synchronise les 12 sous-tables de type prudentiel via le discriminant prudential_type.
+
+        Chaque exposition est routée vers exactement une sous-table selon prudential_type,
+        ce qui garantit la contrainte MERISE de spécialisation exclusive (1 parmi 12).
+        """
+        sovereign_rows, public_body_rows, bmd_rows, bank_rows = [], [], [], []
+        retail_rows, res_mortgage_rows, comm_re_rows = [], [], []
+        defaulted_rows, enterprise_rows, other_asset_rows, off_balance_rows = [], [], [], []
+        high_risk_rows = []
+
+        for r in records:
+            eid = str(r["id"])
+            ptype = str(r.get("prudential_type") or r.get("category_raw") or "e")
+
+            if ptype == "a":
+                sovereign_rows.append((
+                    eid,
+                    str(r.get("sovereign_special_case") or ""),
+                    _bool_to_int(bool(r.get("sovereign_preferential_zero_weight"))),
+                    _bool_to_int(bool(r.get("sovereign_oce_established"))),
+                    str(r.get("sovereign_oce_note") or ""),
+                ))
+            elif ptype == "b":
+                public_body_rows.append((
+                    eid,
+                    _nullable_bool_to_int(r.get("public_body_uemoa_fcfa_case")),
+                    _nullable_bool_to_int(r.get("public_body_non_public_activity")),
+                ))
+            elif ptype == "c":
+                bmd_rows.append((
+                    eid,
+                    _nullable_bool_to_int(r.get("bmd_high_quality_case")),
+                    _nullable_bool_to_int(r.get("bmd_uemoa_fcfa_case")),
+                    _nullable_bool_to_int(r.get("bmd_uemoa_criteria_satisfied")),
+                    _nullable_bool_to_int(r.get("bmd_listed_institution_fcfa_case")),
+                ))
+            elif ptype == "d":
+                bank_rows.append((eid, str(r.get("bank_institution_case") or "") or None))
+            elif ptype == "e":
+                enterprise_rows.append((
+                    eid,
+                    _nullable_bool_to_int(r.get("enterprise_exceeds_bceao_degradation_threshold")),
+                    _nullable_bool_to_int(r.get("enterprise_prudential_procedure")),
+                    _nullable_bool_to_int(r.get("enterprise_investment_firm_without_banking_law")),
+                ))
+            elif ptype == "f":
+                retail_rows.append((eid, _nullable_bool_to_int(r.get("retail_eligibility_criteria_satisfied"))))
+            elif ptype == "g":
+                res_mortgage_rows.append((eid, _nullable_bool_to_int(r.get("residential_mortgage_eligible"))))
+            elif ptype == "h":
+                comm_re_rows.append((eid, _nullable_bool_to_int(r.get("commercial_real_estate_eligible"))))
+            elif ptype == "i":
+                d_rw = (
+                    float(r["defaulted_exposure_initial_risk_weight"])
+                    if r.get("defaulted_exposure_initial_risk_weight") is not None
+                    else None
+                )
+                defaulted_rows.append((
+                    eid,
+                    d_rw,
+                    _nullable_bool_to_int(r.get("defaulted_exposure_residential_mortgage_in_default")),
+                    _nullable_bool_to_int(r.get("defaulted_exposure_provision_at_least_twenty_percent")),
+                ))
+            elif ptype == "j":
+                high_risk_rows.append((eid,))
+            elif ptype == "k":
+                other_asset_rows.append((eid, str(r.get("other_asset_type") or "") or None))
+            elif ptype == "l":
+                off_balance_rows.append((eid, str(r.get("off_balance_risk_level") or "") or None))
+
+        if sovereign_rows:
+            connection.executemany(
+                """INSERT INTO exposition_souveraine(exposition_id, cas_particulier, ponderation_zero_preferentiel, oce_etabli, oce_note)
+                   VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET
+                     cas_particulier = excluded.cas_particulier,
+                     ponderation_zero_preferentiel = excluded.ponderation_zero_preferentiel,
+                     oce_etabli = excluded.oce_etabli,
+                     oce_note = excluded.oce_note""",
+                sovereign_rows,
+            )
+        if public_body_rows:
+            connection.executemany(
+                """INSERT INTO exposition_organisme_public(exposition_id, cas_uemoa_fcfa, activite_non_publique)
+                   VALUES (?, ?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET
+                     cas_uemoa_fcfa = excluded.cas_uemoa_fcfa,
+                     activite_non_publique = excluded.activite_non_publique""",
+                public_body_rows,
+            )
+        if bmd_rows:
+            connection.executemany(
+                """INSERT INTO exposition_bmd(exposition_id, cas_haute_qualite, cas_uemoa_fcfa, criteres_uemoa_satisfaits, cas_institution_listee_fcfa)
+                   VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET
+                     cas_haute_qualite = excluded.cas_haute_qualite,
+                     cas_uemoa_fcfa = excluded.cas_uemoa_fcfa,
+                     criteres_uemoa_satisfaits = excluded.criteres_uemoa_satisfaits,
+                     cas_institution_listee_fcfa = excluded.cas_institution_listee_fcfa""",
+                bmd_rows,
+            )
+        if bank_rows:
+            connection.executemany(
+                """INSERT INTO exposition_banque(exposition_id, cas_institution)
+                   VALUES (?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET cas_institution = excluded.cas_institution""",
+                bank_rows,
+            )
+        if retail_rows:
+            connection.executemany(
+                """INSERT INTO exposition_clientele_detail(exposition_id, criteres_eligibilite_satisfaits)
+                   VALUES (?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET criteres_eligibilite_satisfaits = excluded.criteres_eligibilite_satisfaits""",
+                retail_rows,
+            )
+        if res_mortgage_rows:
+            connection.executemany(
+                """INSERT INTO exposition_immo_residentiel(exposition_id, eligible)
+                   VALUES (?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET eligible = excluded.eligible""",
+                res_mortgage_rows,
+            )
+        if comm_re_rows:
+            connection.executemany(
+                """INSERT INTO exposition_immo_commercial(exposition_id, eligible)
+                   VALUES (?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET eligible = excluded.eligible""",
+                comm_re_rows,
+            )
+        if defaulted_rows:
+            connection.executemany(
+                """INSERT INTO exposition_souffrance(exposition_id, ponderation_initiale, immo_residentiel_en_defaut, provision_au_moins_vingt_pct)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET
+                     ponderation_initiale = excluded.ponderation_initiale,
+                     immo_residentiel_en_defaut = excluded.immo_residentiel_en_defaut,
+                     provision_au_moins_vingt_pct = excluded.provision_au_moins_vingt_pct""",
+                defaulted_rows,
+            )
+        if enterprise_rows:
+            connection.executemany(
+                """INSERT INTO exposition_entreprise(exposition_id, depasse_seuil_degradation_bceao, procedure_prudentielle, sfi_hors_loi_bancaire)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET
+                     depasse_seuil_degradation_bceao = excluded.depasse_seuil_degradation_bceao,
+                     procedure_prudentielle = excluded.procedure_prudentielle,
+                     sfi_hors_loi_bancaire = excluded.sfi_hors_loi_bancaire""",
+                enterprise_rows,
+            )
+        if other_asset_rows:
+            connection.executemany(
+                """INSERT INTO exposition_autre_actif(exposition_id, type_actif)
+                   VALUES (?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET type_actif = excluded.type_actif""",
+                other_asset_rows,
+            )
+        if off_balance_rows:
+            connection.executemany(
+                """INSERT INTO exposition_hors_bilan_detail(exposition_id, niveau_risque)
+                   VALUES (?, ?)
+                   ON CONFLICT(exposition_id) DO UPDATE SET niveau_risque = excluded.niveau_risque""",
+                off_balance_rows,
+            )
+        if high_risk_rows:
+            connection.executemany(
+                """INSERT INTO exposition_risque_eleve(exposition_id)
+                   VALUES (?)
+                   ON CONFLICT(exposition_id) DO NOTHING""",
+                high_risk_rows,
+            )
+
     def replace_all(self, records: list[dict[str, Any]], *, connection=None) -> list[dict[str, Any]]:
         manager = nullcontext(connection) if connection is not None else database_manager.transaction()
         with manager as active_connection:
@@ -456,11 +558,12 @@ class ExposureRepository:
     def clear_portfolio(self, *, connection=None) -> None:
         manager = nullcontext(connection) if connection is not None else database_manager.transaction()
         with manager as active_connection:
-            active_connection.execute("DELETE FROM off_balance_commitments")
-            active_connection.execute("DELETE FROM crm_financed")
-            active_connection.execute("DELETE FROM crm_non_financed")
-            active_connection.execute("DELETE FROM exposures")
-            active_connection.execute("DELETE FROM counterparties")
+            active_connection.execute("DELETE FROM engagements_hors_bilan")
+            active_connection.execute("DELETE FROM crm_financee")
+            active_connection.execute("DELETE FROM crm_non_financee")
+            # Les sous-tables de type sont supprimées en cascade via FK
+            active_connection.execute("DELETE FROM expositions")
+            active_connection.execute("DELETE FROM contreparties")
 
     def delete_exposures(
         self,
@@ -485,15 +588,16 @@ class ExposureRepository:
         manager = nullcontext(connection) if connection is not None else database_manager.transaction()
         with manager as active_connection:
             rows = active_connection.execute(
-                f"SELECT id FROM exposures WHERE id IN ({placeholders})",
+                f"SELECT id FROM expositions WHERE id IN ({placeholders})",
                 normalized_ids,
             ).fetchall()
             deleted_ids = sorted(str(row["id"]) for row in rows)
             missing_ids = [item for item in normalized_ids if item not in deleted_ids]
             if deleted_ids:
                 delete_placeholders = ", ".join("?" for _ in deleted_ids)
+                # Les sous-tables sont supprimées en CASCADE
                 active_connection.execute(
-                    f"DELETE FROM exposures WHERE id IN ({delete_placeholders})",
+                    f"DELETE FROM expositions WHERE id IN ({delete_placeholders})",
                     deleted_ids,
                 )
                 renumbered_ids = (
@@ -535,8 +639,8 @@ class ExposureRepository:
                 CASE
                     WHEN EXISTS(
                         SELECT 1
-                        FROM exposures e_exists
-                        WHERE e_exists.counterparty_id = cp.id
+                        FROM expositions e_exists
+                        WHERE e_exists.contrepartie_id = cp.id
                     ) THEN 1
                     ELSE 0
                 END AS has_exposure,
@@ -546,8 +650,8 @@ class ExposureRepository:
                         ELSE NULL
                     END
                 ) AS exposure_order
-            FROM counterparties cp
-            LEFT JOIN exposures e ON e.counterparty_id = cp.id
+            FROM contreparties cp
+            LEFT JOIN expositions e ON e.contrepartie_id = cp.id
             WHERE cp.id LIKE 'CP%'
             GROUP BY cp.id
             """
@@ -588,11 +692,7 @@ class ExposureRepository:
         exposure_ids_after = {
             str(row["id"])
             for row in connection.execute(
-                """
-                SELECT id
-                FROM exposures
-                WHERE id LIKE 'CP%'
-                """
+                "SELECT id FROM expositions WHERE id LIKE 'CP%'"
             ).fetchall()
         }
         return {
@@ -608,38 +708,57 @@ class ExposureRepository:
         target_id: str,
     ) -> None:
         connection.execute(
-            "UPDATE counterparties SET id = ? WHERE id = ?",
+            "UPDATE contreparties SET id = ? WHERE id = ?",
             (target_id, source_id),
         )
         connection.execute(
-            "UPDATE exposures SET id = ? WHERE id = ?",
+            "UPDATE expositions SET id = ? WHERE id = ?",
             (target_id, source_id),
         )
         connection.execute(
-            "UPDATE exposures SET counterparty_id = ? WHERE counterparty_id = ?",
+            "UPDATE expositions SET contrepartie_id = ? WHERE contrepartie_id = ?",
+            (target_id, source_id),
+        )
+        # Sous-tables de type (PKs remappées — les FK suivent via CASCADE)
+        for table in (
+            "exposition_souveraine",
+            "exposition_organisme_public",
+            "exposition_bmd",
+            "exposition_banque",
+            "exposition_clientele_detail",
+            "exposition_immo_residentiel",
+            "exposition_immo_commercial",
+            "exposition_souffrance",
+            "exposition_entreprise",
+            "exposition_risque_eleve",
+            "exposition_autre_actif",
+            "exposition_hors_bilan_detail",
+        ):
+            connection.execute(
+                f"UPDATE {table} SET exposition_id = ? WHERE exposition_id = ?",
+                (target_id, source_id),
+            )
+        connection.execute(
+            "UPDATE crm_financee SET exposition_id = ? WHERE exposition_id = ?",
             (target_id, source_id),
         )
         connection.execute(
-            "UPDATE crm_financed SET exposure_id = ? WHERE exposure_id = ?",
+            "UPDATE crm_non_financee SET exposition_id = ? WHERE exposition_id = ?",
             (target_id, source_id),
         )
         connection.execute(
-            "UPDATE crm_non_financed SET exposure_id = ? WHERE exposure_id = ?",
+            "UPDATE crm_garanties SET exposition_id = ? WHERE exposition_id = ?",
             (target_id, source_id),
         )
         connection.execute(
-            "UPDATE crm_guarantees SET exposure_id = ? WHERE exposure_id = ?",
-            (target_id, source_id),
-        )
-        connection.execute(
-            "UPDATE off_balance_commitments SET counterparty_id = ? WHERE counterparty_id = ?",
+            "UPDATE engagements_hors_bilan SET contrepartie_id = ? WHERE contrepartie_id = ?",
             (target_id, source_id),
         )
         connection.execute(
             """
-            UPDATE report_lines
-            SET item_id = ?
-            WHERE source = 'Exposition' AND item_id = ?
+            UPDATE lignes_rapport
+            SET element_id = ?
+            WHERE source = 'Exposition' AND element_id = ?
             """,
             (target_id, source_id),
         )
@@ -647,25 +766,25 @@ class ExposureRepository:
     def _upsert_counterparties(self, connection, records: list[dict[str, Any]], *, now: str) -> None:
         connection.executemany(
             """
-            INSERT INTO counterparties(
+            INSERT INTO contreparties(
                 id,
-                name,
-                country,
-                country_rating,
-                category_standard,
-                category_prudential,
-                rating,
-                created_at,
-                updated_at
+                nom,
+                pays,
+                notation_pays,
+                categorie_standard,
+                categorie_prudentielle,
+                notation,
+                cree_le,
+                modifie_le
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
-                name = excluded.name,
-                country = excluded.country,
-                country_rating = excluded.country_rating,
-                category_standard = excluded.category_standard,
-                category_prudential = excluded.category_prudential,
-                rating = excluded.rating,
-                updated_at = excluded.updated_at
+                nom = excluded.nom,
+                pays = excluded.pays,
+                notation_pays = excluded.notation_pays,
+                categorie_standard = excluded.categorie_standard,
+                categorie_prudentielle = excluded.categorie_prudentielle,
+                notation = excluded.notation,
+                modifie_le = excluded.modifie_le
             """,
             [
                 (
@@ -686,16 +805,16 @@ class ExposureRepository:
     def _cleanup_orphan_counterparties(self, connection) -> None:
         connection.execute(
             """
-            DELETE FROM counterparties
-            WHERE id NOT IN (SELECT counterparty_id FROM exposures)
-              AND id NOT IN (SELECT counterparty_id FROM off_balance_commitments)
+            DELETE FROM contreparties
+            WHERE id NOT IN (SELECT contrepartie_id FROM expositions)
+              AND id NOT IN (SELECT contrepartie_id FROM engagements_hors_bilan)
             """
         )
 
     def _log_operation(self, connection, *, entity_type: str, entity_id: str | None, operation: str, payload: dict[str, Any]) -> None:
         connection.execute(
             """
-            INSERT INTO operation_history(entity_type, entity_id, operation, payload_json, created_at)
+            INSERT INTO journal_operations(type_entite, entite_id, operation, payload_json, cree_le)
             VALUES (?, ?, ?, ?, ?)
             """,
             (
@@ -797,6 +916,7 @@ class ExposureRepository:
             "counterparty_name": str(row["counterparty_name"]),
             "country": str(row["country"]),
             "country_rating": _normalize_rating_label(row.get("country_rating")),
+            "prudential_type": str(row.get("prudential_type") or row.get("category_raw") or "e"),
             "category_raw": str(row.get("category_raw") or row.get("category_standard") or "Entreprises"),
             "category_dashboard": str(row.get("category_standard") or "Entreprises"),
             "category_standard": str(row.get("category_standard") or "Entreprises"),

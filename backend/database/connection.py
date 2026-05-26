@@ -145,70 +145,57 @@ class DatabaseManager:
             return column_name.lower() in existing_columns
         if "already exists" in message:
             return True
+        # DROP COLUMN sur une colonne déjà supprimée (DB déjà migrée ou schéma frais)
+        if "no such column" in message:
+            if re.search(r"alter\s+table\s+\S+\s+drop\s+column", statement, re.IGNORECASE):
+                return True
+            # RENAME COLUMN sur une colonne absente = déjà renommée
+            if re.search(r"alter\s+table\s+\S+\s+rename\s+column", statement, re.IGNORECASE):
+                return True
+            # INSERT...SELECT depuis des colonnes absentes : schéma frais, rien à migrer
+            if statement.strip().upper().startswith("INSERT"):
+                return True
+        # RENAME TABLE sur une table absente = déjà renommée ou schéma frais
+        if "no such table" in message:
+            if re.search(r"alter\s+table\s+\S+\s+rename\s+to", statement, re.IGNORECASE):
+                return True
         return False
 
     def _ensure_runtime_compatibility(self, connection: sqlite3.Connection) -> None:
+        # Note : les colonnes de type prudentiel ont été déplacées dans leurs
+        # sous-tables respectives par la migration 019. La migration 021 a renommé
+        # toutes les tables et colonnes en français.
         self._ensure_table_column(
             connection,
-            table_name="exposures",
-            column_name="residential_mortgage_eligible",
-            column_definition="INTEGER",
-        )
-        self._ensure_table_column(
-            connection,
-            table_name="exposures",
-            column_name="commercial_real_estate_eligible",
-            column_definition="INTEGER",
-        )
-        self._ensure_table_column(
-            connection,
-            table_name="exposures",
-            column_name="defaulted_exposure_initial_risk_weight",
-            column_definition="REAL",
-        )
-        self._ensure_table_column(
-            connection,
-            table_name="exposures",
-            column_name="defaulted_exposure_residential_mortgage_in_default",
-            column_definition="INTEGER",
-        )
-        self._ensure_table_column(
-            connection,
-            table_name="exposures",
-            column_name="defaulted_exposure_provision_at_least_twenty_percent",
-            column_definition="INTEGER",
-        )
-        self._ensure_table_column(
-            connection,
-            table_name="exposures",
-            column_name="source_fields_json",
+            table_name="expositions",
+            column_name="champs_source_json",
             column_definition="TEXT NOT NULL DEFAULT '{}'",
         )
         for column_name, column_definition in (
-            ("collateral_currency", "TEXT NOT NULL DEFAULT 'XOF'"),
+            ("devise_collateral", "TEXT NOT NULL DEFAULT 'XOF'"),
             (
-                "collateral_type",
+                "type_collateral",
                 "TEXT NOT NULL DEFAULT 'Liquidités dans la même devise'",
             ),
-            ("convertible_main_index", "INTEGER NOT NULL DEFAULT 1"),
-            ("opcvm_highest_haircut", "REAL NOT NULL DEFAULT 0.30"),
-            ("basket_items_json", "TEXT NOT NULL DEFAULT '[]'"),
-            ("exposure_currency", "TEXT NOT NULL DEFAULT 'XOF'"),
-            ("risk_weight", "REAL NOT NULL DEFAULT 0"),
+            ("convertible_indice_principal", "INTEGER NOT NULL DEFAULT 1"),
+            ("opcvm_decote_max", "REAL NOT NULL DEFAULT 0.30"),
+            ("elements_panier_json", "TEXT NOT NULL DEFAULT '[]'"),
+            ("devise_exposition", "TEXT NOT NULL DEFAULT 'XOF'"),
+            ("ponderation", "REAL NOT NULL DEFAULT 0"),
             ("collateral_eligible", "INTEGER NOT NULL DEFAULT 1"),
-            ("ineligibility_reason", "TEXT NOT NULL DEFAULT ''"),
+            ("motif_ineligibilite", "TEXT NOT NULL DEFAULT ''"),
             ("he", "REAL NOT NULL DEFAULT 0"),
             ("hc", "REAL NOT NULL DEFAULT 0"),
             ("hfx", "REAL NOT NULL DEFAULT 0"),
             ("eva", "REAL NOT NULL DEFAULT 0"),
             ("cva", "REAL NOT NULL DEFAULT 0"),
-            ("ead_after_financed_crm", "REAL NOT NULL DEFAULT 0"),
+            ("ead_apres_crm_financee", "REAL NOT NULL DEFAULT 0"),
             ("rwa_final", "REAL NOT NULL DEFAULT 0"),
-            ("crm_gain", "REAL NOT NULL DEFAULT 0"),
+            ("gain_crm", "REAL NOT NULL DEFAULT 0"),
         ):
             self._ensure_table_column(
                 connection,
-                table_name="crm_financed",
+                table_name="crm_financee",
                 column_name=column_name,
                 column_definition=column_definition,
             )
