@@ -1,31 +1,34 @@
 // Ce fichier structure le layout principal de l'application.
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_module.dart';
 import '../../core/localization/app_language.dart';
 import '../../core/localization/app_localization.dart';
-import '../../core/models/global_search_entry.dart';
-import '../../core/services/rwa_api_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/currency_conversion.dart';
+import 'desktop_asset_image.dart';
 import 'sidebar_navigation.dart';
 
 const double _sidebarToggleButtonWidth = 28;
 const double _sidebarToggleButtonHeight = 28;
 const double _sidebarToggleHitArea = 42;
 const double _sidebarToggleButtonRadius = 6;
-const double _desktopPanelGap = 8;
+const double _desktopPanelGap = AppTheme.pageGap;
 const double _desktopRailWidth = 54;
 const double _desktopOverlayWidth = 220;
-const Duration _desktopSidebarAnimationDuration = Duration(milliseconds: 220);
+const double _workspaceTopBarControlHeight = 24;
+const double _workspaceTopBarControlRadius = 2;
+const Duration _desktopSidebarOpenDuration = Duration(milliseconds: 60);
+const Duration _desktopSidebarCloseDuration = Duration(milliseconds: 60);
 
 /// Coquille principale de l'application avec top bar, sidebar et contenu.
 class AppShell extends StatefulWidget {
   const AppShell({
     super.key,
-    required this.api,
     required this.selectedModule,
     required this.onSelectModule,
+    required this.onReturnToWelcome,
     required this.themeMode,
     required this.onThemeModeChanged,
     required this.portfolioDisplayCurrency,
@@ -33,9 +36,9 @@ class AppShell extends StatefulWidget {
     required this.child,
   });
 
-  final RwaApiService api;
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
+  final VoidCallback onReturnToWelcome;
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
   final ValueNotifier<String> portfolioDisplayCurrency;
@@ -46,9 +49,9 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-/// Etat interne qui pilote la recherche, la sidebar et la top bar.
+/// Etat interne qui pilote la sidebar et la top bar.
 class _AppShellState extends State<AppShell> {
-  static const double _screenSpacing = AppTheme.spacing;
+  static const double _screenSpacing = AppTheme.pagePadding;
   bool _isSidebarOverlayOpen = false;
 
   @override
@@ -67,8 +70,6 @@ class _AppShellState extends State<AppShell> {
   }
 
   Widget _buildDesktopShell() {
-    final sidebarWidth =
-        _isSidebarOverlayOpen ? _desktopOverlayWidth : _desktopRailWidth;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -84,36 +85,79 @@ class _AppShellState extends State<AppShell> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // La top bar concentre la marque, la recherche et les actions globales.
+                  // La top bar concentre la marque et les actions globales.
                   _WorkspaceTopBar(
-                    api: widget.api,
-                    onSelectModule: widget.onSelectModule,
                     themeMode: widget.themeMode,
                     onThemeModeChanged: widget.onThemeModeChanged,
                     selectedModule: widget.selectedModule,
+                    onReturnToWelcome: widget.onReturnToWelcome,
                     portfolioDisplayCurrency: widget.portfolioDisplayCurrency,
                     appLanguage: widget.appLanguage,
                   ),
-                  const SizedBox(height: AppTheme.spacing),
+                  const SizedBox(height: AppTheme.pageGap),
                   Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        AnimatedContainer(
-                          duration: _desktopSidebarAnimationDuration,
-                          curve: Curves.easeOutCubic,
-                          width: sidebarWidth,
-                          child: RepaintBoundary(
-                            child: _DesktopSidebarFrame(
-                              compact: !_isSidebarOverlayOpen,
-                              width: sidebarWidth,
-                              selectedModule: widget.selectedModule,
-                              onSelectModule: _handleDesktopModuleSelection,
-                              showBrand: false,
-                              showToggleButton: true,
-                              onToggleSidebar: _toggleDesktopSidebarOverlay,
-                            ),
+                        TweenAnimationBuilder<double>(
+                          tween: Tween<double>(
+                            end: _isSidebarOverlayOpen ? 1 : 0,
                           ),
+                          duration: _isSidebarOverlayOpen
+                              ? _desktopSidebarOpenDuration
+                              : _desktopSidebarCloseDuration,
+                          curve: _isSidebarOverlayOpen
+                              ? Curves.easeOutQuart
+                              : Curves.easeInQuart,
+                          builder: (context, progress, _) {
+                            final sidebarWidth = _desktopRailWidth +
+                                (_desktopOverlayWidth - _desktopRailWidth) *
+                                    progress;
+                            final showCompact =
+                                !_isSidebarOverlayOpen && progress <= 0.001;
+                            return SizedBox(
+                              width: sidebarWidth,
+                              child: RepaintBoundary(
+                                child: ClipRect(
+                                  child: showCompact
+                                      ? _DesktopSidebarFrame(
+                                          compact: true,
+                                          width: _desktopRailWidth,
+                                          selectedModule: widget.selectedModule,
+                                          onSelectModule:
+                                              _handleDesktopModuleSelection,
+                                          showBrand: false,
+                                          showToggleButton: true,
+                                          onToggleSidebar:
+                                              _toggleDesktopSidebarOverlay,
+                                        )
+                                      : IgnorePointer(
+                                          ignoring: progress < 0.98,
+                                          child: OverflowBox(
+                                            alignment: Alignment.centerLeft,
+                                            minWidth: _desktopOverlayWidth,
+                                            maxWidth: _desktopOverlayWidth,
+                                            child: SizedBox(
+                                              width: _desktopOverlayWidth,
+                                              child: _DesktopSidebarFrame(
+                                                compact: false,
+                                                width: _desktopOverlayWidth,
+                                                selectedModule:
+                                                    widget.selectedModule,
+                                                onSelectModule:
+                                                    _handleDesktopModuleSelection,
+                                                showBrand: false,
+                                                showToggleButton: true,
+                                                onToggleSidebar:
+                                                    _toggleDesktopSidebarOverlay,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(width: _desktopPanelGap),
                         Expanded(
@@ -168,8 +212,9 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _handleDesktopModuleSelection(AppModule module) {
-    if (_isSidebarOverlayOpen) {
-      setState(() => _isSidebarOverlayOpen = false);
+    if (module == AppModule.risqueMarcheImport) {
+      widget.onSelectModule(module);
+      return;
     }
     if (module == widget.selectedModule) {
       return;
@@ -203,8 +248,9 @@ class _AppShellState extends State<AppShell> {
               _TopBar(
                 selectedModule: widget.selectedModule,
                 showMenuButton: true,
+                onReturnToWelcome: widget.onReturnToWelcome,
               ),
-              const SizedBox(height: _screenSpacing),
+              const SizedBox(height: AppTheme.pageGap),
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
@@ -228,7 +274,7 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-/// Fond décoratif léger affiché derrière l'espace de travail.
+/// Fond analytique discret affiché derrière l'espace de travail.
 class _DecorativeBackdrop extends StatelessWidget {
   const _DecorativeBackdrop({required this.dark});
 
@@ -236,123 +282,90 @@ class _DecorativeBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final colors = dark
+        ? const [Color(0xFF091224), Color(0xFF0B1630), Color(0xFF0F1B31)]
+        : const [Color(0xFFF3F6FB), Color(0xFFEAF0F8), Color(0xFFF8FAFC)];
+
+    return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: dark
-              ? const [Color(0xFF091224), Color(0xFF0B1630), Color(0xFF0F1D38)]
-              : const [Color(0xFFF2F0FF), Color(0xFFE8F0FB), Color(0xFFF6F3FF)],
+          colors: colors,
         ),
       ),
-      child: Stack(
-        children: [
-          _BackdropOrb(
-            alignment: Alignment.topLeft,
-            size: 360,
-            colors: dark
-                ? const [Color(0x224C8FFF), Color(0x004C8FFF)]
-                : const [Color(0x33BCA7FF), Color(0x00BCA7FF)],
-            offset: const Offset(-110, -100),
-          ),
-          _BackdropOrb(
-            alignment: Alignment.centerRight,
-            size: 420,
-            colors: dark
-                ? const [Color(0x1C7E6CFF), Color(0x007E6CFF)]
-                : const [Color(0x33C3A6FF), Color(0x00C3A6FF)],
-            offset: const Offset(130, 0),
-          ),
-          _BackdropOrb(
-            alignment: Alignment.bottomLeft,
-            size: 320,
-            colors: dark
-                ? const [Color(0x1423A6FF), Color(0x0023A6FF)]
-                : const [Color(0x33A6FFE3), Color(0x00A6FFE3)],
-            offset: const Offset(-60, 90),
-          ),
-        ],
+      child: CustomPaint(
+        painter: _WorkspaceBackdropPainter(dark: dark),
+        child: const SizedBox.expand(),
       ),
     );
   }
 }
 
-/// Élément décoratif circulaire utilisé dans le fond d'écran.
-class _BackdropOrb extends StatelessWidget {
-  const _BackdropOrb({
-    required this.alignment,
-    required this.size,
-    required this.colors,
-    required this.offset,
-  });
+class _WorkspaceBackdropPainter extends CustomPainter {
+  const _WorkspaceBackdropPainter({required this.dark});
 
-  final Alignment alignment;
-  final double size;
-  final List<Color> colors;
-  final Offset offset;
+  final bool dark;
 
   @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: alignment,
-      child: Transform.translate(
-        offset: offset,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(colors: colors),
-          ),
-        ),
-      ),
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = dark ? const Color(0x142C4166) : const Color(0x1A9BA8BD)
+      ..strokeWidth = 1;
+    const gridStep = 48.0;
+    for (var x = 0.0; x <= size.width; x += gridStep) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (var y = 0.0; y <= size.height; y += gridStep) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    final bandPaint = Paint()
+      ..color = dark ? const Color(0x102563EB) : const Color(0x102563EB)
+      ..style = PaintingStyle.fill;
+    final bandPath = Path()
+      ..moveTo(size.width * 0.52, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(size.width * 0.82, size.height)
+      ..close();
+    canvas.drawPath(bandPath, bandPaint);
+
+    final baselinePaint = Paint()
+      ..color = dark ? const Color(0x242563EB) : const Color(0x24365F9A)
+      ..strokeWidth = 1.2;
+    canvas.drawLine(
+      Offset(0, size.height * 0.18),
+      Offset(size.width, size.height * 0.18),
+      baselinePaint,
     );
+  }
+
+  @override
+  bool shouldRepaint(covariant _WorkspaceBackdropPainter oldDelegate) {
+    return oldDelegate.dark != dark;
   }
 }
 
 IconData _iconForModule(AppModule module) {
-  switch (module) {
-    case AppModule.dashboard:
-      return Icons.grid_view_rounded;
-    case AppModule.expositions:
-      return Icons.inventory_2_outlined;
-    case AppModule.risqueMarche:
-      return Icons.show_chart_rounded;
-    case AppModule.risqueOperationnel:
-      return Icons.shield_outlined;
-    case AppModule.analyse:
-      return Icons.analytics_outlined;
-    case AppModule.stressTest:
-      return Icons.science_outlined;
-    case AppModule.icap:
-      return Icons.account_balance_outlined;
-    case AppModule.capitalPlaning:
-      return Icons.timeline_rounded;
-    case AppModule.referentiels:
-      return Icons.menu_book_outlined;
-    case AppModule.rapports:
-      return Icons.assessment_outlined;
-  }
+  return module.icon;
 }
 
 /// Barre supérieure de l'espace de travail.
 class _WorkspaceTopBar extends StatelessWidget {
   const _WorkspaceTopBar({
-    required this.api,
-    required this.onSelectModule,
     required this.themeMode,
     required this.onThemeModeChanged,
     required this.selectedModule,
+    required this.onReturnToWelcome,
     required this.portfolioDisplayCurrency,
     required this.appLanguage,
   });
 
-  final RwaApiService api;
-  final ValueChanged<AppModule> onSelectModule;
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
   final AppModule selectedModule;
+  final VoidCallback onReturnToWelcome;
   final ValueNotifier<String> portfolioDisplayCurrency;
   final ValueNotifier<AppLanguage> appLanguage;
 
@@ -362,12 +375,12 @@ class _WorkspaceTopBar extends StatelessWidget {
 
     return Container(
       height: 66,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF0F1B31).withValues(alpha: 0.94)
             : Colors.white.withValues(alpha: 0.90),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(
           color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
         ),
@@ -383,12 +396,31 @@ class _WorkspaceTopBar extends StatelessWidget {
         builder: (context, constraints) {
           // Ces seuils permettent de simplifier progressivement la barre sur des largeurs réduites.
           final showActionButtons = constraints.maxWidth >= 1380;
+          final showHeaderStatus = constraints.maxWidth >= 1080;
 
           return Row(
             children: [
               // La marque reste à gauche pour ancrer la lecture de l'application.
               const _ShellBrand(),
               const Spacer(),
+              _HeaderIconButton(
+                icon: CupertinoIcons.circle_grid_3x3_fill,
+                accent: const Color(0xFF2563EB),
+                onPressed: onReturnToWelcome,
+              ),
+              const SizedBox(width: 6),
+              if (showHeaderStatus) ...[
+                const _HeaderIconButton(
+                  icon: CupertinoIcons.exclamationmark_triangle_fill,
+                  accent: Color(0xFFF59E0B),
+                ),
+                const SizedBox(width: 6),
+                const _HeaderIconButton(
+                  icon: CupertinoIcons.bell_fill,
+                  accent: Color(0xFF2563EB),
+                ),
+                const SizedBox(width: 6),
+              ],
               _PortfolioCurrencyPicker(
                 selectedCurrencyListenable: portfolioDisplayCurrency,
               ),
@@ -404,12 +436,12 @@ class _WorkspaceTopBar extends StatelessWidget {
                 const SizedBox(width: 8),
                 _HeaderGhostButton(
                   label: context.tr('Exporter'),
-                  icon: Icons.file_download_outlined,
+                  icon: CupertinoIcons.arrow_down_doc_fill,
                 ),
                 const SizedBox(width: 6),
                 _HeaderPrimaryButton(
                   label: context.tr('Nouvelle analyse'),
-                  icon: Icons.add_rounded,
+                  icon: CupertinoIcons.plus,
                 ),
               ],
             ],
@@ -432,28 +464,32 @@ class _ShellBrand extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 46,
+          height: 48,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF14233D) : const Color(0xFFF9FAFF),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isDark ? const Color(0xFF2A3C5E) : const Color(0xFFD9E4F6),
-            ),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox.expand(
-              child: Image.asset(
-                'assets/images/logo.png',
-                fit: BoxFit.cover,
-                alignment: Alignment.center,
-                filterQuality: FilterQuality.high,
+            color: isDark
+                ? const Color(0xFF14233D)
+                : Colors.white.withValues(alpha: 0.78),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.14)
+                    : const Color(0xFF234A84).withValues(alpha: 0.055),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
-            ),
+            ],
+          ),
+          child: const DesktopAssetImage(
+            'assets/images/logo.png',
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            filterQuality: FilterQuality.high,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,11 +497,10 @@ class _ShellBrand extends StatelessWidget {
             Text(
               context.tr('Risk management'),
               style: TextStyle(
-                color: isDark
-                    ? const Color(0xFFC9D6FF)
-                    : const Color.fromARGB(255, 85, 98, 245),
+                color:
+                    isDark ? const Color(0xFFC9D6FF) : const Color(0xFF123A73),
                 fontSize: 16,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 letterSpacing: -0.3,
               ),
             ),
@@ -473,11 +508,10 @@ class _ShellBrand extends StatelessWidget {
             Text(
               context.tr('Outil de pilotage des fonds propres'),
               style: TextStyle(
-                color: isDark
-                    ? const Color(0xFF8FA0BC)
-                    : const Color.fromARGB(255, 10, 3, 141),
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
+                color:
+                    isDark ? const Color(0xFF8FA0BC) : const Color(0xFF365F9A),
+                fontSize: 10.2,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -543,434 +577,76 @@ class _SidebarToggleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Tooltip(
-      message: compact ? 'Ouvrir le menu' : 'Réduire le menu',
+    return TooltipVisibility(
+      visible: compact,
       child: SizedBox(
         width: _sidebarToggleHitArea,
         height: _sidebarToggleHitArea,
-        child: Center(
-          child: Material(
-            color: isDark ? const Color(0xFF14233D) : Colors.white,
-            borderRadius: BorderRadius.circular(_sidebarToggleButtonRadius),
-            elevation: 3,
-            shadowColor:
-                isDark ? const Color(0x33040A16) : const Color(0x150F172A),
-            child: InkWell(
-              onTap: onTap,
+        child: Tooltip(
+          message: 'Ouvrir le menu',
+          waitDuration: const Duration(milliseconds: 160),
+          showDuration: const Duration(milliseconds: 1500),
+          preferBelow: false,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: const Color(0xFF102A55),
+            borderRadius: BorderRadius.circular(5),
+            border: Border.all(color: const Color(0xFF2F5D9F)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x2A0F172A),
+                blurRadius: 14,
+                offset: Offset(0, 6),
+              ),
+            ],
+          ),
+          textStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            height: 1.05,
+          ),
+          child: Center(
+            child: Material(
+              color: isDark ? const Color(0xFF14233D) : Colors.white,
               borderRadius: BorderRadius.circular(_sidebarToggleButtonRadius),
-              child: Container(
-                width: _sidebarToggleButtonWidth,
-                height: _sidebarToggleButtonHeight,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(
-                    _sidebarToggleButtonRadius,
-                  ),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF2A3C5E)
-                        : const Color(0xFFD9E4F6),
-                  ),
+              elevation: 3,
+              shadowColor:
+                  isDark ? const Color(0x33040A16) : const Color(0x150F172A),
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(
+                  _sidebarToggleButtonRadius,
                 ),
-                child: Icon(
-                  compact
-                      ? Icons.chevron_right_rounded
-                      : Icons.chevron_left_rounded,
-                  color: isDark
-                      ? const Color(0xFFD7E3FA)
-                      : const Color(0xFF47619C),
-                  size: 13,
+                child: Container(
+                  width: _sidebarToggleButtonWidth,
+                  height: _sidebarToggleButtonHeight,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(
+                      _sidebarToggleButtonRadius,
+                    ),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF2A3C5E)
+                          : const Color(0xFFD9E4F6),
+                    ),
+                  ),
+                  child: Icon(
+                    compact
+                        ? CupertinoIcons.chevron_right
+                        : CupertinoIcons.chevron_left,
+                    color: isDark
+                        ? const Color(0xFFD7E3FA)
+                        : const Color(0xFF47619C),
+                    size: 13,
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Champ de recherche globale présent dans la top bar.
-class _GlobalSearchField extends StatefulWidget {
-  const _GlobalSearchField({
-    required this.api,
-    required this.panelWidth,
-    required this.onSelectModule,
-  });
-
-  final RwaApiService api;
-  final double panelWidth;
-  final ValueChanged<AppModule> onSelectModule;
-
-  @override
-  State<_GlobalSearchField> createState() => _GlobalSearchFieldState();
-}
-
-/// Etat interne du champ de recherche et de sa liste de résultats.
-class _GlobalSearchFieldState extends State<_GlobalSearchField> {
-  final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  List<GlobalSearchEntry> _catalog = const [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCatalog();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadCatalog() async {
-    // On charge une seule fois le catalogue pour garder une saisie fluide ensuite.
-    final catalog = await widget.api.fetchGlobalSearchCatalog();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _catalog = catalog;
-      _isLoading = false;
-    });
-  }
-
-  Iterable<GlobalSearchEntry> _buildOptions(TextEditingValue value) {
-    if (_catalog.isEmpty) {
-      return const <GlobalSearchEntry>[];
-    }
-
-    final query = value.text.trim();
-    if (query.isEmpty) {
-      // Sans recherche, on met en avant les modules pour faciliter la navigation rapide.
-      return _catalog
-          .where((entry) => entry.section == 'Module')
-          .take(8)
-          .toList(growable: false);
-    }
-
-    final normalizedQuery = _normalize(query);
-    // Chaque résultat reçoit un score simple pour remonter les correspondances les plus utiles.
-    final scored = _catalog
-        .map(
-          (entry) => (entry: entry, score: _scoreEntry(entry, normalizedQuery)),
-        )
-        .where((item) => item.score > 0)
-        .toList()
-      ..sort((a, b) => b.score.compareTo(a.score));
-
-    return scored.take(10).map((item) => item.entry).toList(growable: false);
-  }
-
-  int _scoreEntry(GlobalSearchEntry entry, String query) {
-    final title = _normalize(entry.title);
-    final subtitle = _normalize(entry.subtitle);
-    final section = _normalize(entry.section);
-    final index = _normalize(entry.searchIndex);
-
-    // On favorise d'abord le titre exact, puis les préfixes, puis les autres correspondances.
-    if (title == query) {
-      return 140;
-    }
-    if (title.startsWith(query)) {
-      return 110;
-    }
-    if (title.contains(query)) {
-      return 80;
-    }
-    if (section.contains(query)) {
-      return 55;
-    }
-    if (subtitle.contains(query)) {
-      return 40;
-    }
-    if (index.contains(query)) {
-      return 24;
-    }
-    return 0;
-  }
-
-  String _normalize(String value) {
-    const source = 'àáâãäåçèéêëìíîïñòóôõöùúûüýÿÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖÙÚÛÜÝ';
-    const target = 'aaaaaaceeeeiiiinooooouuuuyyAAAAAACEEEEIIIINOOOOOUUUUY';
-    final buffer = StringBuffer();
-    for (final char in value.toLowerCase().split('')) {
-      // Cette normalisation rend la recherche tolérante aux accents.
-      final index = source.toLowerCase().indexOf(char);
-      buffer.write(index >= 0 ? target.toLowerCase()[index] : char);
-    }
-    return buffer.toString();
-  }
-
-  void _handleSubmit() {
-    final results = _buildOptions(_controller.value).toList(growable: false);
-    if (results.isEmpty) {
-      return;
-    }
-    _selectEntry(results.first);
-  }
-
-  void _selectEntry(GlobalSearchEntry entry) {
-    widget.onSelectModule(entry.module);
-    _controller
-      ..text = entry.title
-      ..selection = TextSelection.collapsed(offset: entry.title.length);
-    _focusNode.unfocus();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return RawAutocomplete<GlobalSearchEntry>(
-      textEditingController: _controller,
-      focusNode: _focusNode,
-      displayStringForOption: (entry) => entry.title,
-      optionsBuilder: _buildOptions,
-      onSelected: _selectEntry,
-      fieldViewBuilder:
-          (context, textEditingController, focusNode, onFieldSubmitted) {
-        return SizedBox(
-          height: 30,
-          child: TextField(
-            controller: textEditingController,
-            focusNode: focusNode,
-            onSubmitted: (_) => _handleSubmit(),
-            style: TextStyle(
-              color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: context.tr('Recherche rapide'),
-              hintStyle: TextStyle(
-                color: isDark ? const Color(0xFF8FA0BC) : AppTheme.muted,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-              prefixIcon: Icon(
-                Icons.search_rounded,
-                size: 14,
-                color: isDark ? const Color(0xFF8FA0BC) : AppTheme.muted,
-              ),
-              prefixIconConstraints: const BoxConstraints(
-                minWidth: 30,
-                minHeight: 30,
-              ),
-              suffixIconConstraints: const BoxConstraints(
-                minWidth: 28,
-                minHeight: 28,
-              ),
-              suffixIcon: _isLoading
-                  ? const Padding(
-                      // Un loader léger indique que le catalogue n'est pas encore prêt.
-                      padding: EdgeInsets.all(8),
-                      child: SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : (textEditingController.text.isEmpty
-                      ? null
-                      : IconButton(
-                          // Le bouton efface rapidement la requête sans quitter le champ.
-                          onPressed: () {
-                            textEditingController.clear();
-                            setState(() {});
-                          },
-                          splashRadius: 14,
-                          icon: Icon(
-                            Icons.close_rounded,
-                            size: 14,
-                            color: isDark
-                                ? const Color(0xFF8FA0BC)
-                                : AppTheme.muted,
-                          ),
-                        )),
-              filled: true,
-              fillColor:
-                  isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppTheme.radius),
-                borderSide: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF22304B)
-                      : const Color(0xFFE7EAF5),
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppTheme.radius),
-                borderSide: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF22304B)
-                      : const Color(0xFFE7EAF5),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppTheme.radius),
-                borderSide: const BorderSide(
-                  color: Color(0xFF234A84),
-                  width: 1,
-                ),
-              ),
-            ),
-            onChanged: (_) => setState(() {}),
-          ),
-        );
-      },
-      optionsViewBuilder: (context, onSelected, options) {
-        final results = options.toList(growable: false);
-        if (results.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        return Align(
-          alignment: Alignment.topLeft,
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              width: widget.panelWidth,
-              margin: const EdgeInsets.only(top: 6),
-              constraints: const BoxConstraints(maxHeight: 360),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F1B31) : Colors.white,
-                borderRadius: BorderRadius.circular(AppTheme.radius),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF22304B)
-                      : const Color(0xFFE5E8F5),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: isDark
-                        ? const Color(0x33040A16)
-                        : const Color(0x160F172A),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                shrinkWrap: true,
-                itemCount: results.length,
-                separatorBuilder: (context, index) => Divider(
-                  height: 1,
-                  thickness: 0.6,
-                  color: isDark
-                      ? const Color(0xFF22304B)
-                      : const Color(0xFFE9EEF9),
-                ),
-                itemBuilder: (context, index) {
-                  final entry = results[index];
-                  return InkWell(
-                    onTap: () => onSelected(entry),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          // L'icône donne un repère immédiat sur le module cible.
-                          Container(
-                            width: 25,
-                            height: 25,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF14233D)
-                                  : const Color(0xFFF4F7FF),
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.radius,
-                              ),
-                            ),
-                            child: Icon(
-                              _iconForModule(entry.module),
-                              size: 13,
-                              color: isDark
-                                  ? const Color(0xFFD7E3FA)
-                                  : const Color(0xFF234A84),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Le titre reste prioritaire, le sous-texte précise le contexte fonctionnel.
-                                Text(
-                                  entry.title.tr(context),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? const Color(0xFFF2F6FF)
-                                        : AppTheme.text,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  entry.subtitle.tr(context),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: isDark
-                                        ? const Color(0xFF8FA0BC)
-                                        : AppTheme.muted,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 4,
-                            ),
-                            // La pastille rappelle dans quelle grande section se trouve l'entrée.
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF162742)
-                                  : const Color(0xFFEFF5FF),
-                              borderRadius: BorderRadius.circular(
-                                AppTheme.radius,
-                              ),
-                            ),
-                            child: Text(
-                              entry.section,
-                              style: TextStyle(
-                                color: isDark
-                                    ? const Color(0xFFD7E3FA)
-                                    : const Color(0xFF234A84),
-                                fontSize: 8,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -990,9 +666,6 @@ class _ThemeModePill extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDarkMode = themeMode == ThemeMode.dark;
     final nextMode = isDarkMode ? ThemeMode.light : ThemeMode.dark;
-    final tooltip = isDarkMode
-        ? context.tr('Passer en mode clair')
-        : context.tr('Passer en mode sombre');
     final icon =
         isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded;
     final iconColor =
@@ -1002,65 +675,43 @@ class _ThemeModePill extends StatelessWidget {
     final borderColor =
         isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5);
 
-    return Tooltip(
-      message: tooltip,
-      waitDuration: const Duration(milliseconds: 220),
-      showDuration: const Duration(seconds: 2),
-      preferBelow: false,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x220F172A),
-            blurRadius: 14,
-            offset: Offset(0, 4),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onThemeModeChanged(nextMode),
+        borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          width: _workspaceTopBarControlHeight,
+          height: _workspaceTopBarControlHeight,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
+            border: Border.all(color: borderColor, width: 0.8),
           ),
-        ],
-      ),
-      textStyle: const TextStyle(
-        color: Colors.white,
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => onThemeModeChanged(nextMode),
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            width: 28,
-            height: 16,
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-              border: Border.all(color: borderColor, width: 0.8),
-            ),
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeOutCubic,
-                transitionBuilder: (child, animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(
-                      scale: Tween<double>(
-                        begin: 0.88,
-                        end: 1,
-                      ).animate(animation),
-                      child: child,
-                    ),
-                  );
-                },
-                child: Icon(
-                  icon,
-                  key: ValueKey<bool>(isDarkMode),
-                  size: 8,
-                  color: iconColor,
-                ),
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeOutCubic,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween<double>(
+                      begin: 0.88,
+                      end: 1,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: Icon(
+                icon,
+                key: ValueKey<bool>(isDarkMode),
+                size: 13,
+                color: iconColor,
               ),
             ),
           ),
@@ -1086,16 +737,17 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
         final normalizedSelectedCurrency =
             normalizeCurrencyCode(selectedCurrency);
         return PopupMenuButton<String>(
-          tooltip: context.tr("Devise par défaut de l'application"),
+          tooltip: '',
+          padding: EdgeInsets.zero,
           onSelected: (value) {
             final normalizedValue = normalizeCurrencyCode(value);
             if (normalizedValue == normalizedSelectedCurrency) return;
             selectedCurrencyListenable.value = normalizedValue;
           },
-          offset: const Offset(0, 38),
+          offset: const Offset(0, _workspaceTopBarControlHeight + 8),
           color: isDark ? const Color(0xFF14233D) : Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radius),
+            borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
             side: BorderSide(
               color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
             ),
@@ -1104,83 +756,150 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
             PopupMenuItem<String>(
               value: 'XOF',
               height: 40,
-              child: Text(context.tr('XOF - FCFA BCEAO')),
+              child: _CurrencyMenuItem(
+                currencyCode: 'XOF',
+                label: context.tr('XOF - FCFA BCEAO'),
+              ),
             ),
             PopupMenuItem<String>(
               value: 'EUR',
               height: 40,
-              child: Text(context.tr('EUR - Euro')),
+              child: _CurrencyMenuItem(
+                currencyCode: 'EUR',
+                label: context.tr('EUR - Euro'),
+              ),
             ),
             PopupMenuItem<String>(
               value: 'USD',
               height: 40,
-              child: Text(context.tr('USD - Dollar americain')),
+              child: _CurrencyMenuItem(
+                currencyCode: 'USD',
+                label: context.tr('USD - Dollar americain'),
+              ),
             ),
           ],
-          child: Tooltip(
-            message: context.tr("Devise par défaut de l'application"),
-            waitDuration: const Duration(milliseconds: 220),
-            showDuration: const Duration(seconds: 2),
-            preferBelow: false,
+          child: Container(
+            height: _workspaceTopBarControlHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 7),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x220F172A),
-                  blurRadius: 14,
-                  offset: Offset(0, 4),
+              color: isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
+              borderRadius:
+                  BorderRadius.circular(_workspaceTopBarControlRadius),
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _CurrencyBadge(
+                  currencyCode: normalizedSelectedCurrency,
+                  size: 15,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  normalizedSelectedCurrency,
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
+                    fontSize: 9.8,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 12,
+                  color: isDark ? const Color(0xFFD7E3FA) : AppTheme.muted,
                 ),
               ],
-            ),
-            textStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
-            child: Container(
-              height: 16,
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              decoration: BoxDecoration(
-                color:
-                    isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
-                borderRadius: BorderRadius.circular(AppTheme.radius),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF22304B)
-                      : const Color(0xFFE7EAF5),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.currency_exchange_rounded,
-                    size: 8,
-                    color: isDark ? const Color(0xFFD7E3FA) : AppTheme.muted,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    normalizedSelectedCurrency,
-                    style: TextStyle(
-                      color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
-                      fontSize: 8.2,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 9,
-                    color: isDark ? const Color(0xFFD7E3FA) : AppTheme.muted,
-                  ),
-                ],
-              ),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _CurrencyMenuItem extends StatelessWidget {
+  const _CurrencyMenuItem({
+    required this.currencyCode,
+    required this.label,
+  });
+
+  final String currencyCode;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      children: [
+        _CurrencyBadge(currencyCode: currencyCode, size: 18),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CurrencyBadge extends StatelessWidget {
+  const _CurrencyBadge({
+    required this.currencyCode,
+    this.size = 16,
+  });
+
+  final String currencyCode;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = normalizeCurrencyCode(currencyCode);
+    final symbol = switch (normalized) {
+      'XOF' => 'CFA',
+      'EUR' => '€',
+      'USD' => r'$',
+      _ => normalized.length <= 3 ? normalized : normalized.substring(0, 3),
+    };
+    final color = switch (normalized) {
+      'XOF' => const Color(0xFF06B6D4),
+      'EUR' => const Color(0xFF2563EB),
+      'USD' => const Color(0xFF10B981),
+      _ => AppTheme.muted,
+    };
+
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        symbol,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: symbol.length > 1 ? size * 0.34 : size * 0.62,
+          fontWeight: FontWeight.w800,
+          height: 1,
+          letterSpacing: 0,
+        ),
+      ),
     );
   }
 }
@@ -1199,12 +918,13 @@ class _LanguagePicker extends StatelessWidget {
       valueListenable: appLanguage,
       builder: (context, selectedLanguage, _) {
         return PopupMenuButton<AppLanguage>(
-          tooltip: context.tr('Langue'),
+          tooltip: '',
+          padding: EdgeInsets.zero,
           onSelected: (value) => appLanguage.value = value,
-          offset: const Offset(0, 38),
+          offset: const Offset(0, _workspaceTopBarControlHeight + 8),
           color: isDark ? const Color(0xFF14233D) : Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radius),
+            borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
             side: BorderSide(
               color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
             ),
@@ -1219,70 +939,45 @@ class _LanguagePicker extends StatelessWidget {
               isDark: isDark,
             ),
           ],
-          child: Tooltip(
-            message: selectedLanguage == AppLanguage.francais
-                ? context.tr('Français')
-                : context.tr('Anglais'),
-            waitDuration: const Duration(milliseconds: 220),
-            showDuration: const Duration(seconds: 2),
-            preferBelow: false,
+          child: Container(
+            height: _workspaceTopBarControlHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 7),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x220F172A),
-                  blurRadius: 14,
-                  offset: Offset(0, 4),
+              color: isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
+              borderRadius:
+                  BorderRadius.circular(_workspaceTopBarControlRadius),
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _LanguageFlag(
+                  language: selectedLanguage,
+                  width: 16,
+                  height: 12,
+                  showBorder: false,
+                  radius: _workspaceTopBarControlRadius,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  selectedLanguage.shortLabel,
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
+                    fontSize: 9.8,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 12,
+                  color: isDark ? const Color(0xFFD7E3FA) : AppTheme.muted,
                 ),
               ],
-            ),
-            textStyle: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
-            child: Container(
-              height: 20,
-              padding: const EdgeInsets.symmetric(horizontal: 5),
-              decoration: BoxDecoration(
-                color:
-                    isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
-                borderRadius: BorderRadius.circular(AppTheme.radius),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF22304B)
-                      : const Color(0xFFE7EAF5),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _LanguageFlag(
-                    language: selectedLanguage,
-                    width: 16,
-                    height: 12,
-                    showBorder: false,
-                    radius: AppTheme.radius - 0.5,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    selectedLanguage.shortLabel,
-                    style: TextStyle(
-                      color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
-                      fontSize: 8.6,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 2),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    size: 9,
-                    color: isDark ? const Color(0xFFD7E3FA) : AppTheme.muted,
-                  ),
-                ],
-              ),
             ),
           ),
         );
@@ -1306,7 +1001,7 @@ class _LanguagePicker extends StatelessWidget {
             style: TextStyle(
               color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
               fontSize: 11.2,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1345,8 +1040,10 @@ class _LanguageFlag extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
           ),
           child: switch (language) {
-            AppLanguage.francais => const CustomPaint(painter: _FrenchFlagPainter()),
-            AppLanguage.anglais => const CustomPaint(painter: _UnionJackPainter()),
+            AppLanguage.francais =>
+              const CustomPaint(painter: _FrenchFlagPainter()),
+            AppLanguage.anglais =>
+              const CustomPaint(painter: _UnionJackPainter()),
           },
         ),
       ),
@@ -1458,6 +1155,43 @@ class _UnionJackPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+class _HeaderIconButton extends StatelessWidget {
+  const _HeaderIconButton({
+    required this.icon,
+    required this.accent,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
+        child: Container(
+          width: _workspaceTopBarControlHeight,
+          height: _workspaceTopBarControlHeight,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
+            borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
+            border: Border.all(
+              color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
+            ),
+          ),
+          child: Icon(icon, size: 13, color: accent),
+        ),
+      ),
+    );
+  }
+}
+
 /// Bouton secondaire au style discret pour la top bar.
 class _HeaderGhostButton extends StatelessWidget {
   const _HeaderGhostButton({required this.label, required this.icon});
@@ -1493,7 +1227,7 @@ class _HeaderGhostButton extends StatelessWidget {
             style: TextStyle(
               color: isDark ? const Color(0xFFD7E0F3) : const Color(0xFF4B556B),
               fontSize: 10,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1516,12 +1250,12 @@ class _HeaderPrimaryButton extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacing),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF6B5CFF), Color(0xFF8A68FF)],
+          colors: [Color(0xFF2563EB), Color(0xFF06B6D4)],
         ),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x226C5CFD),
+            color: Color(0x222563EB),
             blurRadius: 14,
             offset: Offset(0, 6),
           ),
@@ -1537,7 +1271,7 @@ class _HeaderPrimaryButton extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 10,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -1548,10 +1282,15 @@ class _HeaderPrimaryButton extends StatelessWidget {
 
 /// Structure globale de la barre supérieure.
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.selectedModule, required this.showMenuButton});
+  const _TopBar({
+    required this.selectedModule,
+    required this.showMenuButton,
+    required this.onReturnToWelcome,
+  });
 
   final AppModule selectedModule;
   final bool showMenuButton;
+  final VoidCallback onReturnToWelcome;
 
   @override
   Widget build(BuildContext context) {
@@ -1576,21 +1315,25 @@ class _TopBar extends StatelessWidget {
                 icon: const Icon(Icons.menu_rounded),
               ),
             ),
-          Icon(_iconForModule(selectedModule), color: const Color(0xFF6C5CFD)),
+          Icon(_iconForModule(selectedModule), color: const Color(0xFF2563EB)),
           const SizedBox(width: AppTheme.spacing),
           Text(
             selectedModule.title.tr(context),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: isDark
                       ? const Color(0xFFF2F6FF)
                       : const Color(0xFF1E2337),
                 ),
           ),
           const Spacer(),
+          _HeaderIconButton(
+            icon: CupertinoIcons.circle_grid_3x3_fill,
+            accent: const Color(0xFF2563EB),
+            onPressed: onReturnToWelcome,
+          ),
+          const SizedBox(width: 8),
           const Icon(Icons.notifications_none_rounded, color: AppTheme.muted),
-          const SizedBox(width: AppTheme.spacing),
-          const Icon(Icons.search_rounded, color: AppTheme.muted),
         ],
       ),
     );

@@ -73,9 +73,9 @@ def apply_crm_substitution(
 
     # La couverture est bornee pour rester entre absence totale et couverture complete.
     bounded_ratio = max(0.0, min(coverage_ratio, 1.0))
-    # CRM non financee: les parts couverte et non couverte sont ponderees au RW du garant.
+    # CRM non financee: seule la part couverte bénéficie du RW du garant.
     covered_part = bounded_ratio * guarantor_risk_weight
-    uncovered_part = (1 - bounded_ratio) * guarantor_risk_weight
+    uncovered_part = (1 - bounded_ratio) * original_risk_weight
     return round(covered_part + uncovered_part, 4)
 
 

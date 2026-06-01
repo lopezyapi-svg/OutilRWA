@@ -46,17 +46,18 @@ class _RapportsScreenState extends State<RapportsScreen> {
 
         final data = snapshot.data!;
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.spacing),
+          padding: const EdgeInsets.all(AppTheme.pagePadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const PageHeader(
                 title: 'Rapports',
-                subtitle: 'Generation de rapports de synthese et detail avec filtres metier et exports.',
+                subtitle:
+                    'Generation de rapports de synthese et detail avec filtres metier et exports.',
               ),
-              const SizedBox(height: AppTheme.spacing),
+              const SizedBox(height: AppTheme.pageGap),
               ReportFilterCard(onGenerate: _handleGenerate),
-              const SizedBox(height: AppTheme.spacing),
+              const SizedBox(height: AppTheme.pageGap),
               SectionCard(
                 title: 'Rapports Recents',
                 child: ReportTable(reports: data.reports),

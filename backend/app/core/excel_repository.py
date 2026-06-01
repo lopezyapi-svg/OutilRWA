@@ -1106,7 +1106,11 @@ class ExcelRepository:
 
             final_rw = borrower_rw
             if coverage_ratio > 0:
-                final_rw = round((coverage_ratio * guarantor_rw) + ((1 - coverage_ratio) * guarantor_rw), 4)
+                final_rw = round(
+                    (coverage_ratio * guarantor_rw)
+                    + ((1 - coverage_ratio) * borrower_rw),
+                    4,
+                )
             rwa_before = round(ead * borrower_rw, 2)
             rwa_after = round(ead * final_rw, 2)
             capital_before = round(rwa_before * 0.08, 2)

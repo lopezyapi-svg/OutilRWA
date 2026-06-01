@@ -55,6 +55,9 @@ class DatabaseManager:
         connection.execute("PRAGMA journal_mode = WAL")
         connection.execute("PRAGMA synchronous = NORMAL")
         connection.execute("PRAGMA temp_store = MEMORY")
+        connection.execute("PRAGMA cache_size = -64000")
+        connection.execute("PRAGMA mmap_size = 268435456")
+        connection.execute("PRAGMA busy_timeout = 30000")
         return connection
 
     def initialize(self) -> None:

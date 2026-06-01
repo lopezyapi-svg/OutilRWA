@@ -25,6 +25,10 @@ class PageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? AppTheme.darkText : AppTheme.text;
+    final subtitleColor = isDark ? AppTheme.darkMuted : AppTheme.muted;
+
     return Row(
       crossAxisAlignment: crossAxisAlignment,
       children: [
@@ -35,8 +39,8 @@ class PageHeader extends StatelessWidget {
               Text(
                 title.tr(context),
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.text,
+                      fontWeight: FontWeight.w700,
+                      color: titleColor,
                       fontSize: titleFontSize,
                     ),
               ),
@@ -44,7 +48,7 @@ class PageHeader extends StatelessWidget {
               Text(
                 subtitle.tr(context),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.muted,
+                      color: subtitleColor,
                       fontSize: subtitleFontSize,
                     ),
               ),

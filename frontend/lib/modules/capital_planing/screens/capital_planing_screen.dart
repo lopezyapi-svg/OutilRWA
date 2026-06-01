@@ -16,66 +16,35 @@ class CapitalPlaningScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SingleChildScrollView(
-      padding: EdgeInsets.all(AppTheme.spacing),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor =
+        isDark ? const Color(0xFFEAF2FF) : const Color(0xFF13203A);
+
+    return Padding(
+      padding: const EdgeInsets.all(AppTheme.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PageHeader(
-            title: 'Capital planing',
+          const PageHeader(
+            title: 'Capital Planning',
             subtitle:
                 'Projection du capital, des besoins prudentiels et des marges de manoeuvre.',
           ),
-          SizedBox(height: AppTheme.spacing),
-          _InfoCard(
-            title: 'Trajectoire prévisionnelle',
-            content:
-                'Projetez l’évolution du capital disponible, des besoins réglementaires et des coussins afin de visualiser les marges de manoeuvre sur plusieurs horizons.',
+          Expanded(
+            child: Center(
+              child: Text(
+                'Cette section est en cours de construction',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w700,
+                  height: 1.1,
+                  letterSpacing: 0,
+                ),
+              ),
+            ),
           ),
-          SizedBox(height: AppTheme.spacing),
-          _InfoCard(
-            title: 'Arbitrages de gestion',
-            content:
-                'Préparez les décisions de distribution, de croissance des encours et de renforcement du capital en fonction des contraintes prudentielles attendues.',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.title,
-    required this.content,
-  });
-
-  final String title;
-  final String content;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppTheme.spacing),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(color: const Color(0xFFE6EAF5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 10),
-          Text(content, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );

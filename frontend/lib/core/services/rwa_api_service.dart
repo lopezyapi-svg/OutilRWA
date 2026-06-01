@@ -2,8 +2,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import '../app_module.dart';
-import '../models/global_search_entry.dart';
 import '../../modules/crm/models/crm_models.dart';
 import '../../modules/dashboard/models/dashboard_models.dart';
 import '../../modules/expositions/models/exposition_models.dart';
@@ -39,9 +37,36 @@ class RwaApiService {
   Future<CrmModuleData>? _crmFuture;
   Future<ReferentielsModuleData>? _referentielsFuture;
   Future<ReportsModuleData>? _reportsFuture;
-  Future<List<GlobalSearchEntry>>? _globalSearchCatalogFuture;
 
   Stream<int> get portfolioRefreshStream => _portfolioRefreshController.stream;
+
+  Future<Map<String, dynamic>> refreshCemacYieldCurves() async {
+    final payload =
+        await _client.post('/market/yield-curves/cemac/refresh', {});
+    if (payload is Map<String, dynamic>) {
+      return payload;
+    }
+    if (payload is Map) {
+      return Map<String, dynamic>.from(payload);
+    }
+    throw StateError('Réponse CEMAC invalide.');
+  }
+
+  Future<Map<String, dynamic>?> fetchMarketPortfolioPayload() async {
+    final payload = await _client.get('/market/portfolios');
+    if (payload is! Map) return null;
+    final map = Map<String, dynamic>.from(payload);
+    final data = map['payload'];
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return null;
+  }
+
+  Future<void> saveMarketPortfolioPayload(
+    Map<String, Object?> payload,
+  ) async {
+    await _client.put('/market/portfolios', {'payload': payload});
+  }
 
   final List<Map<String, dynamic>> _riskWeights = [
     {
@@ -478,7 +503,6 @@ class RwaApiService {
     _horsBilanFuture = null;
     _crmFuture = null;
     _reportsFuture = null;
-    _globalSearchCatalogFuture = null;
   }
 
   Future<T> _memoizeFuture<T>({
@@ -1094,18 +1118,6 @@ class RwaApiService {
     );
   }
 
-  Future<List<GlobalSearchEntry>> fetchGlobalSearchCatalog() async {
-    return _memoizeFuture<List<GlobalSearchEntry>>(
-      cached: _globalSearchCatalogFuture,
-      getCache: () => _globalSearchCatalogFuture,
-      setCache: (value) => _globalSearchCatalogFuture = value,
-      load: () async {
-        // La recherche globale repose toujours sur un catalogue déjà structuré.
-        return _withDelay(_buildGlobalSearchCatalog());
-      },
-    );
-  }
-
   Future<void> generateReport(ReportDraft draft) async {
     if (!useMockData) {
       await _client.post('/rapports', draft.toJson());
@@ -1284,165 +1296,6 @@ class RwaApiService {
           )
           .toList(),
     );
-  }
-
-  List<GlobalSearchEntry> _buildGlobalSearchCatalog() {
-    // Le catalogue mélange navigation, indicateurs clés et objets métiers recherchables.
-    final entries = <GlobalSearchEntry>[
-      for (final module in AppModule.values)
-        GlobalSearchEntry(
-          id: 'module-${module.name}',
-          title: module.title,
-          subtitle: module.subtitle,
-          section: 'Module',
-          module: module,
-          searchIndex:
-              '${module.title} ${module.subtitle} ${_moduleKeywords(module)}',
-        ),
-      const GlobalSearchEntry(
-        id: 'dashboard-encours',
-        title: 'Encours',
-        subtitle: 'Indicateur global du portefeuille',
-        section: 'Dashboard',
-        module: AppModule.dashboard,
-        searchIndex: 'encours portefeuille exposition bilan dashboard',
-      ),
-      const GlobalSearchEntry(
-        id: 'dashboard-rwa',
-        title: 'RWA',
-        subtitle: 'Actifs pondérés par le risque',
-        section: 'Dashboard',
-        module: AppModule.dashboard,
-        searchIndex: 'rwa risque capital prudentiel dashboard',
-      ),
-      const GlobalSearchEntry(
-        id: 'dashboard-capital',
-        title: 'Capital minimum',
-        subtitle: 'Capital réglementaire calculé',
-        section: 'Dashboard',
-        module: AppModule.dashboard,
-        searchIndex: 'capital minimum solvabilite coussin prudentiel',
-      ),
-      const GlobalSearchEntry(
-        id: 'reports-history',
-        title: 'Rapports recents',
-        subtitle: 'Historique des generations et exports',
-        section: 'Rapports',
-        module: AppModule.rapports,
-        searchIndex: 'rapports historique generation export pdf excel',
-      ),
-      const GlobalSearchEntry(
-        id: 'reports-export',
-        title: 'Exports PDF et Excel',
-        subtitle: 'Sorties documentaires des rapports prudentiels',
-        section: 'Rapports',
-        module: AppModule.rapports,
-        searchIndex: 'rapport export pdf excel synthese detaille',
-      ),
-    ];
-
-    // On injecte ensuite les expositions pour pouvoir les retrouver depuis la top bar.
-    entries.addAll(
-      _exposures.map((item) {
-        final counterparty = item['counterparty'] as Map<String, dynamic>;
-        return GlobalSearchEntry(
-          id: 'exposure-${item['id']}',
-          title: counterparty['name'] as String,
-          subtitle:
-              '${item['id']} • ${counterparty['category']} • ${counterparty['country']}',
-          section: 'Expositions',
-          module: AppModule.expositions,
-          searchIndex:
-              '${item['id']} ${counterparty['name']} ${counterparty['category']} ${counterparty['country']} ${counterparty['rating']} ${item['comment']} ${item['crm_type']}',
-        );
-      }),
-    );
-
-    // Les référentiels RW, CCF et notations complètent le catalogue.
-    entries.addAll(
-      _riskWeights.map(
-        (item) => GlobalSearchEntry(
-          id: 'rw-${item['id']}',
-          title: '${item['segment']} ${item['rating']}',
-          subtitle:
-              'RW ${((item['risk_weight'] as num).toDouble() * 100).toStringAsFixed(0)} %',
-          section: 'Référentiels RW',
-          module: AppModule.referentiels,
-          searchIndex:
-              '${item['id']} ${item['segment']} ${item['rating']} rw ${item['approach']}',
-        ),
-      ),
-    );
-
-    entries.addAll(
-      _ccfTable.map(
-        (item) => GlobalSearchEntry(
-          id: 'ccf-${item['id']}',
-          title: item['engagement_type'] as String,
-          subtitle:
-              'CCF ${((item['ccf'] as num).toDouble() * 100).toStringAsFixed(0)} %',
-          section: 'Référentiels CCF',
-          module: AppModule.referentiels,
-          searchIndex:
-              '${item['id']} ${item['engagement_type']} ccf conversion credit',
-        ),
-      ),
-    );
-
-    entries.addAll(
-      _ratings.map(
-        (item) => GlobalSearchEntry(
-          id: 'rating-${item['id']}',
-          title: item['label'] as String,
-          subtitle: item['description'] as String,
-          section: 'Notations',
-          module: AppModule.referentiels,
-          searchIndex:
-              '${item['id']} ${item['label']} ${item['description']} notation rating',
-        ),
-      ),
-    );
-
-    entries.addAll(
-      _reports.map(
-        (item) => GlobalSearchEntry(
-          id: 'report-${item['id']}',
-          title: item['period'] as String,
-          subtitle: '${item['id']} • ${item['report_type']}',
-          section: 'Rapports',
-          module: AppModule.rapports,
-          searchIndex:
-              '${item['id']} ${item['period']} ${item['report_type']} ${item['currency']} ${item['exposure_scope']}',
-        ),
-      ),
-    );
-
-    return entries;
-  }
-
-  String _moduleKeywords(AppModule module) {
-    switch (module) {
-      case AppModule.dashboard:
-        return 'encours rwa capital ratio couverture crm';
-      case AppModule.expositions:
-        return 'expositions portefeuille contreparties import edition';
-      case AppModule.risqueMarche:
-        return 'risque marche taux changes prix volatilite';
-      case AppModule.risqueOperationnel:
-        return 'risque operationnel incidents controles processus';
-      case AppModule.analyse:
-        return 'analyse recommandations conseils strategie';
-      case AppModule.stressTest:
-        return 'stress test scenarios chocs sensibilites rwa capital';
-      case AppModule.icap:
-        return 'icap adequation capital solvabilite pilotage interne';
-      case AppModule.capitalPlaning:
-        return 'capital planing planning projection budget prudentiel';
-      case AppModule.referentiels:
-        return 'referentiels rw ccf notations tables';
-      case AppModule.rapports:
-        return 'rapports synthese exports pdf excel historique';
-    }
   }
 
   ExposureSummary _computeExposureSummary(List<ExposureRecord> exposures) {

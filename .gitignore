@@ -13,16 +13,31 @@ frontend/.flutter-plugins-dependencies
 frontend/.packages
 frontend/build/
 frontend/.idea/
+frontend/devtools_options.yaml
 frontend/flutter_webserver*.log
+frontend/flutter*.log
+frontend/*.log
+frontend/*.err.log
+frontend/*.out.log
 
 # Sorties generales.
 build/
 dist/
 .build/
+
+# Secrets locaux / variables d'environnement.
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
 # IDE
 .vscode/
 
 # Données locales / bases SQLite
+backend/logs/
 backend/data/
 *.db
 *.db-shm
@@ -32,6 +47,7 @@ backend/data/
 
 # Dossiers temporaires
 tmp/
+tmp_*
 **/node_modules/
 
 # Fichiers de test locaux

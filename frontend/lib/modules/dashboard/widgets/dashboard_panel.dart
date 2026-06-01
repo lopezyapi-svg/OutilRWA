@@ -96,7 +96,7 @@ class _PanelHeaderText extends StatelessWidget {
           style: TextStyle(
             color: dashboardTitleColor(isDark),
             fontSize: 13,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.2,
           ),
         ),

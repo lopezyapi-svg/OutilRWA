@@ -66,7 +66,7 @@ class _CrmScreenState extends State<CrmScreen> {
         }).toList();
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.spacing),
+          padding: const EdgeInsets.all(AppTheme.pagePadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -75,9 +75,9 @@ class _CrmScreenState extends State<CrmScreen> {
                 subtitle:
                     'Analyse des garanties, du risque et recalcul automatique des RW et RWA.',
               ),
-              const SizedBox(height: AppTheme.spacing),
+              const SizedBox(height: AppTheme.pageGap),
               CrmScenarioBanner(highlight: data.highlight),
-              const SizedBox(height: AppTheme.spacing),
+              const SizedBox(height: AppTheme.pageGap),
               SectionCard(
                 title: 'Portefeuille CRM',
                 child: Column(
@@ -98,12 +98,16 @@ class _CrmScreenState extends State<CrmScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: AppTheme.spacing),
+              const SizedBox(height: AppTheme.pageGap),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final width = constraints.maxWidth > 960
-                      ? (constraints.maxWidth - 20) / 3
-                      : constraints.maxWidth;
+                  final width = constraints.maxWidth >= 960
+                      ? 190.0
+                      : constraints.maxWidth >= 620
+                          ? ((constraints.maxWidth - AppTheme.spacing) / 2)
+                              .clamp(0.0, 190.0)
+                              .toDouble()
+                          : constraints.maxWidth;
                   return Wrap(
                     spacing: AppTheme.spacing,
                     runSpacing: AppTheme.spacing,

@@ -37,7 +37,7 @@ class CrmScenarioBanner extends StatelessWidget {
                       Text(
                         highlight!.label.tr(context),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               color: const Color(0xFF0F766E),
                             ),
                       ),

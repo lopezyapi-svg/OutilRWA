@@ -9,7 +9,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
-import 'dashboard_maturity_panel.dart';
 import 'dashboard_panel.dart';
 import 'dashboard_theme.dart';
 
@@ -22,9 +21,6 @@ class DashboardChartsSection extends StatelessWidget {
     required this.rwaCategoryEntries,
     required this.countryEntries,
     required this.crmEntries,
-    required this.maturityPoints,
-    required this.maturityView,
-    required this.onMaturityViewChanged,
     required this.densityRwa,
     required this.coveredRatio,
   });
@@ -34,9 +30,6 @@ class DashboardChartsSection extends StatelessWidget {
   final List<DistributionEntry> rwaCategoryEntries;
   final List<DistributionEntry> countryEntries;
   final List<DistributionEntry> crmEntries;
-  final List<DashboardProjectionPoint> maturityPoints;
-  final DashboardMaturityView maturityView;
-  final ValueChanged<DashboardMaturityView> onMaturityViewChanged;
   final double densityRwa;
   final double coveredRatio;
 
@@ -86,35 +79,16 @@ class DashboardChartsSection extends StatelessWidget {
             ),
           ),
         );
-        // La seconde ligne reste sur une seule rangée sans scroll horizontal.
-        final secondaryChartsContent = Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 8,
-              child: DashboardMaturityPanel(
-                displayCurrency: displayCurrency,
-                view: maturityView,
-                onViewChanged: onMaturityViewChanged,
-                points: maturityPoints,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              flex: 4,
-              child: _CountriesCard(
-                entries: countryEntries,
-                displayCurrency: displayCurrency,
-              ),
-            ),
-          ],
+        final countriesCard = _CountriesCard(
+          entries: countryEntries,
+          displayCurrency: displayCurrency,
         );
 
         return Column(
           children: [
             primaryChartsRow,
             const SizedBox(height: 8),
-            secondaryChartsContent,
+            countriesCard,
           ],
         );
       },
@@ -229,7 +203,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
             style: const TextStyle(
               color: Color(0xFF1E293B),
               fontSize: 10.4,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               height: 1.05,
             ),
           ),
@@ -424,7 +398,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                 style: TextStyle(
                   color: dashboardTitleColor(isDark),
                   fontSize: 10.4,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -476,7 +450,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                 style: TextStyle(
                   color: dashboardTitleColor(isDark),
                   fontSize: 10.4,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -541,7 +515,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                                   isDark,
                                                 ),
                                                 fontSize: 8.6,
-                                                fontWeight: FontWeight.w800,
+                                                fontWeight: FontWeight.w700,
                                               ),
                                             ),
                                           ),
@@ -717,7 +691,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                 style: TextStyle(
                   color: dashboardTitleColor(isDark),
                   fontSize: 10.4,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
@@ -1270,7 +1244,7 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                                     style: TextStyle(
                                       color: dashboardTitleColor(isDark),
                                       fontSize: 10.0,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                       height: 1,
                                     ),
                                   ),
@@ -1382,7 +1356,7 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                                         style: TextStyle(
                                           color: titleColor,
                                           fontSize: 7.2,
-                                          fontWeight: FontWeight.w800,
+                                          fontWeight: FontWeight.w700,
                                           height: 1,
                                         ),
                                       ),
@@ -1398,7 +1372,7 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                                   style: TextStyle(
                                     color: valueColor,
                                     fontSize: 6.9,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w700,
                                     height: 1,
                                   ),
                                 ),
@@ -1481,7 +1455,7 @@ class _CountriesCardState extends State<_CountriesCard> {
           style: TextStyle(
             color: tooltipTitleColor,
             fontSize: 9.2,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             height: 1.1,
           ),
         ),
@@ -1490,7 +1464,7 @@ class _CountriesCardState extends State<_CountriesCard> {
           style: TextStyle(
             color: tooltipTitleColor,
             fontSize: 8.8,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             height: 1.15,
           ),
         ),
@@ -1511,7 +1485,7 @@ class _CountriesCardState extends State<_CountriesCard> {
           style: TextStyle(
             color: tooltipAccent,
             fontSize: 7.7,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
             height: 1.15,
           ),
         ),
@@ -1664,7 +1638,7 @@ class _CountriesCardState extends State<_CountriesCard> {
                                             style: TextStyle(
                                               color: labelColor,
                                               fontSize: 7.6,
-                                              fontWeight: FontWeight.w800,
+                                              fontWeight: FontWeight.w700,
                                               height: 1,
                                             ),
                                           ),
@@ -1677,7 +1651,7 @@ class _CountriesCardState extends State<_CountriesCard> {
                                           style: TextStyle(
                                             color: percentColor,
                                             fontSize: 7.1,
-                                            fontWeight: FontWeight.w900,
+                                            fontWeight: FontWeight.w700,
                                             height: 1,
                                           ),
                                         ),
@@ -1875,7 +1849,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                   style: TextStyle(
                     color: dashboardTitleColor(isDark),
                     fontSize: 9.9,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -1950,7 +1924,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                                                       isDark,
                                                     ),
                                                     fontSize: 9.4,
-                                                    fontWeight: FontWeight.w900,
+                                                    fontWeight: FontWeight.w700,
                                                     letterSpacing: -0.8,
                                                     height: 0.9,
                                                   ),
@@ -1962,7 +1936,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                                                   style: TextStyle(
                                                     color: activeColor,
                                                     fontSize: 5.3,
-                                                    fontWeight: FontWeight.w900,
+                                                    fontWeight: FontWeight.w700,
                                                     height: 1,
                                                   ),
                                                 ),
@@ -2055,7 +2029,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                                   style: TextStyle(
                                     color: dashboardTitleColor(isDark),
                                     fontSize: widget.compact ? 12 : 16,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w700,
                                     letterSpacing: -1.4,
                                     height: 0.85,
                                   ),
@@ -2066,7 +2040,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                                   style: TextStyle(
                                     color: activeColor,
                                     fontSize: widget.compact ? 7.4 : 9.5,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w700,
                                     fontStyle: FontStyle.italic,
                                     height: 1,
                                   ),
@@ -2078,7 +2052,7 @@ class _CreditGaugeCardState extends State<_CreditGaugeCard>
                                     style: TextStyle(
                                       color: dashboardSubtitleColor(isDark),
                                       fontSize: 7,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
@@ -2211,7 +2185,7 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
             style: TextStyle(
               color: titleColor,
               fontSize: 7.1,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               height: 1,
             ),
           ),
@@ -2225,7 +2199,7 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
                     style: TextStyle(
                       color: levels[index].color,
                       fontSize: 10.2,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       height: 1.35,
                     ),
                   ),
@@ -2247,7 +2221,7 @@ class _DensityRiskLegendState extends State<_DensityRiskLegend> {
                           ? const Color(0xFFB8C9E6)
                           : const Color(0xFF5E759A),
                       fontSize: 9.4,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       height: 1.35,
                     ),
                   ),
@@ -2397,7 +2371,7 @@ class _DensityRiskTile extends StatelessWidget {
                     style: TextStyle(
                       color: active ? Colors.white : color,
                       fontSize: 6.5,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       height: 1.05,
                     ),
                   ),
@@ -2481,7 +2455,7 @@ class _LegendStatTile extends StatelessWidget {
             style: TextStyle(
               color: dashboardSubtitleColor(isDark),
               fontSize: 8.3,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -2514,7 +2488,7 @@ class _RangePill extends StatelessWidget {
           style: TextStyle(
             color: color,
             fontSize: 8.2,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -2561,7 +2535,7 @@ class _ChartTooltip extends StatelessWidget {
               style: TextStyle(
                 color: dashboardTitleColor(isDark),
                 fontSize: 8.7,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 3),
@@ -2570,7 +2544,7 @@ class _ChartTooltip extends StatelessWidget {
               style: TextStyle(
                 color: dashboardTitleColor(isDark),
                 fontSize: 9.8,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             Text(
@@ -2960,7 +2934,7 @@ class _GaugePainter extends CustomPainter {
         style: TextStyle(
           color: tick.color,
           fontSize: tick.value % 50 == 0 ? 9.4 : 8.3,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
         ),
       );
       textPainter.layout();

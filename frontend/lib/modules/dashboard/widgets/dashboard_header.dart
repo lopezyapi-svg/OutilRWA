@@ -95,7 +95,7 @@ class _HeaderText extends StatelessWidget {
           style: TextStyle(
             color: dashboardTitleColor(isDark),
             fontSize: 17,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
           ),
         ),
@@ -210,7 +210,7 @@ class _InfoPill extends StatelessWidget {
                 style: TextStyle(
                   color: dashboardTitleColor(isDark),
                   fontSize: 8.3,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],

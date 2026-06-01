@@ -11,6 +11,7 @@ from app.crm.routes import router as crm_router
 from app.dashboard.routes import router as dashboard_router
 from app.expositions.routes import router as expositions_router
 from app.hors_bilan.routes import router as hors_bilan_router
+from app.market.routes import router as market_router
 from app.rapports.routes import router as rapports_router
 from app.referentiels.routes import router as referentiels_router
 from database.connection import database_manager
@@ -50,6 +51,7 @@ app.include_router(hors_bilan_router)
 app.include_router(crm_router)
 app.include_router(referentiels_router)
 app.include_router(rapports_router)
+app.include_router(market_router)
 
 
 @app.get("/")

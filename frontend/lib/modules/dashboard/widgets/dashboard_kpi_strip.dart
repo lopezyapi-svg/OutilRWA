@@ -54,14 +54,14 @@ class _DashboardKpiStripState extends State<DashboardKpiStrip> {
         final itemCount = math.max(widget.items.length, 1);
         final fluidWidth =
             (constraints.maxWidth - (gap * (itemCount - 1))) / itemCount;
-        final baseCardWidth = fluidWidth >= 101.0 ? fluidWidth : 90.0;
+        final baseCardWidth = math.max(164.0, math.min(fluidWidth, 185.0));
         bool usesRiskInterpretation(DashboardKpiItem item) {
           return item.label == 'Densité RWA';
         }
 
         double widthFor(DashboardKpiItem item) {
           if (usesRiskInterpretation(item)) {
-            return baseCardWidth + 95;
+            return math.min(baseCardWidth + 54, 238.0);
           }
           return baseCardWidth;
         }
@@ -74,7 +74,7 @@ class _DashboardKpiStripState extends State<DashboardKpiStrip> {
             for (var index = 0; index < widget.items.length; index++) ...[
               SizedBox(
                 width: widthFor(widget.items[index]),
-                height: 120,
+                height: 104,
                 child: usesRiskInterpretation(widget.items[index])
                     ? _DensityMiniCard(
                         item: widget.items[index],
@@ -193,97 +193,6 @@ class _KpiCardState extends State<_KpiCard> {
     return parts.isNotEmpty ? parts.first : mainValue;
   }
 
-  Widget _buildValueBlock(Color titleColor, Color mutedColor, Color accent) {
-    final unitPart = _unitPart;
-    final suffixPart = _suffixPart;
-    final valueHint = widget.item.valueHint;
-    final hoverFullValue =
-        _hovered && !_isPercentValue ? widget.item.fullValue : null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _numberPart,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: titleColor,
-            fontSize: 21,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.6,
-            height: 0.95,
-          ),
-        ),
-        const SizedBox(height: 4),
-        if (unitPart != null)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(height: 1),
-                  children: [
-                    TextSpan(
-                      text: unitPart,
-                      style: TextStyle(
-                        color: accent,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    if (suffixPart != null)
-                      TextSpan(
-                        text: '  $suffixPart',
-                        style: TextStyle(
-                          color: mutedColor.withValues(alpha: 0.76),
-                          fontSize: 9.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (hoverFullValue != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  hoverFullValue,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: mutedColor.withValues(alpha: 0.92),
-                    fontSize: 7.6,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
-                ),
-              ],
-            ],
-          )
-        else
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (valueHint != null) ...[
-                const SizedBox(height: 1),
-                Text(
-                  valueHint.tr(context),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: accent,
-                    fontSize: 8.6,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
-                ),
-              ],
-            ],
-          ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -293,10 +202,12 @@ class _KpiCardState extends State<_KpiCard> {
         isDark ? const Color(0xFF22304B) : const Color(0xFFE2E8F2);
     final titleColor = isDark ? AppTheme.darkText : AppTheme.text;
     final mutedColor = isDark ? AppTheme.darkMuted : AppTheme.muted;
-    final iconSurface =
-        isDark ? accent.withValues(alpha: 0.10) : accent.withValues(alpha: 0.06);
-    final iconTint =
-        isDark ? accent.withValues(alpha: 0.78) : accent.withValues(alpha: 0.58);
+    final iconSurface = isDark
+        ? accent.withValues(alpha: 0.10)
+        : accent.withValues(alpha: 0.06);
+    final iconTint = isDark
+        ? accent.withValues(alpha: 0.78)
+        : accent.withValues(alpha: 0.58);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -351,8 +262,6 @@ class _KpiCardState extends State<_KpiCard> {
                 final accentGap = math.max(2.0, cardHeight * 0.025);
                 final unitPart = _unitPart;
                 final suffixPart = _suffixPart;
-                final hoverFullValue =
-                    _hovered && !_isPercentValue ? widget.item.fullValue : null;
 
                 return Stack(
                   children: [
@@ -422,7 +331,7 @@ class _KpiCardState extends State<_KpiCard> {
                       ),
                     ),
                     Padding(
-                      padding: EdgeInsets.fromLTRB(10, topInset, 10, 6),
+                      padding: EdgeInsets.fromLTRB(10, topInset, 10, 4),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -433,7 +342,8 @@ class _KpiCardState extends State<_KpiCard> {
                               shape: BoxShape.circle,
                               color: iconSurface,
                               border: Border.all(
-                                color: accent.withValues(alpha: isDark ? 0.16 : 0.10),
+                                color: accent.withValues(
+                                    alpha: isDark ? 0.16 : 0.10),
                               ),
                             ),
                             child: Icon(
@@ -450,8 +360,8 @@ class _KpiCardState extends State<_KpiCard> {
                             style: TextStyle(
                               color: titleColor,
                               fontSize: numberFont,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0,
                               height: 0.95,
                             ),
                           ),
@@ -469,14 +379,15 @@ class _KpiCardState extends State<_KpiCard> {
                                         style: TextStyle(
                                           color: accent,
                                           fontSize: unitFont,
-                                          fontWeight: FontWeight.w900,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                       if (suffixPart != null)
                                         TextSpan(
                                           text: '  $suffixPart',
                                           style: TextStyle(
-                                            color: mutedColor.withValues(alpha: 0.76),
+                                            color: mutedColor.withValues(
+                                                alpha: 0.76),
                                             fontSize: fcfaFont,
                                             fontWeight: FontWeight.w700,
                                           ),
@@ -484,28 +395,6 @@ class _KpiCardState extends State<_KpiCard> {
                                     ],
                                   ),
                                 ),
-                                if (hoverFullValue != null) ...[
-                                  const SizedBox(height: 2),
-                                  SizedBox(
-                                    width: double.infinity,
-                                    child: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        hoverFullValue,
-                                        style: TextStyle(
-                                          color: mutedColor.withValues(alpha: 0.92),
-                                          fontSize: math.max(
-                                            7.0,
-                                            helperFont + 0.2,
-                                          ),
-                                          fontWeight: FontWeight.w700,
-                                          height: 1,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
                               ],
                             )
                           else
@@ -518,7 +407,7 @@ class _KpiCardState extends State<_KpiCard> {
                                     style: TextStyle(
                                       color: titleColor,
                                       fontSize: unitFont,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   )),
                           SizedBox(height: accentGap),
@@ -538,7 +427,7 @@ class _KpiCardState extends State<_KpiCard> {
                             style: TextStyle(
                               color: titleColor,
                               fontSize: titleFont,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               height: 1.08,
                             ),
                           ),
@@ -548,8 +437,8 @@ class _KpiCardState extends State<_KpiCard> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color:
-                                  mutedColor.withValues(alpha: isDark ? 0.96 : 0.92),
+                              color: mutedColor.withValues(
+                                  alpha: isDark ? 0.96 : 0.92),
                               fontSize: helperFont,
                               fontWeight: FontWeight.w600,
                               height: 1.1,
@@ -846,7 +735,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                             style: TextStyle(
                                               color: titleColor,
                                               fontSize: titleFont,
-                                              fontWeight: FontWeight.w800,
+                                              fontWeight: FontWeight.w700,
                                               height: 1.04,
                                             ),
                                           ),
@@ -875,8 +764,8 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                   style: TextStyle(
                                     color: titleColor,
                                     fontSize: valueFont,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: -0.7,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0,
                                     height: 0.92,
                                   ),
                                 ),
@@ -948,7 +837,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                       style: TextStyle(
                                         color: titleColor,
                                         fontSize: sectionTitleFont,
-                                        fontWeight: FontWeight.w800,
+                                        fontWeight: FontWeight.w700,
                                         height: 1.03,
                                       ),
                                     ),
@@ -965,7 +854,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                               style: TextStyle(
                                                 color: levels[index].color,
                                                 fontSize: 8.2,
-                                                fontWeight: FontWeight.w800,
+                                                fontWeight: FontWeight.w700,
                                                 height: 1.35,
                                               ),
                                             ),
@@ -1005,7 +894,8 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                   decoration: BoxDecoration(
                                                     color: activeLevelData.color
                                                         .withValues(
-                                                      alpha: isDark ? 0.12 : 0.06,
+                                                      alpha:
+                                                          isDark ? 0.12 : 0.06,
                                                     ),
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -1014,7 +904,9 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                       color: activeLevelData
                                                           .color
                                                           .withValues(
-                                                        alpha: isDark ? 0.52 : 0.40,
+                                                        alpha: isDark
+                                                            ? 0.52
+                                                            : 0.40,
                                                       ),
                                                     ),
                                                   ),
@@ -1051,7 +943,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                                   ),
                                                             fontSize: 8.1,
                                                             fontWeight:
-                                                                FontWeight.w800,
+                                                                FontWeight.w700,
                                                             height: 1.2,
                                                           ),
                                                         ),
@@ -1064,7 +956,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                                     .color,
                                                             fontSize: 8.1,
                                                             fontWeight:
-                                                                FontWeight.w800,
+                                                                FontWeight.w700,
                                                             height: 1.2,
                                                           ),
                                                         ),
@@ -1134,10 +1026,11 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                           borderRadius:
                                               BorderRadius.circular(10),
                                           border: Border.all(
-                                            color:
-                                                levels[index].color.withValues(
-                                                      alpha: isDark ? 0.28 : 0.22,
-                                                    ),
+                                            color: levels[index]
+                                                .color
+                                                .withValues(
+                                                  alpha: isDark ? 0.28 : 0.22,
+                                                ),
                                           ),
                                           boxShadow: [
                                             BoxShadow(
@@ -1161,7 +1054,8 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                 : levels[index]
                                                     .color
                                                     .withValues(
-                                                      alpha: isDark ? 0.10 : 0.05,
+                                                      alpha:
+                                                          isDark ? 0.10 : 0.05,
                                                     ),
                                             borderRadius:
                                                 BorderRadius.circular(7),
@@ -1217,7 +1111,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                         fontSize:
                                                             levelLabelFont,
                                                         fontWeight:
-                                                            FontWeight.w800,
+                                                            FontWeight.w700,
                                                         height: 1,
                                                       ),
                                                     ),

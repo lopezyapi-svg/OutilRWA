@@ -72,7 +72,7 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
         };
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.spacing),
+          padding: const EdgeInsets.all(AppTheme.pagePadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -81,7 +81,7 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
                 subtitle:
                     'Gestion des engagements hors bilan avec application des CCF et calcul des RWA.',
               ),
-              const SizedBox(height: AppTheme.spacing),
+              const SizedBox(height: AppTheme.pageGap),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final isWide = constraints.maxWidth >= 1120;
@@ -136,7 +136,7 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: AppTheme.spacing),
+                            const SizedBox(height: AppTheme.pageGap),
                             OffBalanceTable(rows: items),
                           ],
                         ),
@@ -144,9 +144,13 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
                       const SizedBox(height: AppTheme.spacing),
                       LayoutBuilder(
                         builder: (context, inner) {
-                          final width = inner.maxWidth > 960
-                              ? (inner.maxWidth - 20) / 3
-                              : inner.maxWidth;
+                          final width = inner.maxWidth >= 960
+                              ? 190.0
+                              : inner.maxWidth >= 620
+                                  ? ((inner.maxWidth - AppTheme.spacing) / 2)
+                                      .clamp(0.0, 190.0)
+                                      .toDouble()
+                                  : inner.maxWidth;
                           return Wrap(
                             spacing: AppTheme.spacing,
                             runSpacing: AppTheme.spacing,

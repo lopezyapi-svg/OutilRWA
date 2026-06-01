@@ -91,6 +91,7 @@ extension AppLocalizationString on String {
 
 const Map<String, String> _englishTranslations = {
   'Dashboard': 'Dashboard',
+  'Vue d\'ensemble': 'Overview',
   'Tableau de bord': 'Dashboard',
   'Expositions': 'Exposures',
   'Risque de crédit': 'Credit risk',
@@ -257,19 +258,11 @@ const Map<String, String> _englishTranslations = {
   'RWA / Exposition brute': 'RWA / Gross exposure',
   'Risque faible': 'Low risk',
   'Risque moyen': 'Medium risk',
-  'Profil de maturité des RWA': 'RWA maturity profile',
-  "Vue prévisionnelle de l'amortissement et de la libération projetés des RWA.":
-      'Forward view of projected amortization and RWA release.',
   'Monthly': 'Monthly',
   'Quarterly': 'Quarterly',
   'Yearly': 'Yearly',
-  'Amortissement mensuel': 'Monthly amortization',
   'Projection': 'Projection',
   'Unité: {{value}}': 'Unit: {{value}}',
-  'Encours RWA': 'Outstanding RWA',
-  'RWA libéré cumulé': 'Cumulative released RWA',
-  "Pic d'amort.": 'Peak amort.',
-  'Horizon': 'Horizon',
   'milliards {{currency}}': 'billions {{currency}}',
   'millions {{currency}}': 'millions {{currency}}',
   'milliers {{currency}}': 'thousands {{currency}}',
@@ -470,15 +463,7 @@ const Map<String, String> _englishTranslations = {
   'Verifier les montants saisis.': 'Please verify the entered amounts.',
   'Echec de l enregistrement: {{error}}': 'Save failed: {{error}}',
   'LEADER DE L\'ALM EN AFRIQUE SUBSAHARIENNE': 'SUB-SAHARAN AFRICA ALM LEADER',
-  'Recherche rapide': 'Quick search',
   'Erreur: {{error}}': 'Error: {{error}}',
-  'Trajectoire RWA': 'RWA trajectory',
-  'Cette période concentre la baisse la plus marquée de la trajectoire. Le stock RWA se détend plus vite, ce qui accélère la libération du capital réglementaire.':
-      'This period concentrates the sharpest decline in the trajectory. The RWA stock eases faster, which accelerates regulatory capital release.',
-  "A partir de ce point, la courbe devient prévisionnelle. La lecture doit être comprise comme une estimation du rythme futur d'amortissement et de relâchement des RWA.":
-      'From this point onward, the curve becomes forward-looking. It should be read as an estimate of the future pace of amortization and RWA release.',
-  "Ce point représente l'horizon de projection disponible dans le dashboard. Il permet d'estimer le niveau résiduel de RWA à la fin de la séquence observée.":
-      'This point represents the projection horizon available in the dashboard. It helps estimate the residual RWA level at the end of the observed sequence.',
   'Rapport RWA importé avec succès (Attention indisponible pour le moment).':
       'RWA report successfully generated (feature temporarily unavailable).',
   'Nouvelle source importée: {{filename}}': 'New source imported: {{filename}}',
@@ -699,6 +684,272 @@ const Map<String, String> _englishTranslations = {
   'Définition : [[BREAK]]Les éléments de hors bilan recouvrent les garanties, les engagements, les instruments dérivés et d’autres accords contractuels non comptabilisés au bilan.\n\nApproche standard : [[BREAK]]Dans l’approche standard, chaque élément de hors bilan est converti en équivalent risque de crédit (ERC) au moyen d’un facteur de conversion en équivalent crédit (FCEC) qui sert à établir une projection de l’exposition potentielle au risque.\n\nCalcul de l’ERC : [[BREAK]]Le montant ERC d’une transaction de hors bilan est calculé en multipliant le montant correspondant à la portion non utilisée par le FCEC y relatif.\n\nCalcul des APR : [[BREAK]]Pour obtenir les APR de crédit sur les engagements de hors bilan, le montant ERC ainsi défini est ensuite multiplié par la pondération du risque qui dépend du type de contrepartie et de sa notation.\n\nCatégories de FCEC : [[BREAK]]Les FCEC applicables aux éléments de hors bilan sont répartis en cinq (5) catégories définies par ordre croissant selon le niveau de risque potentiel de la transaction.':
       'Definition: [[BREAK]]Off-balance-sheet items include guarantees, commitments, derivative instruments and other contractual arrangements not recognized on the balance sheet.\n\nStandardized approach: [[BREAK]]Under the standardized approach, each off-balance-sheet item is converted into a credit risk equivalent amount (CRE) using a credit conversion factor (CCF) to estimate the potential exposure to risk.\n\nCRE calculation: [[BREAK]]The CRE amount of an off-balance-sheet transaction is calculated by multiplying the amount corresponding to the unused portion by the related CCF.\n\nRWA calculation: [[BREAK]]To obtain credit RWA on off-balance-sheet commitments, the resulting CRE amount is then multiplied by the risk weight, which depends on the counterparty type and its rating.\n\nCCF categories: [[BREAK]]The CCFs applicable to off-balance-sheet items are divided into five (5) categories, defined in ascending order according to the potential risk level of the transaction.',
   'Ponderation appliquee': 'Applied risk weight',
+  'Import données': 'Market data import',
+  'Import données marché': 'Market data import',
+  'Importation des fichiers nécessaires aux calculs de risque de marché.':
+      'Import files required for market risk calculations.',
+  'Centralisation des fichiers nécessaires aux calculs de VaR, sensibilités et stress marché.':
+      'Centralization of files required for VaR, sensitivity and market stress calculations.',
+  'Périmètre des données': 'Data scope',
+  'Choisir le type de données marché à charger.':
+      'Choose the type of market data to load.',
+  'Source à importer': 'Source to import',
+  'Charger le fichier qui alimentera le moteur marché.':
+      'Load the file that will feed the market engine.',
+  'Aucun fichier sélectionné': 'No file selected',
+  'Formats acceptés : .xlsx, .csv, .json':
+      'Accepted formats: .xlsx, .csv, .json',
+  'Choisir un fichier': 'Choose a file',
+  'Préparer l’import': 'Prepare import',
+  'Préparation…': 'Preparing...',
+  'Fichier marché prêt pour traitement.': 'Market file ready for processing.',
+  'Format attendu': 'Expected format',
+  'Structure minimale pour une intégration propre.':
+      'Minimum structure for clean integration.',
+  'Courbes de taux': 'Yield curves',
+  'Points de courbe, maturités, rendements et taux zéro-coupon.':
+      'Curve points, maturities, yields and zero-coupon rates.',
+  'FX & devises': 'FX & currencies',
+  'Taux de change, parités, dates de cotation et sources.':
+      'Exchange rates, pairs, quotation dates and sources.',
+  'Prix de marché': 'Market prices',
+  'Prix actions, indices, obligations et instruments suivis.':
+      'Equity prices, indices, bonds and tracked instruments.',
+  'Historique P&L': 'P&L history',
+  'Séries de pertes, gains, rendements et scénarios observés.':
+      'Loss, gain, return and observed scenario series.',
+  'Instrument': 'Instrument',
+  'Valeur': 'Value',
+  'Source': 'Source',
+  'Visualisation': 'Visualization',
+  'Visualisation d’indicateurs': 'Indicator visualization',
+  'Tableau des données': 'Data table',
+  'Données marché consolidées pour les calculs de risque.':
+      'Consolidated market data for risk calculations.',
+  'Date': 'Date',
+  'Type': 'Type',
+  'Variation': 'Change',
+  'Taux': 'Rates',
+  'Prix': 'Price',
+  'Courbe UMOA 10Y': 'WAEMU 10Y curve',
+  'Portefeuille trading': 'Trading portfolio',
+  'Marché interne': 'Internal market',
+  'Flux marché': 'Market feed',
+  'Bourse': 'Exchange',
+  'Risk management': 'Risk management',
+  'Risque Crédit': 'Credit Risk',
+  'Risque du Marché': 'Market Risk',
+  'Risque Opérationnel': 'Operational Risk',
+  'Paramètres': 'Settings',
+  'Défauts / Impayés': 'Defaults / Past dues',
+  'Garanties': 'Guarantees',
+  'Rapports': 'Reports',
+  'Synthèse du module risque de crédit.': 'Credit risk module summary.',
+  'Techniques de réduction du risque de crédit, couvertures et scénarios CRM.':
+      'Credit risk mitigation techniques, coverages and CRM scenarios.',
+  'Pilotage des engagements hors bilan, CCF, EAD et capital associé.':
+      'Monitoring of off-balance-sheet commitments, CCF, EAD and related capital.',
+  'Inventaire des garanties, couvertures et statuts relies aux expositions.':
+      'Inventory of guarantees, coverages and statuses linked to exposures.',
+  'Suivi des retards, incidents prudentiels et provisions estimées.':
+      'Monitoring of delays, prudential incidents and estimated provisions.',
+  'Analyse des concentrations sectorielles, geographiques et des plus fortes expositions.':
+      'Analysis of sector concentrations, geographic concentrations and largest exposures.',
+  'Exports et rapports de portefeuille, garanties et defauts.':
+      'Portfolio, guarantee and default exports and reports.',
+  'Evaluation des tensions de marché et des risques associés au portefeuille.':
+      'Assessment of market stress and portfolio-related risks.',
+  'Cartographie des risques operationnels et des controles internes.':
+      'Mapping of operational risks and internal controls.',
+  'Conseils et recommandations basés sur les expositions et les risques.':
+      'Advice and recommendations based on exposures and risks.',
+  'Generation de rapports de synthese, details et exports metier.':
+      'Generation of summary reports, detailed reports and business exports.',
+  'Risque de marché': 'Market risk',
+  'Synthèse du risque de marché': 'Market risk summary',
+  'Recommandations': 'Recommendations',
+  'Evaluation des tendances de marché et impacts sur le portefeuille.':
+      'Assessment of market trends and portfolio impacts.',
+  'Analyse des variations de taux, des changes et des prix des actifs. Identifiez les sensibilités principales et surveillez les expositions critiques.':
+      'Analysis of interest-rate, FX and asset-price movements. Identify key sensitivities and monitor critical exposures.',
+  'Vérifiez la concentration sectorielle et géographique. Suivez la volatilité des taux et adaptez les limites internes si nécessaire.':
+      'Review sector and geographic concentration. Monitor rate volatility and adjust internal limits where needed.',
+  'VALUE AT RISK (VaR)': 'VALUE AT RISK (VaR)',
+  'Mesure et simulation du risque de marché':
+      'Market risk measurement and simulation',
+  'Historique': 'Historical',
+  'Paramétrique': 'Parametric',
+  'VaR Historique': 'Historical VaR',
+  'VaR Paramétrique': 'Parametric VaR',
+  'VaR Monte-Carlo': 'Monte Carlo VaR',
+  'Approche basée sur les distributions historiques des pertes et rendements.':
+      'Approach based on historical loss and return distributions.',
+  'Approche analytique basée sur la volatilité et la loi normale.':
+      'Analytical approach based on volatility and the normal distribution.',
+  'Simulation stochastique avancée du risque de marché.':
+      'Advanced stochastic simulation of market risk.',
+  'Paramètres de calcul': 'Calculation parameters',
+  'Paramètres dynamiques': 'Dynamic parameters',
+  'Paramètres de simulation': 'Simulation parameters',
+  'Histogramme des pertes historiques': 'Historical loss histogram',
+  'Queue rouge, seuil VaR et densité observée':
+      'Red tail, VaR threshold and observed density',
+  'Courbe normale Delta-Normale': 'Delta-normal curve',
+  'Quantile, zone de perte et seuil VaR':
+      'Quantile, loss zone and VaR threshold',
+  'Distribution P&L simulée': 'Simulated P&L distribution',
+  'Pertes, gains, queue critique et seuil VaR':
+      'Losses, gains, critical tail and VaR threshold',
+  'Niveau de confiance': 'Confidence level',
+  'Horizon': 'Horizon',
+  'Fenêtre historique': 'Historical window',
+  'Type de portefeuille': 'Portfolio type',
+  'Nombre de simulations': 'Number of simulations',
+  'Distribution': 'Distribution',
+  'Corrélations': 'Correlations',
+  'Corrélation': 'Correlation',
+  'Volatilité σ': 'Volatility σ',
+  'Valeur du portefeuille': 'Portfolio value',
+  'Duration modifiée': 'Modified duration',
+  'Rendement attendu μ': 'Expected return μ',
+  'Taux sans risque': 'Risk-free rate',
+  'Paramètres avancés': 'Advanced settings',
+  'Réinitialiser les paramètres par défaut': 'Reset default parameters',
+  'Perte moyenne au-delà du seuil': 'Average loss beyond the threshold',
+  'Pire perte observée': 'Worst observed loss',
+  'Volatilité historique': 'Historical volatility',
+  'Volatilité annualisée simulée': 'Simulated annualized volatility',
+  'Queue extrême': 'Extreme tail',
+  'Observations au-delà de la VaR': 'Observations beyond VaR',
+  'Queue normale au-delà du quantile': 'Normal tail beyond the quantile',
+  'Volatilité': 'Volatility',
+  'Entrée principale du modèle': 'Main model input',
+  'Ratio de Sharpe': 'Sharpe ratio',
+  'Prime de risque / volatilité': 'Risk premium / volatility',
+  'Sensibilité taux': 'Rate sensitivity',
+  'Impact indicatif de 100 pb': 'Indicative 100 bp impact',
+  'Scénarios extrêmes': 'Extreme scenarios',
+  'Worst Case': 'Worst Case',
+  'Pire scénario généré': 'Worst generated scenario',
+  'Moyenne des scénarios de queue': 'Average of tail scenarios',
+  'Comprendre la lecture historique': 'Understand the historical reading',
+  'Comprendre la formule paramétrique': 'Understand the parametric formula',
+  'Comprendre la simulation Monte-Carlo':
+      'Understand the Monte Carlo simulation',
+  'Formules - VaR historique': 'Formulas - Historical VaR',
+  'Formules - VaR paramétrique': 'Formulas - Parametric VaR',
+  'Formules - VaR Monte-Carlo': 'Formulas - Monte Carlo VaR',
+  'Formules de calcul': 'Calculation formulas',
+  'Variables': 'Variables',
+  'Lᵢ : perte observée ; Rᵢ : rendement historique ; V : valeur du portefeuille ; α : niveau de confiance ; n : nombre d’observations ; Qα : quantile empirique.':
+      'Lᵢ: observed loss; Rᵢ: historical return; V: portfolio value; α: confidence level; n: number of observations; Qα: empirical quantile.',
+  'zα : quantile normal ; σ : volatilité ; D : duration/sensibilité ; ρ : corrélation ; μ : rendement attendu ; T : horizon en jours ouvrés ; φ : densité normale.':
+      'zα: normal quantile; σ: volatility; D: duration/sensitivity; ρ: correlation; μ: expected return; T: horizon in business days; φ: normal density.',
+  'Mᵢ : facteur de marché ; Eᵢ : choc spécifique ; ρ : corrélation ; εᵢ : choc corrélé ; Rᵢ : rendement simulé ; Lᵢ : perte simulée ; V : valeur du portefeuille ; N : scénarios.':
+      'Mᵢ: market factor; Eᵢ: specific shock; ρ: correlation; εᵢ: correlated shock; Rᵢ: simulated return; Lᵢ: simulated loss; V: portfolio value; N: scenarios.',
+  'Fréquence': 'Frequency',
+  'gains ←': 'gains ←',
+  'pertes sévères →': 'severe losses →',
+  'P&L simulé': 'Simulated P&L',
+  'Pertes / gains simulés': 'Simulated losses / gains',
+  'Densité': 'Density',
+  'Distribution historique des pertes': 'Historical loss distribution',
+  'Distribution des pertes potentielles': 'Potential loss distribution',
+  'Zone de pertes extrêmes': 'Extreme loss zone',
+  '{{value}} des scénarios dépassent ce seuil':
+      '{{value}} of scenarios exceed this threshold',
+  'Seuil VaR historique': 'Historical VaR threshold',
+  'Intervalle de pertes historiques': 'Historical loss interval',
+  'Repère de pertes élevées : 95% des observations historiques restent sous ce niveau.':
+      'High-loss marker: 95% of historical observations remain below this level.',
+  'Queue extrême : 1% des observations historiques dépassent ce repère.':
+      'Extreme tail: 1% of historical observations exceed this marker.',
+  '{{count}} observations · {{probability}} des scénarios · cumul {{cumulative}} · P{{lower}}-P{{upper}}':
+      '{{count}} observations · {{probability}} of scenarios · cumulative {{cumulative}} · P{{lower}}-P{{upper}}',
+  '{{count}} observations · {{probability}} au-delà du seuil · ES {{expectedShortfall}}':
+      '{{count}} observations · {{probability}} beyond the threshold · ES {{expectedShortfall}}',
+  'Seuil VaR Delta-Normale': 'Delta-normal VaR threshold',
+  'Queue de pertes extrêmes': 'Extreme loss tail',
+  'Moyenne μ': 'Mean μ',
+  'Distribution des pertes': 'Loss distribution',
+  'Perte maximale probable sur {{horizon}} ; {{exceedance}} des scénarios dépassent ce seuil.':
+      'Maximum probable loss over {{horizon}}; {{exceedance}} of scenarios exceed this threshold.',
+  'Percentile {{percentile}} · zone critique au-delà du quantile.':
+      'Percentile {{percentile}} · critical zone beyond the quantile.',
+  'Centre de la distribution ajusté par le rendement attendu.':
+      'Center of the distribution adjusted by expected return.',
+  'Percentile {{percentile}} · σ* {{volatility}}.':
+      'Percentile {{percentile}} · σ* {{volatility}}.',
+  'Intervalle P&L': 'P&L interval',
+  '{{count}} scénarios · {{probability}} · P{{lower}}-P{{upper}}':
+      '{{count}} scenarios · {{probability}} · P{{lower}}-P{{upper}}',
+  'Génération des scénarios': 'Scenario generation',
+  'Revalorisation portefeuille': 'Portfolio revaluation',
+  'Extraction de la VaR': 'VaR extraction',
+  'Comparaison des méthodes VaR': 'VaR method comparison',
+  'Lecture institutionnelle des arbitrages de calcul':
+      'Institutional view of calculation trade-offs',
+  'Méthode': 'Method',
+  'Rapidité': 'Speed',
+  'Robustesse': 'Robustness',
+  'Complexité': 'Complexity',
+  'Rapide': 'Fast',
+  'Très rapide': 'Very fast',
+  'Moyenne': 'Medium',
+  'Lente': 'Slow',
+  'Très forte': 'Very strong',
+  'Élevée': 'High',
+  'Exploite les pertes réellement observées pour estimer le quantile de perte.':
+      'Uses actual observed losses to estimate the loss quantile.',
+  'Utilise volatilité, corrélation et quantile pour produire un calcul rapide.':
+      'Uses volatility, correlation and quantile to produce a fast calculation.',
+  'Simule de nombreux scénarios pour capter les queues de distribution complexes.':
+      'Simulates many scenarios to capture complex distribution tails.',
+  'La méthode historique privilégie la lecture empirique, la paramétrique accélère le calcul, et Monte-Carlo renforce la robustesse au prix d’une complexité plus élevée.':
+      'The historical method favors empirical reading, the parametric method speeds up calculation, and Monte Carlo strengthens robustness at the cost of higher complexity.',
+  'Obligataire': 'Bonds',
+  'Actions': 'Equities',
+  'Mixte': 'Mixed',
+  'Normale': 'Normal',
+  'Empirique': 'Empirical',
+  '1 jour': '1 day',
+  '10 jours': '10 days',
+  '1 mois': '1 month',
+  'Recommendations à partir des expositions et des risques.':
+      'Recommendations based on exposures and risks.',
+  'Synthèse des observations': 'Observation summary',
+  'Le module d’analyse agrège les données des expositions, du risque de marché et du risque opérationnel. Il aide à identifier les leviers d’amélioration et les zones de concentration.':
+      'The analysis module aggregates exposure, market risk and operational risk data. It helps identify improvement levers and concentration areas.',
+  'Actions recommandées': 'Recommended actions',
+  'Priorisez les dispositifs de couverture et de mitigation. Renforcez la surveillance des expositions sensibles et formalisez les plans de correction.':
+      'Prioritize coverage and mitigation mechanisms. Strengthen monitoring of sensitive exposures and formalize corrective action plans.',
+  'Trajectoire prévisionnelle': 'Forecast trajectory',
+  'Projetez l’évolution du capital disponible, des besoins réglementaires et des coussins afin de visualiser les marges de manoeuvre sur plusieurs horizons.':
+      'Project available capital, regulatory needs and buffers to visualize management headroom across several horizons.',
+  'Arbitrages de gestion': 'Management trade-offs',
+  'Préparez les décisions de distribution, de croissance des encours et de renforcement du capital en fonction des contraintes prudentielles attendues.':
+      'Prepare distribution, exposure growth and capital strengthening decisions based on expected prudential constraints.',
+  'Périmètre d’évaluation': 'Assessment scope',
+  'Regroupez les hypothèses de capital interne, les contraintes réglementaires et les risques matériels pour établir une lecture cohérente de l’adéquation du capital.':
+      'Consolidate internal capital assumptions, regulatory constraints and material risks to establish a coherent view of capital adequacy.',
+  'Décisions de pilotage': 'Steering decisions',
+  'Identifiez les coussins disponibles, les limites de concentration et les besoins d’ajustement pour sécuriser la trajectoire prudentielle.':
+      'Identify available buffers, concentration limits and adjustment needs to secure the prudential trajectory.',
+  'Risque opérationnel': 'Operational risk',
+  'Suivi des incidents et des controles internes liés aux processus.':
+      'Monitoring of incidents and process-related internal controls.',
+  'Principaux indicateurs opérationnels': 'Key operational indicators',
+  'Métriques sur les pertes, les incidents et la qualité des processus. L’objectif est de limiter l’impact opérationnel sur les résultats.':
+      'Metrics on losses, incidents and process quality. The objective is to limit the operational impact on results.',
+  'Conseils pratiques': 'Practical guidance',
+  'Renforcez les controles clés, formalisez les procédures et surveillez les événements opérationnels récurrents pour réduire les risques.':
+      'Strengthen key controls, formalize procedures and monitor recurring operational events to reduce risk.',
+  'Bibliothèque de scénarios': 'Scenario library',
+  'Centralisez les stress de taux, de défaut, de concentration et de liquidité pour mesurer leur impact sur les RWA, le capital et la solvabilité.':
+      'Centralize rate, default, concentration and liquidity stresses to measure their impact on RWA, capital and solvency.',
+  'Lecture des impacts': 'Impact reading',
+  'Comparez le scénario central aux hypothèses adverses, identifiez les seuils de rupture et préparez les actions de mitigation à suivre.':
+      'Compare the central scenario with adverse assumptions, identify breakpoints and prepare follow-up mitigation actions.',
 };
 
 const Map<String, String> _frenchTranslations = {
@@ -725,6 +976,7 @@ const Map<String, String> _frenchTranslations = {
   'Risque moyen (densité)': 'Risque moyen',
   'Risque élevé (densité)': 'Risque élevé',
   'Dashboard': 'Tableau de bord',
+  'Overview': 'Vue d\'ensemble',
   'Exposures': 'Expositions',
   'Credit risk': 'Risque de crédit',
   'CRM financee': 'CRM financée',

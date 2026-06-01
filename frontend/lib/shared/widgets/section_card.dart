@@ -20,6 +20,8 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasHeader = title.trim().isNotEmpty || trailing != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dividerColor = isDark ? AppTheme.darkBorder : AppTheme.border;
 
     return Card(
       margin: EdgeInsets.zero,
@@ -38,7 +40,7 @@ class SectionCard extends StatelessWidget {
                         title.tr(context),
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                 ),
                       ),
                     )
@@ -48,7 +50,7 @@ class SectionCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppTheme.spacing),
-              const Divider(color: AppTheme.border),
+              Divider(color: dividerColor),
               const SizedBox(height: AppTheme.spacing),
             ],
             child,

@@ -2,7 +2,6 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -378,7 +377,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                             style: TextStyle(
                               color: headerTitleColor,
                               fontSize: 19,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               letterSpacing: -0.2,
                             ),
                           ),
@@ -575,7 +574,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                           style: TextStyle(
                             color: _text,
                             fontSize: 13,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: -0.1,
                           ),
                         ),
@@ -846,7 +845,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                         borderRadius: BorderRadius.circular(AppTheme.radius),
                         child: AnimatedContainer(
                           width: double.infinity,
-                          height: 230,
+                          height: 178,
                           duration: const Duration(milliseconds: 180),
                           decoration: BoxDecoration(
                             color: _isDragging
@@ -863,17 +862,32 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                           child: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                SizedBox(
-                                  width: 220,
-                                  height: 140,
-                                  child: Lottie.asset(
-                                    'assets/lotties/import_loader.json',
-                                    repeat: true,
-                                    fit: BoxFit.contain,
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  width: 58,
+                                  height: 58,
+                                  decoration: BoxDecoration(
+                                    color: _isDragging
+                                        ? _accent.withValues(alpha: 0.14)
+                                        : _accent.withValues(alpha: 0.10),
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radius,
+                                    ),
+                                    border: Border.all(
+                                      color: _accent.withValues(alpha: 0.18),
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    _isDragging
+                                        ? Icons.file_download_done_rounded
+                                        : Icons.upload_file_rounded,
+                                    color: _accent,
+                                    size: 28,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 10),
                                 Text(
                                   _isDragging
                                       ? 'Relâchez pour charger le fichier'
@@ -1474,7 +1488,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                           style: TextStyle(
                             color: fileNameColor,
                             fontSize: 13.2,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             letterSpacing: -0.2,
                           ),
                         ),
@@ -1657,7 +1671,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 style: TextStyle(
                   color: accentColor ?? _text,
                   fontSize: 12.8,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: -0.15,
                 ),
               ),

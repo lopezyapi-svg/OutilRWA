@@ -3,7 +3,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
@@ -14,8 +13,6 @@ import '../models/exposition_models.dart';
 
 const double _exposureFormRadius = 5;
 const double _wizardBorderWidth = 1.0;
-const String _wizardPanelIllustrationAsset =
-    'assets/images/manage_money_bro.svg';
 
 bool _isExposureDark(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark;
@@ -164,7 +161,7 @@ InlineSpan _buildTooltipCardSpan(String line) {
               title,
               style: const TextStyle(
                 fontSize: 11.4,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
                 color: Colors.white,
                 height: 1.2,
               ),
@@ -222,7 +219,7 @@ InlineSpan _buildModernTooltipContent(String title, String message) {
       text: '$title\n',
       style: const TextStyle(
         fontSize: 12.4,
-        fontWeight: FontWeight.w800,
+        fontWeight: FontWeight.w700,
         color: Colors.white,
         height: 1.2,
       ),
@@ -1243,7 +1240,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         text: '$title\n',
         style: const TextStyle(
           fontSize: 12.4,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
           height: 1.2,
         ),
@@ -1824,11 +1821,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         child: IgnorePointer(
                           child: Opacity(
                             opacity: isDark ? 0.10 : 0.17,
-                            child: SvgPicture.asset(
-                              _wizardPanelIllustrationAsset,
-                              width: illustrationWidth,
-                              fit: BoxFit.contain,
-                              excludeFromSemantics: true,
+                            child: Icon(
+                              Icons.account_balance_wallet_rounded,
+                              size: illustrationWidth * 0.72,
+                              color: isDark
+                                  ? const Color(0xFFE7EEF9)
+                                  : const Color(0xFF2D6CDF),
                             ),
                           ),
                         ),
@@ -1867,7 +1865,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                                           .textTheme
                                           .titleLarge
                                           ?.copyWith(
-                                            fontWeight: FontWeight.w900,
+                                            fontWeight: FontWeight.w700,
                                             fontSize: 15.8,
                                             color: summaryTitleColor,
                                             height: 1.05,
@@ -3704,7 +3702,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           label: Text(
             context.tr('Suivant'),
             style: const TextStyle(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               fontSize: 10.2,
             ),
           ),
@@ -3777,7 +3775,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   Text(
                     widget.title.tr(context),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w700,
                           fontSize: 16,
                           color: _wizardTitleColor(context),
                           letterSpacing: -0.2,
@@ -3874,7 +3872,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                           : context
                               .tr('Mise a jour de l exposition en cours...'),
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                     ),
                     const SizedBox(height: 4),
@@ -4764,7 +4762,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   value,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: _wizardBodyTitleColor(context),
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                         fontSize: valueFontSize,
                         height: compact ? 1.05 : null,
                       ),
@@ -4849,7 +4847,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 child: Text(
                   'Actif ${index + 1}',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
               ),
@@ -5473,7 +5471,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: _wizardBodyTitleColor(context),
                       fontSize: 12.2,
                       height: 1.0,
@@ -6391,7 +6389,7 @@ class _CompactFieldCard extends StatelessWidget {
         text: '$title\n',
         style: const TextStyle(
           fontSize: 12.4,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
           height: 1.2,
         ),
@@ -6613,7 +6611,7 @@ class _CompactFieldCard extends StatelessWidget {
                                   .textTheme
                                   .labelMedium
                                   ?.copyWith(
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w700,
                                     color: _wizardBodyTitleColor(context),
                                     fontSize: 10.8,
                                   ),
@@ -6819,7 +6817,7 @@ class _CrmChoiceStepScreen extends StatelessWidget {
                         resolvedQuestionText,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               color: _wizardBodyTitleColor(context),
                               fontSize: 15.2,
                               height: 1.22,
@@ -7024,7 +7022,7 @@ class _FinalDecisionStepScreen extends StatelessWidget {
                 label: Text(
                   submitLabel.tr(context),
                   style: const TextStyle(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
                 ),
@@ -7107,7 +7105,7 @@ class _StepSurface extends StatelessWidget {
                                 .textTheme
                                 .titleMedium
                                 ?.copyWith(
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w700,
                                   fontSize: 14,
                                   color: _wizardBodyTitleColor(context),
                                 ),
@@ -7236,7 +7234,9 @@ class _AdaptiveMetricGrid extends StatelessWidget {
                 : 1;
         final itemWidth = columns == 1
             ? constraints.maxWidth
-            : (constraints.maxWidth - spacing * (columns - 1)) / columns;
+            : ((constraints.maxWidth - spacing * (columns - 1)) / columns)
+                .clamp(0.0, 180.0)
+                .toDouble();
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
@@ -7473,7 +7473,7 @@ class _StepOverviewChip extends StatelessWidget {
         '$number',
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: textColor,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
               fontSize: 9,
             ),
       ),
@@ -7565,7 +7565,7 @@ class _ModeChoiceCard extends StatelessWidget {
                       label,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                             color: _wizardBodyTitleColor(context),
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             fontSize: 13.5,
                           ),
                     ),

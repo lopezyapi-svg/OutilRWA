@@ -29,7 +29,7 @@ class OffBalanceTable extends StatelessWidget {
         dataRowMaxHeight: 44,
         dividerThickness: 0.4,
         headingTextStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
             ),
         dataTextStyle: Theme.of(context).textTheme.bodyMedium,
         columns: const [

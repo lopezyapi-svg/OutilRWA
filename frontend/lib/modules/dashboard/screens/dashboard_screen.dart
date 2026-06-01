@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../models/dashboard_models.dart';
 import '../widgets/dashboard_charts_section.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/dashboard_kpi_strip.dart';
-import '../widgets/dashboard_maturity_panel.dart';
 import '../widgets/dashboard_theme.dart';
 
 /// Ecran principal de pilotage des RWA et du capital.
@@ -32,7 +32,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Future<DashboardSnapshot> _future;
   StreamSubscription<int>? _portfolioRefreshSubscription;
   DateTime _selectedDate = DateTime.now();
-  DashboardMaturityView _maturityView = DashboardMaturityView.monthly;
 
   @override
   void initState() {
@@ -200,15 +199,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .toList();
         final crmEntries = _completeCrmDistribution(data.crmDistribution);
         final countryEntries = data.countryDistribution.take(5).toList();
-        // La maturité est recalculée selon la vue choisie par l'utilisateur.
-        final maturityPoints = _buildProjectionEntries(
-          data.rwaProjection,
-          _maturityView,
-          data.valuationDate,
-        );
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(10),
+          // ignore: prefer_const_constructors
+          padding: EdgeInsets.all(AppTheme.pagePadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -220,10 +214,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _pickReferenceDate();
                 },
               ),
-              const SizedBox(height: 8),
+              // ignore: prefer_const_constructors
+              SizedBox(height: AppTheme.pageGap),
               // Le bandeau KPI résume immédiatement les agrégats clés du portefeuille.
               DashboardKpiStrip(items: kpis),
-              const SizedBox(height: 8),
+              // ignore: prefer_const_constructors
+              SizedBox(height: AppTheme.pageGap),
               // La zone centrale combine les vues de structure, concentration et mitigation.
               DashboardChartsSection(
                 displayCurrency: displayCurrency,
@@ -231,10 +227,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 rwaCategoryEntries: rwaCategoryEntries,
                 countryEntries: countryEntries,
                 crmEntries: crmEntries,
-                maturityPoints: maturityPoints,
-                maturityView: _maturityView,
-                onMaturityViewChanged: (view) =>
-                    setState(() => _maturityView = view),
                 densityRwa: densityRwa,
                 coveredRatio: crmMetric.value,
               ),
@@ -269,26 +261,6 @@ double _densityRwaPercent(double rwaTotal, double grossExposure) {
     return 0.0;
   }
   return ((rwaTotal / grossExposure) * 100).clamp(0.0, 999.0).toDouble();
-}
-
-List<Color> _densityRwaGradient(double densityPercent) {
-  if (densityPercent >= 70) {
-    return const [Color(0xFFFF6B6B), Color(0xFFFF4766)];
-  }
-  if (densityPercent >= 40) {
-    return const [Color(0xFFFFAA2A), Color(0xFFFF7A21)];
-  }
-  return const [Color(0xFF39C97A), Color(0xFF22A863)];
-}
-
-String _densityRwaHint(double densityPercent) {
-  if (densityPercent >= 70) {
-    return 'Risque élevé (densité)';
-  }
-  if (densityPercent >= 40) {
-    return 'Risque moyen (densité)';
-  }
-  return 'Risque faible (densité)';
 }
 
 List<Color> _defaultRateGradient(double defaultRate) {
@@ -370,60 +342,4 @@ String _normalizeDashboardCrmLabel(String raw) {
     return 'Aucune';
   }
   return raw;
-}
-
-List<DashboardProjectionPoint> _buildProjectionEntries(
-  List<DashboardProjectionPoint> raw,
-  DashboardMaturityView view,
-  DateTime valuationDate,
-) {
-  if (raw.isEmpty) {
-    return [];
-  }
-
-  switch (view) {
-    case DashboardMaturityView.monthly:
-      // La vue mensuelle reprend directement les 12 prochains points.
-      return raw.take(12).toList();
-    case DashboardMaturityView.quarterly:
-      final quarterPoints = <DashboardProjectionPoint>[];
-
-      for (var index = 0; index < raw.length; index += 3) {
-        // Chaque trimestre agrège un bloc de trois mois pour lisser la lecture.
-        final bucket = raw.skip(index).take(3).toList();
-        if (bucket.isEmpty) {
-          continue;
-        }
-
-        final amount =
-            bucket.map((item) => item.value).reduce((a, b) => a + b) /
-                bucket.length;
-        quarterPoints.add(
-          DashboardProjectionPoint(
-            label: 'Q${(index ~/ 3) + 1}',
-            value: amount,
-          ),
-        );
-      }
-
-      return quarterPoints;
-    case DashboardMaturityView.yearly:
-      // La vue annuelle synthétise la tendance en trois points simples.
-      final average =
-          raw.map((item) => item.value).reduce((a, b) => a + b) / raw.length;
-      return [
-        DashboardProjectionPoint(
-          label: '${valuationDate.year}',
-          value: average,
-        ),
-        DashboardProjectionPoint(
-          label: '${valuationDate.year + 1}',
-          value: average * 0.88,
-        ),
-        DashboardProjectionPoint(
-          label: '${valuationDate.year + 2}',
-          value: average * 0.74,
-        ),
-      ];
-  }
 }

@@ -19,12 +19,22 @@
 namespace {
 
 constexpr wchar_t kBackendHost[] = L"127.0.0.1";
-constexpr unsigned short kBackendPort = 8000;
+constexpr unsigned short kBackendPort = 8001;
 constexpr auto kBackendStartupTimeout = std::chrono::seconds(15);
 constexpr auto kBackendPollInterval = std::chrono::milliseconds(150);
 
 HANDLE g_backend_process = nullptr;
 bool g_backend_started_by_runner = false;
+
+struct BackendLaunchConfiguration {
+  std::filesystem::path backend_root;
+  std::filesystem::path python_directory;
+  std::filesystem::path python_executable;
+  std::filesystem::path server_script;
+  std::filesystem::path working_directory;
+  std::filesystem::path launch_log_path;
+  bool packaged = true;
+};
 
 std::filesystem::path GetExecutableDirectory() {
   wchar_t buffer[MAX_PATH];
@@ -52,6 +62,110 @@ std::filesystem::path GetBackendLogPath() {
 
 std::filesystem::path GetBackendLaunchLogPath() {
   return GetBackendLogPath().parent_path() / L"backend-launch.log";
+}
+
+std::filesystem::path GetSourceBackendLaunchLogPath(
+    const std::filesystem::path& source_backend_root) {
+  return source_backend_root / L"data" / L"logs" / L"backend-launch.log";
+}
+
+std::filesystem::path FindSourceRepositoryRoot() {
+  std::filesystem::path current = GetExecutableDirectory();
+  std::error_code canonical_error;
+  const std::filesystem::path canonical_current =
+      std::filesystem::weakly_canonical(current, canonical_error);
+  if (!canonical_error) {
+    current = canonical_current;
+  }
+
+  for (int depth = 0; depth < 12; ++depth) {
+    const std::filesystem::path backend_root = current / L"backend";
+    if (std::filesystem::exists(backend_root / L"run_server.py") &&
+        std::filesystem::exists(backend_root / L"app")) {
+      return current;
+    }
+
+    const std::filesystem::path parent = current.parent_path();
+    if (parent.empty() || parent == current) {
+      break;
+    }
+    current = parent;
+  }
+
+  return std::filesystem::path();
+}
+
+BackendLaunchConfiguration GetPackagedBackendLaunchConfiguration() {
+  const std::filesystem::path install_directory = GetExecutableDirectory();
+  BackendLaunchConfiguration configuration;
+  configuration.backend_root = install_directory / L"backend";
+  configuration.python_directory = configuration.backend_root / L"python";
+  configuration.python_executable =
+      configuration.python_directory / L"python.exe";
+  configuration.server_script =
+      configuration.backend_root / L"src" / L"run_server.py";
+  configuration.working_directory = configuration.python_directory;
+  configuration.launch_log_path = GetBackendLaunchLogPath();
+  configuration.packaged = true;
+  return configuration;
+}
+
+bool TryGetSourceBackendLaunchConfiguration(
+    BackendLaunchConfiguration* configuration) {
+  const std::filesystem::path repository_root = FindSourceRepositoryRoot();
+  if (repository_root.empty()) {
+    return false;
+  }
+
+  BackendLaunchConfiguration source_configuration;
+  source_configuration.backend_root = repository_root / L"backend";
+  source_configuration.python_directory =
+      source_configuration.backend_root / L".venv" / L"Scripts";
+  source_configuration.python_executable =
+      source_configuration.python_directory / L"python.exe";
+  source_configuration.server_script =
+      source_configuration.backend_root / L"run_server.py";
+  source_configuration.working_directory = source_configuration.backend_root;
+  source_configuration.launch_log_path =
+      GetSourceBackendLaunchLogPath(source_configuration.backend_root);
+  source_configuration.packaged = false;
+
+  if (!std::filesystem::exists(source_configuration.python_executable) ||
+      !std::filesystem::exists(source_configuration.server_script)) {
+    return false;
+  }
+
+  if (configuration != nullptr) {
+    *configuration = source_configuration;
+  }
+  return true;
+}
+
+bool IsBackendLaunchConfigurationAvailable(
+    const BackendLaunchConfiguration& configuration) {
+  return std::filesystem::exists(configuration.python_executable) &&
+         std::filesystem::exists(configuration.server_script);
+}
+
+std::wstring BuildBackendResolutionErrorMessage(
+    const BackendLaunchConfiguration& packaged_configuration) {
+  std::wstring message =
+      L"Runtime Python embarque introuvable: " +
+      packaged_configuration.python_executable.wstring();
+
+  const std::filesystem::path repository_root = FindSourceRepositoryRoot();
+  if (repository_root.empty()) {
+    message += L"\nBackend source introuvable depuis: " +
+               GetExecutableDirectory().wstring();
+    return message;
+  }
+
+  const std::filesystem::path source_backend_root =
+      repository_root / L"backend";
+  message += L"\nFallback developpement introuvable: " +
+             (source_backend_root / L".venv" / L"Scripts" / L"python.exe")
+                 .wstring();
+  return message;
 }
 
 bool IsBackendReachable() {
@@ -196,39 +310,43 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
     return true;
   }
 
-  const std::filesystem::path install_directory = GetExecutableDirectory();
-  const std::filesystem::path backend_root = install_directory / L"backend";
-  const std::filesystem::path python_directory = backend_root / L"python";
-  const std::filesystem::path python_executable = python_directory / L"python.exe";
-  const std::filesystem::path server_script =
-      backend_root / L"src" / L"run_server.py";
-  const std::filesystem::path launch_log_path = GetBackendLaunchLogPath();
-  const std::wstring python_executable_string = python_executable.wstring();
+  BackendLaunchConfiguration configuration =
+      GetPackagedBackendLaunchConfiguration();
+  if (!IsBackendLaunchConfigurationAvailable(configuration)) {
+    BackendLaunchConfiguration source_configuration;
+    if (TryGetSourceBackendLaunchConfiguration(&source_configuration)) {
+      configuration = source_configuration;
+    }
+  }
 
-  if (!std::filesystem::exists(python_executable)) {
+  if (!std::filesystem::exists(configuration.python_executable)) {
     if (error_message != nullptr) {
-      *error_message =
-          L"Runtime Python embarque introuvable: " + python_executable.wstring();
+      *error_message = BuildBackendResolutionErrorMessage(configuration);
     }
     return false;
   }
 
-  if (!std::filesystem::exists(server_script)) {
+  if (!std::filesystem::exists(configuration.server_script)) {
     if (error_message != nullptr) {
       *error_message =
-          L"Lanceur backend introuvable: " + server_script.wstring();
+          L"Lanceur backend introuvable: " +
+          configuration.server_script.wstring();
     }
     return false;
   }
 
-  ::SetEnvironmentVariableW(L"RWA_PACKAGED", L"1");
+  if (configuration.packaged) {
+    ::SetEnvironmentVariableW(L"RWA_PACKAGED", L"1");
+  } else {
+    ::SetEnvironmentVariableW(L"RWA_PACKAGED", nullptr);
+  }
   ::SetEnvironmentVariableW(L"RWA_API_HOST", kBackendHost);
-  ::SetEnvironmentVariableW(L"RWA_API_PORT", L"8000");
+  ::SetEnvironmentVariableW(L"RWA_API_PORT", L"8001");
   ::SetEnvironmentVariableW(L"RWA_API_LOG_LEVEL", L"warning");
   ::SetEnvironmentVariableW(L"PYTHONUTF8", L"1");
 
   std::error_code create_directories_error;
-  std::filesystem::create_directories(launch_log_path.parent_path(),
+  std::filesystem::create_directories(configuration.launch_log_path.parent_path(),
                                       create_directories_error);
 
   SECURITY_ATTRIBUTES security_attributes = {};
@@ -237,7 +355,7 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
   security_attributes.lpSecurityDescriptor = nullptr;
 
   HANDLE log_handle = ::CreateFileW(
-      launch_log_path.wstring().c_str(),
+      configuration.launch_log_path.wstring().c_str(),
       FILE_APPEND_DATA,
       FILE_SHARE_READ | FILE_SHARE_WRITE,
       &security_attributes,
@@ -248,7 +366,7 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
     if (error_message != nullptr) {
       *error_message =
           L"Impossible d'ouvrir le journal backend: " +
-          launch_log_path.wstring();
+          configuration.launch_log_path.wstring();
     }
     return false;
   }
@@ -271,7 +389,8 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
   }
 
   std::wstring command_line =
-      BuildBackendCommandLine(python_executable, server_script);
+      BuildBackendCommandLine(configuration.python_executable,
+                              configuration.server_script);
   std::vector<wchar_t> mutable_command_line(command_line.begin(),
                                             command_line.end());
   mutable_command_line.push_back(L'\0');
@@ -285,6 +404,10 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
   startup_info.hStdError = log_handle;
 
   PROCESS_INFORMATION process_information = {};
+  const std::wstring python_executable_string =
+      configuration.python_executable.wstring();
+  const std::wstring working_directory_string =
+      configuration.working_directory.wstring();
   const BOOL create_result = ::CreateProcessW(
       python_executable_string.c_str(),
       mutable_command_line.data(),
@@ -293,7 +416,7 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
       TRUE,
       CREATE_NO_WINDOW,
       nullptr,
-      python_directory.wstring().c_str(),
+      working_directory_string.c_str(),
       &startup_info,
       &process_information);
 
@@ -303,9 +426,9 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
   if (!create_result) {
     if (error_message != nullptr) {
       *error_message =
-          L"Impossible de demarrer le backend embarque (code Win32 " +
+          L"Impossible de demarrer le backend (code Win32 " +
           std::to_wstring(::GetLastError()) + L"). Consultez: " +
-          launch_log_path.wstring();
+          configuration.launch_log_path.wstring();
     }
     return false;
   }
@@ -326,9 +449,9 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
       ::GetExitCodeProcess(g_backend_process, &exit_code);
       if (error_message != nullptr) {
         *error_message =
-            L"Le backend embarque s'est arrete au demarrage (code " +
+            L"Le backend s'est arrete au demarrage (code " +
             std::to_wstring(exit_code) + L"). Consultez: " +
-            launch_log_path.wstring();
+            configuration.launch_log_path.wstring();
       }
       StopManagedBackendServer();
       return false;
@@ -339,8 +462,8 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
 
   if (error_message != nullptr) {
     *error_message =
-        L"Le backend embarque ne repond pas sur 127.0.0.1:8000. Consultez: " +
-        launch_log_path.wstring();
+        L"Le backend ne repond pas sur 127.0.0.1:8001. Consultez: " +
+        configuration.launch_log_path.wstring();
   }
   StopManagedBackendServer();
   return false;

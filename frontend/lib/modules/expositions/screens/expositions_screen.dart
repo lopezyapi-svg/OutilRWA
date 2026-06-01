@@ -54,10 +54,33 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   static const double _mainTableMinWidth = 4300;
   static const double _controlGap = 8;
   static const double _filterControlHeight = 30;
+  static const double _optionControlHeight = 34;
   static const double _textFilterControlHeight = 44;
-  static const double _resetButtonSize = 25;
   static const double _floatingActionButtonSize = 44;
   static const double _floatingActionButtonRadius = 10;
+  static const double _tableRowHeight = 40;
+  static const ExposureSummary _emptySummary = ExposureSummary(
+    totalExpositions: 0,
+    totalEad: 0,
+    totalRwa: 0,
+    totalCapital: 0,
+  );
+  static const String _filterId = 'id';
+  static const String _filterCounterparty = 'counterparty';
+  static const String _filterCountry = 'country';
+  static const String _filterCategory = 'category';
+  static const String _filterZone = 'zone';
+  static const String _filterRating = 'rating';
+  static const String _filterCrm = 'crm';
+  static const List<String> _filterOptionKeys = [
+    _filterId,
+    _filterCounterparty,
+    _filterCountry,
+    _filterCategory,
+    _filterZone,
+    _filterRating,
+    _filterCrm,
+  ];
 
   late Future<void> _future;
   StreamSubscription<int>? _portfolioRefreshSubscription;
@@ -72,13 +95,16 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       TextEditingController();
 
   List<ExposureRecord> _allRows = const [];
+  List<ExposureRecord> _visibleRows = const [];
+  ExposureSummary _visibleSummary = _emptySummary;
   List<String> _ratings = prudentialRatings;
   String _categoryFilter = 'Toutes';
   String _zoneFilter = 'Toutes';
   String _ratingFilter = 'Toutes';
   String _crmFilter = 'Toutes';
   String _displayCurrency = 'XOF';
-  String? _sortColumnKey = 'id';
+  String _activeFilterKey = _filterCounterparty;
+  String? _sortColumnKey = 'counterparty';
   bool _sortAscending = true;
   bool _isImporting = false;
   bool _isDeleting = false;
@@ -121,6 +147,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     if (!mounted || _displayCurrency == nextCurrency) return;
     setState(() {
       _displayCurrency = nextCurrency;
+      _recomputeVisibleView();
     });
   }
 
@@ -156,20 +183,17 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           );
         }
 
-        final visibleRows = _buildVisibleRows();
-        final visibleSummary = _summarize(visibleRows);
-
         return LayoutBuilder(
           builder: (context, constraints) {
             return Padding(
-              padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
+              padding: EdgeInsets.zero,
               child: Stack(
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 10),
+                        padding: EdgeInsets.zero,
                         child: PageHeader(
                           title: 'Risque de crédit',
                           subtitle:
@@ -177,10 +201,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                           titleFontSize: 22,
                           subtitleFontSize: 11,
                           crossAxisAlignment: CrossAxisAlignment.end,
-                          trailing: _buildHeaderActionButtons(visibleRows),
+                          trailing: _buildHeaderActionButtons(_visibleRows),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: AppTheme.pageGap),
                       Expanded(
                         child: LayoutBuilder(
                           builder: (context, areaConstraints) {
@@ -209,7 +233,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                                                 child:
                                                     _buildScrollableExposureTable(
                                                   context,
-                                                  visibleRows,
+                                                  _visibleRows,
                                                 ),
                                               ),
                                               Positioned(
@@ -225,8 +249,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                                         const SizedBox(height: 10),
                                         _buildCompactSummaryCards(
                                           context,
-                                          visibleSummary,
-                                          visibleRows.length,
+                                          _visibleSummary,
+                                          _visibleRows.length,
                                         ),
                                       ],
                                     ),
@@ -241,7 +265,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                   ),
                   Positioned(
                     right: 18,
-                    bottom: 44,
+                    bottom: 84,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.end,
@@ -362,7 +386,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           foregroundColor: Colors.white,
           textStyle: const TextStyle(
             fontSize: 10.5,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             height: 1,
           ),
           shape: RoundedRectangleBorder(
@@ -439,7 +463,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     return AbsorbPointer(
       absorbing: true,
       child: Container(
-        color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.22),
+        color: (isDark ? Colors.black : Colors.white).withOpacity(0.22),
         alignment: Alignment.center,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 360),
@@ -452,7 +476,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.26 : 0.08),
+                color: Colors.black.withOpacity(isDark ? 0.26 : 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -475,7 +499,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     Text(
                       message,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                           ),
                     ),
                     const SizedBox(height: 4),
@@ -499,7 +523,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   final TextStyle _tableHeadingStyle = const TextStyle(
-    fontWeight: FontWeight.w700,
+    fontFamily: AppTheme.fontFamily,
+    fontWeight: FontWeight.w600,
     fontSize: 8.1,
     height: 1.0,
     letterSpacing: 0.18,
@@ -509,9 +534,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   TextStyle get _tableCellStyle {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextStyle(
+      fontFamily: AppTheme.fontFamily,
       fontSize: 9.8,
       height: 1.1,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w500,
       color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
     );
   }
@@ -561,31 +587,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                         visibleRows,
                       ),
                       Expanded(
-                        child: Scrollbar(
-                          controller: _tableVerticalController,
-                          thumbVisibility: true,
-                          child: SingleChildScrollView(
-                            controller: _tableVerticalController,
-                            physics: const ClampingScrollPhysics(),
-                            child: DataTable(
-                              headingRowHeight: 0,
-                              dataTextStyle: _tableCellStyle,
-                              horizontalMargin: 0,
-                              showCheckboxColumn: false,
-                              columnSpacing: 0,
-                              dataRowMinHeight: 38,
-                              dataRowMaxHeight: 42,
-                              columns: _buildBodyColumns(
-                                columnWidths,
-                                tableMode,
-                              ),
-                              rows: _buildDataRows(
-                                visibleRows,
-                                columnWidths,
-                                tableMode,
-                              ),
-                            ),
-                          ),
+                        child: _buildVirtualizedTableBody(
+                          visibleRows,
+                          columnWidths,
+                          tableMode,
                         ),
                       ),
                     ],
@@ -599,6 +604,34 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     );
   }
 
+  Widget _buildVirtualizedTableBody(
+    List<ExposureRecord> rows,
+    List<double> widths,
+    _ExposureTableMode mode,
+  ) {
+    final columnKeys = _tableColumnKeysForMode(mode);
+
+    return Scrollbar(
+      controller: _tableVerticalController,
+      thumbVisibility: true,
+      child: ListView.builder(
+        controller: _tableVerticalController,
+        physics: const ClampingScrollPhysics(),
+        itemCount: rows.length,
+        itemExtent: _tableRowHeight,
+        itemBuilder: (context, index) {
+          return RepaintBoundary(
+            child: _buildVirtualizedTableRow(
+              rows[index],
+              columnKeys,
+              widths,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildCompactSummaryCards(
     BuildContext context,
     ExposureSummary summary,
@@ -608,58 +641,139 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         ? 0.0
         : (summary.totalRwa / summary.totalEad) * 100;
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildCompactSummaryCard(
-            context,
-            label: 'Expositions',
-            value: '$visibleCount',
-            detail: context.tr(
-              '{{count}} sélectionnée(s)',
-              args: {'count': _selectedIds.length},
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 8.0;
+        const cardHeight = 42.0;
+        const countCardWidth = 132.0;
+
+        if (constraints.maxWidth >= 780) {
+          return SizedBox(
+            width: double.infinity,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: countCardWidth,
+                  height: cardHeight,
+                  child: _buildCompactSummaryCard(
+                    context,
+                    label: 'Expositions',
+                    value: '$visibleCount',
+                    detail: context.tr(
+                      '{{count}} sélectionnée(s)',
+                      args: {'count': _selectedIds.length},
+                    ),
+                    color: AppTheme.sidebarLight,
+                  ),
+                ),
+                const SizedBox(width: gap),
+                Expanded(
+                  child: SizedBox(
+                    height: cardHeight,
+                    child: _buildCompactSummaryCard(
+                      context,
+                      label: 'Exposition totale brute',
+                      value:
+                          '${AppFormatters.compactNumber(summary.totalExpositions)} $_displayCurrencyLabel',
+                      detail: 'Périmètre filtré',
+                      color: AppTheme.sidebarLight,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: gap),
+                Expanded(
+                  child: SizedBox(
+                    height: cardHeight,
+                    child: _buildCompactSummaryCard(
+                      context,
+                      label: 'RWA total',
+                      value:
+                          '${AppFormatters.compactNumber(summary.totalRwa)} $_displayCurrencyLabel',
+                      detail: 'RW ${rwAverage.toStringAsFixed(0)}%',
+                      color: AppTheme.success,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: gap),
+                Expanded(
+                  child: SizedBox(
+                    height: cardHeight,
+                    child: _buildCompactSummaryCard(
+                      context,
+                      label: 'Capital requis',
+                      value:
+                          '${AppFormatters.compactNumber(summary.totalCapital)} $_displayCurrencyLabel',
+                      detail: 'Exigence réglementaire',
+                      color: AppTheme.warning,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            icon: Icons.segment_rounded,
-            color: AppTheme.sidebarLight,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildCompactSummaryCard(
-            context,
-            label: 'Exposition totale brute',
-            value:
-                '${AppFormatters.compactNumber(summary.totalExpositions)} $_displayCurrencyLabel',
-            detail: 'Périmètre filtré',
-            icon: Icons.account_balance_wallet_outlined,
-            color: AppTheme.sidebarLight,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildCompactSummaryCard(
-            context,
-            label: 'RWA total',
-            value:
-                '${AppFormatters.compactNumber(summary.totalRwa)} $_displayCurrencyLabel',
-            detail: 'RW ${rwAverage.toStringAsFixed(0)}%',
-            icon: Icons.shield_outlined,
-            color: AppTheme.success,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildCompactSummaryCard(
-            context,
-            label: 'Capital requis',
-            value:
-                '${AppFormatters.compactNumber(summary.totalCapital)} $_displayCurrencyLabel',
-            detail: 'Exigence réglementaire',
-            icon: Icons.account_balance_outlined,
-            color: AppTheme.warning,
-          ),
-        ),
-      ],
+          );
+        }
+
+        final cardWidth = constraints.maxWidth >= 460
+            ? (constraints.maxWidth - gap) / 2
+            : constraints.maxWidth;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            SizedBox(
+              width: cardWidth,
+              height: cardHeight,
+              child: _buildCompactSummaryCard(
+                context,
+                label: 'Expositions',
+                value: '$visibleCount',
+                detail: context.tr(
+                  '{{count}} sélectionnée(s)',
+                  args: {'count': _selectedIds.length},
+                ),
+                color: AppTheme.sidebarLight,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              height: cardHeight,
+              child: _buildCompactSummaryCard(
+                context,
+                label: 'Exposition totale brute',
+                value:
+                    '${AppFormatters.compactNumber(summary.totalExpositions)} $_displayCurrencyLabel',
+                detail: 'Périmètre filtré',
+                color: AppTheme.sidebarLight,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              height: cardHeight,
+              child: _buildCompactSummaryCard(
+                context,
+                label: 'RWA total',
+                value:
+                    '${AppFormatters.compactNumber(summary.totalRwa)} $_displayCurrencyLabel',
+                detail: 'RW ${rwAverage.toStringAsFixed(0)}%',
+                color: AppTheme.success,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              height: cardHeight,
+              child: _buildCompactSummaryCard(
+                context,
+                label: 'Capital requis',
+                value:
+                    '${AppFormatters.compactNumber(summary.totalCapital)} $_displayCurrencyLabel',
+                detail: 'Exigence réglementaire',
+                color: AppTheme.warning,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -668,99 +782,62 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     required String label,
     required String value,
     required String detail,
-    required IconData icon,
     required Color color,
   }) {
-    final theme = Theme.of(context);
-
-    return Container(
-      constraints: const BoxConstraints.tightFor(height: 40),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white,
-            color.withValues(alpha: 0.05),
+    return Tooltip(
+      message: detail.tr(context),
+      waitDuration: const Duration(milliseconds: 350),
+      child: Container(
+        height: double.infinity,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.98),
+          borderRadius: BorderRadius.circular(1),
+          border: Border.all(color: color.withValues(alpha: 0.24)),
+        ),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 7),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label.tr(context).toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.text,
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 6.8,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value.tr(context),
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: color,
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 11.4,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Icon(icon, size: 11, color: color),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label.tr(context),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: AppTheme.muted,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 8.2,
-                    height: 1,
-                    letterSpacing: 0.1,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 5,
-                      child: Text(
-                        value,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: AppTheme.text,
-                          fontSize: 9.1,
-                          height: 1,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      flex: 4,
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          detail.tr(context),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: color,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 7.8,
-                            height: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -998,8 +1075,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               ),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF213252).withValues(alpha: 0.98)
-                    : const Color(0xFF16325C).withValues(alpha: 0.96),
+                    ? const Color(0xFF213252).withOpacity(0.98)
+                    : const Color(0xFF16325C).withOpacity(0.96),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isDark
@@ -1009,7 +1086,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.18),
+                    color: Colors.black.withOpacity(isDark ? 0.32 : 0.18),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -1144,8 +1221,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   Color _rwRowTint(double rwPercent, {required bool isSelected}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return _rwGaugeColor(rwPercent).withValues(
-      alpha: isDark ? (isSelected ? 0.22 : 0.12) : (isSelected ? 0.18 : 0.08),
+    return _rwGaugeColor(rwPercent).withOpacity(
+      isDark ? (isSelected ? 0.22 : 0.12) : (isSelected ? 0.18 : 0.08),
     );
   }
 
@@ -1578,7 +1655,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         ),
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.10),
+            color: Colors.white.withOpacity(0.10),
           ),
         ),
       ),
@@ -1692,17 +1769,47 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     );
   }
 
-  List<DataColumn> _buildBodyColumns(
+  Widget _buildVirtualizedTableRow(
+    ExposureRecord row,
+    List<String> columnKeys,
     List<double> widths,
-    _ExposureTableMode mode,
   ) {
-    final columnKeys = _tableColumnKeysForMode(mode);
+    final isSelected = _selectedIds.contains(row.id);
+    final rwPercent = _rwPercentValue(row);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rowColor = _rwRowTint(rwPercent, isSelected: isSelected);
+    final borderColor =
+        isDark ? const Color(0xFF25354E) : const Color(0xFFE8EEF8);
 
-    return List<DataColumn>.generate(columnKeys.length, (index) {
-      return DataColumn(
-        label: SizedBox(width: widths[index]),
-      );
-    });
+    return Container(
+      height: _tableRowHeight,
+      decoration: BoxDecoration(
+        color: rowColor,
+        border: Border(
+          bottom: BorderSide(color: borderColor, width: 0.7),
+        ),
+      ),
+      child: Row(
+        children: List<Widget>.generate(columnKeys.length, (index) {
+          final key = columnKeys[index];
+          final cell = _tableCellForKey(row, key, widths[index]);
+
+          if (key == 'select') {
+            return SizedBox(
+                width: widths[index], height: _tableRowHeight, child: cell);
+          }
+
+          return SizedBox(
+            width: widths[index],
+            height: _tableRowHeight,
+            child: InkWell(
+              onDoubleTap: () => _openEditPanel(row),
+              child: cell,
+            ),
+          );
+        }),
+      ),
+    );
   }
 
   Widget _tableCellForKey(
@@ -1817,7 +1924,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           textAlign: TextAlign.left,
           style: _tableCellStyle.copyWith(
             color: _rwGaugeColor(rwPercent),
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w700,
           ),
         );
       case 'rwa_eb':
@@ -1852,36 +1959,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     }
   }
 
-  List<DataRow> _buildDataRows(
-    List<ExposureRecord> rows,
-    List<double> widths,
-    _ExposureTableMode mode,
-  ) {
-    final columnKeys = _tableColumnKeysForMode(mode);
-    return rows.map((row) {
-      final isSelected = _selectedIds.contains(row.id);
-      final rwPercent = _rwPercentValue(row);
-      return DataRow(
-        selected: isSelected,
-        color: WidgetStateProperty.resolveWith((states) {
-          final selected = states.contains(WidgetState.selected) || isSelected;
-          return _rwRowTint(rwPercent, isSelected: selected);
-        }),
-        cells: List<DataCell>.generate(columnKeys.length, (index) {
-          final key = columnKeys[index];
-          return DataCell(
-            key == 'select'
-                ? _tableCellForKey(row, key, widths[index])
-                : InkWell(
-                    onDoubleTap: () => _openEditPanel(row),
-                    child: _tableCellForKey(row, key, widths[index]),
-                  ),
-          );
-        }),
-      );
-    }).toList();
-  }
-
   void _toggleSort(String column) {
     setState(() {
       if (_sortColumnKey != column) {
@@ -1893,69 +1970,380 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         _sortColumnKey = null;
         _sortAscending = true;
       }
+      _recomputeVisibleView();
     });
   }
 
   Widget _buildControlsPanel(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final panelBorderColor =
+        isDark ? const Color(0xFF22304B) : const Color(0xFFDDE7F6);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF101C32) : const Color(0xFFF7F9FD),
+        color: isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF),
         borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: panelBorderColor, width: 0.8),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? const Color(0x26040A16) : const Color(0x080F172A),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Theme(
-        data: _compactControlsTheme(theme),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ..._columnFilterFields,
-            const SizedBox(width: 12),
-            SizedBox(
-              height: _resetButtonSize,
-              width: _resetButtonSize,
-              child: Tooltip(
-                message: 'Réinitialiser',
-                child: ElevatedButton(
-                  onPressed: _resetFilters,
-                  style: ElevatedButton.styleFrom(
-                    elevation: 5,
-                    shadowColor: Colors.black.withValues(
-                      alpha: isDark ? 0.34 : 0.16,
-                    ),
-                    backgroundColor: isDark
-                        ? const Color(0xFFFF9A1F)
-                        : const Color(0xFFFF8A00),
-                    foregroundColor: Colors.white,
-                    surfaceTintColor: Colors.transparent,
-                    minimumSize: const Size(
-                      _resetButtonSize,
-                      _resetButtonSize,
-                    ),
-                    padding: EdgeInsets.zero,
-                    side: BorderSide(
-                      color: isDark
-                          ? const Color(0xFFFFB14D)
-                          : const Color(0xFFFF8A00),
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radius),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.restart_alt_rounded,
-                    size: 16,
-                  ),
+        data: _compactControlsTheme(
+          theme,
+          minHeight: _optionControlHeight,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          labelFontSize: 9.2,
+          floatingLabelFontSize: 9.2,
+          hintFontSize: 10.2,
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final availableWidth =
+                constraints.maxWidth.isFinite ? constraints.maxWidth : 860.0;
+            final isNarrow = availableWidth < 820;
+            final selectorWidth = isNarrow ? availableWidth : 230.0;
+            final activeFieldWidth = isNarrow
+                ? availableWidth
+                : (availableWidth * 0.18).clamp(200.0, 300.0).toDouble();
+
+            return Wrap(
+              spacing: _controlGap,
+              runSpacing: _controlGap,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _buildFilterSelectorControl(
+                  width: selectorWidth,
+                  isDark: isDark,
                 ),
-              ),
-            ),
-          ],
+                _buildActiveFilterControl(width: activeFieldWidth),
+                _buildSortDirectionButton(isDark: isDark),
+                _buildResetFiltersButton(isDark: isDark),
+              ],
+            );
+          },
         ),
       ),
     );
+  }
+
+  Widget _buildFilterSelectorControl({
+    required double width,
+    required bool isDark,
+  }) {
+    final borderColor =
+        isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6);
+    final fillColor =
+        isDark ? const Color(0xFF13243F) : const Color(0xFFFFFFFF);
+    final labelColor =
+        isDark ? const Color(0xFFB8C8E8) : const Color(0xFF2563EB);
+
+    return SizedBox(
+      width: width,
+      height: _optionControlHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: BorderRadius.circular(AppTheme.radius),
+                border: Border.all(color: borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? const Color(0x18040A16)
+                        : const Color(0x0A2563EB),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 40,
+            top: -4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              color: fillColor,
+              child: Text(
+                'Filtre'.tr(context),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: labelColor,
+                      fontSize: 8.2,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                    ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: Row(
+              children: [
+                SizedBox(
+                  width: _optionControlHeight,
+                  height: _optionControlHeight,
+                  child: Icon(
+                    Icons.tune_rounded,
+                    size: 15,
+                    color: isDark ? const Color(0xFFDCEBFF) : AppTheme.accent,
+                  ),
+                ),
+                Expanded(
+                  child: SizedBox.expand(
+                    child: _buildCompactDropdownField(
+                      value: _activeFilterKey,
+                      label: 'Filtre',
+                      items: _filterOptionKeys,
+                      displayTextBuilder: _filterOptionLabel,
+                      onChanged: _selectFilterOption,
+                      showFrame: false,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveFilterControl({required double width}) {
+    switch (_activeFilterKey) {
+      case _filterId:
+        return _buildCompactTextField(
+          controller: _idFilterController,
+          label: 'ID exposition',
+          hint: 'Saisir un identifiant',
+          width: width,
+          height: _optionControlHeight,
+        );
+      case _filterCountry:
+        return _buildCompactTextField(
+          controller: _countryFilterController,
+          label: 'Pays',
+          hint: 'Saisir un pays',
+          width: width,
+          height: _optionControlHeight,
+        );
+      case _filterCategory:
+        return SizedBox(
+          width: width,
+          height: _optionControlHeight,
+          child: _buildCompactDropdownField(
+            value: _categoryFilter,
+            label: 'Catégorie',
+            items: [
+              'Toutes',
+              ...exposureCategories.map((item) => item.prudentialLabel),
+            ],
+            displayTextBuilder: (item) =>
+                item == 'Toutes' ? item : _displayExposureCategory(item),
+            onChanged: (value) => setState(() {
+              _categoryFilter = value ?? 'Toutes';
+              _recomputeVisibleView();
+            }),
+          ),
+        );
+      case _filterZone:
+        return SizedBox(
+          width: width,
+          height: _optionControlHeight,
+          child: _buildCompactDropdownField(
+            value: _zoneFilter,
+            label: 'Zone',
+            items: const ['Toutes', 'UEMOA', 'CEMAC', 'Hors zone'],
+            onChanged: (value) => setState(() {
+              _zoneFilter = value ?? 'Toutes';
+              _recomputeVisibleView();
+            }),
+          ),
+        );
+      case _filterRating:
+        return SizedBox(
+          width: width,
+          height: _optionControlHeight,
+          child: _buildCompactDropdownField(
+            value: _ratingFilter,
+            label: 'Notation',
+            items: ['Toutes', ..._ratings],
+            onChanged: (value) => setState(() {
+              _ratingFilter = value ?? 'Toutes';
+              _recomputeVisibleView();
+            }),
+          ),
+        );
+      case _filterCrm:
+        return SizedBox(
+          width: width,
+          height: _optionControlHeight,
+          child: _buildCompactDropdownField(
+            value: _crmFilter,
+            label: 'Type CRM',
+            items: const [
+              'Toutes',
+              'Aucune',
+              'CRM financee',
+              'CRM non financee',
+            ],
+            onChanged: (value) => setState(() {
+              _crmFilter = value ?? 'Toutes';
+              _recomputeVisibleView();
+            }),
+          ),
+        );
+      case _filterCounterparty:
+      default:
+        return _buildCompactTextField(
+          controller: _counterpartyFilterController,
+          label: 'Contrepartie',
+          hint: 'Nom ou raison sociale',
+          width: width,
+          height: _optionControlHeight,
+        );
+    }
+  }
+
+  Widget _buildSortDirectionButton({required bool isDark}) {
+    final enabled = _sortColumnKey != null;
+    return _buildOptionIconButton(
+      isDark: isDark,
+      tooltip: _sortAscending ? 'Ordre croissant' : 'Ordre décroissant',
+      icon: _sortAscending
+          ? Icons.arrow_upward_rounded
+          : Icons.arrow_downward_rounded,
+      accentColor: AppTheme.accent,
+      onPressed: enabled
+          ? () => setState(() {
+                _sortAscending = !_sortAscending;
+                _recomputeVisibleView();
+              })
+          : null,
+    );
+  }
+
+  Widget _buildResetFiltersButton({required bool isDark}) {
+    return _buildOptionIconButton(
+      isDark: isDark,
+      tooltip: 'Réinitialiser les options',
+      icon: Icons.restart_alt_rounded,
+      accentColor: AppTheme.warning,
+      onPressed: _resetFilters,
+    );
+  }
+
+  Widget _buildOptionIconButton({
+    required bool isDark,
+    required String tooltip,
+    required IconData icon,
+    required Color accentColor,
+    required VoidCallback? onPressed,
+  }) {
+    final enabled = onPressed != null;
+
+    return SizedBox(
+      height: _optionControlHeight,
+      width: _optionControlHeight,
+      child: Tooltip(
+        message: tooltip.tr(context),
+        child: OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            padding: EdgeInsets.zero,
+            foregroundColor: accentColor,
+            backgroundColor:
+                isDark ? const Color(0xFF13243F) : const Color(0xFFFFFFFF),
+            disabledForegroundColor:
+                isDark ? const Color(0xFF61708B) : const Color(0xFF9AA8BA),
+            surfaceTintColor: Colors.transparent,
+            minimumSize: const Size(_optionControlHeight, _optionControlHeight),
+            side: BorderSide(
+              color: isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radius),
+            ),
+            shadowColor: enabled
+                ? (isDark ? const Color(0x22040A16) : const Color(0x102563EB))
+                : Colors.transparent,
+            elevation: enabled ? 1 : 0,
+          ),
+          child: Icon(icon, size: 15),
+        ),
+      ),
+    );
+  }
+
+  String _filterOptionLabel(String key) {
+    return switch (key) {
+      _filterId => 'ID exposition',
+      _filterCountry => 'Pays',
+      _filterCategory => 'Catégorie',
+      _filterZone => 'Zone',
+      _filterRating => 'Notation',
+      _filterCrm => 'Type CRM',
+      _ => 'Contrepartie',
+    };
+  }
+
+  void _selectFilterOption(String? key) {
+    if (key == null || key == _activeFilterKey) {
+      return;
+    }
+    setState(() {
+      _activeFilterKey = key;
+      _sortColumnKey = _sortKeyForFilter(key);
+      _sortAscending = true;
+      _clearInactiveFilters(key);
+      _recomputeVisibleView();
+    });
+  }
+
+  String _sortKeyForFilter(String filterKey) {
+    return switch (filterKey) {
+      _filterId => 'id',
+      _filterCountry => 'country',
+      _filterCategory => 'category',
+      _filterZone => 'zone',
+      _filterRating => 'rating',
+      _filterCrm => 'crm',
+      _ => 'counterparty',
+    };
+  }
+
+  void _clearInactiveFilters(String activeKey) {
+    if (activeKey != _filterId) {
+      _idFilterController.clear();
+    }
+    if (activeKey != _filterCounterparty) {
+      _counterpartyFilterController.clear();
+    }
+    if (activeKey != _filterCountry) {
+      _countryFilterController.clear();
+    }
+    if (activeKey != _filterCategory) {
+      _categoryFilter = 'Toutes';
+    }
+    if (activeKey != _filterZone) {
+      _zoneFilter = 'Toutes';
+    }
+    if (activeKey != _filterRating) {
+      _ratingFilter = 'Toutes';
+    }
+    if (activeKey != _filterCrm) {
+      _crmFilter = 'Toutes';
+    }
   }
 
   Widget _buildTableHelperHint(BuildContext context) {
@@ -2031,7 +2419,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 5),
             decoration: BoxDecoration(
               color: isDark
-                  ? const Color(0xFF173055).withValues(alpha: 0.92)
+                  ? const Color(0xFF173055).withOpacity(0.92)
                   : const Color(0xFFEAF2FF),
               borderRadius: BorderRadius.circular(5),
               border: Border.all(
@@ -2138,7 +2526,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         ),
         floatingLabelStyle: baseTheme.textTheme.labelMedium?.copyWith(
           color: AppTheme.accent,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           fontSize: floatingLabelFontSize,
         ),
         hintStyle: baseTheme.textTheme.bodyMedium?.copyWith(
@@ -2177,80 +2565,152 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     required List<String> items,
     required ValueChanged<String?> onChanged,
     String Function(String item)? displayTextBuilder,
+    bool showFrame = true,
   }) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      isExpanded: true,
-      menuMaxHeight: 320,
-      icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 16),
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontWeight: FontWeight.w700,
-            fontSize: 9.8,
-          ),
-      decoration: InputDecoration(
-        labelText: label.tr(context),
-        hintText: hint?.tr(context),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: isDark ? const Color(0xFFEAF1FF) : const Color(0xFF13203A),
+          fontWeight: FontWeight.w700,
+          fontSize: 11.4,
+          height: 1.08,
+        );
+
+    final dropdown = DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: true,
+        isDense: true,
+        menuMaxHeight: 320,
+        itemHeight: null,
+        dropdownColor: isDark ? const Color(0xFF13243F) : Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        icon: Icon(
+          Icons.keyboard_arrow_down_rounded,
+          size: 16,
+          color: isDark ? const Color(0xFF9FB3D4) : const Color(0xFF64748B),
+        ),
+        style: textStyle,
+        hint: hint == null
+            ? null
+            : Text(
+                hint.tr(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle?.copyWith(
+                  color: Theme.of(context).hintColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+        selectedItemBuilder: (context) => items.map(
+          (item) {
+            final displayText = displayTextBuilder?.call(item) ?? item;
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                displayText.tr(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textStyle,
+              ),
+            );
+          },
+        ).toList(),
+        items: items.map(
+          (item) {
+            final displayText = displayTextBuilder?.call(item) ?? item;
+            return DropdownMenuItem<String>(
+              value: item,
+              child: SizedBox(
+                height: 36,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    displayText.tr(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textStyle,
+                  ),
+                ),
+              ),
+            );
+          },
+        ).toList(),
+        onChanged: onChanged,
       ),
-      selectedItemBuilder: (context) => items.map(
-        (item) {
-          final displayText = displayTextBuilder?.call(item) ?? item;
-          return Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              displayText.tr(context),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 9.8,
-                  ),
-            ),
-          );
-        },
-      ).toList(),
-      items: items.map(
-        (item) {
-          final displayText = displayTextBuilder?.call(item) ?? item;
-          return DropdownMenuItem<String>(
-            value: item,
-            child: Text(
-              displayText.tr(context),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 9.8,
-                  ),
-            ),
-          );
-        },
-      ).toList(),
-      onChanged: onChanged,
     );
+
+    if (!showFrame) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(0, 10, 10, 2),
+        child: dropdown,
+      );
+    }
+
+    return _buildOptionFieldFrame(label: label, child: dropdown);
   }
 
-  List<String> get _countryFilterOptions {
-    final options = <String>['Tous'];
-    final seen = <String>{};
+  Widget _buildOptionFieldFrame({
+    required String label,
+    required Widget child,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor =
+        isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6);
+    final fillColor = isDark ? const Color(0xFF13243F) : Colors.white;
+    final labelColor =
+        isDark ? const Color(0xFFB8C8E8) : const Color(0xFF2563EB);
 
-    void addCountry(String raw) {
-      final candidate = canonicalCountryName(raw, fallback: raw).trim();
-      final key = normalizedCountryName(candidate);
-      if (candidate.isEmpty || key.isEmpty || seen.contains(key)) {
-        return;
-      }
-      seen.add(key);
-      options.add(candidate);
-    }
-
-    addCountry(_countryFilterController.text.trim());
-    for (final row in _allRows) {
-      addCountry(row.counterparty.country);
-    }
-    for (final raw in worldCountries) {
-      addCountry(raw);
-    }
-    return options;
+    return SizedBox.expand(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: BorderRadius.circular(AppTheme.radius),
+                border: Border.all(color: borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? const Color(0x18040A16)
+                        : const Color(0x082563EB),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 10,
+            top: -4,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              color: fillColor,
+              child: Text(
+                label.tr(context),
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: labelColor,
+                      fontSize: 8.2,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                    ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 8, 2),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: child,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildCompactTextField({
@@ -2260,162 +2720,67 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     double? width,
     double height = _textFilterControlHeight,
   }) {
-    return Theme(
-      data: _compactControlsTheme(
-        Theme.of(context),
-        minHeight: height,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        labelFontSize: 8.8,
-        floatingLabelFontSize: 8.8,
-        hintFontSize: 9.8,
-      ),
-      child: SizedBox(
-        width: width,
-        height: height,
-        child: TextField(
-          controller: controller,
-          onChanged: (_) => setState(() {}),
-          maxLines: 1,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 9.8,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: _buildOptionFieldFrame(
+        label: label,
+        child: SizedBox(
+          height: 21,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(color: Colors.transparent),
+            child: TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                filled: false,
+                fillColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                isDense: false,
+                isCollapsed: true,
+                contentPadding: EdgeInsets.zero,
+                hintText: hint.tr(context),
+                hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: isDark
+                          ? const Color(0xFF9FB3D4)
+                          : const Color(0xFF6F7D92),
+                      fontSize: 11.6,
+                      fontWeight: FontWeight.w600,
+                      height: 1.05,
+                    ),
               ),
-          decoration: InputDecoration(
-            labelText: label.tr(context),
-            hintText: hint.tr(context),
+              cursorHeight: 15,
+              maxLines: 1,
+              strutStyle: const StrutStyle(
+                fontSize: 11.6,
+                height: 1.05,
+                forceStrutHeight: true,
+              ),
+              textAlignVertical: TextAlignVertical.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    backgroundColor: Colors.transparent,
+                    color: isDark ? const Color(0xFFEAF1FF) : AppTheme.text,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11.6,
+                    height: 1.05,
+                  ),
+              onChanged: (_) => setState(_recomputeVisibleView),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildResponsiveField({
-    required int flex,
-    required Widget child,
-  }) {
-    return Expanded(flex: flex, child: child);
-  }
-
-  List<Widget> get _columnFilterFields {
-    final children = <Widget>[
-      _buildResponsiveField(
-        flex: 15,
-        child: _buildCompactTextField(
-          controller: _counterpartyFilterController,
-          label: 'Contrepartie',
-          hint: 'Nom ou raison sociale',
-          height: _textFilterControlHeight,
-        ),
-      ),
-      _buildResponsiveField(
-        flex: 12,
-        child: Theme(
-          data: _compactControlsTheme(
-            Theme.of(context),
-            minHeight: _filterControlHeight,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            labelFontSize: 8.8,
-            floatingLabelFontSize: 8.8,
-            hintFontSize: 9.8,
-          ),
-          child: SizedBox(
-            height: _filterControlHeight,
-            child: _buildCompactDropdownField(
-              value: _countryFilterController.text.trim().isEmpty
-                  ? null
-                  : canonicalCountryName(
-                      _countryFilterController.text.trim(),
-                      fallback: _countryFilterController.text.trim(),
-                    ),
-              label: 'Pays',
-              hint: 'Pays de résidence',
-              items: _countryFilterOptions,
-              displayTextBuilder: (item) =>
-                  item == 'Tous' ? item : _displayCountry(item),
-              onChanged: (value) => setState(() {
-                _countryFilterController.text =
-                    value == null || value == 'Tous' ? '' : value;
-              }),
-            ),
-          ),
-        ),
-      ),
-      _buildResponsiveField(
-        flex: 15,
-        child: SizedBox(
-          height: _filterControlHeight,
-          child: _buildCompactDropdownField(
-            value: _categoryFilter,
-            label: 'Catégorie',
-            items: [
-              'Toutes',
-              ...exposureCategories.map((item) => item.prudentialLabel),
-            ],
-            displayTextBuilder: (item) =>
-                item == 'Toutes' ? item : _displayExposureCategory(item),
-            onChanged: (value) =>
-                setState(() => _categoryFilter = value ?? 'Toutes'),
-          ),
-        ),
-      ),
-      _buildResponsiveField(
-        flex: 14,
-        child: SizedBox(
-          height: _filterControlHeight,
-          child: _buildCompactDropdownField(
-            value: _zoneFilter,
-            label: 'Zone',
-            items: const ['Toutes', 'UEMOA', 'CEMAC', 'Hors zone'],
-            onChanged: (value) =>
-                setState(() => _zoneFilter = value ?? 'Toutes'),
-          ),
-        ),
-      ),
-      _buildResponsiveField(
-        flex: 14,
-        child: SizedBox(
-          height: _filterControlHeight,
-          child: _buildCompactDropdownField(
-            value: _ratingFilter,
-            label: 'Notation',
-            items: ['Toutes', ..._ratings],
-            onChanged: (value) =>
-                setState(() => _ratingFilter = value ?? 'Toutes'),
-          ),
-        ),
-      ),
-      _buildResponsiveField(
-        flex: 14,
-        child: SizedBox(
-          height: _filterControlHeight,
-          child: _buildCompactDropdownField(
-            value: _crmFilter,
-            label: 'Type CRM',
-            items: const [
-              'Toutes',
-              'Aucune',
-              'CRM financee',
-              'CRM non financee',
-            ],
-            onChanged: (value) =>
-                setState(() => _crmFilter = value ?? 'Toutes'),
-          ),
-        ),
-      ),
-    ];
-
-    return [
-      for (var index = 0; index < children.length; index++) ...[
-        if (index > 0) const SizedBox(width: _controlGap),
-        children[index],
-      ],
-    ];
-  }
-
   void _resetFilters() {
     setState(() {
+      _activeFilterKey = _filterCounterparty;
+      _sortColumnKey = _sortKeyForFilter(_activeFilterKey);
+      _sortAscending = true;
       _idFilterController.clear();
       _counterpartyFilterController.clear();
       _countryFilterController.clear();
@@ -2423,7 +2788,14 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       _zoneFilter = 'Toutes';
       _ratingFilter = 'Toutes';
       _crmFilter = 'Toutes';
+      _recomputeVisibleView();
     });
+  }
+
+  void _recomputeVisibleView() {
+    final rows = _buildVisibleRows();
+    _visibleRows = rows;
+    _visibleSummary = _summarize(rows);
   }
 
   List<ExposureRecord> _buildVisibleRows() {
@@ -2491,6 +2863,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               right.counterparty.countryRating),
           'country_rw' => _countryRiskWeightValue(left)
               .compareTo(_countryRiskWeightValue(right)),
+          'zone' => left.zone.compareTo(right.zone),
           'source_currency' => left.currency.compareTo(right.currency),
           'category' => _displayExposureCategory(left.categoryLabel)
               .compareTo(_displayExposureCategory(right.categoryLabel)),
@@ -2613,6 +2986,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       _selectedIds = _selectedIds
           .where((id) => _allRows.any((row) => row.id == id))
           .toSet();
+      _recomputeVisibleView();
     });
   }
 
@@ -2630,6 +3004,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       _selectedIds = _selectedIds
           .where((id) => _allRows.any((row) => row.id == id))
           .toSet();
+      _recomputeVisibleView();
     });
   }
 
@@ -2728,7 +3103,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       MaterialPageRoute<void>(
         builder: (routeContext) {
           return Scaffold(
-            backgroundColor: Colors.black.withValues(alpha: 0.22),
+            backgroundColor: Colors.black.withOpacity(0.22),
             body: SafeArea(
               child: Align(
                 alignment: Alignment.centerRight,
@@ -2879,7 +3254,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                         : previewIds,
                     style:
                         Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                             ),
                   ),
                   const SizedBox(height: 16),
@@ -3063,7 +3438,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
+                  color: accent.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: accent, size: 20),
@@ -3079,7 +3454,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                       style: Theme.of(dialogContext)
                           .textTheme
                           .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -3221,7 +3596,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         margin: const pw.EdgeInsets.all(14),
         build: (_) => [
           pw.Table(
-            border: const pw.TableBorder(
+            border: pw.TableBorder(
               horizontalInside: pw.BorderSide(
                 color: PdfColor.fromInt(0xFFE2E8F0),
                 width: 0.6,
@@ -3250,7 +3625,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             columnWidths: columnWidths,
             children: [
               pw.TableRow(
-                decoration: const pw.BoxDecoration(
+                decoration: pw.BoxDecoration(
                   color: PdfColor.fromInt(0xFF24467A),
                 ),
                 children: headers
@@ -3294,7 +3669,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         text,
         maxLines: 2,
         style: pw.TextStyle(
-          color: color ?? const PdfColor.fromInt(0xFF1F2A44),
+          color: color ?? PdfColor.fromInt(0xFF1F2A44),
           fontSize: fontSize,
           fontWeight: fontWeight ?? pw.FontWeight.normal,
         ),
@@ -3419,22 +3794,22 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   PdfColor _pdfRowColor(double rwPercent) {
     if (rwPercent <= 50) {
-      return const PdfColor.fromInt(0xFFF2FAF5);
+      return PdfColor.fromInt(0xFFF2FAF5);
     }
     if (rwPercent <= 100) {
-      return const PdfColor.fromInt(0xFFFFF7EA);
+      return PdfColor.fromInt(0xFFFFF7EA);
     }
-    return const PdfColor.fromInt(0xFFFFF1F1);
+    return PdfColor.fromInt(0xFFFFF1F1);
   }
 
   PdfColor _pdfRwColor(double rwPercent) {
     if (rwPercent <= 50) {
-      return const PdfColor.fromInt(0xFF18A957);
+      return PdfColor.fromInt(0xFF18A957);
     }
     if (rwPercent <= 100) {
-      return const PdfColor.fromInt(0xFFD68A00);
+      return PdfColor.fromInt(0xFFD68A00);
     }
-    return const PdfColor.fromInt(0xFFE04F5F);
+    return PdfColor.fromInt(0xFFE04F5F);
   }
 
   String _exportTimestamp() {
