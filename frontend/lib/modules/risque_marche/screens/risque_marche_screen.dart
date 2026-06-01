@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart' as fm;
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -795,31 +796,40 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
           ),
           const SizedBox(height: 14),
           if (hasDrawableData) ...[
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            Row(
               children: [
-                _YieldCurveMetricChip(
-                  label: 'Court terme · ${shortPoint!.label}',
-                  value: _formatYieldRate(shortPoint.rate),
-                  color: color,
+                Expanded(
+                  child: _YieldCurveMetricChip(
+                    label: 'Court terme · ${shortPoint!.label}',
+                    value: _formatYieldRate(shortPoint.rate),
+                    color: color,
+                  ),
                 ),
-                _YieldCurveMetricChip(
-                  label: tenYear == null
-                      ? 'Point long · ${longPoint!.label}'
-                      : 'Point 10Y · ${longPoint!.label}',
-                  value: _formatYieldRate(longPoint.rate),
-                  color: _marketCyan,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _YieldCurveMetricChip(
+                    label: tenYear == null
+                        ? 'Point long · ${longPoint!.label}'
+                        : 'Point 10Y · ${longPoint!.label}',
+                    value: _formatYieldRate(longPoint.rate),
+                    color: _marketCyan,
+                  ),
                 ),
-                _YieldCurveMetricChip(
-                  label: 'Pente CT / ${longPoint.label}',
-                  value: _formatYieldSpread(slopeBps!),
-                  color: _marketWarning,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _YieldCurveMetricChip(
+                    label: 'Pente CT / ${longPoint.label}',
+                    value: _formatYieldSpread(slopeBps!),
+                    color: _marketWarning,
+                  ),
                 ),
-                _YieldCurveMetricChip(
-                  label: 'Pic · ${maxPoint!.label}',
-                  value: _formatYieldRate(maxPoint.rate),
-                  color: _marketSuccess,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _YieldCurveMetricChip(
+                    label: 'Pic · ${maxPoint!.label}',
+                    value: _formatYieldRate(maxPoint.rate),
+                    color: _marketSuccess,
+                  ),
                 ),
               ],
             ),
@@ -853,7 +863,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
           ],
           if (hasDrawableData)
             SizedBox(
-              height: visibleSeries.length > 1 ? 48 : 42,
+              height: visibleSeries.length > 1 ? 38 : 32,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemBuilder: (context, index) {
@@ -910,7 +920,7 @@ class _YieldCurveMetricChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 132,
+      constraints: const BoxConstraints(minWidth: 0),
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: _isMarketDark(context) ? 0.16 : 0.08),
@@ -1023,13 +1033,14 @@ class _YieldCurveCountryLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final countries = _yieldCountriesFor(snapshot);
+    final zoneLabel = _yieldZoneDisplayLabel(snapshot);
 
     final zoneChip = _YieldCurveSeriesControlChip(
-      label: 'Zone',
+      label: zoneLabel,
       color: snapshot.color,
       available: snapshot.points.length >= 2,
       selected: selectedSeriesIds.contains(_yieldZoneSeriesId),
-      tooltip: 'Courbe globale ${snapshot.title}',
+      tooltip: 'Courbe globale $zoneLabel',
       onTap: () => onToggle(_yieldZoneSeriesId),
     );
     final countryChips = [
@@ -1116,21 +1127,16 @@ class _YieldCurveSeriesControlChip extends StatelessWidget {
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
             decoration: BoxDecoration(
-              color: chipColor.withValues(
-                alpha: isActive
-                    ? (_isMarketDark(context) ? 0.22 : 0.13)
-                    : available
-                        ? 0.07
-                        : (_isMarketDark(context) ? 0.10 : 0.05),
-              ),
+              color: Colors.transparent,
               border: Border.all(
                 color: chipColor.withValues(
                   alpha: isActive
-                      ? (_isMarketDark(context) ? 0.68 : 0.50)
+                      ? (_isMarketDark(context) ? 0.82 : 0.68)
                       : available
-                          ? (_isMarketDark(context) ? 0.38 : 0.30)
-                          : (_isMarketDark(context) ? 0.30 : 0.22),
+                          ? (_isMarketDark(context) ? 0.52 : 0.42)
+                          : (_isMarketDark(context) ? 0.34 : 0.28),
                 ),
+                width: isActive ? 1.2 : 1,
               ),
               borderRadius: BorderRadius.circular(3),
               boxShadow: isActive
@@ -1227,7 +1233,7 @@ class _YieldCurvePointTile extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           width: hasSeriesLabel ? 88 : 60,
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
           decoration: BoxDecoration(
             color: selected
                 ? color.withValues(alpha: isDark ? 0.18 : 0.10)
@@ -1260,7 +1266,7 @@ class _YieldCurvePointTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: selected ? color : _marketMutedFor(context),
-                    fontSize: 7.7,
+                    fontSize: 7.2,
                     fontWeight: FontWeight.w800,
                     height: 1,
                   ),
@@ -1271,7 +1277,7 @@ class _YieldCurvePointTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: selected ? color : _marketMutedFor(context),
-                  fontSize: 8,
+                  fontSize: 7.4,
                   fontWeight: FontWeight.w700,
                   height: 1,
                 ),
@@ -1282,7 +1288,7 @@ class _YieldCurvePointTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: color,
-                  fontSize: 10.1,
+                  fontSize: 9.4,
                   fontWeight: selected ? FontWeight.w900 : FontWeight.w800,
                   height: 1,
                 ),
@@ -2462,7 +2468,7 @@ class _YieldCurveSnapshot {
       items.add(
         _YieldCurveDisplaySeries(
           id: _yieldZoneSeriesId,
-          label: 'Zone',
+          label: _yieldZoneDisplayLabel(this),
           color: color,
           points: points,
           isZone: true,
@@ -2639,6 +2645,19 @@ List<String> _yieldKnownCountriesForZone(String zoneId) {
     'uemoa' => _uemoaYieldCountries,
     'cemac' => _cemacYieldCountries,
     _ => const <String>[],
+  };
+}
+
+String _yieldZoneDisplayLabel(_YieldCurveSnapshot snapshot) {
+  final title = snapshot.title.trim();
+  final normalized = _normalizeYieldText(title);
+  if (normalized.startsWith('zone ')) {
+    return title.substring(5).trim();
+  }
+  return switch (snapshot.id) {
+    'uemoa' => 'UEMOA',
+    'cemac' => 'CEMAC',
+    _ => title.isEmpty ? snapshot.id.toUpperCase() : title,
   };
 }
 
@@ -3578,7 +3597,7 @@ List<_BondTitleIndicatorRow> _buildBondIndicatorTitleRows(
       maturity: maturityYears,
       yieldCurves: stats.yieldCurves,
     );
-    final issuer = record.issuer.trim();
+    final issuer = record.issuerAnalysisLabel.trim();
     final instrument = record.instrumentType.trim();
     final code = record.instrumentCode.trim();
     final titleId = record.titleId;
@@ -3595,6 +3614,7 @@ List<_BondTitleIndicatorRow> _buildBondIndicatorTitleRows(
       _BondTitleIndicatorRow(
         titleId: titleId.isEmpty ? '-' : titleId,
         title: title,
+        flagAsset: _marketIssuerFlagAssetForRecord(record),
         country: country.isEmpty ? 'Non renseigné' : country,
         zone: _bondZoneLabel(record),
         rating: _bondRatingLabel(record),
@@ -4222,6 +4242,7 @@ class _BondTitleIndicatorRow {
   const _BondTitleIndicatorRow({
     required this.titleId,
     required this.title,
+    required this.flagAsset,
     required this.country,
     required this.zone,
     required this.rating,
@@ -4242,6 +4263,7 @@ class _BondTitleIndicatorRow {
 
   final String titleId;
   final String title;
+  final String? flagAsset;
   final String country;
   final String zone;
   final String rating;
@@ -4265,6 +4287,7 @@ class _BondTitleIndicatorRow {
     return [
       titleId,
       title,
+      flagAsset ?? '',
       country,
       zone,
       rating,
@@ -4923,8 +4946,9 @@ class _BondTitleHeaderCell extends StatelessWidget {
               Flexible(
                 child: Text(
                   column.label.toUpperCase(),
-                  maxLines: 3,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                   textAlign: alignLeft ? TextAlign.left : TextAlign.right,
                   style: TextStyle(
                     color: sorted ? _marketPrimary : _marketDashboardDeepBlue,
@@ -5001,6 +5025,9 @@ class _BondTitleIndicatorsDataRow extends StatelessWidget {
                           width: column.width,
                           alignLeft: column.isText,
                           selected: selected,
+                          flagAsset: column == _BondTitleColumn.title
+                              ? row.flagAsset
+                              : null,
                         ),
                     ],
                   ),
@@ -5384,12 +5411,14 @@ class _BondTitleTableCell extends StatelessWidget {
     required this.width,
     this.alignLeft = false,
     this.selected = false,
+    this.flagAsset,
   });
 
   final String value;
   final double width;
   final bool alignLeft;
   final bool selected;
+  final String? flagAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -5408,19 +5437,31 @@ class _BondTitleTableCell extends StatelessWidget {
           right: BorderSide(color: border.withValues(alpha: 0.44)),
         ),
       ),
-      child: Text(
-        value,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        textAlign: resolvedAlignLeft ? TextAlign.left : TextAlign.right,
-        style: TextStyle(
-          color: selected ? _marketDashboardDeepBlue : text,
-          fontSize: 11.2,
-          fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-          height: 1.05,
-          letterSpacing: 0,
-        ),
-      ),
+      child: flagAsset == null || flagAsset!.isEmpty
+          ? Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: resolvedAlignLeft ? TextAlign.left : TextAlign.right,
+              style: TextStyle(
+                color: selected ? _marketDashboardDeepBlue : text,
+                fontSize: 11.2,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                height: 1.05,
+                letterSpacing: 0,
+              ),
+            )
+          : _MarketFlaggedIssuerLabel(
+              label: value,
+              flagAsset: flagAsset,
+              style: TextStyle(
+                color: selected ? _marketDashboardDeepBlue : text,
+                fontSize: 11.2,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                height: 1.05,
+                letterSpacing: 0,
+              ),
+            ),
     );
   }
 }
@@ -5502,9 +5543,13 @@ _BondRecordFixedIncomeMetrics _bondRecordFixedIncomeMetrics({
     frequency: frequency,
     fallbackYield: marketRate,
   );
-  final durationMetrics = _bondDurationMetricsFromYield(
+  final durationMetrics = _bondTermStructureDurationMetrics(
+    record: record,
+    yieldCurves: yieldCurves,
     cashflows: cashflows,
     presentValue: resolvedPresentValue,
+    fallbackYield: fallbackYield,
+    equivalentYield: yieldToMaturity,
     annualYield: yieldToMaturity,
     frequency: frequency,
   );
@@ -5562,8 +5607,7 @@ List<_BondPricingCashflow> _bondFutureCashflows({
       final time = math.min(period / frequency, maturity).toDouble();
       final periodLength = math.max(0.0, time - previousTime).toDouble();
       final couponCashflow = outstanding * coupon * periodLength;
-      final principalCashflow =
-          period == periods ? _bondRedemptionPrincipal(record, outstanding) : 0;
+      final principalCashflow = period == periods ? outstanding : 0;
       final amount = couponCashflow + principalCashflow;
       if (amount > 0) {
         cashflows.add(_BondPricingCashflow(time: time, amount: amount));
@@ -5660,38 +5704,6 @@ bool _isBondPricingShortMonthlyTreasuryBill(MarketPortfolioRecord record) {
       (code == 'bt' || type.contains('bon du tresor'));
 }
 
-double _bondRedemptionPrincipal(
-  MarketPortfolioRecord record,
-  double outstanding,
-) {
-  if (outstanding <= 0) return 0;
-  final redemptionPrice = record.redemptionPrice;
-  if (redemptionPrice > 0) {
-    final nominal = record.nominalUnit;
-    final multiplier = nominal > 0 && redemptionPrice > 200
-        ? redemptionPrice / nominal
-        : redemptionPrice <= 2
-            ? redemptionPrice
-            : redemptionPrice <= 200
-                ? redemptionPrice / 100
-                : 0.0;
-    if (multiplier.isFinite && multiplier > 0 && multiplier <= 3) {
-      return (outstanding * multiplier).toDouble();
-    }
-  }
-
-  final premium = record.redemptionPremium;
-  if (premium != 0 && premium.isFinite) {
-    final premiumFraction = premium.abs() <= 2
-        ? premium
-        : premium.abs() <= 200
-            ? premium / 100
-            : 0.0;
-    return math.max(0.0, outstanding * (1 + premiumFraction)).toDouble();
-  }
-  return outstanding;
-}
-
 double _bondFallbackMarketYield(MarketPortfolioRecord record, double coupon) {
   final explicitYield = record.yieldToMaturity;
   if (explicitYield.isFinite && explicitYield > -0.99 && explicitYield != 0) {
@@ -5706,6 +5718,7 @@ double _bondTermStructurePresentValue({
   required List<_YieldCurveSnapshot> yieldCurves,
   required List<_BondPricingCashflow> cashflows,
   required double fallbackYield,
+  double parallelShift = 0,
 }) {
   if (cashflows.isEmpty) return 0;
   final frequency = math.max(1, record.couponPaymentsPerYear);
@@ -5717,7 +5730,7 @@ double _bondTermStructurePresentValue({
           years: cashflow.time,
         ) ??
         fallbackYield;
-    final yieldPerPeriod = rate / frequency;
+    final yieldPerPeriod = (rate + parallelShift) / frequency;
     if (yieldPerPeriod <= -0.999) continue;
     final discountPeriods = cashflow.time * frequency;
     final discount = math.pow(1 + yieldPerPeriod, discountPeriods).toDouble();
@@ -5830,6 +5843,92 @@ _BondPricingDurationMetrics _bondDurationMetricsFromYield({
     macaulay: macaulay.isFinite ? math.max(0.0, macaulay).toDouble() : 0,
     modified: modified.isFinite ? math.max(0.0, modified).toDouble() : 0,
     convexity: convexity.isFinite ? math.max(0.0, convexity).toDouble() : 0,
+  );
+}
+
+_BondPricingDurationMetrics _bondTermStructureDurationMetrics({
+  required MarketPortfolioRecord record,
+  required List<_YieldCurveSnapshot> yieldCurves,
+  required List<_BondPricingCashflow> cashflows,
+  required double presentValue,
+  required double fallbackYield,
+  required double equivalentYield,
+  required double annualYield,
+  required int frequency,
+}) {
+  if (cashflows.isEmpty || presentValue <= 0) {
+    return const _BondPricingDurationMetrics(
+      macaulay: 0,
+      modified: 0,
+      convexity: 0,
+    );
+  }
+
+  var pricedValue = 0.0;
+  var macaulayNumerator = 0.0;
+  for (final cashflow in cashflows) {
+    final rate = _bondPricingCurveRate(
+          record: record,
+          yieldCurves: yieldCurves,
+          years: cashflow.time,
+        ) ??
+        fallbackYield;
+    final yieldPerPeriod = rate / frequency;
+    if (yieldPerPeriod <= -0.999) continue;
+    final discountPeriods = cashflow.time * frequency;
+    final discount = math.pow(1 + yieldPerPeriod, discountPeriods).toDouble();
+    if (discount <= 0 || !discount.isFinite) continue;
+    final discountedCashflow = cashflow.amount / discount;
+    pricedValue += discountedCashflow;
+    macaulayNumerator += cashflow.time * discountedCashflow;
+  }
+
+  final denominator = pricedValue > 0 ? pricedValue : presentValue;
+  if (denominator <= 0 || !denominator.isFinite) {
+    return _bondDurationMetricsFromYield(
+      cashflows: cashflows,
+      presentValue: presentValue,
+      annualYield: annualYield,
+      frequency: frequency,
+    );
+  }
+
+  const bump = 0.0001;
+  final priceDown = _bondTermStructurePresentValue(
+    record: record,
+    yieldCurves: yieldCurves,
+    cashflows: cashflows,
+    fallbackYield: fallbackYield,
+    parallelShift: -bump,
+  );
+  final priceUp = _bondTermStructurePresentValue(
+    record: record,
+    yieldCurves: yieldCurves,
+    cashflows: cashflows,
+    fallbackYield: fallbackYield,
+    parallelShift: bump,
+  );
+
+  final macaulay = macaulayNumerator / denominator;
+  final effectiveModified =
+      priceDown > 0 && priceUp > 0 && priceDown.isFinite && priceUp.isFinite
+          ? (priceDown - priceUp) / (2 * bump * denominator)
+          : macaulay / (1 + equivalentYield / frequency);
+  final effectiveConvexity = priceDown > 0 &&
+          priceUp > 0 &&
+          priceDown.isFinite &&
+          priceUp.isFinite
+      ? (priceDown + priceUp - 2 * denominator) / (denominator * bump * bump)
+      : math.max(0.0, macaulay * (macaulay + 1)).toDouble();
+
+  return _BondPricingDurationMetrics(
+    macaulay: macaulay.isFinite ? math.max(0.0, macaulay).toDouble() : 0,
+    modified: effectiveModified.isFinite
+        ? math.max(0.0, effectiveModified).toDouble()
+        : 0,
+    convexity: effectiveConvexity.isFinite
+        ? math.max(0.0, effectiveConvexity).toDouble()
+        : 0,
   );
 }
 
@@ -5994,7 +6093,6 @@ class _BondInstitutionalIndicatorCard extends StatelessWidget {
                     _marketSurfaceFor(context),
                   )
                 : item.color.withValues(alpha: 0.065),
-            border: Border.all(color: item.color.withValues(alpha: 0.26)),
             borderRadius: BorderRadius.circular(2),
           ),
           child: Row(
@@ -6035,7 +6133,7 @@ class _BondInstitutionalIndicatorCard extends StatelessWidget {
                                 style: TextStyle(
                                   color: muted,
                                   fontSize: 9.2,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w500,
                                   height: 1,
                                 ),
                               ),
@@ -6051,7 +6149,7 @@ class _BondInstitutionalIndicatorCard extends StatelessWidget {
                       style: TextStyle(
                         color: muted.withValues(alpha: 0.96),
                         fontSize: 9.8,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         height: 1,
                       ),
                     ),
@@ -7549,7 +7647,7 @@ class _BondDashboardStats {
           durationDenominator += valuationWeight;
         }
       }
-      final issuer = record.issuer.trim();
+      final issuer = record.issuerAnalysisKey.trim();
       if (issuer.isNotEmpty && issuer != 'Non renseigné') issuers.add(issuer);
     }
     final total = capitalRemainingDueTotal > 0
@@ -7558,7 +7656,10 @@ class _BondDashboardStats {
 
     final issuerEntries = _bondGroupedEntries(
       dataset,
-      (record) => record.issuer,
+      (record) => record.issuerAnalysisLabel,
+      keyOf: (record) => record.issuerAnalysisKey,
+      flagAssetOf: _marketIssuerFlagAssetForRecord,
+      countryCodeOf: (record) => record.issuerCountryIso3,
       limit: 10,
     );
     final ratingEntries = _bondGroupedEntries(
@@ -7808,12 +7909,14 @@ class _BondSectionPanel extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.child,
+    this.actions,
     this.height,
   });
 
   final String title;
   final String subtitle;
   final Widget child;
+  final Widget? actions;
   final double? height;
 
   @override
@@ -7821,6 +7924,60 @@ class _BondSectionPanel extends StatelessWidget {
     final text = _marketTextFor(context);
     final muted = _marketMutedFor(context);
     final hasSubtitle = subtitle.trim().isNotEmpty;
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: text,
+            fontSize: 13.1,
+            fontWeight: FontWeight.w600,
+            height: 1,
+          ),
+        ),
+        if (hasSubtitle) ...[
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: muted,
+              fontSize: 10.0,
+              fontWeight: FontWeight.w500,
+              height: 1,
+            ),
+          ),
+        ],
+      ],
+    );
+    final header = actions == null
+        ? titleBlock
+        : LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 700) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    titleBlock,
+                    const SizedBox(height: 8),
+                    actions!,
+                  ],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: titleBlock),
+                  const SizedBox(width: 12),
+                  actions!,
+                ],
+              );
+            },
+          );
     final panel = Container(
       width: double.infinity,
       padding: const EdgeInsets.all(11),
@@ -7833,33 +7990,8 @@ class _BondSectionPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: text,
-              fontSize: 13.1,
-              fontWeight: FontWeight.w600,
-              height: 1,
-            ),
-          ),
-          if (hasSubtitle) ...[
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: muted,
-                fontSize: 10.0,
-                fontWeight: FontWeight.w500,
-                height: 1,
-              ),
-            ),
-            const SizedBox(height: 11),
-          ] else
-            const SizedBox(height: 10),
+          header,
+          SizedBox(height: hasSubtitle ? 11 : 10),
           Expanded(child: child),
         ],
       ),
@@ -7869,25 +8001,50 @@ class _BondSectionPanel extends StatelessWidget {
   }
 }
 
-class _BondSimulationPanel extends StatelessWidget {
+class _BondSimulationPanel extends StatefulWidget {
   const _BondSimulationPanel({required this.stats});
 
   final _BondDashboardStats stats;
 
   @override
+  State<_BondSimulationPanel> createState() => _BondSimulationPanelState();
+}
+
+class _BondSimulationPanelState extends State<_BondSimulationPanel> {
+  _VarMethod _method = _VarMethod.monteCarlo;
+  double _confidence = 0.99;
+  int _horizonDays = 10;
+
+  @override
   Widget build(BuildContext context) {
+    final riskResult = _bondDashboardRiskResult(
+      stats: widget.stats,
+      method: _method,
+      confidence: _confidence,
+      horizonDays: _horizonDays,
+    );
+    final confidenceLabel = AppFormatters.percent(_confidence);
     return _BondSectionPanel(
       height: 262,
       title: 'Distribution des pertes simulées',
       subtitle:
-          'Queue de risque, seuil VaR 99% et exposition aux chocs de taux',
+          'Paramètres par défaut, seuil $confidenceLabel, horizon ${_horizonLabel(_horizonDays)}',
+      actions: _BondSimulationSelectors(
+        method: _method,
+        confidence: _confidence,
+        horizonDays: _horizonDays,
+        onMethodChanged: (value) => setState(() => _method = value),
+        onConfidenceChanged: (value) => setState(() => _confidence = value),
+        onHorizonChanged: (value) => setState(() => _horizonDays = value),
+      ),
       child: Column(
         children: [
           Expanded(
             child: _BondLossDistributionChart(
-              losses: stats.lossSeries,
-              var99: stats.var99,
-              worstLoss: stats.worstLoss,
+              losses: riskResult.losses,
+              varValue: riskResult.varValue,
+              varLabel: 'VaR $confidenceLabel',
+              worstLoss: riskResult.worstLoss,
             ),
           ),
           const SizedBox(height: 8),
@@ -7895,8 +8052,8 @@ class _BondSimulationPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: _MarketMicroMetric(
-                  label: 'VaR 99%',
-                  value: _marketReadableMoney(stats.var99),
+                  label: 'VaR $confidenceLabel',
+                  value: _marketReadableMoney(riskResult.varValue),
                   color: _marketDanger,
                 ),
               ),
@@ -7904,7 +8061,7 @@ class _BondSimulationPanel extends StatelessWidget {
               Expanded(
                 child: _MarketMicroMetric(
                   label: 'Pire perte',
-                  value: _marketReadableMoney(stats.worstLoss),
+                  value: _marketReadableMoney(riskResult.worstLoss),
                   color: _marketWarning,
                 ),
               ),
@@ -7912,7 +8069,7 @@ class _BondSimulationPanel extends StatelessWidget {
               Expanded(
                 child: _MarketMicroMetric(
                   label: 'Sensibilité au risque de taux',
-                  value: _marketReadableMoney(stats.rateSensitivity),
+                  value: _marketReadableMoney(riskResult.rateSensitivity),
                   color: _marketViolet,
                 ),
               ),
@@ -7922,6 +8079,338 @@ class _BondSimulationPanel extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BondSimulationSelectors extends StatelessWidget {
+  const _BondSimulationSelectors({
+    required this.method,
+    required this.confidence,
+    required this.horizonDays,
+    required this.onMethodChanged,
+    required this.onConfidenceChanged,
+    required this.onHorizonChanged,
+  });
+
+  final _VarMethod method;
+  final double confidence;
+  final int horizonDays;
+  final ValueChanged<_VarMethod> onMethodChanged;
+  final ValueChanged<double> onConfidenceChanged;
+  final ValueChanged<int> onHorizonChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 7,
+      runSpacing: 7,
+      alignment: WrapAlignment.end,
+      children: [
+        _BondRiskSelector<_VarMethod>(
+          width: 142,
+          value: method,
+          values: _VarMethod.values,
+          icon: method.icon,
+          color: method.color,
+          labelFor: _bondRiskMethodLabel,
+          onChanged: onMethodChanged,
+        ),
+        _BondRiskSelector<double>(
+          width: 94,
+          value: confidence,
+          values: const [0.95, 0.975, 0.99],
+          icon: CupertinoIcons.percent,
+          color: _marketDanger,
+          labelFor: AppFormatters.percent,
+          onChanged: onConfidenceChanged,
+        ),
+        _BondRiskSelector<int>(
+          width: 100,
+          value: horizonDays,
+          values: const [1, 3, 10, 21],
+          icon: CupertinoIcons.calendar,
+          color: _marketPrimary,
+          labelFor: _horizonLabel,
+          onChanged: onHorizonChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class _BondRiskSelector<T> extends StatelessWidget {
+  const _BondRiskSelector({
+    required this.width,
+    required this.value,
+    required this.values,
+    required this.icon,
+    required this.color,
+    required this.labelFor,
+    required this.onChanged,
+  });
+
+  final double width;
+  final T value;
+  final List<T> values;
+  final IconData icon;
+  final Color color;
+  final String Function(T value) labelFor;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = _marketSurfaceFor(context);
+    final border = _marketBorderFor(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+
+    return Container(
+      width: width,
+      height: 30,
+      padding: const EdgeInsets.only(left: 8, right: 6),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<T>(
+                value: value,
+                isDense: true,
+                isExpanded: true,
+                borderRadius: BorderRadius.circular(2),
+                dropdownColor: surface,
+                menuMaxHeight: 220,
+                icon: Icon(
+                  CupertinoIcons.chevron_down,
+                  size: 12,
+                  color: muted,
+                ),
+                style: TextStyle(
+                  color: text,
+                  fontSize: 10.2,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0,
+                  height: 1,
+                ),
+                items: [
+                  for (final item in values)
+                    DropdownMenuItem<T>(
+                      value: item,
+                      child: Text(
+                        labelFor(item),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+                onChanged: (next) {
+                  if (next != null) onChanged(next);
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _bondRiskMethodLabel(_VarMethod method) {
+  return switch (method) {
+    _VarMethod.historical => 'Historique',
+    _VarMethod.parametric => 'Paramétrique',
+    _VarMethod.monteCarlo => 'Monte-Carlo',
+  };
+}
+
+class _BondDashboardRiskResult {
+  const _BondDashboardRiskResult({
+    required this.losses,
+    required this.varValue,
+    required this.worstLoss,
+    required this.rateSensitivity,
+  });
+
+  final List<double> losses;
+  final double varValue;
+  final double worstLoss;
+  final double rateSensitivity;
+}
+
+_BondDashboardRiskResult _bondDashboardRiskResult({
+  required _BondDashboardStats stats,
+  required _VarMethod method,
+  required double confidence,
+  required int horizonDays,
+}) {
+  final portfolio = _VarPortfolioContext.fromSources(
+    null,
+    stats.dataset,
+    portfolioType: stats.dataset.portfolioType,
+  );
+
+  switch (method) {
+    case _VarMethod.historical:
+      final result = _HistoricalVarResult.calculate(
+        portfolio: portfolio,
+        confidence: confidence,
+        horizonDays: horizonDays,
+        windowDays: 500,
+      );
+      if (result.losses.isNotEmpty) {
+        return _BondDashboardRiskResult(
+          losses: result.losses,
+          varValue: result.varValue,
+          worstLoss: math.max(result.worstLoss, result.varValue),
+          rateSensitivity: _bondDashboardDefaultRateSensitivity(stats),
+        );
+      }
+      return _bondDashboardFallbackRiskResult(
+        stats: stats,
+        confidence: confidence,
+        horizonDays: horizonDays,
+      );
+    case _VarMethod.parametric:
+      final defaultDuration = _bondDashboardDefaultModifiedDuration(stats);
+      final result = stats.dataset.calculateParametricVar(
+        confidence: confidence,
+        horizonDays: horizonDays,
+        portfolioScale: _defaultParamPortfolioScale,
+        annualVolatilityOverride: _defaultParamVolatility,
+        modifiedDurationOverride: defaultDuration,
+        correlationOverride: _defaultParamCorrelation,
+        expectedReturnOverride: _defaultParamExpectedReturn,
+        riskFreeRate: _defaultParamRiskFreeRate,
+      );
+      final losses = _bondDashboardParametricLosses(result);
+      if (result.varValue > 0 || losses.isNotEmpty) {
+        return _BondDashboardRiskResult(
+          losses: losses,
+          varValue: result.varValue,
+          worstLoss: math.max(
+            result.varValue,
+            losses.isEmpty ? result.expectedShortfall : losses.last,
+          ),
+          rateSensitivity: result.rateSensitivity,
+        );
+      }
+      return _bondDashboardFallbackRiskResult(
+        stats: stats,
+        confidence: confidence,
+        horizonDays: horizonDays,
+      );
+    case _VarMethod.monteCarlo:
+      final result = _MonteCarloVarResult.calculateCached(
+        portfolio: portfolio,
+        confidence: confidence,
+        horizonDays: horizonDays,
+        simulations: _defaultMcSimulations,
+        correlation: _defaultMcCorrelation,
+        distribution: _defaultMcDistribution,
+        volatility: _defaultParamVolatility,
+        expectedReturn: _defaultParamExpectedReturn,
+      );
+      if (result.losses.isNotEmpty) {
+        return _BondDashboardRiskResult(
+          losses: result.losses,
+          varValue: result.varValue,
+          worstLoss: math.max(result.worstCase, result.varValue),
+          rateSensitivity: _bondDashboardDefaultRateSensitivity(stats),
+        );
+      }
+      return _bondDashboardFallbackRiskResult(
+        stats: stats,
+        confidence: confidence,
+        horizonDays: horizonDays,
+      );
+  }
+}
+
+_BondDashboardRiskResult _bondDashboardFallbackRiskResult({
+  required _BondDashboardStats stats,
+  required double confidence,
+  required int horizonDays,
+}) {
+  final losses = _bondDashboardFallbackLosses(stats, horizonDays);
+  final varValue = _quantile(losses, confidence);
+  final worstLoss = losses.isEmpty ? varValue : math.max(losses.last, varValue);
+  return _BondDashboardRiskResult(
+    losses: losses,
+    varValue: varValue,
+    worstLoss: worstLoss,
+    rateSensitivity: _bondDashboardDefaultRateSensitivity(stats),
+  );
+}
+
+double _bondDashboardDefaultModifiedDuration(_BondDashboardStats stats) {
+  return stats.dataset.portfolioType == MarketPortfolioType.bonds
+      ? _defaultParamDuration
+      : 1.0;
+}
+
+double _bondDashboardDefaultRateSensitivity(_BondDashboardStats stats) {
+  final value = stats.dataset.parametricRiskValue > 0
+      ? stats.dataset.parametricRiskValue
+      : stats.presentValue > 0
+          ? stats.presentValue
+          : stats.totalExposure;
+  return _bondDashboardDefaultModifiedDuration(stats) *
+      math.max(0.0, value) *
+      0.0001;
+}
+
+List<double> _bondDashboardFallbackLosses(
+  _BondDashboardStats stats,
+  int horizonDays,
+) {
+  final scale = math.sqrt(math.max(1, horizonDays));
+  final losses = [
+    for (final value in stats.lossSeries)
+      if (value.isFinite && value >= 0) value * scale,
+  ]..sort();
+  if (losses.length >= 2) return losses;
+
+  final fallbackVar = math.max(stats.var99.abs(), stats.totalExposure * 0.001);
+  final fallbackWorst = math.max(fallbackVar, stats.worstLoss.abs());
+  return [
+    for (var index = 0; index < 32; index++)
+      math.max(
+        0.0,
+        (fallbackVar * 0.10 +
+                math.pow(index / 31, 2.25).toDouble() * fallbackWorst +
+                math.sin(index * 1.37) * fallbackVar * 0.04) *
+            scale,
+      ),
+  ]..sort();
+}
+
+List<double> _bondDashboardParametricLosses(
+  MarketParametricVarResult result,
+) {
+  final stdDev = result.lossStdDev;
+  final portfolioValue = result.portfolioValue;
+  if (stdDev <= 0 || portfolioValue <= 0) {
+    return result.varValue > 0 ? [0, result.varValue] : const [];
+  }
+  final random = math.Random(
+    Object.hash(
+      result.confidence,
+      result.horizonDays,
+      result.varValue.round(),
+      result.modifiedDuration.round(),
+    ),
+  );
+  final driftLoss = math.max(0.0, -result.drift * portfolioValue);
+  final losses = [
+    for (var index = 0; index < 1000; index++)
+      math.max(0.0, driftLoss + stdDev * _gaussian(random)),
+  ]..sort();
+  return losses;
 }
 
 class _BondRatingPanel extends StatelessWidget {
@@ -8419,10 +8908,8 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
               ),
               Expanded(
                 flex: 5,
-                child: Text(
-                  widget.entry.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: _MarketIssuerIdentityLabel(
+                  entry: widget.entry,
                   style: TextStyle(
                     color: widget.text,
                     fontSize: 9.7,
@@ -8666,12 +9153,14 @@ class _BondCouponBucket {
 class _BondLossDistributionChart extends StatefulWidget {
   const _BondLossDistributionChart({
     required this.losses,
-    required this.var99,
+    required this.varValue,
+    required this.varLabel,
     required this.worstLoss,
   });
 
   final List<double> losses;
-  final double var99;
+  final double varValue;
+  final String varLabel;
   final double worstLoss;
 
   @override
@@ -8696,7 +9185,8 @@ class _BondLossDistributionChartState
           return CustomPaint(
             painter: _BondLossDistributionPainter(
               losses: widget.losses,
-              var99: widget.var99,
+              varValue: widget.varValue,
+              varLabel: widget.varLabel,
               worstLoss: widget.worstLoss,
               color: _marketPrimary,
               danger: _marketDanger,
@@ -8808,7 +9298,8 @@ class _BondCouponCurveChartState extends State<_BondCouponCurveChart> {
 class _BondLossDistributionPainter extends CustomPainter {
   const _BondLossDistributionPainter({
     required this.losses,
-    required this.var99,
+    required this.varValue,
+    required this.varLabel,
     required this.worstLoss,
     required this.color,
     required this.danger,
@@ -8821,7 +9312,8 @@ class _BondLossDistributionPainter extends CustomPainter {
   });
 
   final List<double> losses;
-  final double var99;
+  final double varValue;
+  final String varLabel;
   final double worstLoss;
   final Color color;
   final Color danger;
@@ -8866,12 +9358,12 @@ class _BondLossDistributionPainter extends CustomPainter {
     if (losses.length < 2) return;
     final sorted = losses.toList()..sort();
     final minValue = math.min(0.0, sorted.first);
-    final maxValue = math.max(worstLoss, sorted.last);
+    final maxValue = math.max(math.max(worstLoss, sorted.last), varValue);
     final span = math.max(1.0, maxValue - minValue);
     double xFor(double value) =>
         chart.left + ((value - minValue) / span) * chart.width;
 
-    final varX = xFor(var99);
+    final varX = xFor(varValue);
     canvas.drawRect(
       Rect.fromLTRB(varX, chart.top, chart.right, chart.bottom),
       Paint()
@@ -8918,7 +9410,7 @@ class _BondLossDistributionPainter extends CustomPainter {
         barWidth,
         animatedHeight,
       );
-      final isTail = midpoint >= var99;
+      final isTail = midpoint >= varValue;
       final barColor = isTail ? danger : color;
       canvas.drawRRect(
         RRect.fromRectAndRadius(rect, const Radius.circular(2)),
@@ -8996,7 +9488,7 @@ class _BondLossDistributionPainter extends CustomPainter {
 
     _paintSmallLabel(
       canvas,
-      'VaR 99%',
+      varLabel,
       Offset(varX + 6, chart.top + 10),
       danger,
       TextAlign.left,
@@ -9044,7 +9536,8 @@ class _BondLossDistributionPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _BondLossDistributionPainter oldDelegate) {
     return oldDelegate.losses != losses ||
-        oldDelegate.var99 != var99 ||
+        oldDelegate.varValue != varValue ||
+        oldDelegate.varLabel != varLabel ||
         oldDelegate.worstLoss != worstLoss ||
         oldDelegate.hoverPosition != hoverPosition ||
         oldDelegate.hoverProgress != hoverProgress ||
@@ -9579,10 +10072,8 @@ class _MarketIssuerCardList extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              entries[index].label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            _MarketIssuerIdentityLabel(
+                              entry: entries[index],
                               style: TextStyle(
                                 color: text,
                                 fontSize: 11.3,
@@ -10680,12 +11171,83 @@ class _MarketDistributionEntry {
     required this.amount,
     required this.share,
     required this.color,
+    this.flagAsset,
+    this.countryCode,
   });
 
   final String label;
   final double amount;
   final double share;
   final Color color;
+  final String? flagAsset;
+  final String? countryCode;
+}
+
+class _MarketIssuerIdentityLabel extends StatelessWidget {
+  const _MarketIssuerIdentityLabel({
+    required this.entry,
+    required this.style,
+  });
+
+  final _MarketDistributionEntry entry;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    return _MarketFlaggedIssuerLabel(
+      label: entry.label,
+      flagAsset: entry.flagAsset,
+      style: style,
+    );
+  }
+}
+
+class _MarketFlaggedIssuerLabel extends StatelessWidget {
+  const _MarketFlaggedIssuerLabel({
+    required this.label,
+    required this.flagAsset,
+    required this.style,
+  });
+
+  final String label;
+  final String? flagAsset;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = flagAsset;
+    if (asset == null || asset.isEmpty) {
+      return Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+
+    return Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: SvgPicture.asset(
+            asset,
+            width: 18,
+            height: 12,
+            fit: BoxFit.cover,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _MarketMicroMetric extends StatelessWidget {
@@ -10879,6 +11441,9 @@ List<_MarketAnalyticKpiSpec> _marketAnalyticKpis(
 List<_MarketDistributionEntry> _bondGroupedEntries(
   MarketPortfolioDataset dataset,
   String Function(MarketPortfolioRecord record) labelOf, {
+  String Function(MarketPortfolioRecord record)? keyOf,
+  String? Function(MarketPortfolioRecord record)? flagAssetOf,
+  String Function(MarketPortfolioRecord record)? countryCodeOf,
   required int limit,
 }) {
   const colors = [
@@ -10906,11 +11471,23 @@ List<_MarketDistributionEntry> _bondGroupedEntries(
     ];
   }
   final grouped = <String, double>{};
+  final labels = <String, String>{};
+  final flagAssets = <String, String?>{};
+  final countryCodes = <String, String>{};
   for (final record in dataset.records) {
     final exposure = math.max(0.0, _bondOutstandingCapitalValue(record));
     if (exposure <= 0) continue;
     final label = labelOf(record).trim();
-    final key = label.isEmpty ? 'Non renseigné' : label;
+    final rawKey = keyOf?.call(record).trim() ?? label;
+    final key = rawKey.isEmpty ? 'Non renseigné' : rawKey;
+    labels.putIfAbsent(key, () => label.isEmpty ? 'Non renseigné' : label);
+    if (flagAssetOf != null) {
+      flagAssets.putIfAbsent(key, () => flagAssetOf(record));
+    }
+    if (countryCodeOf != null) {
+      final code = countryCodeOf(record).trim();
+      if (code.isNotEmpty) countryCodes.putIfAbsent(key, () => code);
+    }
     grouped.update(key, (value) => value + exposure, ifAbsent: () => exposure);
   }
   final ranked = grouped.entries.toList()
@@ -10918,12 +11495,38 @@ List<_MarketDistributionEntry> _bondGroupedEntries(
   return [
     for (var index = 0; index < math.min(limit, ranked.length); index++)
       _MarketDistributionEntry(
-        label: ranked[index].key,
+        label: labels[ranked[index].key] ?? ranked[index].key,
         amount: ranked[index].value,
         share: total <= 0 ? 0 : ranked[index].value / total,
         color: colors[index % colors.length],
+        flagAsset: flagAssets[ranked[index].key],
+        countryCode: countryCodes[ranked[index].key],
       ),
   ];
+}
+
+String? _marketIssuerFlagAssetForRecord(MarketPortfolioRecord record) {
+  return _marketCountryFlagAsset(record.issuerCountryIso3);
+}
+
+String? _marketCountryFlagAsset(String iso3) {
+  return switch (iso3.trim().toUpperCase()) {
+    'BEN' => 'assets/flags/ben.svg',
+    'BFA' => 'assets/flags/bfa.svg',
+    'CIV' => 'assets/flags/civ.svg',
+    'GNB' => 'assets/flags/gnb.svg',
+    'MLI' => 'assets/flags/mli.svg',
+    'NER' => 'assets/flags/ner.svg',
+    'SEN' => 'assets/flags/sen.svg',
+    'TGO' => 'assets/flags/tgo.svg',
+    'CMR' => 'assets/flags/cmr.svg',
+    'COG' => 'assets/flags/cog.svg',
+    'GAB' => 'assets/flags/gab.svg',
+    'CAF' => 'assets/flags/caf.svg',
+    'TCD' => 'assets/flags/tcd.svg',
+    'GNQ' => 'assets/flags/gnq.svg',
+    _ => null,
+  };
 }
 
 String _bondRatingLabel(MarketPortfolioRecord record) {
@@ -11114,6 +11717,16 @@ List<_MarketDistributionEntry> _marketTopExposureEntries(
   MarketPortfolioDataset dataset, {
   required int limit,
 }) {
+  if (dataset.portfolioType == MarketPortfolioType.bonds) {
+    return _marketGroupedEntries(
+      dataset,
+      (record) => record.issuerAnalysisLabel,
+      keyOf: (record) => record.issuerAnalysisKey,
+      flagAssetOf: _marketIssuerFlagAssetForRecord,
+      countryCodeOf: (record) => record.issuerCountryIso3,
+      limit: limit,
+    );
+  }
   return _marketGroupedEntries(
     dataset,
     (record) => record.issuer,
@@ -11124,6 +11737,9 @@ List<_MarketDistributionEntry> _marketTopExposureEntries(
 List<_MarketDistributionEntry> _marketGroupedEntries(
   MarketPortfolioDataset dataset,
   String Function(MarketPortfolioRecord record) labelOf, {
+  String Function(MarketPortfolioRecord record)? keyOf,
+  String? Function(MarketPortfolioRecord record)? flagAssetOf,
+  String Function(MarketPortfolioRecord record)? countryCodeOf,
   required int limit,
 }) {
   const colors = [
@@ -11147,13 +11763,29 @@ List<_MarketDistributionEntry> _marketGroupedEntries(
   }
 
   final grouped = <String, double>{};
+  final labels = <String, String>{};
+  final flagAssets = <String, String?>{};
+  final countryCodes = <String, String>{};
   for (final record in dataset.records) {
     final label = labelOf(record).trim();
-    final key = label.isEmpty ? 'Non renseigné' : label;
+    final rawKey = keyOf?.call(record).trim() ?? label;
+    final key = rawKey.isEmpty ? 'Non renseigné' : rawKey;
+    final exposure = dataset.portfolioType == MarketPortfolioType.bonds
+        ? _bondOutstandingCapitalValue(record)
+        : record.exposureAmount;
+    if (exposure <= 0) continue;
+    labels.putIfAbsent(key, () => label.isEmpty ? 'Non renseigné' : label);
+    if (flagAssetOf != null) {
+      flagAssets.putIfAbsent(key, () => flagAssetOf(record));
+    }
+    if (countryCodeOf != null) {
+      final code = countryCodeOf(record).trim();
+      if (code.isNotEmpty) countryCodes.putIfAbsent(key, () => code);
+    }
     grouped.update(
       key,
-      (value) => value + record.exposureAmount,
-      ifAbsent: () => record.exposureAmount,
+      (value) => value + exposure,
+      ifAbsent: () => exposure,
     );
   }
   final ranked = grouped.entries.toList()
@@ -11162,10 +11794,12 @@ List<_MarketDistributionEntry> _marketGroupedEntries(
   return [
     for (var index = 0; index < math.min(limit, ranked.length); index++)
       _MarketDistributionEntry(
-        label: ranked[index].key,
+        label: labels[ranked[index].key] ?? ranked[index].key,
         amount: ranked[index].value,
         share: ranked[index].value / total,
         color: colors[index % colors.length],
+        flagAsset: flagAssets[ranked[index].key],
+        countryCode: countryCodes[ranked[index].key],
       ),
   ];
 }
@@ -11408,7 +12042,15 @@ class _MarketPortfolioMetricStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final records = dataset?.records ?? const <MarketPortfolioRecord>[];
     final portfolioType = dataset?.portfolioType ?? selectedType;
-    final issuers = records.map((record) => record.issuer).toSet().length;
+    final issuers = records
+        .map(
+          (record) => portfolioType == MarketPortfolioType.bonds
+              ? record.issuerAnalysisKey
+              : record.issuer,
+        )
+        .where((value) => value.trim().isNotEmpty)
+        .toSet()
+        .length;
     final zones = records.map((record) => record.zone).toSet().length;
     final currencies = records.map((record) => record.currency).toSet().length;
     final residualYears = dataset?.weightedResidualYears ?? 0;
@@ -11795,10 +12437,7 @@ class _MarketPortfolioDetailsTableState
 
     for (var index = 0; index < records.length; index++) {
       final record = records[index];
-      if (query.isNotEmpty &&
-          !record.values.values.any(
-            (value) => value.toString().toLowerCase().contains(query),
-          )) {
+      if (query.isNotEmpty && !_recordMatchesQuery(record, query)) {
         continue;
       }
       entries.add(_MarketPortfolioTableEntry(index: index, record: record));
@@ -11808,12 +12447,34 @@ class _MarketPortfolioDetailsTableState
     return entries;
   }
 
+  bool _recordMatchesQuery(MarketPortfolioRecord record, String query) {
+    if (record.values.values.any(
+      (value) => value.toString().toLowerCase().contains(query),
+    )) {
+      return true;
+    }
+    if (widget.portfolioType != MarketPortfolioType.bonds) return false;
+    return [
+      record.issuerAnalysisLabel,
+      record.issuerAnalysisKey,
+      record.issuerCountryIso3,
+    ].any((value) => value.toLowerCase().contains(query));
+  }
+
   int _compareEntries(
     _MarketPortfolioTableEntry left,
     _MarketPortfolioTableEntry right,
   ) {
     final sortHeader = _sortHeader;
     if (sortHeader != null) {
+      if (sortHeader == 'Emetteur' &&
+          widget.portfolioType == MarketPortfolioType.bonds) {
+        final result = left.record.issuerAnalysisLabel
+            .toLowerCase()
+            .compareTo(right.record.issuerAnalysisLabel.toLowerCase());
+        final resolved = _sortAscending ? result : -result;
+        return resolved == 0 ? left.index.compareTo(right.index) : resolved;
+      }
       final leftValue = left.record.values[sortHeader];
       final rightValue = right.record.values[sortHeader];
       final leftEmpty = _marketPortfolioSortValueIsEmpty(leftValue);
@@ -13492,6 +14153,20 @@ Widget _marketPortfolioCellContent({
   required bool selected,
   required Color textColor,
 }) {
+  final emphasized = selected || _marketPortfolioEmphasizedHeader(header);
+  if (header == 'Emetteur' &&
+      record.portfolioType == MarketPortfolioType.bonds) {
+    return _MarketFlaggedIssuerLabel(
+      label: record.issuerAnalysisLabel,
+      flagAsset: _marketIssuerFlagAssetForRecord(record),
+      style: TextStyle(
+        color: textColor,
+        fontSize: 10.8,
+        fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
+      ),
+    );
+  }
+
   final value = _formatMarketPortfolioCell(
     header,
     record.values[header],
@@ -13520,9 +14195,7 @@ Widget _marketPortfolioCellContent({
     style: TextStyle(
       color: textColor,
       fontSize: 10.8,
-      fontWeight: selected || _marketPortfolioEmphasizedHeader(header)
-          ? FontWeight.w700
-          : FontWeight.w500,
+      fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
     ),
   );
 }
@@ -13926,7 +14599,10 @@ String _marketTableSortValue(
   _MarketTableSortKey key,
 ) {
   return switch (key) {
-    _MarketTableSortKey.issuer => record.issuer,
+    _MarketTableSortKey.issuer =>
+      record.portfolioType == MarketPortfolioType.bonds
+          ? record.issuerAnalysisLabel
+          : record.issuer,
     _MarketTableSortKey.country => _marketPortfolioRecordTextAny(
         record,
         const ['Pays émetteur', 'Pays / marché'],
@@ -20265,12 +20941,16 @@ Future<_VarPortfolioContext> _varPortfolioContextForAsync(
   final cachedFuture = futuresByType[portfolioType.index];
   if (cachedFuture != null) return cachedFuture;
 
-  final future = _computeVarPortfolioContextAsync(
-    _VarPortfolioContextRequest(
-      dataset: dataset,
-      portfolioTypeIndex: portfolioType.index,
-    ),
-  );
+  final future = portfolioType == MarketPortfolioType.bonds
+      ? _bondDashboardStatsForAsync(dataset).then(
+          _VarPortfolioContext.fromBondStats,
+        )
+      : _computeVarPortfolioContextAsync(
+          _VarPortfolioContextRequest(
+            dataset: dataset,
+            portfolioTypeIndex: portfolioType.index,
+          ),
+        );
   futuresByType[portfolioType.index] = future;
   return future;
 }
@@ -20374,6 +21054,39 @@ class _VarPortfolioContext {
     return _VarPortfolioContext(
       portfolioType: portfolioType,
       portfolioValue: 0,
+    );
+  }
+
+  static _VarPortfolioContext fromBondStats(_BondDashboardStats stats) {
+    final dataset = stats.dataset;
+    final portfolioValue = stats.presentValue > 0
+        ? stats.presentValue
+        : (stats.capitalRemainingDue > 0
+            ? stats.capitalRemainingDue
+            : dataset.portfolioValue);
+    final importedLosses = dataset.scenarioLosses.isNotEmpty
+        ? dataset.scenarioLosses
+        : dataset.bondRateShockLosses;
+    final derivedVolatility = dataset.annualizedVolatility > 0
+        ? dataset.annualizedVolatility
+        : _annualizedVolatilityFromLosses(importedLosses, portfolioValue);
+    final modifiedDuration = stats.modifiedDuration > 0
+        ? stats.modifiedDuration
+        : (dataset.parametricModifiedDuration > 0
+            ? dataset.parametricModifiedDuration
+            : null);
+
+    return _VarPortfolioContext(
+      portfolioType: MarketPortfolioType.bonds,
+      portfolioValue: portfolioValue,
+      parametricPortfolioValue: portfolioValue,
+      historicalReturns: dataset.scenarioReturns,
+      importedLosses: importedLosses,
+      volatility: derivedVolatility,
+      durationYears: modifiedDuration,
+      expectedReturn: dataset.expectedReturn,
+      correlation: dataset.correlationProxy,
+      hasImportedData: true,
     );
   }
 }

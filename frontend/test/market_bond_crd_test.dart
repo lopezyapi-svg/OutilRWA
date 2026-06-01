@@ -137,5 +137,19 @@ void main() {
       expect(record.resolvedCapitalRemainingDue, 1000000000);
       expect(record.presentValue, 950000000);
     });
+
+    test('builds issuer analysis identity from country and issuer', () {
+      const record = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.bonds,
+        values: {
+          'Pays émetteur': 'Côte d\'Ivoire',
+          'Emetteur': 'Trésor public',
+        },
+      );
+
+      expect(record.issuerCountryIso3, 'CIV');
+      expect(record.issuerAnalysisKey, 'CIV|Trésor public');
+      expect(record.issuerAnalysisLabel, 'Trésor public (CIV)');
+    });
   });
 }

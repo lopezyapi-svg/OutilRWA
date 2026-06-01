@@ -340,6 +340,10 @@ class MarketPortfolioRecord {
         const ['Emetteur', 'Émetteur / Société'],
         fallback: 'Non renseigné',
       );
+  String get issuerCountry => _text('Pays émetteur', fallback: '').trim();
+  String get issuerCountryIso3 => _marketCountryIso3(issuerCountry);
+  String get issuerAnalysisKey => _marketIssuerAnalysisKey(this);
+  String get issuerAnalysisLabel => _marketIssuerAnalysisLabel(this);
   String get titleId => _text('ID Titre', fallback: '').trim();
   String get instrumentType =>
       _text('Type d\'instrument', fallback: 'Instrument');
@@ -856,10 +860,16 @@ class MarketPortfolioDataset {
     if (records.isEmpty || totalExposure <= 0) return 0;
     final byIssuer = <String, double>{};
     for (final record in records) {
+      final exposure = portfolioType == MarketPortfolioType.bonds
+          ? _bondOutstandingCapital(record)
+          : record.exposureAmount;
+      if (exposure <= 0) continue;
       byIssuer.update(
-        record.issuer,
-        (value) => value + record.exposureAmount,
-        ifAbsent: () => record.exposureAmount,
+        portfolioType == MarketPortfolioType.bonds
+            ? record.issuerAnalysisKey
+            : record.issuer,
+        (value) => value + exposure,
+        ifAbsent: () => exposure,
       );
     }
     if (byIssuer.isEmpty) return 0;
@@ -869,15 +879,30 @@ class MarketPortfolioDataset {
   String _computeDominantIssuer() {
     if (records.isEmpty || totalExposure <= 0) return 'Non disponible';
     final byIssuer = <String, double>{};
+    final labelsByKey = <String, String>{};
     for (final record in records) {
+      final exposure = portfolioType == MarketPortfolioType.bonds
+          ? _bondOutstandingCapital(record)
+          : record.exposureAmount;
+      if (exposure <= 0) continue;
+      final key = portfolioType == MarketPortfolioType.bonds
+          ? record.issuerAnalysisKey
+          : record.issuer;
+      final label = portfolioType == MarketPortfolioType.bonds
+          ? record.issuerAnalysisLabel
+          : record.issuer;
+      labelsByKey.putIfAbsent(key, () => label);
       byIssuer.update(
-        record.issuer,
-        (value) => value + record.exposureAmount,
-        ifAbsent: () => record.exposureAmount,
+        key,
+        (value) => value + exposure,
+        ifAbsent: () => exposure,
       );
     }
     if (byIssuer.isEmpty) return 'Non disponible';
-    return byIssuer.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+    final dominant = byIssuer.entries.reduce(
+      (left, right) => left.value >= right.value ? left : right,
+    );
+    return labelsByKey[dominant.key] ?? dominant.key;
   }
 
   List<double> _computeScenarioReturns() {
@@ -1294,6 +1319,54 @@ String _foldMarketText(String value) {
       .replaceAll(RegExp(r'[\u2019\u2018]'), "'")
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
+}
+
+String _marketCountryIso3(String country) {
+  final normalized = _foldMarketText(country).replaceAll('-', ' ');
+  if (normalized.contains('benin')) return 'BEN';
+  if (normalized.contains('burkina')) return 'BFA';
+  if (normalized.contains('cote d ivoire') ||
+      normalized.contains('cote divoire') ||
+      normalized.contains('ivoire')) {
+    return 'CIV';
+  }
+  if (normalized.contains('guinee bissau')) return 'GNB';
+  if (normalized.contains('guinee equatoriale')) return 'GNQ';
+  if (normalized.contains('mali')) return 'MLI';
+  if (normalized.contains('niger')) return 'NER';
+  if (normalized.contains('senegal')) return 'SEN';
+  if (normalized.contains('togo')) return 'TGO';
+  if (normalized.contains('cameroun') || normalized.contains('cameroon')) {
+    return 'CMR';
+  }
+  if (normalized.contains('republique centrafricaine') ||
+      normalized.contains('centrafrique')) {
+    return 'CAF';
+  }
+  if (normalized.contains('congo')) return 'COG';
+  if (normalized.contains('gabon')) return 'GAB';
+  if (normalized.contains('tchad') || normalized.contains('chad')) {
+    return 'TCD';
+  }
+  return '';
+}
+
+String _marketIssuerAnalysisKey(MarketPortfolioRecord record) {
+  final issuer = record.issuer.trim();
+  final normalizedIssuer =
+      issuer.isEmpty || issuer == 'Non renseigné' ? 'Non renseigné' : issuer;
+  final countryCode = record.issuerCountryIso3;
+  if (countryCode.isEmpty) return normalizedIssuer;
+  return '$countryCode|$normalizedIssuer';
+}
+
+String _marketIssuerAnalysisLabel(MarketPortfolioRecord record) {
+  final issuer = record.issuer.trim();
+  final normalizedIssuer =
+      issuer.isEmpty || issuer == 'Non renseigné' ? 'Non renseigné' : issuer;
+  final countryCode = record.issuerCountryIso3;
+  if (countryCode.isEmpty) return normalizedIssuer;
+  return '$normalizedIssuer ($countryCode)';
 }
 
 double _bondMarketValue(MarketPortfolioRecord record) {
@@ -1800,7 +1873,12 @@ class MarketDataImportStore {
         await _persistDatasets();
       }
     } catch (error) {
-      debugPrint('SQLite market restore failed: $error');
+      final restored = await _restorePersistedDatasets(allowInSqlMode: true);
+      if (!restored) {
+        debugPrint(
+          'Données marché locales indisponibles pour le moment. Vérifiez que le service local est démarré.',
+        );
+      }
     }
   }
 
@@ -1879,8 +1957,14 @@ class MarketDataImportStore {
     };
     final sqlApi = _sqlBackendApi;
     if (_sqlModeEnabled && sqlApi != null) {
-      await sqlApi.saveMarketPortfolioPayload(payload);
-      return;
+      try {
+        await sqlApi.saveMarketPortfolioPayload(payload);
+        return;
+      } catch (_) {
+        debugPrint(
+          'Sauvegarde SQL locale indisponible pour le moment. Une sauvegarde locale de secours va être utilisée.',
+        );
+      }
     }
 
     final encodedPayload = jsonEncode(payload);

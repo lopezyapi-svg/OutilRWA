@@ -9,6 +9,30 @@ import '../../modules/hors_bilan/models/hors_bilan_models.dart';
 import '../../modules/rapports/models/report_models.dart';
 import '../../modules/referentiels/models/referentiels_models.dart';
 import 'api_client.dart';
+import 'api_runtime_environment.dart' as runtime_environment;
+
+String _resolveDefaultApiBaseUrl() {
+  final runtimeBaseUrl =
+      runtime_environment.runtimeEnvironmentValue('RWA_API_BASE_URL')?.trim();
+  if (runtimeBaseUrl != null && runtimeBaseUrl.isNotEmpty) {
+    return runtimeBaseUrl;
+  }
+
+  const buildBaseUrl = String.fromEnvironment('RWA_API_BASE_URL');
+  if (buildBaseUrl.isNotEmpty) {
+    return buildBaseUrl;
+  }
+
+  final runtimeHost =
+      runtime_environment.runtimeEnvironmentValue('RWA_API_HOST')?.trim();
+  final runtimePort =
+      runtime_environment.runtimeEnvironmentValue('RWA_API_PORT')?.trim();
+  final host =
+      runtimeHost == null || runtimeHost.isEmpty ? '127.0.0.1' : runtimeHost;
+  final port =
+      runtimePort == null || runtimePort.isEmpty ? '8001' : runtimePort;
+  return 'http://$host:$port';
+}
 
 /// Service principal qui orchestre les appels API et les données mockées.
 class RwaApiService {
@@ -18,11 +42,7 @@ class RwaApiService {
     ApiClient? client,
   }) : _client = client ??
             ApiClient(
-              baseUrl: baseUrl ??
-                  const String.fromEnvironment(
-                    'RWA_API_BASE_URL',
-                    defaultValue: 'http://127.0.0.1:8000',
-                  ),
+              baseUrl: baseUrl ?? _resolveDefaultApiBaseUrl(),
             );
 
   final bool useMockData;

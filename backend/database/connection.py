@@ -146,6 +146,28 @@ class DatabaseManager:
                 for row in connection.execute(f"PRAGMA table_info({table_name})")
             }
             return column_name.lower() in existing_columns
+        if "already another table or index with this name" in message:
+            match = re.search(
+                r"alter\s+table\s+([a-zA-Z_][\w]*)\s+rename\s+to\s+([a-zA-Z_][\w]*)",
+                statement,
+                flags=re.IGNORECASE,
+            )
+            if not match:
+                return False
+            target_name = match.group(2)
+            return (
+                connection.execute(
+                    """
+                    SELECT 1
+                    FROM sqlite_master
+                    WHERE lower(name) = lower(?)
+                      AND type IN ('table', 'index', 'view', 'trigger')
+                    LIMIT 1
+                    """,
+                    (target_name,),
+                ).fetchone()
+                is not None
+            )
         if "already exists" in message:
             return True
         # DROP COLUMN sur une colonne déjà supprimée (DB déjà migrée ou schéma frais)
