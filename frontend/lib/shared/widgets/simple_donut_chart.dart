@@ -91,7 +91,8 @@ class _DonutPainter extends CustomPainter {
     for (var index = 0; index < entries.length; index++) {
       paint.color = palette[index % palette.length];
       final sweepAngle = entries[index].percentage * math.pi * 2;
-      canvas.drawArc(rect.deflate(strokeWidth / 2), startAngle, sweepAngle, false, paint);
+      canvas.drawArc(
+          rect.deflate(strokeWidth / 2), startAngle, sweepAngle, false, paint);
       startAngle += sweepAngle;
     }
   }

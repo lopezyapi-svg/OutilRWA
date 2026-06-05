@@ -377,7 +377,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                             style: TextStyle(
                               color: headerTitleColor,
                               fontSize: 19,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               letterSpacing: -0.2,
                             ),
                           ),
@@ -574,7 +574,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                           style: TextStyle(
                             color: _text,
                             fontSize: 13,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                             letterSpacing: -0.1,
                           ),
                         ),
@@ -637,7 +637,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                       ),
                       textStyle: const TextStyle(
                         fontSize: 11.2,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(6),
@@ -720,7 +720,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
             style: TextStyle(
               color: chipForeground,
               fontSize: 10.2,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -769,7 +769,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                   alignment: Alignment.centerLeft,
                   textStyle: const TextStyle(
                     fontSize: 11.2,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -801,7 +801,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                   elevation: 0,
                   textStyle: const TextStyle(
                     fontSize: 10.8,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 9,
@@ -896,7 +896,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                                   style: TextStyle(
                                     color: _text,
                                     fontSize: 12.2,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
@@ -981,7 +981,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                   style: TextStyle(
                     color: _text,
                     fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1025,7 +1025,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
             style: TextStyle(
               color: _text,
               fontSize: 11.8,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
@@ -1077,7 +1077,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
               style: TextStyle(
                 color: _text,
                 fontSize: 9.7,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -1127,7 +1127,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 style: TextStyle(
                   color: _text,
                   fontSize: 11.8,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(width: 8),
@@ -1142,7 +1142,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                   style: TextStyle(
                     color: _text,
                     fontSize: 9.8,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1217,7 +1217,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 style: TextStyle(
                   color: _text,
                   fontSize: 9.9,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(width: 4),
@@ -1226,7 +1226,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 style: TextStyle(
                   color: _muted,
                   fontSize: 9.0,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -1257,7 +1257,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
         style: TextStyle(
           color: _text,
           fontSize: 9.15,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -1296,7 +1296,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 style: TextStyle(
                   color: _text,
                   fontSize: 9.9,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(width: 4),
@@ -1305,7 +1305,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 style: TextStyle(
                   color: _muted,
                   fontSize: 9.0,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -1374,7 +1374,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                     style: TextStyle(
                       color: color,
                       fontSize: 8.1,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -1387,7 +1387,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                         style: TextStyle(
                           color: _text,
                           fontSize: 9.15,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       TextSpan(
@@ -1477,7 +1477,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                           style: TextStyle(
                             color: _muted,
                             fontSize: 10.0,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -1488,7 +1488,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                           style: TextStyle(
                             color: fileNameColor,
                             fontSize: 13.2,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                             letterSpacing: -0.2,
                           ),
                         ),
@@ -1513,7 +1513,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                           style: TextStyle(
                             color: statusColor,
                             fontSize: 10.6,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -1662,7 +1662,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 style: TextStyle(
                   color: _muted,
                   fontSize: 8.9,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 2),
@@ -1671,7 +1671,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 style: TextStyle(
                   color: accentColor ?? _text,
                   fontSize: 12.8,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: -0.15,
                 ),
               ),
@@ -1734,7 +1734,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                   style: TextStyle(
                     color: _text,
                     fontSize: 9.35,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1.05,
                   ),
                 ),
@@ -1833,7 +1833,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
               style: TextStyle(
                 color: _text,
                 fontSize: 10.6,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(width: 4),
@@ -1887,7 +1887,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                     style: TextStyle(
                       color: _text,
                       fontSize: 10.6,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -1925,7 +1925,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
           style: TextStyle(
             color: _text,
             fontSize: 11.5,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 4),
@@ -1965,7 +1965,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                   style: TextStyle(
                     color: _text,
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),

@@ -38,7 +38,7 @@ class RisqueOperationnelScreen extends StatelessWidget {
                 style: TextStyle(
                   color: textColor,
                   fontSize: 30,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   height: 1.1,
                   letterSpacing: 0,
                 ),

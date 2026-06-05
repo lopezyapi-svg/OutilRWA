@@ -25,6 +25,80 @@ _BEAC_FALLBACK_PDF_URL = (
     "https://www.beac.int/wp-content/uploads/2016/10/"
     "Courbe-des-taux-de-rendement-des-titres-publics-CEMAC-mars-26.pdf"
 )
+_BEAC_COUNTRY_PDF_URLS = {
+    "Cameroun": (
+        "https://www.beac.int/wp-content/uploads/2016/10/"
+        "Courbe-des-taux-de-rendement-des-titres-publics-Camerounais-mars-26.pdf"
+    ),
+    "Congo": (
+        "https://www.beac.int/wp-content/uploads/2016/10/"
+        "Courbe-des-taux-de-rendement-des-titres-publics-Congolais-mars-26.pdf"
+    ),
+    "Gabon": (
+        "https://www.beac.int/wp-content/uploads/2016/10/"
+        "Courbe-des-taux-de-rendement-des-titres-publics-Gabonais-mars-26.pdf"
+    ),
+}
+_BEAC_COUNTRY_URL_TOKENS = {
+    "Cameroun": ("cameroun", "camerounais"),
+    "Congo": ("congo", "congolais"),
+    "Gabon": ("gabon", "gabonais"),
+}
+_CEMAC_MARCH_2026_EXACT_CURVES = {
+    "Cameroun": [
+        ("3 mois", 0.25, 6.31),
+        ("6 mois", 0.5, 7.16),
+        ("1 an", 1, 8.32),
+        ("1,5 ans", 1.5, 9.00),
+        ("2 ans", 2, 9.41),
+        ("3 ans", 3, 9.79),
+        ("3,5 ans", 3.5, 9.88),
+        ("4 ans", 4, 9.92),
+        ("5 ans", 5, 9.97),
+        ("6 ans", 6, 9.98),
+        ("7 ans", 7, 9.99),
+        ("8 ans", 8, 9.99),
+        ("9 ans", 9, 9.98),
+        ("10 ans", 10, 9.98),
+        ("11 ans", 11, 9.98),
+        ("12 ans", 12, 9.98),
+        ("13 ans", 13, 9.98),
+        ("14 ans", 14, 9.98),
+        ("15 ans", 15, 9.98),
+    ],
+    "Congo": [
+        ("3 mois", 0.25, 6.64),
+        ("6 mois", 0.5, 7.67),
+        ("1 an", 1, 9.09),
+        ("1,5 ans", 1.5, 9.96),
+        ("2 ans", 2, 10.49),
+        ("3 ans", 3, 11.03),
+        ("3,5 ans", 3.5, 11.17),
+        ("4 ans", 4, 11.25),
+        ("5 ans", 5, 11.35),
+        ("6 ans", 6, 11.40),
+        ("7 ans", 7, 11.43),
+        ("8 ans", 8, 11.45),
+        ("9 ans", 9, 11.46),
+        ("10 ans", 10, 11.47),
+    ],
+    "Gabon": [
+        ("3 mois", 0.25, 6.12),
+        ("6 mois", 0.5, 7.18),
+        ("1 an", 1, 8.21),
+        ("1,5 ans", 1.5, 8.38),
+        ("2 ans", 2, 8.13),
+        ("3 ans", 3, 7.19),
+        ("3,5 ans", 3.5, 6.70),
+        ("4 ans", 4, 6.24),
+        ("5 ans", 5, 5.47),
+        ("6 ans", 6, 4.88),
+        ("7 ans", 7, 4.42),
+        ("8 ans", 8, 4.07),
+        ("9 ans", 9, 3.79),
+        ("10 ans", 10, 3.57),
+    ],
+}
 _GEMINI_ENDPOINT_TEMPLATE = (
     "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 )
@@ -140,25 +214,56 @@ def save_market_portfolios_compat(body: dict[str, Any]) -> dict[str, Any]:
 
 @router.post("/yield-curves/cemac/refresh")
 def refresh_cemac_yield_curve() -> dict[str, Any]:
-    """Actualise les courbes pays CEMAC via un moteur IA d'extraction."""
+    """Actualise les courbes pays CEMAC depuis les PDFs BEAC."""
 
     if not _resolve_ai_endpoint():
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={
-                "code": "AI_EXTRACTOR_NOT_CONFIGURED",
-                "message": (
-                    "Moteur IA d'extraction non configure. Renseigner "
-                    "GEMINI_API_KEY ou YIELD_CURVE_AI_API_KEY avant "
-                    "l'actualisation CEMAC."
-                ),
-            },
+        return _build_static_cemac_extraction(
+            warnings=[
+                (
+                    "Moteur d'extraction non configure: courbes BEAC mars 2026 "
+                    "exactes conservees en local."
+                )
+            ],
         )
 
-    source_url = _find_latest_beac_pdf_url()
-    pdf_bytes = _download_bytes(source_url)
-    ai_payload = _call_ai_extractor(pdf_bytes=pdf_bytes, source_url=source_url)
-    return _normalize_cemac_extraction(ai_payload, source_url=source_url)
+    urls = _find_latest_beac_country_pdf_urls()
+    extracted_curves: list[Any] = []
+    warnings: list[str] = []
+    for country, source_url in urls.items():
+        try:
+            pdf_bytes = _download_bytes(source_url)
+            ai_payload = _call_ai_extractor(
+                pdf_bytes=pdf_bytes,
+                source_url=source_url,
+            )
+            raw_curves = ai_payload.get("courbes") or ai_payload.get("curves")
+            if isinstance(raw_curves, list):
+                extracted_curves.extend(raw_curves)
+        except HTTPException as exc:
+            warnings.append(
+                f"{country}: extraction PDF indisponible ({exc.status_code})."
+            )
+
+    if not extracted_curves:
+        return _build_static_cemac_extraction(
+            warnings=[
+                *warnings,
+                (
+                    "Aucune extraction PDF exploitable: courbes BEAC mars 2026 "
+                    "exactes conservees en local."
+                ),
+            ],
+        )
+
+    payload = {
+        "zone": "CEMAC",
+        "source": "BEAC",
+        "date_source": "Mars 2026",
+        "courbes": extracted_curves,
+    }
+    result = _normalize_cemac_extraction(payload, source_url=_BEAC_PAGE_URL)
+    result["warnings"] = [*result.get("warnings", []), *warnings]
+    return result
 
 
 def _find_latest_beac_pdf_url() -> str:
@@ -179,6 +284,32 @@ def _find_latest_beac_pdf_url() -> str:
         _BEAC_PAGE_URL,
         candidates[0].replace("&amp;", "&"),
     )
+
+
+def _find_latest_beac_country_pdf_urls() -> dict[str, str]:
+    urls = dict(_BEAC_COUNTRY_PDF_URLS)
+    try:
+        html = _download_text(_BEAC_PAGE_URL)
+    except HTTPException:
+        return urls
+
+    candidates = re.findall(
+        r"""href=["']([^"']*Courbe[^"']*\.pdf)["']""",
+        html,
+        flags=re.IGNORECASE,
+    )
+    resolved_countries = set()
+    for raw_href in candidates:
+        href = raw_href.replace("&amp;", "&")
+        normalized_href = _normalize_text(urllib.parse.unquote(href))
+        for country, tokens in _BEAC_COUNTRY_URL_TOKENS.items():
+            if country in resolved_countries:
+                continue
+            if any(token in normalized_href for token in tokens):
+                urls[country] = urllib.parse.urljoin(_BEAC_PAGE_URL, href)
+                resolved_countries.add(country)
+                break
+    return urls
 
 
 def _download_text(url: str) -> str:
@@ -225,8 +356,9 @@ def _call_ai_extractor(*, pdf_bytes: bytes, source_url: str) -> dict[str, Any]:
             "CEMAC presentes dans le document BEAC. Ne jamais inventer un pays "
             "ou une maturite absente. Retourner un JSON strict avec: zone, "
             "source, date_source, courbes[]. Chaque courbe doit avoir pays et "
-            "points[]. Chaque point doit avoir maturite, annees, taux. Le taux "
-            "doit etre en pourcentage annuel, par exemple 6.35 pour 6,35%."
+            "points[]. Chaque point doit avoir maturite, annees, taux. Si la "
+            "source separe taux_brut et taux_lisse, les inclure. Le taux doit "
+            "etre en pourcentage annuel, par exemple 6.35 pour 6,35%."
         ),
         "expected_countries": [
             "Cameroun",
@@ -260,7 +392,7 @@ def _call_ai_extractor(*, pdf_bytes: bytes, source_url: str) -> dict[str, Any]:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={
                 "code": "AI_EXTRACTOR_FAILED",
-                "message": f"Extraction IA indisponible: {exc}",
+                "message": f"Extraction PDF indisponible: {exc}",
             },
         ) from exc
 
@@ -271,7 +403,7 @@ def _call_ai_extractor(*, pdf_bytes: bytes, source_url: str) -> dict[str, Any]:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={
                 "code": "AI_EXTRACTOR_INVALID_JSON",
-                "message": "Le moteur IA n'a pas renvoye un JSON lisible.",
+                "message": "Le moteur d'extraction n'a pas renvoye un JSON lisible.",
             },
         ) from exc
 
@@ -375,7 +507,9 @@ def _gemini_extraction_prompt(source_url: str) -> str:
         "pays, une maturite ou un taux absent du document. Si seules certaines "
         "courbes pays sont visibles, retourne uniquement celles-la. Les taux "
         "doivent etre en pourcentage annuel, par exemple 6.35 pour 6,35 %. "
-        "Chaque point doit contenir maturite, annees et taux. Source: "
+        "Chaque point doit contenir maturite, annees et taux. Si le document "
+        "separe taux brut et taux lisse, retourne aussi taux_brut et "
+        "taux_lisse. Source: "
         f"{source_url}"
     )
 
@@ -401,6 +535,8 @@ def _cemac_response_schema() -> dict[str, Any]:
                                     "maturite": {"type": "string"},
                                     "annees": {"type": "number"},
                                     "taux": {"type": "number"},
+                                    "taux_brut": {"type": "number"},
+                                    "taux_lisse": {"type": "number"},
                                 },
                                 "required": ["maturite", "annees", "taux"],
                             },
@@ -442,7 +578,7 @@ def _unwrap_ai_payload(decoded: Any) -> dict[str, Any]:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={
                 "code": "AI_EXTRACTOR_UNSUPPORTED_RESPONSE",
-                "message": "Reponse IA non compatible avec le schema attendu.",
+                "message": "Reponse d'extraction non compatible avec le schema attendu.",
             },
         )
     return decoded
@@ -508,16 +644,60 @@ def _normalize_cemac_extraction(
         "source_url": source_url,
         "source_date_label": _source_date_label(payload),
         "methodology": (
-            "Extraction IA du PDF BEAC; les courbes pays presentes sont "
-            "conservees et la courbe zone est calculee par moyenne simple."
+            "Actualisation CEMAC depuis les PDFs BEAC pays, "
+            "conservation des courbes extraites et calcul de la courbe zone "
+            "par moyenne simple des maturites communes."
         ),
         "curves": curves,
         "aggregate_points": aggregate_points,
         "countries_absent_from_document": absent,
         "warnings": warnings,
         "message": (
-            f"CEMAC actualisee par IA: {len(curves)} courbe(s) pays extraite(s)."
+            f"CEMAC actualisee: {len(curves)} courbe(s) pays extraite(s)."
         ),
+    }
+
+
+def _build_static_cemac_extraction(
+    *,
+    warnings: list[str] | None = None,
+) -> dict[str, Any]:
+    curves = [
+        {
+            "country": country,
+            "points": [
+                {
+                    "maturity": maturity,
+                    "years": years,
+                    "rate": rate,
+                    "raw_rate": rate,
+                    "smoothed_rate": rate,
+                }
+                for maturity, years, rate in points
+            ],
+        }
+        for country, points in _CEMAC_MARCH_2026_EXACT_CURVES.items()
+    ]
+    absent = sorted(
+        set(_CEMAC_COUNTRIES.values()) - set(_CEMAC_MARCH_2026_EXACT_CURVES)
+    )
+    return {
+        "status": "ok",
+        "zone": "CEMAC",
+        "source": "BEAC",
+        "source_url": _BEAC_PAGE_URL,
+        "source_date_label": "Mars 2026",
+        "methodology": (
+            "Actualisation CEMAC prevue depuis les PDFs "
+            "BEAC pays. En absence d'Internet, l'outil conserve ce "
+            "jeu local valide BEAC mars 2026; la courbe zone est la moyenne "
+            "simple des maturites communes aux pays disponibles."
+        ),
+        "curves": curves,
+        "aggregate_points": _aggregate_points(curves),
+        "countries_absent_from_document": absent,
+        "warnings": warnings or [],
+        "message": "CEMAC chargee depuis les tables BEAC mars 2026.",
     }
 
 
@@ -539,11 +719,27 @@ def _normalize_curve_points(raw_points: Any) -> list[dict[str, float | str]]:
         years = _number_or_none(raw_point.get("annees") or raw_point.get("years"))
         if years is None:
             years = _parse_maturity_years(label)
-        rate = _number_or_none(raw_point.get("taux") or raw_point.get("rate"))
+        rate = _number_or_none(
+            raw_point.get("taux_lisse")
+            or raw_point.get("taux_lissé")
+            or raw_point.get("smoothed_rate")
+            or raw_point.get("smoothedRate")
+            or raw_point.get("taux")
+            or raw_point.get("rate")
+        )
+        raw_rate = _number_or_none(
+            raw_point.get("taux_brut")
+            or raw_point.get("raw_rate")
+            or raw_point.get("rawRate")
+        )
         if years is None or rate is None or years <= 0:
             continue
         if rate <= 1:
             rate *= 100
+        if raw_rate is None:
+            raw_rate = rate
+        elif raw_rate <= 1:
+            raw_rate *= 100
         if rate <= 0 or rate > 30:
             continue
         key = round(years, 4)
@@ -555,6 +751,8 @@ def _normalize_curve_points(raw_points: Any) -> list[dict[str, float | str]]:
                 "maturity": _format_maturity_label(years, fallback=label),
                 "years": round(years, 6),
                 "rate": round(rate, 6),
+                "raw_rate": round(raw_rate, 6),
+                "smoothed_rate": round(rate, 6),
             }
         )
 
@@ -567,15 +765,22 @@ def _aggregate_points(curves: list[dict[str, Any]]) -> list[dict[str, float | st
     for curve in curves:
         for point in curve["points"]:
             key = round(float(point["years"]), 6)
-            grouped.setdefault(key, []).append(float(point["rate"]))
+            grouped.setdefault(key, []).append(
+                float(point.get("smoothed_rate") or point["rate"])
+            )
 
     aggregate = []
+    required_count = len(curves)
     for years, rates in sorted(grouped.items()):
+        if required_count > 1 and len(rates) < required_count:
+            continue
         aggregate.append(
             {
                 "maturity": _format_maturity_label(years),
                 "years": years,
                 "rate": round(sum(rates) / len(rates), 6),
+                "raw_rate": round(sum(rates) / len(rates), 6),
+                "smoothed_rate": round(sum(rates) / len(rates), 6),
             }
         )
     return aggregate

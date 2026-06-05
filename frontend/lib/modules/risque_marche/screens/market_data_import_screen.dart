@@ -23,7 +23,8 @@ extension _MarketImportScopeX on _MarketImportScope {
         _MarketImportScope.bonds => MarketPortfolioType.bonds.templateFileName,
         _MarketImportScope.equities =>
           MarketPortfolioType.equities.templateFileName,
-        _MarketImportScope.both => 'GPO_Template_Portefeuille_Complet.xlsx',
+        _MarketImportScope.both =>
+          'RiskManagement_Template_Portefeuille_Complet.xlsx',
       };
 
   IconData get icon => switch (this) {
@@ -55,18 +56,18 @@ extension _MarketImportScopeX on _MarketImportScope {
 }
 
 Future<void> showMarketDataImportDialog(BuildContext context) async {
-  final successMessage = await showDialog<String>(
+  final successResult = await showDialog<_MarketImportSuccessPayload>(
     context: context,
     barrierDismissible: false,
     builder: (context) => const _MarketDataImportDialog(),
   );
-  if (successMessage == null || !context.mounted) return;
-  await _showMarketDataImportSuccessDialog(context, successMessage);
+  if (successResult == null || !context.mounted) return;
+  await _showMarketDataImportSuccessDialog(context, successResult);
 }
 
 Future<void> _showMarketDataImportSuccessDialog(
   BuildContext context,
-  String message,
+  _MarketImportSuccessPayload result,
 ) {
   return showDialog<void>(
     context: context,
@@ -96,16 +97,13 @@ Future<void> _showMarketDataImportSuccessDialog(
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
-                'Importation effectuée',
-                style: TextStyle(fontWeight: FontWeight.w800),
+                'Importation réussie',
+                style: TextStyle(fontWeight: FontWeight.w500),
               ),
             ),
           ],
         ),
-        content: Text(
-          message,
-          style: const TextStyle(height: 1.45, fontWeight: FontWeight.w500),
-        ),
+        content: _MarketImportSuccessContent(result: result),
         actions: [
           FilledButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -117,35 +115,72 @@ Future<void> _showMarketDataImportSuccessDialog(
   );
 }
 
-String _buildImportSuccessMessage({
-  required _MarketImportScope scope,
-  required String mode,
-  required List<MarketImportCommitResult> results,
-}) {
-  final action = mode == 'replace' ? 'remplacée' : 'complétée';
-  if (results.isEmpty) {
-    return 'Aucune donnée n’a été importée.';
-  }
+class _MarketImportSuccessPayload {
+  const _MarketImportSuccessPayload({
+    required this.scope,
+    required this.mode,
+    required this.results,
+  });
 
-  if (scope == _MarketImportScope.both) {
-    final details = results.map((result) {
-      return '${result.dataset.portfolioType.label} : '
-          '${_importModeDetail(result)}';
-    }).join(' · ');
-    return 'La base marché a été $action. $details.';
-  }
+  final _MarketImportScope scope;
+  final String mode;
+  final List<MarketImportCommitResult> results;
 
-  final result = results.first;
-  return 'La base ${scope.label} a été $action. ${_importModeDetail(result)}.';
+  bool get isReplacement => mode == 'replace';
+
+  int get previousTitleCount => results.fold<int>(
+        0,
+        (sum, result) => sum + result.previousRowCount,
+      );
+
+  int get newTitleCount => isReplacement
+      ? results.fold<int>(0, (sum, result) => sum + result.importedRowCount)
+      : results.fold<int>(0, (sum, result) => sum + result.totalRowCount);
 }
 
-String _importModeDetail(MarketImportCommitResult result) {
-  if (result.appended) {
-    return '${result.addedRowCount} ligne(s) ajoutée(s), '
-        '${result.totalRowCount} ligne(s) au total';
+class _MarketImportSuccessContent extends StatelessWidget {
+  const _MarketImportSuccessContent({required this.result});
+
+  final _MarketImportSuccessPayload result;
+
+  @override
+  Widget build(BuildContext context) {
+    const crimson = Color(0xFFDC143C);
+    const indigo = Color(0xFF3730A3);
+    const baseStyle = TextStyle(
+      height: 1.45,
+      fontSize: 14.5,
+      fontWeight: FontWeight.w500,
+      color: Color(0xFF13203A),
+    );
+    const strongStyle = TextStyle(fontWeight: FontWeight.w800);
+
+    final oldCount = '${result.previousTitleCount}';
+    final newCount = '${result.newTitleCount}';
+
+    return RichText(
+      text: TextSpan(
+        style: baseStyle,
+        children: [
+          const TextSpan(
+            text: 'La base de données a été mise à jour avec succès.',
+          ),
+          const TextSpan(text: '\n\n'),
+          const TextSpan(text: 'Nombre de titres dans l’ancienne base : '),
+          TextSpan(
+            text: oldCount,
+            style: strongStyle.copyWith(color: crimson),
+          ),
+          const TextSpan(text: '\n'),
+          const TextSpan(text: 'Nombre de titres dans la nouvelle base : '),
+          TextSpan(
+            text: newCount,
+            style: strongStyle.copyWith(color: indigo),
+          ),
+        ],
+      ),
+    );
   }
-  return '${result.importedRowCount} ligne(s) chargée(s), '
-      '${result.replacedRowCount} ancienne(s) ligne(s) remplacée(s)';
 }
 
 class _MarketDataImportDialog extends StatefulWidget {
@@ -250,7 +285,7 @@ class _MarketDataImportDialogState extends State<_MarketDataImportDialog> {
         requiredExtension: '.xlsx',
       );
       if (!mounted) return;
-      _showMessage('Modèle GPO portefeuille enregistré.');
+      _showMessage('Modèle RiskManagement portefeuille enregistré.');
     } catch (error) {
       if (!mounted) return;
       _showMessage('Téléchargement impossible : $error', isError: true);
@@ -288,12 +323,12 @@ class _MarketDataImportDialogState extends State<_MarketDataImportDialog> {
         );
       }
       if (!mounted) return;
-      final successMessage = _buildImportSuccessMessage(
+      final successResult = _MarketImportSuccessPayload(
         scope: _scope,
         mode: _mode,
         results: imported,
       );
-      Navigator.of(context).pop(successMessage);
+      Navigator.of(context).pop(successResult);
     } catch (error) {
       if (!mounted) return;
       _showMessage('Import impossible : $error', isError: true);
@@ -461,7 +496,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                     style: TextStyle(
                       color: colors.text,
                       fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 0,
                     ),
                   ),
@@ -640,7 +675,7 @@ class _ImportDropZone extends StatelessWidget {
         ? 'Relâchez pour charger le fichier'
         : 'Cliquez pour sélectionner votre fichier';
     final subtitle = isInspecting
-        ? 'Analyse du classeur GPO en cours…'
+        ? 'Analyse du classeur RiskManagement en cours…'
         : selectedName == null
             ? 'Format accepté : .xlsx. Utilisez la sélection de fichier pour importer.'
             : 'Fichier chargé : $selectedName';
@@ -699,7 +734,7 @@ class _ImportDropZone extends StatelessWidget {
                         style: TextStyle(
                           color: colors.text,
                           fontSize: 13.2,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -757,7 +792,7 @@ class _ImportDropZone extends StatelessWidget {
                     ),
                     textStyle: const TextStyle(
                       fontSize: 11.2,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -832,7 +867,7 @@ class _ExpectedWorkbookPanel extends StatelessWidget {
             style: TextStyle(
               color: colors.text,
               fontSize: 13.2,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 5),
@@ -873,7 +908,7 @@ class _ExpectedWorkbookPanel extends StatelessWidget {
                 style: TextStyle(
                   color: colors.text,
                   fontSize: 11.2,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 8),
@@ -967,7 +1002,7 @@ class _FileVerificationPanel extends StatelessWidget {
                         style: TextStyle(
                           color: colors.muted,
                           fontSize: 10.0,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -978,7 +1013,7 @@ class _FileVerificationPanel extends StatelessWidget {
                         style: TextStyle(
                           color: statusColor,
                           fontSize: 13.2,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -1000,7 +1035,7 @@ class _FileVerificationPanel extends StatelessWidget {
                     style: TextStyle(
                       color: statusColor,
                       fontSize: 10.6,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -1084,7 +1119,7 @@ class _FileVerificationPanel extends StatelessWidget {
                   foregroundColor: AppTheme.danger,
                   textStyle: const TextStyle(
                     fontSize: 12.2,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -1150,7 +1185,7 @@ class _VerificationMetricCard extends StatelessWidget {
                 style: TextStyle(
                   color: colors.muted,
                   fontSize: 8.9,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 2),
@@ -1161,7 +1196,7 @@ class _VerificationMetricCard extends StatelessWidget {
                 style: TextStyle(
                   color: showAccentDot ? color : colors.text,
                   fontSize: 12.8,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: -0.15,
                 ),
               ),
@@ -1232,7 +1267,7 @@ class _VerificationItemChip extends StatelessWidget {
                   style: TextStyle(
                     color: colors.text,
                     fontSize: 9.35,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1.05,
                   ),
                 ),
@@ -1331,7 +1366,7 @@ class _SecondaryDropTarget extends StatelessWidget {
                   style: TextStyle(
                     color: colors.text,
                     fontSize: 12.4,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -1386,7 +1421,7 @@ class _ImportSectionCard extends StatelessWidget {
                 style: TextStyle(
                   color: colors.text,
                   fontSize: 13.2,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -1501,7 +1536,7 @@ class _ImportPortfolioTypeButton extends StatelessWidget {
               style: TextStyle(
                 color: selected ? accent : colors.text,
                 fontSize: 11.5,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                fontWeight: selected ? FontWeight.w500 : FontWeight.w500,
               ),
             ),
           ],
@@ -1545,7 +1580,7 @@ class _ExpectedActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
           textStyle: const TextStyle(
             fontSize: 11.2,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1629,7 +1664,7 @@ class _ImportModeSelector extends StatelessWidget {
                 style: TextStyle(
                   color: colors.text,
                   fontSize: 11.2,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -1678,7 +1713,7 @@ class _ImportModeMenuItem extends StatelessWidget {
             style: TextStyle(
               color: colors.text,
               fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -1790,7 +1825,7 @@ class _ExpectedChip extends StatelessWidget {
         style: TextStyle(
           color: fg,
           fontSize: 10.1,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -1826,7 +1861,7 @@ class _HintChip extends StatelessWidget {
             style: TextStyle(
               color: colors.muted,
               fontSize: 10.1,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

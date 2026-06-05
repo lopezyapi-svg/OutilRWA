@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../core/localization/app_localization.dart';
 import '../../core/theme/app_theme.dart';
-import 'mini_trend_chart.dart';
 
 class KpiMetricCard extends StatefulWidget {
   const KpiMetricCard({
@@ -14,7 +13,7 @@ class KpiMetricCard extends StatefulWidget {
     required this.color,
     this.trend = const <double>[],
     this.fullValue,
-    this.height = 104,
+    this.height = 46,
     this.borderRadius = AppTheme.radius,
     this.onTap,
   });
@@ -40,29 +39,20 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final parts = _KpiValueParts.from(widget.value);
-    final expandedValue = _expandedHoverValue(
-      parts: parts,
-      compactValue: widget.value,
-      fullValue: widget.fullValue,
+    final surface = isDark
+        ? Colors.white.withValues(alpha: 0.035)
+        : widget.color.withValues(alpha: 0.050);
+    final border = widget.color.withValues(
+      alpha: _hovered ? (isDark ? 0.38 : 0.42) : (isDark ? 0.24 : 0.28),
     );
-    final showExpandedValue = _hovered && expandedValue != null;
-    final surface = isDark ? AppTheme.darkCard : Colors.white;
-    final border = isDark ? AppTheme.darkBorder : const Color(0xFFD9E5F4);
     final titleColor = isDark ? AppTheme.darkText : AppTheme.text;
-    final mutedColor = isDark ? AppTheme.darkMuted : AppTheme.muted;
+    final mutedColor = isDark ? AppTheme.darkMuted : const Color(0xFF5E6B82);
     final indicatorInfo = _KpiIndicatorInfo.resolve(
       label: widget.label,
       helper: widget.helper,
     );
-    final contentPadding = EdgeInsets.fromLTRB(
-      14,
-      showExpandedValue ? 8 : 10,
-      14,
-      showExpandedValue ? 5 : 8,
-    );
-    final trendValues =
-        widget.trend.isEmpty ? const [0.0, 1.0, 0.4, 1.2] : widget.trend;
+    final label = widget.label.tr(context).toUpperCase();
+    final value = widget.value;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -70,150 +60,96 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
       child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
-          duration: const Duration(milliseconds: 520),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          builder: (context, progress, child) {
-            return Opacity(
-              opacity: progress,
-              child: Transform.translate(
-                offset: Offset(0, 7 * (1 - progress)),
-                child: child,
-              ),
-            );
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 170),
-            curve: Curves.easeOutCubic,
-            height: widget.height,
-            transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
-            decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              border: Border.all(
-                color: _hovered ? widget.color.withValues(alpha: 0.54) : border,
-                width: _hovered ? 1.2 : 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: _hovered ? 0.16 : 0.09)
-                      : const Color(0xFF9DB2D1).withValues(
-                          alpha: _hovered ? 0.16 : 0.08,
-                        ),
-                  blurRadius: _hovered ? 18 : 12,
-                  offset: Offset(0, _hovered ? 8 : 5),
+          height: widget.height,
+          transform: Matrix4.translationValues(0, _hovered ? -1 : 0, 0),
+          padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
+          decoration: BoxDecoration(
+            color: surface,
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            border: Border.all(
+              color: border,
+              width: _hovered ? 1 : 0.8,
+            ),
+            boxShadow: _hovered
+                ? [
+                    BoxShadow(
+                      color: isDark
+                          ? Colors.black.withValues(alpha: 0.12)
+                          : const Color(0xFF334155).withValues(alpha: 0.07),
+                      blurRadius: 11,
+                      offset: const Offset(0, 5),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              _IndicatorTooltip(
+                info: indicatorInfo,
+                accent: widget.color,
+                isDark: isDark,
+                borderRadius: widget.borderRadius,
+                child: Container(
+                  width: 21,
+                  height: 21,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: widget.color.withValues(alpha: isDark ? 0.16 : 0.12),
+                    borderRadius: BorderRadius.circular(widget.borderRadius),
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    color: widget.color,
+                    size: 11.5,
+                  ),
                 ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(widget.borderRadius),
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: 0,
-                    left: 28,
-                    child: Container(
-                      width: 92,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: widget.color,
-                        borderRadius: BorderRadius.only(
-                          bottomLeft: Radius.circular(widget.borderRadius),
-                          bottomRight: Radius.circular(widget.borderRadius),
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: mutedColor,
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 7.2,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          value,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: titleColor,
+                            fontFamily: AppTheme.fontFamily,
+                            fontSize: 11.7,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0,
+                            height: 1,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    right: 14,
-                    bottom: 22,
-                    width: 76,
-                    height: 34,
-                    child: Opacity(
-                      opacity: isDark ? 0.16 : 0.12,
-                      child: MiniTrendChart(
-                        values: trendValues,
-                        color: widget.color,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Icon(
-                      Icons.drag_indicator_rounded,
-                      size: 16,
-                      color: mutedColor.withValues(alpha: 0.60),
-                    ),
-                  ),
-                  Padding(
-                    padding: contentPadding,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final contentWidth = constraints.maxWidth.isFinite
-                            ? constraints.maxWidth
-                            : 180.0;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _IndicatorTooltip(
-                              info: indicatorInfo,
-                              accent: widget.color,
-                              isDark: isDark,
-                              borderRadius: widget.borderRadius,
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: widget.color.withValues(
-                                    alpha: isDark ? 0.13 : 0.08,
-                                  ),
-                                  border: Border.all(
-                                    color: widget.color.withValues(alpha: 0.22),
-                                  ),
-                                ),
-                                child: Icon(
-                                  widget.icon,
-                                  color: widget.color,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Expanded(
-                              child: Align(
-                                alignment: Alignment.bottomLeft,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  alignment: Alignment.bottomLeft,
-                                  child: SizedBox(
-                                    width: contentWidth,
-                                    child: _KpiTextBlock(
-                                      parts: parts,
-                                      accent: widget.color,
-                                      titleColor: titleColor,
-                                      mutedColor: mutedColor,
-                                      label: widget.label,
-                                      helper: widget.helper,
-                                      showExpandedValue: showExpandedValue,
-                                      expandedValue: expandedValue,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
@@ -251,7 +187,7 @@ class _IndicatorTooltip extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 12.4,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               height: 1.2,
             ),
           ),
@@ -269,7 +205,7 @@ class _IndicatorTooltip extends StatelessWidget {
             style: TextStyle(
               color: accent,
               fontSize: 10.4,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               height: 1.2,
             ),
           ),
@@ -287,7 +223,7 @@ class _IndicatorTooltip extends StatelessWidget {
             style: TextStyle(
               color: accent,
               fontSize: 10.4,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               height: 1.2,
             ),
           ),
@@ -305,7 +241,7 @@ class _IndicatorTooltip extends StatelessWidget {
             style: TextStyle(
               color: accent,
               fontSize: 10.4,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               height: 1.2,
             ),
           ),
@@ -510,318 +446,4 @@ class _KpiIndicatorInfo {
           'Plus le RWA est élevé, plus la consommation de capital réglementaire augmente.',
     );
   }
-}
-
-class _KpiTextBlock extends StatelessWidget {
-  const _KpiTextBlock({
-    required this.parts,
-    required this.accent,
-    required this.titleColor,
-    required this.mutedColor,
-    required this.label,
-    required this.helper,
-    required this.showExpandedValue,
-    required this.expandedValue,
-  });
-
-  final _KpiValueParts parts;
-  final Color accent;
-  final Color titleColor;
-  final Color mutedColor;
-  final String label;
-  final String helper;
-  final bool showExpandedValue;
-  final String? expandedValue;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _KpiValueText(
-          parts: parts,
-          accent: accent,
-          titleColor: titleColor,
-          mutedColor: mutedColor,
-        ),
-        if (showExpandedValue)
-          Padding(
-            padding: const EdgeInsets.only(top: 2, bottom: 2),
-            child: _KpiExpandedValueText(
-              value: expandedValue ?? '',
-              accent: accent,
-              mutedColor: mutedColor,
-            ),
-          )
-        else
-          const SizedBox(height: 5),
-        Text(
-          label.tr(context),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: titleColor,
-            fontFamily: AppTheme.fontFamily,
-            fontSize: 10.8,
-            fontWeight: FontWeight.w700,
-            height: 1,
-          ),
-        ),
-        if (!showExpandedValue) ...[
-          const SizedBox(height: 2),
-          Text(
-            helper.tr(context),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: mutedColor,
-              fontFamily: AppTheme.fontFamily,
-              fontSize: 7.6,
-              fontWeight: FontWeight.w500,
-              height: 1,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _KpiValueText extends StatelessWidget {
-  const _KpiValueText({
-    required this.parts,
-    required this.accent,
-    required this.titleColor,
-    required this.mutedColor,
-  });
-
-  final _KpiValueParts parts;
-  final Color accent;
-  final Color titleColor;
-  final Color mutedColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final unit = parts.unit;
-    final suffix = parts.suffix;
-
-    return FittedBox(
-      fit: BoxFit.scaleDown,
-      alignment: Alignment.centerLeft,
-      child: RichText(
-        maxLines: 1,
-        text: TextSpan(
-          children: [
-            TextSpan(
-              text: parts.number,
-              style: TextStyle(
-                color: titleColor,
-                fontFamily: AppTheme.fontFamily,
-                fontSize: 19.5,
-                fontWeight: FontWeight.w700,
-                height: 1,
-              ),
-            ),
-            if (unit != null)
-              TextSpan(
-                text: ' $unit',
-                style: TextStyle(
-                  color: accent,
-                  fontFamily: AppTheme.fontFamily,
-                  fontSize: 10.8,
-                  fontWeight: FontWeight.w700,
-                  height: 1,
-                ),
-              ),
-            if (suffix != null)
-              TextSpan(
-                text: '  $suffix',
-                style: TextStyle(
-                  color: mutedColor.withValues(alpha: 0.78),
-                  fontFamily: AppTheme.fontFamily,
-                  fontSize: 8.8,
-                  fontWeight: FontWeight.w700,
-                  height: 1,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _KpiExpandedValueText extends StatelessWidget {
-  const _KpiExpandedValueText({
-    required this.value,
-    required this.accent,
-    required this.mutedColor,
-  });
-
-  final String value;
-  final Color accent;
-  final Color mutedColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 14,
-      padding: EdgeInsets.zero,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            value,
-            maxLines: 1,
-            style: TextStyle(
-              color: mutedColor.withValues(alpha: 0.95),
-              fontFamily: AppTheme.fontFamily,
-              fontSize: 9.4,
-              fontWeight: FontWeight.w700,
-              height: 1,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _KpiValueParts {
-  const _KpiValueParts({
-    required this.number,
-    this.unit,
-    this.suffix,
-  });
-
-  final String number;
-  final String? unit;
-  final String? suffix;
-
-  static const _currencySuffixes = {'FCFA', 'XOF', 'EUR', 'USD'};
-
-  factory _KpiValueParts.from(String raw) {
-    final normalized =
-        raw.replaceAll('\u00a0', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-    if (normalized.isEmpty) {
-      return const _KpiValueParts(number: 'N/D');
-    }
-
-    final tokens = normalized.split(' ');
-    if (tokens.length == 1) {
-      return _KpiValueParts(number: normalized);
-    }
-
-    final first = tokens.first.toUpperCase();
-    final last = tokens.last.toUpperCase();
-    if (_currencySuffixes.contains(first) && tokens.length >= 2) {
-      return _KpiValueParts(
-        number: tokens[1],
-        unit: tokens.length > 2
-            ? tokens.sublist(2, tokens.length).join(' ')
-            : null,
-        suffix: tokens.first,
-      );
-    }
-
-    if (_currencySuffixes.contains(last)) {
-      return _KpiValueParts(
-        number: tokens.first,
-        unit: tokens.length > 2
-            ? tokens.sublist(1, tokens.length - 1).join(' ')
-            : null,
-        suffix: tokens.last,
-      );
-    }
-
-    return _KpiValueParts(
-      number: tokens.first,
-      unit: tokens.sublist(1).join(' '),
-    );
-  }
-}
-
-String? _expandedHoverValue({
-  required _KpiValueParts parts,
-  required String compactValue,
-  required String? fullValue,
-}) {
-  final normalizedCompact = _normalizeValueText(compactValue);
-  final normalizedFull = _normalizeValueText(fullValue);
-  if (normalizedFull != null && normalizedFull != normalizedCompact) {
-    return fullValue!.trim();
-  }
-
-  return _expandedCompactCurrency(parts);
-}
-
-String? _expandedCompactCurrency(_KpiValueParts parts) {
-  final multiplier = _compactUnitMultiplier(parts.unit);
-  if (multiplier == null) {
-    return null;
-  }
-
-  final numericValue = _parseLocalizedNumber(parts.number);
-  if (numericValue == null) {
-    return null;
-  }
-
-  final expandedNumber = _groupInteger((numericValue * multiplier).round());
-  if (parts.suffix == null) {
-    return expandedNumber;
-  }
-  return '$expandedNumber ${parts.suffix}';
-}
-
-double? _compactUnitMultiplier(String? unit) {
-  if (unit == null) {
-    return null;
-  }
-
-  final normalized = unit.toLowerCase();
-  if (normalized.contains('milliard') || normalized.contains('billion')) {
-    return 1000000000;
-  }
-  if (normalized.contains('million')) {
-    return 1000000;
-  }
-  if (normalized.contains('mille') || normalized.contains('thousand')) {
-    return 1000;
-  }
-  return null;
-}
-
-double? _parseLocalizedNumber(String value) {
-  final normalized = value
-      .replaceAll('\u00a0', '')
-      .replaceAll(' ', '')
-      .replaceAll(',', '.')
-      .replaceAll(RegExp(r'[^0-9.\-]'), '');
-  if (normalized.isEmpty) {
-    return null;
-  }
-  return double.tryParse(normalized);
-}
-
-String _groupInteger(int value) {
-  final sign = value < 0 ? '-' : '';
-  final digits = value.abs().toString();
-  final buffer = StringBuffer();
-  for (var index = 0; index < digits.length; index++) {
-    final remaining = digits.length - index;
-    buffer.write(digits[index]);
-    if (remaining > 1 && remaining % 3 == 1) {
-      buffer.write(' ');
-    }
-  }
-  return '$sign$buffer';
-}
-
-String? _normalizeValueText(String? value) {
-  final trimmed =
-      value?.replaceAll('\u00a0', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-  return trimmed?.isEmpty ?? true ? null : trimmed;
 }

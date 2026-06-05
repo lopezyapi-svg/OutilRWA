@@ -533,7 +533,7 @@ class _FamilySnapshotCard extends StatelessWidget {
             Text(
               snapshot.family.label,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     color: color,
                   ),
             ),
@@ -593,7 +593,7 @@ class _SnapshotPill extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppTheme.muted,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
           ),
           const SizedBox(height: 2),
@@ -602,7 +602,7 @@ class _SnapshotPill extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
           ),
         ],

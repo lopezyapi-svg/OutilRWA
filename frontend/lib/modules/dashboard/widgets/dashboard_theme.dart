@@ -7,25 +7,25 @@ import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/formatters.dart';
 
 Color dashboardPanelColor(bool isDark) {
-  return isDark ? const Color(0xFF0F1B31) : Colors.white;
+  return isDark ? const Color(0xFF162642) : const Color(0xFFF8FAFC);
 }
 
 Color dashboardPanelBorder(bool isDark) {
-  return isDark ? const Color(0xFF22304B) : const Color(0xFFE6ECF5);
+  return isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
 }
 
 Color dashboardTitleColor(bool isDark) {
-  return isDark ? const Color(0xFFF5F8FF) : const Color(0xFF182033);
+  return isDark ? const Color(0xFFEAF2FF) : const Color(0xFF13203A);
 }
 
 Color dashboardSubtitleColor(bool isDark) {
-  return isDark ? const Color(0xFF92A3BE) : const Color(0xFF6F7D96);
+  return isDark ? const Color(0xFF9FB0CE) : const Color(0xFF64748B);
 }
 
 List<BoxShadow> dashboardPanelShadow(bool isDark) {
   return [
     BoxShadow(
-      color: isDark ? const Color(0x18040A16) : const Color(0x120F172A),
+      color: isDark ? const Color(0x26040A16) : const Color(0x0F334155),
       blurRadius: 18,
       offset: const Offset(0, 8),
     ),

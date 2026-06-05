@@ -50,6 +50,7 @@ class PageHeader extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: subtitleColor,
                       fontSize: subtitleFontSize,
+                      fontWeight: FontWeight.w500,
                     ),
               ),
             ],

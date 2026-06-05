@@ -251,28 +251,9 @@ const List<_MenuEntry> _marketRiskChildren = [
     label: 'Courbe des taux',
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueMarche,
-    icon: Icons.analytics_outlined,
-    label: 'Gap analysis',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueMarche,
-    icon: Icons.science_outlined,
-    label: 'Stress marché',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueMarche,
-    icon: Icons.business_center_outlined,
-    label: 'Expositions trading',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueMarche,
-    icon: Icons.summarize_outlined,
-    label: 'Reporting marché',
-    selectable: false,
+    module: AppModule.risqueMarcheAmortissementCrd,
+    icon: CupertinoIcons.graph_square_fill,
+    label: 'Amortissement CRD',
   ),
 ];
 
@@ -1230,14 +1211,16 @@ class _SidebarServiceCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            context.tr("LEADER DE L'ALM EN AFRIQUE SUBSAHARIENNE"),
+            context.tr(
+              "LEADER DE L'ALM ET DU RISK MANAGEMENT EN AFRIQUE SUBSAHARIENNE",
+            ),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: isDark
                   ? const Color(0xFF8FA6CB)
                   : const Color.fromARGB(255, 13, 33, 64),
               fontSize: 7,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               height: 1.2,
               letterSpacing: 0.2,
             ),
@@ -1256,7 +1239,7 @@ class _SidebarServiceCard extends StatelessWidget {
                   ? const Color(0xFFD7E3FA)
                   : const Color.fromARGB(255, 6, 24, 57),
               fontSize: 8,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

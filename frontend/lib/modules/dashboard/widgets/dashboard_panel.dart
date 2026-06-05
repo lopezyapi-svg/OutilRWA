@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localization.dart';
-import '../../../core/theme/app_theme.dart';
 import 'dashboard_theme.dart';
 
 /// Carte standard utilisée pour les blocs du dashboard.
@@ -25,10 +24,10 @@ class DashboardPanel extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(11),
       decoration: BoxDecoration(
         color: dashboardPanelColor(isDark),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: dashboardPanelBorder(isDark)),
         boxShadow: dashboardPanelShadow(isDark),
       ),
@@ -64,7 +63,7 @@ class DashboardPanel extends StatelessWidget {
                     ],
                   ],
                 ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 11),
               child,
             ],
           );
@@ -88,6 +87,8 @@ class _PanelHeaderText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasSubtitle = subtitle.trim().isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -95,21 +96,26 @@ class _PanelHeaderText extends StatelessWidget {
           title.tr(context),
           style: TextStyle(
             color: dashboardTitleColor(isDark),
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
+            fontSize: 14.2,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0,
+            height: 1,
           ),
         ),
-        const SizedBox(height: 3),
-        Text(
-          subtitle.tr(context),
-          style: TextStyle(
-            color: dashboardSubtitleColor(isDark),
-            fontSize: 9.5,
-            fontWeight: FontWeight.w600,
-            height: 1.25,
+        if (hasSubtitle) ...[
+          const SizedBox(height: 4),
+          Text(
+            subtitle.tr(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: dashboardSubtitleColor(isDark),
+              fontSize: 11.0,
+              fontWeight: FontWeight.w500,
+              height: 1,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

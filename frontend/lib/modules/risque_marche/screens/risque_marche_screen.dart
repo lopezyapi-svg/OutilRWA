@@ -9,7 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart' as fm;
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,9 +21,16 @@ import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../dashboard/models/dashboard_models.dart';
+import '../services/market_country_resolver.dart';
 import '../services/market_data_import_store.dart';
 
-enum MarketRiskView { dashboard, indicators, yieldCurves, varRisk }
+enum MarketRiskView {
+  dashboard,
+  indicators,
+  yieldCurves,
+  amortizationCapital,
+  varRisk,
+}
 
 enum _VarMethod { historical, parametric, monteCarlo }
 
@@ -180,10 +186,13 @@ class RisqueMarcheScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    _ensureMarketDataCacheInvalidationListener();
     return switch (view) {
       MarketRiskView.dashboard => _buildDashboard(context),
       MarketRiskView.indicators => const _MarketIndicatorsWorkspace(),
       MarketRiskView.yieldCurves => _MarketYieldCurvesWorkspace(api: api),
+      MarketRiskView.amortizationCapital =>
+        const _MarketCrdEvolutionWorkspace(),
       MarketRiskView.varRisk => _ValueAtRiskModule(api: api),
     };
   }
@@ -305,6 +314,7 @@ class _MarketYieldCurvesWorkspaceState
                           builder: (context, constraints) {
                             const gap = 14.0;
                             const minCardWidth = 520.0;
+                            const cardHeight = 572.0;
                             final cardWidth = math.max(
                               minCardWidth,
                               (constraints.maxWidth - gap) / 2,
@@ -320,6 +330,7 @@ class _MarketYieldCurvesWorkspaceState
                                       index++) ...[
                                     SizedBox(
                                       width: cardWidth,
+                                      height: cardHeight,
                                       child: _YieldCurveSnapshotCard(
                                         snapshot: _snapshots[index],
                                       ),
@@ -409,7 +420,7 @@ class _YieldCurveRefreshDialog extends StatelessWidget {
                       style: TextStyle(
                         color: text,
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         height: 1.15,
                       ),
                     ),
@@ -447,7 +458,7 @@ class _YieldCurveRefreshDialog extends StatelessWidget {
                     'Fermer'.tr(context),
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       height: 1,
                     ),
                   ),
@@ -501,7 +512,7 @@ class _YieldCurveRefreshStatusLine extends StatelessWidget {
               style: TextStyle(
                 color: _marketTextFor(context).withValues(alpha: 0.88),
                 fontSize: 12.3,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 height: 1.35,
               ),
             ),
@@ -618,7 +629,7 @@ class _YieldCurveInfoBanner extends StatelessWidget {
         textStyle: const TextStyle(
           color: Colors.white,
           fontSize: 11.5,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           height: 1.35,
         ),
         child: Semantics(
@@ -771,19 +782,24 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
                       style: TextStyle(
                         color: text,
                         fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w500,
                         height: 1,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '${snapshot.sourceName} · ${snapshot.sourceDateLabel}',
+                      [
+                        snapshot.sourceName,
+                        snapshot.sourceDateLabel,
+                        if (_yieldExtractionModeLabel(snapshot) != null)
+                          _yieldExtractionModeLabel(snapshot)!,
+                      ].join(' · '),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: muted,
                         fontSize: 10.8,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         height: 1.25,
                       ),
                     ),
@@ -800,7 +816,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
               children: [
                 Expanded(
                   child: _YieldCurveMetricChip(
-                    label: 'Court terme · ${shortPoint!.label}',
+                    label: 'Taux lissé CT · ${shortPoint!.label}',
                     value: _formatYieldRate(shortPoint.rate),
                     color: color,
                   ),
@@ -809,8 +825,8 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
                 Expanded(
                   child: _YieldCurveMetricChip(
                     label: tenYear == null
-                        ? 'Point long · ${longPoint!.label}'
-                        : 'Point 10Y · ${longPoint!.label}',
+                        ? 'Taux lissé long · ${longPoint!.label}'
+                        : 'Taux lissé 10Y · ${longPoint!.label}',
                     value: _formatYieldRate(longPoint.rate),
                     color: _marketCyan,
                   ),
@@ -826,7 +842,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _YieldCurveMetricChip(
-                    label: 'Pic · ${maxPoint!.label}',
+                    label: 'Pic lissé · ${maxPoint!.label}',
                     value: _formatYieldRate(maxPoint.rate),
                     color: _marketSuccess,
                   ),
@@ -853,6 +869,13 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
             ),
           ),
           const SizedBox(height: 12),
+          if (hasDrawableData && primarySeries != null) ...[
+            _YieldCurveRateTypeLegend(
+              color: primarySeries.color,
+              showZeroCoupon: _yieldHasDistinctZeroCouponRate(visibleSeries),
+            ),
+            const SizedBox(height: 10),
+          ],
           if (snapshot.hasSeriesControls) ...[
             _YieldCurveCountryLegend(
               snapshot: snapshot,
@@ -863,7 +886,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
           ],
           if (hasDrawableData)
             SizedBox(
-              height: visibleSeries.length > 1 ? 38 : 32,
+              height: visibleSeries.length > 1 ? 50 : 44,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemBuilder: (context, index) {
@@ -939,7 +962,7 @@ class _YieldCurveMetricChip extends StatelessWidget {
             style: TextStyle(
               color: _marketMutedFor(context),
               fontSize: 8.6,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               height: 1,
             ),
           ),
@@ -951,13 +974,116 @@ class _YieldCurveMetricChip extends StatelessWidget {
             style: TextStyle(
               color: _marketTextFor(context).withValues(alpha: 0.90),
               fontSize: 11.8,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               height: 1,
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+class _YieldCurveRateTypeLegend extends StatelessWidget {
+  const _YieldCurveRateTypeLegend({
+    required this.color,
+    required this.showZeroCoupon,
+  });
+
+  final Color color;
+  final bool showZeroCoupon;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = _marketMutedFor(context);
+    final text = _marketTextFor(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (showZeroCoupon) ...[
+          _YieldCurveLegendLine(
+            color: color.withValues(alpha: 0.72),
+            dashed: true,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Taux zéro coupon',
+            style: TextStyle(
+              color: muted,
+              fontSize: 9.6,
+              fontWeight: FontWeight.w500,
+              height: 1,
+            ),
+          ),
+          const SizedBox(width: 14),
+        ],
+        _YieldCurveLegendLine(color: color, dashed: false),
+        const SizedBox(width: 6),
+        Text(
+          'Taux lissé',
+          style: TextStyle(
+            color: text.withValues(alpha: 0.88),
+            fontSize: 9.6,
+            fontWeight: FontWeight.w500,
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _YieldCurveLegendLine extends StatelessWidget {
+  const _YieldCurveLegendLine({
+    required this.color,
+    required this.dashed,
+  });
+
+  final Color color;
+  final bool dashed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 28,
+      height: 8,
+      child: CustomPaint(
+        painter: _YieldCurveLegendLinePainter(color: color, dashed: dashed),
+      ),
+    );
+  }
+}
+
+class _YieldCurveLegendLinePainter extends CustomPainter {
+  const _YieldCurveLegendLinePainter({
+    required this.color,
+    required this.dashed,
+  });
+
+  final Color color;
+  final bool dashed;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..isAntiAlias = true
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..color = color;
+    final path = Path()
+      ..moveTo(0, size.height / 2)
+      ..lineTo(size.width, size.height / 2);
+    if (dashed) {
+      _drawDashedPath(canvas, path, paint, dashWidth: 5, gapWidth: 4);
+    } else {
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _YieldCurveLegendLinePainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.dashed != dashed;
   }
 }
 
@@ -972,6 +1098,8 @@ class _YieldCurveSourceInfoButton extends StatelessWidget {
     final tooltip = [
       'Source : ${snapshot.sourceName}',
       'Référence : ${snapshot.sourceDateLabel}',
+      if (_yieldExtractionModeLabel(snapshot) != null)
+        'Mode : ${_yieldExtractionModeLabel(snapshot)}',
       snapshot.methodology,
     ].join('\n').tr(context);
 
@@ -996,7 +1124,7 @@ class _YieldCurveSourceInfoButton extends StatelessWidget {
       textStyle: const TextStyle(
         color: Colors.white,
         fontSize: 11.4,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         height: 1.35,
       ),
       child: Semantics(
@@ -1163,7 +1291,7 @@ class _YieldCurveSeriesControlChip extends StatelessWidget {
                             : _marketMutedFor(context))
                         : muted.withValues(alpha: 0.66),
                     fontSize: 9.6,
-                    fontWeight: isActive ? FontWeight.w800 : FontWeight.w700,
+                    fontWeight: isActive ? FontWeight.w500 : FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -1222,6 +1350,8 @@ class _YieldCurvePointTile extends StatelessWidget {
     final isDark = _isMarketDark(context);
     final hasSeriesLabel =
         seriesLabel != null && seriesLabel!.trim().isNotEmpty;
+    final hasDistinctRawRate =
+        (point.rawRate - point.smoothedRate).abs() >= 0.005;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => onHoverChanged(true),
@@ -1232,7 +1362,7 @@ class _YieldCurvePointTile extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          width: hasSeriesLabel ? 88 : 60,
+          width: hasSeriesLabel ? 104 : 78,
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
           decoration: BoxDecoration(
             color: selected
@@ -1267,7 +1397,7 @@ class _YieldCurvePointTile extends StatelessWidget {
                   style: TextStyle(
                     color: selected ? color : _marketMutedFor(context),
                     fontSize: 7.2,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -1278,21 +1408,72 @@ class _YieldCurvePointTile extends StatelessWidget {
                 style: TextStyle(
                   color: selected ? color : _marketMutedFor(context),
                   fontSize: 7.4,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   height: 1,
                 ),
               ),
-              Text(
-                _formatYieldRate(point.rate),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 9.4,
-                  fontWeight: selected ? FontWeight.w900 : FontWeight.w800,
-                  height: 1,
-                ),
+              Row(
+                children: [
+                  Text(
+                    'Lissé',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _marketMutedFor(context),
+                      fontSize: 6.8,
+                      fontWeight: FontWeight.w500,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      _formatYieldRate(point.smoothedRate),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 9.2,
+                        fontWeight:
+                            selected ? FontWeight.w500 : FontWeight.w500,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              if (hasDistinctRawRate)
+                Row(
+                  children: [
+                    Text(
+                      'Zéro',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: _marketMutedFor(context),
+                        fontSize: 6.7,
+                        fontWeight: FontWeight.w500,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _formatYieldRate(point.rawRate),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          color: _marketMutedFor(context),
+                          fontSize: 8,
+                          fontWeight: FontWeight.w500,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -1450,7 +1631,7 @@ class _YieldCurveNoDataChart extends StatelessWidget {
               style: TextStyle(
                 color: text,
                 fontSize: 12.6,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w500,
                 height: 1,
               ),
             ),
@@ -1461,7 +1642,7 @@ class _YieldCurveNoDataChart extends StatelessWidget {
               style: TextStyle(
                 color: muted,
                 fontSize: 10.4,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 height: 1.25,
               ),
             ),
@@ -1507,20 +1688,25 @@ class _YieldCurvePainter extends CustomPainter {
     final allPoints = [
       for (final item in drawableSeries) ...item.points,
     ];
+    final allRates = [
+      for (final point in allPoints) point.smoothedRate,
+      if (_yieldHasDistinctZeroCouponRate(drawableSeries))
+        for (final point in allPoints) point.rawRate,
+    ];
 
     final minYear = allPoints.map((point) => point.years).reduce(math.min);
     final maxYear = allPoints.map((point) => point.years).reduce(math.max);
-    final minRate =
-        (allPoints.map((point) => point.rate).reduce(math.min) - 0.6).floor();
-    final maxRate =
-        (allPoints.map((point) => point.rate).reduce(math.max) + 0.6).ceil();
+    final minRate = (allRates.reduce(math.min) - 0.6).floor();
+    final maxRate = (allRates.reduce(math.max) + 0.6).ceil();
     final rateSpan = math.max(1.0, (maxRate - minRate).toDouble());
     final yearSpan = math.max(0.1, maxYear - minYear);
 
     double xFor(_YieldCurvePoint point) =>
         chart.left + (point.years - minYear) / yearSpan * chart.width;
-    double yFor(_YieldCurvePoint point) =>
-        chart.bottom - (point.rate - minRate) / rateSpan * chart.height;
+    double yForRate(double rate) =>
+        chart.bottom - (rate - minRate) / rateSpan * chart.height;
+    double yFor(_YieldCurvePoint point) => yForRate(point.smoothedRate);
+    double yForZeroCoupon(_YieldCurvePoint point) => yForRate(point.rawRate);
 
     final gridPaint = Paint()
       ..color = grid.withValues(alpha: 0.72)
@@ -1582,6 +1768,26 @@ class _YieldCurvePainter extends CustomPainter {
     }
 
     for (final item in orderedSeries) {
+      if (_yieldSeriesHasDistinctZeroCouponRate(item)) {
+        final zeroCouponPath = _yieldSeriesPath(
+          item.points,
+          xFor,
+          yForZeroCoupon,
+        );
+        _drawDashedPath(
+          canvas,
+          zeroCouponPath,
+          Paint()
+            ..isAntiAlias = true
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = item.isZone ? 2.0 : 1.5
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round
+            ..color = item.color.withValues(alpha: item.isZone ? 0.58 : 0.48),
+          dashWidth: 6,
+          gapWidth: 5,
+        );
+      }
       final path = _yieldSeriesPath(item.points, xFor, yFor);
       canvas.drawPath(
         path,
@@ -1671,7 +1877,7 @@ class _YieldCurvePainter extends CustomPainter {
         style: TextStyle(
           color: color,
           fontSize: 9,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
           height: 1,
         ),
       ),
@@ -1690,29 +1896,81 @@ class _YieldCurvePainter extends CustomPainter {
     _YieldCurveDisplaySeries series,
     double progress,
   ) {
-    final label =
-        '${series.label} · ${point.label} · ${_formatYieldRate(point.rate)}';
+    final hasZeroCoupon = (point.rawRate - point.smoothedRate).abs() >= 0.005;
     final painter = TextPainter(
       text: TextSpan(
-        text: label,
+        children: [
+          TextSpan(
+            text: '${series.label} · ${point.label}\n',
+            style: TextStyle(
+              color: text.withValues(alpha: progress),
+              fontSize: 9.8,
+              fontWeight: FontWeight.w500,
+              height: 1.18,
+            ),
+          ),
+          TextSpan(
+            text: 'Taux lissé : ',
+            style: TextStyle(
+              color: muted.withValues(alpha: progress),
+              fontSize: 8.9,
+              fontWeight: FontWeight.w500,
+              height: 1.22,
+            ),
+          ),
+          TextSpan(
+            text: _formatYieldRate(point.smoothedRate),
+            style: TextStyle(
+              color: text.withValues(alpha: progress),
+              fontSize: 9.2,
+              fontWeight: FontWeight.w500,
+              height: 1.22,
+            ),
+          ),
+          if (hasZeroCoupon) ...[
+            TextSpan(
+              text: '\nTaux zéro coupon : ',
+              style: TextStyle(
+                color: muted.withValues(alpha: progress),
+                fontSize: 8.9,
+                fontWeight: FontWeight.w500,
+                height: 1.22,
+              ),
+            ),
+            TextSpan(
+              text: _formatYieldRate(point.rawRate),
+              style: TextStyle(
+                color: text.withValues(alpha: progress),
+                fontSize: 9.2,
+                fontWeight: FontWeight.w500,
+                height: 1.22,
+              ),
+            ),
+          ],
+        ],
         style: TextStyle(
           color: text.withValues(alpha: progress),
           fontSize: 9.2,
-          fontWeight: FontWeight.w800,
-          height: 1,
+          fontWeight: FontWeight.w500,
+          height: 1.18,
         ),
       ),
       textDirection: TextDirection.ltr,
-      maxLines: 1,
-    )..layout(maxWidth: 112);
+      maxLines: hasZeroCoupon ? 3 : 2,
+    );
 
-    final width = painter.width + 14;
-    const height = 22.0;
-    final left = (anchor.dx - width / 2)
-        .clamp(chart.left + 4, chart.right - width - 4)
-        .toDouble();
-    final top = (anchor.dy - 30 - 4 * progress)
-        .clamp(chart.top + 4, chart.bottom - 34)
+    final availableWidth = math.max(80.0, chart.width - 10);
+    final labelMaxWidth = math.min(210.0, math.max(80.0, availableWidth - 14));
+    painter.layout(maxWidth: labelMaxWidth);
+
+    final width = math.min(painter.width + 14, availableWidth);
+    final height = painter.height + 14;
+    final maxLeft = math.max(chart.left + 4, chart.right - width - 4);
+    final left =
+        (anchor.dx - width / 2).clamp(chart.left + 4, maxLeft).toDouble();
+    final maxTop = math.max(chart.top + 4, chart.bottom - height - 4);
+    final top = (anchor.dy - height - 12 - 4 * progress)
+        .clamp(chart.top + 4, maxTop)
         .toDouble();
     final rect = RRect.fromRectAndRadius(
       Rect.fromLTWH(left, top, width, height),
@@ -1729,7 +1987,7 @@ class _YieldCurvePainter extends CustomPainter {
         ..strokeWidth = 1
         ..color = series.color.withValues(alpha: 0.28 * progress),
     );
-    painter.paint(canvas, Offset(left + 7, top + 6));
+    painter.paint(canvas, Offset(left + 7, top + 7));
   }
 
   @override
@@ -1751,7 +2009,8 @@ class _YieldCurveRepository {
 
   final RwaApiService api;
 
-  static const _cacheKey = 'market_yield_curves.snapshots.v1';
+  static const _cacheKey = 'market_yield_curves.snapshots.v3';
+  static const _historyCacheKey = 'market_yield_curves.history.v1';
   static const _umoaPageUrl =
       'https://www.umoatitres.org/fr/ressources-2/courbe-des-taux/';
   static const _umoaSeedWorkbookUrl =
@@ -1963,80 +2222,85 @@ class _YieldCurveRepository {
       sourceUrl: _beacPdfUrl,
       sourceDateLabel: 'Mars 2026',
       methodology:
-          'Courbe agrégée par moyenne des courbes Cameroun, Congo et Gabon publiées par la BEAC.',
+          'Actualisation CEMAC depuis les PDFs BEAC pays. Hors connexion, l’outil conserve le jeu local validé BEAC mars 2026. La courbe zone est la moyenne simple des maturités communes aux courbes Cameroun, Congo et Gabon.',
       color: _marketSuccess,
       points: [
-        _YieldCurvePoint('3 mois', 0.25, 6.353846),
-        _YieldCurvePoint('6 mois', 0.5, 7.335043),
-        _YieldCurvePoint('1 an', 1, 8.540326),
-        _YieldCurvePoint('1,5 ans', 1.5, 9.116861),
-        _YieldCurvePoint('2 ans', 2, 9.345299),
-        _YieldCurvePoint('3 ans', 3, 9.338772),
-        _YieldCurvePoint('3,5 ans', 3.5, 9.249573),
-        _YieldCurvePoint('4 ans', 4, 9.140793),
-        _YieldCurvePoint('5 ans', 5, 8.931935),
-        _YieldCurvePoint('6 ans', 6, 8.753535),
-        _YieldCurvePoint('7 ans', 7, 8.614297),
-        _YieldCurvePoint('8 ans', 8, 8.503341),
-        _YieldCurvePoint('9 ans', 9, 8.414141),
-        _YieldCurvePoint('10 ans', 10, 8.340171),
+        _YieldCurvePoint('3 mois', 0.25, 6.356667),
+        _YieldCurvePoint('6 mois', 0.5, 7.336667),
+        _YieldCurvePoint('1 an', 1, 8.540000),
+        _YieldCurvePoint('1,5 ans', 1.5, 9.113333),
+        _YieldCurvePoint('2 ans', 2, 9.343333),
+        _YieldCurvePoint('3 ans', 3, 9.336667),
+        _YieldCurvePoint('3,5 ans', 3.5, 9.250000),
+        _YieldCurvePoint('4 ans', 4, 9.136667),
+        _YieldCurvePoint('5 ans', 5, 8.930000),
+        _YieldCurvePoint('6 ans', 6, 8.753333),
+        _YieldCurvePoint('7 ans', 7, 8.613333),
+        _YieldCurvePoint('8 ans', 8, 8.503333),
+        _YieldCurvePoint('9 ans', 9, 8.410000),
+        _YieldCurvePoint('10 ans', 10, 8.340000),
       ],
       countryCurves: [
         _YieldCurveCountryCurve(
           country: 'Cameroun',
           points: [
-            _YieldCurvePoint('3 mois', 0.25, 6.3082),
-            _YieldCurvePoint('6 mois', 0.5, 7.1566),
-            _YieldCurvePoint('1 an', 1, 8.3184),
-            _YieldCurvePoint('1,5 ans', 1.5, 9.0037),
-            _YieldCurvePoint('2 ans', 2, 9.4084),
-            _YieldCurvePoint('3 ans', 3, 9.7935),
-            _YieldCurvePoint('3,5 ans', 3.5, 9.8783),
-            _YieldCurvePoint('4 ans', 4, 9.9240),
-            _YieldCurvePoint('5 ans', 5, 9.9697),
-            _YieldCurvePoint('6 ans', 6, 9.9828),
-            _YieldCurvePoint('7 ans', 7, 9.9893),
-            _YieldCurvePoint('8 ans', 8, 9.9893),
-            _YieldCurvePoint('9 ans', 9, 9.9828),
-            _YieldCurvePoint('10 ans', 10, 9.9828),
+            _YieldCurvePoint('3 mois', 0.25, 6.31),
+            _YieldCurvePoint('6 mois', 0.5, 7.16),
+            _YieldCurvePoint('1 an', 1, 8.32),
+            _YieldCurvePoint('1,5 ans', 1.5, 9.00),
+            _YieldCurvePoint('2 ans', 2, 9.41),
+            _YieldCurvePoint('3 ans', 3, 9.79),
+            _YieldCurvePoint('3,5 ans', 3.5, 9.88),
+            _YieldCurvePoint('4 ans', 4, 9.92),
+            _YieldCurvePoint('5 ans', 5, 9.97),
+            _YieldCurvePoint('6 ans', 6, 9.98),
+            _YieldCurvePoint('7 ans', 7, 9.99),
+            _YieldCurvePoint('8 ans', 8, 9.99),
+            _YieldCurvePoint('9 ans', 9, 9.98),
+            _YieldCurvePoint('10 ans', 10, 9.98),
+            _YieldCurvePoint('11 ans', 11, 9.98),
+            _YieldCurvePoint('12 ans', 12, 9.98),
+            _YieldCurvePoint('13 ans', 13, 9.98),
+            _YieldCurvePoint('14 ans', 14, 9.98),
+            _YieldCurvePoint('15 ans', 15, 9.98),
           ],
         ),
         _YieldCurveCountryCurve(
           country: 'Congo',
           points: [
-            _YieldCurvePoint('3 mois', 0.25, 6.6345),
-            _YieldCurvePoint('6 mois', 0.5, 7.6657),
-            _YieldCurvePoint('1 an', 1, 9.0886),
-            _YieldCurvePoint('1,5 ans', 1.5, 9.9632),
-            _YieldCurvePoint('2 ans', 2, 10.4984),
-            _YieldCurvePoint('3 ans', 3, 11.0336),
-            _YieldCurvePoint('3,5 ans', 3.5, 11.1706),
-            _YieldCurvePoint('4 ans', 4, 11.2555),
-            _YieldCurvePoint('5 ans', 5, 11.3534),
-            _YieldCurvePoint('6 ans', 6, 11.3991),
-            _YieldCurvePoint('7 ans', 7, 11.4317),
-            _YieldCurvePoint('8 ans', 8, 11.4513),
-            _YieldCurvePoint('9 ans', 9, 11.4643),
-            _YieldCurvePoint('10 ans', 10, 11.4709),
+            _YieldCurvePoint('3 mois', 0.25, 6.64),
+            _YieldCurvePoint('6 mois', 0.5, 7.67),
+            _YieldCurvePoint('1 an', 1, 9.09),
+            _YieldCurvePoint('1,5 ans', 1.5, 9.96),
+            _YieldCurvePoint('2 ans', 2, 10.49),
+            _YieldCurvePoint('3 ans', 3, 11.03),
+            _YieldCurvePoint('3,5 ans', 3.5, 11.17),
+            _YieldCurvePoint('4 ans', 4, 11.25),
+            _YieldCurvePoint('5 ans', 5, 11.35),
+            _YieldCurvePoint('6 ans', 6, 11.40),
+            _YieldCurvePoint('7 ans', 7, 11.43),
+            _YieldCurvePoint('8 ans', 8, 11.45),
+            _YieldCurvePoint('9 ans', 9, 11.46),
+            _YieldCurvePoint('10 ans', 10, 11.47),
           ],
         ),
         _YieldCurveCountryCurve(
           country: 'Gabon',
           points: [
-            _YieldCurvePoint('3 mois', 0.25, 6.1189),
-            _YieldCurvePoint('6 mois', 0.5, 7.1828),
-            _YieldCurvePoint('1 an', 1, 8.2140),
-            _YieldCurvePoint('1,5 ans', 1.5, 8.3837),
-            _YieldCurvePoint('2 ans', 2, 8.1291),
-            _YieldCurvePoint('3 ans', 3, 7.1893),
-            _YieldCurvePoint('3,5 ans', 3.5, 6.6998),
-            _YieldCurvePoint('4 ans', 4, 6.2429),
-            _YieldCurvePoint('5 ans', 5, 5.4727),
-            _YieldCurvePoint('6 ans', 6, 4.8788),
-            _YieldCurvePoint('7 ans', 7, 4.4219),
-            _YieldCurvePoint('8 ans', 8, 4.0695),
-            _YieldCurvePoint('9 ans', 9, 3.7953),
-            _YieldCurvePoint('10 ans', 10, 3.5669),
+            _YieldCurvePoint('3 mois', 0.25, 6.12),
+            _YieldCurvePoint('6 mois', 0.5, 7.18),
+            _YieldCurvePoint('1 an', 1, 8.21),
+            _YieldCurvePoint('1,5 ans', 1.5, 8.38),
+            _YieldCurvePoint('2 ans', 2, 8.13),
+            _YieldCurvePoint('3 ans', 3, 7.19),
+            _YieldCurvePoint('3,5 ans', 3.5, 6.70),
+            _YieldCurvePoint('4 ans', 4, 6.24),
+            _YieldCurvePoint('5 ans', 5, 5.47),
+            _YieldCurvePoint('6 ans', 6, 4.88),
+            _YieldCurvePoint('7 ans', 7, 4.42),
+            _YieldCurvePoint('8 ans', 8, 4.07),
+            _YieldCurvePoint('9 ans', 9, 3.79),
+            _YieldCurvePoint('10 ans', 10, 3.57),
           ],
         ),
       ],
@@ -2100,6 +2364,7 @@ class _YieldCurveRepository {
     ];
     if (refreshed) {
       await _save(snapshots);
+      await _appendHistory([...current, ...snapshots]);
     }
 
     return _YieldCurveRefreshResult(
@@ -2114,6 +2379,38 @@ class _YieldCurveRepository {
       _cacheKey,
       jsonEncode([for (final snapshot in snapshots) snapshot.toJson()]),
     );
+    _clearBondDashboardStatsCaches();
+  }
+
+  Future<void> _appendHistory(List<_YieldCurveSnapshot> snapshots) async {
+    final preferences = await SharedPreferences.getInstance();
+    final history = <_YieldCurveSnapshot>[];
+    final raw = preferences.getString(_historyCacheKey);
+    if (raw != null && raw.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw) as List<dynamic>;
+        history.addAll(
+          decoded
+              .whereType<Map<String, dynamic>>()
+              .map(_YieldCurveSnapshot.fromJson)
+              .map(_hydrateYieldSnapshotFromSeed)
+              .where((snapshot) => snapshot.points.length >= 2),
+        );
+      } catch (_) {
+        history.clear();
+      }
+    }
+    history.addAll(
+      snapshots
+          .map(_hydrateYieldSnapshotFromSeed)
+          .where((snapshot) => snapshot.points.length >= 2),
+    );
+    final compacted = _compactYieldCurveHistory(history);
+    await preferences.setString(
+      _historyCacheKey,
+      jsonEncode([for (final snapshot in compacted) snapshot.toJson()]),
+    );
+    _clearBondDashboardStatsCaches();
   }
 
   Future<_YieldCurveSnapshot> _fetchUemoaCurve() async {
@@ -2192,7 +2489,7 @@ class _YieldCurveRepository {
           ? current.sourceDateLabel
           : sourceDateLabel,
       methodology: methodology == null || methodology.isEmpty
-          ? 'Données extraites du PDF BEAC avec conservation des courbes pays.'
+          ? 'Données extraites depuis les PDFs BEAC avec conservation des courbes pays.'
           : methodology,
       points: aggregatePoints,
       countryCurves: countryCurves,
@@ -2206,15 +2503,18 @@ class _YieldCurveRepository {
     required String sourceDateLabel,
   }) {
     final workbook = Excel.decodeBytes(bytes);
-    final ratesByMaturity = <double, List<double>>{};
+    final smoothedRatesByMaturity = <double, List<double>>{};
+    final rawRatesByMaturity = <double, List<double>>{};
     final countryCurves = <_YieldCurveCountryCurve>[];
 
     for (final entry in workbook.tables.entries) {
       final sheetName = _normalizeYieldText(entry.key);
       if (sheetName.startsWith('feuil')) continue;
       final rows = entry.value.rows;
-      final sheetRatesByMaturity = <double, List<double>>{};
+      final sheetSmoothedRatesByMaturity = <double, List<double>>{};
+      final sheetRawRatesByMaturity = <double, List<double>>{};
       int? maturityColumn;
+      int? rawRateColumn;
       int? smoothedRateColumn;
       var headerRow = -1;
 
@@ -2224,6 +2524,12 @@ class _YieldCurveRepository {
           final header = _normalizeYieldText(_yieldCellText(row[columnIndex]));
           if (header == 'maturite') {
             maturityColumn = columnIndex;
+          }
+          if (header.contains('taux avant') ||
+              header.contains('taux brut') ||
+              header.contains('zero coupon') ||
+              header.contains('zero-coupon')) {
+            rawRateColumn = columnIndex;
           }
           if (header.contains('taux apres') || header.contains('taux lisse')) {
             smoothedRateColumn = columnIndex;
@@ -2248,29 +2554,54 @@ class _YieldCurveRepository {
         final years = _parseYieldMaturityYears(
           _yieldCellText(row[maturityColumn]),
         );
-        final rate = _yieldCellNumber(row[smoothedRateColumn]);
-        if (years == null || rate == null || !rate.isFinite) continue;
-        final percentRate = rate.abs() <= 1 ? rate * 100 : rate;
-        ratesByMaturity.putIfAbsent(years, () => []).add(percentRate);
-        sheetRatesByMaturity.putIfAbsent(years, () => []).add(percentRate);
+        final smoothedRate = _yieldCellNumber(row[smoothedRateColumn]);
+        if (years == null || smoothedRate == null || !smoothedRate.isFinite) {
+          continue;
+        }
+        final rawRate = rawRateColumn != null && rawRateColumn < row.length
+            ? _yieldCellNumber(row[rawRateColumn])
+            : null;
+        final percentSmoothedRate =
+            smoothedRate.abs() <= 1 ? smoothedRate * 100 : smoothedRate;
+        final percentRawRate = rawRate == null || !rawRate.isFinite
+            ? percentSmoothedRate
+            : rawRate.abs() <= 1
+                ? rawRate * 100
+                : rawRate;
+        smoothedRatesByMaturity
+            .putIfAbsent(years, () => [])
+            .add(percentSmoothedRate);
+        rawRatesByMaturity.putIfAbsent(years, () => []).add(percentRawRate);
+        sheetSmoothedRatesByMaturity
+            .putIfAbsent(years, () => [])
+            .add(percentSmoothedRate);
+        sheetRawRatesByMaturity
+            .putIfAbsent(years, () => [])
+            .add(percentRawRate);
       }
 
-      if (sheetRatesByMaturity.length >= 2) {
+      if (sheetSmoothedRatesByMaturity.length >= 2) {
         final country = _canonicalUemoaCountry(entry.key) ?? entry.key.trim();
         countryCurves.add(
           _YieldCurveCountryCurve(
             country: country,
-            points: _averageYieldPoints(sheetRatesByMaturity),
+            points: _averageYieldPoints(
+              sheetSmoothedRatesByMaturity,
+              rawValues: sheetRawRatesByMaturity,
+            ),
           ),
         );
       }
     }
 
-    if (ratesByMaturity.length < 2) {
+    if (smoothedRatesByMaturity.length < 2) {
       throw StateError('Courbe UMOA-Titres non lisible.');
     }
 
-    final points = _averageYieldPoints(ratesByMaturity);
+    final points = _averageYieldPoints(
+      smoothedRatesByMaturity,
+      rawValues: rawRatesByMaturity,
+    );
 
     return seedSnapshots.first.copyWith(
       sourceUrl: sourceUrl,
@@ -2356,17 +2687,38 @@ List<_YieldCurvePoint> _parseYieldCurvePoints(Object? payload) {
             .trim();
     final years = _yieldDynamicNumber(values['years'] ?? values['annees']) ??
         _parseYieldMaturityYears(label);
-    final rate = _yieldDynamicNumber(values['rate'] ?? values['taux']);
-    if (years == null || rate == null || years <= 0) continue;
-    final percentRate = rate.abs() <= 1 ? rate * 100 : rate;
-    if (percentRate <= 0 || percentRate > 30) continue;
+    final smoothedRate = _yieldDynamicNumber(
+      values['smoothedRate'] ??
+          values['smoothed_rate'] ??
+          values['taux_lisse'] ??
+          values['taux_lissé'] ??
+          values['rate'] ??
+          values['taux'],
+    );
+    final rawRate = _yieldDynamicNumber(
+      values['rawRate'] ??
+          values['raw_rate'] ??
+          values['taux_brut'] ??
+          values['taux_zero_coupon'] ??
+          values['taux_zéro_coupon'],
+    );
+    if (years == null || smoothedRate == null || years <= 0) continue;
+    final percentSmoothedRate =
+        smoothedRate.abs() <= 1 ? smoothedRate * 100 : smoothedRate;
+    final percentRawRate = rawRate == null
+        ? percentSmoothedRate
+        : rawRate.abs() <= 1
+            ? rawRate * 100
+            : rawRate;
+    if (percentSmoothedRate <= 0 || percentSmoothedRate > 30) continue;
     final key = double.parse(years.toStringAsFixed(6));
     if (!seen.add(key)) continue;
     points.add(
       _YieldCurvePoint(
         label.isEmpty ? _formatYieldMaturityLabel(years) : label,
         years,
-        percentRate,
+        percentSmoothedRate,
+        rawRate: percentRawRate,
       ),
     );
   }
@@ -2374,14 +2726,22 @@ List<_YieldCurvePoint> _parseYieldCurvePoints(Object? payload) {
   return points;
 }
 
-List<_YieldCurvePoint> _averageYieldPoints(Map<double, List<double>> values) {
+List<_YieldCurvePoint> _averageYieldPoints(
+  Map<double, List<double>> values, {
+  Map<double, List<double>> rawValues = const {},
+}) {
   final points = values.entries.map((entry) {
     final average =
         entry.value.reduce((left, right) => left + right) / entry.value.length;
+    final rawItems = rawValues[entry.key];
+    final rawAverage = rawItems == null || rawItems.isEmpty
+        ? average
+        : rawItems.reduce((left, right) => left + right) / rawItems.length;
     return _YieldCurvePoint(
       _formatYieldMaturityLabel(entry.key),
       entry.key,
       average,
+      rawRate: rawAverage,
     );
   }).toList()
     ..sort((left, right) => left.years.compareTo(right.years));
@@ -2606,25 +2966,40 @@ class _YieldCurveCountryCurve {
 }
 
 class _YieldCurvePoint {
-  const _YieldCurvePoint(this.label, this.years, this.rate);
+  const _YieldCurvePoint(
+    this.label,
+    this.years,
+    double rate, {
+    double? rawRate,
+    double? smoothedRate,
+  })  : rawRate = rawRate ?? rate,
+        smoothedRate = smoothedRate ?? rate;
 
   final String label;
   final double years;
-  final double rate;
+  final double rawRate;
+  final double smoothedRate;
+
+  double get rate => smoothedRate;
 
   Map<String, Object?> toJson() {
     return {
       'label': label,
       'years': years,
-      'rate': rate,
+      'rate': smoothedRate,
+      'rawRate': rawRate,
+      'smoothedRate': smoothedRate,
     };
   }
 
   factory _YieldCurvePoint.fromJson(Map<String, dynamic> json) {
+    final fallbackRate = (json['rate'] as num?)?.toDouble() ?? 0;
     return _YieldCurvePoint(
       json['label'] as String? ?? '',
       (json['years'] as num?)?.toDouble() ?? 0,
-      (json['rate'] as num?)?.toDouble() ?? 0,
+      fallbackRate,
+      rawRate: (json['rawRate'] as num?)?.toDouble() ?? fallbackRate,
+      smoothedRate: (json['smoothedRate'] as num?)?.toDouble() ?? fallbackRate,
     );
   }
 }
@@ -2659,6 +3034,11 @@ String _yieldZoneDisplayLabel(_YieldCurveSnapshot snapshot) {
     'cemac' => 'CEMAC',
     _ => title.isEmpty ? snapshot.id.toUpperCase() : title,
   };
+}
+
+String? _yieldExtractionModeLabel(_YieldCurveSnapshot snapshot) {
+  if (snapshot.id != 'cemac') return null;
+  return 'Extraction PDF';
 }
 
 Color _yieldCountryColorFor(String country, String zoneId) {
@@ -2791,6 +3171,16 @@ _YieldCurveDisplaySeries? _fillYieldSeries(
   return null;
 }
 
+bool _yieldSeriesHasDistinctZeroCouponRate(_YieldCurveDisplaySeries series) {
+  return series.points.any(
+    (point) => (point.rawRate - point.smoothedRate).abs() >= 0.005,
+  );
+}
+
+bool _yieldHasDistinctZeroCouponRate(List<_YieldCurveDisplaySeries> series) {
+  return series.any(_yieldSeriesHasDistinctZeroCouponRate);
+}
+
 Path _yieldSeriesPath(
   List<_YieldCurvePoint> points,
   double Function(_YieldCurvePoint point) xFor,
@@ -2801,6 +3191,23 @@ Path _yieldSeriesPath(
     path.lineTo(xFor(point), yFor(point));
   }
   return path;
+}
+
+void _drawDashedPath(
+  Canvas canvas,
+  Path source,
+  Paint paint, {
+  required double dashWidth,
+  required double gapWidth,
+}) {
+  for (final metric in source.computeMetrics()) {
+    var distance = 0.0;
+    while (distance < metric.length) {
+      final next = math.min(distance + dashWidth, metric.length);
+      canvas.drawPath(metric.extractPath(distance, next), paint);
+      distance = next + gapWidth;
+    }
+  }
 }
 
 List<_YieldCurvePointStripItem> _yieldPointStripItems(
@@ -2914,76 +3321,153 @@ class _MarketIndicatorsWorkspace extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<
-        Map<MarketPortfolioType, MarketPortfolioDataset>>(
-      valueListenable: MarketDataImportStore.instance.datasetsNotifier,
-      builder: (context, datasets, _) {
-        final dataset = datasets[MarketPortfolioType.bonds];
+    return ValueListenableBuilder<MarketDataSnapshot>(
+      valueListenable: MarketDataImportStore.instance.snapshotNotifier,
+      builder: (context, snapshot, _) {
+        final dataset = snapshot.datasetFor(MarketPortfolioType.bonds);
         return Padding(
           padding: const EdgeInsets.all(AppTheme.pagePadding),
           child: dataset == null || dataset.rowCount == 0
-              ? const SizedBox(height: 1)
-              : FutureBuilder<_BondDashboardStats>(
-                  future: _bondDashboardStatsForAsync(dataset),
-                  builder: (context, snapshot) {
-                    final stats = snapshot.data;
-                    if (stats == null) {
-                      return const _MarketDeferredLoadingState(
-                        title: 'Chargement des indicateurs',
-                        subtitle:
-                            'Nous préparons les chiffres du portefeuille.',
-                      );
-                    }
-                    return _BondKeyIndicatorsSection(stats: stats);
-                  },
-                ),
+              ? const _MarketNoImportedDataState(
+                  title: 'Aucune donnée chargée',
+                  subtitle:
+                      'Chargez un portefeuille obligataire depuis Import données pour afficher les indicateurs clés.',
+                  icon: CupertinoIcons.chart_bar_alt_fill,
+                  fillAvailable: true,
+                )
+              : _MarketIndicatorsStatsView(dataset: dataset),
         );
       },
     );
   }
 }
 
-final Expando<Map<String, _BondDashboardStats>> _bondDashboardStatsCache =
-    Expando<Map<String, _BondDashboardStats>>('bond-dashboard-stats');
-final Expando<Map<String, Future<_BondDashboardStats>>>
-    _bondDashboardStatsFutureCache =
-    Expando<Map<String, Future<_BondDashboardStats>>>(
-  'bond-dashboard-stats-future',
-);
+class _MarketIndicatorsStatsView extends StatelessWidget {
+  const _MarketIndicatorsStatsView({required this.dataset});
+
+  final MarketPortfolioDataset dataset;
+
+  @override
+  Widget build(BuildContext context) {
+    final cached = _bondDashboardStatsCached(dataset);
+    if (cached != null) return _BondKeyIndicatorsSection(stats: cached);
+    return FutureBuilder<_BondDashboardStats>(
+      future: _bondDashboardStatsForAsync(dataset),
+      builder: (context, snapshot) {
+        final stats = snapshot.data;
+        if (stats == null) {
+          return const _MarketDeferredLoadingState(
+            title: 'Chargement des indicateurs',
+            subtitle: 'Nous préparons les chiffres du portefeuille.',
+          );
+        }
+        return _BondKeyIndicatorsSection(stats: stats);
+      },
+    );
+  }
+}
+
+const int _bondDashboardStatsCacheLimit = 2;
+const int _marketComputedCacheVersion = 5;
+final Map<String, _BondDashboardStats> _bondDashboardStatsCache =
+    <String, _BondDashboardStats>{};
+final Map<String, Future<_BondDashboardStats>> _bondDashboardStatsFutureCache =
+    <String, Future<_BondDashboardStats>>{};
+bool _marketDataCacheInvalidationListenerAttached = false;
+String? _marketComputedBondsDatasetSignature;
+
+void _ensureMarketDataCacheInvalidationListener() {
+  if (_marketDataCacheInvalidationListenerAttached) return;
+  _marketDataCacheInvalidationListenerAttached = true;
+  MarketDataImportStore.instance.snapshotNotifier.addListener(
+    _clearMarketComputedCaches,
+  );
+}
+
+void _clearMarketComputedCaches() {
+  final dataset = MarketDataImportStore.instance.snapshotNotifier.value
+      .datasetFor(MarketPortfolioType.bonds);
+  final nextSignature =
+      dataset == null ? null : _bondDatasetContentSignature(dataset);
+  if (nextSignature == _marketComputedBondsDatasetSignature) return;
+  _marketComputedBondsDatasetSignature = nextSignature;
+  _clearBondDashboardStatsCaches();
+  _clearBondCrdEvolutionCaches();
+  _MonteCarloVarResult.clearCache();
+}
 
 Future<_BondDashboardStats> _bondDashboardStatsForAsync(
   MarketPortfolioDataset dataset,
-) async {
-  final yieldCurves = await _loadBondPricingYieldCurves();
-  final signature = _bondYieldCurvePricingSignature(yieldCurves);
-  final cacheBySignature =
-      _bondDashboardStatsCache[dataset] ?? <String, _BondDashboardStats>{};
-  _bondDashboardStatsCache[dataset] = cacheBySignature;
-  final cached = cacheBySignature[signature];
+) {
+  final datasetSignature = _bondDatasetContentSignature(dataset);
+  _marketComputedBondsDatasetSignature = datasetSignature;
+  final cached = _bondDashboardStatsCache[datasetSignature];
   if (cached != null) return SynchronousFuture(cached);
-  final futureBySignature = _bondDashboardStatsFutureCache[dataset] ??
-      <String, Future<_BondDashboardStats>>{};
-  _bondDashboardStatsFutureCache[dataset] = futureBySignature;
-  final cachedFuture = futureBySignature[signature];
+  final cachedFuture = _bondDashboardStatsFutureCache[datasetSignature];
   if (cachedFuture != null) return cachedFuture;
 
-  final future =
-      _computeBondDashboardStatsAsync(dataset, yieldCurves).then((stats) {
-    cacheBySignature[signature] = stats;
-    futureBySignature.remove(signature);
-    return stats;
-  });
-  futureBySignature[signature] = future;
+  final future = _bondDashboardStatsForSignatureAsync(
+    dataset,
+    datasetSignature,
+  );
+  _bondDashboardStatsFutureCache[datasetSignature] = future;
+  _trimBondDashboardStatsCaches();
   return future;
+}
+
+Future<_BondDashboardStats> _bondDashboardStatsForSignatureAsync(
+  MarketPortfolioDataset dataset,
+  String datasetSignature,
+) async {
+  final yieldCurves = await _loadBondPricingYieldCurves();
+  final yieldCurveHistory =
+      await _loadBondPricingYieldCurveHistory(yieldCurves);
+  final stats = await _computeBondDashboardStatsAsync(
+    dataset,
+    yieldCurves,
+    yieldCurveHistory,
+  );
+  _bondDashboardStatsCache[datasetSignature] = stats;
+  _bondDashboardStatsFutureCache.remove(datasetSignature);
+  _trimBondDashboardStatsCaches();
+  return stats;
+}
+
+void _clearBondDashboardStatsCaches() {
+  _bondDashboardStatsCache.clear();
+  _bondDashboardStatsFutureCache.clear();
+  _bondIndicatorRowsCache.clear();
+  _bondIndicatorRowsFutureCache.clear();
+}
+
+void _trimBondDashboardStatsCaches() {
+  while (_bondDashboardStatsCache.length > _bondDashboardStatsCacheLimit) {
+    _bondDashboardStatsCache.remove(_bondDashboardStatsCache.keys.first);
+  }
+  while (
+      _bondDashboardStatsFutureCache.length > _bondDashboardStatsCacheLimit) {
+    _bondDashboardStatsFutureCache
+        .remove(_bondDashboardStatsFutureCache.keys.first);
+  }
+}
+
+_BondDashboardStats? _bondDashboardStatsCached(
+  MarketPortfolioDataset dataset,
+) {
+  final datasetSignature = _bondDatasetContentSignature(dataset);
+  _marketComputedBondsDatasetSignature = datasetSignature;
+  return _bondDashboardStatsCache[datasetSignature];
 }
 
 Future<_BondDashboardStats> _computeBondDashboardStatsAsync(
   MarketPortfolioDataset dataset,
   List<_YieldCurveSnapshot> yieldCurves,
+  List<_YieldCurveSnapshot> yieldCurveHistory,
 ) async {
   final request = _BondDashboardStatsRequest(
     dataset: dataset,
     yieldCurves: yieldCurves,
+    yieldCurveHistory: yieldCurveHistory,
   );
   try {
     return await compute(
@@ -2993,7 +3477,11 @@ Future<_BondDashboardStats> _computeBondDashboardStatsAsync(
     );
   } catch (error) {
     debugPrint('Calcul asynchrone stats obligations indisponible: $error');
-    return _BondDashboardStats.from(dataset, yieldCurves: yieldCurves);
+    return _BondDashboardStats.from(
+      dataset,
+      yieldCurves: yieldCurves,
+      yieldCurveHistory: yieldCurveHistory,
+    );
   }
 }
 
@@ -3003,6 +3491,7 @@ _BondDashboardStats _computeBondDashboardStats(
   return _BondDashboardStats.from(
     request.dataset,
     yieldCurves: request.yieldCurves,
+    yieldCurveHistory: request.yieldCurveHistory,
   );
 }
 
@@ -3010,10 +3499,52 @@ class _BondDashboardStatsRequest {
   const _BondDashboardStatsRequest({
     required this.dataset,
     required this.yieldCurves,
+    required this.yieldCurveHistory,
   });
 
   final MarketPortfolioDataset dataset;
   final List<_YieldCurveSnapshot> yieldCurves;
+  final List<_YieldCurveSnapshot> yieldCurveHistory;
+}
+
+const int _bondCrdEvolutionCacheLimit = 2;
+final Map<String, _BondCrdEvolutionResult> _bondCrdEvolutionResultCache =
+    <String, _BondCrdEvolutionResult>{};
+
+_BondCrdEvolutionResult _bondCrdEvolutionResultForSync(
+  MarketPortfolioDataset dataset,
+  String signature,
+) {
+  final cached = _bondCrdEvolutionResultCache[signature];
+  if (cached != null) return cached;
+  final result = _bondCrdEvolutionResult(dataset);
+  _bondCrdEvolutionResultCache[signature] = result;
+  _trimBondCrdEvolutionCaches();
+  return result;
+}
+
+void _trimBondCrdEvolutionCaches() {
+  while (_bondCrdEvolutionResultCache.length > _bondCrdEvolutionCacheLimit) {
+    _bondCrdEvolutionResultCache
+        .remove(_bondCrdEvolutionResultCache.keys.first);
+  }
+}
+
+void _clearBondCrdEvolutionCaches() {
+  _bondCrdEvolutionResultCache.clear();
+}
+
+String _bondDatasetContentSignature(MarketPortfolioDataset dataset) {
+  final today = DateTime.now();
+  return [
+    'v$_marketComputedCacheVersion',
+    dataset.contentSignature,
+    '${today.year}-${today.month}-${today.day}',
+  ].join('|');
+}
+
+String _bondCrdEvolutionDatasetSignature(MarketPortfolioDataset dataset) {
+  return 'crd|${_bondDatasetContentSignature(dataset)}';
 }
 
 Future<List<_YieldCurveSnapshot>> _loadBondPricingYieldCurves() async {
@@ -3040,19 +3571,45 @@ Future<List<_YieldCurveSnapshot>> _loadBondPricingYieldCurves() async {
   }
 }
 
+Future<List<_YieldCurveSnapshot>> _loadBondPricingYieldCurveHistory(
+  List<_YieldCurveSnapshot> current,
+) async {
+  final preferences = await SharedPreferences.getInstance();
+  final raw = preferences.getString(_YieldCurveRepository._historyCacheKey);
+  final snapshots = <_YieldCurveSnapshot>[
+    ..._YieldCurveRepository.seedSnapshots,
+    ...current,
+  ];
+  if (raw != null && raw.trim().isNotEmpty) {
+    try {
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      snapshots.addAll(
+        decoded
+            .whereType<Map<String, dynamic>>()
+            .map(_YieldCurveSnapshot.fromJson)
+            .map(_hydrateYieldSnapshotFromSeed)
+            .where((snapshot) => snapshot.points.length >= 2),
+      );
+    } catch (error) {
+      debugPrint('Historique local des courbes indisponible: $error');
+    }
+  }
+  return _compactYieldCurveHistory(snapshots);
+}
+
 String _bondYieldCurvePricingSignature(List<_YieldCurveSnapshot> snapshots) {
   return snapshots.map((snapshot) {
     final pointStamp = snapshot.points
         .map(
           (point) =>
-              '${point.years.toStringAsFixed(4)}:${point.rate.toStringAsFixed(4)}',
+              '${point.years.toStringAsFixed(4)}:${point.rawRate.toStringAsFixed(4)}:${point.smoothedRate.toStringAsFixed(4)}',
         )
         .join(',');
     final countryStamp = snapshot.countryCurves.map((curve) {
       final points = curve.points
           .map(
             (point) =>
-                '${point.years.toStringAsFixed(4)}:${point.rate.toStringAsFixed(4)}',
+                '${point.years.toStringAsFixed(4)}:${point.rawRate.toStringAsFixed(4)}:${point.smoothedRate.toStringAsFixed(4)}',
           )
           .join(',');
       return '${curve.country}:$points';
@@ -3064,6 +3621,104 @@ String _bondYieldCurvePricingSignature(List<_YieldCurveSnapshot> snapshots) {
       countryStamp,
     ].join('|');
   }).join('||');
+}
+
+List<_YieldCurveSnapshot> _compactYieldCurveHistory(
+  List<_YieldCurveSnapshot> snapshots,
+) {
+  final bySignature = <String, _YieldCurveSnapshot>{};
+  for (final snapshot in snapshots) {
+    if (snapshot.id.isEmpty || snapshot.points.length < 2) continue;
+    bySignature[_yieldCurveHistorySignature(snapshot)] = snapshot;
+  }
+
+  final byZone = <String, List<_YieldCurveSnapshot>>{};
+  for (final snapshot in bySignature.values) {
+    byZone
+        .putIfAbsent(snapshot.id, () => <_YieldCurveSnapshot>[])
+        .add(snapshot);
+  }
+
+  final compacted = <_YieldCurveSnapshot>[];
+  for (final entry in byZone.entries) {
+    final zoneSnapshots = entry.value
+      ..sort((left, right) {
+        final leftDate = _yieldCurveSnapshotSortDate(left);
+        final rightDate = _yieldCurveSnapshotSortDate(right);
+        final byDate = leftDate.compareTo(rightDate);
+        if (byDate != 0) return byDate;
+        return _yieldCurveHistorySignature(left)
+            .compareTo(_yieldCurveHistorySignature(right));
+      });
+    const maxSnapshotsPerZone = 180;
+    compacted.addAll(
+      zoneSnapshots.length <= maxSnapshotsPerZone
+          ? zoneSnapshots
+          : zoneSnapshots.sublist(zoneSnapshots.length - maxSnapshotsPerZone),
+    );
+  }
+  return compacted
+    ..sort((left, right) {
+      final byZone = left.id.compareTo(right.id);
+      if (byZone != 0) return byZone;
+      return _yieldCurveSnapshotSortDate(left)
+          .compareTo(_yieldCurveSnapshotSortDate(right));
+    });
+}
+
+String _yieldCurveHistorySignature(_YieldCurveSnapshot snapshot) {
+  return [
+    snapshot.id,
+    _normalizeYieldText(snapshot.sourceDateLabel),
+    _bondYieldCurvePricingSignature([snapshot]),
+  ].join('|');
+}
+
+DateTime _yieldCurveSnapshotSortDate(_YieldCurveSnapshot snapshot) {
+  return _parseYieldHistoryDate(snapshot.sourceDateLabel) ??
+      snapshot.checkedAt ??
+      DateTime(1970);
+}
+
+DateTime? _parseYieldHistoryDate(String label) {
+  final trimmed = label.trim();
+  if (trimmed.isEmpty) return null;
+  final numeric = RegExp(
+    r'(\d{1,2})[./-](\d{1,2})[./-](\d{4})',
+  ).firstMatch(trimmed);
+  if (numeric != null) {
+    final day = int.tryParse(numeric.group(1)!);
+    final month = int.tryParse(numeric.group(2)!);
+    final year = int.tryParse(numeric.group(3)!);
+    if (day != null && month != null && year != null) {
+      return DateTime(year, month, day);
+    }
+  }
+
+  final normalized = _normalizeYieldText(trimmed);
+  final yearMatch = RegExp(r'(20\d{2})').firstMatch(normalized);
+  final year = yearMatch == null ? null : int.tryParse(yearMatch.group(1)!);
+  if (year == null) return null;
+  const months = {
+    'janvier': 1,
+    'fevrier': 2,
+    'mars': 3,
+    'avril': 4,
+    'mai': 5,
+    'juin': 6,
+    'juillet': 7,
+    'aout': 8,
+    'septembre': 9,
+    'octobre': 10,
+    'novembre': 11,
+    'decembre': 12,
+  };
+  for (final entry in months.entries) {
+    if (normalized.contains(entry.key)) {
+      return DateTime(year, entry.value, 1);
+    }
+  }
+  return DateTime(year);
 }
 
 class _MarketDeferredLoadingState extends StatelessWidget {
@@ -3101,7 +3756,7 @@ class _MarketDeferredLoadingState extends StatelessWidget {
                     style: TextStyle(
                       color: text,
                       fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       height: 1,
                     ),
                   ),
@@ -3123,6 +3778,1371 @@ class _MarketDeferredLoadingState extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MarketNoImportedDataState extends StatelessWidget {
+  const _MarketNoImportedDataState({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.accent = _marketPrimary,
+    this.minHeight = 320,
+    this.fillAvailable = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final double minHeight;
+  final bool fillAvailable;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isMarketDark(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final border = _marketBorderFor(context);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = fillAvailable && constraints.maxHeight.isFinite
+            ? math.max(minHeight, constraints.maxHeight)
+            : minHeight;
+        return _MarketCard(
+          padding: EdgeInsets.zero,
+          child: SizedBox(
+            height: height,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 26,
+                    vertical: 24,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _marketSurfaceSoftFor(context).withValues(
+                      alpha: isDark ? 0.42 : 0.72,
+                    ),
+                    border: Border.all(color: border.withValues(alpha: 0.86)),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.10),
+                          border: Border.all(
+                            color: accent.withValues(alpha: 0.22),
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Icon(icon, color: accent, size: 24),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        title.tr(context),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        subtitle.tr(context),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: muted,
+                          fontSize: 12.4,
+                          fontWeight: FontWeight.w500,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MarketCrdEvolutionWorkspace extends StatelessWidget {
+  const _MarketCrdEvolutionWorkspace();
+
+  @override
+  Widget build(BuildContext context) {
+    final displayCurrency = PortfolioCurrencyScope.maybeOf(context);
+    return ValueListenableBuilder<MarketDataSnapshot>(
+      valueListenable: MarketDataImportStore.instance.snapshotNotifier,
+      builder: (context, snapshot, _) {
+        final dataset = snapshot.datasetFor(MarketPortfolioType.bonds);
+        return Padding(
+          padding: const EdgeInsets.all(AppTheme.pagePadding),
+          child: dataset == null || dataset.rowCount == 0
+              ? const _MarketNoImportedDataState(
+                  title: 'Aucune donnée obligataire chargée',
+                  subtitle:
+                      'Chargez un portefeuille obligataire pour projeter l’évolution du capital restant dû.',
+                  icon: CupertinoIcons.chart_bar_alt_fill,
+                  fillAvailable: true,
+                )
+              : _MarketCrdEvolutionBody(
+                  dataset: dataset,
+                  displayCurrency: displayCurrency,
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _MarketCrdEvolutionBody extends StatefulWidget {
+  const _MarketCrdEvolutionBody({
+    required this.dataset,
+    required this.displayCurrency,
+  });
+
+  final MarketPortfolioDataset dataset;
+  final String displayCurrency;
+
+  @override
+  State<_MarketCrdEvolutionBody> createState() =>
+      _MarketCrdEvolutionBodyState();
+}
+
+class _MarketCrdEvolutionBodyState extends State<_MarketCrdEvolutionBody> {
+  late String _signature;
+  late _BondCrdEvolutionResult _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _signature = _bondCrdEvolutionDatasetSignature(widget.dataset);
+    _result = _bondCrdEvolutionResultForSync(widget.dataset, _signature);
+  }
+
+  @override
+  void didUpdateWidget(covariant _MarketCrdEvolutionBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextSignature = _bondCrdEvolutionDatasetSignature(widget.dataset);
+    if (nextSignature != _signature) {
+      _signature = nextSignature;
+      _result = _bondCrdEvolutionResultForSync(widget.dataset, _signature);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _MarketCrdEvolutionContent(
+      result: _result,
+      displayCurrency: widget.displayCurrency,
+    );
+  }
+}
+
+class _MarketCrdEvolutionContent extends StatelessWidget {
+  const _MarketCrdEvolutionContent({
+    required this.result,
+    required this.displayCurrency,
+  });
+
+  final _BondCrdEvolutionResult result;
+  final String displayCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _MarketCrdEvolutionHeader(),
+          const SizedBox(height: 10),
+          _MarketCrdEvolutionKpis(
+            result: result,
+            displayCurrency: displayCurrency,
+          ),
+          const SizedBox(height: 10),
+          _MarketCard(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+            child: _MarketCrdEvolutionChartPanel(
+              result: result,
+              displayCurrency: displayCurrency,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _MarketCrdInputsPanel(result: result),
+        ],
+      ),
+    );
+  }
+}
+
+class _MarketCrdEvolutionHeader extends StatelessWidget {
+  const _MarketCrdEvolutionHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: _marketWarning.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: const Icon(
+            CupertinoIcons.graph_square_fill,
+            color: _marketWarning,
+            size: 17,
+          ),
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Capital Restant Dû — Évolution mensuelle'.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: text,
+                  fontSize: 12.8,
+                  fontWeight: FontWeight.w500,
+                  height: 1,
+                  letterSpacing: 0.45,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Projection mensuelle du capital restant dû selon les profils d’amortissement.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: muted,
+                  fontSize: 10.4,
+                  fontWeight: FontWeight.w500,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MarketCrdEvolutionKpis extends StatelessWidget {
+  const _MarketCrdEvolutionKpis({
+    required this.result,
+    required this.displayCurrency,
+  });
+
+  final _BondCrdEvolutionResult result;
+  final String displayCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _MarketCrdKpiSpec(
+        label: 'CRD actuel',
+        value: _money(result.currentCrd, displayCurrency),
+        detail: '${result.activeCount}/${result.totalCount} titres actifs',
+        color: _marketPrimary,
+        icon: CupertinoIcons.creditcard_fill,
+      ),
+      _MarketCrdKpiSpec(
+        label: 'Amortissement projeté',
+        value: _money(result.projectedAmortization, displayCurrency),
+        detail: 'Capital remboursé sur l’horizon',
+        color: _marketWarning,
+        icon: CupertinoIcons.arrow_down_right_square_fill,
+      ),
+      _MarketCrdKpiSpec(
+        label: 'CRD fin de période',
+        value: _money(result.endingCrd, displayCurrency),
+        detail: _bondCrdShortDate(result.endDate),
+        color: _marketSuccess,
+        icon: CupertinoIcons.checkmark_seal_fill,
+      ),
+      _MarketCrdKpiSpec(
+        label: 'Amortissement moyen',
+        value: _money(result.averageMonthlyAmortization, displayCurrency),
+        detail: 'Moyenne mensuelle',
+        color: _marketCyan,
+        icon: CupertinoIcons.calendar_today,
+      ),
+    ];
+    return SizedBox(
+      height: 54,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          return SizedBox(
+            width: 218,
+            child: _MarketCrdKpiCard(item: items[index]),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _MarketCrdKpiSpec {
+  const _MarketCrdKpiSpec({
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.color,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final String detail;
+  final Color color;
+  final IconData icon;
+}
+
+class _MarketCrdKpiCard extends StatelessWidget {
+  const _MarketCrdKpiCard({required this.item});
+
+  final _MarketCrdKpiSpec item;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final isDark = _isMarketDark(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.030)
+            : item.color.withValues(alpha: 0.052),
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: item.color.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: item.color.withValues(alpha: 0.11),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: Icon(item.icon, size: 14, color: item.color),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 13.2,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${item.label} · ${item.detail}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: muted,
+                    fontSize: 8.8,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MarketCrdEvolutionChartPanel extends StatelessWidget {
+  const _MarketCrdEvolutionChartPanel({
+    required this.result,
+    required this.displayCurrency,
+  });
+
+  final _BondCrdEvolutionResult result;
+  final String displayCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Trajectoire mensuelle du CRD',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: text,
+                      fontSize: 12.8,
+                      fontWeight: FontWeight.w500,
+                      height: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Lecture mensuelle du capital encore dû, hors détails techniques de calcul.',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: muted,
+                      fontSize: 9.8,
+                      fontWeight: FontWeight.w500,
+                      height: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 342,
+          child: _BondCrdEvolutionChart(
+            result: result,
+            displayCurrency: displayCurrency,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MarketCrdInputsPanel extends StatelessWidget {
+  const _MarketCrdInputsPanel({required this.result});
+
+  final _BondCrdEvolutionResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    return _MarketCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Paramètres de projection'.toUpperCase(),
+            style: TextStyle(
+              color: text,
+              fontSize: 11.4,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.45,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _MarketCrdInputLine(
+            label: 'Date d’analyse',
+            value: _bondCrdShortDate(result.analysisDate),
+            icon: CupertinoIcons.calendar,
+          ),
+          const _MarketCrdInputLine(
+            label: 'Maturités',
+            value: 'Calculées depuis les dates',
+            icon: CupertinoIcons.time,
+          ),
+          const _MarketCrdInputLine(
+            label: 'Capital',
+            value: 'CRD reconstitué',
+            icon: CupertinoIcons.creditcard_fill,
+          ),
+          const _MarketCrdInputLine(
+            label: 'Rythme',
+            value: 'Profil amortissement',
+            icon: CupertinoIcons.repeat,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Répartition par profil',
+            style: TextStyle(
+              color: muted,
+              fontSize: 10.0,
+              fontWeight: FontWeight.w500,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 126,
+            child: _BondProfileBreakdownPie(
+              entries: result.profileBreakdown,
+              compact: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MarketCrdInputLine extends StatelessWidget {
+  const _MarketCrdInputLine({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: _marketPrimary),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 86,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: muted,
+                fontSize: 9.6,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: text,
+                fontSize: 10.0,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BondCrdEvolutionChart extends StatefulWidget {
+  const _BondCrdEvolutionChart({
+    required this.result,
+    required this.displayCurrency,
+  });
+
+  final _BondCrdEvolutionResult result;
+  final String displayCurrency;
+
+  @override
+  State<_BondCrdEvolutionChart> createState() => _BondCrdEvolutionChartState();
+}
+
+class _BondCrdEvolutionChartState extends State<_BondCrdEvolutionChart> {
+  int? _hoverIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.result.points.length < 2) {
+      return const SizedBox.expand();
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        final metrics = _BondCrdChartMetrics.from(widget.result.points, size);
+        return MouseRegion(
+          onHover: (event) {
+            final index = metrics.indexNear(event.localPosition.dx);
+            if (index != _hoverIndex) setState(() => _hoverIndex = index);
+          },
+          onExit: (_) => setState(() => _hoverIndex = null),
+          child: Stack(
+            children: [
+              CustomPaint(
+                size: Size.infinite,
+                painter: _BondCrdEvolutionChartPainter(
+                  result: widget.result,
+                  metrics: metrics,
+                  hoverIndex: _hoverIndex,
+                  displayCurrency: widget.displayCurrency,
+                  isDark: _isMarketDark(context),
+                ),
+              ),
+              if (_hoverIndex != null)
+                _BondCrdEvolutionTooltip(
+                  point: widget.result.points[_hoverIndex!],
+                  metrics: metrics,
+                  index: _hoverIndex!,
+                  displayCurrency: widget.displayCurrency,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _BondCrdEvolutionTooltip extends StatelessWidget {
+  const _BondCrdEvolutionTooltip({
+    required this.point,
+    required this.metrics,
+    required this.index,
+    required this.displayCurrency,
+  });
+
+  final _BondCrdEvolutionPoint point;
+  final _BondCrdChartMetrics metrics;
+  final int index;
+  final String displayCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    final x = metrics.xForIndex(index);
+    final y = metrics.yForValue(point.crd);
+    const width = 224.0;
+    const height = 96.0;
+    final left = (x + 18).clamp(
+      metrics.chart.left + 4,
+      metrics.chart.right - width - 4,
+    );
+    final top = (y - height / 2).clamp(
+      metrics.chart.top + 4,
+      metrics.chart.bottom - height - 4,
+    );
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    return Positioned(
+      left: left.toDouble(),
+      top: top.toDouble(),
+      width: width,
+      height: height,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: _marketSurfaceFor(context),
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(color: _marketBorderFor(context)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.16),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _bondCrdMonthLabel(point.date),
+                style: TextStyle(
+                  color: text,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                'CRD : ${_money(point.crd, displayCurrency)}',
+                style: const TextStyle(
+                  color: _marketWarning,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                'Amort. mois : ${_money(point.monthlyAmortization, displayCurrency)} · ${point.activeCount} actifs',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: muted,
+                  fontSize: 9.6,
+                  fontWeight: FontWeight.w500,
+                  height: 1.18,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BondCrdEvolutionPoint {
+  const _BondCrdEvolutionPoint({
+    required this.date,
+    required this.crd,
+    required this.monthlyAmortization,
+    required this.activeCount,
+  });
+
+  final DateTime date;
+  final double crd;
+  final double monthlyAmortization;
+  final int activeCount;
+}
+
+class _BondCrdProfileEntry {
+  const _BondCrdProfileEntry({
+    required this.label,
+    required this.amount,
+    required this.count,
+    required this.color,
+  });
+
+  final String label;
+  final double amount;
+  final int count;
+  final Color color;
+}
+
+class _BondCrdEvolutionResult {
+  const _BondCrdEvolutionResult({
+    required this.points,
+    required this.analysisDate,
+    required this.endDate,
+    required this.currentCrd,
+    required this.endingCrd,
+    required this.projectedAmortization,
+    required this.averageMonthlyAmortization,
+    required this.activeCount,
+    required this.totalCount,
+    required this.profileBreakdown,
+  });
+
+  final List<_BondCrdEvolutionPoint> points;
+  final DateTime analysisDate;
+  final DateTime endDate;
+  final double currentCrd;
+  final double endingCrd;
+  final double projectedAmortization;
+  final double averageMonthlyAmortization;
+  final int activeCount;
+  final int totalCount;
+  final List<_BondCrdProfileEntry> profileBreakdown;
+}
+
+class _BondCrdChartMetrics {
+  const _BondCrdChartMetrics({
+    required this.chart,
+    required this.maxValue,
+    required this.pointCount,
+  });
+
+  factory _BondCrdChartMetrics.from(
+    List<_BondCrdEvolutionPoint> points,
+    Size size,
+  ) {
+    final chart = Rect.fromLTWH(
+      64,
+      18,
+      math.max(1.0, size.width - 88),
+      math.max(1.0, size.height - 72),
+    );
+    final rawMax = points.fold<double>(
+      0,
+      (maxValue, point) => math.max(maxValue, point.crd),
+    );
+    return _BondCrdChartMetrics(
+      chart: chart,
+      maxValue: _bondCrdNiceMax(rawMax),
+      pointCount: points.length,
+    );
+  }
+
+  final Rect chart;
+  final double maxValue;
+  final int pointCount;
+
+  double xForIndex(int index) {
+    if (pointCount <= 1) return chart.left;
+    return chart.left + index / (pointCount - 1) * chart.width;
+  }
+
+  double yForValue(double value) {
+    final ratio = maxValue <= 0 ? 0.0 : (value / maxValue).clamp(0.0, 1.0);
+    return chart.bottom - ratio * chart.height;
+  }
+
+  int indexNear(double dx) {
+    if (pointCount <= 1) return 0;
+    final ratio = ((dx - chart.left) / chart.width).clamp(0.0, 1.0);
+    return (ratio * (pointCount - 1)).round().clamp(0, pointCount - 1);
+  }
+}
+
+class _BondCrdEvolutionChartPainter extends CustomPainter {
+  const _BondCrdEvolutionChartPainter({
+    required this.result,
+    required this.metrics,
+    required this.hoverIndex,
+    required this.displayCurrency,
+    required this.isDark,
+  });
+
+  final _BondCrdEvolutionResult result;
+  final _BondCrdChartMetrics metrics;
+  final int? hoverIndex;
+  final String displayCurrency;
+  final bool isDark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final chart = metrics.chart;
+    final grid = (isDark ? Colors.white : _marketBorder).withValues(
+      alpha: isDark ? 0.14 : 0.70,
+    );
+    final axis = (isDark ? Colors.white : _marketMuted).withValues(alpha: 0.46);
+    final labelColor =
+        (isDark ? Colors.white : _marketMuted).withValues(alpha: 0.84);
+
+    final gridPaint = Paint()
+      ..color = grid
+      ..strokeWidth = 1;
+    final axisPaint = Paint()
+      ..color = axis
+      ..strokeWidth = 1.1;
+
+    for (var tick = 0; tick <= 4; tick++) {
+      final y = chart.bottom - tick / 4 * chart.height;
+      final path = Path()
+        ..moveTo(chart.left, y)
+        ..lineTo(chart.right, y);
+      _drawDashedPath(canvas, path, gridPaint, dashWidth: 5, gapWidth: 6);
+      _paintCrdAxisLabel(
+        canvas,
+        Offset(0, y - 5),
+        _axisMoneyLabel(metrics.maxValue * tick / 4, displayCurrency),
+        labelColor,
+        width: chart.left - 8,
+        align: TextAlign.right,
+        fontSize: 8.3,
+        fontWeight: FontWeight.w500,
+      );
+    }
+
+    final xTicks = _bondCrdXAxisTicks(
+      result.points.length,
+      maxTicks: chart.width < 520
+          ? 4
+          : chart.width < 820
+              ? 5
+              : 7,
+    );
+    for (final index in xTicks) {
+      final x = metrics.xForIndex(index);
+      final path = Path()
+        ..moveTo(x, chart.top)
+        ..lineTo(x, chart.bottom);
+      _drawDashedPath(canvas, path, gridPaint, dashWidth: 5, gapWidth: 7);
+      canvas.drawLine(
+        Offset(x, chart.bottom),
+        Offset(x, chart.bottom + 4),
+        axisPaint,
+      );
+      _paintCrdAxisLabel(
+        canvas,
+        Offset(x - 39, chart.bottom + 12),
+        _bondCrdMonthLabel(result.points[index].date),
+        labelColor,
+        width: 78,
+        align: TextAlign.center,
+        fontSize: 8.4,
+        fontWeight: FontWeight.w500,
+      );
+    }
+
+    canvas.drawLine(chart.bottomLeft, chart.bottomRight, axisPaint);
+    canvas.drawLine(chart.bottomLeft, chart.topLeft, axisPaint);
+
+    if (result.points.length >= 2) {
+      final linePath = Path();
+      for (var index = 0; index < result.points.length; index++) {
+        final point = result.points[index];
+        final offset = Offset(
+          metrics.xForIndex(index),
+          metrics.yForValue(point.crd),
+        );
+        if (index == 0) {
+          linePath.moveTo(offset.dx, offset.dy);
+        } else {
+          linePath.lineTo(offset.dx, offset.dy);
+        }
+      }
+
+      final fillPath = Path.from(linePath)
+        ..lineTo(chart.right, chart.bottom)
+        ..lineTo(chart.left, chart.bottom)
+        ..close();
+      canvas.drawPath(
+        fillPath,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              _marketWarning.withValues(alpha: isDark ? 0.30 : 0.24),
+              _marketWarning.withValues(alpha: isDark ? 0.08 : 0.10),
+            ],
+          ).createShader(chart),
+      );
+      canvas.drawPath(
+        linePath,
+        Paint()
+          ..isAntiAlias = true
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..strokeWidth = 2.1
+          ..color = _marketWarning,
+      );
+    }
+
+    final selected = hoverIndex;
+    if (selected != null && selected >= 0 && selected < result.points.length) {
+      final point = result.points[selected];
+      final x = metrics.xForIndex(selected);
+      final y = metrics.yForValue(point.crd);
+      canvas.drawLine(
+        Offset(x, chart.top),
+        Offset(x, chart.bottom),
+        Paint()
+          ..color = _marketWarning.withValues(alpha: 0.35)
+          ..strokeWidth = 1.1,
+      );
+      canvas.drawCircle(
+        Offset(x, y),
+        5.5,
+        Paint()..color = _marketSurface,
+      );
+      canvas.drawCircle(
+        Offset(x, y),
+        5.5,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.2
+          ..color = _marketWarning,
+      );
+    }
+
+    final legendY = math.min(size.height - 9, chart.bottom + 42);
+    final legendX = chart.left + chart.width / 2 - 27;
+    canvas.drawCircle(
+      Offset(legendX, legendY - 1),
+      3.2,
+      Paint()..color = _marketWarning,
+    );
+    canvas.drawLine(
+      Offset(legendX + 7, legendY - 1),
+      Offset(legendX + 24, legendY - 1),
+      Paint()
+        ..color = _marketWarning
+        ..strokeWidth = 2,
+    );
+    _paintCrdAxisLabel(
+      canvas,
+      Offset(legendX + 30, legendY - 7),
+      'CRD',
+      labelColor,
+      width: 60,
+      align: TextAlign.left,
+      fontSize: 8.6,
+      fontWeight: FontWeight.w500,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BondCrdEvolutionChartPainter oldDelegate) {
+    return oldDelegate.result != result ||
+        oldDelegate.metrics != metrics ||
+        oldDelegate.hoverIndex != hoverIndex ||
+        oldDelegate.displayCurrency != displayCurrency ||
+        oldDelegate.isDark != isDark;
+  }
+}
+
+_BondCrdEvolutionResult _bondCrdEvolutionResult(
+  MarketPortfolioDataset dataset,
+) {
+  final analysisDate = _bondCrdAnalysisDate(dataset);
+  final activeRecords = <MarketPortfolioRecord>[];
+  final activeCurrents = <double>[];
+  final activeResidualMonths = <int>[];
+  var maxResidualMonths = 0;
+  for (final record in dataset.records) {
+    final current = _bondOutstandingCapitalValue(record);
+    if (current <= 0) continue;
+    final residual = _bondCrdResidualMonthsAt(
+      record,
+      analysisDate: analysisDate,
+      targetDate: analysisDate,
+    );
+    if (residual <= 0) continue;
+    activeRecords.add(record);
+    activeCurrents.add(current);
+    activeResidualMonths.add(residual);
+    maxResidualMonths = math.max(maxResidualMonths, residual);
+  }
+
+  final horizonMonths = math.max(1, maxResidualMonths);
+  final crdDeltas = List<double>.filled(horizonMonths + 2, 0);
+  final activeDeltas = List<int>.filled(horizonMonths + 2, 0);
+  for (var index = 0; index < activeRecords.length; index++) {
+    final record = activeRecords[index];
+    final current = activeCurrents[index];
+    final residual = activeResidualMonths[index].clamp(0, horizonMonths);
+    if (residual <= 0) continue;
+
+    final frequency = math.max(1, record.couponPaymentsPerYear);
+    final periodMonths = math.max(1, (12 / frequency).round());
+    final currentPeriods =
+        (residual / periodMonths).ceil().clamp(1, 10000).toInt();
+    final kind = _bondPricingAmortizationKind(record);
+
+    if (kind == _BondPricingAmortizationKind.bullet) {
+      _bondCrdAddRange(
+        crdDeltas,
+        activeDeltas,
+        start: 0,
+        endExclusive: residual,
+        amount: current,
+      );
+      continue;
+    }
+
+    for (var remainingPeriods = currentPeriods;
+        remainingPeriods >= 1;
+        remainingPeriods--) {
+      final start = math.max(0, residual - remainingPeriods * periodMonths);
+      final endExclusive = math.min(
+        residual,
+        residual - (remainingPeriods - 1) * periodMonths,
+      );
+      if (endExclusive <= start) continue;
+
+      final amount = kind == _BondPricingAmortizationKind.constantAnnuity
+          ? _bondCrdConstantAnnuityBalance(
+              initialCapital: current,
+              paidPeriods: currentPeriods - remainingPeriods,
+              totalPeriods: currentPeriods,
+              periodRate: _bondCouponFraction(record.coupon) / frequency,
+            )
+          : current * remainingPeriods / currentPeriods;
+      _bondCrdAddRange(
+        crdDeltas,
+        activeDeltas,
+        start: start,
+        endExclusive: endExclusive,
+        amount: amount.clamp(0.0, current).toDouble(),
+      );
+    }
+  }
+
+  final points = <_BondCrdEvolutionPoint>[];
+  var runningCrd = 0.0;
+  var runningActiveCount = 0;
+  var previousCrd = 0.0;
+  for (var monthOffset = 0; monthOffset <= horizonMonths; monthOffset++) {
+    final date = _bondCrdAddMonths(analysisDate, monthOffset);
+    runningCrd += crdDeltas[monthOffset];
+    runningActiveCount += activeDeltas[monthOffset];
+    final crd = runningCrd.abs() < 0.000001 ? 0.0 : runningCrd;
+    points.add(
+      _BondCrdEvolutionPoint(
+        date: date,
+        crd: crd,
+        monthlyAmortization:
+            monthOffset == 0 ? 0 : math.max(0.0, previousCrd - crd),
+        activeCount: math.max(0, runningActiveCount),
+      ),
+    );
+    previousCrd = crd;
+  }
+
+  final currentCrd = points.isEmpty ? 0.0 : points.first.crd;
+  final endingCrd = points.isEmpty ? 0.0 : points.last.crd;
+  final projectedAmortization = math.max(0.0, currentCrd - endingCrd);
+  return _BondCrdEvolutionResult(
+    points: points,
+    analysisDate: analysisDate,
+    endDate: points.isEmpty ? analysisDate : points.last.date,
+    currentCrd: currentCrd,
+    endingCrd: endingCrd,
+    projectedAmortization: projectedAmortization,
+    averageMonthlyAmortization:
+        projectedAmortization / math.max(1, horizonMonths),
+    activeCount: activeRecords.length,
+    totalCount: dataset.rowCount,
+    profileBreakdown: _bondCrdProfileBreakdown(activeRecords),
+  );
+}
+
+void _bondCrdAddRange(
+  List<double> crdDeltas,
+  List<int> activeDeltas, {
+  required int start,
+  required int endExclusive,
+  required double amount,
+}) {
+  if (amount <= 0 || endExclusive <= start) return;
+  final safeStart = start.clamp(0, crdDeltas.length - 1);
+  final safeEnd = endExclusive.clamp(0, crdDeltas.length - 1);
+  if (safeEnd <= safeStart) return;
+  crdDeltas[safeStart] += amount;
+  crdDeltas[safeEnd] -= amount;
+  activeDeltas[safeStart] += 1;
+  activeDeltas[safeEnd] -= 1;
+}
+
+DateTime _bondCrdAnalysisDate(MarketPortfolioDataset dataset) {
+  for (final record in dataset.records) {
+    if (record.analysisDate != null) {
+      return _bondCrdDateOnly(record.resolvedAnalysisDate);
+    }
+  }
+  if (dataset.records.isNotEmpty) {
+    return _bondCrdDateOnly(dataset.records.first.resolvedAnalysisDate);
+  }
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+}
+
+int _bondCrdResidualMonthsAt(
+  MarketPortfolioRecord record, {
+  required DateTime analysisDate,
+  required DateTime targetDate,
+}) {
+  final target = _bondCrdDateOnly(targetDate);
+  final maturity = record.maturityDate;
+  if (maturity != null) {
+    return _bondCrdCalendarMonthsCeil(target, maturity);
+  }
+  final currentResidual = _bondMaturityMonths(record).ceil();
+  if (currentResidual <= 0) return 0;
+  final elapsed = _bondCrdCalendarMonthsCeil(analysisDate, target);
+  return math.max(0, currentResidual - elapsed);
+}
+
+List<_BondCrdProfileEntry> _bondCrdProfileBreakdown(
+  List<MarketPortfolioRecord> records,
+) {
+  final amounts = <_BondPricingAmortizationKind, double>{};
+  final counts = <_BondPricingAmortizationKind, int>{};
+  for (final record in records) {
+    final amount = _bondOutstandingCapitalValue(record);
+    if (amount <= 0) continue;
+    final kind = _bondPricingAmortizationKind(record);
+    amounts.update(kind, (value) => value + amount, ifAbsent: () => amount);
+    counts.update(kind, (value) => value + 1, ifAbsent: () => 1);
+  }
+  final entries = [
+    for (final kind in _BondPricingAmortizationKind.values)
+      if ((amounts[kind] ?? 0) > 0)
+        _BondCrdProfileEntry(
+          label: _bondCrdProfileLabel(kind),
+          amount: amounts[kind] ?? 0,
+          count: counts[kind] ?? 0,
+          color: _bondCrdProfileColor(kind),
+        ),
+  ]..sort((left, right) => right.amount.compareTo(left.amount));
+  return entries;
+}
+
+String _bondCrdProfileLabel(_BondPricingAmortizationKind kind) {
+  return switch (kind) {
+    _BondPricingAmortizationKind.bullet => 'In fine / bullet',
+    _BondPricingAmortizationKind.linear => 'Amortissement linéaire',
+    _BondPricingAmortizationKind.constantAnnuity => 'Annuités constantes',
+  };
+}
+
+Color _bondCrdProfileColor(_BondPricingAmortizationKind kind) {
+  return switch (kind) {
+    _BondPricingAmortizationKind.bullet => _marketWarning,
+    _BondPricingAmortizationKind.linear => _marketPrimary,
+    _BondPricingAmortizationKind.constantAnnuity => _marketSuccess,
+  };
+}
+
+double _bondCrdConstantAnnuityBalance({
+  required double initialCapital,
+  required int paidPeriods,
+  required int totalPeriods,
+  required double periodRate,
+}) {
+  if (paidPeriods <= 0) return initialCapital;
+  if (paidPeriods >= totalPeriods) return 0;
+  if (!periodRate.isFinite || periodRate <= 0) {
+    return initialCapital * (totalPeriods - paidPeriods) / totalPeriods;
+  }
+  final annuityDenominator =
+      1 - math.pow(1 + periodRate, -totalPeriods).toDouble();
+  if (!annuityDenominator.isFinite || annuityDenominator <= 0) {
+    return initialCapital;
+  }
+  final annuity = initialCapital * periodRate / annuityDenominator;
+  final growth = math.pow(1 + periodRate, paidPeriods).toDouble();
+  final balance =
+      initialCapital * growth - annuity * ((growth - 1) / periodRate);
+  return balance.isFinite ? math.max(0.0, balance).toDouble() : initialCapital;
+}
+
+DateTime _bondCrdDateOnly(DateTime date) {
+  return DateTime(date.year, date.month, date.day);
+}
+
+DateTime _bondCrdAddMonths(DateTime date, int months) {
+  final targetMonthIndex = date.month + months - 1;
+  final year = date.year + targetMonthIndex ~/ 12;
+  final month = targetMonthIndex % 12 + 1;
+  final day = math.min(date.day, DateTime(year, month + 1, 0).day);
+  return DateTime(year, month, day);
+}
+
+int _bondCrdCalendarMonthsCeil(DateTime start, DateTime end) {
+  final startDate = _bondCrdDateOnly(start);
+  final endDate = _bondCrdDateOnly(end);
+  if (!endDate.isAfter(startDate)) return 0;
+  var months =
+      (endDate.year - startDate.year) * 12 + endDate.month - startDate.month;
+  if (_bondCrdAddMonths(startDate, months).isBefore(endDate)) months++;
+  return math.max(0, months);
+}
+
+double _bondCrdNiceMax(double rawMax) {
+  if (!rawMax.isFinite || rawMax <= 0) return 1;
+  final exponent = (math.log(rawMax) / math.ln10).floor();
+  final base = math.pow(10, exponent).toDouble();
+  final normalized = rawMax / base;
+  final multiplier = normalized <= 2
+      ? 2
+      : normalized <= 5
+          ? 5
+          : 10;
+  return multiplier * base;
+}
+
+List<int> _bondCrdXAxisTicks(
+  int pointCount, {
+  int maxTicks = 6,
+}) {
+  if (pointCount <= 1) return const [0];
+  final tickCount = math.min(maxTicks.clamp(2, 8), pointCount);
+  final ticks = <int>{};
+  for (var index = 0; index < tickCount; index++) {
+    ticks.add((index * (pointCount - 1) / (tickCount - 1)).round());
+  }
+  return ticks.toList()..sort();
+}
+
+String _bondCrdShortDate(DateTime? date) {
+  if (date == null) return '-';
+  String two(int value) => value.toString().padLeft(2, '0');
+  return '${two(date.day)}/${two(date.month)}/${date.year}';
+}
+
+String _bondCrdMonthLabel(DateTime date) {
+  const months = [
+    'janv.',
+    'févr.',
+    'mars',
+    'avr.',
+    'mai',
+    'juin',
+    'juil.',
+    'août',
+    'sept.',
+    'oct.',
+    'nov.',
+    'déc.',
+  ];
+  return '${months[date.month - 1]} ${date.year.toString().substring(2)}';
+}
+
+void _paintCrdAxisLabel(
+  Canvas canvas,
+  Offset offset,
+  String text,
+  Color color, {
+  required double width,
+  required TextAlign align,
+  double fontSize = 9,
+  FontWeight fontWeight = FontWeight.w500,
+}) {
+  final painter = TextPainter(
+    text: TextSpan(
+      text: text,
+      style: TextStyle(
+        color: color,
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        height: 1,
+      ),
+    ),
+    maxLines: 1,
+    textAlign: align,
+    textDirection: TextDirection.ltr,
+  )..layout(maxWidth: width);
+  painter.paint(canvas, offset);
 }
 
 class _BondKeyIndicatorsSection extends StatelessWidget {
@@ -3209,7 +5229,7 @@ class _BondKeyIndicatorsHeader extends StatelessWidget {
                   style: TextStyle(
                     color: text,
                     fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -3219,7 +5239,7 @@ class _BondKeyIndicatorsHeader extends StatelessWidget {
                   style: TextStyle(
                     color: muted,
                     fontSize: 9.5,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -3295,12 +5315,12 @@ class _BondKeyIndicatorSpec {
         unit: '',
         icon: CupertinoIcons.arrow_up_right_circle_fill,
         color: _marketWarning,
-        formula: r'\bar{y}=\frac{\sum_i y_i\times w_i}{\sum_i w_i}',
+        formula: r'PV=\sum_t\frac{CF_t}{(1+YTM)^t}',
         detail:
-            'YTM équivalent recalculé par titre à partir de la PV courbe de taux, puis pondéré par valeur actualisée.',
+            'Taux annuel unique qui égalise la valeur actualisée du portefeuille et ses flux futurs agrégés.',
         caption: 'Moteur de performance',
         category: 'Rendement',
-        method: 'Taux plat équivalent pondéré',
+        method: 'Taux actuariel agrégé',
         reading: 'Performance long terme',
       ),
       _BondKeyIndicatorSpec(
@@ -3378,12 +5398,12 @@ class _BondKeyIndicatorSpec {
         unit: 'ans',
         icon: CupertinoIcons.gauge,
         color: _marketViolet,
-        formula: r'D_{mod}=\frac{D_{Mac}}{1+\frac{YTM}{m}}',
+        formula: r'D_{mod}=\frac{D_{Mac}}{1+YTM}',
         detail:
-            'Mesure l’exposition directe du portefeuille au risque de taux via les YTM équivalents par titre.',
+            'Mesure l’exposition directe du portefeuille au risque de taux via le YTM agrégé.',
         caption: 'Sensibilité prix/taux',
         category: 'Sensibilité',
-        method: 'Macaulay corrigée du YTM',
+        method: 'Macaulay corrigée du YTM agrégé',
         reading: 'Impact par point de base',
       ),
       _BondKeyIndicatorSpec(
@@ -3415,6 +5435,11 @@ class _BondIndicatorContentBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cachedRows = _bondIndicatorRowsCached(stats);
+    if (cachedRows != null) {
+      return _buildContent(rows: cachedRows);
+    }
+
     return FutureBuilder<_BondIndicatorRowsBundle>(
       future: _bondIndicatorRowsForAsync(stats),
       builder: (context, snapshot) {
@@ -3436,41 +5461,75 @@ class _BondIndicatorContentBoard extends StatelessWidget {
             ],
           );
         }
-        return Column(
-          children: [
-            _BondIndicatorOverviewSwitcher(
-              items: items,
-              zoneRows: rows.zoneRows,
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: _BondTitleIndicatorsTable(rows: rows.titleRows),
-            ),
-          ],
-        );
+        return _buildContent(rows: rows);
       },
+    );
+  }
+
+  Widget _buildContent({required _BondIndicatorRowsBundle rows}) {
+    return Column(
+      children: [
+        _BondIndicatorOverviewSwitcher(
+          items: items,
+          zoneRows: rows.zoneRows,
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: _BondTitleIndicatorsTable(rows: rows.titleRows),
+        ),
+      ],
     );
   }
 }
 
-final Expando<_BondIndicatorRowsBundle> _bondIndicatorRowsCache =
-    Expando<_BondIndicatorRowsBundle>('bond-indicator-rows');
-final Expando<Future<_BondIndicatorRowsBundle>> _bondIndicatorRowsFutureCache =
-    Expando<Future<_BondIndicatorRowsBundle>>('bond-indicator-rows-future');
+const int _bondIndicatorRowsCacheLimit = 3;
+final Map<String, _BondIndicatorRowsBundle> _bondIndicatorRowsCache =
+    <String, _BondIndicatorRowsBundle>{};
+final Map<String, Future<_BondIndicatorRowsBundle>>
+    _bondIndicatorRowsFutureCache =
+    <String, Future<_BondIndicatorRowsBundle>>{};
+
+String _bondIndicatorRowsCacheKey(_BondDashboardStats stats) {
+  return [
+    'indicator-rows',
+    _bondDatasetContentSignature(stats.dataset),
+    _bondYieldCurvePricingSignature(stats.yieldCurves),
+  ].join('|');
+}
+
+_BondIndicatorRowsBundle? _bondIndicatorRowsCached(
+  _BondDashboardStats stats,
+) {
+  return _bondIndicatorRowsCache[_bondIndicatorRowsCacheKey(stats)];
+}
+
+void _trimBondIndicatorRowsCaches() {
+  while (_bondIndicatorRowsCache.length > _bondIndicatorRowsCacheLimit) {
+    _bondIndicatorRowsCache.remove(_bondIndicatorRowsCache.keys.first);
+  }
+  while (_bondIndicatorRowsFutureCache.length > _bondIndicatorRowsCacheLimit) {
+    _bondIndicatorRowsFutureCache
+        .remove(_bondIndicatorRowsFutureCache.keys.first);
+  }
+}
 
 Future<_BondIndicatorRowsBundle> _bondIndicatorRowsForAsync(
   _BondDashboardStats stats,
 ) {
-  final cached = _bondIndicatorRowsCache[stats];
+  final cacheKey = _bondIndicatorRowsCacheKey(stats);
+  final cached = _bondIndicatorRowsCache[cacheKey];
   if (cached != null) return SynchronousFuture(cached);
-  final cachedFuture = _bondIndicatorRowsFutureCache[stats];
+  final cachedFuture = _bondIndicatorRowsFutureCache[cacheKey];
   if (cachedFuture != null) return cachedFuture;
 
   final future = _computeBondIndicatorRowsAsync(stats).then((rows) {
-    _bondIndicatorRowsCache[stats] = rows;
+    _bondIndicatorRowsCache[cacheKey] = rows;
+    _bondIndicatorRowsFutureCache.remove(cacheKey);
+    _trimBondIndicatorRowsCaches();
     return rows;
   });
-  _bondIndicatorRowsFutureCache[stats] = future;
+  _bondIndicatorRowsFutureCache[cacheKey] = future;
+  _trimBondIndicatorRowsCaches();
   return future;
 }
 
@@ -3628,7 +5687,7 @@ List<_BondTitleIndicatorRow> _buildBondIndicatorTitleRows(
                 shareTotal,
         ytm: metrics.yieldToMaturity,
         coupon: coupon,
-        spread: record.spread,
+        spread: coupon - metrics.yieldToMaturity,
         maturityMonths: maturityMonths,
         residualMaturityMonths: residualMaturityMonths,
         macaulay: metrics.macaulay,
@@ -3820,7 +5879,7 @@ class _BondIndicatorKpiPanel extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+      padding: const EdgeInsets.fromLTRB(10, 7, 10, 8),
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context).withValues(
           alpha: isDark ? 0.86 : 0.98,
@@ -3840,7 +5899,7 @@ class _BondIndicatorKpiPanel extends StatelessWidget {
             children: [
               Container(
                 width: 24,
-                height: 24,
+                height: 23,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: _marketPrimary.withValues(alpha: isDark ? 0.18 : 0.10),
@@ -3864,7 +5923,7 @@ class _BondIndicatorKpiPanel extends StatelessWidget {
                       style: TextStyle(
                         color: text.withValues(alpha: 0.72),
                         fontSize: 12.1,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0.35,
                         height: 1,
                       ),
@@ -3877,7 +5936,7 @@ class _BondIndicatorKpiPanel extends StatelessWidget {
                       style: TextStyle(
                         color: muted.withValues(alpha: 0.95),
                         fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         height: 1,
                       ),
                     ),
@@ -3958,11 +6017,11 @@ class _BondZoneMonetaryTable extends StatelessWidget {
                 ),
                 child: const Icon(
                   CupertinoIcons.globe,
-                  size: 14,
+                  size: 13,
                   color: _marketPrimary,
                 ),
               ),
-              const SizedBox(width: 9),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -3973,9 +6032,9 @@ class _BondZoneMonetaryTable extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: text.withValues(alpha: 0.72),
-                        fontSize: 12.1,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.35,
+                        fontSize: 11.4,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.18,
                         height: 1,
                       ),
                     ),
@@ -3986,8 +6045,8 @@ class _BondZoneMonetaryTable extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: muted.withValues(alpha: 0.95),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 8.7,
+                        fontWeight: FontWeight.w500,
                         height: 1,
                       ),
                     ),
@@ -3997,30 +6056,29 @@ class _BondZoneMonetaryTable extends StatelessWidget {
               const SizedBox(width: 78),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           LayoutBuilder(
             builder: (context, constraints) {
               const gap = 8.0;
-              final columns =
-                  constraints.maxWidth < 760 ? 1 : math.min(2, rows.length);
-              final safeColumns = math.max(1, columns);
-              final available = constraints.maxWidth - gap * (safeColumns - 1);
-              final cardWidth = available / safeColumns;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
+              if (rows.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final row in rows)
-                    SizedBox(
-                      width: cardWidth,
+                  for (var index = 0; index < rows.length; index++) ...[
+                    Expanded(
                       child: _BondZoneAllocationCard(
-                        row: row,
+                        row: rows[index],
                         totalCapital: totalCapital,
                         text: text,
                         muted: muted,
                         border: border,
                       ),
                     ),
+                    if (index < rows.length - 1) const SizedBox(width: gap),
+                  ],
                 ],
               );
             },
@@ -4053,8 +6111,8 @@ class _BondZoneAllocationCard extends StatelessWidget {
     final capitalRatio = row.share.clamp(0.0, 1.0).toDouble();
 
     return Container(
-      height: 78,
-      padding: const EdgeInsets.all(7),
+      height: 68,
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: isDark
             ? Color.alphaBlend(
@@ -4072,7 +6130,7 @@ class _BondZoneAllocationCard extends StatelessWidget {
             children: [
               Container(
                 width: 4,
-                height: 16,
+                height: 14,
                 decoration: BoxDecoration(
                   color: accent,
                   borderRadius: BorderRadius.circular(2),
@@ -4086,8 +6144,8 @@ class _BondZoneAllocationCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: text,
-                    fontSize: 11.4,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -4095,7 +6153,7 @@ class _BondZoneAllocationCard extends StatelessWidget {
               _BondZoneShareChip(row: row, color: accent),
             ],
           ),
-          const SizedBox(height: 7),
+          const SizedBox(height: 6),
           Row(
             children: [
               Expanded(
@@ -4170,8 +6228,8 @@ class _BondZoneShareChip extends StatelessWidget {
         _bondIndicatorPercent(row.share),
         style: TextStyle(
           color: _marketTextFor(context),
-          fontSize: 9.8,
-          fontWeight: FontWeight.w700,
+          fontSize: 8.8,
+          fontWeight: FontWeight.w500,
           height: 1,
         ),
       ),
@@ -4207,12 +6265,12 @@ class _BondZoneMetricText extends StatelessWidget {
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
           style: TextStyle(
             color: text,
-            fontSize: 11.4,
-            fontWeight: FontWeight.w700,
+            fontSize: 10.4,
+            fontWeight: FontWeight.w500,
             height: 1,
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 2),
         Text(
           label,
           maxLines: 1,
@@ -4220,7 +6278,7 @@ class _BondZoneMetricText extends StatelessWidget {
           textAlign: alignEnd ? TextAlign.right : TextAlign.left,
           style: TextStyle(
             color: muted.withValues(alpha: 0.72),
-            fontSize: 8.1,
+            fontSize: 7.3,
             fontWeight: FontWeight.w500,
             height: 1,
           ),
@@ -4371,15 +6429,15 @@ extension _BondTitleColumnMeta on _BondTitleColumn {
         _BondTitleColumn.capital => 170,
         _BondTitleColumn.presentValue => 170,
         _BondTitleColumn.share => 150,
-        _BondTitleColumn.ytm => 180,
-        _BondTitleColumn.coupon => 168,
-        _BondTitleColumn.spread => 156,
-        _BondTitleColumn.maturityMonths => 156,
-        _BondTitleColumn.residualMaturityMonths => 180,
-        _BondTitleColumn.macaulay => 170,
-        _BondTitleColumn.modified => 170,
-        _BondTitleColumn.convexity => 112,
-        _BondTitleColumn.sensitivity => 148,
+        _BondTitleColumn.ytm => 210,
+        _BondTitleColumn.coupon => 132,
+        _BondTitleColumn.spread => 210,
+        _BondTitleColumn.maturityMonths => 210,
+        _BondTitleColumn.residualMaturityMonths => 238,
+        _BondTitleColumn.macaulay => 224,
+        _BondTitleColumn.modified => 218,
+        _BondTitleColumn.convexity => 130,
+        _BondTitleColumn.sensitivity => 164,
       };
 
   bool get isText => switch (this) {
@@ -4679,7 +6737,7 @@ class _BondTitleIndicatorsTableState extends State<_BondTitleIndicatorsTable> {
                   style: TextStyle(
                     color: muted,
                     fontSize: 11.8,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 0.85,
                     height: 1,
                   ),
@@ -4731,7 +6789,7 @@ class _BondTitleIndicatorsTableState extends State<_BondTitleIndicatorsTable> {
                               style: TextStyle(
                                 color: muted,
                                 fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           )
@@ -4930,8 +6988,8 @@ class _BondTitleHeaderCell extends StatelessWidget {
         child: Container(
           width: column.width,
           height: double.infinity,
-          alignment: alignLeft ? Alignment.centerLeft : Alignment.centerRight,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
             border: Border(
               right: BorderSide(color: border.withValues(alpha: 0.44)),
@@ -4939,23 +6997,22 @@ class _BondTitleHeaderCell extends StatelessWidget {
             ),
           ),
           child: Row(
-            mainAxisAlignment:
-                alignLeft ? MainAxisAlignment.start : MainAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisSize: MainAxisSize.max,
             children: [
-              Flexible(
+              Expanded(
                 child: Text(
                   column.label.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                  textAlign: alignLeft ? TextAlign.left : TextAlign.right,
+                  maxLines: 2,
+                  overflow: TextOverflow.visible,
+                  softWrap: true,
+                  textAlign: alignLeft ? TextAlign.left : TextAlign.center,
                   style: TextStyle(
                     color: sorted ? _marketPrimary : _marketDashboardDeepBlue,
-                    fontSize: 9.0,
-                    fontWeight: FontWeight.w800,
-                    height: 1.03,
-                    letterSpacing: 0.25,
+                    fontSize: 8.8,
+                    fontWeight: FontWeight.w500,
+                    height: 1.10,
+                    letterSpacing: 0,
                   ),
                 ),
               ),
@@ -5025,7 +7082,7 @@ class _BondTitleIndicatorsDataRow extends StatelessWidget {
                           width: column.width,
                           alignLeft: column.isText,
                           selected: selected,
-                          flagAsset: column == _BondTitleColumn.title
+                          flagAsset: column == _BondTitleColumn.country
                               ? row.flagAsset
                               : null,
                         ),
@@ -5080,7 +7137,7 @@ class _BondIssuerSearchField extends StatelessWidget {
         style: TextStyle(
           color: text,
           fontSize: 11.4,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           height: 1,
         ),
         decoration: InputDecoration(
@@ -5088,7 +7145,7 @@ class _BondIssuerSearchField extends StatelessWidget {
           hintStyle: TextStyle(
             color: muted.withValues(alpha: 0.72),
             fontSize: 11.2,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
           prefixIcon: Icon(
             CupertinoIcons.search,
@@ -5216,7 +7273,7 @@ class _BondTitleColumnVisibilityButtonState
                     style: TextStyle(
                       color: text,
                       fontSize: 11.2,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       height: 1,
                     ),
                   ),
@@ -5289,7 +7346,7 @@ class _BondTitleColumnVisibilityPanel extends StatelessWidget {
                     style: TextStyle(
                       color: text,
                       fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       height: 1,
                     ),
                   ),
@@ -5306,7 +7363,7 @@ class _BondTitleColumnVisibilityPanel extends StatelessWidget {
                     style: TextStyle(
                       color: muted,
                       fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -5392,7 +7449,7 @@ class _BondTitleColumnOptionRow extends StatelessWidget {
                       ? (selected ? text : muted.withValues(alpha: 0.92))
                       : muted.withValues(alpha: 0.58),
                   fontSize: 12.1,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: selected ? FontWeight.w500 : FontWeight.w500,
                   height: 1,
                 ),
               ),
@@ -5446,7 +7503,7 @@ class _BondTitleTableCell extends StatelessWidget {
               style: TextStyle(
                 color: selected ? _marketDashboardDeepBlue : text,
                 fontSize: 11.2,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                fontWeight: selected ? FontWeight.w500 : FontWeight.w500,
                 height: 1.05,
                 letterSpacing: 0,
               ),
@@ -5457,7 +7514,7 @@ class _BondTitleTableCell extends StatelessWidget {
               style: TextStyle(
                 color: selected ? _marketDashboardDeepBlue : text,
                 fontSize: 11.2,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                fontWeight: selected ? FontWeight.w500 : FontWeight.w500,
                 height: 1.05,
                 letterSpacing: 0,
               ),
@@ -5504,10 +7561,11 @@ _BondRecordFixedIncomeMetrics _bondRecordFixedIncomeMetrics({
 
   final frequency = math.max(1, record.couponPaymentsPerYear);
   final fallbackYield = _bondFallbackMarketYield(record, coupon);
+  final cashflowCoupon = _bondCashflowCoupon(record, coupon);
   final cashflows = _bondFutureCashflows(
     record: record,
     capital: capital,
-    coupon: coupon,
+    coupon: cashflowCoupon,
     maturity: maturity,
   );
   if (cashflows.isEmpty) {
@@ -5540,16 +7598,11 @@ _BondRecordFixedIncomeMetrics _bondRecordFixedIncomeMetrics({
   final yieldToMaturity = _bondSolveEquivalentYield(
     cashflows: cashflows,
     targetPresentValue: resolvedPresentValue,
-    frequency: frequency,
     fallbackYield: marketRate,
+    frequency: frequency,
   );
-  final durationMetrics = _bondTermStructureDurationMetrics(
-    record: record,
-    yieldCurves: yieldCurves,
+  final durationMetrics = _bondPeriodicYieldDurationMetrics(
     cashflows: cashflows,
-    presentValue: resolvedPresentValue,
-    fallbackYield: fallbackYield,
-    equivalentYield: yieldToMaturity,
     annualYield: yieldToMaturity,
     frequency: frequency,
   );
@@ -5598,6 +7651,7 @@ List<_BondPricingCashflow> _bondFutureCashflows({
   final frequency = math.max(1, record.couponPaymentsPerYear);
   final periods = math.max(1, (maturity * frequency).ceil());
   final kind = _bondPricingAmortizationKind(record);
+  final redemptionFactor = _bondRedemptionCashflowFactor(record);
   final cashflows = <_BondPricingCashflow>[];
 
   var outstanding = capital;
@@ -5607,7 +7661,8 @@ List<_BondPricingCashflow> _bondFutureCashflows({
       final time = math.min(period / frequency, maturity).toDouble();
       final periodLength = math.max(0.0, time - previousTime).toDouble();
       final couponCashflow = outstanding * coupon * periodLength;
-      final principalCashflow = period == periods ? outstanding : 0;
+      final principalCashflow =
+          period == periods ? outstanding * redemptionFactor : 0;
       final amount = couponCashflow + principalCashflow;
       if (amount > 0) {
         cashflows.add(_BondPricingCashflow(time: time, amount: amount));
@@ -5630,7 +7685,7 @@ List<_BondPricingCashflow> _bondFutureCashflows({
             : math
                 .min(outstanding, math.max(0.0, annuity - interest))
                 .toDouble();
-        final amount = interest + principal;
+        final amount = interest + principal * redemptionFactor;
         if (amount > 0) {
           cashflows.add(_BondPricingCashflow(time: time, amount: amount));
         }
@@ -5649,7 +7704,7 @@ List<_BondPricingCashflow> _bondFutureCashflows({
     final principal = period == periods
         ? outstanding
         : math.min(outstanding, scheduledPrincipal).toDouble();
-    final amount = couponCashflow + principal;
+    final amount = couponCashflow + principal * redemptionFactor;
     if (amount > 0) {
       cashflows.add(_BondPricingCashflow(time: time, amount: amount));
     }
@@ -5657,6 +7712,10 @@ List<_BondPricingCashflow> _bondFutureCashflows({
     previousTime = time;
   }
   return cashflows;
+}
+
+double _bondRedemptionCashflowFactor(MarketPortfolioRecord record) {
+  return 1.0;
 }
 
 _BondPricingAmortizationKind _bondPricingAmortizationKind(
@@ -5673,17 +7732,8 @@ _BondPricingAmortizationKind _bondPricingAmortizationKind(
       profile.contains('a echeance')) {
     return _BondPricingAmortizationKind.bullet;
   }
-  if (profile == 'constant' && _isBondPricingShortMonthlyTreasuryBill(record)) {
-    return _BondPricingAmortizationKind.linear;
-  }
   if (profile == 'constant' ||
-      profile.contains('annuite') ||
-      profile.contains('annuity') ||
-      profile.contains('echeance constante') ||
-      profile.contains('paiement constant')) {
-    return _BondPricingAmortizationKind.constantAnnuity;
-  }
-  if (profile.contains('lineaire') ||
+      profile.contains('lineaire') ||
       profile.contains('linear') ||
       profile.contains('principal constant') ||
       profile.contains('capital constant') ||
@@ -5692,16 +7742,14 @@ _BondPricingAmortizationKind _bondPricingAmortizationKind(
       profile.contains('amorti')) {
     return _BondPricingAmortizationKind.linear;
   }
+  if (profile.contains('annuite') ||
+      profile.contains('annuity') ||
+      profile.contains('serie egale') ||
+      profile.contains('echeance constante') ||
+      profile.contains('paiement constant')) {
+    return _BondPricingAmortizationKind.constantAnnuity;
+  }
   return _BondPricingAmortizationKind.bullet;
-}
-
-bool _isBondPricingShortMonthlyTreasuryBill(MarketPortfolioRecord record) {
-  final code = _normalizeYieldText(record.instrumentCode).replaceAll(' ', '');
-  final type = _normalizeYieldText(record.instrumentType);
-  return record.maturityMonths > 0 &&
-      record.maturityMonths <= 36 &&
-      record.couponPaymentsPerYear == 12 &&
-      (code == 'bt' || type.contains('bon du tresor'));
 }
 
 double _bondFallbackMarketYield(MarketPortfolioRecord record, double coupon) {
@@ -5713,6 +7761,14 @@ double _bondFallbackMarketYield(MarketPortfolioRecord record, double coupon) {
   return 0.0;
 }
 
+double _bondCashflowCoupon(MarketPortfolioRecord record, double coupon) {
+  final profile = _normalizeYieldText(record.amortizationProfile);
+  if (profile.contains('zero coupon') || profile.contains('zerocoupon')) {
+    return 0;
+  }
+  return coupon;
+}
+
 double _bondTermStructurePresentValue({
   required MarketPortfolioRecord record,
   required List<_YieldCurveSnapshot> yieldCurves,
@@ -5721,7 +7777,6 @@ double _bondTermStructurePresentValue({
   double parallelShift = 0,
 }) {
   if (cashflows.isEmpty) return 0;
-  final frequency = math.max(1, record.couponPaymentsPerYear);
   var presentValue = 0.0;
   for (final cashflow in cashflows) {
     final rate = _bondPricingCurveRate(
@@ -5730,10 +7785,9 @@ double _bondTermStructurePresentValue({
           years: cashflow.time,
         ) ??
         fallbackYield;
-    final yieldPerPeriod = (rate + parallelShift) / frequency;
-    if (yieldPerPeriod <= -0.999) continue;
-    final discountPeriods = cashflow.time * frequency;
-    final discount = math.pow(1 + yieldPerPeriod, discountPeriods).toDouble();
+    final annualRate = rate + parallelShift;
+    if (annualRate <= -0.999) continue;
+    final discount = math.pow(1 + annualRate, cashflow.time).toDouble();
     if (discount <= 0 || !discount.isFinite) continue;
     presentValue += cashflow.amount / discount;
   }
@@ -5743,18 +7797,19 @@ double _bondTermStructurePresentValue({
 double _bondSolveEquivalentYield({
   required List<_BondPricingCashflow> cashflows,
   required double targetPresentValue,
-  required int frequency,
   required double fallbackYield,
+  required int frequency,
 }) {
   if (cashflows.isEmpty || targetPresentValue <= 0) return fallbackYield;
 
   double priceAt(double annualYield) {
-    final yieldPerPeriod = annualYield / frequency;
-    if (yieldPerPeriod <= -0.999) return double.infinity;
+    if (annualYield <= -0.999 || frequency <= 0) return double.infinity;
+    final periodicBase = 1 + annualYield / frequency;
+    if (periodicBase <= 0 || !periodicBase.isFinite) return double.infinity;
     var price = 0.0;
     for (final cashflow in cashflows) {
-      final discountPeriods = cashflow.time * frequency;
-      final discount = math.pow(1 + yieldPerPeriod, discountPeriods).toDouble();
+      final discount =
+          math.pow(periodicBase, cashflow.time * frequency).toDouble();
       if (discount <= 0 || !discount.isFinite) return double.nan;
       price += cashflow.amount / discount;
     }
@@ -5783,13 +7838,12 @@ double _bondSolveEquivalentYield({
   return solved.isFinite ? solved.clamp(-0.95, 1.5).toDouble() : fallbackYield;
 }
 
-_BondPricingDurationMetrics _bondDurationMetricsFromYield({
+_BondPricingDurationMetrics _bondPeriodicYieldDurationMetrics({
   required List<_BondPricingCashflow> cashflows,
-  required double presentValue,
   required double annualYield,
   required int frequency,
 }) {
-  if (cashflows.isEmpty || presentValue <= 0) {
+  if (cashflows.isEmpty || annualYield <= -0.999 || frequency <= 0) {
     return const _BondPricingDurationMetrics(
       macaulay: 0,
       modified: 0,
@@ -5797,8 +7851,8 @@ _BondPricingDurationMetrics _bondDurationMetricsFromYield({
     );
   }
 
-  final yieldPerPeriod = annualYield / frequency;
-  if (yieldPerPeriod <= -0.999) {
+  final periodicBase = 1 + annualYield / frequency;
+  if (periodicBase <= 0 || !periodicBase.isFinite) {
     return const _BondPricingDurationMetrics(
       macaulay: 0,
       modified: 0,
@@ -5806,29 +7860,22 @@ _BondPricingDurationMetrics _bondDurationMetricsFromYield({
     );
   }
 
+  var presentValue = 0.0;
   var macaulayNumerator = 0.0;
   var convexityNumerator = 0.0;
-  var pricedValue = 0.0;
   for (final cashflow in cashflows) {
-    final discountPeriods = cashflow.time * frequency;
-    final discount = math.pow(1 + yieldPerPeriod, discountPeriods).toDouble();
+    if (cashflow.amount <= 0 || cashflow.time <= 0) continue;
+    final periods = cashflow.time * frequency;
+    final discount = math.pow(periodicBase, periods).toDouble();
     if (discount <= 0 || !discount.isFinite) continue;
     final discountedCashflow = cashflow.amount / discount;
-    pricedValue += discountedCashflow;
+    presentValue += discountedCashflow;
     macaulayNumerator += cashflow.time * discountedCashflow;
-
-    final convexityDiscount =
-        math.pow(1 + yieldPerPeriod, discountPeriods + 2).toDouble();
-    if (convexityDiscount > 0 && convexityDiscount.isFinite) {
-      convexityNumerator += cashflow.amount *
-          discountPeriods *
-          (discountPeriods + 1) /
-          (frequency * frequency * convexityDiscount);
-    }
+    convexityNumerator +=
+        cashflow.time * (cashflow.time + 1 / frequency) * discountedCashflow;
   }
 
-  final denominator = pricedValue > 0 ? pricedValue : presentValue;
-  if (denominator <= 0) {
+  if (presentValue <= 0 || !presentValue.isFinite) {
     return const _BondPricingDurationMetrics(
       macaulay: 0,
       modified: 0,
@@ -5836,99 +7883,14 @@ _BondPricingDurationMetrics _bondDurationMetricsFromYield({
     );
   }
 
-  final macaulay = macaulayNumerator / denominator;
-  final modified = macaulay / (1 + yieldPerPeriod);
-  final convexity = convexityNumerator / denominator;
+  final macaulay = macaulayNumerator / presentValue;
+  final modified = macaulay / periodicBase;
+  final convexity = convexityNumerator /
+      (presentValue * math.pow(periodicBase, 2).toDouble());
   return _BondPricingDurationMetrics(
     macaulay: macaulay.isFinite ? math.max(0.0, macaulay).toDouble() : 0,
     modified: modified.isFinite ? math.max(0.0, modified).toDouble() : 0,
     convexity: convexity.isFinite ? math.max(0.0, convexity).toDouble() : 0,
-  );
-}
-
-_BondPricingDurationMetrics _bondTermStructureDurationMetrics({
-  required MarketPortfolioRecord record,
-  required List<_YieldCurveSnapshot> yieldCurves,
-  required List<_BondPricingCashflow> cashflows,
-  required double presentValue,
-  required double fallbackYield,
-  required double equivalentYield,
-  required double annualYield,
-  required int frequency,
-}) {
-  if (cashflows.isEmpty || presentValue <= 0) {
-    return const _BondPricingDurationMetrics(
-      macaulay: 0,
-      modified: 0,
-      convexity: 0,
-    );
-  }
-
-  var pricedValue = 0.0;
-  var macaulayNumerator = 0.0;
-  for (final cashflow in cashflows) {
-    final rate = _bondPricingCurveRate(
-          record: record,
-          yieldCurves: yieldCurves,
-          years: cashflow.time,
-        ) ??
-        fallbackYield;
-    final yieldPerPeriod = rate / frequency;
-    if (yieldPerPeriod <= -0.999) continue;
-    final discountPeriods = cashflow.time * frequency;
-    final discount = math.pow(1 + yieldPerPeriod, discountPeriods).toDouble();
-    if (discount <= 0 || !discount.isFinite) continue;
-    final discountedCashflow = cashflow.amount / discount;
-    pricedValue += discountedCashflow;
-    macaulayNumerator += cashflow.time * discountedCashflow;
-  }
-
-  final denominator = pricedValue > 0 ? pricedValue : presentValue;
-  if (denominator <= 0 || !denominator.isFinite) {
-    return _bondDurationMetricsFromYield(
-      cashflows: cashflows,
-      presentValue: presentValue,
-      annualYield: annualYield,
-      frequency: frequency,
-    );
-  }
-
-  const bump = 0.0001;
-  final priceDown = _bondTermStructurePresentValue(
-    record: record,
-    yieldCurves: yieldCurves,
-    cashflows: cashflows,
-    fallbackYield: fallbackYield,
-    parallelShift: -bump,
-  );
-  final priceUp = _bondTermStructurePresentValue(
-    record: record,
-    yieldCurves: yieldCurves,
-    cashflows: cashflows,
-    fallbackYield: fallbackYield,
-    parallelShift: bump,
-  );
-
-  final macaulay = macaulayNumerator / denominator;
-  final effectiveModified =
-      priceDown > 0 && priceUp > 0 && priceDown.isFinite && priceUp.isFinite
-          ? (priceDown - priceUp) / (2 * bump * denominator)
-          : macaulay / (1 + equivalentYield / frequency);
-  final effectiveConvexity = priceDown > 0 &&
-          priceUp > 0 &&
-          priceDown.isFinite &&
-          priceUp.isFinite
-      ? (priceDown + priceUp - 2 * denominator) / (denominator * bump * bump)
-      : math.max(0.0, macaulay * (macaulay + 1)).toDouble();
-
-  return _BondPricingDurationMetrics(
-    macaulay: macaulay.isFinite ? math.max(0.0, macaulay).toDouble() : 0,
-    modified: effectiveModified.isFinite
-        ? math.max(0.0, effectiveModified).toDouble()
-        : 0,
-    convexity: effectiveConvexity.isFinite
-        ? math.max(0.0, effectiveConvexity).toDouble()
-        : 0,
   );
 }
 
@@ -5953,30 +7915,7 @@ List<_YieldCurvePoint> _bondPricingCurvePoints(
         orElse: () => null,
       );
   if (snapshot == null) return const [];
-
-  final country = _marketRecordText(record, 'Pays émetteur', '');
-  final countryCurve = _bondPricingCountryCurve(snapshot, country);
-  if (countryCurve != null && countryCurve.points.length >= 2) {
-    return countryCurve.points;
-  }
   return snapshot.points;
-}
-
-_YieldCurveCountryCurve? _bondPricingCountryCurve(
-  _YieldCurveSnapshot snapshot,
-  String country,
-) {
-  final target = _normalizeYieldText(country);
-  if (target.isEmpty) return null;
-  for (final curve in snapshot.countryCurves) {
-    final normalized = _normalizeYieldText(curve.country);
-    if (normalized == target ||
-        target.contains(normalized) ||
-        normalized.contains(target)) {
-      return curve;
-    }
-  }
-  return null;
 }
 
 String _bondPricingZoneId(MarketPortfolioRecord record) {
@@ -5990,14 +7929,19 @@ double? _bondInterpolateYieldCurveRate(
   List<_YieldCurvePoint> points,
   double years,
 ) {
-  final validPoints = points.where((point) => point.rate.isFinite).toList()
+  double zeroCouponRate(_YieldCurvePoint point) =>
+      point.rawRate.isFinite ? point.rawRate : point.rate;
+
+  final validPoints = points
+      .where((point) => zeroCouponRate(point).isFinite)
+      .toList()
     ..sort((left, right) => left.years.compareTo(right.years));
   if (validPoints.isEmpty) return null;
   if (validPoints.length == 1 || years <= validPoints.first.years) {
-    return validPoints.first.rate / 100;
+    return zeroCouponRate(validPoints.first) / 100;
   }
   if (years >= validPoints.last.years) {
-    return validPoints.last.rate / 100;
+    return zeroCouponRate(validPoints.last) / 100;
   }
 
   for (var index = 1; index < validPoints.length; index++) {
@@ -6005,12 +7949,14 @@ double? _bondInterpolateYieldCurveRate(
     final left = validPoints[index - 1];
     if (years > right.years) continue;
     final span = right.years - left.years;
-    if (span <= 0) return right.rate / 100;
+    if (span <= 0) return zeroCouponRate(right) / 100;
     final ratio = (years - left.years) / span;
-    final rate = left.rate + (right.rate - left.rate) * ratio;
+    final leftRate = zeroCouponRate(left);
+    final rightRate = zeroCouponRate(right);
+    final rate = leftRate + (rightRate - leftRate) * ratio;
     return rate / 100;
   }
-  return validPoints.last.rate / 100;
+  return zeroCouponRate(validPoints.last) / 100;
 }
 
 class _BondIndicatorCardGrid extends StatelessWidget {
@@ -6123,7 +8069,7 @@ class _BondInstitutionalIndicatorCard extends StatelessWidget {
                           style: TextStyle(
                             color: text,
                             fontSize: 14.6,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w500,
                             height: 1,
                           ),
                           children: [
@@ -6215,7 +8161,7 @@ class _BondIndicatorInfoDialog extends StatelessWidget {
                     style: TextStyle(
                       color: text,
                       fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w500,
                       height: 1,
                     ),
                   ),
@@ -6243,7 +8189,7 @@ class _BondIndicatorInfoDialog extends StatelessWidget {
                   textStyle: TextStyle(
                     color: text,
                     fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -6254,7 +8200,7 @@ class _BondIndicatorInfoDialog extends StatelessWidget {
               style: TextStyle(
                 color: muted,
                 fontSize: 12.7,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 height: 1.38,
               ),
             ),
@@ -6399,7 +8345,7 @@ class _BondHorizontalBars extends StatelessWidget {
                   style: TextStyle(
                     color: muted,
                     fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -6450,7 +8396,7 @@ class _BondHorizontalBars extends StatelessWidget {
                   style: TextStyle(
                     color: text,
                     fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -6518,7 +8464,7 @@ class _BondYieldSpreadPainter extends CustomPainter {
         Offset(centerX, bottom + 8),
         muted,
         9.5,
-        FontWeight.w700,
+        FontWeight.w500,
         align: TextAlign.center,
       );
       _paintText(
@@ -6527,7 +8473,7 @@ class _BondYieldSpreadPainter extends CustomPainter {
         Offset(centerX, y - 11),
         entry.color,
         9.5,
-        FontWeight.w800,
+        FontWeight.w500,
         align: TextAlign.center,
       );
     }
@@ -6628,7 +8574,7 @@ class _BondSensitivityPainter extends CustomPainter {
         Offset(centerX, chart.bottom + 12),
         muted,
         9.5,
-        FontWeight.w700,
+        FontWeight.w500,
       );
       _paintText(
         canvas,
@@ -6636,7 +8582,7 @@ class _BondSensitivityPainter extends CustomPainter {
         Offset(centerX, chart.bottom - height - 10),
         entry.color,
         9.5,
-        FontWeight.w800,
+        FontWeight.w500,
       );
     }
 
@@ -6662,7 +8608,7 @@ class _BondSensitivityPainter extends CustomPainter {
       Offset(chart.left + slot * 2.36, chart.bottom + 12),
       muted,
       9.5,
-      FontWeight.w700,
+      FontWeight.w500,
     );
     _paintText(
       canvas,
@@ -6670,7 +8616,7 @@ class _BondSensitivityPainter extends CustomPainter {
       Offset(chart.right - 22, chart.top + 12),
       _marketWarning,
       9.5,
-      FontWeight.w800,
+      FontWeight.w500,
     );
   }
 
@@ -6807,10 +8753,9 @@ class _MarketDashboardState extends State<_MarketDashboard> {
           ),
         ),
         Expanded(
-          child: ValueListenableBuilder<
-              Map<MarketPortfolioType, MarketPortfolioDataset>>(
-            valueListenable: MarketDataImportStore.instance.datasetsNotifier,
-            builder: (context, datasets, _) {
+          child: ValueListenableBuilder<MarketDataSnapshot>(
+            valueListenable: MarketDataImportStore.instance.snapshotNotifier,
+            builder: (context, snapshot, _) {
               return AnimatedSwitcher(
                 duration: const Duration(milliseconds: 220),
                 switchInCurve: Curves.easeOutCubic,
@@ -6825,7 +8770,7 @@ class _MarketDashboardState extends State<_MarketDashboard> {
                         AppTheme.pagePadding,
                       ),
                       child: _MarketDashboardVisualisation(
-                        datasets: datasets,
+                        datasets: snapshot.datasets,
                         selectedType: _selectedVisualisationType,
                         onTypeChanged: (type) {
                           setState(() => _selectedVisualisationType = type);
@@ -6841,7 +8786,8 @@ class _MarketDashboardState extends State<_MarketDashboard> {
                         AppTheme.pagePadding,
                       ),
                       child: _MarketDashboardDataTable(
-                        dataset: datasets[_selectedVisualisationType],
+                        dataset:
+                            snapshot.datasetFor(_selectedVisualisationType),
                         selectedType: _selectedVisualisationType,
                         onTypeChanged: (type) {
                           setState(() => _selectedVisualisationType = type);
@@ -6941,7 +8887,7 @@ class _MarketDashboardTabButton extends StatelessWidget {
                 style: TextStyle(
                   color: selected ? _marketDashboardDeepBlue : muted,
                   fontSize: 12.8,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: selected ? FontWeight.w500 : FontWeight.w500,
                   letterSpacing: 0,
                 ),
                 child: Text(label.tr(context)),
@@ -7075,7 +9021,7 @@ class _MarketVisualHeader extends StatelessWidget {
                 style: TextStyle(
                   color: text,
                   fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   height: 1.1,
                 ),
               ),
@@ -7183,7 +9129,7 @@ class _MarketPortfolioTypeToggleButton extends StatelessWidget {
                 style: TextStyle(
                   color: selected ? Colors.white : muted,
                   fontSize: 10.8,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   height: 1,
                   letterSpacing: 0,
                 ),
@@ -7230,7 +9176,7 @@ class _MarketVisualEmptyState extends StatelessWidget {
             style: TextStyle(
               color: text,
               fontSize: 13.4,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 5),
@@ -7377,7 +9323,7 @@ class _MarketAnalyticKpiCard extends StatelessWidget {
                   style: TextStyle(
                     color: muted,
                     fontSize: 7.2,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                     letterSpacing: 0,
                   ),
@@ -7390,7 +9336,7 @@ class _MarketAnalyticKpiCard extends StatelessWidget {
                   style: TextStyle(
                     color: text,
                     fontSize: 11.7,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -7410,6 +9356,10 @@ class _BondInstitutionalDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cached = _bondDashboardStatsCached(dataset);
+    if (cached != null) {
+      return _BondInstitutionalDashboardContent(stats: cached);
+    }
     return FutureBuilder<_BondDashboardStats>(
       future: _bondDashboardStatsForAsync(dataset),
       builder: (context, snapshot) {
@@ -7420,98 +9370,109 @@ class _BondInstitutionalDashboard extends StatelessWidget {
             subtitle: 'Nous préparons la vue du portefeuille.',
           );
         }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _BondDashboardKpiStrip(stats: stats),
-            const SizedBox(height: 10),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxWidth < 980;
-                final performance = _BondSimulationPanel(stats: stats);
-                final rating = _BondRatingPanel(stats: stats);
-                if (compact) {
-                  return Column(
-                    children: [
-                      performance,
-                      const SizedBox(height: 10),
-                      rating,
-                    ],
-                  );
-                }
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 15, child: performance),
-                    const SizedBox(width: 10),
-                    Expanded(flex: 10, child: rating),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxWidth < 980;
-                final countries = _BondCountryPanel(stats: stats);
-                final zones = _BondZonePanel(stats: stats);
-                final issuers = _BondIssuerConcentrationPanel(stats: stats);
-                if (compact) {
-                  return Column(
-                    children: [
-                      countries,
-                      const SizedBox(height: 10),
-                      zones,
-                      const SizedBox(height: 10),
-                      issuers,
-                    ],
-                  );
-                }
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 10, child: countries),
-                    const SizedBox(width: 10),
-                    Expanded(flex: 8, child: zones),
-                    const SizedBox(width: 10),
-                    Expanded(flex: 12, child: issuers),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxWidth < 980;
-                final maturity = _BondMaturityPanel(stats: stats);
-                final scatter = _BondCouponMaturityPanel(stats: stats);
-                final risk = _BondRiskAnalyticsPanel(stats: stats);
-                if (compact) {
-                  return Column(
-                    children: [
-                      maturity,
-                      const SizedBox(height: 10),
-                      scatter,
-                      const SizedBox(height: 10),
-                      risk,
-                    ],
-                  );
-                }
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 11, child: maturity),
-                    const SizedBox(width: 10),
-                    Expanded(flex: 11, child: scatter),
-                    const SizedBox(width: 10),
-                    Expanded(flex: 8, child: risk),
-                  ],
-                );
-              },
-            ),
-          ],
-        );
+        return _BondInstitutionalDashboardContent(stats: stats);
       },
+    );
+  }
+}
+
+class _BondInstitutionalDashboardContent extends StatelessWidget {
+  const _BondInstitutionalDashboardContent({required this.stats});
+
+  final _BondDashboardStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _BondDashboardKpiStrip(stats: stats),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 980;
+            final performance = _BondSimulationPanel(stats: stats);
+            final rating = _BondRatingPanel(stats: stats);
+            if (compact) {
+              return Column(
+                children: [
+                  performance,
+                  const SizedBox(height: 10),
+                  rating,
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 15, child: performance),
+                const SizedBox(width: 10),
+                Expanded(flex: 10, child: rating),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 980;
+            final countries = _BondCountryPanel(stats: stats);
+            final zones = _BondZonePanel(stats: stats);
+            final issuers = _BondIssuerConcentrationPanel(stats: stats);
+            if (compact) {
+              return Column(
+                children: [
+                  countries,
+                  const SizedBox(height: 10),
+                  zones,
+                  const SizedBox(height: 10),
+                  issuers,
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 10, child: countries),
+                const SizedBox(width: 10),
+                Expanded(flex: 8, child: zones),
+                const SizedBox(width: 10),
+                Expanded(flex: 12, child: issuers),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 980;
+            final maturity = _BondMaturityPanel(stats: stats);
+            final scatter = _BondCouponMaturityPanel(stats: stats);
+            final profile = _BondProfileBreakdownPanel(stats: stats);
+            if (compact) {
+              return Column(
+                children: [
+                  maturity,
+                  const SizedBox(height: 10),
+                  scatter,
+                  const SizedBox(height: 10),
+                  profile,
+                ],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 11, child: maturity),
+                const SizedBox(width: 10),
+                Expanded(flex: 11, child: scatter),
+                const SizedBox(width: 10),
+                Expanded(flex: 8, child: profile),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -7521,6 +9482,7 @@ class _BondDashboardStats {
     required this.dataset,
     required this.yieldCurves,
     required this.totalExposure,
+    required this.portfolioTotalValue,
     required this.capitalRemainingDue,
     required this.presentValue,
     required this.weightedCoupon,
@@ -7547,14 +9509,20 @@ class _BondDashboardStats {
     required this.countryEntries,
     required this.zoneEntries,
     required this.issuerEntries,
+    required this.profileBreakdown,
     required this.maturityBuckets,
     required this.couponBuckets,
     required this.lossSeries,
+    required this.curveShockLosses,
+    required this.curveShockVolatility,
+    required this.curveShockIsProxy,
+    required this.curveShockSourceLabel,
   });
 
   final MarketPortfolioDataset dataset;
   final List<_YieldCurveSnapshot> yieldCurves;
   final double totalExposure;
+  final double portfolioTotalValue;
   final double capitalRemainingDue;
   final double presentValue;
   final double weightedCoupon;
@@ -7581,19 +9549,26 @@ class _BondDashboardStats {
   final List<_MarketDistributionEntry> countryEntries;
   final List<_MarketDistributionEntry> zoneEntries;
   final List<_MarketDistributionEntry> issuerEntries;
+  final List<_BondCrdProfileEntry>? profileBreakdown;
   final List<_BondMaturityBucket> maturityBuckets;
   final List<_BondCouponBucket> couponBuckets;
   final List<double> lossSeries;
+  final List<double> curveShockLosses;
+  final double curveShockVolatility;
+  final bool curveShockIsProxy;
+  final String curveShockSourceLabel;
 
   static _BondDashboardStats from(
     MarketPortfolioDataset dataset, {
     required List<_YieldCurveSnapshot> yieldCurves,
+    required List<_YieldCurveSnapshot> yieldCurveHistory,
   }) {
     final records = dataset.records;
     final activeBondCount =
         records.where((record) => record.isActiveAtAnalysisDate).length;
     final maturedBondCount =
         records.where((record) => record.isMaturedAtAnalysisDate).length;
+    var portfolioTotalValue = 0.0;
     var capitalRemainingDueTotal = 0.0;
     var presentValueTotal = 0.0;
     var couponNumerator = 0.0;
@@ -7607,9 +9582,13 @@ class _BondDashboardStats {
     var convexityNumerator = 0.0;
     var durationDenominator = 0.0;
     final issuers = <String>{};
+    final curveRiskPositions = <_BondCurveRiskPosition>[];
 
     for (final record in records) {
       final capital = _bondOutstandingCapitalValue(record);
+      final initialCapital = _bondInitialCapitalValue(record);
+      final lineTotal = math.max(initialCapital, capital).toDouble();
+      if (lineTotal > 0) portfolioTotalValue += lineTotal;
       if (capital <= 0) continue;
       final coupon = _bondCouponFraction(record.coupon);
       final maturityYears = _bondMaturityYears(record);
@@ -7632,20 +9611,42 @@ class _BondDashboardStats {
         maturityNumerator += maturityYears * capital;
         maturityDenominator += capital;
       }
-      if (valuationWeight > 0) {
-        if (metrics.yieldToMaturity.isFinite) {
-          ytmNumerator += metrics.yieldToMaturity * valuationWeight;
-          ytmDenominator += valuationWeight;
-        }
-        if ((metrics.macaulay > 0 ||
-                metrics.modified > 0 ||
-                metrics.convexity > 0) &&
-            valuationWeight > 0) {
-          macaulayNumerator += metrics.macaulay * valuationWeight;
-          modifiedNumerator += metrics.modified * valuationWeight;
-          convexityNumerator += metrics.convexity * valuationWeight;
-          durationDenominator += valuationWeight;
-        }
+      if (metrics.yieldToMaturity.isFinite && valuationWeight > 0) {
+        ytmNumerator += metrics.yieldToMaturity * valuationWeight;
+        ytmDenominator += valuationWeight;
+      }
+      if ((metrics.macaulay > 0 ||
+              metrics.modified > 0 ||
+              metrics.convexity > 0) &&
+          valuationWeight > 0) {
+        macaulayNumerator += metrics.macaulay * valuationWeight;
+        modifiedNumerator += metrics.modified * valuationWeight;
+        convexityNumerator += metrics.convexity * valuationWeight;
+        durationDenominator += valuationWeight;
+      }
+      final zoneId = _bondPricingZoneId(record);
+      final modified = metrics.modified > 0 && metrics.modified.isFinite
+          ? metrics.modified
+          : record.bondModifiedDuration;
+      if (zoneId.isNotEmpty &&
+          maturityYears > 0 &&
+          valuationWeight > 0 &&
+          modified > 0 &&
+          modified.isFinite) {
+        final convexity = metrics.convexity > 0 && metrics.convexity.isFinite
+            ? metrics.convexity
+            : math.max(0.0, modified * (modified + 1)).toDouble();
+        curveRiskPositions.add(
+          _BondCurveRiskPosition(
+            zoneId: zoneId,
+            country: record.issuerCountry,
+            countryIso3: record.issuerCountryIso3,
+            maturityYears: maturityYears,
+            presentValue: valuationWeight,
+            modifiedDuration: modified,
+            convexity: convexity,
+          ),
+        );
       }
       final issuer = record.issuerAnalysisKey.trim();
       if (issuer.isNotEmpty && issuer != 'Non renseigné') issuers.add(issuer);
@@ -7671,12 +9672,21 @@ class _BondDashboardStats {
         .take(5)
         .fold<double>(0, (sum, entry) => sum + entry.amount);
     final hasHistoricalReturns = dataset.scenarioReturns.isNotEmpty;
-    final lossSeries = hasHistoricalReturns
-        ? [
+    final returnLossSeries = hasHistoricalReturns
+        ? ([
             for (final value in dataset.scenarioReturns)
               -value * dataset.portfolioValue,
-          ]
-        : dataset.bondRateShockLosses;
+          ]..sort())
+        : const <double>[];
+    final curveShockResult = _bondHistoricalCurveShockResult(
+      dataset: dataset,
+      yieldCurves: yieldCurves,
+      yieldCurveHistory: yieldCurveHistory,
+      positions: curveRiskPositions,
+    );
+    final lossSeries = curveShockResult.losses.isNotEmpty
+        ? curveShockResult.losses
+        : returnLossSeries;
     final weightedCoupon =
         couponDenominator <= 0 ? 0.0 : couponNumerator / couponDenominator;
     final weightedMaturity = maturityDenominator <= 0
@@ -7684,24 +9694,32 @@ class _BondDashboardStats {
         : maturityNumerator / maturityDenominator;
     final capitalRemainingDue = total;
     final presentValue = presentValueTotal > 0 ? presentValueTotal : total;
-    final yieldToMaturity = ytmDenominator <= 0
+    final weightedLineYield = ytmDenominator <= 0
         ? weightedCoupon
         : (ytmNumerator / ytmDenominator).clamp(-0.99, 1.5).toDouble();
-    final macaulayDuration = durationDenominator <= 0
+    final yieldToMaturity = weightedLineYield;
+    final weightedMacaulayDuration = durationDenominator <= 0
         ? weightedMaturity
         : macaulayNumerator / durationDenominator;
-    final modifiedDuration = durationDenominator <= 0
-        ? macaulayDuration
+    final weightedModifiedDuration = durationDenominator <= 0
+        ? weightedMacaulayDuration
         : modifiedNumerator / durationDenominator;
+    final macaulayDuration = weightedMacaulayDuration;
+    final modifiedDuration = weightedModifiedDuration;
     final couponYtmSpread = weightedCoupon - yieldToMaturity;
-    final convexity = durationDenominator <= 0
-        ? math.max(0.0, macaulayDuration * (macaulayDuration + 1)).toDouble()
+    final weightedConvexity = durationDenominator <= 0
+        ? math
+            .max(0.0, weightedMacaulayDuration * (weightedMacaulayDuration + 1))
+            .toDouble()
         : convexityNumerator / durationDenominator;
+    final convexity = weightedConvexity;
 
     return _BondDashboardStats(
       dataset: dataset,
       yieldCurves: yieldCurves,
       totalExposure: total,
+      portfolioTotalValue:
+          portfolioTotalValue > 0 ? portfolioTotalValue : total,
       capitalRemainingDue: capitalRemainingDue,
       presentValue: presentValue,
       weightedCoupon: weightedCoupon,
@@ -7723,13 +9741,11 @@ class _BondDashboardStats {
       topFiveConcentration: total <= 0 ? 0 : topFiveAmount / total,
       durationProxy: modifiedDuration,
       rateSensitivity: modifiedDuration * presentValue * 0.0001,
-      var99: hasHistoricalReturns
-          ? dataset.scenarioVar99
-          : dataset.bondRateShockVar99,
-      worstLoss: hasHistoricalReturns
-          ? dataset.scenarioWorstLoss
-          : dataset.bondRateShockWorstLoss,
-      volatility: dataset.annualizedVolatility,
+      var99: lossSeries.isNotEmpty ? _quantile(lossSeries, 0.99) : 0,
+      worstLoss: lossSeries.isEmpty ? 0 : math.max(0.0, lossSeries.last),
+      volatility: dataset.annualizedVolatility > 0
+          ? dataset.annualizedVolatility
+          : curveShockResult.annualizedVolatility,
       correlation: dataset.correlationProxy,
       ratingEntries: ratingEntries,
       countryEntries: _bondGroupedEntries(
@@ -7743,11 +9759,347 @@ class _BondDashboardStats {
         limit: 3,
       ),
       issuerEntries: issuerEntries,
+      profileBreakdown: _bondCrdProfileBreakdown(records),
       maturityBuckets: _bondMaturityBuckets(dataset),
       couponBuckets: _bondCouponBuckets(dataset),
       lossSeries: lossSeries,
+      curveShockLosses: curveShockResult.losses,
+      curveShockVolatility: curveShockResult.annualizedVolatility,
+      curveShockIsProxy: curveShockResult.isProxy,
+      curveShockSourceLabel: curveShockResult.sourceLabel,
     );
   }
+}
+
+class _BondCurveShockResult {
+  const _BondCurveShockResult({
+    required this.losses,
+    required this.annualizedVolatility,
+    required this.isProxy,
+    required this.sourceLabel,
+  });
+
+  final List<double> losses;
+  final double annualizedVolatility;
+  final bool isProxy;
+  final String sourceLabel;
+}
+
+class _BondCurveRiskPosition {
+  const _BondCurveRiskPosition({
+    required this.zoneId,
+    required this.country,
+    required this.countryIso3,
+    required this.maturityYears,
+    required this.presentValue,
+    required this.modifiedDuration,
+    required this.convexity,
+  });
+
+  final String zoneId;
+  final String country;
+  final String countryIso3;
+  final double maturityYears;
+  final double presentValue;
+  final double modifiedDuration;
+  final double convexity;
+}
+
+_BondCurveShockResult _bondHistoricalCurveShockResult({
+  required MarketPortfolioDataset dataset,
+  required List<_YieldCurveSnapshot> yieldCurves,
+  required List<_YieldCurveSnapshot> yieldCurveHistory,
+  List<_BondCurveRiskPosition>? positions,
+}) {
+  if (dataset.records.isEmpty) {
+    return const _BondCurveShockResult(
+      losses: [],
+      annualizedVolatility: 0,
+      isProxy: false,
+      sourceLabel: 'Non disponible',
+    );
+  }
+
+  final resolvedPositions = positions ??
+      _bondCurveRiskPositions(
+        dataset: dataset,
+        yieldCurves: yieldCurves,
+      );
+  if (resolvedPositions.isEmpty) {
+    return const _BondCurveShockResult(
+      losses: [],
+      annualizedVolatility: 0,
+      isProxy: false,
+      sourceLabel: 'Non disponible',
+    );
+  }
+
+  final observedLosses = _bondObservedCurveShockLosses(
+    positions: resolvedPositions,
+    yieldCurveHistory: yieldCurveHistory,
+  );
+  if (observedLosses.length >= 2) {
+    final portfolioValue = _bondCurvePositionsPresentValue(resolvedPositions);
+    return _BondCurveShockResult(
+      losses: observedLosses,
+      annualizedVolatility: _annualizedVolatilityFromLosses(
+        observedLosses,
+        portfolioValue,
+        allowGains: true,
+      ),
+      isProxy: false,
+      sourceLabel: 'Chocs historiques de courbe',
+    );
+  }
+
+  final reconstructedLosses = _bondReconstructedCurveShockLosses(
+    positions: resolvedPositions,
+    yieldCurves: yieldCurves,
+  );
+  if (reconstructedLosses.length >= 2) {
+    final portfolioValue = _bondCurvePositionsPresentValue(resolvedPositions);
+    return _BondCurveShockResult(
+      losses: reconstructedLosses,
+      annualizedVolatility: _annualizedVolatilityFromLosses(
+        reconstructedLosses,
+        portfolioValue,
+        allowGains: true,
+      ),
+      isProxy: true,
+      sourceLabel: 'Chocs de courbe reconstruits',
+    );
+  }
+
+  return const _BondCurveShockResult(
+    losses: [],
+    annualizedVolatility: 0,
+    isProxy: false,
+    sourceLabel: 'Non disponible',
+  );
+}
+
+List<_BondCurveRiskPosition> _bondCurveRiskPositions({
+  required MarketPortfolioDataset dataset,
+  required List<_YieldCurveSnapshot> yieldCurves,
+}) {
+  final positions = <_BondCurveRiskPosition>[];
+  for (final record in dataset.records) {
+    final capital = _bondOutstandingCapitalValue(record);
+    final maturity = _bondMaturityYears(record);
+    final zoneId = _bondPricingZoneId(record);
+    if (capital <= 0 || maturity <= 0 || zoneId.isEmpty) continue;
+
+    final coupon = _bondCouponFraction(record.coupon);
+    final metrics = _bondRecordFixedIncomeMetrics(
+      record: record,
+      capital: capital,
+      coupon: coupon,
+      maturity: maturity,
+      yieldCurves: yieldCurves,
+    );
+    final presentValue =
+        metrics.presentValue > 0 && metrics.presentValue.isFinite
+            ? metrics.presentValue
+            : capital;
+    final modified = metrics.modified > 0 && metrics.modified.isFinite
+        ? metrics.modified
+        : record.bondModifiedDuration;
+    if (presentValue <= 0 || modified <= 0 || !modified.isFinite) continue;
+    final convexity = metrics.convexity > 0 && metrics.convexity.isFinite
+        ? metrics.convexity
+        : math.max(0.0, modified * (modified + 1)).toDouble();
+
+    positions.add(
+      _BondCurveRiskPosition(
+        zoneId: zoneId,
+        country: record.issuerCountry,
+        countryIso3: record.issuerCountryIso3,
+        maturityYears: maturity,
+        presentValue: presentValue,
+        modifiedDuration: modified,
+        convexity: convexity,
+      ),
+    );
+  }
+  return positions;
+}
+
+List<double> _bondObservedCurveShockLosses({
+  required List<_BondCurveRiskPosition> positions,
+  required List<_YieldCurveSnapshot> yieldCurveHistory,
+}) {
+  final losses = <double>[];
+  final byZone = <String, List<_YieldCurveSnapshot>>{};
+  for (final snapshot in yieldCurveHistory) {
+    if (snapshot.id.isEmpty || snapshot.points.length < 2) continue;
+    byZone
+        .putIfAbsent(snapshot.id, () => <_YieldCurveSnapshot>[])
+        .add(snapshot);
+  }
+
+  for (final entry in byZone.entries) {
+    final zonePositions =
+        positions.where((position) => position.zoneId == entry.key).toList();
+    if (zonePositions.isEmpty) continue;
+    final snapshots = entry.value
+      ..sort((left, right) => _yieldCurveSnapshotSortDate(left)
+          .compareTo(_yieldCurveSnapshotSortDate(right)));
+    for (var index = 1; index < snapshots.length; index++) {
+      final previous = snapshots[index - 1];
+      final current = snapshots[index];
+      if (_yieldCurveHistorySignature(previous) ==
+          _yieldCurveHistorySignature(current)) {
+        continue;
+      }
+      var scenarioLoss = 0.0;
+      var applied = 0;
+      for (final position in zonePositions) {
+        final previousRate = _bondCurveRateForPosition(previous, position);
+        final currentRate = _bondCurveRateForPosition(current, position);
+        if (previousRate == null || currentRate == null) continue;
+        final deltaYield = currentRate - previousRate;
+        if (!deltaYield.isFinite || deltaYield == 0) continue;
+        scenarioLoss += _bondCurveShockLoss(position, deltaYield);
+        applied++;
+      }
+      if (applied > 0 && scenarioLoss.isFinite) {
+        losses.add(scenarioLoss);
+      }
+    }
+  }
+  return losses..sort();
+}
+
+List<double> _bondReconstructedCurveShockLosses({
+  required List<_BondCurveRiskPosition> positions,
+  required List<_YieldCurveSnapshot> yieldCurves,
+}) {
+  final losses = <double>[];
+  const countryMultipliers = [-1.25, -0.75, -0.35, 0.35, 0.75, 1.25, 1.75];
+  const parallelMultipliers = [-1.10, -0.65, -0.30, 0.30, 0.65, 1.10];
+
+  for (final snapshot in yieldCurves) {
+    final zonePositions =
+        positions.where((position) => position.zoneId == snapshot.id).toList();
+    if (zonePositions.isEmpty || snapshot.points.length < 2) continue;
+
+    for (final curve in snapshot.countryCurves) {
+      if (curve.points.length < 2) continue;
+      for (final multiplier in countryMultipliers) {
+        var scenarioLoss = 0.0;
+        var applied = 0;
+        for (final position in zonePositions) {
+          if (!_bondPositionMatchesCurveCountry(position, curve.country)) {
+            continue;
+          }
+          final zoneRate = _bondInterpolateYieldCurveRate(
+            snapshot.points,
+            position.maturityYears,
+          );
+          final countryRate = _bondInterpolateYieldCurveRate(
+            curve.points,
+            position.maturityYears,
+          );
+          if (zoneRate == null || countryRate == null) continue;
+          final deltaYield = (countryRate - zoneRate) * multiplier;
+          if (!deltaYield.isFinite || deltaYield == 0) continue;
+          scenarioLoss += _bondCurveShockLoss(position, deltaYield);
+          applied++;
+        }
+        if (applied > 0 && scenarioLoss.isFinite) {
+          losses.add(scenarioLoss);
+        }
+      }
+    }
+
+    final parallelShock = _bondCurveReconstructedParallelShock(snapshot);
+    if (parallelShock > 0) {
+      for (final multiplier in parallelMultipliers) {
+        var scenarioLoss = 0.0;
+        for (final position in zonePositions) {
+          scenarioLoss +=
+              _bondCurveShockLoss(position, parallelShock * multiplier);
+        }
+        if (scenarioLoss.isFinite) losses.add(scenarioLoss);
+      }
+    }
+  }
+  return losses..sort();
+}
+
+double _bondCurvePositionsPresentValue(List<_BondCurveRiskPosition> positions) {
+  return positions.fold<double>(
+    0,
+    (sum, position) => sum + math.max(0.0, position.presentValue),
+  );
+}
+
+double? _bondCurveRateForPosition(
+  _YieldCurveSnapshot snapshot,
+  _BondCurveRiskPosition position,
+) {
+  final countryCurve = _bondSnapshotCountryCurve(snapshot, position);
+  final points = countryCurve?.points ?? snapshot.points;
+  if (points.length < 2) return null;
+  return _bondInterpolateYieldCurveRate(points, position.maturityYears);
+}
+
+_YieldCurveCountryCurve? _bondSnapshotCountryCurve(
+  _YieldCurveSnapshot snapshot,
+  _BondCurveRiskPosition position,
+) {
+  for (final curve in snapshot.countryCurves) {
+    if (_bondPositionMatchesCurveCountry(position, curve.country)) {
+      return curve;
+    }
+  }
+  return null;
+}
+
+bool _bondPositionMatchesCurveCountry(
+  _BondCurveRiskPosition position,
+  String curveCountry,
+) {
+  final curveIso3 = marketCountryIso3FromLooseText(curveCountry);
+  if (position.countryIso3.isNotEmpty &&
+      curveIso3.isNotEmpty &&
+      position.countryIso3 == curveIso3) {
+    return true;
+  }
+  final normalizedCurve = _normalizeYieldText(curveCountry);
+  final normalizedPosition = _normalizeYieldText(position.country);
+  return normalizedPosition.isNotEmpty &&
+      normalizedCurve.isNotEmpty &&
+      normalizedPosition == normalizedCurve;
+}
+
+double _bondCurveShockLoss(
+  _BondCurveRiskPosition position,
+  double deltaYield,
+) {
+  final linearLoss =
+      position.modifiedDuration * position.presentValue * deltaYield;
+  final convexityGain = 0.5 *
+      position.convexity *
+      position.presentValue *
+      deltaYield *
+      deltaYield;
+  final loss = linearLoss - convexityGain;
+  if (!loss.isFinite) return 0;
+  return loss
+      .clamp(-position.presentValue, position.presentValue * 5)
+      .toDouble();
+}
+
+double _bondCurveReconstructedParallelShock(_YieldCurveSnapshot snapshot) {
+  final rates = [
+    for (final point in snapshot.points)
+      if (point.rawRate.isFinite) point.rawRate / 100,
+  ];
+  if (rates.length < 2) return 0;
+  final dispersion = _standardDeviation(rates);
+  if (!dispersion.isFinite || dispersion <= 0) return 0.0005;
+  return dispersion.clamp(0.0005, 0.02).toDouble();
 }
 
 class _BondDashboardKpiStrip extends StatelessWidget {
@@ -7759,9 +10111,15 @@ class _BondDashboardKpiStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _BondDashboardKpiItem(
+        label: 'Total portefeuille',
+        value: _marketShortXofAmount(stats.portfolioTotalValue),
+        icon: CupertinoIcons.plus_circle_fill,
+        color: _marketWarning,
+      ),
+      _BondDashboardKpiItem(
         label: 'Encours total',
         value: _marketShortXofAmount(stats.totalExposure),
-        icon: CupertinoIcons.money_dollar_circle_fill,
+        icon: CupertinoIcons.creditcard_fill,
         color: _marketPrimary,
       ),
       _BondDashboardKpiItem(
@@ -7781,12 +10139,6 @@ class _BondDashboardKpiStrip extends StatelessWidget {
         value: '${_bondIndicatorMonths(stats.weightedMaturityYears * 12)} mois',
         icon: CupertinoIcons.time_solid,
         color: _marketViolet,
-      ),
-      _BondDashboardKpiItem(
-        label: 'Émetteur dominant',
-        value: stats.dominantIssuer,
-        icon: CupertinoIcons.scope,
-        color: _marketWarning,
       ),
       _BondDashboardKpiItem(
         label: 'Rating dominant',
@@ -7878,7 +10230,7 @@ class _BondDashboardKpiCard extends StatelessWidget {
                   style: TextStyle(
                     color: muted,
                     fontSize: 7.2,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     letterSpacing: 0,
                     height: 1,
                   ),
@@ -7891,7 +10243,7 @@ class _BondDashboardKpiCard extends StatelessWidget {
                   style: TextStyle(
                     color: text,
                     fontSize: 11.7,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -7910,6 +10262,7 @@ class _BondSectionPanel extends StatelessWidget {
     required this.subtitle,
     required this.child,
     this.actions,
+    this.leading,
     this.height,
   });
 
@@ -7917,6 +10270,7 @@ class _BondSectionPanel extends StatelessWidget {
   final String subtitle;
   final Widget child;
   final Widget? actions;
+  final Widget? leading;
   final double? height;
 
   @override
@@ -7934,7 +10288,7 @@ class _BondSectionPanel extends StatelessWidget {
           style: TextStyle(
             color: text,
             fontSize: 13.1,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             height: 1,
           ),
         ),
@@ -7954,24 +10308,25 @@ class _BondSectionPanel extends StatelessWidget {
         ],
       ],
     );
-    final header = actions == null
+    final leadingWidget = leading;
+    final titleContent = leadingWidget == null
         ? titleBlock
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              leadingWidget,
+              const SizedBox(width: 8),
+              Flexible(child: titleBlock),
+            ],
+          );
+    final header = actions == null
+        ? titleContent
         : LayoutBuilder(
             builder: (context, constraints) {
-              if (constraints.maxWidth < 700) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    titleBlock,
-                    const SizedBox(height: 8),
-                    actions!,
-                  ],
-                );
-              }
               return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded(child: titleBlock),
+                  Expanded(child: titleContent),
                   const SizedBox(width: 12),
                   actions!,
                 ],
@@ -8024,11 +10379,20 @@ class _BondSimulationPanelState extends State<_BondSimulationPanel> {
       horizonDays: _horizonDays,
     );
     final confidenceLabel = AppFormatters.percent(_confidence);
+    final horizonLabel = _horizonLabel(_horizonDays);
     return _BondSectionPanel(
       height: 262,
       title: 'Distribution des pertes simulées',
       subtitle:
-          'Paramètres par défaut, seuil $confidenceLabel, horizon ${_horizonLabel(_horizonDays)}',
+          'Paramètres par défaut, seuil $confidenceLabel, horizon $horizonLabel',
+      leading: _BondRiskNotificationButton(
+        summary:
+            '${_bondRiskMethodLabel(_method)} · $confidenceLabel · $horizonLabel',
+        notifications: _bondRiskNotifications(
+          riskResult: riskResult,
+          confidenceLabel: confidenceLabel,
+        ),
+      ),
       actions: _BondSimulationSelectors(
         method: _method,
         confidence: _confidence,
@@ -8060,6 +10424,14 @@ class _BondSimulationPanelState extends State<_BondSimulationPanel> {
               const SizedBox(width: 8),
               Expanded(
                 child: _MarketMicroMetric(
+                  label: 'ES $confidenceLabel',
+                  value: _marketReadableMoney(riskResult.expectedShortfall),
+                  color: _marketViolet,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MarketMicroMetric(
                   label: 'Pire perte',
                   value: _marketReadableMoney(riskResult.worstLoss),
                   color: _marketWarning,
@@ -8068,9 +10440,9 @@ class _BondSimulationPanelState extends State<_BondSimulationPanel> {
               const SizedBox(width: 8),
               Expanded(
                 child: _MarketMicroMetric(
-                  label: 'Sensibilité au risque de taux',
+                  label: 'Sensibilité taux',
                   value: _marketReadableMoney(riskResult.rateSensitivity),
-                  color: _marketViolet,
+                  color: _marketCyan,
                 ),
               ),
             ],
@@ -8079,6 +10451,435 @@ class _BondSimulationPanelState extends State<_BondSimulationPanel> {
       ),
     );
   }
+}
+
+class _BondRiskNotificationButton extends StatefulWidget {
+  const _BondRiskNotificationButton({
+    required this.summary,
+    required this.notifications,
+  });
+
+  final String summary;
+  final List<_BondRiskNotification> notifications;
+
+  @override
+  State<_BondRiskNotificationButton> createState() =>
+      _BondRiskNotificationButtonState();
+}
+
+class _BondRiskNotificationButtonState
+    extends State<_BondRiskNotificationButton> {
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _entry;
+  bool _isOpen = false;
+
+  void _toggleOverlay() {
+    if (_entry == null) {
+      _showOverlay();
+    } else {
+      _hideOverlay();
+    }
+  }
+
+  void _showOverlay() {
+    if (_entry != null) {
+      _entry!.markNeedsBuild();
+      return;
+    }
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) return;
+
+    _entry = OverlayEntry(builder: _buildOverlay);
+    overlay.insert(_entry!);
+    if (mounted) {
+      setState(() => _isOpen = true);
+    }
+  }
+
+  void _hideOverlay({bool notify = true}) {
+    _entry?.remove();
+    _entry = null;
+    if (notify && mounted) {
+      setState(() => _isOpen = false);
+    } else {
+      _isOpen = false;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _BondRiskNotificationButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_entry != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _entry?.markNeedsBuild();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _hideOverlay(notify: false);
+    super.dispose();
+  }
+
+  Widget _buildOverlay(BuildContext context) {
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: _hideOverlay,
+            child: const SizedBox.expand(),
+          ),
+          CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            targetAnchor: Alignment.bottomLeft,
+            followerAnchor: Alignment.topLeft,
+            offset: const Offset(0, 8),
+            child: Material(
+              color: Colors.transparent,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, (1 - value) * -6),
+                      child: Transform.scale(
+                        scale: 0.985 + value * 0.015,
+                        alignment: Alignment.topLeft,
+                        child: child,
+                      ),
+                    ),
+                  );
+                },
+                child: _BondRiskNotificationsOverlay(
+                  summary: widget.summary,
+                  notifications: widget.notifications,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = _marketSurfaceFor(context);
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Semantics(
+          button: true,
+          label: 'Afficher les alertes de risque',
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _toggleOverlay,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              width: 28,
+              height: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color:
+                    _isOpen ? _marketWarning.withValues(alpha: 0.10) : surface,
+                borderRadius: BorderRadius.circular(2),
+                border: Border.all(
+                  color: _marketWarning.withValues(
+                    alpha: _isOpen ? 0.38 : 0.18,
+                  ),
+                ),
+                boxShadow: _isOpen
+                    ? [
+                        BoxShadow(
+                          color: _marketWarning.withValues(alpha: 0.14),
+                          blurRadius: 16,
+                          offset: const Offset(0, 8),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: const Icon(
+                CupertinoIcons.exclamationmark_triangle_fill,
+                size: 14,
+                color: _marketWarning,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BondRiskNotificationsOverlay extends StatelessWidget {
+  const _BondRiskNotificationsOverlay({
+    required this.summary,
+    required this.notifications,
+  });
+
+  final String summary;
+  final List<_BondRiskNotification> notifications;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isMarketDark(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final surface = _marketSurfaceFor(context);
+    final border = _marketBorderFor(context);
+
+    return Container(
+      width: 312,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: surface.withValues(alpha: isDark ? 0.98 : 0.99),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: border.withValues(alpha: 0.86)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(
+              alpha: isDark ? 0.30 : 0.14,
+            ),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+          BoxShadow(
+            color: _marketPrimary.withValues(alpha: 0.08),
+            blurRadius: 34,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _marketWarning.withValues(alpha: isDark ? 0.18 : 0.10),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: const Icon(
+                  CupertinoIcons.exclamationmark_triangle_fill,
+                  size: 14,
+                  color: _marketWarning,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Alertes de risque',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: text,
+                        fontSize: 12.7,
+                        fontWeight: FontWeight.w500,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      summary,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: muted,
+                        fontSize: 10.2,
+                        fontWeight: FontWeight.w500,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                height: 22,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _marketWarning.withValues(alpha: isDark ? 0.18 : 0.08),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  notifications.length.toString(),
+                  style: const TextStyle(
+                    color: _marketWarning,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (var index = 0; index < notifications.length; index++) ...[
+            if (index > 0) const SizedBox(height: 7),
+            _BondRiskNotificationTile(notification: notifications[index]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BondRiskNotificationTile extends StatelessWidget {
+  const _BondRiskNotificationTile({required this.notification});
+
+  final _BondRiskNotification notification;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isMarketDark(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+      decoration: BoxDecoration(
+        color: notification.color.withValues(alpha: isDark ? 0.14 : 0.075),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(
+          color: notification.color.withValues(alpha: isDark ? 0.30 : 0.20),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 26,
+            height: 26,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: notification.color.withValues(
+                alpha: isDark ? 0.22 : 0.12,
+              ),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Icon(
+              notification.icon,
+              size: 14,
+              color: notification.color,
+            ),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  notification.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 11.3,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  notification.detail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: muted,
+                    fontSize: 9.8,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            notification.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: notification.color,
+              fontSize: 11.4,
+              fontWeight: FontWeight.w500,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BondRiskNotification {
+  const _BondRiskNotification({
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String detail;
+  final IconData icon;
+  final Color color;
+}
+
+List<_BondRiskNotification> _bondRiskNotifications({
+  required _BondDashboardRiskResult riskResult,
+  required String confidenceLabel,
+}) {
+  return [
+    _BondRiskNotification(
+      label: 'VaR $confidenceLabel',
+      value: _marketReadableMoney(riskResult.varValue),
+      detail: 'Perte maximale estimée sur l’horizon retenu.',
+      icon: CupertinoIcons.exclamationmark_triangle_fill,
+      color: _marketDanger,
+    ),
+    _BondRiskNotification(
+      label: 'ES $confidenceLabel',
+      value: _marketReadableMoney(riskResult.expectedShortfall),
+      detail: 'Perte moyenne estimée au-delà de la VaR.',
+      icon: CupertinoIcons.chart_bar_square_fill,
+      color: _marketViolet,
+    ),
+    _BondRiskNotification(
+      label: 'Pire perte simulée',
+      value: _marketReadableMoney(riskResult.worstLoss),
+      detail: 'Observation la plus défavorable de la distribution.',
+      icon: CupertinoIcons.arrow_down_right,
+      color: _marketWarning,
+    ),
+    _BondRiskNotification(
+      label: 'Sensibilité taux',
+      value: _marketReadableMoney(riskResult.rateSensitivity),
+      detail: 'Impact estimé d’un choc de taux sur le portefeuille.',
+      icon: CupertinoIcons.percent,
+      color: _marketCyan,
+    ),
+  ];
 }
 
 class _BondSimulationSelectors extends StatelessWidget {
@@ -8100,13 +10901,11 @@ class _BondSimulationSelectors extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 7,
-      runSpacing: 7,
-      alignment: WrapAlignment.end,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         _BondRiskSelector<_VarMethod>(
-          width: 142,
+          width: 116,
           value: method,
           values: _VarMethod.values,
           icon: method.icon,
@@ -8114,8 +10913,9 @@ class _BondSimulationSelectors extends StatelessWidget {
           labelFor: _bondRiskMethodLabel,
           onChanged: onMethodChanged,
         ),
+        const SizedBox(width: 7),
         _BondRiskSelector<double>(
-          width: 94,
+          width: 82,
           value: confidence,
           values: const [0.95, 0.975, 0.99],
           icon: CupertinoIcons.percent,
@@ -8123,8 +10923,9 @@ class _BondSimulationSelectors extends StatelessWidget {
           labelFor: AppFormatters.percent,
           onChanged: onConfidenceChanged,
         ),
+        const SizedBox(width: 7),
         _BondRiskSelector<int>(
-          width: 100,
+          width: 88,
           value: horizonDays,
           values: const [1, 3, 10, 21],
           icon: CupertinoIcons.calendar,
@@ -8166,7 +10967,7 @@ class _BondRiskSelector<T> extends StatelessWidget {
     return Container(
       width: width,
       height: 30,
-      padding: const EdgeInsets.only(left: 8, right: 6),
+      padding: const EdgeInsets.only(left: 7, right: 5),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(2),
@@ -8193,7 +10994,7 @@ class _BondRiskSelector<T> extends StatelessWidget {
                 style: TextStyle(
                   color: text,
                   fontSize: 10.2,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 0,
                   height: 1,
                 ),
@@ -8232,12 +11033,14 @@ class _BondDashboardRiskResult {
   const _BondDashboardRiskResult({
     required this.losses,
     required this.varValue,
+    required this.expectedShortfall,
     required this.worstLoss,
     required this.rateSensitivity,
   });
 
   final List<double> losses;
   final double varValue;
+  final double expectedShortfall;
   final double worstLoss;
   final double rateSensitivity;
 }
@@ -8248,11 +11051,7 @@ _BondDashboardRiskResult _bondDashboardRiskResult({
   required double confidence,
   required int horizonDays,
 }) {
-  final portfolio = _VarPortfolioContext.fromSources(
-    null,
-    stats.dataset,
-    portfolioType: stats.dataset.portfolioType,
-  );
+  final portfolio = _VarPortfolioContext.fromBondStats(stats);
 
   switch (method) {
     case _VarMethod.historical:
@@ -8266,6 +11065,7 @@ _BondDashboardRiskResult _bondDashboardRiskResult({
         return _BondDashboardRiskResult(
           losses: result.losses,
           varValue: result.varValue,
+          expectedShortfall: result.expectedShortfall,
           worstLoss: math.max(result.worstLoss, result.varValue),
           rateSensitivity: _bondDashboardDefaultRateSensitivity(stats),
         );
@@ -8277,14 +11077,23 @@ _BondDashboardRiskResult _bondDashboardRiskResult({
       );
     case _VarMethod.parametric:
       final defaultDuration = _bondDashboardDefaultModifiedDuration(stats);
-      final result = stats.dataset.calculateParametricVar(
+      final defaultPortfolioValue = stats.presentValue > 0
+          ? stats.presentValue
+          : (stats.capitalRemainingDue > 0
+              ? stats.capitalRemainingDue
+              : stats.dataset.parametricRiskValue);
+      final result = calculateMarketParametricVar(
+        hasMarketData:
+            stats.dataset.records.isNotEmpty && defaultPortfolioValue > 0,
+        portfolioType: MarketPortfolioType.bonds,
+        basePortfolioValue: defaultPortfolioValue,
         confidence: confidence,
         horizonDays: horizonDays,
         portfolioScale: _defaultParamPortfolioScale,
-        annualVolatilityOverride: _defaultParamVolatility,
-        modifiedDurationOverride: defaultDuration,
-        correlationOverride: _defaultParamCorrelation,
-        expectedReturnOverride: _defaultParamExpectedReturn,
+        annualVolatility: _defaultParamVolatility,
+        modifiedDuration: defaultDuration,
+        correlation: _defaultParamCorrelation,
+        expectedReturn: _defaultParamExpectedReturn,
         riskFreeRate: _defaultParamRiskFreeRate,
       );
       final losses = _bondDashboardParametricLosses(result);
@@ -8292,6 +11101,7 @@ _BondDashboardRiskResult _bondDashboardRiskResult({
         return _BondDashboardRiskResult(
           losses: losses,
           varValue: result.varValue,
+          expectedShortfall: result.expectedShortfall,
           worstLoss: math.max(
             result.varValue,
             losses.isEmpty ? result.expectedShortfall : losses.last,
@@ -8319,6 +11129,7 @@ _BondDashboardRiskResult _bondDashboardRiskResult({
         return _BondDashboardRiskResult(
           losses: result.losses,
           varValue: result.varValue,
+          expectedShortfall: result.expectedShortfall,
           worstLoss: math.max(result.worstCase, result.varValue),
           rateSensitivity: _bondDashboardDefaultRateSensitivity(stats),
         );
@@ -8338,26 +11149,39 @@ _BondDashboardRiskResult _bondDashboardFallbackRiskResult({
 }) {
   final losses = _bondDashboardFallbackLosses(stats, horizonDays);
   final varValue = _quantile(losses, confidence);
+  final tail = losses.where((loss) => loss >= varValue).toList();
+  final expectedShortfall =
+      tail.isEmpty ? varValue : tail.reduce((a, b) => a + b) / tail.length;
   final worstLoss = losses.isEmpty ? varValue : math.max(losses.last, varValue);
   return _BondDashboardRiskResult(
     losses: losses,
     varValue: varValue,
+    expectedShortfall: expectedShortfall,
     worstLoss: worstLoss,
     rateSensitivity: _bondDashboardDefaultRateSensitivity(stats),
   );
 }
 
 double _bondDashboardDefaultModifiedDuration(_BondDashboardStats stats) {
+  if (stats.modifiedDuration > 0 && stats.modifiedDuration.isFinite) {
+    return stats.modifiedDuration;
+  }
+  if (stats.macaulayDuration > 0 &&
+      stats.macaulayDuration.isFinite &&
+      stats.yieldToMaturity > -0.999) {
+    final modified = stats.macaulayDuration / (1 + stats.yieldToMaturity);
+    if (modified > 0 && modified.isFinite) return modified;
+  }
   return stats.dataset.portfolioType == MarketPortfolioType.bonds
       ? _defaultParamDuration
       : 1.0;
 }
 
 double _bondDashboardDefaultRateSensitivity(_BondDashboardStats stats) {
-  final value = stats.dataset.parametricRiskValue > 0
-      ? stats.dataset.parametricRiskValue
-      : stats.presentValue > 0
-          ? stats.presentValue
+  final value = stats.presentValue > 0
+      ? stats.presentValue
+      : stats.dataset.parametricRiskValue > 0
+          ? stats.dataset.parametricRiskValue
           : stats.totalExposure;
   return _bondDashboardDefaultModifiedDuration(stats) *
       math.max(0.0, value) *
@@ -8445,7 +11269,7 @@ class _BondRatingPanel extends StatelessWidget {
               style: TextStyle(
                 color: text,
                 fontSize: 12.8,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 height: 1,
               ),
             ),
@@ -8463,7 +11287,7 @@ class _BondRatingPanel extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: _MarketDonutBreakdown(
+              child: _BondRatingBarChart(
                 entries: stats.ratingEntries.take(6).toList(),
               ),
             ),
@@ -8471,6 +11295,277 @@ class _BondRatingPanel extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _BondRatingBarChart extends StatefulWidget {
+  const _BondRatingBarChart({required this.entries});
+
+  final List<_MarketDistributionEntry> entries;
+
+  @override
+  State<_BondRatingBarChart> createState() => _BondRatingBarChartState();
+}
+
+class _BondRatingBarChartState extends State<_BondRatingBarChart> {
+  Offset? _hoverPosition;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onHover: (event) => setState(() => _hoverPosition = event.localPosition),
+      onExit: (_) => setState(() => _hoverPosition = null),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+        builder: (context, progress, _) {
+          return SizedBox.expand(
+            child: CustomPaint(
+              painter: _BondRatingBarChartPainter(
+                entries: widget.entries,
+                progress: progress,
+                hoverPosition: _hoverPosition,
+                text: _marketTextFor(context),
+                muted: _marketMutedFor(context),
+                border: _marketBorderFor(context),
+                isDark: _isMarketDark(context),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _BondRatingBarChartPainter extends CustomPainter {
+  const _BondRatingBarChartPainter({
+    required this.entries,
+    required this.progress,
+    required this.hoverPosition,
+    required this.text,
+    required this.muted,
+    required this.border,
+    required this.isDark,
+  });
+
+  final List<_MarketDistributionEntry> entries;
+  final double progress;
+  final Offset? hoverPosition;
+  final Color text;
+  final Color muted;
+  final Color border;
+  final bool isDark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (entries.isEmpty || size.width <= 80 || size.height <= 80) {
+      _paintCenteredEmptyState(canvas, size);
+      return;
+    }
+
+    final chart = Rect.fromLTWH(
+      32,
+      14,
+      math.max(1, size.width - 42),
+      math.max(1, size.height - 44),
+    );
+    final axisMax = _axisMax();
+    final gridPaint = Paint()
+      ..isAntiAlias = true
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8
+      ..color = border.withValues(alpha: isDark ? 0.42 : 0.62);
+    final axisPaint = Paint()
+      ..isAntiAlias = true
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = muted.withValues(alpha: isDark ? 0.42 : 0.55);
+
+    for (var tick = 0; tick <= 4; tick++) {
+      final value = axisMax * tick / 4;
+      final y = chart.bottom - chart.height * tick / 4;
+      final path = Path()
+        ..moveTo(chart.left, y)
+        ..lineTo(chart.right, y);
+      _drawDashedPath(canvas, path, gridPaint, dashWidth: 4, gapWidth: 5);
+      _paintSmallText(
+        canvas,
+        value.toStringAsFixed(0),
+        Offset(0, y - 6),
+        width: 25,
+        align: TextAlign.right,
+        color: muted.withValues(alpha: 0.80),
+        fontSize: 8.4,
+        fontWeight: FontWeight.w500,
+      );
+    }
+
+    canvas.drawLine(chart.bottomLeft, chart.bottomRight, axisPaint);
+    canvas.drawLine(chart.bottomLeft, chart.topLeft, axisPaint);
+
+    final groupWidth = chart.width / entries.length;
+    final barWidth = math.min(48.0, math.max(18.0, groupWidth * 0.54));
+    int? hoveredIndex;
+
+    for (var index = 0; index < entries.length; index++) {
+      final entry = entries[index];
+      final centerX = chart.left + groupWidth * (index + 0.5);
+      final value = entry.share * 100;
+      final barHeight = chart.height *
+          (value / axisMax).clamp(0.0, 1.0) *
+          progress.clamp(0.0, 1.0);
+      final rect = Rect.fromLTWH(
+        centerX - barWidth / 2,
+        chart.bottom - barHeight,
+        barWidth,
+        barHeight,
+      );
+      final hitRect = Rect.fromLTWH(
+        centerX - groupWidth / 2,
+        chart.top,
+        groupWidth,
+        chart.height + 24,
+      );
+      final isHovered =
+          hoverPosition != null && hitRect.contains(hoverPosition!);
+      if (isHovered) hoveredIndex = index;
+
+      if (isHovered) {
+        final glowRect = rect.inflate(4);
+        canvas.drawRRect(
+          RRect.fromRectAndCorners(
+            glowRect,
+            topLeft: const Radius.circular(6),
+            topRight: const Radius.circular(6),
+          ),
+          Paint()
+            ..isAntiAlias = true
+            ..color = entry.color.withValues(alpha: 0.13),
+        );
+      }
+
+      final barPaint = Paint()
+        ..isAntiAlias = true
+        ..style = PaintingStyle.fill
+        ..color = entry.color.withValues(alpha: isHovered ? 1 : 0.94);
+      canvas.drawRRect(
+        RRect.fromRectAndCorners(
+          rect,
+          topLeft: Radius.circular(isHovered ? 6 : 4),
+          topRight: Radius.circular(isHovered ? 6 : 4),
+        ),
+        barPaint,
+      );
+
+      _paintSmallText(
+        canvas,
+        AppFormatters.percent(entry.share),
+        Offset(centerX - groupWidth * 0.46, rect.top - 15),
+        width: groupWidth * 0.92,
+        align: TextAlign.center,
+        color: isHovered ? entry.color : text.withValues(alpha: 0.84),
+        fontSize: isHovered ? 9.6 : 9.0,
+        fontWeight: FontWeight.w500,
+      );
+      _paintSmallText(
+        canvas,
+        entry.label,
+        Offset(centerX - groupWidth * 0.48, chart.bottom + 9),
+        width: groupWidth * 0.96,
+        align: TextAlign.center,
+        color: isHovered ? entry.color : muted,
+        fontSize: 8.9,
+        fontWeight: FontWeight.w500,
+      );
+    }
+
+    if (hoveredIndex != null && hoverPosition != null) {
+      final entry = entries[hoveredIndex];
+      _paintChartTooltip(
+        canvas,
+        [
+          entry.label,
+          AppFormatters.percent(entry.share),
+          _marketReadableMoney(entry.amount),
+        ],
+        hoverPosition!,
+        Offset.zero & size,
+        entry.color,
+        isDark,
+      );
+    }
+  }
+
+  double _axisMax() {
+    final maxPercent = entries.fold<double>(
+      0,
+      (max, entry) => math.max(max, entry.share * 100),
+    );
+    if (maxPercent <= 0) return 100;
+    for (final candidate in const [10, 20, 30, 45, 60, 75, 100]) {
+      if (maxPercent <= candidate * 0.92) return candidate.toDouble();
+    }
+    return 100;
+  }
+
+  void _paintCenteredEmptyState(Canvas canvas, Size size) {
+    _paintSmallText(
+      canvas,
+      'Aucune notation',
+      Offset(0, size.height / 2 - 5),
+      width: size.width,
+      align: TextAlign.center,
+      color: muted,
+      fontSize: 10,
+      fontWeight: FontWeight.w500,
+    );
+  }
+
+  void _paintSmallText(
+    Canvas canvas,
+    String label,
+    Offset offset, {
+    required double width,
+    required TextAlign align,
+    required Color color,
+    required double fontSize,
+    required FontWeight fontWeight,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: color,
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          height: 1,
+        ),
+      ),
+      maxLines: 1,
+      ellipsis: '…',
+      textAlign: align,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: width);
+    var dx = offset.dx;
+    if (align == TextAlign.center) {
+      dx += (width - painter.width) / 2;
+    } else if (align == TextAlign.right) {
+      dx += width - painter.width;
+    }
+    painter.paint(canvas, Offset(dx, offset.dy));
+  }
+
+  @override
+  bool shouldRepaint(covariant _BondRatingBarChartPainter oldDelegate) {
+    return oldDelegate.entries != entries ||
+        oldDelegate.progress != progress ||
+        oldDelegate.hoverPosition != hoverPosition ||
+        oldDelegate.text != text ||
+        oldDelegate.muted != muted ||
+        oldDelegate.border != border ||
+        oldDelegate.isDark != isDark;
   }
 }
 
@@ -8561,45 +11656,520 @@ class _BondCouponMaturityPanel extends StatelessWidget {
   }
 }
 
-class _BondRiskAnalyticsPanel extends StatelessWidget {
-  const _BondRiskAnalyticsPanel({required this.stats});
+class _BondProfileBreakdownPanel extends StatelessWidget {
+  const _BondProfileBreakdownPanel({required this.stats});
 
   final _BondDashboardStats stats;
 
   @override
   Widget build(BuildContext context) {
+    final profileBreakdown = stats.profileBreakdown ??
+        _bondCrdProfileBreakdown(stats.dataset.records);
     return _BondSectionPanel(
       height: 268,
-      title: 'Sensibilité obligataire',
-      subtitle: 'Volatilité, corrélation, duration et impact du risque de taux',
-      child: _MarketRiskTileGrid(
-        columns: 1,
-        itemHeight: 48,
-        compact: true,
-        items: [
-          _MarketRiskTileData(
-            label: 'Volatilité',
-            value: AppFormatters.percent(stats.volatility),
-            color: _marketCyan,
-          ),
-          _MarketRiskTileData(
-            label: 'Corrélation',
-            value: stats.correlation.toStringAsFixed(2).replaceAll('.', ','),
-            color: _marketViolet,
-          ),
-          _MarketRiskTileData(
-            label: 'Duration',
-            value: stats.durationProxy.toStringAsFixed(2).replaceAll('.', ','),
-            color: _marketPrimary,
-          ),
-          _MarketRiskTileData(
-            label: 'Sensibilité',
-            value: _marketShortXofAmount(stats.rateSensitivity),
-            color: _marketWarning,
-          ),
-        ],
+      title: 'Répartition par profil',
+      subtitle: 'Capital restant dû par profil d’amortissement',
+      child: _BondProfileBreakdownPie(
+        entries: profileBreakdown,
       ),
     );
+  }
+}
+
+class _BondProfileBreakdownPie extends StatefulWidget {
+  const _BondProfileBreakdownPie({
+    required this.entries,
+    this.compact = false,
+  });
+
+  final List<_BondCrdProfileEntry> entries;
+  final bool compact;
+
+  @override
+  State<_BondProfileBreakdownPie> createState() =>
+      _BondProfileBreakdownPieState();
+}
+
+class _BondProfileBreakdownPieState extends State<_BondProfileBreakdownPie> {
+  Offset? _hoverPosition;
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = widget.compact;
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final surface = _marketSurfaceFor(context);
+    final validEntries = [
+      for (final entry in widget.entries)
+        if (entry.amount > 0) entry,
+    ];
+    final total =
+        validEntries.fold<double>(0, (sum, entry) => sum + entry.amount);
+    if (validEntries.isEmpty || total <= 0) {
+      return Center(
+        child: Text(
+          'Aucun profil disponible',
+          style: TextStyle(
+            color: muted,
+            fontSize: compact ? 10.5 : 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+    }
+
+    final shown = validEntries.take(4).toList(growable: false);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final narrow = constraints.maxWidth < 340;
+        final chartSize = compact
+            ? math.min(88.0, constraints.maxHeight)
+            : narrow
+                ? 106.0
+                : math.min(136.0, constraints.maxHeight);
+        final pie = MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onHover: (event) => setState(() {
+            _hoverPosition = event.localPosition;
+            _isHovering = true;
+          }),
+          onExit: (_) => setState(() {
+            _isHovering = false;
+          }),
+          child: SizedBox.square(
+            dimension: chartSize,
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(
+                begin: 0,
+                end: _isHovering ? 1 : 0,
+              ),
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              builder: (context, hoverProgress, _) {
+                return TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 520),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, progress, _) {
+                    return CustomPaint(
+                      painter: _BondProfilePiePainter(
+                        entries: shown,
+                        total: total,
+                        progress: progress,
+                        separatorColor: surface,
+                        isDark: _isMarketDark(context),
+                        hoverPosition: _hoverPosition,
+                        hoverProgress: hoverProgress,
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        );
+
+        final legend = _BondProfileBreakdownLegend(
+          entries: shown,
+          total: total,
+          compact: compact || narrow,
+          text: text,
+          muted: muted,
+        );
+
+        if (narrow && !compact) {
+          return Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              pie,
+              const SizedBox(height: 12),
+              Expanded(child: legend),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            pie,
+            SizedBox(width: compact ? 10 : 16),
+            Expanded(child: legend),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _BondProfileBreakdownLegend extends StatelessWidget {
+  const _BondProfileBreakdownLegend({
+    required this.entries,
+    required this.total,
+    required this.compact,
+    required this.text,
+    required this.muted,
+  });
+
+  final List<_BondCrdProfileEntry> entries;
+  final double total;
+  final bool compact;
+  final Color text;
+  final Color muted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (var index = 0; index < entries.length; index++) ...[
+          _BondProfileBreakdownLegendRow(
+            entry: entries[index],
+            share: total <= 0
+                ? 0
+                : (entries[index].amount / total).clamp(0.0, 1.0).toDouble(),
+            compact: compact,
+            text: text,
+            muted: muted,
+          ),
+          if (index < entries.length - 1) SizedBox(height: compact ? 7 : 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _BondProfileBreakdownLegendRow extends StatelessWidget {
+  const _BondProfileBreakdownLegendRow({
+    required this.entry,
+    required this.share,
+    required this.compact,
+    required this.text,
+    required this.muted,
+  });
+
+  final _BondCrdProfileEntry entry;
+  final double share;
+  final bool compact;
+  final Color text;
+  final Color muted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: compact ? 9 : 10,
+          height: compact ? 9 : 10,
+          decoration: BoxDecoration(
+            color: entry.color,
+            borderRadius: BorderRadius.circular(1.5),
+          ),
+        ),
+        SizedBox(width: compact ? 7 : 9),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: text,
+                  fontSize: compact ? 9.7 : 12.2,
+                  fontWeight: FontWeight.w500,
+                  height: 1,
+                ),
+              ),
+              SizedBox(height: compact ? 2 : 4),
+              Text(
+                '${entry.count} titres',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: muted,
+                  fontSize: compact ? 8.4 : 10.0,
+                  fontWeight: FontWeight.w500,
+                  height: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(width: compact ? 6 : 10),
+        Text(
+          AppFormatters.percent(share),
+          style: TextStyle(
+            color: muted,
+            fontSize: compact ? 9.2 : 11.4,
+            fontWeight: FontWeight.w500,
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BondProfilePiePainter extends CustomPainter {
+  const _BondProfilePiePainter({
+    required this.entries,
+    required this.total,
+    required this.progress,
+    required this.separatorColor,
+    required this.isDark,
+    this.hoverPosition,
+    this.hoverProgress = 0,
+  });
+
+  final List<_BondCrdProfileEntry> entries;
+  final double total;
+  final double progress;
+  final Color separatorColor;
+  final bool isDark;
+  final Offset? hoverPosition;
+  final double hoverProgress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (entries.isEmpty || total <= 0) return;
+    final radius = math.min(size.width, size.height) / 2 - 3;
+    final center = Offset(size.width / 2, size.height / 2);
+    final shadowPaint = Paint()
+      ..isAntiAlias = true
+      ..color = Colors.black.withValues(alpha: isDark ? 0.22 : 0.09)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+    canvas.drawCircle(center.translate(0, 2), radius * 0.96, shadowPaint);
+
+    var startAngle = -math.pi / 2;
+    final sweepLimit = (math.pi * 2 * progress).clamp(0.0, math.pi * 2);
+    var paintedSweep = 0.0;
+    final hoveredIndex = _hoveredIndexFor(center, radius);
+    final segments = <({
+      int index,
+      _BondCrdProfileEntry entry,
+      double startAngle,
+      double fullSweep,
+      double sweep,
+    })>[];
+    for (var index = 0; index < entries.length; index++) {
+      final entry = entries[index];
+      if (entry.amount <= 0) continue;
+      final fullSweep = entry.amount / total * math.pi * 2;
+      final remaining = math.max(0.0, sweepLimit - paintedSweep);
+      final sweep = math.min(fullSweep, remaining);
+      if (sweep > 0) {
+        segments.add((
+          index: index,
+          entry: entry,
+          startAngle: startAngle,
+          fullSweep: fullSweep,
+          sweep: sweep,
+        ));
+      }
+      startAngle += fullSweep;
+      paintedSweep += fullSweep;
+    }
+    for (final segment in segments) {
+      if (segment.index != hoveredIndex) {
+        _paintSegment(canvas, segment, center, radius);
+      }
+    }
+    if (hoveredIndex != null) {
+      for (final segment in segments) {
+        if (segment.index == hoveredIndex) {
+          _paintSegment(canvas, segment, center, radius);
+          break;
+        }
+      }
+    }
+
+    for (final segment in segments) {
+      final segmentProgress = segment.fullSweep <= 0
+          ? 0.0
+          : (segment.sweep / segment.fullSweep).clamp(0.0, 1.0).toDouble();
+      if (segmentProgress > 0.58) {
+        final labelAlpha =
+            ((segmentProgress - 0.58) / 0.42).clamp(0.0, 1.0).toDouble();
+        final isHovered = segment.index == hoveredIndex;
+        final labelAngle = segment.startAngle + segment.fullSweep / 2;
+        final lift = isHovered ? 5.4 * hoverProgress : 0.0;
+        final labelRadius =
+            (radius + (isHovered ? 2.0 * hoverProgress : 0.0)) * 0.58 + lift;
+        final labelOffset = Offset(
+          center.dx + math.cos(labelAngle) * labelRadius,
+          center.dy + math.sin(labelAngle) * labelRadius,
+        );
+        _paintPieLabel(
+          canvas,
+          AppFormatters.percent(segment.entry.amount / total),
+          labelOffset,
+          alpha: labelAlpha,
+          compact: radius < 56,
+          emphasis: isHovered ? hoverProgress : 0,
+        );
+      }
+    }
+
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..isAntiAlias = true
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = separatorColor.withValues(alpha: isDark ? 0.36 : 0.72),
+    );
+  }
+
+  int? _hoveredIndexFor(Offset center, double radius) {
+    final position = hoverPosition;
+    if (position == null || hoverProgress <= 0) return null;
+    final distance = (position - center).distance;
+    if (distance > radius + 8) return null;
+    var angle = math.atan2(position.dy - center.dy, position.dx - center.dx);
+    angle += math.pi / 2;
+    while (angle < 0) {
+      angle += math.pi * 2;
+    }
+    while (angle >= math.pi * 2) {
+      angle -= math.pi * 2;
+    }
+    var cumulative = 0.0;
+    for (var index = 0; index < entries.length; index++) {
+      final entry = entries[index];
+      if (entry.amount <= 0) continue;
+      final sweep = entry.amount / total * math.pi * 2;
+      if (angle <= cumulative + sweep) return index;
+      cumulative += sweep;
+    }
+    return null;
+  }
+
+  void _paintSegment(
+    Canvas canvas,
+    ({
+      int index,
+      _BondCrdProfileEntry entry,
+      double startAngle,
+      double fullSweep,
+      double sweep,
+    }) segment,
+    Offset center,
+    double radius,
+  ) {
+    final isHovered = segment.index == _hoveredIndexFor(center, radius);
+    final angle = segment.startAngle + segment.fullSweep / 2;
+    final lift = isHovered ? 5.4 * hoverProgress : 0.0;
+    final activeRadius = radius + (isHovered ? 2.0 * hoverProgress : 0.0);
+    final segmentCenter = Offset(
+      center.dx + math.cos(angle) * lift,
+      center.dy + math.sin(angle) * lift,
+    );
+    final segmentRect = Rect.fromCircle(
+      center: segmentCenter,
+      radius: activeRadius,
+    );
+    final path = Path()
+      ..moveTo(segmentCenter.dx, segmentCenter.dy)
+      ..arcTo(segmentRect, segment.startAngle, segment.sweep, false)
+      ..close();
+    if (isHovered) {
+      canvas.drawPath(
+        path.shift(const Offset(0, 2)),
+        Paint()
+          ..isAntiAlias = true
+          ..style = PaintingStyle.fill
+          ..color = Colors.black.withValues(
+            alpha: isDark ? 0.22 * hoverProgress : 0.13 * hoverProgress,
+          )
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+      );
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..isAntiAlias = true
+        ..style = PaintingStyle.fill
+        ..color = segment.entry.color,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..isAntiAlias = true
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2 + (isHovered ? 0.5 * hoverProgress : 0.0)
+        ..strokeJoin = StrokeJoin.round
+        ..color = separatorColor.withValues(alpha: 0.96),
+    );
+  }
+
+  void _paintPieLabel(
+    Canvas canvas,
+    String label,
+    Offset center, {
+    required double alpha,
+    required bool compact,
+    required double emphasis,
+  }) {
+    final fontSize = (compact ? 7.8 : 9.2) + 0.7 * emphasis;
+    final shadowPainter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: Colors.black.withValues(alpha: 0.28 * alpha),
+          fontSize: fontSize,
+          fontWeight: FontWeight.w500,
+          height: 1,
+          letterSpacing: 0,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    shadowPainter.paint(
+      canvas,
+      Offset(
+        center.dx - shadowPainter.width / 2,
+        center.dy - shadowPainter.height / 2 + 1,
+      ),
+    );
+
+    final labelPainter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.98 * alpha),
+          fontSize: fontSize,
+          fontWeight: FontWeight.w500,
+          height: 1,
+          letterSpacing: 0,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    labelPainter.paint(
+      canvas,
+      Offset(
+        center.dx - labelPainter.width / 2,
+        center.dy - labelPainter.height / 2,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BondProfilePiePainter oldDelegate) {
+    return oldDelegate.entries != entries ||
+        oldDelegate.total != total ||
+        oldDelegate.progress != progress ||
+        oldDelegate.hoverPosition != hoverPosition ||
+        oldDelegate.hoverProgress != hoverProgress ||
+        oldDelegate.separatorColor != separatorColor ||
+        oldDelegate.isDark != isDark;
   }
 }
 
@@ -8713,7 +12283,7 @@ class _BondDistributionBarRowState extends State<_BondDistributionBarRow> {
                     style: TextStyle(
                       color: widget.text,
                       fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -8777,7 +12347,7 @@ class _BondDistributionBarRowState extends State<_BondDistributionBarRow> {
                           ? _marketPrimary
                           : widget.muted,
                       fontSize: 9.1,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -8902,7 +12472,7 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
                         ? _marketPrimary
                         : widget.muted,
                     fontSize: 9.2,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -8913,7 +12483,7 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
                   style: TextStyle(
                     color: widget.text,
                     fontSize: 9.7,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -8978,7 +12548,7 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
                         ? _marketPrimary
                         : widget.muted,
                     fontSize: 9.2,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -8997,16 +12567,370 @@ class _BondZoneAllocation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final zones = _orderedZoneEntries(entries);
+    final zones = _rankedBondZoneEntries(_orderedZoneEntries(entries));
+    return _BondZoneDonutBreakdown(entries: zones);
+  }
+}
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var index = 0; index < zones.length; index++) ...[
-          Expanded(child: _BondZoneRow(entry: zones[index])),
-          if (index < zones.length - 1) const SizedBox(height: 7),
+List<_MarketDistributionEntry> _rankedBondZoneEntries(
+  List<_MarketDistributionEntry> entries,
+) {
+  final ranked = [...entries]..sort((a, b) {
+      final shareComparison = b.share.compareTo(a.share);
+      if (shareComparison != 0) return shareComparison;
+      return b.amount.compareTo(a.amount);
+    });
+  final colorsByLabel = <String, Color>{};
+  for (var index = 0; index < ranked.length; index++) {
+    colorsByLabel[ranked[index].label] = switch (index) {
+      0 => _marketPrimary,
+      1 => _marketWarning,
+      _ => _marketDanger,
+    };
+  }
+
+  return [
+    for (final entry in entries)
+      _MarketDistributionEntry(
+        label: entry.label,
+        amount: entry.amount,
+        share: entry.share,
+        color: colorsByLabel[entry.label] ?? _marketDanger,
+        flagAsset: entry.flagAsset,
+        countryCode: entry.countryCode,
+      ),
+  ];
+}
+
+class _BondZoneDonutBreakdown extends StatefulWidget {
+  const _BondZoneDonutBreakdown({required this.entries});
+
+  final List<_MarketDistributionEntry> entries;
+
+  @override
+  State<_BondZoneDonutBreakdown> createState() =>
+      _BondZoneDonutBreakdownState();
+}
+
+class _BondZoneDonutBreakdownState extends State<_BondZoneDonutBreakdown> {
+  Offset? _hoverPosition;
+
+  _MarketDistributionEntry? _hoveredEntryFor({
+    required Offset? position,
+    required double size,
+    required List<_MarketDistributionEntry> entries,
+  }) {
+    if (position == null || entries.isEmpty) return null;
+    final center = Offset(size / 2, size / 2);
+    const strokeWidth = 23.0;
+    final radius = size / 2 - 15;
+    final distance = (position - center).distance;
+    final inRing = distance >= radius - strokeWidth / 2 - 8 &&
+        distance <= radius + strokeWidth / 2 + 8;
+    if (!inRing) return null;
+
+    var angle = math.atan2(position.dy - center.dy, position.dx - center.dx) +
+        math.pi / 2;
+    while (angle < 0) {
+      angle += math.pi * 2;
+    }
+    while (angle >= math.pi * 2) {
+      angle -= math.pi * 2;
+    }
+
+    var cursor = 0.0;
+    for (final entry in entries) {
+      final sweep = math.max(0.035, entry.share * math.pi * 2);
+      if (angle >= cursor && angle <= cursor + sweep) return entry;
+      cursor += sweep;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final surface = _marketSurfaceFor(context);
+    final visibleEntries = widget.entries
+        .where((entry) => entry.amount > 0 && entry.share > 0.0001)
+        .toList(growable: false);
+    final dominant = visibleEntries.isEmpty
+        ? null
+        : visibleEntries.reduce(
+            (best, entry) => entry.share > best.share ? entry : best,
+          );
+    final dominantShare = dominant?.share ?? 0;
+    final centerLabel = dominantShare >= 0.40
+        ? 'Part élevée'
+        : dominantShare >= 0.25
+            ? 'Part notable'
+            : 'Part diffuse';
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final donutSize = constraints.maxWidth < 310 ? 116.0 : 128.0;
+        final hoveredEntry = _hoveredEntryFor(
+          position: _hoverPosition,
+          size: donutSize,
+          entries: visibleEntries,
+        );
+        final centerEntry = hoveredEntry ?? dominant;
+        final centerShare = centerEntry?.share ?? 0;
+        final activeCenterLabel = hoveredEntry?.label ?? centerLabel;
+        final activeCenterColor = centerEntry?.color ?? muted;
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: donutSize,
+              height: donutSize,
+              child: MouseRegion(
+                cursor: hoveredEntry == null
+                    ? SystemMouseCursors.basic
+                    : SystemMouseCursors.click,
+                onHover: (event) {
+                  setState(() => _hoverPosition = event.localPosition);
+                },
+                onExit: (_) => setState(() => _hoverPosition = null),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: const Duration(milliseconds: 360),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, progress, child) {
+                    return TweenAnimationBuilder<double>(
+                      tween: Tween<double>(
+                        begin: 0,
+                        end: hoveredEntry == null ? 0 : 1,
+                      ),
+                      duration: const Duration(milliseconds: 170),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, hoverProgress, child) {
+                        return CustomPaint(
+                          foregroundPainter: _MarketDonutPainter(
+                            entries: [
+                              for (final entry in visibleEntries)
+                                _MarketDistributionEntry(
+                                  label: entry.label,
+                                  amount: entry.amount,
+                                  share: entry.share * progress,
+                                  color: entry.color,
+                                ),
+                            ],
+                            track: _marketBorderFor(context)
+                                .withValues(alpha: 0.42),
+                            hoverPosition: _hoverPosition,
+                            hoverProgress: hoverProgress,
+                            isDark: _isMarketDark(context),
+                          ),
+                          child: child,
+                        );
+                      },
+                      child: child,
+                    );
+                  },
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 170),
+                      curve: Curves.easeOutCubic,
+                      width: donutSize * (hoveredEntry == null ? 0.50 : 0.53),
+                      height: donutSize * (hoveredEntry == null ? 0.50 : 0.53),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: surface,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: activeCenterColor.withValues(
+                              alpha: hoveredEntry == null ? 0.08 : 0.16,
+                            ),
+                            blurRadius: hoveredEntry == null ? 12 : 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 150),
+                            curve: Curves.easeOutCubic,
+                            style: TextStyle(
+                              color: activeCenterColor,
+                              fontSize: hoveredEntry == null ? 12.8 : 13.4,
+                              fontWeight: FontWeight.w500,
+                              height: 1,
+                            ),
+                            child: Text(
+                              centerEntry == null
+                                  ? '-'
+                                  : AppFormatters.percent(centerShare),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: activeCenterColor.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                            child: Text(
+                              activeCenterLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: activeCenterColor,
+                                fontSize: 6.5,
+                                fontWeight: FontWeight.w500,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var index = 0;
+                      index < widget.entries.length;
+                      index++) ...[
+                    _BondZoneDonutLegendItem(
+                      entry: widget.entries[index],
+                      highlighted:
+                          hoveredEntry?.label == widget.entries[index].label,
+                      text: text,
+                      muted: muted,
+                    ),
+                    if (index < widget.entries.length - 1)
+                      const SizedBox(height: 8),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _BondZoneDonutLegendItem extends StatelessWidget {
+  const _BondZoneDonutLegendItem({
+    required this.entry,
+    required this.highlighted,
+    required this.text,
+    required this.muted,
+  });
+
+  final _MarketDistributionEntry entry;
+  final bool highlighted;
+  final Color text;
+  final Color muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final inactive = entry.amount <= 0 || entry.share <= 0;
+    final color = entry.color;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutCubic,
+      height: 42,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(
+          alpha: highlighted
+              ? (_isMarketDark(context) ? 0.22 : 0.12)
+              : inactive
+                  ? (_isMarketDark(context) ? 0.09 : 0.045)
+                  : (_isMarketDark(context) ? 0.13 : 0.07),
+        ),
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(
+          color: color.withValues(
+            alpha: highlighted ? 0.34 : (inactive ? 0.14 : 0.18),
+          ),
+          width: highlighted ? 0.9 : 0.7,
+        ),
+        boxShadow: highlighted
+            ? [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.10),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 9,
+            height: 9,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 10.3,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _marketReadableMoney(entry.amount),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: muted,
+                    fontSize: 8.1,
+                    fontWeight: FontWeight.w500,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            AppFormatters.percent(entry.share),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+              height: 1,
+            ),
+          ),
         ],
-      ],
+      ),
     );
   }
 }
@@ -9064,7 +12988,7 @@ class _BondZoneRowState extends State<_BondZoneRow> {
               style: TextStyle(
                 color: text,
                 fontSize: 10.1,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w500,
                 height: 1,
               ),
             ),
@@ -9075,7 +12999,7 @@ class _BondZoneRowState extends State<_BondZoneRow> {
               style: TextStyle(
                 color: widget.entry.color,
                 fontSize: 12.5,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w500,
                 height: 1,
               ),
             ),
@@ -9088,7 +13012,7 @@ class _BondZoneRowState extends State<_BondZoneRow> {
               style: TextStyle(
                 color: muted,
                 fontSize: 8.6,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 height: 1,
               ),
             ),
@@ -9126,6 +13050,7 @@ class _BondMaturityBucket {
     required this.minYears,
     required this.maxYears,
     required this.amount,
+    required this.titleCount,
     required this.color,
   });
 
@@ -9133,6 +13058,7 @@ class _BondMaturityBucket {
   final double minYears;
   final double maxYears;
   final double amount;
+  final int titleCount;
   final Color color;
 }
 
@@ -9140,12 +13066,14 @@ class _BondCouponBucket {
   const _BondCouponBucket({
     required this.label,
     required this.amount,
+    required this.titleCount,
     required this.weightedCoupon,
     required this.color,
   });
 
   final String label;
   final double amount;
+  final int titleCount;
   final double weightedCoupon;
   final Color color;
 }
@@ -9645,6 +13573,16 @@ class _BondMaturityHistogramPainter extends CustomPainter {
           ).createShader(rect),
       );
       centers.add(Offset(x + barWidth / 2, chart.bottom - barHeight));
+      final countLabel =
+          '${bucket.titleCount} ${bucket.titleCount > 1 ? 'titres' : 'titre'}';
+      final countY = math.max(chart.top + 2, rect.top - 16);
+      _paintSmallLabel(
+        canvas,
+        countLabel,
+        Offset(x + barWidth / 2, countY),
+        isHovered ? bucket.color : text.withValues(alpha: 0.82),
+        TextAlign.center,
+      );
       _paintSmallLabel(canvas, bucket.label,
           Offset(x + barWidth / 2, size.height - 10), text, TextAlign.center);
     }
@@ -9723,6 +13661,7 @@ class _BondMaturityHistogramPainter extends CustomPainter {
         canvas,
         [
           bucket.label,
+          '${bucket.titleCount} ${bucket.titleCount > 1 ? 'titres' : 'titre'}',
           _marketReadableMoney(bucket.amount),
           'Maturité max ${bucket.maxYears.toStringAsFixed(0)} ans',
         ],
@@ -9773,6 +13712,18 @@ class _BondCouponCurvePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final safeBuckets = [
+      for (final bucket in buckets)
+        _BondCouponBucket(
+          label: bucket.label,
+          amount: _bondPositiveFiniteValue(bucket.amount),
+          titleCount: bucket.titleCount < 0 ? 0 : bucket.titleCount,
+          weightedCoupon: _bondPositiveFiniteValue(bucket.weightedCoupon)
+              .clamp(0.0, 1.5)
+              .toDouble(),
+          color: bucket.color,
+        ),
+    ];
     const left = 34.0;
     const bottom = 34.0;
     const top = 10.0;
@@ -9802,27 +13753,34 @@ class _BondCouponCurvePainter extends CustomPainter {
       );
     }
 
-    if (buckets.isEmpty) return;
+    if (safeBuckets.isEmpty) return;
     final maxAmount =
-        buckets.map((bucket) => bucket.amount).fold<double>(0, math.max);
+        safeBuckets.map((bucket) => bucket.amount).fold<double>(0, math.max);
     final maxCoupon = math.max(
       0.01,
-      buckets.map((bucket) => bucket.weightedCoupon).fold<double>(0, math.max),
+      safeBuckets
+          .map((bucket) => bucket.weightedCoupon)
+          .fold<double>(0, math.max),
     );
     final yMax = math.max(0.01, maxCoupon * 1.20);
-    const gap = 12.0;
-    final barWidth =
-        (chart.width - gap * (buckets.length - 1)) / buckets.length;
+    final gap = safeBuckets.length <= 1
+        ? 0.0
+        : math.min(12.0, chart.width / (safeBuckets.length * 3));
+    final barWidth = math.max(
+      2.0,
+      (chart.width - gap * (safeBuckets.length - 1)) / safeBuckets.length,
+    );
     final points = <Offset>[];
     final hoverIndex = hoverPosition != null && chart.contains(hoverPosition!)
-        ? (((hoverPosition!.dx - chart.left) / chart.width) * buckets.length)
+        ? (((hoverPosition!.dx - chart.left) / chart.width) *
+                safeBuckets.length)
             .floor()
-            .clamp(0, buckets.length - 1)
+            .clamp(0, safeBuckets.length - 1)
             .toInt()
         : null;
 
-    for (var index = 0; index < buckets.length; index++) {
-      final bucket = buckets[index];
+    for (var index = 0; index < safeBuckets.length; index++) {
+      final bucket = safeBuckets[index];
       final x = chart.left + index * (barWidth + gap);
       final centerX = x + barWidth / 2;
       final amountRatio = maxAmount <= 0 ? 0.0 : bucket.amount / maxAmount;
@@ -9850,6 +13808,16 @@ class _BondCouponCurvePainter extends CustomPainter {
             ],
           ).createShader(rect),
       );
+      final countLabel =
+          '${bucket.titleCount} ${bucket.titleCount > 1 ? 'titres' : 'titre'}';
+      final countY = math.max(chart.top + 2, rect.top - 16);
+      _paintSmallLabel(
+        canvas,
+        countLabel,
+        Offset(centerX, countY),
+        isHovered ? bucket.color : text.withValues(alpha: 0.82),
+        TextAlign.center,
+      );
 
       final couponY = chart.bottom -
           (bucket.weightedCoupon / yMax).clamp(0.0, 1.0) * chart.height;
@@ -9875,7 +13843,7 @@ class _BondCouponCurvePainter extends CustomPainter {
         Offset(point.dx, chart.top),
         Offset(point.dx, chart.bottom),
         Paint()
-          ..color = buckets[hoverIndex].color.withValues(alpha: 0.28)
+          ..color = safeBuckets[hoverIndex].color.withValues(alpha: 0.28)
           ..strokeWidth = 1.0,
       );
     }
@@ -9919,7 +13887,7 @@ class _BondCouponCurvePainter extends CustomPainter {
         points[index],
         6 + (isHovered ? 3 * hoverProgress : 0),
         Paint()
-          ..color = buckets[index].color.withValues(
+          ..color = safeBuckets[index].color.withValues(
                 alpha: isHovered ? 0.22 : 0.16,
               ),
       );
@@ -9927,7 +13895,7 @@ class _BondCouponCurvePainter extends CustomPainter {
         points[index],
         isHovered ? 4.8 : 4.2,
         Paint()
-          ..color = buckets[index].color.withValues(
+          ..color = safeBuckets[index].color.withValues(
                 alpha: isHovered ? 1.0 : 0.88,
               ),
       );
@@ -9938,13 +13906,14 @@ class _BondCouponCurvePainter extends CustomPainter {
     _paintSmallLabel(canvas, 'encours', Offset(chart.right - 2, chart.top + 8),
         warning, TextAlign.right);
     if (hoverIndex != null) {
-      final bucket = buckets[hoverIndex];
+      final bucket = safeBuckets[hoverIndex];
       _paintChartTooltip(
         canvas,
         [
           bucket.label,
           'Coupon ${AppFormatters.percent(bucket.weightedCoupon)}',
           'Encours ${_marketReadableMoney(bucket.amount)}',
+          '${bucket.titleCount} ${bucket.titleCount > 1 ? 'titres' : 'titre'}',
         ],
         hoverPosition!,
         chart,
@@ -10063,7 +14032,7 @@ class _MarketIssuerCardList extends StatelessWidget {
                           style: TextStyle(
                             color: entries[index].color,
                             fontSize: 11,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -10077,7 +14046,7 @@ class _MarketIssuerCardList extends StatelessWidget {
                               style: TextStyle(
                                 color: text,
                                 fontSize: 11.3,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -10100,7 +14069,7 @@ class _MarketIssuerCardList extends StatelessWidget {
                         style: TextStyle(
                           color: entries[index].color,
                           fontSize: 11.2,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -10159,7 +14128,7 @@ class _MarketEquityRankedBars extends StatelessWidget {
                         style: TextStyle(
                           color: index == 0 ? _marketPrimary : muted,
                           fontSize: 9.2,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -10172,7 +14141,7 @@ class _MarketEquityRankedBars extends StatelessWidget {
                         style: TextStyle(
                           color: text,
                           fontSize: 9.8,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -10218,7 +14187,7 @@ class _MarketEquityRankedBars extends StatelessWidget {
                         style: TextStyle(
                           color: index == 0 ? _marketPrimary : muted,
                           fontSize: 9.2,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -10300,7 +14269,7 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
                       style: TextStyle(
                         color: dominant?.color ?? muted,
                         fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w500,
                         height: 1,
                       ),
                     ),
@@ -10319,7 +14288,7 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
                         style: TextStyle(
                           color: concentrationColor,
                           fontSize: 6.8,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                           height: 1,
                         ),
                       ),
@@ -10358,7 +14327,7 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
                           style: TextStyle(
                             color: text,
                             fontSize: 10.4,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
@@ -10367,7 +14336,7 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
                         style: TextStyle(
                           color: muted,
                           fontSize: 10,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -10436,7 +14405,7 @@ class _MarketSectorTileGrid extends StatelessWidget {
                             style: TextStyle(
                               color: text,
                               fontSize: 11.0,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               height: 1.1,
                             ),
                           ),
@@ -10447,7 +14416,7 @@ class _MarketSectorTileGrid extends StatelessWidget {
                           style: TextStyle(
                             color: entry.color,
                             fontSize: 11.4,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -10660,22 +14629,16 @@ class _MarketRiskSignalPanel extends StatelessWidget {
         children: [
           SizedBox(
             height: 104,
-            child: CustomPaint(
-              painter: isBonds
-                  ? _MarketMaturityLadderPainter(
+            child: isBonds
+                ? CustomPaint(
+                    painter: _MarketMaturityLadderPainter(
                       records: dataset.records,
                       color: _marketPrimary,
                       muted: _marketBorderFor(context),
                       text: _marketMutedFor(context),
-                    )
-                  : _MarketEquityScatterPainter(
-                      records: dataset.records,
-                      color: _marketSuccess,
-                      danger: _marketDanger,
-                      muted: _marketBorderFor(context),
-                      text: _marketMutedFor(context),
                     ),
-            ),
+                  )
+                : _MarketEquityRiskReturnProfile(dataset: dataset),
           ),
           const SizedBox(height: 10),
           _MarketRiskTileGrid(
@@ -10757,15 +14720,9 @@ class _MarketRiskTileData {
 class _MarketRiskTileGrid extends StatelessWidget {
   const _MarketRiskTileGrid({
     required this.items,
-    this.columns,
-    this.itemHeight,
-    this.compact = false,
   });
 
   final List<_MarketRiskTileData> items;
-  final int? columns;
-  final double? itemHeight;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -10774,17 +14731,16 @@ class _MarketRiskTileGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final gap = compact ? 5.0 : 6.0;
-        final resolvedColumns =
-            (columns ?? (constraints.maxWidth >= 240 ? 2 : 1))
-                .clamp(1, math.max(1, items.length));
+        const gap = 6.0;
+        final resolvedColumns = (constraints.maxWidth >= 240 ? 2 : 1)
+            .clamp(1, math.max(1, items.length));
         final rows = (items.length / resolvedColumns).ceil();
         final width = (constraints.maxWidth - gap * (resolvedColumns - 1)) /
             resolvedColumns;
         final maxHeight = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : rows * 54 + gap * (rows - 1);
-        final height = itemHeight ??
+        final height =
             ((maxHeight - gap * (rows - 1)) / rows).clamp(48.0, 58.0);
 
         return Wrap(
@@ -10803,21 +14759,21 @@ class _MarketRiskTileGrid extends StatelessWidget {
                     borderRadius: BorderRadius.circular(2),
                   ),
                   child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: compact ? 7 : 8,
-                      vertical: compact ? 5 : 7,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 7,
                     ),
                     child: Row(
                       children: [
                         Container(
-                          width: compact ? 2.4 : 3,
+                          width: 3,
                           height: double.infinity,
                           decoration: BoxDecoration(
                             color: item.color,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        SizedBox(width: compact ? 6 : 7),
+                        const SizedBox(width: 7),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -10829,20 +14785,20 @@ class _MarketRiskTileGrid extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: muted,
-                                  fontSize: compact ? 8.2 : 8.7,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 8.7,
+                                  fontWeight: FontWeight.w500,
                                   height: 1,
                                 ),
                               ),
-                              SizedBox(height: compact ? 3 : 4),
+                              const SizedBox(height: 4),
                               Text(
                                 item.value,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   color: text,
-                                  fontSize: compact ? 10.8 : 12.0,
-                                  fontWeight: FontWeight.w800,
+                                  fontSize: 12.0,
+                                  fontWeight: FontWeight.w500,
                                   height: 1,
                                 ),
                               ),
@@ -10857,6 +14813,229 @@ class _MarketRiskTileGrid extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+double _marketEquityResolvedBeta(
+  MarketPortfolioRecord record,
+  double fallback,
+) {
+  final value = record.beta > 0 ? record.beta : fallback;
+  return value.isFinite ? value.clamp(0.35, 2.40).toDouble() : fallback;
+}
+
+double _marketEquityResolvedReturn(
+  MarketPortfolioRecord record,
+  double fallback,
+) {
+  final value =
+      record.expectedReturnInput != 0 ? record.expectedReturnInput : fallback;
+  return value.isFinite ? value.clamp(-0.20, 0.35).toDouble() : fallback;
+}
+
+double _marketNumericSpread(Iterable<double> values) {
+  var minValue = double.infinity;
+  var maxValue = -double.infinity;
+  var count = 0;
+  for (final value in values) {
+    if (!value.isFinite) continue;
+    minValue = math.min(minValue, value);
+    maxValue = math.max(maxValue, value);
+    count++;
+  }
+  if (count <= 1 || minValue == double.infinity) return 0;
+  return maxValue - minValue;
+}
+
+class _MarketEquityRiskReturnProfile extends StatelessWidget {
+  const _MarketEquityRiskReturnProfile({required this.dataset});
+
+  final MarketPortfolioDataset dataset;
+
+  @override
+  Widget build(BuildContext context) {
+    final usableRecords = dataset.records
+        .where((record) => record.exposureAmount > 0)
+        .toList(growable: false);
+    final betaSpread = _marketNumericSpread(
+      usableRecords.map(
+        (record) => _marketEquityResolvedBeta(record, dataset.weightedBeta),
+      ),
+    );
+    final returnSpread = _marketNumericSpread(
+      usableRecords.map(
+        (record) => _marketEquityResolvedReturn(
+          record,
+          dataset.expectedReturn,
+        ),
+      ),
+    );
+    final hasTrueDispersion =
+        usableRecords.length >= 5 && betaSpread >= 0.08 && returnSpread >= 0.01;
+
+    if (!hasTrueDispersion) {
+      return _MarketEquityAggregateProfile(dataset: dataset);
+    }
+
+    return CustomPaint(
+      painter: _MarketEquityScatterPainter(
+        records: usableRecords,
+        weightedBeta: dataset.weightedBeta,
+        expectedReturn: dataset.expectedReturn,
+        color: _marketSuccess,
+        danger: _marketDanger,
+        muted: _marketBorderFor(context),
+        text: _marketMutedFor(context),
+      ),
+    );
+  }
+}
+
+class _MarketEquityAggregateProfile extends StatelessWidget {
+  const _MarketEquityAggregateProfile({required this.dataset});
+
+  final MarketPortfolioDataset dataset;
+
+  @override
+  Widget build(BuildContext context) {
+    final beta = dataset.weightedBeta.isFinite ? dataset.weightedBeta : 1.0;
+    final expectedReturn =
+        dataset.expectedReturn.isFinite ? dataset.expectedReturn : 0.0;
+
+    return Column(
+      children: [
+        _MarketEquityProfileGauge(
+          label: 'Bêta pondéré',
+          value: beta.toStringAsFixed(2).replaceAll('.', ','),
+          ratio: ((beta - 0.60) / 1.00).clamp(0.0, 1.0).toDouble(),
+          color: _marketPrimary,
+        ),
+        const SizedBox(height: 8),
+        _MarketEquityProfileGauge(
+          label: 'Rendement attendu',
+          value: AppFormatters.percent(expectedReturn),
+          ratio: (expectedReturn / 0.18).clamp(0.0, 1.0).toDouble(),
+          color: _marketSuccess,
+        ),
+      ],
+    );
+  }
+}
+
+class _MarketEquityProfileGauge extends StatelessWidget {
+  const _MarketEquityProfileGauge({
+    required this.label,
+    required this.value,
+    required this.ratio,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final double ratio;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final track = _marketBorderFor(context).withValues(alpha: 0.42);
+
+    return Expanded(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: _isMarketDark(context) ? 0.12 : 0.055),
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      label.tr(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: muted,
+                        fontSize: 9.2,
+                        fontWeight: FontWeight.w500,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: text,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final clampedRatio = ratio.clamp(0.0, 1.0).toDouble();
+                  final markerLeft = (constraints.maxWidth * clampedRatio - 2)
+                      .clamp(0.0, math.max(0.0, constraints.maxWidth - 4))
+                      .toDouble();
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: track,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: clampedRatio,
+                        child: Container(
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        left: markerLeft,
+                        top: -1.5,
+                        child: Container(
+                          width: 4,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(1),
+                            boxShadow: [
+                              BoxShadow(
+                                color: color.withValues(alpha: 0.22),
+                                blurRadius: 6,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -10946,6 +15125,8 @@ class _MarketMaturityLadderPainter extends CustomPainter {
 class _MarketEquityScatterPainter extends CustomPainter {
   const _MarketEquityScatterPainter({
     required this.records,
+    required this.weightedBeta,
+    required this.expectedReturn,
     required this.color,
     required this.danger,
     required this.muted,
@@ -10953,6 +15134,8 @@ class _MarketEquityScatterPainter extends CustomPainter {
   });
 
   final List<MarketPortfolioRecord> records;
+  final double weightedBeta;
+  final double expectedReturn;
   final Color color;
   final Color danger;
   final Color muted;
@@ -10960,29 +15143,75 @@ class _MarketEquityScatterPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final axis = Paint()
-      ..color = muted.withValues(alpha: 0.50)
-      ..strokeWidth = 0.8;
-    canvas.drawLine(
-      Offset(0, size.height - 18),
-      Offset(size.width, size.height - 18),
-      axis,
+    final chart = Rect.fromLTWH(
+      28,
+      7,
+      math.max(1, size.width - 39),
+      math.max(1, size.height - 30),
     );
-    canvas.drawLine(const Offset(20, 0), Offset(20, size.height - 18), axis);
+    final axis = Paint()
+      ..color = muted.withValues(alpha: 0.46)
+      ..strokeWidth = 0.8;
 
     if (records.isEmpty) return;
-    final maxExposure = records
-        .map((record) => record.exposureAmount)
-        .fold<double>(0, math.max);
-    final sample = records.length > 90 ? records.take(90) : records;
+    final maxExposure = records.map((record) => record.exposureAmount).fold(
+          0.0,
+          math.max,
+        );
+    final sample = records.length > 90
+        ? (records.toList(growable: false)
+              ..sort((a, b) => b.exposureAmount.compareTo(a.exposureAmount)))
+            .take(90)
+            .toList(growable: false)
+        : records;
+    final betaValues = sample
+        .map((record) => _marketEquityResolvedBeta(record, weightedBeta))
+        .toList(growable: false);
+    final returnValues = sample
+        .map((record) => _marketEquityResolvedReturn(record, expectedReturn))
+        .toList(growable: false);
+    final betaMin = betaValues.reduce(math.min);
+    final betaMax = betaValues.reduce(math.max);
+    final returnMin = returnValues.reduce(math.min);
+    final returnMax = returnValues.reduce(math.max);
+    final betaPad = math.max(0.06, (betaMax - betaMin) * 0.18);
+    final returnPad = math.max(0.006, (returnMax - returnMin) * 0.22);
+    final minBeta = math.max(0.35, betaMin - betaPad);
+    final maxBeta = math.min(2.40, betaMax + betaPad);
+    final minReturn = math.min(0.0, returnMin - returnPad);
+    final maxReturn = math.max(0.02, returnMax + returnPad);
+    final betaSpan = math.max(0.0001, maxBeta - minBeta);
+    final returnSpan = math.max(0.0001, maxReturn - minReturn);
+
+    final grid = Paint()
+      ..color = muted.withValues(alpha: 0.22)
+      ..strokeWidth = 0.7;
+    for (var i = 0; i <= 2; i++) {
+      final y = chart.top + chart.height * i / 2;
+      canvas.drawLine(Offset(chart.left, y), Offset(chart.right, y), grid);
+    }
+    for (var i = 0; i <= 2; i++) {
+      final x = chart.left + chart.width * i / 2;
+      canvas.drawLine(Offset(x, chart.top), Offset(x, chart.bottom), grid);
+    }
+    canvas.drawLine(
+      Offset(chart.left, chart.bottom),
+      Offset(chart.right, chart.bottom),
+      axis,
+    );
+    canvas.drawLine(
+      Offset(chart.left, chart.top),
+      Offset(chart.left, chart.bottom),
+      axis,
+    );
+
     for (final record in sample) {
-      final beta = (record.beta > 0 ? record.beta : 1.0).clamp(0.45, 2.2);
-      final expectedReturn =
-          (record.expectedReturnInput != 0 ? record.expectedReturnInput : 0.055)
-              .clamp(-0.08, 0.28);
-      final x = 20 + ((beta - 0.45) / 1.75) * (size.width - 28);
-      final y = (size.height - 22) -
-          ((expectedReturn + 0.08) / 0.36) * (size.height - 30);
+      final beta = _marketEquityResolvedBeta(record, weightedBeta);
+      final expectedReturnValue =
+          _marketEquityResolvedReturn(record, expectedReturn);
+      final x = chart.left + ((beta - minBeta) / betaSpan) * chart.width;
+      final y = chart.bottom -
+          ((expectedReturnValue - minReturn) / returnSpan) * chart.height;
       final radius = maxExposure <= 0
           ? 4.5
           : (4 + (record.exposureAmount / maxExposure) * 8).clamp(4.0, 12.0);
@@ -11000,15 +15229,27 @@ class _MarketEquityScatterPainter extends CustomPainter {
           ..strokeWidth = 1.2,
       );
     }
-    _paintSmallLabel(canvas, 'bêta', Offset(size.width - 14, size.height - 8),
-        text, TextAlign.right);
     _paintSmallLabel(
-        canvas, 'rend.', const Offset(22, 8), text, TextAlign.left);
+      canvas,
+      'bêta',
+      Offset(chart.right, size.height - 8),
+      text,
+      TextAlign.right,
+    );
+    _paintSmallLabel(
+      canvas,
+      'rend.',
+      Offset(chart.left, 7),
+      text,
+      TextAlign.left,
+    );
   }
 
   @override
   bool shouldRepaint(covariant _MarketEquityScatterPainter oldDelegate) {
     return oldDelegate.records != records ||
+        oldDelegate.weightedBeta != weightedBeta ||
+        oldDelegate.expectedReturn != expectedReturn ||
         oldDelegate.color != color ||
         oldDelegate.danger != danger ||
         oldDelegate.muted != muted ||
@@ -11029,7 +15270,7 @@ void _paintSmallLabel(
       style: TextStyle(
         color: color,
         fontSize: 8.5,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
       ),
     ),
     textAlign: align,
@@ -11062,7 +15303,7 @@ void _paintChartTooltip(
               ? accent
               : (isDark ? const Color(0xFFEAF2FF) : const Color(0xFF13203A)),
           fontSize: index == 0 ? 8.8 : 8.2,
-          fontWeight: index == 0 ? FontWeight.w700 : FontWeight.w500,
+          fontWeight: index == 0 ? FontWeight.w500 : FontWeight.w500,
           height: 1.15,
         ),
       ),
@@ -11141,7 +15382,7 @@ class _MarketVisualPanel extends StatelessWidget {
             style: TextStyle(
               color: text,
               fontSize: 13.2,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               height: 1,
             ),
           ),
@@ -11215,8 +15456,8 @@ class _MarketFlaggedIssuerLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final asset = flagAsset;
-    if (asset == null || asset.isEmpty) {
+    final iso2 = _marketCountryIso2FromFlagAssetOrText(flagAsset, label);
+    if (iso2 == null || iso2.isEmpty) {
       return Text(
         label,
         maxLines: 1,
@@ -11227,14 +15468,10 @@ class _MarketFlaggedIssuerLabel extends StatelessWidget {
 
     return Row(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: SvgPicture.asset(
-            asset,
-            width: 18,
-            height: 12,
-            fit: BoxFit.cover,
-          ),
+        SizedBox(
+          width: 16,
+          height: 10,
+          child: _MarketCountryFlagImage(iso2: iso2),
         ),
         const SizedBox(width: 6),
         Expanded(
@@ -11246,6 +15483,53 @@ class _MarketFlaggedIssuerLabel extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MarketCountryFlagImage extends StatelessWidget {
+  const _MarketCountryFlagImage({required this.iso2});
+
+  final String iso2;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(1),
+      child: Image.network(
+        'https://flagcdn.com/w40/$iso2.png',
+        width: 16,
+        height: 10,
+        fit: BoxFit.fill,
+        errorBuilder: (context, error, stackTrace) {
+          return const _MarketFlagEmptyFallback();
+        },
+      ),
+    );
+  }
+}
+
+class _MarketFlagEmptyFallback extends StatelessWidget {
+  const _MarketFlagEmptyFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: _marketPrimary.withValues(
+          alpha: _isMarketDark(context) ? 0.16 : 0.08,
+        ),
+        borderRadius: BorderRadius.circular(1),
+      ),
+      child: SizedBox(
+        width: 16,
+        height: 10,
+        child: Icon(
+          CupertinoIcons.flag_fill,
+          size: 7,
+          color: _marketPrimary.withValues(alpha: 0.72),
+        ),
+      ),
     );
   }
 }
@@ -11279,7 +15563,7 @@ class _MarketMicroMetric extends StatelessWidget {
             style: TextStyle(
               color: _marketMutedFor(context),
               fontSize: 9.0,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
@@ -11290,7 +15574,7 @@ class _MarketMicroMetric extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: 12.0,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
               height: 1,
             ),
           ),
@@ -11396,7 +15680,7 @@ List<_MarketAnalyticKpiSpec> _marketAnalyticKpis(
   final isBonds = dataset.portfolioType == MarketPortfolioType.bonds;
   return [
     _MarketAnalyticKpiSpec(
-      label: isBonds ? 'Exposition totale' : 'Valeur de marché',
+      label: isBonds ? 'Encours total' : 'Valeur de marché',
       value: _marketReadableMoney(dataset.totalExposure),
       color: _marketPrimary,
       icon: CupertinoIcons.money_dollar_circle_fill,
@@ -11506,27 +15790,42 @@ List<_MarketDistributionEntry> _bondGroupedEntries(
 }
 
 String? _marketIssuerFlagAssetForRecord(MarketPortfolioRecord record) {
-  return _marketCountryFlagAsset(record.issuerCountryIso3);
+  final candidates = [
+    record.issuerCountryIso3,
+    marketCountryIso3FromLooseText(record.issuerCountry),
+    marketCountryIso3FromLooseText(record.issuerAnalysisLabel),
+    marketCountryIso3FromLooseText(record.issuer),
+  ];
+  for (final candidate in candidates) {
+    final asset = _marketCountryFlagAsset(candidate);
+    if (asset != null && asset.isNotEmpty) return asset;
+  }
+  return null;
 }
 
 String? _marketCountryFlagAsset(String iso3) {
-  return switch (iso3.trim().toUpperCase()) {
-    'BEN' => 'assets/flags/ben.svg',
-    'BFA' => 'assets/flags/bfa.svg',
-    'CIV' => 'assets/flags/civ.svg',
-    'GNB' => 'assets/flags/gnb.svg',
-    'MLI' => 'assets/flags/mli.svg',
-    'NER' => 'assets/flags/ner.svg',
-    'SEN' => 'assets/flags/sen.svg',
-    'TGO' => 'assets/flags/tgo.svg',
-    'CMR' => 'assets/flags/cmr.svg',
-    'COG' => 'assets/flags/cog.svg',
-    'GAB' => 'assets/flags/gab.svg',
-    'CAF' => 'assets/flags/caf.svg',
-    'TCD' => 'assets/flags/tcd.svg',
-    'GNQ' => 'assets/flags/gnq.svg',
-    _ => null,
-  };
+  return marketCountryFlagAssetFromIso3(iso3);
+}
+
+String? _marketCountryIso2FromFlagAssetOrText(
+  String? flagAsset,
+  String label,
+) {
+  final asset = flagAsset?.trim();
+  if (asset != null && asset.isNotEmpty) {
+    final assetCode = asset
+        .split('/')
+        .last
+        .split('.')
+        .first
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z]'), '');
+    if (assetCode.length == 2) return assetCode;
+  }
+
+  final iso3 = marketCountryIso3FromLooseText(label);
+  final iso2 = marketCountryIso2FromIso3(iso3);
+  return iso2?.toLowerCase();
 }
 
 String _bondRatingLabel(MarketPortfolioRecord record) {
@@ -11576,12 +15875,30 @@ List<_MarketDistributionEntry> _orderedZoneEntries(
 }
 
 double _bondCouponFraction(double rawCoupon) {
-  if (rawCoupon <= 0) return 0;
-  return rawCoupon > 1 ? rawCoupon / 100 : rawCoupon;
+  if (!rawCoupon.isFinite || rawCoupon <= 0) return 0;
+  final coupon = rawCoupon > 1 ? rawCoupon / 100 : rawCoupon;
+  return coupon.clamp(0.0, 1.5).toDouble();
+}
+
+double _bondPositiveFiniteValue(double value) {
+  if (!value.isFinite || value <= 0) return 0;
+  return value;
 }
 
 double _bondOutstandingCapitalValue(MarketPortfolioRecord record) {
-  return record.resolvedCapitalRemainingDue;
+  if (record.isMaturedAtAnalysisDate) return 0;
+  if (record.capitalRemainingDue > 0) return record.capitalRemainingDue;
+  final reconstructed = record.resolvedCapitalRemainingDue;
+  if (reconstructed > 0) return reconstructed;
+  return _bondInitialCapitalValue(record);
+}
+
+double _bondInitialCapitalValue(MarketPortfolioRecord record) {
+  if (record.capitalInitial > 0) return record.capitalInitial;
+  if (record.nominalUnit > 0 && record.quantity > 0) {
+    return record.nominalUnit * record.quantity;
+  }
+  return _bondPositiveFiniteValue(record.exposureAmount);
 }
 
 double _bondMaturityYears(MarketPortfolioRecord record) {
@@ -11615,6 +15932,7 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
       minYears: 0,
       maxYears: 1,
       amount: 0,
+      titleCount: 0,
       color: _marketSuccess,
     ),
     const _BondMaturityBucket(
@@ -11622,6 +15940,7 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
       minYears: 1,
       maxYears: 3,
       amount: 0,
+      titleCount: 0,
       color: _marketCyan,
     ),
     const _BondMaturityBucket(
@@ -11629,6 +15948,7 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
       minYears: 3,
       maxYears: 5,
       amount: 0,
+      titleCount: 0,
       color: _marketPrimary,
     ),
     const _BondMaturityBucket(
@@ -11636,6 +15956,7 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
       minYears: 5,
       maxYears: 7,
       amount: 0,
+      titleCount: 0,
       color: _marketViolet,
     ),
     const _BondMaturityBucket(
@@ -11643,11 +15964,15 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
       minYears: 7,
       maxYears: 12,
       amount: 0,
+      titleCount: 0,
       color: _marketWarning,
     ),
   ];
   final amounts = List<double>.filled(buckets.length, 0);
+  final titleCounts = List<int>.filled(buckets.length, 0);
   for (final record in dataset.records) {
+    final exposure = math.max(0.0, record.exposureAmount);
+    if (exposure <= 0) continue;
     final years = _bondMaturityYears(record);
     final index = years < 1
         ? 0
@@ -11658,7 +15983,8 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
                 : years < 7
                     ? 3
                     : 4;
-    amounts[index] += math.max(0, record.exposureAmount);
+    amounts[index] += exposure;
+    titleCounts[index] += 1;
   }
   return [
     for (var index = 0; index < buckets.length; index++)
@@ -11667,6 +15993,7 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
         minYears: buckets[index].minYears,
         maxYears: buckets[index].maxYears,
         amount: amounts[index],
+        titleCount: titleCounts[index],
         color: buckets[index].color,
       ),
   ];
@@ -11683,9 +16010,10 @@ List<_BondCouponBucket> _bondCouponBuckets(MarketPortfolioDataset dataset) {
   ];
   final amounts = List<double>.filled(labels.length, 0);
   final couponNumerators = List<double>.filled(labels.length, 0);
+  final titleCounts = List<int>.filled(labels.length, 0);
 
   for (final record in dataset.records) {
-    final exposure = math.max(0.0, record.exposureAmount);
+    final exposure = _bondPositiveFiniteValue(record.exposureAmount);
     if (exposure <= 0) continue;
     final years = _bondMaturityYears(record);
     final index = years < 1
@@ -11698,6 +16026,7 @@ List<_BondCouponBucket> _bondCouponBuckets(MarketPortfolioDataset dataset) {
                     ? 3
                     : 4;
     amounts[index] += exposure;
+    titleCounts[index] += 1;
     couponNumerators[index] += _bondCouponFraction(record.coupon) * exposure;
   }
 
@@ -11706,6 +16035,7 @@ List<_BondCouponBucket> _bondCouponBuckets(MarketPortfolioDataset dataset) {
       _BondCouponBucket(
         label: labels[index],
         amount: amounts[index],
+        titleCount: titleCounts[index],
         weightedCoupon:
             amounts[index] <= 0 ? 0 : couponNumerators[index] / amounts[index],
         color: colors[index],
@@ -11899,7 +16229,7 @@ class _MarketDashboardDataTable extends StatelessWidget {
                         style: TextStyle(
                           color: text,
                           fontSize: 14.2,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -12019,7 +16349,7 @@ class _MarketPortfolioTypeButton extends StatelessWidget {
               style: TextStyle(
                 color: selected ? Colors.white : muted,
                 fontSize: 9.6,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -12062,31 +16392,31 @@ class _MarketPortfolioMetricStrip extends StatelessWidget {
         label: portfolioType == MarketPortfolioType.bonds
             ? 'Lignes titres'
             : 'Lignes actions',
-        value: AppFormatters.compactNumber(records.length),
+        value: AppFormatters.integer(records.length),
         color: _marketPrimary,
         icon: CupertinoIcons.square_stack_3d_up_fill,
       ),
       _MarketPortfolioMetricData(
         label: 'Émetteurs',
-        value: AppFormatters.compactNumber(issuers),
+        value: AppFormatters.integer(issuers),
         color: _marketCyan,
         icon: CupertinoIcons.person_2_fill,
       ),
       _MarketPortfolioMetricData(
         label: 'Zones',
-        value: AppFormatters.compactNumber(zones),
+        value: AppFormatters.integer(zones),
         color: _marketViolet,
         icon: CupertinoIcons.globe,
       ),
       _MarketPortfolioMetricData(
         label: 'Devises',
-        value: AppFormatters.compactNumber(currencies),
+        value: AppFormatters.integer(currencies),
         color: _marketSuccess,
         icon: CupertinoIcons.money_dollar_circle_fill,
       ),
       _MarketPortfolioMetricData(
         label: portfolioType == MarketPortfolioType.bonds
-            ? 'Exposition totale'
+            ? 'Encours total'
             : 'Valeur de marché',
         value: _marketCompactMoney(exposure),
         color: _marketWarning,
@@ -12190,7 +16520,7 @@ class _MarketPortfolioMetricCard extends StatelessWidget {
                   style: TextStyle(
                     color: text,
                     fontSize: 11.2,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -12202,7 +16532,7 @@ class _MarketPortfolioMetricCard extends StatelessWidget {
                   style: TextStyle(
                     color: muted,
                     fontSize: 8.2,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -12617,7 +16947,7 @@ class _MarketPortfolioDetailsTableState
                                 Expanded(
                                   child: Center(
                                     child: Text(
-                                      'Importez un fichier GPO ${widget.portfolioType.label} conforme pour afficher les ${headers.length} colonnes du portefeuille.'
+                                      'Importez un fichier RiskManagement ${widget.portfolioType.label} conforme pour afficher les ${headers.length} colonnes du portefeuille.'
                                           .tr(context),
                                       style: TextStyle(
                                         color: muted,
@@ -12752,14 +17082,14 @@ class _MarketPortfolioTableToolbar extends StatelessWidget {
                 style: TextStyle(
                   color: text,
                   fontSize: 10.4,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Rechercher une ligne...'.tr(context),
                   hintStyle: TextStyle(
                     color: muted.withValues(alpha: 0.75),
                     fontSize: 10.2,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                   prefixIcon: Icon(
                     CupertinoIcons.search,
@@ -12805,7 +17135,7 @@ class _MarketPortfolioTableToolbar extends StatelessWidget {
                 'Ajouter'.tr(context),
                 style: const TextStyle(
                   fontSize: 10.6,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               style: FilledButton.styleFrom(
@@ -12856,7 +17186,7 @@ class _MarketSortButton extends StatelessWidget {
                   style: TextStyle(
                     color: text,
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -12881,7 +17211,7 @@ class _MarketSortButton extends StatelessWidget {
               style: TextStyle(
                 color: muted,
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(width: 4),
@@ -12893,7 +17223,7 @@ class _MarketSortButton extends StatelessWidget {
                 style: TextStyle(
                   color: text,
                   fontSize: 10.4,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -13013,7 +17343,7 @@ class _MarketColumnVisibilityButtonState
                     style: TextStyle(
                       color: text,
                       fontSize: 12.2,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -13085,7 +17415,7 @@ class _MarketColumnVisibilityPanel extends StatelessWidget {
                     style: TextStyle(
                       color: text,
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -13101,7 +17431,7 @@ class _MarketColumnVisibilityPanel extends StatelessWidget {
                     style: TextStyle(
                       color: muted,
                       fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -13184,7 +17514,7 @@ class _MarketColumnQuickAction extends StatelessWidget {
           style: TextStyle(
             color: active ? _marketPrimary : muted,
             fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
@@ -13234,7 +17564,7 @@ class _MarketColumnOptionRow extends StatelessWidget {
                 style: TextStyle(
                   color: selected ? text : muted.withValues(alpha: 0.92),
                   fontSize: 13.2,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
@@ -13675,7 +18005,7 @@ class _MarketPortfolioEditDialogState
         style: TextStyle(
           color: text,
           fontSize: 16,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
         ),
       ),
       content: SizedBox(
@@ -13693,14 +18023,14 @@ class _MarketPortfolioEditDialogState
                     style: TextStyle(
                       color: text,
                       fontSize: 11.2,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
                     decoration: InputDecoration(
                       labelText: header,
                       labelStyle: TextStyle(
                         color: muted,
                         fontSize: 10.2,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                       isDense: true,
                       filled: true,
@@ -13786,7 +18116,7 @@ class _MarketPortfolioActionsHeader extends StatelessWidget {
         style: TextStyle(
           color: _marketDashboardDeepBlue,
           fontSize: 9.4,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           letterSpacing: 1.4,
         ),
       ),
@@ -13987,7 +18317,7 @@ class _MarketPortfolioHeaderCell extends StatelessWidget {
                   style: TextStyle(
                     color: sorted ? _marketPrimary : _marketDashboardDeepBlue,
                     fontSize: 10.2,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w500,
                     height: 1.03,
                   ),
                 ),
@@ -14125,7 +18455,7 @@ class _MarketPortfolioValueBadge extends StatelessWidget {
                     style: TextStyle(
                       color: style.foreground,
                       fontSize: 10.8,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       height: 1,
                     ),
                   ),
@@ -14154,22 +18484,29 @@ Widget _marketPortfolioCellContent({
   required Color textColor,
 }) {
   final emphasized = selected || _marketPortfolioEmphasizedHeader(header);
-  if (header == 'Emetteur' &&
+  if (header == 'Pays émetteur' &&
       record.portfolioType == MarketPortfolioType.bonds) {
+    final country = _formatMarketPortfolioCell(
+      header,
+      record.values[header],
+      currency: record.currency,
+    );
     return _MarketFlaggedIssuerLabel(
-      label: record.issuerAnalysisLabel,
+      label: country,
       flagAsset: _marketIssuerFlagAssetForRecord(record),
       style: TextStyle(
         color: textColor,
         fontSize: 10.8,
-        fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
+        fontWeight: emphasized ? FontWeight.w500 : FontWeight.w500,
       ),
     );
   }
 
   final value = _formatMarketPortfolioCell(
     header,
-    record.values[header],
+    header == 'Emetteur' && record.portfolioType == MarketPortfolioType.bonds
+        ? record.issuerAnalysisLabel
+        : record.values[header],
     currency: record.currency,
   );
   final tagStyle = _marketPortfolioTagStyleFor(
@@ -14195,7 +18532,7 @@ Widget _marketPortfolioCellContent({
     style: TextStyle(
       color: textColor,
       fontSize: 10.8,
-      fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
+      fontWeight: emphasized ? FontWeight.w500 : FontWeight.w500,
     ),
   );
 }
@@ -14747,9 +19084,7 @@ String _marketMoneyText(
 
 double _marketAmountInBillions(double value) {
   final absolute = value.abs();
-  if (absolute >= 1000000) {
-    return value / 1000000000;
-  }
+  if (absolute >= 1000000) return value / 1000000000;
   return value;
 }
 
@@ -14835,7 +19170,6 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
   double _mcConfidence = _defaultMcConfidence;
   int _mcHorizon = _defaultMcHorizon;
   int _mcSimulations = _defaultMcSimulations;
-  double _mcCorrelation = _defaultMcCorrelation;
   _MonteCarloDistribution _mcDistribution = _defaultMcDistribution;
 
   @override
@@ -14863,7 +19197,6 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
           _mcConfidence = _defaultMcConfidence;
           _mcHorizon = _defaultMcHorizon;
           _mcSimulations = _defaultMcSimulations;
-          _mcCorrelation = _defaultMcCorrelation;
           _mcDistribution = _defaultMcDistribution;
       }
     });
@@ -14890,11 +19223,10 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
     return FutureBuilder<DashboardSnapshot>(
       future: _dashboardFuture,
       builder: (context, snapshot) {
-        return ValueListenableBuilder<
-            Map<MarketPortfolioType, MarketPortfolioDataset>>(
-          valueListenable: MarketDataImportStore.instance.datasetsNotifier,
-          builder: (context, datasets, _) {
-            final dataset = datasets[_historicalPortfolio];
+        return ValueListenableBuilder<MarketDataSnapshot>(
+          valueListenable: MarketDataImportStore.instance.snapshotNotifier,
+          builder: (context, marketSnapshot, _) {
+            final dataset = marketSnapshot.datasetFor(_historicalPortfolio);
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -14944,6 +19276,15 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
                               ),
                             ),
                           )
+                        else if (dataset == null || dataset.rowCount == 0)
+                          const _MarketNoImportedDataState(
+                            title: 'Aucune donnée chargée',
+                            subtitle:
+                                'Chargez un portefeuille depuis Import données pour calculer la VaR et lancer les simulations.',
+                            icon: CupertinoIcons.waveform_path_ecg,
+                            accent: _marketViolet,
+                            minHeight: 360,
+                          )
                         else
                           FutureBuilder<_VarPortfolioContext>(
                             future: _varPortfolioContextForAsync(
@@ -14980,7 +19321,6 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
                                 mcConfidence: _mcConfidence,
                                 mcHorizon: _mcHorizon,
                                 mcSimulations: _mcSimulations,
-                                mcCorrelation: _mcCorrelation,
                                 mcDistribution: _mcDistribution,
                                 onResetDefaults: _resetActiveMethodDefaults,
                                 onHistoricalConfidenceChanged: (value) =>
@@ -15037,9 +19377,6 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
                                 onMcSimulationsChanged: (value) => setState(
                                   () => _mcSimulations = value,
                                 ),
-                                onMcCorrelationChanged: (value) => setState(
-                                  () => _mcCorrelation = value,
-                                ),
                                 onMcDistributionChanged: (value) => setState(
                                   () => _mcDistribution = value,
                                 ),
@@ -15079,7 +19416,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
     required this.mcConfidence,
     required this.mcHorizon,
     required this.mcSimulations,
-    required this.mcCorrelation,
     required this.mcDistribution,
     required this.onResetDefaults,
     required this.onHistoricalConfidenceChanged,
@@ -15098,7 +19434,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
     required this.onMcConfidenceChanged,
     required this.onMcHorizonChanged,
     required this.onMcSimulationsChanged,
-    required this.onMcCorrelationChanged,
     required this.onMcDistributionChanged,
   });
 
@@ -15120,7 +19455,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
   final double mcConfidence;
   final int mcHorizon;
   final int mcSimulations;
-  final double mcCorrelation;
   final _MonteCarloDistribution mcDistribution;
   final VoidCallback onResetDefaults;
   final ValueChanged<double> onHistoricalConfidenceChanged;
@@ -15139,7 +19473,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
   final ValueChanged<double> onMcConfidenceChanged;
   final ValueChanged<int> onMcHorizonChanged;
   final ValueChanged<int> onMcSimulationsChanged;
-  final ValueChanged<double> onMcCorrelationChanged;
   final ValueChanged<_MonteCarloDistribution> onMcDistributionChanged;
 
   @override
@@ -15196,9 +19529,9 @@ class _UnifiedVarMethodView extends StatelessWidget {
             confidence: mcConfidence,
             horizonDays: mcHorizon,
             simulations: mcSimulations,
-            correlation: mcCorrelation,
+            correlation: _defaultMcCorrelation,
             distribution: mcDistribution,
-            volatility: portfolio.volatility,
+            volatility: effectiveParamVolatility,
             expectedReturn: portfolio.expectedReturn,
           )
         : _MonteCarloVarResult.empty(mcConfidence);
@@ -15266,9 +19599,12 @@ class _UnifiedVarMethodView extends StatelessWidget {
                         activeIndex: method.index,
                         children: [
                           _VarChartPanel(
-                            title: 'Histogramme des pertes historiques',
-                            subtitle:
-                                'Distribution observée et seuil de perte VaR',
+                            title: historicalResult.isProxy
+                                ? 'Distribution reconstruite des pertes'
+                                : 'Histogramme des pertes historiques',
+                            subtitle: historicalResult.isProxy
+                                ? historicalResult.sourceLabel
+                                : 'Distribution observée et seuil de perte VaR',
                             kpis: kpiItems,
                             onResetDefaults: onResetDefaults,
                             child: _HistoricalLossHistogram(
@@ -15405,15 +19741,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
         labelFor: (value) => AppFormatters.percent(value),
         onChanged: onMcConfidenceChanged,
       ),
-      _SliderParameter(
-        label: 'Corrélations',
-        value: mcCorrelation,
-        min: -0.7,
-        max: 0.95,
-        divisions: 66,
-        display: mcCorrelation.toStringAsFixed(2),
-        onChanged: onMcCorrelationChanged,
-      ),
     ];
   }
 
@@ -15445,10 +19772,13 @@ class _UnifiedVarMethodView extends StatelessWidget {
               color: _marketSuccess,
             ),
             _VarKpiSpec(
-              label: 'VaR Historique',
+              label: historicalResult.isProxy
+                  ? 'VaR reconstruite'
+                  : 'VaR Historique',
               value: _money(historicalResult.varValue, displayCurrency),
-              detail:
-                  '${AppFormatters.percent(historicalConfidence)} · ${_shortDaysLabel(historicalHorizon)}',
+              detail: historicalResult.isProxy
+                  ? historicalResult.sourceLabel
+                  : '${AppFormatters.percent(historicalConfidence)} · ${_shortDaysLabel(historicalHorizon)}',
               icon: CupertinoIcons.waveform_circle_fill,
               color: _marketPrimary,
             ),
@@ -15461,27 +19791,17 @@ class _UnifiedVarMethodView extends StatelessWidget {
               color: _marketViolet,
             ),
             _VarKpiSpec(
-              label: 'Pire perte observée',
+              label: historicalResult.isProxy
+                  ? 'Pire perte reconstruite'
+                  : 'Pire perte observée',
               value: _money(historicalResult.worstLoss, displayCurrency),
-              detail: AppLocalizations.isEnglish
-                  ? '${historicalResult.windowDays} recalculated observations'
-                  : '${historicalResult.windowDays} observations recalculées',
+              detail: historicalResult.isProxy
+                  ? '${historicalResult.windowDays} scénarios reconstruits'
+                  : AppLocalizations.isEnglish
+                      ? '${historicalResult.windowDays} recalculated observations'
+                      : '${historicalResult.windowDays} observations recalculées',
               icon: CupertinoIcons.exclamationmark_triangle_fill,
               color: _marketDanger,
-            ),
-            _VarKpiSpec(
-              label: 'Volatilité historique',
-              value: AppFormatters.percent(historicalResult.volatility),
-              detail: 'Volatilité annualisée',
-              icon: CupertinoIcons.waveform_path_ecg,
-              color: _marketCyan,
-            ),
-            _VarKpiSpec(
-              label: 'Queue extrême',
-              value: '${historicalResult.tailCount}',
-              detail: 'Observations au-delà de la VaR',
-              icon: CupertinoIcons.scope,
-              color: _marketWarning,
             ),
           ],
         ],
@@ -15514,13 +19834,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
               color: _marketPrimary,
             ),
             _VarKpiSpec(
-              label: 'Volatilité',
-              value: AppFormatters.percent(parametricResult.annualVolatility),
-              detail: 'Entrée principale du modèle',
-              icon: CupertinoIcons.waveform_path_ecg,
-              color: _marketCyan,
-            ),
-            _VarKpiSpec(
               label: 'Ratio de Sharpe',
               value: parametricResult.sharpeRatio.toStringAsFixed(2),
               detail: 'Prime de risque / volatilité',
@@ -15528,13 +19841,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
               color: parametricResult.sharpeRatio >= 0
                   ? _marketSuccess
                   : _marketDanger,
-            ),
-            _VarKpiSpec(
-              label: 'Sensibilité taux',
-              value: _money(parametricResult.rateSensitivity, displayCurrency),
-              detail: 'Impact indicatif de 100 pb',
-              icon: CupertinoIcons.percent,
-              color: _marketWarning,
             ),
           ],
         ],
@@ -15566,29 +19872,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
               icon: CupertinoIcons.chart_bar_square_fill,
               color: _marketViolet,
             ),
-            _VarKpiSpec(
-              label: 'Worst Case',
-              value: _money(monteCarloResult.worstCase, displayCurrency),
-              detail: 'Pire scénario généré',
-              icon: CupertinoIcons.exclamationmark_octagon_fill,
-              color: _marketDanger,
-            ),
-            _VarKpiSpec(
-              label: 'Scénarios extrêmes',
-              value: '${monteCarloResult.extremeScenarioCount}',
-              detail: 'Observations au-delà de la VaR',
-              icon: CupertinoIcons.scope,
-              color: _marketWarning,
-            ),
-            _VarKpiSpec(
-              label: 'Distribution',
-              value: mcDistribution.label,
-              detail: AppLocalizations.isEnglish
-                  ? 'Correlation ${mcCorrelation.toStringAsFixed(2)}'
-                  : 'Corrélation ${mcCorrelation.toStringAsFixed(2)}',
-              icon: CupertinoIcons.link,
-              color: _marketPrimary,
-            ),
           ],
         ],
     };
@@ -15599,17 +19882,21 @@ class _UnifiedVarMethodView extends StatelessWidget {
       _VarMethod.historical => _VarInsightSpec(
           color: _marketPrimary,
           title: 'Comprendre la lecture historique',
-          body: AppLocalizations.isEnglish
-              ? 'With a confidence level of ${AppFormatters.percent(historicalConfidence)}, '
-                  'the loss over ${_daysLabel(historicalHorizon)} does not exceed ${_money(historicalResult.varValue, displayCurrency)} '
-                  'in most historical scenarios. '
-                  '${AppFormatters.percent(1 - historicalConfidence)} of observations exceed this threshold; '
-                  'in this extreme zone, the expected average loss rises to ${_money(historicalResult.expectedShortfall, displayCurrency)}.'
-              : 'Avec un niveau de confiance de ${AppFormatters.percent(historicalConfidence)}, '
-                  'la perte sur $historicalHorizon jour(s) ne dépasse pas ${_money(historicalResult.varValue, displayCurrency)} '
-                  'dans la majorité des scénarios historiques. '
-                  '${AppFormatters.percent(1 - historicalConfidence)} des observations dépassent ce seuil ; '
-                  'dans cette zone extrême, la perte moyenne attendue monte à ${_money(historicalResult.expectedShortfall, displayCurrency)}.',
+          body: historicalResult.isProxy
+              ? 'Aucune série historique complète du portefeuille n’est disponible. '
+                  'L’écran utilise donc ${historicalResult.sourceLabel.toLowerCase()} : les positions actuelles sont revalorisées avec des variations de courbe, puis les pertes sont classées pour extraire la VaR. '
+                  'Cette lecture reste une reconstruction de marché, pas une observation comptable directe du portefeuille.'
+              : AppLocalizations.isEnglish
+                  ? 'With a confidence level of ${AppFormatters.percent(historicalConfidence)}, '
+                      'the loss over ${_daysLabel(historicalHorizon)} does not exceed ${_money(historicalResult.varValue, displayCurrency)} '
+                      'in most historical scenarios. '
+                      '${AppFormatters.percent(1 - historicalConfidence)} of observations exceed this threshold; '
+                      'in this extreme zone, the expected average loss rises to ${_money(historicalResult.expectedShortfall, displayCurrency)}.'
+                  : 'Avec un niveau de confiance de ${AppFormatters.percent(historicalConfidence)}, '
+                      'la perte sur $historicalHorizon jour(s) ne dépasse pas ${_money(historicalResult.varValue, displayCurrency)} '
+                      'dans la majorité des scénarios historiques. '
+                      '${AppFormatters.percent(1 - historicalConfidence)} des observations dépassent ce seuil ; '
+                      'dans cette zone extrême, la perte moyenne attendue monte à ${_money(historicalResult.expectedShortfall, displayCurrency)}.',
         ),
       _VarMethod.parametric => const _VarInsightSpec(
           color: _marketViolet,
@@ -15622,7 +19909,7 @@ class _UnifiedVarMethodView extends StatelessWidget {
           color: _marketCyan,
           title: 'Comprendre la simulation Monte-Carlo',
           body:
-              'Chaque scénario projette une trajectoire possible du portefeuille. '
+              'Chaque scénario projette un choc de marché possible. Pour les obligations, le choc est converti en perte avec la duration modifiée, comme dans l’approche Delta-Normale. '
               'Les corrélations relient les facteurs de marché, puis le portefeuille est revalorisé. '
               'La VaR correspond au quantile de perte extrait de la distribution simulée ; les scénarios extrêmes alimentent l’Expected Shortfall.',
           footer: _SimulationPipeline(onDark: true),
@@ -15636,13 +19923,14 @@ class _UnifiedVarMethodView extends StatelessWidget {
           color: _marketPrimary,
           title: 'Formules - VaR historique',
           formulas: [
-            r'R_t=\frac{P_t-P_{t-1}}{P_{t-1}}',
-            r'\mathrm{VaR}_{\alpha,1j}=-Q_{1-\alpha}(R)\times V',
-            r'\mathrm{VaR}_{\alpha,T}=\mathrm{VaR}_{\alpha,1j}\times\sqrt{T}',
+            r'L_{i,t}\approx D_{\mathrm{mod},i}\times PV_i\times \Delta y_{i,t}-\frac{1}{2}C_i\times PV_i\times(\Delta y_{i,t})^2',
+            r'L_t=\sum_i L_{i,t}',
+            r'\widehat{\mathrm{VaR}}_{\alpha,1j}=Q_{\alpha}(L)',
+            r'\widehat{\mathrm{VaR}}_{\alpha,T}=\widehat{\mathrm{VaR}}_{\alpha,1j}\times\sqrt{T}',
             r'\widehat{\mathrm{ES}}_{\alpha,T}=\mathbb{E}\left[L\mid L\geq \widehat{\mathrm{VaR}}_{\alpha,T}\right]',
           ],
           variables:
-              'Rₜ : rendement historique ; V : valeur du portefeuille ; α : niveau de confiance ; T : horizon en jours ; Q : quantile empirique.',
+              'PVᵢ : valeur actuelle du titre ; Dmodᵢ : duration modifiée ; Cᵢ : convexité ; Δyᵢ,ₜ : choc de courbe interpolé ; α : niveau de confiance ; T : horizon en jours.',
         ),
       _VarMethod.parametric => const _VarFormulaSpec(
           color: _marketViolet,
@@ -15661,13 +19949,14 @@ class _UnifiedVarMethodView extends StatelessWidget {
           title: 'Formules - VaR Monte-Carlo',
           formulas: [
             r'\varepsilon_i\sim\mathcal{D}(0,1)',
-            r'R_i=\mu\frac{T}{252}+\sigma_{1j}\sqrt{T}\,\varepsilon_i',
-            r'L_i=-R_i\times V',
+            r'X_i=\mu\frac{T}{252}+\sigma_{1j}\sqrt{T}\,\varepsilon_i',
+            r'\kappa=D_{\mathrm{mod}}\ \mathrm{(obligations)},\quad \kappa=1\ \mathrm{(actions)}',
+            r'L_i=\kappa\times X_i\times V\ \mathrm{(obligations)},\quad L_i=-X_i\times V\ \mathrm{(actions)}',
             r'\widehat{\mathrm{VaR}}_{\alpha,T}=Q_{\alpha}\left(\{L_i\}_{i=1}^{N}\right)',
             r'\widehat{\mathrm{ES}}_{\alpha,T}=\frac{1}{N_{\alpha}}\sum_{L_i\geq \widehat{\mathrm{VaR}}_{\alpha,T}}L_i',
           ],
           variables:
-              'εᵢ : choc aléatoire selon la distribution choisie ; Rᵢ : rendement simulé ; Lᵢ : perte simulée ; V : valeur du portefeuille ; N : scénarios.',
+              'εᵢ : choc aléatoire selon la distribution choisie ; Xᵢ : choc simulé ; κ : facteur de sensibilité ; Lᵢ : perte simulée ; V : valeur du portefeuille ; N : scénarios.',
         ),
     };
   }
@@ -15784,6 +20073,82 @@ class _VarChartPanel extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _VarEmptyChartState extends StatelessWidget {
+  const _VarEmptyChartState({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.accent = _marketPrimary,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isMarketDark(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final border = _marketBorderFor(context);
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+          decoration: BoxDecoration(
+            color: _marketSurfaceSoftFor(context).withValues(
+              alpha: isDark ? 0.44 : 0.74,
+            ),
+            border: Border.all(color: border.withValues(alpha: 0.78)),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.10),
+                  border: Border.all(color: accent.withValues(alpha: 0.22)),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: Icon(icon, color: accent, size: 22),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title.tr(context),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: text,
+                  fontSize: 15.2,
+                  fontWeight: FontWeight.w500,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                subtitle.tr(context),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: muted,
+                  fontSize: 11.8,
+                  fontWeight: FontWeight.w500,
+                  height: 1.32,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -15963,7 +20328,7 @@ class _VarMethodSwitch extends StatelessWidget {
                             color: selected == method ? _marketPrimary : muted,
                             fontSize: 10.4,
                             fontWeight: selected == method
-                                ? FontWeight.w600
+                                ? FontWeight.w500
                                 : FontWeight.w500,
                             letterSpacing: 0,
                           ),
@@ -16022,7 +20387,7 @@ class _MethodHeader extends StatelessWidget {
                   style: TextStyle(
                     color: textColor,
                     fontSize: 14.2,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -16245,7 +20610,7 @@ class _MethodInsightTooltip extends StatelessWidget {
                         style: TextStyle(
                           color: insight.color,
                           fontSize: 12.6,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 7),
@@ -16254,7 +20619,7 @@ class _MethodInsightTooltip extends StatelessWidget {
                         style: const TextStyle(
                           color: Color(0xFFE5EDF8),
                           fontSize: 10.8,
-                          fontWeight: FontWeight.w400,
+                          fontWeight: FontWeight.w500,
                           height: 1.42,
                         ),
                       ),
@@ -16425,7 +20790,7 @@ class _FormulaDetailsButtonState extends State<_FormulaDetailsButton> {
                 style: TextStyle(
                   color: widget.spec.color,
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   height: 1,
                 ),
               ),
@@ -16502,7 +20867,7 @@ class _FormulaDetailsTooltip extends StatelessWidget {
                       style: TextStyle(
                         color: spec.color,
                         fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         height: 1,
                       ),
                     ),
@@ -16514,7 +20879,7 @@ class _FormulaDetailsTooltip extends StatelessWidget {
                       style: TextStyle(
                         color: textColor,
                         fontSize: 13.4,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                         height: 1.2,
                       ),
                     ),
@@ -16628,7 +20993,7 @@ class _FormulaTextSection extends StatelessWidget {
                 style: TextStyle(
                   color: color,
                   fontSize: 10,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   height: 1.2,
                 ),
               ),
@@ -16643,7 +21008,7 @@ class _FormulaTextSection extends StatelessWidget {
               style: TextStyle(
                 color: muted,
                 fontSize: 10.2,
-                fontWeight: FontWeight.w400,
+                fontWeight: FontWeight.w500,
                 height: 1.45,
               ),
             ),
@@ -16681,7 +21046,7 @@ class _ParameterStack extends StatelessWidget {
           style: TextStyle(
             color: textColor,
             fontSize: 13.2,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 10),
@@ -16832,7 +21197,7 @@ class _ChoiceSegment<T> extends StatelessWidget {
                     ? (isPortfolioChoice ? Colors.white : _marketPrimary)
                     : unselectedTextColor,
                 fontSize: 9,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w500 : FontWeight.w500,
                 height: 1,
                 letterSpacing: 0,
               ),
@@ -17130,7 +21495,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
                   style: TextStyle(
                     color: _marketTextFor(context),
                     fontSize: 11.2,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
@@ -17139,7 +21504,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
                 style: TextStyle(
                   color: _marketPrimary.withValues(alpha: 0.82),
                   fontSize: 8.4,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(width: 8),
@@ -17273,7 +21638,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
                       style: TextStyle(
                         color: textColor,
                         fontSize: 9.7,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
@@ -17284,7 +21649,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
                       style: TextStyle(
                         color: mutedColor,
                         fontSize: 8,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -17355,7 +21720,7 @@ class _SliderParameter extends StatelessWidget {
               style: TextStyle(
                 color: textColor,
                 fontSize: 9.4,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -17400,7 +21765,7 @@ class _InputLabel extends StatelessWidget {
       style: TextStyle(
         color: muted,
         fontSize: 9.6,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
@@ -17428,7 +21793,7 @@ class _SectionTitle extends StatelessWidget {
           style: TextStyle(
             color: textColor,
             fontSize: 13.2,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 3),
@@ -17454,9 +21819,9 @@ class _VarHeaderKpiStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const cardWidth = 104.0;
-        const gap = 5.0;
-        const stripHeight = 34.0;
+        const cardWidth = 146.0;
+        const gap = 8.0;
+        const stripHeight = 42.0;
         final contentWidth =
             items.length * cardWidth + math.max(0, items.length - 1) * gap;
         final row = Row(
@@ -17504,10 +21869,10 @@ class _VarMiniKpiCard extends StatelessWidget {
     final muted = _marketMutedFor(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: surface.withValues(alpha: _isMarketDark(context) ? 0.72 : 0.92),
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: item.color.withValues(alpha: 0.18)),
         boxShadow: [
           BoxShadow(
@@ -17520,15 +21885,15 @@ class _VarMiniKpiCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 16,
-            height: 16,
+            width: 20,
+            height: 20,
             decoration: BoxDecoration(
               color: item.color.withValues(alpha: 0.09),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(2),
             ),
-            child: Icon(item.icon, size: 9, color: item.color),
+            child: Icon(item.icon, size: 11, color: item.color),
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 7),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -17540,12 +21905,12 @@ class _VarMiniKpiCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: muted,
-                    fontSize: 7,
+                    fontSize: 8.3,
                     fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: FittedBox(
@@ -17555,8 +21920,8 @@ class _VarMiniKpiCard extends StatelessWidget {
                       maxLines: 1,
                       style: TextStyle(
                         color: item.color,
-                        fontSize: 8.8,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 10.8,
+                        fontWeight: FontWeight.w500,
                         height: 1,
                         letterSpacing: 0,
                       ),
@@ -17617,7 +21982,13 @@ class _HistoricalLossHistogramState extends State<_HistoricalLossHistogram> {
   @override
   Widget build(BuildContext context) {
     if (widget.result.losses.isEmpty) {
-      return const SizedBox.shrink();
+      return const _VarEmptyChartState(
+        title: 'Aucune donnée historique chargée',
+        subtitle:
+            'Chargez un portefeuille avec des données de marché pour afficher l’histogramme des pertes.',
+        icon: CupertinoIcons.chart_bar_alt_fill,
+        accent: _marketPrimary,
+      );
     }
     final metrics = _HistoricalHistogramMetrics.from(widget.result);
     return LayoutBuilder(
@@ -17946,7 +22317,8 @@ class _HistoricalHistogramTooltip extends StatelessWidget {
   ({String title, String value, String detail}) _content(BuildContext context) {
     if (hover.kind == _HistoricalHoverKind.varLine) {
       return (
-        title: 'Seuil VaR historique',
+        title:
+            result.isProxy ? 'Seuil VaR reconstruite' : 'Seuil VaR historique',
         value:
             'VaR ${AppFormatters.percent(result.confidence)} : ${_money(result.varValue, displayCurrency)}',
         detail: context.tr(
@@ -17964,16 +22336,18 @@ class _HistoricalHistogramTooltip extends StatelessWidget {
       return (
         title: '95e percentile',
         value: _money(metrics.percentile95, displayCurrency),
-        detail:
-            'Repère de pertes élevées : 95% des observations historiques restent sous ce niveau.',
+        detail: result.isProxy
+            ? 'Repère de pertes élevées : 95% des scénarios reconstruits restent sous ce niveau.'
+            : 'Repère de pertes élevées : 95% des observations historiques restent sous ce niveau.',
       );
     }
     if (hover.kind == _HistoricalHoverKind.percentile99) {
       return (
         title: '99e percentile',
         value: _money(metrics.percentile99, displayCurrency),
-        detail:
-            'Queue extrême : 1% des observations historiques dépassent ce repère.',
+        detail: result.isProxy
+            ? 'Queue extrême : 1% des scénarios reconstruits dépassent ce repère.'
+            : 'Queue extrême : 1% des observations historiques dépassent ce repère.',
       );
     }
 
@@ -17985,7 +22359,9 @@ class _HistoricalHistogramTooltip extends StatelessWidget {
     final interval =
         '${_axisMoneyLabel(bin.start, displayCurrency)} → ${_axisMoneyLabel(bin.end, displayCurrency)}';
     return (
-      title: 'Intervalle de pertes historiques',
+      title: result.isProxy
+          ? 'Intervalle de pertes reconstruites'
+          : 'Intervalle de pertes historiques',
       value: interval,
       detail: context.tr(
         '{{count}} observations · {{probability}} des scénarios · cumul {{cumulative}} · P{{lower}}-P{{upper}}',
@@ -18281,7 +22657,9 @@ void _drawHistoricalAnnotations(
   final varX = metrics.xForLoss(chart, result.varValue);
   _paintParametricPill(
     canvas,
-    'Distribution historique des pertes',
+    result.isProxy
+        ? 'Distribution reconstruite des pertes'
+        : 'Distribution historique des pertes',
     Offset(chart.left + 8, chart.top + 8),
     color: _marketPrimary,
     maxWidth: 186,
@@ -18300,7 +22678,9 @@ void _drawHistoricalAnnotations(
   );
   _paintParametricPill(
     canvas,
-    '${AppFormatters.percent(result.tailProbability)} des observations dépassent ce seuil',
+    result.isProxy
+        ? '${AppFormatters.percent(result.tailProbability)} des scénarios dépassent ce seuil'
+        : '${AppFormatters.percent(result.tailProbability)} des observations dépassent ce seuil',
     Offset(tailLeft, chart.bottom - 50),
     color: _marketDanger,
     maxWidth: 190,
@@ -18342,7 +22722,13 @@ class _NormalCurveChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (result.portfolioValue <= 0 || result.lossStdDev <= 0) {
-      return const SizedBox.shrink();
+      return const _VarEmptyChartState(
+        title: 'Données insuffisantes',
+        subtitle:
+            'Chargez un portefeuille avec une valeur et une volatilité exploitables pour tracer la courbe Delta-Normale.',
+        icon: CupertinoIcons.function,
+        accent: _marketViolet,
+      );
     }
     return _InteractiveNormalCurveChart(
       result: result,
@@ -18999,7 +23385,7 @@ void _paintParametricPill(
       style: TextStyle(
         color: color,
         fontSize: compact ? 8.2 : 8.8,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w500,
         height: 1.1,
       ),
     ),
@@ -19048,7 +23434,7 @@ void _paintParametricLabel(
       style: TextStyle(
         color: color,
         fontSize: 8,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         height: 1,
       ),
     ),
@@ -19087,7 +23473,13 @@ class _MonteCarloDistributionChartState
   @override
   Widget build(BuildContext context) {
     if (widget.result.losses.isEmpty) {
-      return const SizedBox.shrink();
+      return const _VarEmptyChartState(
+        title: 'Aucune simulation disponible',
+        subtitle:
+            'Chargez un portefeuille avec des données exploitables pour générer la distribution Monte-Carlo.',
+        icon: CupertinoIcons.chart_bar_square_fill,
+        accent: _marketCyan,
+      );
     }
     final metrics = _MonteCarloDistributionMetrics.from(widget.result);
 
@@ -20102,7 +24494,7 @@ void _paintVarFloatingLabel(
       style: const TextStyle(
         color: Colors.white,
         fontSize: 9,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w500,
         height: 1,
       ),
     ),
@@ -20190,7 +24582,7 @@ void _paintAxisLabel(
       style: const TextStyle(
         color: _marketMuted,
         fontSize: 8,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w500,
         height: 1,
       ),
     ),
@@ -20259,7 +24651,6 @@ class _SimulationPipeline extends StatelessWidget {
       CupertinoIcons.chart_bar_alt_fill,
       _marketCyan
     ),
-    ('Corrélations', CupertinoIcons.link, _marketPrimary),
     (
       'Revalorisation portefeuille',
       CupertinoIcons.briefcase_fill,
@@ -20346,7 +24737,7 @@ class _PipelineStep extends StatelessWidget {
                   style: TextStyle(
                     color: onDark ? const Color(0xFFEAF2FF) : _marketText,
                     fontSize: 10.2,
-                    fontWeight: onDark ? FontWeight.w500 : FontWeight.w600,
+                    fontWeight: onDark ? FontWeight.w500 : FontWeight.w500,
                     height: 1.18,
                   ),
                 ),
@@ -20393,7 +24784,7 @@ class _ChartTooltip extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 10,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
@@ -20402,7 +24793,7 @@ class _ChartTooltip extends StatelessWidget {
             style: const TextStyle(
               color: Color(0xFF93C5FD),
               fontSize: 10,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 2),
@@ -20411,7 +24802,7 @@ class _ChartTooltip extends StatelessWidget {
             style: const TextStyle(
               color: Color(0xFFD8E2F0),
               fontSize: 9,
-              fontWeight: FontWeight.w400,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -20467,6 +24858,8 @@ class _HistoricalVarResult {
     required this.windowDays,
     required this.losses,
     required this.bins,
+    required this.isProxy,
+    required this.sourceLabel,
   });
 
   final double confidence;
@@ -20478,12 +24871,14 @@ class _HistoricalVarResult {
   final int windowDays;
   final List<double> losses;
   final List<_LossBin> bins;
+  final bool isProxy;
+  final String sourceLabel;
 
   int get tailCount => losses.where((loss) => loss >= varValue).length;
   double get tailProbability =>
       losses.isEmpty ? 0.0 : tailCount / losses.length;
   String get animationKey =>
-      '$confidence-$horizonDays-$windowDays-${losses.length}-${varValue.round()}';
+      '$confidence-$horizonDays-$windowDays-${losses.length}-${varValue.round()}-$isProxy';
 
   static _HistoricalVarResult calculate({
     required _VarPortfolioContext portfolio,
@@ -20520,6 +24915,51 @@ class _HistoricalVarResult {
         windowDays: effectiveWindow,
         losses: losses,
         bins: _LossBin.build(losses, 32),
+        isProxy: false,
+        sourceLabel: 'Historique observé',
+      );
+    }
+
+    if (portfolio.curveShockLosses.isNotEmpty) {
+      final sourceLosses = _sampleLossWindow(
+        portfolio.curveShockLosses,
+        windowDays,
+        allowGains: true,
+      );
+      final losses = [
+        for (final loss in sourceLosses)
+          if (loss.isFinite) loss * timeScale,
+      ]..sort();
+      final varValue = _quantile(losses, confidence);
+      final tail = losses.where((loss) => loss >= varValue).toList();
+      final expectedShortfall =
+          tail.isEmpty ? varValue : tail.reduce((a, b) => a + b) / tail.length;
+      final worstLoss = losses.isEmpty ? 0.0 : math.max(0.0, losses.last);
+      final volatility = portfolio.curveShockVolatility != null &&
+              portfolio.curveShockVolatility!.isFinite &&
+              portfolio.curveShockVolatility! > 0
+          ? portfolio.curveShockVolatility!
+          : _annualizedVolatilityFromLosses(
+              sourceLosses,
+              portfolio.portfolioValue,
+              allowGains: true,
+            );
+
+      return _HistoricalVarResult(
+        confidence: confidence,
+        horizonDays: horizonDays,
+        varValue: varValue,
+        expectedShortfall: expectedShortfall,
+        worstLoss: worstLoss,
+        volatility: volatility,
+        windowDays: losses.length,
+        losses: losses,
+        bins: _LossBin.build(losses, 32),
+        isProxy: portfolio.curveShockIsProxy,
+        sourceLabel: portfolio.curveShockSourceLabel ??
+            (portfolio.curveShockIsProxy
+                ? 'Chocs de courbe reconstruits'
+                : 'Chocs historiques de courbe'),
       );
     }
 
@@ -20552,6 +24992,37 @@ class _HistoricalVarResult {
         windowDays: losses.length,
         losses: losses,
         bins: _LossBin.build(losses, 32),
+        isProxy: false,
+        sourceLabel: 'Scénarios importés',
+      );
+    }
+
+    final proxyLosses = _historicalProxyLosses(
+      portfolio: portfolio,
+      horizonDays: horizonDays,
+      windowDays: windowDays,
+    );
+    if (proxyLosses.isNotEmpty) {
+      final varValue = _quantile(proxyLosses, confidence);
+      final tail = proxyLosses.where((loss) => loss >= varValue).toList();
+      final expectedShortfall =
+          tail.isEmpty ? varValue : tail.reduce((a, b) => a + b) / tail.length;
+      final worstLoss =
+          proxyLosses.isEmpty ? 0.0 : math.max(0.0, proxyLosses.last);
+      final volatility = _historicalProxyAnnualVolatility(portfolio);
+
+      return _HistoricalVarResult(
+        confidence: confidence,
+        horizonDays: horizonDays,
+        varValue: varValue,
+        expectedShortfall: expectedShortfall,
+        worstLoss: worstLoss,
+        volatility: volatility,
+        windowDays: proxyLosses.length,
+        losses: proxyLosses,
+        bins: _LossBin.build(proxyLosses, 32),
+        isProxy: true,
+        sourceLabel: 'Proxy de marché',
       );
     }
 
@@ -20565,8 +25036,62 @@ class _HistoricalVarResult {
       windowDays: 0,
       losses: const [],
       bins: const [],
+      isProxy: false,
+      sourceLabel: 'Non disponible',
     );
   }
+}
+
+double _historicalProxyAnnualVolatility(_VarPortfolioContext portfolio) {
+  final imported = portfolio.volatility;
+  if (imported != null && imported.isFinite && imported > 0) {
+    return _normalizeVolatility(imported);
+  }
+  return _defaultParamVolatility;
+}
+
+double _historicalProxySensitivity(_VarPortfolioContext portfolio) {
+  if (portfolio.portfolioType != MarketPortfolioType.bonds) return 1.0;
+  final duration = portfolio.durationYears;
+  if (duration != null && duration.isFinite && duration > 0) {
+    return duration;
+  }
+  return _defaultParamDuration;
+}
+
+List<double> _historicalProxyLosses({
+  required _VarPortfolioContext portfolio,
+  required int horizonDays,
+  required int windowDays,
+}) {
+  if (!portfolio.hasImportedData || portfolio.portfolioValue <= 0) {
+    return const [];
+  }
+  final annualVolatility = _historicalProxyAnnualVolatility(portfolio);
+  if (annualVolatility <= 0) return const [];
+  final sensitivity = _historicalProxySensitivity(portfolio);
+  if (sensitivity <= 0) return const [];
+  final sampleCount = windowDays.clamp(250, 1000).toInt();
+  final dailyVolatility = annualVolatility / math.sqrt(252);
+  final timeScale = math.sqrt(math.max(1, horizonDays));
+  final lossStdDev =
+      dailyVolatility * sensitivity * portfolio.portfolioValue * timeScale;
+  if (lossStdDev <= 0 || !lossStdDev.isFinite) return const [];
+
+  final random = math.Random(
+    Object.hash(
+      portfolio.portfolioType,
+      (portfolio.portfolioValue / 1000000).round(),
+      (sensitivity * 100).round(),
+      horizonDays,
+      sampleCount,
+    ),
+  );
+  final losses = <double>[
+    for (var index = 0; index < sampleCount; index++)
+      _gaussian(random) * lossStdDev,
+  ]..sort();
+  return losses;
 }
 
 double _parameterValueFromImport({
@@ -20583,10 +25108,14 @@ double _parameterValueFromImport({
   return stillOnDefault ? imported : selected;
 }
 
-List<double> _sampleLossWindow(List<double> losses, int windowDays) {
+List<double> _sampleLossWindow(
+  List<double> losses,
+  int windowDays, {
+  bool allowGains = false,
+}) {
   final filtered = [
     for (final loss in losses)
-      if (loss.isFinite && loss >= 0) loss,
+      if (loss.isFinite && (allowGains || loss >= 0)) loss,
   ]..sort();
   if (filtered.isEmpty) return const [];
   if (windowDays <= 0 || filtered.length <= windowDays) return filtered;
@@ -20600,12 +25129,13 @@ List<double> _sampleLossWindow(List<double> losses, int windowDays) {
 
 double _annualizedVolatilityFromLosses(
   List<double> losses,
-  double portfolioValue,
-) {
+  double portfolioValue, {
+  bool allowGains = false,
+}) {
   if (portfolioValue <= 0) return 0;
   final rates = [
     for (final loss in losses)
-      if (loss.isFinite && loss >= 0) loss / portfolioValue,
+      if (loss.isFinite && (allowGains || loss >= 0)) loss / portfolioValue,
   ];
   if (rates.isEmpty) return 0;
   if (rates.length < 2) return rates.first.abs();
@@ -20746,6 +25276,7 @@ class _MonteCarloVarResult {
 
   static final Map<int, _MonteCarloVarResult> _cache =
       <int, _MonteCarloVarResult>{};
+  static const int _cacheLimit = 2;
 
   static _MonteCarloVarResult empty(double confidence) {
     return _MonteCarloVarResult(
@@ -20807,8 +25338,15 @@ class _MonteCarloVarResult {
         annualVolatility / math.sqrt(252) * distribution.volatilityMultiplier;
     final dailyMean =
         _asDecimalRate(expectedReturn ?? portfolio.expectedReturn ?? 0) / 252;
+    final isBondPortfolio =
+        portfolio.portfolioType == MarketPortfolioType.bonds;
+    final bondSensitivityMultiplier = isBondPortfolio
+        ? math.max(0.0, portfolio.durationYears ?? 0.0).toDouble()
+        : 1.0;
+    final useBondRateShockModel =
+        isBondPortfolio && bondSensitivityMultiplier > 0;
     final timeScale = math.sqrt(math.max(1, horizonDays));
-    final drift = dailyMean * horizonDays;
+    final drift = useBondRateShockModel ? 0.0 : dailyMean * horizonDays;
     final empiricalMean = empiricalReturns.isEmpty
         ? 0.0
         : empiricalReturns.reduce((a, b) => a + b) / empiricalReturns.length;
@@ -20850,14 +25388,21 @@ class _MonteCarloVarResult {
     }
 
     for (var index = 0; index < sampleCount; index++) {
-      final shock = distribution == _MonteCarloDistribution.empirical &&
-              empiricalReturns.isNotEmpty
+      final usesEmpiricalReturn =
+          distribution == _MonteCarloDistribution.empirical &&
+              empiricalReturns.isNotEmpty;
+      final shock = usesEmpiricalReturn
           ? (empiricalReturns[random.nextInt(empiricalReturns.length)] -
                   empiricalMean) /
               empiricalStd
           : distribution.draw(random);
-      final scenarioReturn = drift + dailyVolatility * timeScale * shock;
-      losses.add(-scenarioReturn * portfolio.portfolioValue);
+      final scenarioFactor = drift + dailyVolatility * timeScale * shock;
+      final loss = useBondRateShockModel && !usesEmpiricalReturn
+          ? scenarioFactor *
+              bondSensitivityMultiplier *
+              portfolio.portfolioValue
+          : -scenarioFactor * portfolio.portfolioValue;
+      losses.add(loss);
     }
 
     losses.sort();
@@ -20891,6 +25436,11 @@ class _MonteCarloVarResult {
       portfolio.portfolioValue,
       identityHashCode(portfolio.historicalReturns),
       identityHashCode(portfolio.importedLosses),
+      identityHashCode(portfolio.curveShockLosses),
+      portfolio.volatility,
+      portfolio.durationYears,
+      portfolio.expectedReturn,
+      portfolio.curveShockVolatility,
       confidence,
       horizonDays,
       simulations,
@@ -20912,19 +25462,17 @@ class _MonteCarloVarResult {
       volatility: volatility,
       expectedReturn: expectedReturn,
     );
-    if (_cache.length > 12) {
+    _cache[key] = result;
+    while (_cache.length > _cacheLimit) {
       _cache.remove(_cache.keys.first);
     }
-    _cache[key] = result;
     return result;
   }
-}
 
-final Expando<Map<int, Future<_VarPortfolioContext>>>
-    _varPortfolioContextFutureCache =
-    Expando<Map<int, Future<_VarPortfolioContext>>>(
-  'var-portfolio-context-future',
-);
+  static void clearCache() {
+    _cache.clear();
+  }
+}
 
 Future<_VarPortfolioContext> _varPortfolioContextForAsync(
   MarketPortfolioDataset? dataset,
@@ -20936,23 +25484,22 @@ Future<_VarPortfolioContext> _varPortfolioContextForAsync(
     );
   }
 
-  final futuresByType = _varPortfolioContextFutureCache[dataset] ??=
-      <int, Future<_VarPortfolioContext>>{};
-  final cachedFuture = futuresByType[portfolioType.index];
-  if (cachedFuture != null) return cachedFuture;
+  if (portfolioType == MarketPortfolioType.bonds) {
+    final cachedStats = _bondDashboardStatsCached(dataset);
+    if (cachedStats != null) {
+      return SynchronousFuture(_VarPortfolioContext.fromBondStats(cachedStats));
+    }
+    return _bondDashboardStatsForAsync(dataset).then(
+      _VarPortfolioContext.fromBondStats,
+    );
+  }
 
-  final future = portfolioType == MarketPortfolioType.bonds
-      ? _bondDashboardStatsForAsync(dataset).then(
-          _VarPortfolioContext.fromBondStats,
-        )
-      : _computeVarPortfolioContextAsync(
-          _VarPortfolioContextRequest(
-            dataset: dataset,
-            portfolioTypeIndex: portfolioType.index,
-          ),
-        );
-  futuresByType[portfolioType.index] = future;
-  return future;
+  return _computeVarPortfolioContextAsync(
+    _VarPortfolioContextRequest(
+      dataset: dataset,
+      portfolioTypeIndex: portfolioType.index,
+    ),
+  );
 }
 
 Future<_VarPortfolioContext> _computeVarPortfolioContextAsync(
@@ -21000,6 +25547,10 @@ class _VarPortfolioContext {
     double? parametricPortfolioValue,
     this.historicalReturns = const [],
     this.importedLosses = const [],
+    this.curveShockLosses = const [],
+    this.curveShockVolatility,
+    this.curveShockIsProxy = false,
+    this.curveShockSourceLabel,
     this.volatility,
     this.durationYears,
     this.expectedReturn,
@@ -21012,6 +25563,10 @@ class _VarPortfolioContext {
   final double? _parametricPortfolioValue;
   final List<double> historicalReturns;
   final List<double> importedLosses;
+  final List<double> curveShockLosses;
+  final double? curveShockVolatility;
+  final bool curveShockIsProxy;
+  final String? curveShockSourceLabel;
   final double? volatility;
   final double? durationYears;
   final double? expectedReturn;
@@ -21027,9 +25582,7 @@ class _VarPortfolioContext {
     required MarketPortfolioType portfolioType,
   }) {
     if (dataset != null && dataset.records.isNotEmpty) {
-      final importedLosses = dataset.scenarioLosses.isNotEmpty
-          ? dataset.scenarioLosses
-          : dataset.bondRateShockLosses;
+      final importedLosses = dataset.scenarioLosses;
       final derivedVolatility = dataset.annualizedVolatility > 0
           ? dataset.annualizedVolatility
           : _annualizedVolatilityFromLosses(
@@ -21064,12 +25617,12 @@ class _VarPortfolioContext {
         : (stats.capitalRemainingDue > 0
             ? stats.capitalRemainingDue
             : dataset.portfolioValue);
-    final importedLosses = dataset.scenarioLosses.isNotEmpty
-        ? dataset.scenarioLosses
-        : dataset.bondRateShockLosses;
+    final importedLosses = dataset.scenarioLosses;
     final derivedVolatility = dataset.annualizedVolatility > 0
         ? dataset.annualizedVolatility
-        : _annualizedVolatilityFromLosses(importedLosses, portfolioValue);
+        : stats.curveShockVolatility > 0
+            ? stats.curveShockVolatility
+            : _annualizedVolatilityFromLosses(importedLosses, portfolioValue);
     final modifiedDuration = stats.modifiedDuration > 0
         ? stats.modifiedDuration
         : (dataset.parametricModifiedDuration > 0
@@ -21082,6 +25635,10 @@ class _VarPortfolioContext {
       parametricPortfolioValue: portfolioValue,
       historicalReturns: dataset.scenarioReturns,
       importedLosses: importedLosses,
+      curveShockLosses: stats.curveShockLosses,
+      curveShockVolatility: stats.curveShockVolatility,
+      curveShockIsProxy: stats.curveShockIsProxy,
+      curveShockSourceLabel: stats.curveShockSourceLabel,
       volatility: derivedVolatility,
       durationYears: modifiedDuration,
       expectedReturn: dataset.expectedReturn,

@@ -1306,7 +1306,7 @@ class RwaApiService {
               counterparty: item.counterparty.name,
               country: item.counterparty.country,
               category: item.categoryLabel,
-              rating: item.ratingLabel,
+              rating: _portfolioDisplayRating(item.counterparty.rating),
               crmType: item.crmModeLabel,
               grossAmount: item.grossAmount,
               ead: item.ead,
@@ -1316,6 +1316,24 @@ class RwaApiService {
           )
           .toList(),
     );
+  }
+
+  String _portfolioDisplayRating(String rating) {
+    final trimmed = rating.trim();
+    if (trimmed.isEmpty) {
+      return 'Non noté';
+    }
+    if (prudentialRatings.contains(trimmed)) {
+      return trimmed;
+    }
+    final normalized = trimmed
+        .toUpperCase()
+        .replaceAll('É', 'E')
+        .replaceAll(RegExp(r'\s+'), ' ');
+    if (normalized == 'NON NOTE' || normalized == 'NON NOTÉ') {
+      return 'Non noté';
+    }
+    return 'Non noté';
   }
 
   ExposureSummary _computeExposureSummary(List<ExposureRecord> exposures) {

@@ -1,6 +1,7 @@
 // Ce fichier assemble le dashboard RWA a partir de composants modulaires.
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localization.dart';
@@ -105,11 +106,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final defaultRateMetric = _metric(metrics, 'taux_defaut');
         final solvencyMetric = _metric(metrics, 'solvabilite');
         final crmMetric = _metric(metrics, 'crm');
-        final densityRwa = _densityRwaPercent(
-          rwaMetric.value,
-          grossMetric.value,
-        );
-
         final kpis = [
           DashboardKpiItem(
             label: 'Exposition totale brute',
@@ -122,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               toCurrency: displayCurrency,
             ),
             delta: grossMetric.variation,
-            icon: Icons.account_balance_wallet_outlined,
+            icon: CupertinoIcons.money_dollar_circle_fill,
             gradient: const [Color(0xFF5E8EFF), Color(0xFF356FFF)],
             helper: 'Exposition brute',
           ),
@@ -137,7 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               toCurrency: displayCurrency,
             ),
             delta: rwaMetric.variation,
-            icon: Icons.shield_outlined,
+            icon: CupertinoIcons.checkmark_shield_fill,
             gradient: const [Color(0xFF37C87C), Color(0xFF20A25B)],
             helper: 'Actifs pondérés aux risques',
           ),
@@ -152,7 +148,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               toCurrency: displayCurrency,
             ),
             delta: capitalMetric.variation,
-            icon: Icons.account_balance_outlined,
+            icon: CupertinoIcons.building_2_fill,
             gradient: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
             helper: 'Exigence a 8%',
           ),
@@ -167,7 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               toCurrency: displayCurrency,
             ),
             delta: residualRiskMetric.variation,
-            icon: Icons.security_outlined,
+            icon: CupertinoIcons.lock_shield_fill,
             gradient: const [Color(0xFFF59E0B), Color(0xFFD97706)],
             helper: 'Exposition brute - Garanties',
           ),
@@ -175,7 +171,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: 'Ratio de solvabilite',
             value: dashboardCompactPercent(solvencyMetric.value),
             delta: solvencyMetric.variation,
-            icon: Icons.analytics_outlined,
+            icon: CupertinoIcons.chart_bar_square_fill,
             gradient: const [Color(0xFF22B8CF), Color(0xFF0F9FB8)],
             helper: 'Fonds propres / RWA',
           ),
@@ -183,7 +179,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             label: 'Taux de défaut',
             value: dashboardCompactPercent(defaultRateMetric.value),
             delta: '',
-            icon: Icons.report_problem_outlined,
+            icon: CupertinoIcons.exclamationmark_triangle_fill,
             gradient: _defaultRateGradient(defaultRateMetric.value),
             helper: 'Encours de défaut / Exposition brute',
             valueHint: _defaultRateHint(defaultRateMetric.value),
@@ -198,7 +194,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .where((entry) => entry.amount > 0)
             .toList();
         final crmEntries = _completeCrmDistribution(data.crmDistribution);
-        final countryEntries = data.countryDistribution.take(5).toList();
 
         return SingleChildScrollView(
           // ignore: prefer_const_constructors
@@ -215,7 +210,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
               ),
               // ignore: prefer_const_constructors
-              SizedBox(height: AppTheme.pageGap),
+              SizedBox(height: AppTheme.pageGap + 8),
               // Le bandeau KPI résume immédiatement les agrégats clés du portefeuille.
               DashboardKpiStrip(items: kpis),
               // ignore: prefer_const_constructors
@@ -225,9 +220,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 displayCurrency: displayCurrency,
                 grossCategoryEntries: categoryEntries,
                 rwaCategoryEntries: rwaCategoryEntries,
-                countryEntries: countryEntries,
                 crmEntries: crmEntries,
-                densityRwa: densityRwa,
                 coveredRatio: crmMetric.value,
               ),
             ],
@@ -250,17 +243,62 @@ DashboardMetric _metric(Map<String, DashboardMetric> metrics, String key) {
 }
 
 String _dashboardKpiCurrencyValue(double value, String displayCurrency) {
-  return compactCurrencyForDisplay(
+  final converted = convertCurrencyAmount(
     value,
+    fromCurrency: 'XOF',
     toCurrency: displayCurrency,
   );
+  final absolute = converted.abs();
+  final currency = displayCurrencyLabel(displayCurrency);
+
+  if (absolute >= 1000000000) {
+    final unit = AppLocalizations.isEnglish ? 'Bn' : 'Md';
+    return '${_dashboardScaledNumber(converted / 1000000000)} $unit $currency';
+  }
+  if (absolute >= 1000000) {
+    return '${_dashboardScaledNumber(converted / 1000000)} M $currency';
+  }
+  if (absolute >= 1000) {
+    return '${_dashboardScaledNumber(converted / 1000)} k $currency';
+  }
+  return '${_dashboardScaledNumber(converted)} $currency';
 }
 
-double _densityRwaPercent(double rwaTotal, double grossExposure) {
-  if (grossExposure <= 0) {
-    return 0.0;
+String _dashboardScaledNumber(double value) {
+  final absolute = value.abs();
+  final decimals = absolute >= 100
+      ? 0
+      : absolute >= 10
+          ? 1
+          : 2;
+  final fixedValue = value.toStringAsFixed(decimals);
+  final trimmed =
+      fixedValue.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  final normalized = trimmed == '-0' || trimmed.isEmpty ? '0' : trimmed;
+  final parts = normalized.split('.');
+  final decimalSeparator = AppLocalizations.isEnglish ? '.' : ',';
+
+  if (parts.length == 1) {
+    return _dashboardGroupDigits(parts.first);
   }
-  return ((rwaTotal / grossExposure) * 100).clamp(0.0, 999.0).toDouble();
+  return '${_dashboardGroupDigits(parts.first)}$decimalSeparator${parts.last}';
+}
+
+String _dashboardGroupDigits(String value) {
+  final isNegative = value.startsWith('-');
+  final digits = isNegative ? value.substring(1) : value;
+  final separator = AppLocalizations.isEnglish ? ',' : ' ';
+  final buffer = StringBuffer();
+
+  for (var index = 0; index < digits.length; index++) {
+    final remaining = digits.length - index;
+    if (index > 0 && remaining % 3 == 0) {
+      buffer.write(separator);
+    }
+    buffer.write(digits[index]);
+  }
+
+  return isNegative ? '-$buffer' : buffer.toString();
 }
 
 List<Color> _defaultRateGradient(double defaultRate) {

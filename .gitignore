@@ -50,6 +50,10 @@ tmp/
 tmp_*
 **/node_modules/
 
+# Artefacts generes ponctuels
+outputs/
+.tmp_*.js
+
 # Fichiers de test locaux
 backend/_excel_source_test.xlsx
 backend/_excel_recalc_test.vbs

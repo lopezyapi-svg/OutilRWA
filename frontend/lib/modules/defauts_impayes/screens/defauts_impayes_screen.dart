@@ -330,7 +330,7 @@ class _DefautsImpayesScreenState extends State<DefautsImpayesScreen> {
                   Text(
                     incident.title,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w500,
                         ),
                   ),
                   const SizedBox(height: 4),
@@ -382,7 +382,7 @@ class _PrudentialBadge extends StatelessWidget {
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: color,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
       ),
     );

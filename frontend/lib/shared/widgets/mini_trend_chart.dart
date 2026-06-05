@@ -42,7 +42,8 @@ class _MiniTrendPainter extends CustomPainter {
 
     final minValue = values.reduce((a, b) => a < b ? a : b);
     final maxValue = values.reduce((a, b) => a > b ? a : b);
-    final span = (maxValue - minValue).abs() < 0.0001 ? 1.0 : maxValue - minValue;
+    final span =
+        (maxValue - minValue).abs() < 0.0001 ? 1.0 : maxValue - minValue;
 
     final fillPaint = Paint()
       ..color = color.withValues(alpha: 0.08)
@@ -57,8 +58,10 @@ class _MiniTrendPainter extends CustomPainter {
     final fillPath = Path();
 
     for (var index = 0; index < values.length; index++) {
-      final dx = index / (values.length - 1 == 0 ? 1 : values.length - 1) * size.width;
-      final dy = size.height - ((values[index] - minValue) / span * size.height);
+      final dx =
+          index / (values.length - 1 == 0 ? 1 : values.length - 1) * size.width;
+      final dy =
+          size.height - ((values[index] - minValue) / span * size.height);
       if (index == 0) {
         path.moveTo(dx, dy);
         fillPath.moveTo(dx, size.height);

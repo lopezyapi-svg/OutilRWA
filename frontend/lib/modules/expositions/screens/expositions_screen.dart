@@ -1,7 +1,9 @@
 // Ce fichier affiche l'inventaire interactif des expositions.
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
@@ -52,13 +54,14 @@ class ExpositionsScreen extends StatefulWidget {
 
 class _ExpositionsScreenState extends State<ExpositionsScreen> {
   static const double _mainTableMinWidth = 4300;
+  static const double _fixedIdColumnWidth = 112;
+  static const double _fixedActionsColumnWidth = 112;
   static const double _controlGap = 8;
   static const double _filterControlHeight = 30;
   static const double _optionControlHeight = 34;
   static const double _textFilterControlHeight = 44;
-  static const double _floatingActionButtonSize = 44;
-  static const double _floatingActionButtonRadius = 10;
-  static const double _tableRowHeight = 40;
+  static const double _screenBorderRadius = 1;
+  static const double _tableRowHeight = 44;
   static const ExposureSummary _emptySummary = ExposureSummary(
     totalExpositions: 0,
     totalEad: 0,
@@ -85,9 +88,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   late Future<void> _future;
   StreamSubscription<int>? _portfolioRefreshSubscription;
   final ScrollController _tableVerticalController = ScrollController();
+  final ScrollController _fixedLeadingVerticalController = ScrollController();
+  final ScrollController _fixedTrailingVerticalController = ScrollController();
   final ScrollController _tableHorizontalController = ScrollController();
-  final GlobalKey<TooltipState> _tableHelperTooltipKey =
-      GlobalKey<TooltipState>();
   final TextEditingController _idFilterController = TextEditingController();
   final TextEditingController _counterpartyFilterController =
       TextEditingController();
@@ -104,20 +107,28 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   String _crmFilter = 'Toutes';
   String _displayCurrency = 'XOF';
   String _activeFilterKey = _filterCounterparty;
+  late Set<String> _visibleColumnKeys;
   String? _sortColumnKey = 'counterparty';
   bool _sortAscending = true;
+  String? _selectedExposureId;
   bool _isImporting = false;
   bool _isDeleting = false;
   bool _isExporting = false;
   bool _hasLoadedReferentiels = false;
-  Set<String> _selectedIds = <String>{};
+  bool _isSyncingTableVerticalScroll = false;
 
   @override
   void initState() {
     super.initState();
+    _visibleColumnKeys = _defaultVisibleColumnKeys();
     _displayCurrency =
         normalizeCurrencyCode(widget.displayCurrencyListenable.value);
     widget.displayCurrencyListenable.addListener(_handleDisplayCurrencyChanged);
+    _tableVerticalController.addListener(_syncTableVerticalScrollFromMain);
+    _fixedLeadingVerticalController
+        .addListener(_syncTableVerticalScrollFromLeading);
+    _fixedTrailingVerticalController
+        .addListener(_syncTableVerticalScrollFromTrailing);
     _future = _refresh();
     _portfolioRefreshSubscription =
         widget.api.portfolioRefreshStream.listen((_) {
@@ -133,12 +144,56 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     _portfolioRefreshSubscription?.cancel();
     widget.displayCurrencyListenable
         .removeListener(_handleDisplayCurrencyChanged);
+    _tableVerticalController.removeListener(_syncTableVerticalScrollFromMain);
+    _fixedLeadingVerticalController
+        .removeListener(_syncTableVerticalScrollFromLeading);
+    _fixedTrailingVerticalController
+        .removeListener(_syncTableVerticalScrollFromTrailing);
     _tableVerticalController.dispose();
+    _fixedLeadingVerticalController.dispose();
+    _fixedTrailingVerticalController.dispose();
     _tableHorizontalController.dispose();
     _idFilterController.dispose();
     _counterpartyFilterController.dispose();
     _countryFilterController.dispose();
     super.dispose();
+  }
+
+  void _syncTableVerticalScrollFromMain() {
+    _syncTableVerticalScrollFrom(_tableVerticalController);
+  }
+
+  void _syncTableVerticalScrollFromLeading() {
+    _syncTableVerticalScrollFrom(_fixedLeadingVerticalController);
+  }
+
+  void _syncTableVerticalScrollFromTrailing() {
+    _syncTableVerticalScrollFrom(_fixedTrailingVerticalController);
+  }
+
+  void _syncTableVerticalScrollFrom(ScrollController source) {
+    if (_isSyncingTableVerticalScroll || !source.hasClients) {
+      return;
+    }
+    _isSyncingTableVerticalScroll = true;
+    final sourceOffset = source.offset;
+    for (final controller in [
+      _tableVerticalController,
+      _fixedLeadingVerticalController,
+      _fixedTrailingVerticalController,
+    ]) {
+      if (controller == source || !controller.hasClients) {
+        continue;
+      }
+      final targetOffset = sourceOffset.clamp(
+        controller.position.minScrollExtent,
+        controller.position.maxScrollExtent,
+      );
+      if ((controller.offset - targetOffset).abs() > 0.5) {
+        controller.jumpTo(targetOffset);
+      }
+    }
+    _isSyncingTableVerticalScroll = false;
   }
 
   void _handleDisplayCurrencyChanged() {
@@ -166,7 +221,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   @override
   Widget build(BuildContext context) {
     final screenBusyMessage = _screenBusyMessage;
-    final isScreenBusy = screenBusyMessage != null;
 
     return FutureBuilder<void>(
       future: _future,
@@ -195,7 +249,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                       Padding(
                         padding: EdgeInsets.zero,
                         child: PageHeader(
-                          title: 'Risque de crédit',
+                          title: 'Tableau des expositions',
                           subtitle:
                               'Saisissez, importez et suivez les expositions avec calcul automatique des zones UEMOA/CEMAC.',
                           titleFontSize: 22,
@@ -226,24 +280,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                                         ),
                                         const SizedBox(height: 0),
                                         Expanded(
-                                          child: Stack(
-                                            children: [
-                                              Positioned.fill(
-                                                top: 16,
-                                                child:
-                                                    _buildScrollableExposureTable(
-                                                  context,
-                                                  _visibleRows,
-                                                ),
-                                              ),
-                                              Positioned(
-                                                right: 4,
-                                                top: 0,
-                                                child: _buildTableHelperHint(
-                                                  context,
-                                                ),
-                                              ),
-                                            ],
+                                          child: _buildScrollableExposureTable(
+                                            context,
+                                            _visibleRows,
                                           ),
                                         ),
                                         const SizedBox(height: 10),
@@ -263,27 +302,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                       ),
                     ],
                   ),
-                  Positioned(
-                    right: 18,
-                    bottom: 84,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (_selectedIds.isNotEmpty) ...[
-                          _buildDeleteSelectionButton(),
-                          const SizedBox(height: 10),
-                        ],
-                        _buildFloatingIconButton(
-                          onPressed: isScreenBusy ? null : _openCreatePanel,
-                          tooltip: context.tr('Créer une exposition'),
-                          backgroundColor: AppTheme.accent,
-                          foregroundColor: Colors.white,
-                          icon: Icons.add,
-                        ),
-                      ],
-                    ),
-                  ),
                   if (screenBusyMessage != null)
                     Positioned.fill(
                       child: _buildScreenBusyOverlay(
@@ -297,25 +315,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildDeleteSelectionButton() {
-    return _buildFloatingIconButton(
-      onPressed: _isDeleting || _isImporting ? null : _deleteSelection,
-      tooltip: context.tr('Supprimer la sélection'),
-      backgroundColor: AppTheme.danger,
-      foregroundColor: Colors.white,
-      child: _isDeleting
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : const Icon(Icons.delete_outline_rounded, size: 20),
     );
   }
 
@@ -386,57 +385,16 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           foregroundColor: Colors.white,
           textStyle: const TextStyle(
             fontSize: 10.5,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             height: 1,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(_screenBorderRadius),
           ),
           visualDensity: VisualDensity.compact,
         ),
         icon: iconWidget ?? Icon(icon, size: 14),
         label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
-      ),
-    );
-  }
-
-  Widget _buildFloatingButtonFrame({required Widget child}) {
-    return SizedBox(
-      width: _floatingActionButtonSize,
-      height: _floatingActionButtonSize,
-      child: child,
-    );
-  }
-
-  Widget _buildFloatingIconButton({
-    required VoidCallback? onPressed,
-    required String tooltip,
-    required Color backgroundColor,
-    required Color foregroundColor,
-    IconData? icon,
-    Widget? child,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: _buildFloatingButtonFrame(
-        child: FilledButton(
-          onPressed: onPressed,
-          style: FilledButton.styleFrom(
-            backgroundColor: backgroundColor,
-            foregroundColor: foregroundColor,
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(
-              _floatingActionButtonSize,
-              _floatingActionButtonSize,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(
-                _floatingActionButtonRadius,
-              ),
-            ),
-          ),
-          child: child ?? Icon(icon!, size: 20),
-        ),
       ),
     );
   }
@@ -470,7 +428,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF14233D) : Colors.white,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(_screenBorderRadius),
             border: Border.all(
               color: isDark ? const Color(0xFF2A3C5E) : const Color(0xFFD9E4F6),
             ),
@@ -499,7 +457,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     Text(
                       message,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                           ),
                     ),
                     const SizedBox(height: 4),
@@ -509,7 +467,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                       ),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppTheme.muted,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                     ),
                   ],
@@ -524,8 +482,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   final TextStyle _tableHeadingStyle = const TextStyle(
     fontFamily: AppTheme.fontFamily,
-    fontWeight: FontWeight.w600,
-    fontSize: 8.1,
+    fontWeight: FontWeight.w700,
+    fontSize: 10,
     height: 1.0,
     letterSpacing: 0.18,
     color: Color(0xFFF5F8FF),
@@ -535,9 +493,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextStyle(
       fontFamily: AppTheme.fontFamily,
-      fontSize: 9.8,
+      fontSize: 11.2,
       height: 1.1,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w400,
       color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
     );
   }
@@ -554,48 +512,125 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         border: Border.all(
           color: isDark ? const Color(0xFF304764) : AppTheme.border,
         ),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        borderRadius: BorderRadius.circular(_screenBorderRadius),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        borderRadius: BorderRadius.circular(_screenBorderRadius),
         child: LayoutBuilder(
           builder: (context, constraints) {
             const tableMode = _ExposureTableMode.full;
             final viewportWidth = constraints.maxWidth.isFinite
                 ? constraints.maxWidth - 2
                 : MediaQuery.sizeOf(context).width - 24;
-            final tableWidth = viewportWidth < _mainTableMinWidth
-                ? _mainTableMinWidth
-                : viewportWidth;
-            final columnWidths = _mainTableColumnWidths(tableWidth, tableMode);
+            final columnKeys = _visibleTableColumnKeys(tableMode);
+            final columnWidths = _mainTableColumnWidths(
+              viewportWidth,
+              tableMode,
+              requestedKeys: columnKeys,
+            );
+            final leadingColumnKeys = columnKeys
+                .where(_isLeadingFixedTableColumn)
+                .toList(growable: false);
+            final trailingColumnKeys = columnKeys
+                .where(_isTrailingFixedTableColumn)
+                .toList(growable: false);
+            final scrollableColumnKeys = columnKeys
+                .where((key) =>
+                    !_isLeadingFixedTableColumn(key) &&
+                    !_isTrailingFixedTableColumn(key))
+                .toList(growable: false);
+            final leadingWidths = _columnWidthsForKeys(
+                leadingColumnKeys, columnKeys, columnWidths);
+            final trailingWidths = _columnWidthsForKeys(
+                trailingColumnKeys, columnKeys, columnWidths);
+            final scrollableWidths = _columnWidthsForKeys(
+                scrollableColumnKeys, columnKeys, columnWidths);
+            final leadingWidth = _sumWidths(leadingWidths);
+            final trailingWidth = _sumWidths(trailingWidths);
+            final scrollableWidth = _sumWidths(scrollableWidths);
 
-            return Scrollbar(
-              controller: _tableHorizontalController,
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                controller: _tableHorizontalController,
-                scrollDirection: Axis.horizontal,
-                physics: const ClampingScrollPhysics(),
-                child: SizedBox(
-                  width: tableWidth,
-                  height: constraints.maxHeight,
-                  child: Column(
-                    children: [
-                      _buildStickyTableHeader(
-                        columnWidths,
-                        tableMode,
-                        visibleRows,
-                      ),
-                      Expanded(
-                        child: _buildVirtualizedTableBody(
-                          visibleRows,
-                          columnWidths,
+            return SizedBox(
+              width: double.infinity,
+              height: constraints.maxHeight,
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: leadingWidth,
+                    height: constraints.maxHeight,
+                    child: Column(
+                      children: [
+                        _buildStickyTableHeader(
+                          leadingColumnKeys,
+                          leadingWidths,
                           tableMode,
+                          visibleRows,
+                        ),
+                        Expanded(
+                          child: _buildFixedVirtualizedTableBody(
+                            visibleRows,
+                            leadingColumnKeys,
+                            leadingWidths,
+                            _fixedLeadingVerticalController,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Scrollbar(
+                      controller: _tableHorizontalController,
+                      thumbVisibility: true,
+                      child: SingleChildScrollView(
+                        controller: _tableHorizontalController,
+                        scrollDirection: Axis.horizontal,
+                        physics: const ClampingScrollPhysics(),
+                        child: SizedBox(
+                          width: scrollableWidth,
+                          height: constraints.maxHeight,
+                          child: Column(
+                            children: [
+                              _buildStickyTableHeader(
+                                scrollableColumnKeys,
+                                scrollableWidths,
+                                tableMode,
+                                visibleRows,
+                              ),
+                              Expanded(
+                                child: _buildVirtualizedTableBody(
+                                  visibleRows,
+                                  scrollableColumnKeys,
+                                  scrollableWidths,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  SizedBox(
+                    width: trailingWidth,
+                    height: constraints.maxHeight,
+                    child: Column(
+                      children: [
+                        _buildStickyTableHeader(
+                          trailingColumnKeys,
+                          trailingWidths,
+                          tableMode,
+                          visibleRows,
+                        ),
+                        Expanded(
+                          child: _buildFixedVirtualizedTableBody(
+                            visibleRows,
+                            trailingColumnKeys,
+                            trailingWidths,
+                            _fixedTrailingVerticalController,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             );
           },
@@ -606,11 +641,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   Widget _buildVirtualizedTableBody(
     List<ExposureRecord> rows,
+    List<String> columnKeys,
     List<double> widths,
-    _ExposureTableMode mode,
   ) {
-    final columnKeys = _tableColumnKeysForMode(mode);
-
     return Scrollbar(
       controller: _tableVerticalController,
       thumbVisibility: true,
@@ -623,6 +656,34 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           return RepaintBoundary(
             child: _buildVirtualizedTableRow(
               rows[index],
+              index,
+              columnKeys,
+              widths,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFixedVirtualizedTableBody(
+    List<ExposureRecord> rows,
+    List<String> columnKeys,
+    List<double> widths,
+    ScrollController controller,
+  ) {
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+      child: ListView.builder(
+        controller: controller,
+        physics: const ClampingScrollPhysics(),
+        itemCount: rows.length,
+        itemExtent: _tableRowHeight,
+        itemBuilder: (context, index) {
+          return RepaintBoundary(
+            child: _buildVirtualizedTableRow(
+              rows[index],
+              index,
               columnKeys,
               widths,
             ),
@@ -659,10 +720,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     context,
                     label: 'Expositions',
                     value: '$visibleCount',
-                    detail: context.tr(
-                      '{{count}} sélectionnée(s)',
-                      args: {'count': _selectedIds.length},
-                    ),
+                    detail: 'Lignes affichées',
                     color: AppTheme.sidebarLight,
                   ),
                 ),
@@ -728,10 +786,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 context,
                 label: 'Expositions',
                 value: '$visibleCount',
-                detail: context.tr(
-                  '{{count}} sélectionnée(s)',
-                  args: {'count': _selectedIds.length},
-                ),
+                detail: 'Lignes affichées',
                 color: AppTheme.sidebarLight,
               ),
             ),
@@ -792,7 +847,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.98),
-          borderRadius: BorderRadius.circular(1),
+          borderRadius: BorderRadius.circular(_screenBorderRadius),
           border: Border.all(color: color.withValues(alpha: 0.24)),
         ),
         child: Stack(
@@ -811,7 +866,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                       color: AppTheme.text,
                       fontFamily: AppTheme.fontFamily,
                       fontSize: 6.8,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 0,
                       height: 1,
                     ),
@@ -827,7 +882,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                         color: color,
                         fontFamily: AppTheme.fontFamily,
                         fontSize: 11.4,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                         letterSpacing: 0,
                         height: 1,
                       ),
@@ -843,8 +898,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   static const List<String> _fullTableColumnKeys = [
-    'select',
-    'analysis_date',
     'id',
     'grant_date',
     'maturity_date',
@@ -871,10 +924,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     'rwa_hb',
     'rwa',
     'capital',
+    'actions',
   ];
 
   static const List<String> _denseTableColumnKeys = [
-    'select',
     'id',
     'counterparty',
     'geo',
@@ -888,7 +941,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   ];
 
   static const List<String> _compactTableColumnKeys = [
-    'select',
     'id',
     'counterparty',
     'geo',
@@ -900,7 +952,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   ];
 
   static const List<String> _minimalTableColumnKeys = [
-    'select',
     'id',
     'counterparty',
     'category',
@@ -910,8 +961,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   ];
 
   static const List<double> _mainTableWidthWeights = [
-    0.32,
-    0.88,
     0.82,
     0.98,
     1.02,
@@ -938,10 +987,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     1.08,
     1.08,
     1.10,
+    0.72,
   ];
 
   static const List<double> _denseTableWidthWeights = [
-    0.40,
     0.70,
     1.75,
     1,
@@ -955,7 +1004,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   ];
 
   static const List<double> _compactTableWidthWeights = [
-    0.75,
     1.10,
     2.35,
     1.55,
@@ -967,7 +1015,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   ];
 
   static const List<double> _minimalTableWidthWeights = [
-    0.85,
     1.25,
     3.00,
     2.30,
@@ -978,12 +1025,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   List<double> _scaledColumnWidths(
     double maxWidth,
-    List<double> weights, {
-    bool includeCheckbox = false,
-  }) {
+    List<double> weights,
+  ) {
     final totalWeight = weights.fold<double>(0, (sum, item) => sum + item);
-    final reservedWidth = includeCheckbox ? 42.0 : 0.0;
-    final usableWidth = (maxWidth - reservedWidth).clamp(0.0, double.infinity);
+    final usableWidth = maxWidth.clamp(0.0, double.infinity);
     return weights
         .map((weight) => usableWidth * (weight / totalWeight))
         .toList(growable: false);
@@ -1015,19 +1060,114 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     }
   }
 
-  bool _showCheckboxColumn(_ExposureTableMode mode) {
-    return false;
+  List<String> _visibleTableColumnKeys(_ExposureTableMode mode) {
+    final sourceKeys = _tableColumnKeysForMode(mode);
+    return sourceKeys
+        .where((key) =>
+            _isLockedTableColumn(key) || _visibleColumnKeys.contains(key))
+        .toList(growable: false);
+  }
+
+  bool _isLeadingFixedTableColumn(String key) {
+    return key == 'id';
+  }
+
+  bool _isTrailingFixedTableColumn(String key) {
+    return key == 'actions';
+  }
+
+  bool _isLockedTableColumn(String key) {
+    return _isLeadingFixedTableColumn(key) || _isTrailingFixedTableColumn(key);
+  }
+
+  Set<String> _defaultVisibleColumnKeys() {
+    return _fullTableColumnKeys.toSet();
+  }
+
+  Set<String> _normalizeVisibleColumnKeys(Set<String> keys) {
+    return {
+      for (final key in _fullTableColumnKeys)
+        if (_isLockedTableColumn(key) || keys.contains(key)) key,
+    };
+  }
+
+  double? _fixedTableColumnWidth(String key) {
+    return switch (key) {
+      'id' => _fixedIdColumnWidth,
+      'actions' => _fixedActionsColumnWidth,
+      _ => null,
+    };
+  }
+
+  double _sumWidths(List<double> widths) {
+    return widths.fold<double>(0, (sum, width) => sum + width);
+  }
+
+  List<double> _columnWidthsForKeys(
+    List<String> requestedKeys,
+    List<String> sourceKeys,
+    List<double> sourceWidths,
+  ) {
+    return requestedKeys
+        .map((key) => sourceWidths[sourceKeys.indexOf(key)])
+        .toList(growable: false);
   }
 
   List<double> _mainTableColumnWidths(
     double maxWidth,
-    _ExposureTableMode mode,
-  ) {
-    return _scaledColumnWidths(
-      maxWidth,
-      _tableWeightsForMode(mode),
-      includeCheckbox: _showCheckboxColumn(mode),
+    _ExposureTableMode mode, {
+    List<String>? requestedKeys,
+  }) {
+    final sourceKeys = _tableColumnKeysForMode(mode);
+    final weights = _tableWeightsForMode(mode);
+    final columnKeys = requestedKeys ?? sourceKeys;
+    if (mode != _ExposureTableMode.full) {
+      return _scaledColumnWidths(
+        maxWidth,
+        columnKeys
+            .map((key) => weights[sourceKeys.indexOf(key)])
+            .toList(growable: false),
+      );
+    }
+
+    final fixedWidth = columnKeys.fold<double>(
+      0,
+      (sum, key) => sum + (_fixedTableColumnWidth(key) ?? 0),
     );
+    final scrollableWeights = <double>[
+      for (final key in columnKeys)
+        if (_fixedTableColumnWidth(key) == null)
+          weights[sourceKeys.indexOf(key)],
+    ];
+    final scrollableWeightTotal =
+        scrollableWeights.fold<double>(0, (sum, item) => sum + item);
+    final fullFixedWidth = sourceKeys.fold<double>(
+      0,
+      (sum, key) => sum + (_fixedTableColumnWidth(key) ?? 0),
+    );
+    final fullScrollableWeights = <double>[
+      for (var index = 0; index < sourceKeys.length; index++)
+        if (_fixedTableColumnWidth(sourceKeys[index]) == null) weights[index],
+    ];
+    final fullScrollableWeightTotal =
+        fullScrollableWeights.fold<double>(0, (sum, item) => sum + item);
+    final selectedMinScrollableWidth = fullScrollableWeightTotal <= 0
+        ? 0.0
+        : (_mainTableMinWidth - fullFixedWidth) *
+            (scrollableWeightTotal / fullScrollableWeightTotal);
+    final minScrollableWidth =
+        math.max(0.0, selectedMinScrollableWidth).toDouble();
+    final availableScrollableWidth = math.max(
+      (maxWidth - fixedWidth).clamp(0.0, double.infinity),
+      minScrollableWidth,
+    );
+
+    return [
+      for (final key in columnKeys)
+        _fixedTableColumnWidth(key) ??
+            availableScrollableWidth *
+                (weights[sourceKeys.indexOf(key)] / scrollableWeightTotal),
+    ];
   }
 
   Widget _tableFittedContent({
@@ -1070,14 +1210,14 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 color:
                     isDark ? const Color(0xFFF8FBFF) : const Color(0xFFF8FBFF),
                 fontSize: 10.4,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w500,
                 height: 1.2,
               ),
               decoration: BoxDecoration(
                 color: isDark
                     ? const Color(0xFF213252).withOpacity(0.98)
                     : const Color(0xFF16325C).withOpacity(0.96),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(_screenBorderRadius),
                 border: Border.all(
                   color: isDark
                       ? const Color(0xFF4D6C97)
@@ -1132,22 +1272,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       tooltip: fullValue,
       alignment: alignment,
       textAlign: textAlign,
-    );
-  }
-
-  Widget _tableOptionalAmountText(
-    double? value, {
-    required String currencyCode,
-    required double width,
-    String fallback = 'ND',
-  }) {
-    if (value == null) {
-      return _tableText(fallback, width);
-    }
-    return _tableAmountText(
-      value,
-      currencyCode: currencyCode,
-      width: width,
     );
   }
 
@@ -1209,21 +1333,16 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     return (row.finalRw * 100).clamp(0.0, double.infinity).toDouble();
   }
 
-  Color _rwGaugeColor(double rwPercent) {
-    if (rwPercent <= 50) {
-      return const Color(0xFF2FBF71);
-    }
-    if (rwPercent <= 100) {
-      return const Color(0xFFF59E0B);
-    }
-    return const Color(0xFFE04F5F);
-  }
-
-  Color _rwRowTint(double rwPercent, {required bool isSelected}) {
+  Color _tableRowBackgroundColor(int index, {required bool isSelected}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return _rwGaugeColor(rwPercent).withOpacity(
-      isDark ? (isSelected ? 0.22 : 0.12) : (isSelected ? 0.18 : 0.08),
-    );
+    if (isSelected) {
+      return isDark ? const Color(0xFF243B63) : const Color(0xFFDCEBFF);
+    }
+    final isEven = index.isEven;
+    if (isDark) {
+      return isEven ? const Color(0xFF111D33) : const Color(0xFF16243C);
+    }
+    return isEven ? Colors.white : const Color(0xFFF7FAFF);
   }
 
   String _compactCrmValue(String value) {
@@ -1463,8 +1582,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   String _columnLabelForKey(String key, _ExposureTableMode mode) {
     switch (key) {
-      case 'select':
-        return '';
+      case 'actions':
+        return 'Actions';
       case 'analysis_date':
         return "Date d'analyse";
       case 'id':
@@ -1589,61 +1708,14 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     }
   }
 
-  bool _areAllRowsSelected(List<ExposureRecord> rows) {
-    return rows.isNotEmpty &&
-        rows.every((row) => _selectedIds.contains(row.id));
-  }
-
-  bool _areSomeRowsSelected(List<ExposureRecord> rows) {
-    return rows.any((row) => _selectedIds.contains(row.id));
-  }
-
-  Widget _tableCheckbox({
-    required double width,
-    required bool? value,
-    required ValueChanged<bool?>? onChanged,
-    bool tristate = false,
-    Color? borderColor,
-    Color? activeColor,
-    Color? checkColor,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final resolvedBorderColor = borderColor ??
-        (isDark ? const Color(0xFFAEC2E4) : AppTheme.sidebarLight);
-    final resolvedActiveColor = activeColor ?? AppTheme.sidebarLight;
-    final resolvedCheckColor = checkColor ?? Colors.white;
-    return SizedBox(
-      width: width,
-      child: Align(
-        alignment: Alignment.center,
-        child: Checkbox(
-          value: value,
-          tristate: tristate,
-          onChanged: onChanged,
-          activeColor: resolvedActiveColor,
-          checkColor: resolvedCheckColor,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
-          side: BorderSide(color: resolvedBorderColor, width: 1.4),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radius),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildStickyTableHeader(
+    List<String> columnKeys,
     List<double> widths,
     _ExposureTableMode mode,
     List<ExposureRecord> rows,
   ) {
-    final columnKeys = _tableColumnKeysForMode(mode);
-    final allSelected = _areAllRowsSelected(rows);
-    final someSelected = _areSomeRowsSelected(rows);
-
     return Container(
-      height: 36,
+      height: 40,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -1662,38 +1734,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       child: Row(
         children: List<Widget>.generate(columnKeys.length, (index) {
           final key = columnKeys[index];
-          if (key == 'select') {
-            return SizedBox(
-              width: widths[index],
-              height: 36,
-              child: _tableCheckbox(
-                width: widths[index],
-                value: rows.isEmpty
-                    ? false
-                    : (allSelected
-                        ? true
-                        : someSelected
-                            ? null
-                            : false),
-                tristate: true,
-                borderColor: Colors.white,
-                activeColor: Colors.white,
-                checkColor: AppTheme.sidebarLight,
-                onChanged: rows.isEmpty
-                    ? null
-                    : (selected) {
-                        setState(() {
-                          if (selected == true) {
-                            _selectedIds.addAll(rows.map((row) => row.id));
-                          } else {
-                            _selectedIds.removeAll(rows.map((row) => row.id));
-                          }
-                        });
-                      },
-              ),
-            );
-          }
-
           return _buildStickyHeaderCell(
             width: widths[index],
             label: _columnLabelForKey(key, mode),
@@ -1721,7 +1761,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
     return SizedBox(
       width: width,
-      height: 36,
+      height: 40,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -1752,7 +1792,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                             const SizedBox(width: 4),
                             Icon(
                               arrowIcon,
-                              size: 13,
+                              size: 15,
                               color: Colors.white,
                             ),
                           ],
@@ -1771,15 +1811,19 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   Widget _buildVirtualizedTableRow(
     ExposureRecord row,
+    int rowIndex,
     List<String> columnKeys,
     List<double> widths,
   ) {
-    final isSelected = _selectedIds.contains(row.id);
-    final rwPercent = _rwPercentValue(row);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final rowColor = _rwRowTint(rwPercent, isSelected: isSelected);
-    final borderColor =
-        isDark ? const Color(0xFF25354E) : const Color(0xFFE8EEF8);
+    final isSelected = _selectedExposureId == row.id;
+    final rowColor = _tableRowBackgroundColor(
+      rowIndex,
+      isSelected: isSelected,
+    );
+    final borderColor = isSelected
+        ? (isDark ? const Color(0xFF5B7DB0) : const Color(0xFF8AB8FF))
+        : (isDark ? const Color(0xFF25354E) : const Color(0xFFE4EAF3));
 
     return Container(
       height: _tableRowHeight,
@@ -1794,7 +1838,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           final key = columnKeys[index];
           final cell = _tableCellForKey(row, key, widths[index]);
 
-          if (key == 'select') {
+          if (key == 'actions') {
             return SizedBox(
                 width: widths[index], height: _tableRowHeight, child: cell);
           }
@@ -1803,7 +1847,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             width: widths[index],
             height: _tableRowHeight,
             child: InkWell(
-              onDoubleTap: () => _openEditPanel(row),
+              onTap: () => _selectExposureRow(row),
+              hoverColor: isSelected
+                  ? Colors.transparent
+                  : AppTheme.accent.withValues(alpha: isDark ? 0.12 : 0.06),
               child: cell,
             ),
           );
@@ -1812,26 +1859,21 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     );
   }
 
+  void _selectExposureRow(ExposureRecord row) {
+    if (_selectedExposureId == row.id) {
+      return;
+    }
+    setState(() => _selectedExposureId = row.id);
+  }
+
   Widget _tableCellForKey(
     ExposureRecord row,
     String key,
     double width,
   ) {
     switch (key) {
-      case 'select':
-        return _tableCheckbox(
-          width: width,
-          value: _selectedIds.contains(row.id),
-          onChanged: (selected) {
-            setState(() {
-              if (selected == true) {
-                _selectedIds.add(row.id);
-              } else {
-                _selectedIds.remove(row.id);
-              }
-            });
-          },
-        );
+      case 'actions':
+        return _tableActionsCell(row, width);
       case 'analysis_date':
         return _tableText(_formatExposureDate(row.analysisDate), width);
       case 'id':
@@ -1923,8 +1965,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           alignment: Alignment.centerLeft,
           textAlign: TextAlign.left,
           style: _tableCellStyle.copyWith(
-            color: _rwGaugeColor(rwPercent),
-            fontWeight: FontWeight.w700,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFFF2F6FF)
+                : AppTheme.text,
+            fontWeight: FontWeight.w500,
           ),
         );
       case 'rwa_eb':
@@ -1959,6 +2003,80 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     }
   }
 
+  Widget _tableActionsCell(ExposureRecord row, double width) {
+    final isDisabled = _isImporting || _isDeleting;
+    final iconColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFFEAF1FF)
+        : AppTheme.text;
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF2B3D59)
+                : const Color(0xFFDCE7F6),
+            width: 0.8,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _tableActionIconButton(
+            icon: CupertinoIcons.pencil,
+            color: iconColor,
+            enabled: !isDisabled,
+            onPressed: () {
+              _selectExposureRow(row);
+              _openEditPanel(row);
+            },
+            semanticLabel: "Modifier l'exposition ${row.id}",
+          ),
+          const SizedBox(width: 12),
+          _tableActionIconButton(
+            icon: CupertinoIcons.trash,
+            color: AppTheme.danger,
+            enabled: !isDisabled,
+            onPressed: () {
+              _selectExposureRow(row);
+              _deleteSingleExposure(row);
+            },
+            semanticLabel: "Supprimer l'exposition ${row.id}",
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tableActionIconButton({
+    required IconData icon,
+    required Color color,
+    required bool enabled,
+    required VoidCallback onPressed,
+    required String semanticLabel,
+  }) {
+    final resolvedColor =
+        enabled ? color : AppTheme.muted.withValues(alpha: 0.45);
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(_screenBorderRadius),
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          borderRadius: BorderRadius.circular(_screenBorderRadius),
+          child: SizedBox(
+            width: 26,
+            height: 26,
+            child: Icon(icon, size: 18, color: resolvedColor),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _toggleSort(String column) {
     setState(() {
       if (_sortColumnKey != column) {
@@ -1985,7 +2103,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        borderRadius: BorderRadius.circular(_screenBorderRadius),
         border: Border.all(color: panelBorderColor, width: 0.8),
         boxShadow: [
           BoxShadow(
@@ -2011,22 +2129,55 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 constraints.maxWidth.isFinite ? constraints.maxWidth : 860.0;
             final isNarrow = availableWidth < 820;
             final selectorWidth = isNarrow ? availableWidth : 230.0;
+            final columnChooserWidth =
+                isNarrow ? availableWidth.clamp(0.0, 178.0).toDouble() : 178.0;
             final activeFieldWidth = isNarrow
                 ? availableWidth
                 : (availableWidth * 0.18).clamp(200.0, 300.0).toDouble();
+            final addButton = _buildAddExposureButton(
+              isDark: isDark,
+              onPressed: _screenBusyMessage == null ? _openCreatePanel : null,
+            );
+            final controls = [
+              _buildFilterSelectorControl(
+                width: selectorWidth,
+                isDark: isDark,
+              ),
+              _buildActiveFilterControl(width: activeFieldWidth),
+              _buildColumnChooserButton(
+                width: columnChooserWidth,
+                isDark: isDark,
+              ),
+              _buildSortDirectionButton(isDark: isDark),
+              _buildResetFiltersButton(isDark: isDark),
+            ];
+
+            if (!isNarrow) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  controls[0],
+                  const SizedBox(width: _controlGap),
+                  controls[1],
+                  const SizedBox(width: _controlGap),
+                  controls[2],
+                  const SizedBox(width: _controlGap),
+                  controls[3],
+                  const SizedBox(width: _controlGap),
+                  controls[4],
+                  const Spacer(),
+                  addButton,
+                ],
+              );
+            }
 
             return Wrap(
               spacing: _controlGap,
               runSpacing: _controlGap,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                _buildFilterSelectorControl(
-                  width: selectorWidth,
-                  isDark: isDark,
-                ),
-                _buildActiveFilterControl(width: activeFieldWidth),
-                _buildSortDirectionButton(isDark: isDark),
-                _buildResetFiltersButton(isDark: isDark),
+                ...controls,
+                addButton,
               ],
             );
           },
@@ -2056,7 +2207,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: fillColor,
-                borderRadius: BorderRadius.circular(AppTheme.radius),
+                borderRadius: BorderRadius.circular(_screenBorderRadius),
                 border: Border.all(color: borderColor),
                 boxShadow: [
                   BoxShadow(
@@ -2081,7 +2232,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: labelColor,
                       fontSize: 8.2,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       height: 1,
                     ),
               ),
@@ -2215,6 +2366,54 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     }
   }
 
+  Widget _buildColumnChooserButton({
+    required double width,
+    required bool isDark,
+  }) {
+    final visibleCount =
+        _visibleTableColumnKeys(_ExposureTableMode.full).length;
+
+    return SizedBox(
+      width: width,
+      height: _optionControlHeight,
+      child: Tooltip(
+        message: 'Choisir les colonnes à afficher'.tr(context),
+        child: OutlinedButton.icon(
+          onPressed: _openColumnChooser,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            foregroundColor: isDark ? const Color(0xFFEAF1FF) : AppTheme.text,
+            backgroundColor:
+                isDark ? const Color(0xFF13243F) : const Color(0xFFFFFFFF),
+            surfaceTintColor: Colors.transparent,
+            minimumSize: Size(width, _optionControlHeight),
+            side: BorderSide(
+              color: isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(_screenBorderRadius),
+            ),
+            elevation: 1,
+            shadowColor:
+                isDark ? const Color(0x22040A16) : const Color(0x102563EB),
+            textStyle: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 10.8,
+              fontWeight: FontWeight.w500,
+              height: 1,
+            ),
+          ),
+          icon: const Icon(CupertinoIcons.eye_fill, size: 15),
+          label: Text(
+            'Colonnes ($visibleCount)'.tr(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSortDirectionButton({required bool isDark}) {
     final enabled = _sortColumnKey != null;
     return _buildOptionIconButton(
@@ -2240,6 +2439,54 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       icon: Icons.restart_alt_rounded,
       accentColor: AppTheme.warning,
       onPressed: _resetFilters,
+    );
+  }
+
+  Widget _buildAddExposureButton({
+    required bool isDark,
+    required VoidCallback? onPressed,
+  }) {
+    final enabled = onPressed != null;
+
+    return SizedBox(
+      height: _optionControlHeight,
+      child: Tooltip(
+        message: 'Créer une exposition'.tr(context),
+        child: FilledButton.icon(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: enabled
+                ? AppTheme.accent
+                : (isDark ? const Color(0xFF1B2B47) : const Color(0xFFE8EEF8)),
+            foregroundColor: enabled ? Colors.white : const Color(0xFF7A8AA4),
+            disabledBackgroundColor:
+                isDark ? const Color(0xFF1B2B47) : const Color(0xFFE8EEF8),
+            disabledForegroundColor:
+                isDark ? const Color(0xFF6F7E96) : const Color(0xFF8A98AC),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            minimumSize: const Size(116, _optionControlHeight),
+            elevation: enabled ? 2 : 0,
+            shadowColor:
+                isDark ? const Color(0x22040A16) : const Color(0x242563EB),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(_screenBorderRadius),
+            ),
+            visualDensity: VisualDensity.compact,
+            textStyle: const TextStyle(
+              fontFamily: AppTheme.fontFamily,
+              fontSize: 10.4,
+              fontWeight: FontWeight.w500,
+              height: 1,
+            ),
+          ),
+          icon: const Icon(CupertinoIcons.plus, size: 14),
+          label: Text(
+            'Ajouter'.tr(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
     );
   }
 
@@ -2272,7 +2519,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               color: isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6),
             ),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppTheme.radius),
+              borderRadius: BorderRadius.circular(_screenBorderRadius),
             ),
             shadowColor: enabled
                 ? (isDark ? const Color(0x22040A16) : const Color(0x102563EB))
@@ -2283,6 +2530,229 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openColumnChooser() async {
+    if (!mounted) {
+      return;
+    }
+
+    final draftKeys = Set<String>.from(_visibleColumnKeys);
+    final result = await showDialog<Set<String>>(
+      context: context,
+      builder: (dialogContext) {
+        final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
+        final surfaceColor =
+            isDark ? const Color(0xFF101C32) : const Color(0xFFFFFFFF);
+        final borderColor =
+            isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6);
+        final titleColor =
+            isDark ? const Color(0xFFF2F6FF) : const Color(0xFF13203A);
+        final mutedColor =
+            isDark ? const Color(0xFFB8C8E8) : const Color(0xFF64748B);
+
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            final selectedKeys = _normalizeVisibleColumnKeys(draftKeys);
+            final selectedCount = selectedKeys.length;
+
+            return AlertDialog(
+              backgroundColor: surfaceColor,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(_screenBorderRadius),
+                side: BorderSide(color: borderColor),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+              contentPadding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
+              actionsPadding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
+              title: Row(
+                children: [
+                  const Icon(
+                    CupertinoIcons.eye_fill,
+                    size: 17,
+                    color: AppTheme.accent,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Colonnes affichées'.tr(context),
+                      style: TextStyle(
+                        color: titleColor,
+                        fontFamily: AppTheme.fontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '$selectedCount/${_fullTableColumnKeys.length}',
+                    style: TextStyle(
+                      color: mutedColor,
+                      fontFamily: AppTheme.fontFamily,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 460,
+                height: 430,
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Cochez les colonnes à afficher dans le tableau.'
+                                .tr(context),
+                            style: TextStyle(
+                              color: mutedColor,
+                              fontSize: 10.4,
+                              fontWeight: FontWeight.w500,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => setDialogState(() {
+                            draftKeys
+                              ..clear()
+                              ..addAll(_fullTableColumnKeys);
+                          }),
+                          child: Text('Tout afficher'.tr(context)),
+                        ),
+                        TextButton(
+                          onPressed: () => setDialogState(() {
+                            draftKeys
+                              ..clear()
+                              ..addAll(
+                                _fullTableColumnKeys.where(
+                                  _isLockedTableColumn,
+                                ),
+                              );
+                          }),
+                          child: Text('Réduire'.tr(context)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF13243F)
+                              : const Color(0xFFF6F9FF),
+                          borderRadius:
+                              BorderRadius.circular(_screenBorderRadius),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          itemCount: _fullTableColumnKeys.length,
+                          separatorBuilder: (_, __) => Divider(
+                            height: 1,
+                            color: borderColor.withValues(alpha: 0.58),
+                          ),
+                          itemBuilder: (context, index) {
+                            final key = _fullTableColumnKeys[index];
+                            final locked = _isLockedTableColumn(key);
+                            final checked = locked || draftKeys.contains(key);
+
+                            return CheckboxListTile(
+                              dense: true,
+                              visualDensity: VisualDensity.compact,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              value: checked,
+                              onChanged: locked
+                                  ? null
+                                  : (value) => setDialogState(() {
+                                        if (value ?? false) {
+                                          draftKeys.add(key);
+                                        } else {
+                                          draftKeys.remove(key);
+                                        }
+                                      }),
+                              title: Text(
+                                _columnLabelForKey(
+                                  key,
+                                  _ExposureTableMode.full,
+                                ).tr(context),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: locked ? mutedColor : titleColor,
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontSize: 11.2,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1,
+                                ),
+                              ),
+                              subtitle: locked
+                                  ? Text(
+                                      'Toujours visible'.tr(context),
+                                      style: TextStyle(
+                                        color: mutedColor,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.1,
+                                      ),
+                                    )
+                                  : null,
+                              activeColor: AppTheme.accent,
+                              checkColor: Colors.white,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text('Annuler'.tr(context)),
+                ),
+                FilledButton(
+                  onPressed: () =>
+                      Navigator.of(dialogContext).pop(selectedKeys),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.accent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(_screenBorderRadius),
+                    ),
+                  ),
+                  child: Text('Appliquer'.tr(context)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _visibleColumnKeys = _normalizeVisibleColumnKeys(result);
+      final visibleKeys = _visibleTableColumnKeys(_ExposureTableMode.full);
+      if (_sortColumnKey != null && !visibleKeys.contains(_sortColumnKey)) {
+        _sortColumnKey = 'id';
+        _sortAscending = true;
+        _recomputeVisibleView();
+      }
+    });
+
+    if (_tableHorizontalController.hasClients) {
+      _tableHorizontalController.jumpTo(0);
+    }
   }
 
   String _filterOptionLabel(String key) {
@@ -2346,150 +2816,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     }
   }
 
-  Widget _buildTableHelperHint(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Tooltip(
-        key: _tableHelperTooltipKey,
-        triggerMode: TooltipTriggerMode.longPress,
-        waitDuration: const Duration(milliseconds: 180),
-        showDuration: const Duration(seconds: 6),
-        preferBelow: false,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        margin: const EdgeInsets.only(top: 8),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A2742) : const Color(0xFFF7FAFF),
-          borderRadius: BorderRadius.circular(5),
-          border: Border.all(
-            color: isDark ? const Color(0xFF446A99) : const Color(0xFFC8D8F2),
-            width: 1.1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: isDark ? const Color(0x33040A16) : const Color(0x140F172A),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        richMessage: WidgetSpan(
-          child: SizedBox(
-            width: 320,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHelperTooltipLine(
-                  text: 'Double cliquez pour modifier une exposition.',
-                  bulletColor: const Color(0xFF4C7BF3),
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 8),
-                _buildHelperTooltipLine(
-                  text: "Cliquez sur l'entête d'une colonne pour trier.",
-                  bulletColor: const Color(0xFF7C5CFC),
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 8),
-                _buildHelperTooltipLine(
-                  text:
-                      'Ajoutez une nouvelle exposition via le bouton flottant bleu.',
-                  bulletColor: const Color(0xFF20B26B),
-                  isDark: isDark,
-                ),
-                const SizedBox(height: 8),
-                _buildHelperTooltipLine(
-                  text:
-                      'Pour supprimer une ou plusieurs lignes, cochez les cases concernées puis supprimez-les.',
-                  bulletColor: const Color(0xFFF59E0B),
-                  isDark: isDark,
-                ),
-              ],
-            ),
-          ),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(5),
-          onTap: () =>
-              _tableHelperTooltipKey.currentState?.ensureTooltipVisible(),
-          child: Container(
-            height: 16,
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF173055).withOpacity(0.92)
-                  : const Color(0xFFEAF2FF),
-              borderRadius: BorderRadius.circular(5),
-              border: Border.all(
-                color:
-                    isDark ? const Color(0xFF3B5E92) : const Color(0xFFBDD1F2),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.help_outline_rounded,
-                  size: 10,
-                  color: isDark
-                      ? const Color(0xFFF5F8FF)
-                      : const Color(0xFF31588F),
-                ),
-                const SizedBox(width: 3),
-                Text(
-                  'Aide',
-                  style: TextStyle(
-                    color: isDark
-                        ? const Color(0xFFF5F8FF)
-                        : const Color(0xFF31588F),
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
-                    height: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHelperTooltipLine({
-    required String text,
-    required Color bulletColor,
-    required bool isDark,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          margin: const EdgeInsets.only(top: 3),
-          decoration: BoxDecoration(
-            color: bulletColor,
-            borderRadius: BorderRadius.circular(999),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: isDark ? const Color(0xFFF2F6FF) : const Color(0xFF31415F),
-              fontSize: 10.1,
-              fontWeight: FontWeight.w600,
-              height: 1.35,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   ThemeData _compactControlsTheme(
     ThemeData baseTheme, {
     double minHeight = _filterControlHeight,
@@ -2521,18 +2847,18 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         floatingLabelBehavior: FloatingLabelBehavior.always,
         labelStyle: baseTheme.textTheme.labelMedium?.copyWith(
           color: labelColor,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
           fontSize: labelFontSize,
         ),
         floatingLabelStyle: baseTheme.textTheme.labelMedium?.copyWith(
           color: AppTheme.accent,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
           fontSize: floatingLabelFontSize,
         ),
         hintStyle: baseTheme.textTheme.bodyMedium?.copyWith(
           color: hintColor,
           fontSize: hintFontSize,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
         ),
         prefixIconConstraints: const BoxConstraints(
           minWidth: 24,
@@ -2543,15 +2869,15 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           minHeight: 24,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radius),
+          borderRadius: BorderRadius.circular(_screenBorderRadius),
           borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radius),
+          borderRadius: BorderRadius.circular(_screenBorderRadius),
           borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radius),
+          borderRadius: BorderRadius.circular(_screenBorderRadius),
           borderSide: const BorderSide(color: AppTheme.accent, width: 1.2),
         ),
       ),
@@ -2570,7 +2896,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
           color: isDark ? const Color(0xFFEAF1FF) : const Color(0xFF13203A),
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
           fontSize: 11.4,
           height: 1.08,
         );
@@ -2583,7 +2909,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         menuMaxHeight: 320,
         itemHeight: null,
         dropdownColor: isDark ? const Color(0xFF13243F) : Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        borderRadius: BorderRadius.circular(_screenBorderRadius),
         icon: Icon(
           Icons.keyboard_arrow_down_rounded,
           size: 16,
@@ -2598,7 +2924,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 overflow: TextOverflow.ellipsis,
                 style: textStyle?.copyWith(
                   color: Theme.of(context).hintColor,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
         selectedItemBuilder: (context) => items.map(
@@ -2668,7 +2994,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: fillColor,
-                borderRadius: BorderRadius.circular(AppTheme.radius),
+                borderRadius: BorderRadius.circular(_screenBorderRadius),
                 border: Border.all(color: borderColor),
                 boxShadow: [
                   BoxShadow(
@@ -2693,7 +3019,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: labelColor,
                       fontSize: 8.2,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w500,
                       height: 1,
                     ),
               ),
@@ -2749,7 +3075,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                           ? const Color(0xFF9FB3D4)
                           : const Color(0xFF6F7D92),
                       fontSize: 11.6,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                       height: 1.05,
                     ),
               ),
@@ -2764,7 +3090,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     backgroundColor: Colors.transparent,
                     color: isDark ? const Color(0xFFEAF1FF) : AppTheme.text,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     fontSize: 11.6,
                     height: 1.05,
                   ),
@@ -2796,6 +3122,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     final rows = _buildVisibleRows();
     _visibleRows = rows;
     _visibleSummary = _summarize(rows);
+    if (_selectedExposureId != null &&
+        rows.every((row) => row.id != _selectedExposureId)) {
+      _selectedExposureId = null;
+    }
   }
 
   List<ExposureRecord> _buildVisibleRows() {
@@ -2983,9 +3313,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       if (_ratings.isEmpty) {
         _ratings = _sortRatings(prudentialRatings);
       }
-      _selectedIds = _selectedIds
-          .where((id) => _allRows.any((row) => row.id == id))
-          .toSet();
       _recomputeVisibleView();
     });
   }
@@ -3001,9 +3328,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
     setState(() {
       _allRows = nextRows;
-      _selectedIds = _selectedIds
-          .where((id) => _allRows.any((row) => row.id == id))
-          .toSet();
       _recomputeVisibleView();
     });
   }
@@ -3148,17 +3472,12 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     );
   }
 
-  Future<void> _deleteSelection() async {
+  Future<void> _deleteSingleExposure(ExposureRecord row) async {
     if (_isDeleting || _isImporting) {
       return;
     }
 
-    final ids = _selectedIds.toList()..sort(_compareExposureIds);
-    if (ids.isEmpty) {
-      return;
-    }
-
-    final decision = await _confirmDeleteSelection(ids);
+    final decision = await _confirmDeleteSelection([row.id]);
     if (!decision.confirmed) {
       return;
     }
@@ -3168,7 +3487,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         setState(() => _isDeleting = true);
       }
       final result = await widget.api.deleteExposures(
-        ids,
+        [row.id],
         reindexIds: decision.reindexIds,
       );
       final deletedIds =
@@ -3177,11 +3496,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           List<String>.from(result['missing_ids'] as List? ?? const []);
       final reindexedIds = result['reindexed_ids'] == true;
 
-      if (mounted) {
-        setState(() {
-          _selectedIds = <String>{};
-        });
-      }
       await _queueRefresh();
       if (mounted) {
         final message = _buildDeleteResultMessage(
@@ -3254,7 +3568,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                         : previewIds,
                     style:
                         Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                             ),
                   ),
                   const SizedBox(height: 16),
@@ -3423,13 +3737,13 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       required Color accent,
     }) {
       return InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_screenBorderRadius),
         onTap: () => Navigator.of(dialogContext).pop(format),
         child: Ink(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Theme.of(dialogContext).cardColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(_screenBorderRadius),
             border: Border.all(color: Theme.of(dialogContext).dividerColor),
           ),
           child: Row(
@@ -3439,7 +3753,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 height: 38,
                 decoration: BoxDecoration(
                   color: accent.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(_screenBorderRadius),
                 ),
                 child: Icon(icon, color: accent, size: 20),
               ),
@@ -3454,7 +3768,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                       style: Theme.of(dialogContext)
                           .textTheme
                           .titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                          ?.copyWith(fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -3577,7 +3891,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   Future<Uint8List> _buildVisibleTablePdf(List<ExposureRecord> rows) async {
     final document = pw.Document();
     final pdfColumnKeys = _fullTableColumnKeys
-        .where((key) => key != 'select')
+        .where((key) => key != 'actions')
         .toList(growable: false);
     final headers = pdfColumnKeys
         .map((key) => _columnLabelForKey(key, _ExposureTableMode.full))
@@ -3639,13 +3953,13 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     )
                     .toList(),
               ),
-              for (final row in rows)
+              for (var rowIndex = 0; rowIndex < rows.length; rowIndex++)
                 pw.TableRow(
                   decoration: pw.BoxDecoration(
-                    color: _pdfRowColor(_rwPercentValue(row)),
+                    color: _pdfRowColor(rowIndex),
                   ),
                   children: pdfColumnKeys
-                      .map((key) => _pdfCellForColumn(row, key))
+                      .map((key) => _pdfCellForColumn(rows[rowIndex], key))
                       .toList(growable: false),
                 ),
             ],
@@ -3792,14 +4106,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     }
   }
 
-  PdfColor _pdfRowColor(double rwPercent) {
-    if (rwPercent <= 50) {
-      return PdfColor.fromInt(0xFFF2FAF5);
-    }
-    if (rwPercent <= 100) {
-      return PdfColor.fromInt(0xFFFFF7EA);
-    }
-    return PdfColor.fromInt(0xFFFFF1F1);
+  PdfColor _pdfRowColor(int rowIndex) {
+    return rowIndex.isEven ? PdfColors.white : PdfColor.fromInt(0xFFF7FAFF);
   }
 
   PdfColor _pdfRwColor(double rwPercent) {

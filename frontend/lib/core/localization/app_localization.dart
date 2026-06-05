@@ -273,10 +273,6 @@ const Map<String, String> _englishTranslations = {
       'Direct view of gross exposure and RWA by exposure segment.',
   'Répartition totale par type de CRM': 'Total breakdown by CRM type',
   'Attenuation du risque de crédit ( CRM )': 'Credit risk mitigation (CRM)',
-  "Top 5 de l'encours total par pays UEMOA":
-      'Top 5 total outstanding amounts by WAEMU country',
-  "Lecture directe de l'encours total par pays UEMOA.":
-      'Direct view of total outstanding amounts by WAEMU country.',
   'Qualité de crédit moyenne du portefeuille':
       'Average portfolio credit quality',
   'Vue dynamique de la qualité de crédit à travers le risque pondéré moyen':
@@ -303,10 +299,6 @@ const Map<String, String> _englishTranslations = {
   'Interprétation': 'Interpretation',
   'Actuel': 'Current',
   'Astuce': 'Tip',
-  'Contribution principale': 'Primary contribution',
-  'Contribution notable': 'Notable contribution',
-  'Contribution secondaire': 'Secondary contribution',
-  "{{percent}} de l'encours total": '{{percent}} of total outstanding balance',
   'Org. publics': 'Public bodies',
   'Institutions fin.': 'Financial inst.',
   'Clientèle détail': 'Retail',
@@ -462,7 +454,8 @@ const Map<String, String> _englishTranslations = {
   'RWA': 'RWA',
   'Verifier les montants saisis.': 'Please verify the entered amounts.',
   'Echec de l enregistrement: {{error}}': 'Save failed: {{error}}',
-  'LEADER DE L\'ALM EN AFRIQUE SUBSAHARIENNE': 'SUB-SAHARAN AFRICA ALM LEADER',
+  'LEADER DE L\'ALM ET DU RISK MANAGEMENT EN AFRIQUE SUBSAHARIENNE':
+      'SUB-SAHARAN AFRICA ALM AND RISK MANAGEMENT LEADER',
   'Erreur: {{error}}': 'Error: {{error}}',
   'Rapport RWA importé avec succès (Attention indisponible pour le moment).':
       'RWA report successfully generated (feature temporarily unavailable).',

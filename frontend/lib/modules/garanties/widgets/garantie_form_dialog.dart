@@ -48,8 +48,7 @@ class _GarantieFormDialogState extends State<GarantieFormDialog> {
   void initState() {
     super.initState();
     final initial = widget.initialValue;
-    _selectedExposureId =
-        initial?.exposureId ??
+    _selectedExposureId = initial?.exposureId ??
         (widget.exposureOptions.isEmpty ? '' : widget.exposureOptions.first.id);
     _selectedType = initial?.type ?? _guaranteeTypes.first;
     _selectedStatus = initial?.status ?? _statuses.first;
@@ -85,9 +84,8 @@ class _GarantieFormDialogState extends State<GarantieFormDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedExposureId.isEmpty
-                      ? null
-                      : _selectedExposureId,
+                  initialValue:
+                      _selectedExposureId.isEmpty ? null : _selectedExposureId,
                   isExpanded: true,
                   decoration: const InputDecoration(
                     labelText: 'Exposition liee',

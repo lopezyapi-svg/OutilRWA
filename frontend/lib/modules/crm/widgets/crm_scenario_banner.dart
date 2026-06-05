@@ -37,7 +37,7 @@ class CrmScenarioBanner extends StatelessWidget {
                       Text(
                         highlight!.label.tr(context),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w500,
                               color: const Color(0xFF0F766E),
                             ),
                       ),
@@ -148,7 +148,7 @@ class _ScenarioNode extends StatelessWidget {
           Text(title.tr(context),
               style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
-          Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
+          Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
           const SizedBox(height: 6),
           Text(context.tr('RW = {{value}}', args: {'value': rw})),
         ],

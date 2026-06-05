@@ -34,7 +34,8 @@ class CreditRiskSubmodulesService {
       ..._customGuarantees.where(
         (item) => !_deletedGuaranteeIds.contains(item.id),
       ),
-    ]..sort((left, right) => right.expirationDate.compareTo(left.expirationDate));
+    ]..sort(
+        (left, right) => right.expirationDate.compareTo(left.expirationDate));
 
     final exposureOptions = exposureModule.exposures
         .map(
@@ -139,8 +140,7 @@ class CreditRiskSubmodulesService {
       );
     }
 
-    final candidates = [...exposureModule.exposures]
-      ..sort((left, right) {
+    final candidates = [...exposureModule.exposures]..sort((left, right) {
         final rightScore = _defaultRiskScore(right);
         final leftScore = _defaultRiskScore(left);
         return rightScore.compareTo(leftScore);
@@ -186,92 +186,606 @@ class CreditRiskSubmodulesService {
       0.0,
       (sum, item) => sum + item.grossAmount,
     );
+    final totalNetEad =
+        exposures.fold<double>(0.0, (sum, item) => sum + item.ead);
+    final totalRwa = exposures.fold<double>(0.0, (sum, item) => sum + item.rwa);
+    final totalCapital =
+        exposures.fold<double>(0.0, (sum, item) => sum + item.capital);
+    final latestDate = exposures.isEmpty
+        ? DateTime.now()
+        : exposures
+            .map((item) => item.analysisDate)
+            .reduce((left, right) => left.isAfter(right) ? left : right);
 
-    final sectorTotals = <String, double>{};
-    final sectorCounts = <String, int>{};
-    final countryTotals = <String, double>{};
+    final sectorGroups = <String, _ConcentrationAccumulator>{};
+    final countryGroups = <String, _ConcentrationAccumulator>{};
+    final regionGroups = <String, _ConcentrationAccumulator>{};
+    final prudentialGroups = <String, _ConcentrationAccumulator>{};
+    final counterpartyGroups = <String, _ConcentrationAccumulator>{};
+    final riskWeightGroups = <double, _ConcentrationAccumulator>{};
     final ratingTotals = <String, double>{};
+    final exposureDetails = <ConcentrationExposureDetail>[];
 
     for (final item in exposures) {
       final sector = _sectorFromCategory(item.categoryLabel);
-      sectorTotals.update(
-        sector,
-        (value) => value + item.grossAmount,
-        ifAbsent: () => item.grossAmount,
-      );
-      sectorCounts.update(sector, (value) => value + 1, ifAbsent: () => 1);
-      countryTotals.update(
-        item.counterparty.country,
-        (value) => value + item.grossAmount,
-        ifAbsent: () => item.grossAmount,
-      );
+      final counterpartyName = item.counterparty.name.trim().isEmpty
+          ? item.id
+          : item.counterparty.name.trim();
+      final country = item.counterparty.country.trim().isEmpty
+          ? 'Non renseigné'
+          : item.counterparty.country.trim();
+      final region = item.zone.trim().isEmpty ? 'Non renseigné' : item.zone;
+      final category = item.categoryLabel.trim().isEmpty
+          ? 'Non renseigné'
+          : item.categoryLabel.trim();
+      final riskWeightBucket = _riskWeightBucket(item.finalRw);
+      final crmCoverage = item.crmCoveragePercent > 1
+          ? item.crmCoveragePercent / 100
+          : item.crmCoveragePercent;
+
+      sectorGroups
+          .putIfAbsent(sector, () => _ConcentrationAccumulator(label: sector))
+          .add(item, sector: sector, country: country);
+      countryGroups
+          .putIfAbsent(country, () => _ConcentrationAccumulator(label: country))
+          .add(item, sector: sector, country: country);
+      regionGroups
+          .putIfAbsent(region, () => _ConcentrationAccumulator(label: region))
+          .add(item, sector: sector, country: country);
+      prudentialGroups
+          .putIfAbsent(
+            category,
+            () => _ConcentrationAccumulator(label: category),
+          )
+          .add(item, sector: sector, country: country);
+      counterpartyGroups
+          .putIfAbsent(
+            counterpartyName,
+            () => _ConcentrationAccumulator(label: counterpartyName),
+          )
+          .add(item, sector: sector, country: country);
+      riskWeightGroups
+          .putIfAbsent(
+            riskWeightBucket,
+            () => _ConcentrationAccumulator(
+              label: _riskWeightBucketLabel(riskWeightBucket),
+            ),
+          )
+          .add(item, sector: sector, country: country);
       ratingTotals.update(
         item.ratingLabel,
         (value) => value + item.grossAmount,
         ifAbsent: () => item.grossAmount,
       );
+      exposureDetails.add(
+        ConcentrationExposureDetail(
+          id: item.id,
+          analysisDate: item.analysisDate,
+          counterpartyName: counterpartyName,
+          country: country,
+          region: region,
+          sector: sector,
+          segment: sector,
+          prudentialCategory: category,
+          rating: item.ratingLabel,
+          status: item.status,
+          hasGuarantee: item.crmModeLabel != 'Aucune' || crmCoverage > 0,
+          isDefault: item.isDefaultLike,
+          grossAmount: item.grossAmount,
+          ead: item.ead,
+          rwa: item.rwa,
+          riskWeight: _normalizedRiskWeight(item.finalRw),
+        ),
+      );
     }
 
-    final sectorRows = sectorTotals.entries
-        .map(
-          (entry) => SectorConcentrationRow(
-            sector: entry.key,
-            exposureCount: sectorCounts[entry.key] ?? 0,
-            grossAmount: entry.value,
-            share: totalGross == 0 ? 0.0 : entry.value / totalGross,
-          ),
-        )
-        .toList()
-      ..sort((left, right) => right.grossAmount.compareTo(left.grossAmount));
+    final sectorRows = _sectorRowsFromGroups(
+      sectorGroups,
+      totalGross: totalGross,
+      totalRwa: totalRwa,
+    )..sort((left, right) => right.grossAmount.compareTo(left.grossAmount));
+    final countryRows = _breakdownRowsFromGroups(
+      countryGroups,
+      group: 'Pays',
+      totalGross: totalGross,
+      totalRwa: totalRwa,
+    )..sort((left, right) => right.grossAmount.compareTo(left.grossAmount));
+    final regionRows = _breakdownRowsFromGroups(
+      regionGroups,
+      group: 'Région',
+      totalGross: totalGross,
+      totalRwa: totalRwa,
+    )..sort((left, right) => right.grossAmount.compareTo(left.grossAmount));
+    final prudentialRows = _breakdownRowsFromGroups(
+      prudentialGroups,
+      group: 'Catégorie prudentielle',
+      totalGross: totalGross,
+      totalRwa: totalRwa,
+    )..sort((left, right) => right.grossAmount.compareTo(left.grossAmount));
+    final topCounterparties = _counterpartyRowsFromGroups(
+      counterpartyGroups,
+      totalGross: totalGross,
+    )..sort((left, right) => right.grossAmount.compareTo(left.grossAmount));
+    final topRwaCounterparties = [...topCounterparties]
+      ..sort((left, right) => right.rwa.compareTo(left.rwa));
+    final rwaSectorRows = [...sectorRows]
+      ..sort((left, right) => right.rwa.compareTo(left.rwa));
+    final riskWeightRows = _riskWeightRowsFromGroups(
+      riskWeightGroups,
+      totalEad: totalNetEad,
+      totalRwa: totalRwa,
+    )..sort((left, right) => left.weight.compareTo(right.weight));
 
-    final topExposures = exposures
-        .map(
-          (item) => ConcentrationExposureRow(
-            exposureId: item.id,
-            counterpartyName: item.counterparty.name,
-            country: item.counterparty.country,
-            sector: _sectorFromCategory(item.categoryLabel),
-            grossAmount: item.grossAmount,
-            rwa: item.rwa,
-            share: totalGross == 0 ? 0.0 : item.grossAmount / totalGross,
-          ),
-        )
-        .toList()
-      ..sort((left, right) => right.grossAmount.compareTo(left.grossAmount));
-
-    final sectorDistribution = _distributionFromTotals(sectorTotals, totalGross);
-    final countryDistribution =
-        _distributionFromTotals(countryTotals, totalGross).take(5).toList();
+    final sectorDistribution = _distributionFromSectorRows(
+      sectorRows,
+      totalGross,
+    );
+    final countryDistribution = _distributionFromBreakdownRows(
+      countryRows.take(7).toList(growable: false),
+      totalGross,
+    );
     final ratingDistribution =
         _distributionFromTotals(ratingTotals, totalGross).take(5).toList();
 
-    final topSectorShare =
-        sectorRows.isEmpty ? 0.0 : sectorRows.first.share.clamp(0.0, 1.0).toDouble();
+    final topSectorShare = sectorRows.isEmpty
+        ? 0.0
+        : sectorRows.first.share.clamp(0.0, 1.0).toDouble();
     final topThreeShare = sectorRows
         .take(3)
         .fold<double>(0.0, (sum, item) => sum + item.share)
         .clamp(0.0, 1.0)
         .toDouble();
-    final hhi = sectorRows.fold<double>(
-      0.0,
-      (sum, item) => sum + math.pow(item.share * 100, 2).toDouble(),
+    final topCounterpartyShare =
+        topCounterparties.isEmpty ? 0.0 : topCounterparties.first.share;
+    final hhi = _hhi(
+      counterpartyGroups.values.map(
+        (item) => totalGross == 0 ? 0.0 : item.grossAmount / totalGross,
+      ),
+    );
+    final trends = _portfolioTrends(exposures);
+    final quality = _portfolioQuality(
+      exposures,
+      totalGross: totalGross,
+      totalNetEad: totalNetEad,
+      trends: trends,
+    );
+    final alerts = _concentrationAlerts(
+      latestDate: latestDate,
+      totalRwa: totalRwa,
+      ownFunds: totalCapital * 1.42,
+      hhi: hhi,
+      topSectors: sectorRows,
+      topCounterparties: topCounterparties,
+      topCountries: countryRows,
+      rwaCounterparties: topRwaCounterparties,
+      trends: trends,
     );
 
     return ConcentrationModuleData(
       summary: ConcentrationSummary(
         totalGross: totalGross,
+        totalNetEad: totalNetEad,
+        totalRwa: totalRwa,
         topSectorShare: topSectorShare,
         topThreeShare: topThreeShare,
+        topSectorLabel: sectorRows.isEmpty ? 'N/D' : sectorRows.first.sector,
+        topCounterpartyName: topCounterparties.isEmpty
+            ? 'N/D'
+            : topCounterparties.first.counterpartyName,
+        topCounterpartyShare: topCounterpartyShare,
         herfindahlIndex: hhi,
-        counterpartyCount:
-            exposures.map((item) => item.counterparty.name).toSet().length,
+        hhiBadge: _hhiBadge(hhi),
+        counterpartyCount: counterpartyGroups.length,
       ),
       sectorRows: sectorRows,
-      topExposures: topExposures.take(8).toList(growable: false),
+      countryRows: countryRows,
+      regionRows: regionRows,
+      prudentialRows: prudentialRows,
+      riskWeightRows: riskWeightRows,
+      rwaSectorRows: rwaSectorRows,
+      rwaCounterpartyRows: topRwaCounterparties,
+      exposureDetails: exposureDetails,
+      topExposures: topCounterparties,
       sectorDistribution: sectorDistribution,
       countryDistribution: countryDistribution,
       ratingDistribution: ratingDistribution,
+      quality: quality,
+      trends: trends,
+      alerts: alerts,
     );
+  }
+
+  List<SectorConcentrationRow> _sectorRowsFromGroups(
+    Map<String, _ConcentrationAccumulator> groups, {
+    required double totalGross,
+    required double totalRwa,
+  }) {
+    return groups.values
+        .map(
+          (item) => SectorConcentrationRow(
+            sector: item.label,
+            exposureCount: item.exposureCount,
+            grossAmount: item.grossAmount,
+            ead: item.ead,
+            rwa: item.rwa,
+            averageRiskWeight: item.averageRiskWeight,
+            rwaShare: totalRwa == 0 ? 0.0 : item.rwa / totalRwa,
+            share: totalGross == 0 ? 0.0 : item.grossAmount / totalGross,
+          ),
+        )
+        .toList();
+  }
+
+  List<ConcentrationBreakdownRow> _breakdownRowsFromGroups(
+    Map<String, _ConcentrationAccumulator> groups, {
+    required String group,
+    required double totalGross,
+    required double totalRwa,
+  }) {
+    return groups.values
+        .map(
+          (item) => ConcentrationBreakdownRow(
+            label: item.label,
+            group: group,
+            exposureCount: item.exposureCount,
+            grossAmount: item.grossAmount,
+            ead: item.ead,
+            rwa: item.rwa,
+            averageRiskWeight: item.averageRiskWeight,
+            portfolioShare:
+                totalGross == 0 ? 0.0 : item.grossAmount / totalGross,
+            rwaShare: totalRwa == 0 ? 0.0 : item.rwa / totalRwa,
+          ),
+        )
+        .toList();
+  }
+
+  List<ConcentrationExposureRow> _counterpartyRowsFromGroups(
+    Map<String, _ConcentrationAccumulator> groups, {
+    required double totalGross,
+  }) {
+    return groups.values
+        .map(
+          (item) => ConcentrationExposureRow(
+            exposureId: '${item.exposureCount} dossier(s)',
+            counterpartyName: item.label,
+            country: item.country,
+            sector: item.sector,
+            segment: item.sector,
+            grossAmount: item.grossAmount,
+            ead: item.ead,
+            rwa: item.rwa,
+            averageRiskWeight: item.averageRiskWeight,
+            share: totalGross == 0 ? 0.0 : item.grossAmount / totalGross,
+          ),
+        )
+        .toList();
+  }
+
+  List<RiskWeightBucketRow> _riskWeightRowsFromGroups(
+    Map<double, _ConcentrationAccumulator> groups, {
+    required double totalEad,
+    required double totalRwa,
+  }) {
+    return groups.entries
+        .map(
+          (entry) => RiskWeightBucketRow(
+            label: _riskWeightBucketLabel(entry.key),
+            weight: entry.key,
+            exposureCount: entry.value.exposureCount,
+            ead: entry.value.ead,
+            rwa: entry.value.rwa,
+            portfolioShare: totalEad == 0 ? 0.0 : entry.value.ead / totalEad,
+            rwaShare: totalRwa == 0 ? 0.0 : entry.value.rwa / totalRwa,
+          ),
+        )
+        .toList();
+  }
+
+  List<DistributionEntry> _distributionFromSectorRows(
+    List<SectorConcentrationRow> rows,
+    double totalGross,
+  ) {
+    return rows
+        .map(
+          (row) => DistributionEntry(
+            label: row.sector,
+            amount: row.grossAmount,
+            percentage: totalGross == 0 ? 0.0 : row.grossAmount / totalGross,
+          ),
+        )
+        .toList();
+  }
+
+  List<DistributionEntry> _distributionFromBreakdownRows(
+    List<ConcentrationBreakdownRow> rows,
+    double totalGross,
+  ) {
+    return rows
+        .map(
+          (row) => DistributionEntry(
+            label: row.label,
+            amount: row.grossAmount,
+            percentage: totalGross == 0 ? 0.0 : row.grossAmount / totalGross,
+          ),
+        )
+        .toList();
+  }
+
+  PortfolioQualitySummary _portfolioQuality(
+    List<ExposureRecord> exposures, {
+    required double totalGross,
+    required double totalNetEad,
+    required List<ConcentrationTrendPoint> trends,
+  }) {
+    final defaultRows = exposures.where((item) => item.isDefaultLike).toList();
+    final defaultGross =
+        defaultRows.fold<double>(0.0, (sum, item) => sum + item.grossAmount);
+    final weightedPd = exposures.fold<double>(
+      0.0,
+      (sum, item) => sum + _pdFromRating(item.ratingLabel) * item.grossAmount,
+    );
+    final weightedLgd = exposures.fold<double>(
+      0.0,
+      (sum, item) => sum + _lgdFromCrm(item) * item.grossAmount,
+    );
+    final nplTrend = trends.length < 2
+        ? 0.0
+        : trends.last.npl - trends[trends.length - 2].npl;
+
+    return PortfolioQualitySummary(
+      nplRatio: totalGross == 0 ? 0.0 : defaultGross / totalGross,
+      defaultRate:
+          exposures.isEmpty ? 0.0 : defaultRows.length / exposures.length,
+      defaultGross: defaultGross,
+      riskCoverage:
+          totalGross == 0 ? 0.0 : (totalGross - totalNetEad) / totalGross,
+      averagePd: totalGross == 0 ? 0.0 : weightedPd / totalGross,
+      averageLgd: totalGross == 0 ? 0.0 : weightedLgd / totalGross,
+      nplTrend: nplTrend,
+      defaultTrend: nplTrend,
+      coverageTrend: 0.0,
+    );
+  }
+
+  List<ConcentrationTrendPoint> _portfolioTrends(
+    List<ExposureRecord> exposures,
+  ) {
+    final groups = <DateTime, List<ExposureRecord>>{};
+    for (final item in exposures) {
+      final key = DateTime(item.analysisDate.year, item.analysisDate.month);
+      groups.putIfAbsent(key, () => <ExposureRecord>[]).add(item);
+    }
+    final dates = groups.keys.toList()..sort();
+
+    return [
+      for (final date in dates)
+        ConcentrationTrendPoint(
+          label: _monthLabel(date),
+          date: date,
+          ead: groups[date]!.fold<double>(0.0, (sum, item) => sum + item.ead),
+          rwa: groups[date]!.fold<double>(0.0, (sum, item) => sum + item.rwa),
+          npl: _nplRatio(groups[date]!),
+          hhi: _hhiForRows(groups[date]!),
+        ),
+    ];
+  }
+
+  List<ConcentrationAlert> _concentrationAlerts({
+    required DateTime latestDate,
+    required double totalRwa,
+    required double ownFunds,
+    required double hhi,
+    required List<SectorConcentrationRow> topSectors,
+    required List<ConcentrationExposureRow> topCounterparties,
+    required List<ConcentrationBreakdownRow> topCountries,
+    required List<ConcentrationExposureRow> rwaCounterparties,
+    required List<ConcentrationTrendPoint> trends,
+  }) {
+    final alerts = <ConcentrationAlert>[];
+
+    if (topSectors.isNotEmpty && topSectors.first.share > 0.25) {
+      alerts.add(
+        ConcentrationAlert(
+          level: 'Secteur',
+          severity: topSectors.first.share > 0.40 ? 'Élevé' : 'Moyen',
+          date: latestDate,
+          message:
+              '${topSectors.first.sector} représente ${_percent(topSectors.first.share)} du portefeuille.',
+          recommendation:
+              'Revoir les limites sectorielles et renforcer le suivi des nouvelles entrées.',
+        ),
+      );
+    }
+    if (topCounterparties.isNotEmpty && ownFunds > 0) {
+      final ratio = topCounterparties.first.grossAmount / ownFunds;
+      if (ratio > 0.10) {
+        alerts.add(
+          ConcentrationAlert(
+            level: 'Client',
+            severity: ratio > 0.25 ? 'Élevé' : 'Moyen',
+            date: latestDate,
+            message:
+                '${topCounterparties.first.counterpartyName} dépasse ${_percent(ratio)} des fonds propres estimés.',
+            recommendation:
+                'Contrôler la limite single-name et les garanties mobilisables.',
+          ),
+        );
+      }
+    }
+    if (hhi > 1800) {
+      alerts.add(
+        ConcentrationAlert(
+          level: 'HHI',
+          severity: hhi > 2500 ? 'Élevé' : 'Moyen',
+          date: latestDate,
+          message: 'Indice HHI à ${hhi.toStringAsFixed(0)}.',
+          recommendation:
+              'Diversifier les expositions ou recalibrer les seuils internes.',
+        ),
+      );
+    }
+    if (topCountries.isNotEmpty && topCountries.first.portfolioShare > 0.25) {
+      alerts.add(
+        ConcentrationAlert(
+          level: 'Pays',
+          severity:
+              topCountries.first.portfolioShare > 0.40 ? 'Élevé' : 'Moyen',
+          date: latestDate,
+          message:
+              '${topCountries.first.label} concentre ${_percent(topCountries.first.portfolioShare)} du portefeuille.',
+          recommendation:
+              'Tester les limites pays et les scénarios de stress souverain.',
+        ),
+      );
+    }
+    if (rwaCounterparties.isNotEmpty && totalRwa > 0) {
+      final topFiveRwa = rwaCounterparties
+          .take(5)
+          .fold<double>(0.0, (sum, item) => sum + item.rwa);
+      final share = topFiveRwa / totalRwa;
+      if (share > 0.40) {
+        alerts.add(
+          ConcentrationAlert(
+            level: 'RWA',
+            severity: share > 0.60 ? 'Élevé' : 'Moyen',
+            date: latestDate,
+            message:
+                '${_percent(share)} du RWA est porté par moins de 5 contreparties.',
+            recommendation:
+                'Prioriser les revues de rating, garanties et arbitrages RWA.',
+          ),
+        );
+      }
+    }
+    if (trends.length >= 2 && trends[trends.length - 2].ead > 0) {
+      final growth = (trends.last.ead - trends[trends.length - 2].ead) /
+          trends[trends.length - 2].ead;
+      if (growth > 0.15) {
+        alerts.add(
+          ConcentrationAlert(
+            level: 'Croissance',
+            severity: growth > 0.30 ? 'Élevé' : 'Moyen',
+            date: latestDate,
+            message:
+                'Croissance mensuelle anormale de ${_percent(growth)} sur l’EAD.',
+            recommendation:
+                'Vérifier les nouveaux engagements et leur consommation RWA.',
+          ),
+        );
+      }
+    }
+
+    return alerts;
+  }
+
+  double _hhi(Iterable<double> shares) {
+    return shares.fold<double>(
+      0.0,
+      (sum, share) => sum + math.pow(share * 100, 2).toDouble(),
+    );
+  }
+
+  double _hhiForRows(List<ExposureRecord> exposures) {
+    final totalGross = exposures.fold<double>(
+      0.0,
+      (sum, item) => sum + item.grossAmount,
+    );
+    if (totalGross == 0) {
+      return 0.0;
+    }
+    final totals = <String, double>{};
+    for (final item in exposures) {
+      totals.update(
+        item.counterparty.name,
+        (value) => value + item.grossAmount,
+        ifAbsent: () => item.grossAmount,
+      );
+    }
+    return _hhi(totals.values.map((amount) => amount / totalGross));
+  }
+
+  String _hhiBadge(double hhi) {
+    if (hhi >= 1800) {
+      return 'Élevé';
+    }
+    if (hhi >= 1000) {
+      return 'Moyen';
+    }
+    return 'Faible';
+  }
+
+  double _riskWeightBucket(double rawWeight) {
+    final weight = _normalizedRiskWeight(rawWeight);
+    const buckets = <double>[0.0, 0.20, 0.50, 0.75, 1.0, 1.50];
+    return buckets.reduce(
+      (closest, bucket) =>
+          (weight - bucket).abs() < (weight - closest).abs() ? bucket : closest,
+    );
+  }
+
+  String _riskWeightBucketLabel(double weight) {
+    return '${(weight * 100).round()} %';
+  }
+
+  double _normalizedRiskWeight(double rawWeight) {
+    return rawWeight > 2 ? rawWeight / 100 : rawWeight;
+  }
+
+  double _nplRatio(List<ExposureRecord> exposures) {
+    final totalGross = exposures.fold<double>(
+      0.0,
+      (sum, item) => sum + item.grossAmount,
+    );
+    if (totalGross == 0) {
+      return 0.0;
+    }
+    final defaultGross = exposures
+        .where((item) => item.isDefaultLike)
+        .fold<double>(0.0, (sum, item) => sum + item.grossAmount);
+    return defaultGross / totalGross;
+  }
+
+  double _pdFromRating(String rating) {
+    final normalized = rating.toUpperCase();
+    if (normalized.contains('AAA') || normalized == 'AA') {
+      return 0.0005;
+    }
+    if (normalized == 'A') {
+      return 0.0015;
+    }
+    if (normalized == 'BBB') {
+      return 0.006;
+    }
+    if (normalized.contains('BB') || normalized.contains('B')) {
+      return 0.025;
+    }
+    return 0.045;
+  }
+
+  double _lgdFromCrm(ExposureRecord exposure) {
+    final coverage = exposure.crmCoveragePercent > 1
+        ? exposure.crmCoveragePercent / 100
+        : exposure.crmCoveragePercent;
+    return (1 - coverage).clamp(0.25, 1.0).toDouble();
+  }
+
+  String _monthLabel(DateTime date) {
+    const months = [
+      'Janv.',
+      'Févr.',
+      'Mars',
+      'Avr.',
+      'Mai',
+      'Juin',
+      'Juil.',
+      'Août',
+      'Sept.',
+      'Oct.',
+      'Nov.',
+      'Déc.',
+    ];
+    return months[date.month - 1];
   }
 
   Future<CreditReportingModuleData> fetchReportingModule() async {
@@ -502,8 +1016,9 @@ class CreditRiskSubmodulesService {
       'Surveillance' => 0.15,
       _ => 0.08,
     };
-    final provisionRate =
-        (rawProvisionRate - (activeCoverage * 0.10)).clamp(0.05, 0.45).toDouble();
+    final provisionRate = (rawProvisionRate - (activeCoverage * 0.10))
+        .clamp(0.05, 0.45)
+        .toDouble();
     final incidents = _incidentHistory(
       exposure: exposure,
       daysPastDue: daysPastDue,
@@ -671,4 +1186,35 @@ class CreditRiskSubmodulesService {
 
   String _number(double value) => value.toStringAsFixed(0);
   String _percent(double value) => '${(value * 100).toStringAsFixed(1)} %';
+}
+
+class _ConcentrationAccumulator {
+  _ConcentrationAccumulator({required this.label});
+
+  final String label;
+  var exposureCount = 0;
+  var grossAmount = 0.0;
+  var ead = 0.0;
+  var rwa = 0.0;
+  var sector = 'Non renseigné';
+  var country = 'Non renseigné';
+
+  void add(
+    ExposureRecord exposure, {
+    required String sector,
+    required String country,
+  }) {
+    exposureCount += 1;
+    grossAmount += exposure.grossAmount;
+    ead += exposure.ead;
+    rwa += exposure.rwa;
+    if (this.sector == 'Non renseigné' || this.sector.isEmpty) {
+      this.sector = sector;
+    }
+    if (this.country == 'Non renseigné' || this.country.isEmpty) {
+      this.country = country;
+    }
+  }
+
+  double get averageRiskWeight => ead == 0 ? 0.0 : rwa / ead;
 }

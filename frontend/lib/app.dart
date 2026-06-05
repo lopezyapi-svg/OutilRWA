@@ -55,7 +55,6 @@ class _RwaAppState extends State<RwaApp> {
   bool _showWelcomeScreen = true;
   bool _isMarketImportDialogOpen = false;
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
-  final Map<AppModule, Widget> _screenCache = {};
 
   @override
   void initState() {
@@ -129,9 +128,7 @@ class _RwaAppState extends State<RwaApp> {
   void _handleLanguageChanged() {
     AppLocalizations.setCurrentLanguage(_appLanguage.value);
     if (!mounted) return;
-    setState(() {
-      _screenCache.clear();
-    });
+    setState(() {});
   }
 
   void _selectModule(AppModule module) {
@@ -180,50 +177,50 @@ class _RwaAppState extends State<RwaApp> {
   }
 
   Widget _screenFor(AppModule module) {
-    return _screenCache.putIfAbsent(module, () {
-      return switch (module) {
-        AppModule.vueEnsemble => VueEnsembleScreen(api: _api),
-        AppModule.dashboard => DashboardScreen(api: _api),
-        AppModule.expositions => ExpositionsScreen(
-            api: _api,
-            displayCurrencyListenable: _portfolioDisplayCurrency,
-          ),
-        AppModule.crm => CrmScreen(api: _api),
-        AppModule.horsBilan => HorsBilanScreen(api: _api),
-        AppModule.garanties => GarantiesScreen(api: _api),
-        AppModule.defautsImpayes => DefautsImpayesScreen(api: _api),
-        AppModule.concentrationCredit => ConcentrationScreen(api: _api),
-        AppModule.reportingCredit => ReportingCreditScreen(api: _api),
-        AppModule.risqueMarche => RisqueMarcheScreen(api: _api),
-        AppModule.risqueMarcheImport => RisqueMarcheScreen(api: _api),
-        AppModule.risqueMarcheVar => RisqueMarcheScreen(
-            api: _api,
-            view: MarketRiskView.varRisk,
-          ),
-        AppModule.risqueMarcheIndicateurs => RisqueMarcheScreen(
-            api: _api,
-            view: MarketRiskView.indicators,
-          ),
-        AppModule.risqueMarcheCourbeTaux => RisqueMarcheScreen(
-            api: _api,
-            view: MarketRiskView.yieldCurves,
-          ),
-        AppModule.risqueOperationnel => RisqueOperationnelScreen(api: _api),
-        AppModule.analyse => AnalyseScreen(api: _api),
-        AppModule.stressTest => StressTestScreen(api: _api),
-        AppModule.icap => IcapScreen(api: _api),
-        AppModule.capitalPlaning => CapitalPlaningScreen(api: _api),
-        AppModule.referentiels => ReferentielsScreen(api: _api),
-        AppModule.rapports => RapportsScreen(api: _api),
-      };
-    });
+    return switch (module) {
+      AppModule.vueEnsemble => VueEnsembleScreen(api: _api),
+      AppModule.dashboard => DashboardScreen(api: _api),
+      AppModule.expositions => ExpositionsScreen(
+          api: _api,
+          displayCurrencyListenable: _portfolioDisplayCurrency,
+        ),
+      AppModule.crm => CrmScreen(api: _api),
+      AppModule.horsBilan => HorsBilanScreen(api: _api),
+      AppModule.garanties => GarantiesScreen(api: _api),
+      AppModule.defautsImpayes => DefautsImpayesScreen(api: _api),
+      AppModule.concentrationCredit => ConcentrationScreen(api: _api),
+      AppModule.reportingCredit => ReportingCreditScreen(api: _api),
+      AppModule.risqueMarche => RisqueMarcheScreen(api: _api),
+      AppModule.risqueMarcheImport => RisqueMarcheScreen(api: _api),
+      AppModule.risqueMarcheVar => RisqueMarcheScreen(
+          api: _api,
+          view: MarketRiskView.varRisk,
+        ),
+      AppModule.risqueMarcheIndicateurs => RisqueMarcheScreen(
+          api: _api,
+          view: MarketRiskView.indicators,
+        ),
+      AppModule.risqueMarcheCourbeTaux => RisqueMarcheScreen(
+          api: _api,
+          view: MarketRiskView.yieldCurves,
+        ),
+      AppModule.risqueMarcheAmortissementCrd => RisqueMarcheScreen(
+          api: _api,
+          view: MarketRiskView.amortizationCapital,
+        ),
+      AppModule.risqueOperationnel => RisqueOperationnelScreen(api: _api),
+      AppModule.analyse => AnalyseScreen(api: _api),
+      AppModule.stressTest => StressTestScreen(api: _api),
+      AppModule.icap => IcapScreen(api: _api),
+      AppModule.capitalPlaning => CapitalPlaningScreen(api: _api),
+      AppModule.referentiels => ReferentielsScreen(api: _api),
+      AppModule.rapports => RapportsScreen(api: _api),
+    };
   }
 
   Widget _buildSelectedScreen() {
     return PageStorage(
       bucket: _pageStorageBucket,
-      // On ne garde plus tous les ecrans visites dans le layout pour eviter
-      // que la sidebar ou le shell relancent leur recalcul a chaque animation.
       child: KeyedSubtree(
         key: PageStorageKey<String>(_selectedModule.name),
         child: _screenFor(_selectedModule),

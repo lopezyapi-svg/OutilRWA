@@ -18,6 +18,7 @@ enum AppModule {
   risqueMarcheVar,
   risqueMarcheIndicateurs,
   risqueMarcheCourbeTaux,
+  risqueMarcheAmortissementCrd,
   risqueOperationnel,
   analyse,
   stressTest,
@@ -59,6 +60,8 @@ extension AppModuleLabel on AppModule {
         return 'Indicateurs clés';
       case AppModule.risqueMarcheCourbeTaux:
         return 'Courbe des taux';
+      case AppModule.risqueMarcheAmortissementCrd:
+        return 'Amortissement CRD';
       case AppModule.risqueOperationnel:
         return 'Risque Opérationnel';
       case AppModule.analyse:
@@ -106,6 +109,8 @@ extension AppModuleLabel on AppModule {
         return 'Synthèse des indicateurs clés du portefeuille de marché.';
       case AppModule.risqueMarcheCourbeTaux:
         return 'Courbes de taux UEMOA et CEMAC utilisées pour l’actualisation.';
+      case AppModule.risqueMarcheAmortissementCrd:
+        return 'Evolution mensuelle du capital restant dû et des amortissements.';
       case AppModule.risqueOperationnel:
         return 'Cartographie des risques operationnels et des controles internes.';
       case AppModule.analyse:
@@ -153,6 +158,8 @@ extension AppModuleLabel on AppModule {
         return CupertinoIcons.chart_bar_alt_fill;
       case AppModule.risqueMarcheCourbeTaux:
         return CupertinoIcons.waveform_path_ecg;
+      case AppModule.risqueMarcheAmortissementCrd:
+        return CupertinoIcons.graph_square_fill;
       case AppModule.risqueOperationnel:
         return Icons.shield_rounded;
       case AppModule.analyse:

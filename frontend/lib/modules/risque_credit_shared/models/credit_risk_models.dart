@@ -182,8 +182,11 @@ class ConcentrationExposureRow {
     required this.counterpartyName,
     required this.country,
     required this.sector,
+    required this.segment,
     required this.grossAmount,
+    required this.ead,
     required this.rwa,
+    required this.averageRiskWeight,
     required this.share,
   });
 
@@ -191,8 +194,11 @@ class ConcentrationExposureRow {
   final String counterpartyName;
   final String country;
   final String sector;
+  final String segment;
   final double grossAmount;
+  final double ead;
   final double rwa;
+  final double averageRiskWeight;
   final double share;
 }
 
@@ -201,47 +207,227 @@ class SectorConcentrationRow {
     required this.sector,
     required this.exposureCount,
     required this.grossAmount,
+    required this.ead,
+    required this.rwa,
+    required this.averageRiskWeight,
+    required this.rwaShare,
     required this.share,
   });
 
   final String sector;
   final int exposureCount;
   final double grossAmount;
+  final double ead;
+  final double rwa;
+  final double averageRiskWeight;
+  final double rwaShare;
   final double share;
 }
 
 class ConcentrationSummary {
   const ConcentrationSummary({
     required this.totalGross,
+    required this.totalNetEad,
+    required this.totalRwa,
     required this.topSectorShare,
     required this.topThreeShare,
+    required this.topSectorLabel,
+    required this.topCounterpartyName,
+    required this.topCounterpartyShare,
     required this.herfindahlIndex,
+    required this.hhiBadge,
     required this.counterpartyCount,
   });
 
   final double totalGross;
+  final double totalNetEad;
+  final double totalRwa;
   final double topSectorShare;
   final double topThreeShare;
+  final String topSectorLabel;
+  final String topCounterpartyName;
+  final double topCounterpartyShare;
   final double herfindahlIndex;
+  final String hhiBadge;
   final int counterpartyCount;
+}
+
+class ConcentrationBreakdownRow {
+  const ConcentrationBreakdownRow({
+    required this.label,
+    required this.group,
+    required this.exposureCount,
+    required this.grossAmount,
+    required this.ead,
+    required this.rwa,
+    required this.averageRiskWeight,
+    required this.portfolioShare,
+    required this.rwaShare,
+  });
+
+  final String label;
+  final String group;
+  final int exposureCount;
+  final double grossAmount;
+  final double ead;
+  final double rwa;
+  final double averageRiskWeight;
+  final double portfolioShare;
+  final double rwaShare;
+}
+
+class RiskWeightBucketRow {
+  const RiskWeightBucketRow({
+    required this.label,
+    required this.weight,
+    required this.exposureCount,
+    required this.ead,
+    required this.rwa,
+    required this.portfolioShare,
+    required this.rwaShare,
+  });
+
+  final String label;
+  final double weight;
+  final int exposureCount;
+  final double ead;
+  final double rwa;
+  final double portfolioShare;
+  final double rwaShare;
+}
+
+class ConcentrationExposureDetail {
+  const ConcentrationExposureDetail({
+    required this.id,
+    required this.analysisDate,
+    required this.counterpartyName,
+    required this.country,
+    required this.region,
+    required this.sector,
+    required this.segment,
+    required this.prudentialCategory,
+    required this.rating,
+    required this.status,
+    required this.hasGuarantee,
+    required this.isDefault,
+    required this.grossAmount,
+    required this.ead,
+    required this.rwa,
+    required this.riskWeight,
+  });
+
+  final String id;
+  final DateTime analysisDate;
+  final String counterpartyName;
+  final String country;
+  final String region;
+  final String sector;
+  final String segment;
+  final String prudentialCategory;
+  final String rating;
+  final String status;
+  final bool hasGuarantee;
+  final bool isDefault;
+  final double grossAmount;
+  final double ead;
+  final double rwa;
+  final double riskWeight;
+}
+
+class PortfolioQualitySummary {
+  const PortfolioQualitySummary({
+    required this.nplRatio,
+    required this.defaultRate,
+    required this.defaultGross,
+    required this.riskCoverage,
+    required this.averagePd,
+    required this.averageLgd,
+    required this.nplTrend,
+    required this.defaultTrend,
+    required this.coverageTrend,
+  });
+
+  final double nplRatio;
+  final double defaultRate;
+  final double defaultGross;
+  final double riskCoverage;
+  final double averagePd;
+  final double averageLgd;
+  final double nplTrend;
+  final double defaultTrend;
+  final double coverageTrend;
+}
+
+class ConcentrationTrendPoint {
+  const ConcentrationTrendPoint({
+    required this.label,
+    required this.date,
+    required this.ead,
+    required this.rwa,
+    required this.npl,
+    required this.hhi,
+  });
+
+  final String label;
+  final DateTime date;
+  final double ead;
+  final double rwa;
+  final double npl;
+  final double hhi;
+}
+
+class ConcentrationAlert {
+  const ConcentrationAlert({
+    required this.level,
+    required this.severity,
+    required this.date,
+    required this.message,
+    required this.recommendation,
+  });
+
+  final String level;
+  final String severity;
+  final DateTime date;
+  final String message;
+  final String recommendation;
 }
 
 class ConcentrationModuleData {
   const ConcentrationModuleData({
     required this.summary,
     required this.sectorRows,
+    required this.countryRows,
+    required this.regionRows,
+    required this.prudentialRows,
+    required this.riskWeightRows,
+    required this.rwaSectorRows,
+    required this.rwaCounterpartyRows,
+    required this.exposureDetails,
     required this.topExposures,
     required this.sectorDistribution,
     required this.countryDistribution,
     required this.ratingDistribution,
+    required this.quality,
+    required this.trends,
+    required this.alerts,
   });
 
   final ConcentrationSummary summary;
   final List<SectorConcentrationRow> sectorRows;
+  final List<ConcentrationBreakdownRow> countryRows;
+  final List<ConcentrationBreakdownRow> regionRows;
+  final List<ConcentrationBreakdownRow> prudentialRows;
+  final List<RiskWeightBucketRow> riskWeightRows;
+  final List<SectorConcentrationRow> rwaSectorRows;
+  final List<ConcentrationExposureRow> rwaCounterpartyRows;
+  final List<ConcentrationExposureDetail> exposureDetails;
   final List<ConcentrationExposureRow> topExposures;
   final List<DistributionEntry> sectorDistribution;
   final List<DistributionEntry> countryDistribution;
   final List<DistributionEntry> ratingDistribution;
+  final PortfolioQualitySummary quality;
+  final List<ConcentrationTrendPoint> trends;
+  final List<ConcentrationAlert> alerts;
 }
 
 enum CreditReportFamily {

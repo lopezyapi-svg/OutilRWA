@@ -3,7 +3,7 @@ import 'package:rwa_calculator/modules/risque_marche/services/market_data_import
 
 void main() {
   group('Bond reconstructed CRD', () {
-    test('keeps active constant profile at capital initial', () {
+    test('reconstructs active constant profile with linear principal', () {
       const record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
@@ -12,19 +12,23 @@ void main() {
           'Profil d\'amortissement': 'constant',
           'Fréquence de paiement des intérêts': 'Semestrielle',
           'Maturité (mois)': 180,
-          'Maturité résiduelle (mois)': 172,
+          'Maturité résiduelle (mois)': 156,
           'Coupon (%)': 0.049,
         },
       );
 
+      const expectedCapital = 22605972280 * 26 / 30;
       expect(
         record.resolvedCapitalRemainingDue,
-        moreOrLessEquals(22605972280, epsilon: 0.01),
+        moreOrLessEquals(expectedCapital, epsilon: 0.01),
       );
-      expect(record.capitalAlreadyRepaid, 0);
+      expect(
+        record.capitalAlreadyRepaid,
+        moreOrLessEquals(22605972280 - expectedCapital, epsilon: 0.01),
+      );
     });
 
-    test('keeps active constant annuity profile at capital initial', () {
+    test('reconstructs active constant annuity profile after paid periods', () {
       const record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
@@ -33,19 +37,23 @@ void main() {
           'Profil d\'amortissement': 'annuité constante',
           'Fréquence de paiement des intérêts': 'Trimestrielle',
           'Maturité (mois)': 144,
-          'Maturité résiduelle (mois)': 132,
+          'Maturité résiduelle (mois)': 116,
           'Coupon (%)': 0.0965,
         },
       );
 
       expect(
         record.resolvedCapitalRemainingDue,
-        moreOrLessEquals(82474291920, epsilon: 0.01),
+        moreOrLessEquals(73252186595.82242, epsilon: 0.01),
       );
-      expect(record.capitalAlreadyRepaid, 0);
+      expect(
+        record.capitalAlreadyRepaid,
+        moreOrLessEquals(9222105324.17758, epsilon: 0.01),
+      );
     });
 
-    test('keeps active short monthly Treasury bill at capital initial', () {
+    test('reconstructs active short monthly Treasury bill with linear profile',
+        () {
       const record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
@@ -61,14 +69,19 @@ void main() {
         },
       );
 
+      const expectedCapital = 3360715988 * 23 / 36;
       expect(
         record.resolvedCapitalRemainingDue,
-        moreOrLessEquals(3360715988, epsilon: 0.01),
+        moreOrLessEquals(expectedCapital, epsilon: 0.01),
       );
-      expect(record.capitalAlreadyRepaid, 0);
+      expect(
+        record.capitalAlreadyRepaid,
+        moreOrLessEquals(3360715988 - expectedCapital, epsilon: 0.01),
+      );
     });
 
-    test('keeps active long monthly Treasury bill at capital initial', () {
+    test('reconstructs active long monthly Treasury bill with linear profile',
+        () {
       const record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
@@ -84,9 +97,10 @@ void main() {
         },
       );
 
+      const expectedCapital = 32558786099 * 146 / 156;
       expect(
         record.resolvedCapitalRemainingDue,
-        moreOrLessEquals(32558786099, epsilon: 0.01),
+        moreOrLessEquals(expectedCapital, epsilon: 0.01),
       );
     });
 
@@ -150,6 +164,131 @@ void main() {
       expect(record.issuerCountryIso3, 'CIV');
       expect(record.issuerAnalysisKey, 'CIV|Trésor public');
       expect(record.issuerAnalysisLabel, 'Trésor public (CIV)');
+    });
+
+    test('zero coupon profile does not create coupon cashflows', () {
+      const record = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.bonds,
+        values: {
+          'Profil d\'amortissement': 'Zéro coupon',
+          'Fréquence de paiement des intérêts': 'Semestrielle',
+          'Maturité résiduelle (mois)': 60,
+          'Valeur nominale unitaire': 100,
+          'quantités': 1,
+          'Coupon (%)': 0.05,
+        },
+      );
+
+      expect(record.bondMacaulayDuration, moreOrLessEquals(5, epsilon: 1e-9));
+      expect(
+        record.bondModifiedDuration,
+        moreOrLessEquals(5 / (1 + 0.05 / 2), epsilon: 1e-9),
+      );
+      expect(
+        record.bondCashflowPresentValue,
+        moreOrLessEquals(100 /
+            (1.025 *
+                1.025 *
+                1.025 *
+                1.025 *
+                1.025 *
+                1.025 *
+                1.025 *
+                1.025 *
+                1.025 *
+                1.025)),
+      );
+    });
+
+    test('redemption price does not reduce principal cashflow', () {
+      const record = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.bonds,
+        values: {
+          'Profil d\'amortissement': 'Zéro coupon',
+          'Fréquence de paiement des intérêts': 'Annuelle',
+          'Maturité résiduelle (mois)': 12,
+          'Valeur nominale unitaire': 100,
+          'quantités': 1,
+          'Coupon (%)': 0,
+          'Prix de remboursement': 40,
+          'Prime de remboursement': -60,
+        },
+      );
+
+      expect(record.bondCashflowPresentValue, moreOrLessEquals(100));
+    });
+  });
+
+  group('Market data snapshot architecture', () {
+    test('dataset content signature ignores technical import timestamp', () {
+      const record = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.bonds,
+        values: {
+          'ID Titre': 'CP0001',
+          'Capital initial': 1000000000,
+          'Coupon (%)': 0.05,
+        },
+      );
+      final first = MarketPortfolioDataset(
+        portfolioType: MarketPortfolioType.bonds,
+        fileName: 'base.xlsx',
+        importedAt: DateTime(2026, 6),
+        headers: const ['ID Titre', 'Capital initial', 'Coupon (%)'],
+        records: const [record],
+      );
+      final restored = MarketPortfolioDataset(
+        portfolioType: MarketPortfolioType.bonds,
+        fileName: 'base.xlsx',
+        importedAt: DateTime(2026, 6, 2, 12),
+        headers: const ['ID Titre', 'Capital initial', 'Coupon (%)'],
+        records: const [record],
+      );
+
+      expect(first.contentSignature, restored.contentSignature);
+      expect(
+        MarketDataSnapshot.fromDatasets({
+          MarketPortfolioType.bonds: first,
+        }).contentSignature,
+        MarketDataSnapshot.fromDatasets({
+          MarketPortfolioType.bonds: restored,
+        }).contentSignature,
+      );
+    });
+
+    test('dataset content signature changes when portfolio content changes',
+        () {
+      final first = MarketPortfolioDataset(
+        portfolioType: MarketPortfolioType.bonds,
+        fileName: 'base.xlsx',
+        importedAt: DateTime(2026, 6),
+        headers: const ['ID Titre', 'Capital initial'],
+        records: const [
+          MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.bonds,
+            values: {
+              'ID Titre': 'CP0001',
+              'Capital initial': 1000000000,
+            },
+          ),
+        ],
+      );
+      final changed = MarketPortfolioDataset(
+        portfolioType: MarketPortfolioType.bonds,
+        fileName: 'base.xlsx',
+        importedAt: DateTime(2026, 6),
+        headers: const ['ID Titre', 'Capital initial'],
+        records: const [
+          MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.bonds,
+            values: {
+              'ID Titre': 'CP0001',
+              'Capital initial': 1200000000,
+            },
+          ),
+        ],
+      );
+
+      expect(first.contentSignature, isNot(changed.contentSignature));
     });
   });
 }

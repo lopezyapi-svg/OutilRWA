@@ -95,7 +95,7 @@ class _HeaderText extends StatelessWidget {
           style: TextStyle(
             color: dashboardTitleColor(isDark),
             fontSize: 17,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
             letterSpacing: -0.3,
           ),
         ),
@@ -107,7 +107,7 @@ class _HeaderText extends StatelessWidget {
           style: TextStyle(
             color: dashboardSubtitleColor(isDark),
             fontSize: 9.5,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             height: 1.25,
           ),
         ),
@@ -157,7 +157,7 @@ class _CalendarPill extends StatelessWidget {
                 style: TextStyle(
                   color: dashboardTitleColor(isDark),
                   fontSize: 8.8,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -202,7 +202,7 @@ class _InfoPill extends StatelessWidget {
                 style: TextStyle(
                   color: dashboardSubtitleColor(isDark),
                   fontSize: 7.8,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               Text(
@@ -210,7 +210,7 @@ class _InfoPill extends StatelessWidget {
                 style: TextStyle(
                   color: dashboardTitleColor(isDark),
                   fontSize: 8.3,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

@@ -43,6 +43,8 @@ class AppFormatters {
     return _trimCompact(amount.toStringAsFixed(2));
   }
 
+  static String integer(num value) => _plainNumber().format(value.round());
+
   static String percent(num value) => NumberFormat.decimalPercentPattern(
         locale: AppLocalizations.currentLanguage.intlLocale,
         decimalDigits: 1,

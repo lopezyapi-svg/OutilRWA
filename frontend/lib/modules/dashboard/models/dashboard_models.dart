@@ -21,7 +21,9 @@ class DashboardMetric {
       label: json['label'] as String,
       value: (json['value'] as num).toDouble(),
       variation: json['variation'] as String,
-      trend: (json['trend'] as List<dynamic>).map((item) => (item as num).toDouble()).toList(),
+      trend: (json['trend'] as List<dynamic>)
+          .map((item) => (item as num).toDouble())
+          .toList(),
     );
   }
 }
@@ -140,28 +142,33 @@ class DashboardSnapshot {
           ? DateTime.now()
           : DateTime.parse(json['valuation_date'] as String),
       categoryDistribution: (json['category_distribution'] as List<dynamic>)
-          .map((item) => DistributionEntry.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              DistributionEntry.fromJson(item as Map<String, dynamic>))
           .toList(),
-      rwaCategoryDistribution:
-          (json['rwa_category_distribution'] as List<dynamic>? ??
-                  json['category_distribution'] as List<dynamic>? ??
-                  const [])
-              .map(
-                (item) =>
-                    DistributionEntry.fromJson(item as Map<String, dynamic>),
-              )
+      rwaCategoryDistribution: (json['rwa_category_distribution']
+                  as List<dynamic>? ??
+              json['category_distribution'] as List<dynamic>? ??
+              const [])
+          .map(
+            (item) => DistributionEntry.fromJson(item as Map<String, dynamic>),
+          )
+          .toList(),
+      countryDistribution:
+          (json['country_distribution'] as List<dynamic>? ?? const [])
+              .map((item) =>
+                  DistributionEntry.fromJson(item as Map<String, dynamic>))
               .toList(),
-      countryDistribution: (json['country_distribution'] as List<dynamic>? ?? const [])
-          .map((item) => DistributionEntry.fromJson(item as Map<String, dynamic>))
-          .toList(),
       crmDistribution: (json['crm_distribution'] as List<dynamic>? ?? const [])
-          .map((item) => DistributionEntry.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              DistributionEntry.fromJson(item as Map<String, dynamic>))
           .toList(),
       ratingDistribution: (json['rating_distribution'] as List<dynamic>)
-          .map((item) => DistributionEntry.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              DistributionEntry.fromJson(item as Map<String, dynamic>))
           .toList(),
       rwaProjection: (json['rwa_projection'] as List<dynamic>? ?? const [])
-          .map((item) => DashboardProjectionPoint.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              DashboardProjectionPoint.fromJson(item as Map<String, dynamic>))
           .toList(),
       portfolioOverview: (json['portfolio_overview'] as List<dynamic>)
           .map((item) => PortfolioRow.fromJson(item as Map<String, dynamic>))

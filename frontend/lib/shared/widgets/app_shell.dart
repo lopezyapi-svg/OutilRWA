@@ -411,11 +411,6 @@ class _WorkspaceTopBar extends StatelessWidget {
               const SizedBox(width: 6),
               if (showHeaderStatus) ...[
                 const _HeaderIconButton(
-                  icon: CupertinoIcons.exclamationmark_triangle_fill,
-                  accent: Color(0xFFF59E0B),
-                ),
-                const SizedBox(width: 6),
-                const _HeaderIconButton(
                   icon: CupertinoIcons.bell_fill,
                   accent: Color(0xFF2563EB),
                 ),
@@ -603,7 +598,7 @@ class _SidebarToggleButton extends StatelessWidget {
           textStyle: const TextStyle(
             color: Colors.white,
             fontSize: 11,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w500,
             height: 1.05,
           ),
           child: Center(
@@ -803,7 +798,7 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
                   style: TextStyle(
                     color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
                     fontSize: 9.8,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -847,7 +842,7 @@ class _CurrencyMenuItem extends StatelessWidget {
             style: TextStyle(
               color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
               fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
@@ -895,7 +890,7 @@ class _CurrencyBadge extends StatelessWidget {
         style: TextStyle(
           color: Colors.white,
           fontSize: symbol.length > 1 ? size * 0.34 : size * 0.62,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w500,
           height: 1,
           letterSpacing: 0,
         ),
@@ -967,7 +962,7 @@ class _LanguagePicker extends StatelessWidget {
                   style: TextStyle(
                     color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
                     fontSize: 9.8,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
@@ -1001,7 +996,7 @@ class _LanguagePicker extends StatelessWidget {
             style: TextStyle(
               color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
               fontSize: 11.2,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -1227,7 +1222,7 @@ class _HeaderGhostButton extends StatelessWidget {
             style: TextStyle(
               color: isDark ? const Color(0xFFD7E0F3) : const Color(0xFF4B556B),
               fontSize: 10,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -1271,7 +1266,7 @@ class _HeaderPrimaryButton extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 10,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -1320,7 +1315,7 @@ class _TopBar extends StatelessWidget {
           Text(
             selectedModule.title.tr(context),
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   color: isDark
                       ? const Color(0xFFF2F6FF)
                       : const Color(0xFF1E2337),

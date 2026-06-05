@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xml/xml.dart';
 
 import '../../../core/services/rwa_api_service.dart';
+import 'market_country_resolver.dart';
 import 'market_data_local_storage.dart' as local_storage;
 
 const String marketPortfolioSheetName = 'Saisir donnée';
@@ -30,9 +31,9 @@ extension MarketPortfolioTypeMetadata on MarketPortfolioType {
 
   String get templateFileName => switch (this) {
         MarketPortfolioType.bonds =>
-          'GPO_Template_Portefeuille_Obligations.xlsx',
+          'RiskManagement_Template_Portefeuille_Obligations.xlsx',
         MarketPortfolioType.equities =>
-          'GPO_Template_Portefeuille_Actions.xlsx',
+          'RiskManagement_Template_Portefeuille_Actions.xlsx',
       };
 
   String get expectedPortfolioLabel => switch (this) {
@@ -567,6 +568,74 @@ class MarketPortfolioRecord {
   double _monthNumber(String key) => _marketCeilMonthValue(_number(key));
 }
 
+const int _marketDatasetContentSignatureVersion = 2;
+const int _marketFnvOffsetBasis = 0x811c9dc5;
+const int _marketFnvPrime = 0x01000193;
+const int _marketFnvMask = 0xffffffff;
+
+int _marketSignatureAddString(int hash, String value) {
+  var next = hash;
+  for (final unit in value.codeUnits) {
+    next ^= unit;
+    next = (next * _marketFnvPrime) & _marketFnvMask;
+  }
+  next ^= 0x1f;
+  return (next * _marketFnvPrime) & _marketFnvMask;
+}
+
+String _marketDatasetContentSignature(MarketPortfolioDataset dataset) {
+  var hash = _marketFnvOffsetBasis;
+  hash = _marketSignatureAddString(
+    hash,
+    'v$_marketDatasetContentSignatureVersion',
+  );
+  hash = _marketSignatureAddString(hash, dataset.portfolioType.storageKey);
+  hash = _marketSignatureAddString(hash, dataset.fileName);
+  hash = _marketSignatureAddString(hash, dataset.headers.length.toString());
+  for (final header in dataset.headers) {
+    hash = _marketSignatureAddString(hash, header);
+  }
+  hash = _marketSignatureAddString(hash, dataset.records.length.toString());
+  for (final record in dataset.records) {
+    hash = _marketSignatureAddString(hash, record.portfolioType.storageKey);
+    final keys = record.values.keys.toList(growable: false)..sort();
+    hash = _marketSignatureAddString(hash, keys.length.toString());
+    for (final key in keys) {
+      hash = _marketSignatureAddString(hash, key);
+      hash =
+          _marketSignatureAddString(hash, record.values[key]?.toString() ?? '');
+    }
+  }
+  hash = _marketSignatureAddString(
+    hash,
+    dataset.bondCapitalRemainingDue.toStringAsFixed(6),
+  );
+  hash = _marketSignatureAddString(
+    hash,
+    dataset.bondCashflowPresentValue.toStringAsFixed(6),
+  );
+  hash = _marketSignatureAddString(
+    hash,
+    dataset.bondCashflowMacaulayDuration.toStringAsFixed(10),
+  );
+  hash = _marketSignatureAddString(
+    hash,
+    dataset.bondCashflowModifiedDuration.toStringAsFixed(10),
+  );
+  hash = _marketSignatureAddString(
+    hash,
+    dataset.bondCashflowConvexity.toStringAsFixed(10),
+  );
+  final metricsDate = dataset.bondCashflowMetricsDate;
+  hash = _marketSignatureAddString(
+    hash,
+    metricsDate == null
+        ? ''
+        : '${metricsDate.year}-${metricsDate.month}-${metricsDate.day}',
+  );
+  return hash.toRadixString(16).padLeft(8, '0');
+}
+
 class MarketPortfolioDataset {
   MarketPortfolioDataset({
     required this.portfolioType,
@@ -623,6 +692,7 @@ class MarketPortfolioDataset {
   late final double bondRateShockWorstLoss = bondRateShockLosses.isEmpty
       ? 0.0
       : math.max(0.0, bondRateShockLosses.last).toDouble();
+  late final String contentSignature = _marketDatasetContentSignature(this);
 
   double get parametricRiskValue => portfolioValue;
 
@@ -1132,10 +1202,10 @@ double _bondPositionQuantity(MarketPortfolioRecord record) {
 double _bondOutstandingCapital(MarketPortfolioRecord record) {
   if (_bondIsMaturedAtAnalysisDate(record)) return 0;
   if (record.capitalRemainingDue > 0) return record.capitalRemainingDue;
-  final initialCapital = _bondInitialCapital(record);
-  if (initialCapital > 0) return initialCapital;
   final amortizedCapital = _bondProfileOutstandingCapital(record);
   if (amortizedCapital != null) return amortizedCapital;
+  final initialCapital = _bondInitialCapital(record);
+  if (initialCapital > 0) return initialCapital;
   return math.max(0.0, record.exposureAmount).toDouble();
 }
 
@@ -1169,7 +1239,8 @@ double? _bondProfileOutstandingCapital(MarketPortfolioRecord record) {
         initialCapital: initialCapital,
         paidPeriods: schedule.paidPeriods,
         totalPeriods: schedule.totalPeriods,
-        interestRate: _marketRateFraction(record.coupon),
+        periodRate:
+            _marketRateFraction(record.coupon) / record.couponPaymentsPerYear,
       ),
     _ => initialCapital,
   };
@@ -1189,17 +1260,8 @@ _BondAmortizationKind _bondAmortizationKind(MarketPortfolioRecord record) {
       profile.contains('a echeance')) {
     return _BondAmortizationKind.bullet;
   }
-  if (profile == 'constant' && _isShortMonthlyTreasuryBill(record)) {
-    return _BondAmortizationKind.linear;
-  }
   if (profile == 'constant' ||
-      profile.contains('annuite') ||
-      profile.contains('annuity') ||
-      profile.contains('echeance constante') ||
-      profile.contains('paiement constant')) {
-    return _BondAmortizationKind.constantAnnuity;
-  }
-  if (profile.contains('lineaire') ||
+      profile.contains('lineaire') ||
       profile.contains('linear') ||
       profile.contains('principal constant') ||
       profile.contains('capital constant') ||
@@ -1208,16 +1270,14 @@ _BondAmortizationKind _bondAmortizationKind(MarketPortfolioRecord record) {
       profile.contains('amorti')) {
     return _BondAmortizationKind.linear;
   }
+  if (profile.contains('annuite') ||
+      profile.contains('annuity') ||
+      profile.contains('serie egale') ||
+      profile.contains('echeance constante') ||
+      profile.contains('paiement constant')) {
+    return _BondAmortizationKind.constantAnnuity;
+  }
   return _BondAmortizationKind.none;
-}
-
-bool _isShortMonthlyTreasuryBill(MarketPortfolioRecord record) {
-  final code = _foldMarketText(record.instrumentCode).replaceAll(' ', '');
-  final type = _foldMarketText(record.instrumentType);
-  return record.maturityMonths > 0 &&
-      record.maturityMonths <= 36 &&
-      record.couponPaymentsPerYear == 12 &&
-      (code == 'bt' || type.contains('bon du tresor'));
 }
 
 _BondAmortizationSchedule? _bondAmortizationSchedule(
@@ -1259,11 +1319,10 @@ double _bondConstantAnnuityBalance({
   required double initialCapital,
   required int paidPeriods,
   required int totalPeriods,
-  required double interestRate,
+  required double periodRate,
 }) {
   if (paidPeriods <= 0) return initialCapital;
   if (paidPeriods >= totalPeriods) return 0;
-  final periodRate = interestRate;
   if (!periodRate.isFinite || periodRate <= 0) {
     return initialCapital * (totalPeriods - paidPeriods) / totalPeriods;
   }
@@ -1322,33 +1381,7 @@ String _foldMarketText(String value) {
 }
 
 String _marketCountryIso3(String country) {
-  final normalized = _foldMarketText(country).replaceAll('-', ' ');
-  if (normalized.contains('benin')) return 'BEN';
-  if (normalized.contains('burkina')) return 'BFA';
-  if (normalized.contains('cote d ivoire') ||
-      normalized.contains('cote divoire') ||
-      normalized.contains('ivoire')) {
-    return 'CIV';
-  }
-  if (normalized.contains('guinee bissau')) return 'GNB';
-  if (normalized.contains('guinee equatoriale')) return 'GNQ';
-  if (normalized.contains('mali')) return 'MLI';
-  if (normalized.contains('niger')) return 'NER';
-  if (normalized.contains('senegal')) return 'SEN';
-  if (normalized.contains('togo')) return 'TGO';
-  if (normalized.contains('cameroun') || normalized.contains('cameroon')) {
-    return 'CMR';
-  }
-  if (normalized.contains('republique centrafricaine') ||
-      normalized.contains('centrafrique')) {
-    return 'CAF';
-  }
-  if (normalized.contains('congo')) return 'COG';
-  if (normalized.contains('gabon')) return 'GAB';
-  if (normalized.contains('tchad') || normalized.contains('chad')) {
-    return 'TCD';
-  }
-  return '';
+  return marketCountryIso3FromText(country);
 }
 
 String _marketIssuerAnalysisKey(MarketPortfolioRecord record) {
@@ -1381,18 +1414,8 @@ double _bondMarketValue(MarketPortfolioRecord record) {
 
 double _bondRedemptionUnitAmount(MarketPortfolioRecord record) {
   final nominal = _bondNominalUnit(record);
-  final redemptionPrice =
-      _bondPriceToUnitAmount(record.redemptionPrice, nominal);
-  if (redemptionPrice > 0) return redemptionPrice;
   if (nominal <= 0) return 0;
-  final premium = record.redemptionPremium;
-  if (premium == 0) return nominal;
-  final premiumAmount = premium.abs() <= 2
-      ? nominal * premium
-      : premium.abs() <= 200
-          ? nominal * premium / 100
-          : premium;
-  return math.max(0.0, nominal + premiumAmount).toDouble();
+  return nominal;
 }
 
 double _bondApproximateYield(MarketPortfolioRecord record) {
@@ -1400,6 +1423,16 @@ double _bondApproximateYield(MarketPortfolioRecord record) {
   final resolvedYield =
       explicitYield > 0 ? explicitYield : _marketRateFraction(record.coupon);
   return resolvedYield.clamp(0.0, 1.5).toDouble();
+}
+
+bool _bondIsZeroCouponProfile(MarketPortfolioRecord record) {
+  final profile = _foldMarketText(record.amortizationProfile);
+  return profile.contains('zero coupon') || profile.contains('zerocoupon');
+}
+
+double _bondCashflowCouponRate(MarketPortfolioRecord record) {
+  if (_bondIsZeroCouponProfile(record)) return 0;
+  return _marketRateFraction(record.coupon);
 }
 
 double _bondPresentValueForYield({
@@ -1410,14 +1443,15 @@ double _bondPresentValueForYield({
   required int periods,
   required double annualYield,
 }) {
-  final yieldPerPeriod = annualYield / frequency;
-  if (yieldPerPeriod <= -0.999) return 0;
+  if (annualYield <= -0.999) return 0;
+  final periodicBase = 1 + annualYield / frequency;
+  if (periodicBase <= 0 || !periodicBase.isFinite) return 0;
   final couponCashFlow = couponRate * nominal / frequency;
   var presentValue = 0.0;
   for (var period = 1; period <= periods; period++) {
     final cashFlow = couponCashFlow + (period == periods ? redemption : 0);
     if (cashFlow <= 0) continue;
-    final discount = math.pow(1 + yieldPerPeriod, period).toDouble();
+    final discount = math.pow(periodicBase, period).toDouble();
     if (discount <= 0) return 0;
     presentValue += cashFlow / discount;
   }
@@ -1437,7 +1471,7 @@ double _bondCashflowPresentValue(MarketPortfolioRecord record) {
   final unitPresentValue = _bondPresentValueForYield(
     nominal: nominal,
     redemption: redemption,
-    couponRate: _marketRateFraction(record.coupon),
+    couponRate: _bondCashflowCouponRate(record),
     frequency: frequency,
     periods: periods,
     annualYield: _bondApproximateYield(record),
@@ -1463,18 +1497,18 @@ double _bondMacaulayDuration(MarketPortfolioRecord record) {
 
   final frequency = math.max(1, record.couponPaymentsPerYear);
   final periods = math.max(1, (years * frequency).ceil());
-  final couponCashFlow =
-      _marketRateFraction(record.coupon) * nominal / frequency;
-  final yieldPerPeriod = _bondApproximateYield(record) / frequency;
+  final couponCashFlow = _bondCashflowCouponRate(record) * nominal / frequency;
+  final annualYield = _bondApproximateYield(record);
+  final periodicBase = 1 + annualYield / frequency;
+  if (periodicBase <= 0 || !periodicBase.isFinite) return 0;
 
   var macaulayNumerator = 0.0;
   var presentValue = 0.0;
   for (var period = 1; period <= periods; period++) {
     final time = math.min(period / frequency, years).toDouble();
-    final discountPeriods = time * frequency;
     final cashFlow = couponCashFlow + (period == periods ? redemption : 0);
     if (cashFlow <= 0) continue;
-    final discount = math.pow(1 + yieldPerPeriod, discountPeriods).toDouble();
+    final discount = math.pow(periodicBase, period).toDouble();
     if (discount <= 0) continue;
     final discountedCashFlow = cashFlow / discount;
     presentValue += discountedCashFlow;
@@ -1489,8 +1523,7 @@ double _bondModifiedDuration(MarketPortfolioRecord record) {
   final macaulay = _bondMacaulayDuration(record);
   if (macaulay <= 0) return 0;
   final frequency = math.max(1, record.couponPaymentsPerYear);
-  final yieldPerPeriod = _bondApproximateYield(record) / frequency;
-  final modified = macaulay / (1 + yieldPerPeriod);
+  final modified = macaulay / (1 + _bondApproximateYield(record) / frequency);
   return modified.isFinite ? math.max(0.0, modified).toDouble() : 0;
 }
 
@@ -1502,29 +1535,24 @@ double _bondCashflowConvexity(MarketPortfolioRecord record) {
 
   final frequency = math.max(1, record.couponPaymentsPerYear);
   final periods = math.max(1, (years * frequency).ceil());
-  final yieldPerPeriod = _bondApproximateYield(record) / frequency;
-  final couponCashFlow =
-      _marketRateFraction(record.coupon) * nominal / frequency;
+  final annualYield = _bondApproximateYield(record);
+  final periodicBase = 1 + annualYield / frequency;
+  if (periodicBase <= 0 || !periodicBase.isFinite) return 0;
+  final couponCashFlow = _bondCashflowCouponRate(record) * nominal / frequency;
   var convexityNumerator = 0.0;
   var presentValue = 0.0;
 
   for (var period = 1; period <= periods; period++) {
     final time = math.min(period / frequency, years).toDouble();
-    final discountPeriods = time * frequency;
     final cashFlow = couponCashFlow + (period == periods ? redemption : 0);
     if (cashFlow <= 0) continue;
-    final baseDiscount =
-        math.pow(1 + yieldPerPeriod, discountPeriods).toDouble();
+    final baseDiscount = math.pow(periodicBase, period).toDouble();
     if (baseDiscount <= 0 || !baseDiscount.isFinite) continue;
     presentValue += cashFlow / baseDiscount;
-    final convexityDiscount =
-        math.pow(1 + yieldPerPeriod, discountPeriods + 2).toDouble();
-    if (convexityDiscount <= 0 || !convexityDiscount.isFinite) continue;
-    final periodIndex = discountPeriods;
     convexityNumerator += cashFlow *
-        periodIndex *
-        (periodIndex + 1) /
-        (frequency * frequency * convexityDiscount);
+        time *
+        (time + 1 / frequency) /
+        (baseDiscount * periodicBase * periodicBase);
   }
 
   if (presentValue <= 0) return 0;
@@ -1591,6 +1619,64 @@ class MarketImportCommitResult {
   int get replacedRowCount => appended ? 0 : previousRowCount;
 }
 
+class MarketDataSnapshot {
+  const MarketDataSnapshot({
+    required this.datasets,
+    required this.activeType,
+    required this.activeDataset,
+    required this.contentSignature,
+    required this.revision,
+  });
+
+  factory MarketDataSnapshot.fromDatasets(
+    Map<MarketPortfolioType, MarketPortfolioDataset> datasets, {
+    MarketPortfolioType? activeType,
+    int revision = 0,
+  }) {
+    final normalized =
+        Map<MarketPortfolioType, MarketPortfolioDataset>.unmodifiable(
+      datasets,
+    );
+    final resolvedActiveType =
+        activeType != null && normalized.containsKey(activeType)
+            ? activeType
+            : normalized.isEmpty
+                ? null
+                : normalized.keys.first;
+    final parts = <String>[
+      'market-snapshot-v1',
+      for (final type in MarketPortfolioType.values)
+        if (normalized[type] != null)
+          '${type.storageKey}:${normalized[type]!.contentSignature}',
+      'active:${resolvedActiveType?.storageKey ?? ''}',
+    ];
+    return MarketDataSnapshot(
+      datasets: normalized,
+      activeType: resolvedActiveType,
+      activeDataset:
+          resolvedActiveType == null ? null : normalized[resolvedActiveType],
+      contentSignature: parts.join('|'),
+      revision: revision,
+    );
+  }
+
+  static final MarketDataSnapshot empty = MarketDataSnapshot.fromDatasets(
+    const {},
+  );
+
+  final Map<MarketPortfolioType, MarketPortfolioDataset> datasets;
+  final MarketPortfolioType? activeType;
+  final MarketPortfolioDataset? activeDataset;
+  final String contentSignature;
+  final int revision;
+
+  bool get hasData => datasets.values.any((dataset) => dataset.rowCount > 0);
+
+  MarketPortfolioDataset? datasetFor(MarketPortfolioType type) {
+    return datasets[type];
+  }
+}
+
 class MarketDataImportStore {
   MarketDataImportStore._() {
     _restoreFuture = _restorePersistedDatasets().then((_) {});
@@ -1603,9 +1689,12 @@ class MarketDataImportStore {
   RwaApiService? _sqlBackendApi;
   Future<void>? _sqlBackendFuture;
   late final Future<void> _restoreFuture;
+  int _snapshotRevision = 0;
 
   Future<void> get initialized => _sqlBackendFuture ?? _restoreFuture;
 
+  final ValueNotifier<MarketDataSnapshot> snapshotNotifier =
+      ValueNotifier<MarketDataSnapshot>(MarketDataSnapshot.empty);
   final ValueNotifier<MarketPortfolioDataset?> datasetNotifier =
       ValueNotifier<MarketPortfolioDataset?>(null);
   final ValueNotifier<Map<MarketPortfolioType, MarketPortfolioDataset>>
@@ -1614,9 +1703,39 @@ class MarketDataImportStore {
     const {},
   );
 
-  MarketPortfolioDataset? get dataset => datasetNotifier.value;
+  MarketPortfolioDataset? get dataset => snapshotNotifier.value.activeDataset;
   MarketPortfolioDataset? datasetFor(MarketPortfolioType type) =>
-      datasetsNotifier.value[type];
+      snapshotNotifier.value.datasets[type];
+
+  MarketDataSnapshot get snapshot => snapshotNotifier.value;
+
+  bool _publishDatasets(
+    Map<MarketPortfolioType, MarketPortfolioDataset> datasets, {
+    MarketPortfolioType? activeType,
+    bool persist = false,
+  }) {
+    final next = MarketDataSnapshot.fromDatasets(
+      datasets,
+      activeType: activeType,
+      revision: _snapshotRevision + 1,
+    );
+    final previous = snapshotNotifier.value;
+    if (next.contentSignature == previous.contentSignature) {
+      return false;
+    }
+
+    _snapshotRevision++;
+    final published = MarketDataSnapshot.fromDatasets(
+      next.datasets,
+      activeType: next.activeType,
+      revision: _snapshotRevision,
+    );
+    snapshotNotifier.value = published;
+    datasetsNotifier.value = published.datasets;
+    datasetNotifier.value = published.activeDataset;
+    if (persist) _schedulePersistDatasets();
+    return true;
+  }
 
   Future<void> configureSqlBackend(RwaApiService api) {
     final existing = _sqlBackendFuture;
@@ -1629,7 +1748,7 @@ class MarketDataImportStore {
 
   void addRecord(
       MarketPortfolioType portfolioType, Map<String, Object?> values) {
-    final current = datasetsNotifier.value[portfolioType];
+    final current = snapshotNotifier.value.datasets[portfolioType];
     final headers = current?.headers ?? portfolioType.requiredHeaders;
     final normalizedValues = {
       for (final header in portfolioType.requiredHeaders)
@@ -1651,12 +1770,14 @@ class MarketDataImportStore {
         headers: headers,
         records: [record],
       );
-      datasetsNotifier.value = {
-        ...datasetsNotifier.value,
-        portfolioType: dataset,
-      };
-      datasetNotifier.value = dataset;
-      _schedulePersistDatasets();
+      _publishDatasets(
+        {
+          ...snapshotNotifier.value.datasets,
+          portfolioType: dataset,
+        },
+        activeType: portfolioType,
+        persist: true,
+      );
       return;
     }
     _publishDatasetWithRecords(
@@ -1670,7 +1791,7 @@ class MarketDataImportStore {
     int index,
     Map<String, Object?> values,
   ) {
-    final current = datasetsNotifier.value[portfolioType];
+    final current = snapshotNotifier.value.datasets[portfolioType];
     if (current == null || index < 0 || index >= current.records.length) {
       return;
     }
@@ -1691,7 +1812,7 @@ class MarketDataImportStore {
   }
 
   void removeRecord(MarketPortfolioType portfolioType, int index) {
-    final current = datasetsNotifier.value[portfolioType];
+    final current = snapshotNotifier.value.datasets[portfolioType];
     if (current == null || index < 0 || index >= current.records.length) {
       return;
     }
@@ -1789,7 +1910,7 @@ class MarketDataImportStore {
         'Le fichier ne respecte pas le modèle ${portfolioType.label} attendu.',
       );
     }
-    final current = datasetsNotifier.value[portfolioType];
+    final current = snapshotNotifier.value.datasets[portfolioType];
     final previousRowCount = current?.rowCount ?? 0;
     final records = append && current != null
         ? [...current.records, ...parsed.records]
@@ -1821,12 +1942,14 @@ class MarketDataImportStore {
           ? current.bondCashflowMetricsDate
           : parsedCashflowMetricsDate,
     );
-    datasetsNotifier.value = {
-      ...datasetsNotifier.value,
-      portfolioType: dataset,
-    };
-    datasetNotifier.value = dataset;
-    _schedulePersistDatasets();
+    _publishDatasets(
+      {
+        ...snapshotNotifier.value.datasets,
+        portfolioType: dataset,
+      },
+      activeType: portfolioType,
+      persist: true,
+    );
     return MarketImportCommitResult(
       dataset: dataset,
       appended: append,
@@ -1842,7 +1965,7 @@ class MarketDataImportStore {
     final dataset = MarketPortfolioDataset(
       portfolioType: current.portfolioType,
       fileName: current.fileName,
-      importedAt: current.importedAt,
+      importedAt: DateTime.now(),
       headers: current.headers,
       records: records,
       bondCapitalRemainingDue: current.bondCapitalRemainingDue,
@@ -1852,12 +1975,14 @@ class MarketDataImportStore {
       bondCashflowConvexity: current.bondCashflowConvexity,
       bondCashflowMetricsDate: current.bondCashflowMetricsDate,
     );
-    datasetsNotifier.value = {
-      ...datasetsNotifier.value,
-      current.portfolioType: dataset,
-    };
-    datasetNotifier.value = dataset;
-    _schedulePersistDatasets();
+    _publishDatasets(
+      {
+        ...snapshotNotifier.value.datasets,
+        current.portfolioType: dataset,
+      },
+      activeType: current.portfolioType,
+      persist: true,
+    );
   }
 
   Future<void> _restoreSqlDatasets(RwaApiService api) async {
@@ -1911,10 +2036,10 @@ class MarketDataImportStore {
       final result = await _restoreDecodedDatasetsInBackground(decoded);
       if (_hasLocalMutation || result.datasets.isEmpty) return false;
 
-      datasetsNotifier.value = result.datasets;
-      datasetNotifier.value = result.activeType == null
-          ? result.datasets.values.first
-          : result.datasets[result.activeType] ?? result.datasets.values.first;
+      _publishDatasets(
+        result.datasets,
+        activeType: result.activeType,
+      );
       return true;
     } catch (_) {
       return false;
@@ -1946,12 +2071,12 @@ class MarketDataImportStore {
   }
 
   Future<void> _persistDatasets() async {
-    final activeDataset = datasetNotifier.value;
+    final activeDataset = snapshotNotifier.value.activeDataset;
     final payload = <String, Object?>{
       'version': _marketDataImportStorageVersion,
       'activeType': activeDataset?.portfolioType.storageKey,
       'datasets': {
-        for (final entry in datasetsNotifier.value.entries)
+        for (final entry in snapshotNotifier.value.datasets.entries)
           entry.key.storageKey: _datasetToPersistedJson(entry.value),
       },
     };
@@ -2947,6 +3072,14 @@ void _normalizeMarketRowValues(
     final analysisDate = _marketToday();
     final issueDate = _dateValue(values['Date d\'émission']);
     final maturityDate = _dateValue(values['Date d\'échéance']);
+    values.putIfAbsent(
+      '__Maturité importée (mois)',
+      () => values['Maturité (mois)'],
+    );
+    values.putIfAbsent(
+      '__Maturité résiduelle importée (mois)',
+      () => values['Maturité résiduelle (mois)'],
+    );
     values['Date d\'analyse'] = analysisDate;
     if (issueDate != null && maturityDate != null) {
       values['Maturité (mois)'] = _bondDateMaturityMonths(

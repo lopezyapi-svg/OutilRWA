@@ -59,7 +59,12 @@ class _ReportFilterCardState extends State<ReportFilterCard> {
               _buildDropdown(
                 label: 'Expositions',
                 value: _scope,
-                values: const ['Toutes', 'Entreprises', 'Banques', 'Souverains'],
+                values: const [
+                  'Toutes',
+                  'Entreprises',
+                  'Banques',
+                  'Souverains'
+                ],
                 onChanged: (value) => setState(() => _scope = value),
               ),
             ],
@@ -68,14 +73,16 @@ class _ReportFilterCardState extends State<ReportFilterCard> {
           CheckboxListTile(
             dense: true,
             value: _includeCategoryChart,
-            onChanged: (value) => setState(() => _includeCategoryChart = value ?? _includeCategoryChart),
+            onChanged: (value) => setState(
+                () => _includeCategoryChart = value ?? _includeCategoryChart),
             title: const Text('Inclure graphique de repartition par categorie'),
             contentPadding: EdgeInsets.zero,
           ),
           CheckboxListTile(
             dense: true,
             value: _includeRatingChart,
-            onChanged: (value) => setState(() => _includeRatingChart = value ?? _includeRatingChart),
+            onChanged: (value) => setState(
+                () => _includeRatingChart = value ?? _includeRatingChart),
             title: const Text('Inclure graphique de repartition par notation'),
             contentPadding: EdgeInsets.zero,
           ),
@@ -104,7 +111,9 @@ class _ReportFilterCardState extends State<ReportFilterCard> {
       child: DropdownButtonFormField<String>(
         initialValue: value,
         decoration: InputDecoration(labelText: label),
-        items: values.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+        items: values
+            .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+            .toList(),
         onChanged: (newValue) {
           if (newValue != null) {
             onChanged(newValue);

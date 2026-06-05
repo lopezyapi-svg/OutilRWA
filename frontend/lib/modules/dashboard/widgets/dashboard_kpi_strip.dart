@@ -50,55 +50,47 @@ class _DashboardKpiStripState extends State<DashboardKpiStrip> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        const gap = 12.0;
-        final itemCount = math.max(widget.items.length, 1);
-        final fluidWidth =
-            (constraints.maxWidth - (gap * (itemCount - 1))) / itemCount;
-        final baseCardWidth = math.max(164.0, math.min(fluidWidth, 185.0));
+        final compact = constraints.maxWidth < 980;
+        final tight = constraints.maxWidth < 680;
+        final gap = tight ? 5.0 : (compact ? 7.0 : 10.0);
+        final cardHeight = tight ? 62.0 : 68.0;
         bool usesRiskInterpretation(DashboardKpiItem item) {
           return item.label == 'Densité RWA';
         }
 
-        double widthFor(DashboardKpiItem item) {
-          if (usesRiskInterpretation(item)) {
-            return math.min(baseCardWidth + 54, 238.0);
-          }
-          return baseCardWidth;
-        }
+        final hasRiskInterpretation =
+            widget.items.any((item) => usesRiskInterpretation(item));
+        final rowHeight = hasRiskInterpretation ? 104.0 : cardHeight;
 
-        final totalWidth =
-            widget.items.fold<double>(0, (sum, item) => sum + widthFor(item)) +
-                (gap * math.max(widget.items.length - 1, 0));
-        final cards = Row(
-          children: [
-            for (var index = 0; index < widget.items.length; index++) ...[
-              SizedBox(
-                width: widthFor(widget.items[index]),
-                height: 104,
-                child: usesRiskInterpretation(widget.items[index])
-                    ? _DensityMiniCard(
-                        item: widget.items[index],
-                        selected: _selectedIndex == index,
-                        onTap: () => setState(() => _selectedIndex = index),
-                      )
-                    : _KpiCard(
-                        item: widget.items[index],
-                        selected: _selectedIndex == index,
-                        onTap: () => setState(() => _selectedIndex = index),
-                      ),
-              ),
-              if (index != widget.items.length - 1) const SizedBox(width: gap),
+        return SizedBox(
+          height: rowHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              for (var index = 0; index < widget.items.length; index++) ...[
+                Expanded(
+                  child: SizedBox(
+                    height: usesRiskInterpretation(widget.items[index])
+                        ? rowHeight
+                        : cardHeight,
+                    child: usesRiskInterpretation(widget.items[index])
+                        ? _DensityMiniCard(
+                            item: widget.items[index],
+                            selected: _selectedIndex == index,
+                            onTap: () => setState(() => _selectedIndex = index),
+                          )
+                        : _KpiCard(
+                            item: widget.items[index],
+                            selected: _selectedIndex == index,
+                            onTap: () => setState(() => _selectedIndex = index),
+                          ),
+                  ),
+                ),
+                if (index != widget.items.length - 1) SizedBox(width: gap),
+              ],
             ],
-          ],
-        );
-
-        if (totalWidth <= constraints.maxWidth) {
-          return cards;
-        }
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: cards,
+          ),
         );
       },
     );
@@ -124,333 +116,152 @@ class _KpiCard extends StatefulWidget {
 /// Etat interne qui gère l'animation au survol de la carte KPI.
 class _KpiCardState extends State<_KpiCard> {
   bool _hovered = false;
-  static const List<String> _currencySuffixes = ['FCFA', 'EUR', 'USD'];
 
-  Color _accentColor() {
-    return widget.item.gradient.first;
-  }
-
-  String? get _currencySuffix {
-    final trimmedValue = widget.item.value.trim().toUpperCase();
-    for (final suffix in _currencySuffixes) {
-      if (trimmedValue.endsWith(' $suffix')) {
-        return suffix;
-      }
-    }
-    return null;
-  }
-
-  bool get _isCurrencyValue {
-    return _currencySuffix != null;
-  }
-
-  bool get _isPercentValue {
-    return widget.item.value.trim().endsWith('%');
-  }
-
-  String? get _unitPart {
-    if (_isPercentValue) {
-      return null;
-    }
-    if (!_isCurrencyValue) {
-      return null;
-    }
-
-    final mainValue = widget.item.value
-        .trim()
-        .substring(
-          0,
-          widget.item.value.trim().length - _currencySuffix!.length,
-        )
-        .trimRight();
-    final parts = mainValue.split(' ');
-    return parts.length > 1 ? parts.sublist(1).join(' ') : null;
-  }
-
-  String? get _suffixPart {
-    if (_isCurrencyValue) {
-      return _currencySuffix;
-    }
-    return null;
-  }
-
-  String get _numberPart {
-    if (_isPercentValue) {
-      return widget.item.value.trim();
-    }
-    if (!_isCurrencyValue) {
-      return widget.item.value.trim();
-    }
-
-    final mainValue = widget.item.value
-        .trim()
-        .substring(
-          0,
-          widget.item.value.trim().length - _currencySuffix!.length,
-        )
-        .trimRight();
-    final parts = mainValue.split(' ');
-    return parts.isNotEmpty ? parts.first : mainValue;
-  }
+  Color _accentColor() => widget.item.gradient.first;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accent = _accentColor();
-    final surfaceColor = isDark ? const Color(0xFF0F1B31) : Colors.white;
-    final borderColor =
-        isDark ? const Color(0xFF22304B) : const Color(0xFFE2E8F2);
+    final baseSurface = isDark ? const Color(0xFF101A2E) : Colors.white;
+    final surfaceColor = Color.alphaBlend(
+      accent.withValues(alpha: isDark ? 0.16 : 0.075),
+      baseSurface,
+    );
+    final borderColor = accent.withValues(
+      alpha: (widget.selected || _hovered)
+          ? (isDark ? 0.70 : 0.56)
+          : (isDark ? 0.38 : 0.28),
+    );
     final titleColor = isDark ? AppTheme.darkText : AppTheme.text;
-    final mutedColor = isDark ? AppTheme.darkMuted : AppTheme.muted;
-    final iconSurface = isDark
-        ? accent.withValues(alpha: 0.10)
-        : accent.withValues(alpha: 0.06);
-    final iconTint = isDark
-        ? accent.withValues(alpha: 0.78)
-        : accent.withValues(alpha: 0.58);
+    final mutedColor = isDark ? AppTheme.darkMuted : const Color(0xFF63718A);
+    final label = widget.item.label.tr(context);
+    final helper = widget.item.helper.tr(context);
+    final tooltipValue = widget.item.fullValue ?? widget.item.value;
+    final tooltipMessage = '$label\n$tooltipValue\n$helper';
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          transform: Matrix4.translationValues(0, _hovered ? -1.5 : 0, 0),
-          decoration: BoxDecoration(
-            color: surfaceColor,
-            borderRadius: BorderRadius.circular(5),
-            border: Border.all(
-              color: (widget.selected || _hovered)
-                  ? accent.withValues(alpha: 0.48)
-                  : borderColor.withValues(alpha: 0.82),
-              width: (widget.selected || _hovered) ? 1.3 : 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withValues(alpha: _hovered ? 0.14 : 0.10)
-                    : const Color(0xFFB7C6DE).withValues(
-                        alpha: _hovered ? 0.16 : 0.10,
-                      ),
-                blurRadius: _hovered ? 20 : 14,
-                offset: Offset(0, _hovered ? 8 : 6),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(5),
-            child: LayoutBuilder(
-              builder: (context, cardConstraints) {
-                final cardHeight = cardConstraints.maxHeight;
-                final topInset = math.max(4.0, cardHeight * 0.045);
-                final iconDisk =
-                    math.max(20.0, math.min(28.0, cardHeight * 0.24));
-                final iconSize = math.max(12.0, iconDisk * 0.46);
-                final numberFont =
-                    math.max(16.0, math.min(21.0, cardHeight * 0.18));
-                final unitFont =
-                    math.max(10.2, math.min(12.2, cardHeight * 0.105));
-                final fcfaFont =
-                    math.max(9.2, math.min(10.4, cardHeight * 0.090));
-                final titleFont =
-                    math.max(9.4, math.min(10.6, cardHeight * 0.090));
-                final helperFont =
-                    math.max(6.8, math.min(7.8, cardHeight * 0.062));
-                final valueGap = math.max(2.0, cardHeight * 0.035);
-                final accentGap = math.max(2.0, cardHeight * 0.025);
-                final unitPart = _unitPart;
-                final suffixPart = _suffixPart;
+    return Tooltip(
+      message: tooltipMessage,
+      waitDuration: const Duration(milliseconds: 300),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: LayoutBuilder(
+            builder: (context, cardConstraints) {
+              final width = cardConstraints.maxWidth;
+              final compact = width < 150;
+              final tight = width < 118;
+              final micro = width < 92;
+              final showIcon = width >= 98;
+              final horizontalPadding = micro ? 6.0 : (tight ? 8.0 : 12.0);
+              final verticalPadding = tight ? 8.0 : 10.0;
+              final iconBox = tight ? 30.0 : (compact ? 34.0 : 38.0);
+              final iconSize = tight ? 15.0 : (compact ? 16.0 : 18.0);
+              final contentGap = tight ? 8.0 : 12.0;
+              final labelFont = micro ? 7.6 : (tight ? 8.0 : 8.8);
+              final valueFont = micro ? 13.6 : (tight ? 15.0 : 16.8);
+              final iconSurface =
+                  accent.withValues(alpha: isDark ? 0.18 : 0.13);
+              final iconBorder = accent.withValues(alpha: isDark ? 0.26 : 0.16);
 
-                return Stack(
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                transform: Matrix4.translationValues(0, _hovered ? -1.5 : 0, 0),
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  verticalPadding,
+                  horizontalPadding,
+                  verticalPadding,
+                ),
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  borderRadius: BorderRadius.circular(2),
+                  border: Border.all(
+                    color: borderColor,
+                    width: (widget.selected || _hovered) ? 1.25 : 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark
+                          ? Colors.black.withValues(
+                              alpha: _hovered ? 0.18 : 0.10,
+                            )
+                          : const Color(0xFF64748B).withValues(
+                              alpha: _hovered ? 0.10 : 0.045,
+                            ),
+                      blurRadius: _hovered ? 16 : 10,
+                      offset: Offset(0, _hovered ? 8 : 5),
+                    ),
+                  ],
+                ),
+                child: Row(
                   children: [
-                    Positioned(
-                      right: 10,
-                      top: 18,
-                      bottom: 10,
-                      width: math.min(74.0, cardConstraints.maxWidth * 0.34),
-                      child: IgnorePointer(
-                        child: CustomPaint(
-                          painter: _KpiAmbientMotionPainter(
-                            progress: 0.42,
-                            accent: accent,
-                            isDark: isDark,
-                            compact: false,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: 18,
-                      top: 0,
-                      child: Container(
-                        width: 60,
-                        height: 3,
+                    if (showIcon) ...[
+                      Container(
+                        width: iconBox,
+                        height: iconBox,
                         decoration: BoxDecoration(
+                          color: iconSurface,
+                          borderRadius: BorderRadius.circular(2),
+                          border: Border.all(color: iconBorder),
+                        ),
+                        child: Icon(
+                          widget.item.icon,
                           color: accent,
-                          borderRadius: const BorderRadius.only(
-                            bottomLeft: Radius.circular(2),
-                            bottomRight: Radius.circular(2),
-                          ),
+                          size: iconSize,
                         ),
                       ),
-                    ),
-                    Positioned(
-                      top: topInset + 2,
-                      right: 14,
-                      child: Icon(
-                        Icons.drag_indicator_rounded,
-                        color: mutedColor.withValues(alpha: 0.65),
-                        size: 14,
-                      ),
-                    ),
-                    Positioned(
-                      bottom: -4,
-                      right: -10,
-                      child: IgnorePointer(
-                        child: Container(
-                          width: 92,
-                          height: 62,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                accent.withValues(alpha: 0.00),
-                                accent.withValues(alpha: isDark ? 0.04 : 0.045),
-                                accent.withValues(alpha: isDark ? 0.08 : 0.09),
-                              ],
-                              stops: const [0.20, 0.58, 1.0],
-                            ),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(64),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(10, topInset, 10, 4),
+                      SizedBox(width: contentGap),
+                    ],
+                    Expanded(
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: iconDisk,
-                            height: iconDisk,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: iconSurface,
-                              border: Border.all(
-                                color: accent.withValues(
-                                    alpha: isDark ? 0.16 : 0.10),
-                              ),
-                            ),
-                            child: Icon(
-                              widget.item.icon,
-                              color: iconTint,
-                              size: iconSize,
-                            ),
-                          ),
-                          SizedBox(height: valueGap),
                           Text(
-                            _numberPart,
+                            label.toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: titleColor,
-                              fontSize: numberFont,
-                              fontWeight: FontWeight.w700,
+                              color: mutedColor,
+                              fontFamily: AppTheme.fontFamily,
+                              fontSize: labelFont,
+                              fontWeight: FontWeight.w500,
                               letterSpacing: 0,
-                              height: 0.95,
+                              height: 1.05,
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          if (unitPart != null)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                RichText(
-                                  text: TextSpan(
-                                    style: const TextStyle(height: 1),
-                                    children: [
-                                      TextSpan(
-                                        text: unitPart,
-                                        style: TextStyle(
-                                          color: accent,
-                                          fontSize: unitFont,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      if (suffixPart != null)
-                                        TextSpan(
-                                          text: '  $suffixPart',
-                                          style: TextStyle(
-                                            color: mutedColor.withValues(
-                                                alpha: 0.76),
-                                            fontSize: fcfaFont,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                          SizedBox(height: tight ? 5 : 6),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                widget.item.value,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: titleColor,
+                                  fontFamily: AppTheme.fontFamily,
+                                  fontSize: valueFont,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0,
+                                  height: 1,
                                 ),
-                              ],
-                            )
-                          else
-                            (_isPercentValue
-                                ? SizedBox(height: unitFont)
-                                : Text(
-                                    widget.item.value,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: titleColor,
-                                      fontSize: unitFont,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  )),
-                          SizedBox(height: accentGap),
-                          Container(
-                            width: 18,
-                            height: 2,
-                            decoration: BoxDecoration(
-                              color: accent,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.item.label.tr(context),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: titleColor,
-                              fontSize: titleFont,
-                              fontWeight: FontWeight.w700,
-                              height: 1.08,
-                            ),
-                          ),
-                          const SizedBox(height: 0.5),
-                          Text(
-                            widget.item.helper.tr(context),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: mutedColor.withValues(
-                                  alpha: isDark ? 0.96 : 0.92),
-                              fontSize: helperFont,
-                              fontWeight: FontWeight.w600,
-                              height: 1.1,
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
                   ],
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -735,7 +546,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                             style: TextStyle(
                                               color: titleColor,
                                               fontSize: titleFont,
-                                              fontWeight: FontWeight.w700,
+                                              fontWeight: FontWeight.w500,
                                               height: 1.04,
                                             ),
                                           ),
@@ -749,7 +560,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                 alpha: isDark ? 0.94 : 0.88,
                                               ),
                                               fontSize: helperFont,
-                                              fontWeight: FontWeight.w600,
+                                              fontWeight: FontWeight.w500,
                                               height: 1.02,
                                             ),
                                           ),
@@ -764,7 +575,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                   style: TextStyle(
                                     color: titleColor,
                                     fontSize: valueFont,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w500,
                                     letterSpacing: 0,
                                     height: 0.92,
                                   ),
@@ -810,7 +621,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                           style: TextStyle(
                                             color: _accent,
                                             fontSize: chipFont,
-                                            fontWeight: FontWeight.w700,
+                                            fontWeight: FontWeight.w500,
                                             height: 1,
                                           ),
                                         ),
@@ -837,7 +648,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                       style: TextStyle(
                                         color: titleColor,
                                         fontSize: sectionTitleFont,
-                                        fontWeight: FontWeight.w700,
+                                        fontWeight: FontWeight.w500,
                                         height: 1.03,
                                       ),
                                     ),
@@ -854,7 +665,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                               style: TextStyle(
                                                 color: levels[index].color,
                                                 fontSize: 8.2,
-                                                fontWeight: FontWeight.w700,
+                                                fontWeight: FontWeight.w500,
                                                 height: 1.35,
                                               ),
                                             ),
@@ -865,7 +676,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                     ? const Color(0xFFF8FBFF)
                                                     : const Color(0xFF173055),
                                                 fontSize: 8.1,
-                                                fontWeight: FontWeight.w600,
+                                                fontWeight: FontWeight.w500,
                                                 height: 1.35,
                                               ),
                                             ),
@@ -876,7 +687,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                     ? const Color(0xFFB8C9E6)
                                                     : const Color(0xFF5E759A),
                                                 fontSize: 8.5,
-                                                fontWeight: FontWeight.w700,
+                                                fontWeight: FontWeight.w500,
                                                 height: 1.4,
                                               ),
                                             ),
@@ -926,7 +737,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                                   ),
                                                             fontSize: 8.0,
                                                             fontWeight:
-                                                                FontWeight.w700,
+                                                                FontWeight.w500,
                                                             height: 1.2,
                                                           ),
                                                         ),
@@ -943,7 +754,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                                   ),
                                                             fontSize: 8.1,
                                                             fontWeight:
-                                                                FontWeight.w700,
+                                                                FontWeight.w500,
                                                             height: 1.2,
                                                           ),
                                                         ),
@@ -956,7 +767,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                                     .color,
                                                             fontSize: 8.1,
                                                             fontWeight:
-                                                                FontWeight.w700,
+                                                                FontWeight.w500,
                                                             height: 1.2,
                                                           ),
                                                         ),
@@ -973,7 +784,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                                   ),
                                                             fontSize: 8.0,
                                                             fontWeight:
-                                                                FontWeight.w700,
+                                                                FontWeight.w500,
                                                             height: 1.4,
                                                           ),
                                                         ),
@@ -990,7 +801,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                                   ),
                                                             fontSize: 8.0,
                                                             fontWeight:
-                                                                FontWeight.w600,
+                                                                FontWeight.w500,
                                                             height: 1.4,
                                                           ),
                                                         ),
@@ -1111,7 +922,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                         fontSize:
                                                             levelLabelFont,
                                                         fontWeight:
-                                                            FontWeight.w700,
+                                                            FontWeight.w500,
                                                         height: 1,
                                                       ),
                                                     ),
@@ -1137,7 +948,7 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
                                                         fontSize:
                                                             levelHelperFont,
                                                         fontWeight:
-                                                            FontWeight.w600,
+                                                            FontWeight.w500,
                                                         height: 1,
                                                       ),
                                                     ),

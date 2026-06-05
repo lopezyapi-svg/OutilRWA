@@ -413,7 +413,7 @@ class _StatusBadge extends StatelessWidget {
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: color,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
             ),
       ),
     );

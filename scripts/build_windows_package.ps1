@@ -23,6 +23,14 @@ $backendPythonDir = Join-Path $backendPackageDir "python"
 $backendSourceDir = Join-Path $backendPackageDir "src"
 $backendSeedDataDir = Join-Path $backendSourceDir "data"
 
+function Stop-RwaCalculatorProcesses {
+    $runningProcesses = Get-CimInstance Win32_Process -Filter "Name = 'rwa_calculator.exe'" -ErrorAction SilentlyContinue
+    foreach ($process in $runningProcesses) {
+        Write-Host "Arret du processus existant rwa_calculator.exe ($($process.ProcessId))" -ForegroundColor Yellow
+        Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function New-CleanDirectory {
     param([Parameter(Mandatory = $true)][string]$Path)
 
@@ -88,6 +96,55 @@ function Resolve-CSharpCompilerPath {
     throw "csc.exe introuvable. Installez le .NET Framework developer pack ou Visual Studio."
 }
 
+function Resolve-FlutterRoot {
+    $flutterCommand = Get-Command flutter -ErrorAction SilentlyContinue
+    if (-not $flutterCommand) {
+        throw "flutter introuvable dans le PATH."
+    }
+
+    $flutterBin = Split-Path -Parent $flutterCommand.Source
+    return Split-Path -Parent $flutterBin
+}
+
+function Get-FileSha256 {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        $sha256 = [System.Security.Cryptography.SHA256]::Create()
+        try {
+            $hashBytes = $sha256.ComputeHash($stream)
+            return ([System.BitConverter]::ToString($hashBytes)).Replace("-", "")
+        }
+        finally {
+            $sha256.Dispose()
+        }
+    }
+    finally {
+        $stream.Dispose()
+    }
+}
+
+function Resolve-ExpectedReleaseFlutterEngine {
+    $flutterRoot = Resolve-FlutterRoot
+    $expectedEngine = Join-Path $flutterRoot "bin\cache\artifacts\engine\windows-x64-release\flutter_windows.dll"
+    if (-not (Test-Path $expectedEngine)) {
+        throw "Moteur Flutter release introuvable : $expectedEngine"
+    }
+    return $expectedEngine
+}
+
+function Copy-ReleaseFlutterEngineToBundle {
+    $expectedEngine = Resolve-ExpectedReleaseFlutterEngine
+    $bundleEngine = Join-Path (Join-Path $frontendBuildDir "runner\Release") "flutter_windows.dll"
+
+    if (-not (Test-Path (Split-Path -Parent $bundleEngine))) {
+        throw "Dossier du bundle release introuvable : $(Split-Path -Parent $bundleEngine)"
+    }
+
+    Copy-Item -LiteralPath $expectedEngine -Destination $bundleEngine -Force
+}
+
 function Resolve-FrontendBundlePath {
     $candidates = @(
         (Join-Path $frontendBuildDir "bundle")
@@ -101,6 +158,39 @@ function Resolve-FrontendBundlePath {
     }
 
     throw "Executable Flutter introuvable. Emplacements testes : $($candidates -join ', ')"
+}
+
+function Clear-FlutterWindowsBuildState {
+    Stop-RwaCalculatorProcesses
+
+    $pathsToRemove = @(
+        (Join-Path $frontendDir "build\windows")
+        (Join-Path $frontendDir "windows\flutter\ephemeral")
+    )
+
+    foreach ($path in $pathsToRemove) {
+        if (Test-Path $path) {
+            Remove-Item $path -Recurse -Force
+        }
+        if (Test-Path $path) {
+            throw "Nettoyage incomplet : $path est encore present."
+        }
+    }
+}
+
+function Assert-ReleaseFlutterEngine {
+    $expectedEngine = Resolve-ExpectedReleaseFlutterEngine
+    $bundleEngine = Join-Path (Join-Path $frontendBuildDir "runner\Release") "flutter_windows.dll"
+
+    if (-not (Test-Path $bundleEngine)) {
+        throw "Moteur Flutter absent du bundle release : $bundleEngine"
+    }
+
+    $expectedHash = Get-FileSha256 -Path $expectedEngine
+    $bundleHash = Get-FileSha256 -Path $bundleEngine
+    if ($expectedHash -ne $bundleHash) {
+        throw "Bundle Flutter invalide : le moteur embarque n'est pas le moteur release."
+    }
 }
 
 function Get-PythonVersion {
@@ -222,12 +312,15 @@ Invoke-Step -Title "Assemblage du backend Python embarque" -Action {
 Invoke-Step -Title "Compilation du frontend Flutter Windows" -Action {
     Push-Location $frontendDir
     try {
+        Clear-FlutterWindowsBuildState
         flutter clean
         Assert-LastExitCode -Context "flutter clean"
         flutter pub get
         Assert-LastExitCode -Context "flutter pub get"
-        flutter build windows --release
-        Assert-LastExitCode -Context "flutter build windows --release"
+        flutter build windows --release --no-tree-shake-icons
+        Assert-LastExitCode -Context "flutter build windows --release --no-tree-shake-icons"
+        Copy-ReleaseFlutterEngineToBundle
+        Assert-ReleaseFlutterEngine
     }
     finally {
         Pop-Location
@@ -238,6 +331,8 @@ Invoke-Step -Title "Creation explicite du bundle Windows Flutter" -Action {
     $msbuildExe = Resolve-MSBuildPath
     & $msbuildExe (Join-Path $frontendBuildDir "INSTALL.vcxproj") /p:Configuration=Release /p:Platform=x64 /m
     Assert-LastExitCode -Context "La creation du bundle Windows via MSBuild"
+    Copy-ReleaseFlutterEngineToBundle
+    Assert-ReleaseFlutterEngine
 }
 
 Invoke-Step -Title "Assemblage du livrable portable" -Action {

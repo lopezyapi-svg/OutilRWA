@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 /// Définit les couleurs, espacements et thèmes partagés de l'interface.
 class AppTheme {
-  static const String fontFamily = 'General Sans';
+  static const String fontFamily = 'Roboto Flex';
   static const String dataFontFamily = fontFamily;
   static const String titleFontFamily = fontFamily;
   static const double radius = 5;
@@ -89,7 +89,7 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         titleTextStyle: textTheme.titleLarge?.copyWith(
           color: textColor,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
         toolbarTextStyle: textTheme.titleMedium,
       ),
@@ -97,12 +97,12 @@ class AppTheme {
         headingTextStyle: textTheme.labelMedium?.copyWith(
           color: textColor,
           fontFamily: fontFamily,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
         ),
         dataTextStyle: textTheme.bodyMedium?.copyWith(
           color: textColor,
           fontFamily: fontFamily,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
         ),
       ),
       listTileTheme: ListTileThemeData(
@@ -175,25 +175,32 @@ class AppTheme {
 
   static TextTheme _buildTextTheme(TextTheme base) {
     return base.copyWith(
-      displayLarge: _font(base.displayLarge, fontFamily),
-      displayMedium: _font(base.displayMedium, fontFamily),
-      displaySmall: _font(base.displaySmall, fontFamily),
-      headlineLarge: _font(base.headlineLarge, fontFamily),
-      headlineMedium: _font(base.headlineMedium, fontFamily),
-      headlineSmall: _font(base.headlineSmall, fontFamily),
-      titleLarge: _font(base.titleLarge, fontFamily),
-      titleMedium: _font(base.titleMedium, fontFamily),
-      titleSmall: _font(base.titleSmall, fontFamily),
-      labelLarge: _font(base.labelLarge, fontFamily),
-      labelMedium: _font(base.labelMedium, fontFamily),
-      labelSmall: _font(base.labelSmall, fontFamily),
-      bodyLarge: _font(base.bodyLarge, fontFamily),
-      bodyMedium: _font(base.bodyMedium, fontFamily),
-      bodySmall: _font(base.bodySmall, fontFamily),
+      displayLarge: _font(base.displayLarge, fontFamily, FontWeight.w600),
+      displayMedium: _font(base.displayMedium, fontFamily, FontWeight.w600),
+      displaySmall: _font(base.displaySmall, fontFamily, FontWeight.w600),
+      headlineLarge: _font(base.headlineLarge, fontFamily, FontWeight.w600),
+      headlineMedium: _font(base.headlineMedium, fontFamily, FontWeight.w600),
+      headlineSmall: _font(base.headlineSmall, fontFamily, FontWeight.w600),
+      titleLarge: _font(base.titleLarge, fontFamily, FontWeight.w600),
+      titleMedium: _font(base.titleMedium, fontFamily, FontWeight.w600),
+      titleSmall: _font(base.titleSmall, fontFamily, FontWeight.w600),
+      labelLarge: _font(base.labelLarge, fontFamily, FontWeight.w600),
+      labelMedium: _font(base.labelMedium, fontFamily, FontWeight.w600),
+      labelSmall: _font(base.labelSmall, fontFamily, FontWeight.w500),
+      bodyLarge: _font(base.bodyLarge, fontFamily, FontWeight.w400),
+      bodyMedium: _font(base.bodyMedium, fontFamily, FontWeight.w400),
+      bodySmall: _font(base.bodySmall, fontFamily, FontWeight.w400),
     );
   }
 
-  static TextStyle? _font(TextStyle? style, String fontFamily) {
-    return style?.copyWith(fontFamily: fontFamily);
+  static TextStyle? _font(
+    TextStyle? style,
+    String fontFamily,
+    FontWeight fontWeight,
+  ) {
+    return style?.copyWith(
+      fontFamily: fontFamily,
+      fontWeight: fontWeight,
+    );
   }
 }

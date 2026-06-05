@@ -45,6 +45,111 @@ flutter:
     - assets/lotties/rwa_dashboard.json
     - assets/lotties/yield_curve_no_data.json
   fonts:
+    - family: Roboto Flex
+      fonts:
+        - asset: assets/fonts/RobotoFlex-Variable.ttf
+          weight: 100
+        - asset: assets/fonts/RobotoFlex-Variable.ttf
+          weight: 200
+        - asset: assets/fonts/RobotoFlex-Variable.ttf
+          weight: 300
+        - asset: assets/fonts/RobotoFlex-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/RobotoFlex-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/RobotoFlex-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/RobotoFlex-Variable.ttf
+          weight: 700
+        - asset: assets/fonts/RobotoFlex-Variable.ttf
+          weight: 800
+        - asset: assets/fonts/RobotoFlex-Variable.ttf
+          weight: 900
+    - family: Cormorant Garamond
+      fonts:
+        - asset: assets/fonts/CormorantGaramond-Variable.ttf
+          weight: 400
+        - asset: assets/fonts/CormorantGaramond-Italic-Variable.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/CormorantGaramond-Variable.ttf
+          weight: 500
+        - asset: assets/fonts/CormorantGaramond-Italic-Variable.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/CormorantGaramond-Variable.ttf
+          weight: 600
+        - asset: assets/fonts/CormorantGaramond-Italic-Variable.ttf
+          weight: 600
+          style: italic
+        - asset: assets/fonts/CormorantGaramond-Variable.ttf
+          weight: 700
+        - asset: assets/fonts/CormorantGaramond-Italic-Variable.ttf
+          weight: 700
+          style: italic
+    - family: Aptos
+      fonts:
+        - asset: assets/fonts/Aptos-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Aptos-Light-Italic.ttf
+          weight: 300
+          style: italic
+        - asset: assets/fonts/Aptos.ttf
+          weight: 400
+        - asset: assets/fonts/Aptos-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/Aptos-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Aptos-SemiBold-Italic.ttf
+          weight: 600
+          style: italic
+        - asset: assets/fonts/Aptos-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Aptos-Bold-Italic.ttf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/Aptos-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Aptos-ExtraBold-Italic.ttf
+          weight: 800
+          style: italic
+        - asset: assets/fonts/Aptos-Black.ttf
+          weight: 900
+        - asset: assets/fonts/Aptos-Black-Italic.ttf
+          weight: 900
+          style: italic
+    - family: Nunito Sans
+      fonts:
+        - asset: assets/fonts/NunitoSans-Variable.ttf
+        - asset: assets/fonts/NunitoSans-Italic-Variable.ttf
+          style: italic
+    - family: Michroma
+      fonts:
+        - asset: assets/fonts/Michroma-Regular.ttf
+          weight: 400
+    - family: IBM Plex Sans
+      fonts:
+        - asset: assets/fonts/IBMPlexSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/IBMPlexSans-Italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/IBMPlexSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/IBMPlexSans-MediumItalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/IBMPlexSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/IBMPlexSans-SemiBoldItalic.ttf
+          weight: 600
+          style: italic
+        - asset: assets/fonts/IBMPlexSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/IBMPlexSans-BoldItalic.ttf
+          weight: 700
+          style: italic
     - family: Tenor Sans
       fonts:
         - asset: assets/fonts/TenorSans-Regular.ttf

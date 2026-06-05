@@ -11,8 +11,8 @@ import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../shared/widgets/kpi_metric_card.dart';
 import '../../dashboard/models/dashboard_models.dart';
+import '../../expositions/models/exposition_models.dart';
 
 const Color _background = Color(0xFFF4F7FB);
 const Color _surface = Color(0xFFFFFFFF);
@@ -22,11 +22,13 @@ const Color _primary = Color(0xFF2563EB);
 const Color _cyan = Color(0xFF06B6D4);
 const Color _success = Color(0xFF10B981);
 const Color _warning = Color(0xFFF59E0B);
+const Color _chartIndigo = Color(0xFF4F46E5);
 const Color _violet = Color(0xFF7C3AED);
 const Color _danger = Color(0xFFEF4444);
+const Color _deepBlue = Color(0xFF234A84);
 const Color _textPrimary = Color(0xFF13203A);
 const Color _textSecondary = Color(0xFF64748B);
-const double _radius = 2;
+const double _radius = 3;
 
 bool _isDashboardDark(BuildContext context) =>
     Theme.of(context).brightness == Brightness.dark;
@@ -46,8 +48,30 @@ Color _dashboardBorderFor(BuildContext context) =>
 Color _dashboardTextFor(BuildContext context) =>
     _isDashboardDark(context) ? const Color(0xFFF2F6FF) : _textPrimary;
 
-Color _dashboardMutedFor(BuildContext context) =>
-    _isDashboardDark(context) ? const Color(0xFF9FB0CE) : _textSecondary;
+Color _dashboardTitleFor(BuildContext context) =>
+    _isDashboardDark(context) ? const Color(0xFFE4EEFF) : _deepBlue;
+
+Color _dashboardMutedFor(BuildContext context) => _isDashboardDark(context)
+    ? const Color(0xFFB2C0D9)
+    : const Color(0xFF52627A);
+
+List<BoxShadow> _commandCardElevation(BuildContext context, Color accent) {
+  final isDark = _isDashboardDark(context);
+  return [
+    BoxShadow(
+      color: isDark
+          ? Colors.black.withValues(alpha: 0.22)
+          : const Color(0xFF234A84).withValues(alpha: 0.075),
+      blurRadius: 18,
+      offset: const Offset(0, 9),
+    ),
+    BoxShadow(
+      color: accent.withValues(alpha: isDark ? 0.08 : 0.055),
+      blurRadius: 10,
+      offset: const Offset(0, 3),
+    ),
+  ];
+}
 
 class VueEnsembleScreen extends StatefulWidget {
   const VueEnsembleScreen({
@@ -201,6 +225,16 @@ class _ExecutiveDashboard extends StatelessWidget {
       totalRwa: rwaValue,
       totalExposure: exposureValue,
     );
+    final sortedRows = [...data.portfolioOverview]
+      ..sort((a, b) => b.grossAmount.compareTo(a.grossAmount));
+    final topExposure = sortedRows.isEmpty ? null : sortedRows.first;
+    final topExposureShare = topExposure == null || exposureValue == 0
+        ? 0.0
+        : topExposure.grossAmount / exposureValue;
+    final topExposureLabel =
+        topExposure == null || topExposure.counterparty.trim().isEmpty
+            ? 'Première contrepartie'
+            : topExposure.counterparty.trim();
     final mainKpis = [
       _KpiSpec(
         label: 'RWA total',
@@ -211,19 +245,19 @@ class _ExecutiveDashboard extends StatelessWidget {
         trend: rwaMetric.trend,
       ),
       _KpiSpec(
-        label: 'Ratio de solvabilité',
-        value: AppFormatters.percent(solvencyRatio),
-        detail: 'Solvency Ratio',
-        icon: CupertinoIcons.chart_bar_square_fill,
+        label: 'Exposition totale',
+        value: _money(exposureValue, displayCurrency),
+        detail: 'Montant brut consolidé',
+        icon: CupertinoIcons.sum,
         color: _cyan,
-        trend: solvencyMetric.trend,
+        trend: exposureMetric.trend,
       ),
       _KpiSpec(
         label: 'Capital minimum requis',
         value: _money(capitalValue, displayCurrency),
         detail: 'Minimum Required Capital',
         icon: CupertinoIcons.money_dollar_circle_fill,
-        color: _primary,
+        color: _warning,
         trend: capitalMetric.trend,
       ),
       _KpiSpec(
@@ -239,7 +273,7 @@ class _ExecutiveDashboard extends StatelessWidget {
         value: _money(globalVar, displayCurrency),
         detail: 'Value at Risk',
         icon: CupertinoIcons.waveform_circle_fill,
-        color: _violet,
+        color: _primary,
         trend: rwaMetric.trend,
       ),
       _KpiSpec(
@@ -250,69 +284,168 @@ class _ExecutiveDashboard extends StatelessWidget {
         color: _danger,
         trend: _flatTrend(criticalIncidents.toDouble()),
       ),
+      _KpiSpec(
+        label: 'Concentration max',
+        value: AppFormatters.percent(topExposureShare),
+        detail: topExposureLabel,
+        icon: CupertinoIcons.person_2_fill,
+        color: _violet,
+        trend: _flatTrend(topExposureShare),
+      ),
     ];
+
+    final counterpartyTotals = <String, double>{};
+    for (final row in data.portfolioOverview) {
+      final label =
+          row.counterparty.trim().isEmpty ? row.id : row.counterparty.trim();
+      counterpartyTotals.update(
+        label,
+        (value) => value + row.grossAmount,
+        ifAbsent: () => row.grossAmount,
+      );
+    }
+    final rankedCounterparties = counterpartyTotals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final topFiveExposure = rankedCounterparties
+        .take(5)
+        .fold<double>(0, (sum, entry) => sum + entry.value);
+    final topFiveShare =
+        exposureValue == 0 ? 0.0 : topFiveExposure / exposureValue;
+    final countryCount = data.portfolioOverview
+        .map((row) => row.country.trim())
+        .where((country) => country.isNotEmpty)
+        .toSet()
+        .length;
+    final ratingTotals = <String, double>{};
+    for (final row in data.portfolioOverview) {
+      final rating = _portfolioDisplayRating(row.rating);
+      ratingTotals.update(
+        rating,
+        (value) => value + row.grossAmount,
+        ifAbsent: () => row.grossAmount,
+      );
+    }
+    final rankedRatings = ratingTotals.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final dominantRating =
+        rankedRatings.isEmpty ? 'N/D' : rankedRatings.first.key;
+    final dominantRatingExposure =
+        rankedRatings.isEmpty ? 0.0 : rankedRatings.first.value;
+    final dominantRatingShare =
+        exposureValue == 0 ? 0.0 : dominantRatingExposure / exposureValue;
+    final crmExposure = data.portfolioOverview.where((row) {
+      final crm = row.crmType.trim().toLowerCase();
+      return crm.isNotEmpty && crm != 'aucune' && crm != 'none';
+    }).fold<double>(0, (sum, row) => sum + row.grossAmount);
+    final crmShare = exposureValue == 0 ? 0.0 : crmExposure / exposureValue;
 
     final secondaryKpis = [
       _FactSpec(
-        label: 'Ratio CET1',
-        value: AppFormatters.percent(tier1Ratio),
-        color: _cyan,
-        explanation:
-            'Indique la capacité du portefeuille à absorber ses pertes via les fonds propres de meilleure qualité.',
-        formulaLatex:
-            r'\text{Ratio CET1}=\frac{\text{CET1}}{\text{RWA total}}\times100',
-        analysis: _cet1RatioAnalysis(tier1Ratio),
-        impact: _cet1RatioImpact(tier1Ratio),
-      ),
-      _FactSpec(
-        label: 'Ratio de levier',
-        value: AppFormatters.percent(leverageRatio),
-        color: _violet,
-        explanation:
-            'Mesure la couverture de l’exposition totale par les fonds propres, sans pondérer les actifs par le risque.',
-        formulaLatex:
-            r'\text{Levier}=\frac{\text{Fonds propres eligibles}}{\text{Exposition totale}}\times100',
-        analysis: _leverageRatioAnalysis(leverageRatio),
-        impact: _leverageRatioImpact(leverageRatio),
-      ),
-      _FactSpec(
-        label: 'Exposition totale',
-        value: _money(exposureValue, displayCurrency),
+        label: 'Contreparties suivies',
+        value: '${counterpartyTotals.length}',
         color: _primary,
         explanation:
-            'Agrège le volume de crédit porté par le portefeuille et sert de base au suivi de la taille du risque.',
-        formulaLatex:
-            r'\text{Exposition totale}=\sum_{i=1}^{n}\text{Montant brut}_{i}',
-        analysis: _totalExposureAnalysis(exposureValue, displayCurrency),
-        impact: _totalExposureImpact(exposureValue),
+            'Compte le nombre de contreparties distinctes réellement présentes dans le portefeuille importé.',
+        analysis:
+            '${counterpartyTotals.length} contrepartie(s) sont suivies dans cette vue. Ce volume donne une première lecture de la granularité du portefeuille.',
+        impact:
+            'Plus le nombre de contreparties est faible, plus la surveillance single-name doit être stricte.',
       ),
       _FactSpec(
-        label: 'Expositions hors bilan',
-        value: _money(offBalanceExposure, displayCurrency),
-        color: _warning,
+        label: 'Pays couverts',
+        value: '$countryCount',
+        color: _cyan,
         explanation:
-            'Suit les engagements non encore inscrits au bilan qui peuvent devenir des expositions après conversion.',
-        formulaLatex:
-            r'\text{Hors bilan}=\sum_{i\in HB}\text{Montant brut}_{i}',
-        analysis: _offBalanceExposureAnalysis(
-          offBalanceExposure,
-          exposureValue,
-          displayCurrency,
-        ),
-        impact: _offBalanceExposureImpact(offBalanceExposure),
+            'Mesure l’étendue géographique du portefeuille à partir des pays renseignés sur les lignes importées.',
+        analysis:
+            '$countryCount pays distinct(s) sont représentés. Cette lecture complète l’analyse de concentration géographique.',
+        impact:
+            'Une base pays trop concentrée rend le portefeuille plus sensible aux chocs souverains ou régionaux.',
       ),
       _FactSpec(
-        label: 'Densité RWA',
-        value: AppFormatters.percent(rwaDensity),
+        label: 'Notation dominante',
+        value: dominantRating,
+        color: _deepBlue,
+        explanation:
+            'Identifie la notation qui concentre le plus d’exposition brute dans le portefeuille.',
+        analysis:
+            'Le bucket $dominantRating porte ${AppFormatters.percent(dominantRatingShare)} de l’exposition totale, soit ${_money(dominantRatingExposure, displayCurrency)}.',
+        impact:
+            'Une notation dominante trop exposée rend le portefeuille plus sensible aux migrations de rating et aux hausses de pondération.',
+      ),
+      _FactSpec(
+        label: 'Poids Top 5',
+        value: AppFormatters.percent(topFiveShare),
+        color: _violet,
+        explanation:
+            'Mesure la part de l’exposition totale portée par les cinq premières contreparties.',
+        formulaLatex:
+            r'\text{Top 5}=\frac{\sum_{j=1}^{5}\text{Exposition}_{j}}{\text{Exposition totale}}',
+        analysis:
+            'Les cinq premières contreparties représentent ${AppFormatters.percent(topFiveShare)} de l’exposition totale, soit ${_money(topFiveExposure, displayCurrency)}.',
+        impact:
+            'Plus ce poids est élevé, plus le pilotage des limites et garanties des grandes signatures devient prioritaire.',
+      ),
+      _FactSpec(
+        label: 'Couverture CRM',
+        value: AppFormatters.percent(crmShare),
         color: _success,
         explanation:
-            'Mesure l’intensité en actifs pondérés : elle compare les RWA générés à l’exposition totale.',
+            'Indique la part de l’exposition brute portée par des lignes disposant d’un dispositif CRM ou d’une garantie renseignée.',
         formulaLatex:
-            r'\text{Densite RWA}=\frac{\text{RWA total}}{\text{EAD totale}}\times100',
-        analysis: _rwaDensityAnalysis(rwaDensity),
-        impact: _rwaDensityImpact(rwaDensity),
+            r'\text{CRM}=\frac{\sum \text{Exposition avec CRM}}{\text{Exposition totale}}',
+        analysis:
+            '${AppFormatters.percent(crmShare)} de l’exposition brute est associée à un CRM renseigné, soit ${_money(crmExposure, displayCurrency)}.',
+        impact:
+            'Une couverture CRM faible peut accroître la consommation de capital si les pondérations ou les expositions se détériorent.',
       ),
     ];
+    final varShare = rwaValue == 0 ? 0.0 : globalVar / rwaValue;
+    final briefColor = topExposureShare >= 0.30 || solvencyRatio < 0.08
+        ? _danger
+        : topExposureShare >= 0.18 || solvencyRatio < 0.12 || varShare >= 0.25
+            ? _warning
+            : _success;
+    final executiveBrief = _ExecutiveBriefSpec(
+      title: briefColor == _success
+          ? 'Profil prudentiel maîtrisé : concentration, solvabilité et VaR restent dans les seuils de pilotage.'
+          : briefColor == _danger
+              ? 'Alerte de pilotage : concentration single-name et coussin prudentiel sous pression.'
+              : 'Surveillance renforcée : concentration single-name et marge de solvabilité à piloter.',
+      body:
+          'La contrepartie dominante ($topExposureLabel) représente ${AppFormatters.percent(topExposureShare)} de l’exposition brute. Le ratio de solvabilité ressort à ${AppFormatters.percent(solvencyRatio)} ; la VaR absorbe ${AppFormatters.percent(varShare)} du RWA total.',
+      color: _primary,
+      statusColor: briefColor,
+      actions: [
+        _ExecutiveAction(
+          label: topExposureShare >= 0.18
+              ? 'Revue limite single-name'
+              : 'Surveillance des limites',
+          value: topExposureShare >= 0.18
+              ? 'Contrôler l’utilisation de limite, les collatéraux éligibles et l’exposition nette sur $topExposureLabel.'
+              : 'Maintenir les seuils single-name et suivre les entrées pouvant modifier la concentration.',
+        ),
+        _ExecutiveAction(
+          label: solvencyRatio < 0.12
+              ? 'Pilotage capital / RWA'
+              : 'Préservation du capital',
+          value: solvencyRatio < 0.12
+              ? 'Mesurer l’effet d’un allègement RWA ou d’un renforcement des fonds propres sur le coussin prudentiel.'
+              : 'Protéger le coussin prudentiel avant toute croissance d’engagements.',
+        ),
+        _ExecutiveAction(
+          label: varShare >= 0.25 ? 'Stress de marché' : 'Contrôle périodique',
+          value: varShare >= 0.25
+              ? 'Appliquer un choc de taux et isoler les poches qui consomment le plus de VaR.'
+              : 'Suivre les migrations de notation, la VaR et la trajectoire mensuelle des RWA.',
+        ),
+      ],
+      recommendation: topExposureShare >= 0.18
+          ? 'Mettre sous revue la limite single-name de $topExposureLabel, recalibrer les garanties éligibles et simuler une réduction progressive de l’exposition nette.'
+          : solvencyRatio < 0.12
+              ? 'Sécuriser le coussin prudentiel : arbitrer baisse des RWA, renforcement des fonds propres et ralentissement des nouveaux engagements.'
+              : 'Maintenir le dispositif de surveillance : migrations de notation, consommation de capital et trajectoire mensuelle des RWA.',
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(color: _dashboardBackgroundFor(context)),
@@ -330,8 +463,6 @@ class _ExecutiveDashboard extends StatelessWidget {
             child: _DashboardTitle(
               analysisDate: analysisDate,
               onPickAnalysisDate: onPickAnalysisDate,
-              rows: data.portfolioOverview.length,
-              displayCurrency: displayCurrency,
             ),
           ),
           Expanded(
@@ -346,7 +477,17 @@ class _ExecutiveDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _MainKpiStrip(items: mainKpis),
+                  _CommandCenterPanel(
+                    items: mainKpis,
+                    solvencyRatio: solvencyRatio,
+                    availableCapital: availableCapital,
+                    rwaValue: rwaValue,
+                    offBalanceExposure: offBalanceExposure,
+                    tier1Ratio: tier1Ratio,
+                    leverageRatio: leverageRatio,
+                    rwaDensity: rwaDensity,
+                    displayCurrency: displayCurrency,
+                  ),
                   // ignore: prefer_const_constructors
                   SizedBox(height: AppTheme.pageGap),
                   Column(
@@ -376,7 +517,10 @@ class _ExecutiveDashboard extends StatelessWidget {
                     ],
                   ),
                   // ignore: prefer_const_constructors
-                  SizedBox(height: AppTheme.pageGap),
+                  SizedBox(height: AppTheme.pageGap * 0.72),
+                  _ExecutiveRiskBrief(brief: executiveBrief),
+                  // ignore: prefer_const_constructors
+                  SizedBox(height: AppTheme.pageGap * 0.72),
                   _SecondaryKpiBar(items: secondaryKpis),
                 ],
               ),
@@ -392,14 +536,10 @@ class _DashboardTitle extends StatelessWidget {
   const _DashboardTitle({
     required this.analysisDate,
     required this.onPickAnalysisDate,
-    required this.rows,
-    required this.displayCurrency,
   });
 
   final DateTime analysisDate;
   final VoidCallback onPickAnalysisDate;
-  final int rows;
-  final String displayCurrency;
 
   @override
   Widget build(BuildContext context) {
@@ -407,18 +547,18 @@ class _DashboardTitle extends StatelessWidget {
     final mutedColor = _dashboardMutedFor(context);
 
     return _Panel(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       borderRadius: _radius,
-      elevation: 32,
+      elevation: 26,
       showBorder: false,
       child: Row(
         children: [
           const _IconBox(
             icon: CupertinoIcons.chart_pie_fill,
             color: _primary,
-            size: 28,
+            size: 34,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,42 +570,33 @@ class _DashboardTitle extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: textColor,
-                    fontSize: 13.8,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 16.2,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0,
                     height: 1.05,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(
                   context.tr('Pilotage prudentiel RWA - Approche Standard'),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: mutedColor,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 9.6,
+                    fontWeight: FontWeight.w600,
                     height: 1.1,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           _StatusPill(
             icon: CupertinoIcons.calendar,
+            caption: 'Date d’analyse',
             label: AppFormatters.shortDate(analysisDate),
             onTap: onPickAnalysisDate,
-          ),
-          const SizedBox(width: 6),
-          _StatusPill(
-            icon: CupertinoIcons.number_square,
-            label: '$rows lignes',
-          ),
-          const SizedBox(width: 6),
-          _StatusPill(
-            icon: CupertinoIcons.money_dollar_circle_fill,
-            label: displayCurrencyLabel(displayCurrency),
           ),
         ],
       ),
@@ -473,60 +604,895 @@ class _DashboardTitle extends StatelessWidget {
   }
 }
 
-class _MainKpiStrip extends StatelessWidget {
-  const _MainKpiStrip({required this.items});
+class _CommandCenterPanel extends StatelessWidget {
+  const _CommandCenterPanel({
+    required this.items,
+    required this.solvencyRatio,
+    required this.availableCapital,
+    required this.rwaValue,
+    required this.offBalanceExposure,
+    required this.tier1Ratio,
+    required this.leverageRatio,
+    required this.rwaDensity,
+    required this.displayCurrency,
+  });
 
   final List<_KpiSpec> items;
+  final double solvencyRatio;
+  final double availableCapital;
+  final double rwaValue;
+  final double offBalanceExposure;
+  final double tier1Ratio;
+  final double leverageRatio;
+  final double rwaDensity;
+  final String displayCurrency;
+  static const double _desktopPanelHeight = 238;
+  static const double _desktopRiskLedgerHeight = 306;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const gap = 8.0;
-        const minCardWidth = 178.0;
-        final itemCount = math.max(items.length, 1);
-        final totalGap = gap * math.max(itemCount - 1, 0);
-        final minRowWidth = minCardWidth * itemCount + totalGap;
-        final availableWidth =
-            constraints.maxWidth.isFinite ? constraints.maxWidth : minRowWidth;
-        final rowWidth = math.max(availableWidth, minRowWidth);
+    if (items.isEmpty) return const SizedBox.shrink();
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const ClampingScrollPhysics(),
-          child: SizedBox(
-            width: rowWidth,
-            child: Row(
-              children: [
-                for (var index = 0; index < items.length; index++) ...[
-                  if (index > 0) const SizedBox(width: gap),
-                  Expanded(child: _MainKpiCard(item: items[index])),
-                ],
-              ],
+    final isDark = _isDashboardDark(context);
+    final surface = _dashboardSurfaceFor(context);
+    final soft = _dashboardSurfaceSoftFor(context);
+    final rwa = items[0];
+    final exposure = items.length > 1 ? items[1] : rwa;
+    final offBalance = _KpiSpec(
+      label: 'Exposition au hors bilan',
+      value: _money(offBalanceExposure, displayCurrency),
+      detail: 'Engagements hors bilan',
+      icon: CupertinoIcons.rectangle_stack_badge_plus,
+      color: const Color(0xFFBFDBFE),
+      trend: _flatTrend(offBalanceExposure),
+    );
+    final npl = items.length > 3 ? items[3] : rwa;
+    final valueAtRisk = items.length > 4 ? items[4] : rwa;
+    final incidents = items.length > 5 ? items[5] : rwa;
+    final concentration = items.length > 6 ? items[6] : rwa;
+
+    return _Panel(
+      padding: EdgeInsets.zero,
+      elevation: 22,
+      showBorder: false,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_radius),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [surface, const Color(0xFF0B1730)]
+                  : [surface, soft.withValues(alpha: 0.86)],
             ),
           ),
-        );
-      },
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 1040;
+              final primary = _CommandPrimaryBlock(
+                rwa: rwa,
+                exposure: exposure,
+                offBalance: offBalance,
+              );
+              final compass = _CapitalCompassPanel(
+                solvencyRatio: solvencyRatio,
+                availableCapital: availableCapital,
+                rwaValue: rwaValue,
+                tier1Ratio: tier1Ratio,
+                leverageRatio: leverageRatio,
+                displayCurrency: displayCurrency,
+              );
+              final ledger = _CommandRiskLedger(
+                valueAtRisk: valueAtRisk,
+                npl: npl,
+                incidents: incidents,
+                concentration: concentration,
+              );
+
+              if (compact) {
+                return Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      primary,
+                      const SizedBox(height: 14),
+                      SizedBox(height: 206, child: compass),
+                      const SizedBox(height: 14),
+                      ledger,
+                    ],
+                  ),
+                );
+              }
+
+              return Padding(
+                padding: const EdgeInsets.all(15),
+                child: SizedBox(
+                  height: _desktopRiskLedgerHeight,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 318,
+                        height: _desktopPanelHeight,
+                        child: primary,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: SizedBox(
+                          height: _desktopPanelHeight,
+                          child: compass,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 332,
+                        height: _desktopRiskLedgerHeight,
+                        child: ledger,
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }
 
-class _MainKpiCard extends StatelessWidget {
-  const _MainKpiCard({required this.item});
+class _CommandPrimaryBlock extends StatelessWidget {
+  const _CommandPrimaryBlock({
+    required this.rwa,
+    required this.exposure,
+    required this.offBalance,
+  });
+
+  final _KpiSpec rwa;
+  final _KpiSpec exposure;
+  final _KpiSpec offBalance;
+
+  @override
+  Widget build(BuildContext context) {
+    final dividerColor = Colors.white.withValues(alpha: 0.18);
+    final titleColor = Colors.white.withValues(alpha: 0.94);
+    final labelColor = Colors.white.withValues(alpha: 0.72);
+    const valueColor = Colors.white;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF1D4ED8),
+            Color(0xFF173B8F),
+            Color(0xFF0E2D68),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(_radius),
+        boxShadow: _commandCardElevation(context, _primary),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(15, 12, 15, 11),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const _IconBox(
+                  icon: CupertinoIcons.shield_lefthalf_fill,
+                  color: Colors.white,
+                  size: 34,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Portefeuille prudentiel'.tr(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: titleColor,
+                      fontSize: 14.4,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              rwa.label.tr(context).toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: labelColor,
+                fontSize: 9.6,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 7),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                rwa.value,
+                maxLines: 1,
+                style: const TextStyle(
+                  color: valueColor,
+                  fontSize: 35,
+                  fontWeight: FontWeight.w700,
+                  height: 0.96,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _CommandPrimaryDivider(color: dividerColor),
+            const SizedBox(height: 10),
+            _CommandMeasureRow(
+              item: exposure,
+              labelColor: labelColor,
+              valueColor: valueColor,
+            ),
+            const SizedBox(height: 7),
+            _CommandPrimaryDivider(color: dividerColor),
+            const SizedBox(height: 7),
+            _CommandMeasureRow(
+              item: offBalance,
+              labelColor: labelColor,
+              valueColor: valueColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CommandPrimaryDivider extends StatelessWidget {
+  const _CommandPrimaryDivider({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      width: double.infinity,
+      color: color,
+    );
+  }
+}
+
+class _CommandMeasureRow extends StatelessWidget {
+  const _CommandMeasureRow({
+    required this.item,
+    this.labelColor,
+    this.valueColor,
+  });
+
+  final _KpiSpec item;
+  final Color? labelColor;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = _dashboardTextFor(context);
+
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 26,
+          decoration: BoxDecoration(
+            color: item.color,
+            borderRadius: BorderRadius.circular(_radius),
+          ),
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Text(
+            item.label.tr(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: labelColor ?? textColor.withValues(alpha: 0.76),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 118),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              item.value,
+              maxLines: 1,
+              style: TextStyle(
+                color: valueColor ?? textColor,
+                fontSize: 14.2,
+                fontWeight: FontWeight.w700,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CapitalCompassPanel extends StatelessWidget {
+  const _CapitalCompassPanel({
+    required this.solvencyRatio,
+    required this.availableCapital,
+    required this.rwaValue,
+    required this.tier1Ratio,
+    required this.leverageRatio,
+    required this.displayCurrency,
+  });
+
+  final double solvencyRatio;
+  final double availableCapital;
+  final double rwaValue;
+  final double tier1Ratio;
+  final double leverageRatio;
+  final String displayCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isDashboardDark(context);
+    final textColor = _dashboardTextFor(context);
+    final titleColor = _dashboardTitleFor(context);
+    final mutedColor = _dashboardMutedFor(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.018)
+            : Colors.white.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(_radius),
+        border: Border.all(color: _primary.withValues(alpha: 0.16)),
+        boxShadow: _commandCardElevation(context, _primary),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(15, 13, 15, 13),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final fillBottom =
+                constraints.maxHeight.isFinite && constraints.maxHeight >= 205;
+            final cushion = _CapitalCushionReading(
+              availableCapital: availableCapital,
+              rwaValue: rwaValue,
+              displayCurrency: displayCurrency,
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    const _IconBox(
+                      icon: CupertinoIcons.compass_fill,
+                      color: _primary,
+                      size: 30,
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Boussole prudentielle'.tr(context),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: titleColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              height: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Position du capital face aux seuils.'.tr(context),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: mutedColor,
+                              fontSize: 10.4,
+                              fontWeight: FontWeight.w700,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            AppFormatters.percent(solvencyRatio),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 31,
+                              fontWeight: FontWeight.w700,
+                              height: 0.95,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            'Ratio de solvabilité actuel'.tr(context),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: mutedColor,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _CapitalCompassMiniStat(
+                      label: 'Ratio CET1',
+                      value: AppFormatters.percent(tier1Ratio),
+                      color: _primary,
+                    ),
+                    const SizedBox(width: 8),
+                    _CapitalCompassMiniStat(
+                      label: 'Ratio levier',
+                      value: AppFormatters.percent(leverageRatio),
+                      color: _violet,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                if (fillBottom) Expanded(child: cushion) else cushion,
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _CapitalCompassMiniStat extends StatelessWidget {
+  const _CapitalCompassMiniStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isDashboardDark(context);
+    final textColor = _dashboardTextFor(context);
+    final mutedColor = _dashboardMutedFor(context);
+
+    return Container(
+      width: 74,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.16 : 0.095),
+        borderRadius: BorderRadius.circular(_radius),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.tr(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: mutedColor,
+              fontSize: 8.8,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 5),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13.2,
+                fontWeight: FontWeight.w800,
+                height: 1,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CapitalCushionReading extends StatelessWidget {
+  const _CapitalCushionReading({
+    required this.availableCapital,
+    required this.rwaValue,
+    required this.displayCurrency,
+  });
+
+  final double availableCapital;
+  final double rwaValue;
+  final String displayCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isDashboardDark(context);
+    final textColor = _dashboardTextFor(context);
+    const minimumRatio = 0.08;
+    final minimumCapital = rwaValue * minimumRatio;
+    final cushion = availableCapital - minimumCapital;
+    final cushionColor = cushion >= 0 ? _primary : _danger;
+    final cushionTileColor = cushion >= 0 ? _success : _danger;
+    final reading = cushion >= 0
+        ? 'Réserve de capital mobilisable au-dessus du minimum réglementaire.'
+        : 'Coussin insuffisant face au minimum réglementaire.';
+    final cushionValue =
+        '${cushion >= 0 ? '+' : '-'}${_money(cushion.abs(), displayCurrency)}';
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: cushionColor.withValues(alpha: isDark ? 0.12 : 0.075),
+        borderRadius: BorderRadius.circular(_radius),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: cushionColor,
+                  borderRadius: BorderRadius.circular(_radius),
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  reading.tr(context),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 11.2,
+                    fontWeight: FontWeight.w600,
+                    height: 1.28,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Expanded(
+                child: _CapitalCushionTile(
+                  label: 'Capital minimum',
+                  value: _money(minimumCapital, displayCurrency),
+                  caption: 'seuil 8 %',
+                  color: _primary,
+                ),
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: _CapitalCushionTile(
+                  label: 'Coussin',
+                  value: cushionValue,
+                  caption: 'réserve',
+                  color: cushionTileColor,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CapitalCushionTile extends StatelessWidget {
+  const _CapitalCushionTile({
+    required this.label,
+    required this.value,
+    required this.caption,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String caption;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isDashboardDark(context);
+    final textColor = _dashboardTextFor(context);
+    final mutedColor = _dashboardMutedFor(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.14 : 0.085),
+        borderRadius: BorderRadius.circular(_radius),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label.tr(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: mutedColor,
+              fontSize: 8.2,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value.tr(context),
+              maxLines: 1,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 11.8,
+                fontWeight: FontWeight.w800,
+                height: 1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            caption.tr(context),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 8,
+              fontWeight: FontWeight.w700,
+              height: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommandRiskLedger extends StatelessWidget {
+  const _CommandRiskLedger({
+    required this.valueAtRisk,
+    required this.npl,
+    required this.incidents,
+    required this.concentration,
+  });
+
+  final _KpiSpec valueAtRisk;
+  final _KpiSpec npl;
+  final _KpiSpec incidents;
+  final _KpiSpec concentration;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isDashboardDark(context);
+    final titleColor = _dashboardTitleFor(context);
+    final mutedColor = _dashboardMutedFor(context);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.018)
+            : Colors.white.withValues(alpha: 0.70),
+        borderRadius: BorderRadius.circular(_radius),
+        boxShadow: _commandCardElevation(context, _primary),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Risques à décider'.tr(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: titleColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                height: 1,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'Les signaux qui orientent la surveillance immédiate.'
+                  .tr(context),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: mutedColor,
+                fontSize: 9.2,
+                fontWeight: FontWeight.w600,
+                height: 1.25,
+              ),
+            ),
+            const SizedBox(height: 6),
+            _CommandRiskRow(item: valueAtRisk),
+            const SizedBox(height: 4),
+            _CommandRiskRow(item: npl),
+            const SizedBox(height: 4),
+            _CommandRiskRow(item: incidents),
+            const SizedBox(height: 4),
+            _CommandRiskRow(item: concentration),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CommandRiskRow extends StatefulWidget {
+  const _CommandRiskRow({required this.item});
 
   final _KpiSpec item;
 
   @override
+  State<_CommandRiskRow> createState() => _CommandRiskRowState();
+}
+
+class _CommandRiskRowState extends State<_CommandRiskRow> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return KpiMetricCard(
-      label: item.label,
-      value: item.value,
-      helper: item.detail,
-      icon: item.icon,
-      color: item.color,
-      trend: item.trend,
-      fullValue: item.value,
-      borderRadius: _radius,
+    final isDark = _isDashboardDark(context);
+    final textColor = _dashboardTextFor(context);
+    final mutedColor = _dashboardMutedFor(context);
+    final accentColor = widget.item.color;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedScale(
+        scale: _hovered ? 1.012 : 1,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.translationValues(
+            _hovered ? 4 : 0,
+            _hovered ? -2 : 0,
+            0,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 13.5),
+          decoration: BoxDecoration(
+            color: isDark
+                ? accentColor.withValues(alpha: _hovered ? 0.17 : 0.12)
+                : accentColor.withValues(alpha: _hovered ? 0.115 : 0.075),
+            borderRadius: BorderRadius.circular(_radius),
+            border: Border.all(
+              color: accentColor.withValues(alpha: _hovered ? 0.34 : 0),
+              width: 0.8,
+            ),
+            boxShadow: _hovered
+                ? [
+                    BoxShadow(
+                      color:
+                          accentColor.withValues(alpha: isDark ? 0.18 : 0.12),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                transform: Matrix4.translationValues(0, _hovered ? -1 : 0, 0),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(
+                    alpha: isDark
+                        ? (_hovered ? 0.28 : 0.20)
+                        : (_hovered ? 0.18 : 0.13),
+                  ),
+                  borderRadius: BorderRadius.circular(_radius),
+                ),
+                child: Icon(widget.item.icon, color: accentColor, size: 13),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.item.label.tr(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 11.4,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.item.detail.tr(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: mutedColor.withValues(alpha: 0.96),
+                        fontSize: 8,
+                        fontWeight: FontWeight.w600,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 118),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    widget.item.value,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: accentColor,
+                      fontSize: _hovered ? 14.7 : 14.2,
+                      fontWeight: FontWeight.w700,
+                      height: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -538,124 +1504,884 @@ class _SecondaryKpiBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = _isDashboardDark(context);
+    final textColor = _dashboardTextFor(context);
+    final mutedColor = _dashboardMutedFor(context);
+    final borderColor = _dashboardBorderFor(context);
+
     return _Panel(
-      padding: const EdgeInsets.all(8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          const gap = 6.0;
-          const cardHeight = 48.0;
-          const minCardWidth = 164.0;
-          final totalGap = gap * math.max(items.length - 1, 0);
-          final fluidWidth = constraints.maxWidth.isFinite
-              ? (constraints.maxWidth - totalGap) / math.max(items.length, 1)
-              : minCardWidth;
-          final cardWidth = math.max(minCardWidth, fluidWidth);
-          final rowWidth = cardWidth * items.length + totalGap;
-
-          final row = Row(
+      padding: const EdgeInsets.fromLTRB(13, 12, 13, 13),
+      elevation: 10,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
-              for (var index = 0; index < items.length; index++) ...[
-                SizedBox(
-                  width: cardWidth,
-                  height: cardHeight,
-                  child: _FactTile(item: items[index]),
+              const _IconBox(
+                icon: CupertinoIcons.list_bullet_below_rectangle,
+                color: _cyan,
+                size: 28,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Registre prudentiel'.tr(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Signaux de structure qui complètent la lecture exécutive.'
+                          .tr(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: mutedColor,
+                        fontSize: 9.2,
+                        fontWeight: FontWeight.w600,
+                        height: 1,
+                      ),
+                    ),
+                  ],
                 ),
-                if (index != items.length - 1) const SizedBox(width: gap),
-              ],
+              ),
+              const SizedBox(width: 10),
+              Container(
+                height: 22,
+                padding: const EdgeInsets.symmetric(horizontal: 9),
+                decoration: BoxDecoration(
+                  color: _cyan.withValues(alpha: isDark ? 0.18 : 0.10),
+                  borderRadius: BorderRadius.circular(1),
+                  border: Border.all(
+                    color: _cyan.withValues(alpha: isDark ? 0.46 : 0.34),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      CupertinoIcons.shield_lefthalf_fill,
+                      size: 11,
+                      color: _cyan.withValues(alpha: isDark ? 0.96 : 0.88),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Risque de crédit'.tr(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isDark ? const Color(0xFFE8FBFF) : _cyan,
+                        fontSize: 8.8,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
-          );
+          ),
+          const SizedBox(height: 12),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: borderColor),
+                bottom: BorderSide(color: borderColor),
+              ),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                const minColumnWidth = 184.0;
+                const dividerWidth = 1.0;
+                final itemCount = math.max(items.length, 1);
+                final dividerCount = math.max(items.length - 1, 0);
+                final availableForCells = constraints.maxWidth.isFinite
+                    ? math.max(
+                        0.0,
+                        constraints.maxWidth - dividerCount * dividerWidth,
+                      )
+                    : minColumnWidth * itemCount;
+                final columnWidth = math.max(
+                  minColumnWidth,
+                  availableForCells / itemCount,
+                );
+                final rowWidth =
+                    columnWidth * items.length + dividerCount * dividerWidth;
+                final row = Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var index = 0; index < items.length; index++) ...[
+                      SizedBox(
+                        width: columnWidth,
+                        child: _PrudentialLedgerCell(item: items[index]),
+                      ),
+                      if (index != items.length - 1)
+                        SizedBox(
+                          height: 54,
+                          child: VerticalDivider(
+                            width: 1,
+                            thickness: 0.8,
+                            color: borderColor,
+                          ),
+                        ),
+                    ],
+                  ],
+                );
 
-          if (rowWidth <= constraints.maxWidth) {
-            return row;
-          }
+                if (rowWidth <= constraints.maxWidth) {
+                  return row;
+                }
 
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const ClampingScrollPhysics(),
-            child: SizedBox(width: rowWidth, child: row),
-          );
-        },
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const ClampingScrollPhysics(),
+                  child: SizedBox(width: rowWidth, child: row),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _FactTile extends StatelessWidget {
-  const _FactTile({required this.item});
+class _PrudentialLedgerCell extends StatelessWidget {
+  const _PrudentialLedgerCell({required this.item});
 
   final _FactSpec item;
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = item.color.withValues(alpha: 0.34);
-    final surface = _dashboardSurfaceFor(context);
     final textColor = _dashboardTextFor(context);
+    final mutedColor = _dashboardMutedFor(context);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(_radius),
-      child: Container(
-        height: double.infinity,
-        decoration: BoxDecoration(
-          color: surface,
-          borderRadius: BorderRadius.circular(_radius),
-          border: Border.all(color: borderColor, width: 0.9),
-          boxShadow: [
-            BoxShadow(
-              color: item.color.withValues(alpha: 0.055),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 3,
+            height: 34,
+            decoration: BoxDecoration(
+              color: item.color,
+              borderRadius: BorderRadius.circular(_radius),
+            ),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.label.tr(context).toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: mutedColor,
+                          fontSize: 7.6,
+                          fontWeight: FontWeight.w600,
+                          height: 1,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    _FactInfoButton(item: item),
+                  ],
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  item.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExecutiveRiskBrief extends StatelessWidget {
+  const _ExecutiveRiskBrief({required this.brief});
+
+  final _ExecutiveBriefSpec brief;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isDashboardDark(context);
+    final textColor = _dashboardTextFor(context);
+    final mutedColor = _dashboardMutedFor(context);
+    final surfaceSoft = _dashboardSurfaceSoftFor(context);
+    final borderColor = _dashboardBorderFor(context);
+    final titleColor = _dashboardTitleFor(context);
+
+    return _Panel(
+      padding: EdgeInsets.zero,
+      elevation: 14,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_radius),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: const Color(0xFEFEFEFE),
+            border: Border(
+              left: BorderSide(color: brief.statusColor, width: 3),
+            ),
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 1040;
+              final content = _ExecutiveBriefContent(
+                brief: brief,
+                titleColor: titleColor,
+                mutedColor: mutedColor,
+              );
+              final priority = _ExecutivePriorityDecision(
+                brief: brief,
+                textColor: textColor,
+                mutedColor: mutedColor,
+                surfaceSoft: surfaceSoft,
+                borderColor: borderColor,
+                isDark: isDark,
+              );
+              final actions = _ExecutiveActionStrip(
+                brief: brief,
+                textColor: textColor,
+                mutedColor: mutedColor,
+                surfaceSoft: surfaceSoft,
+                borderColor: borderColor,
+                isDark: isDark,
+              );
+
+              if (compact) {
+                return Padding(
+                  padding: const EdgeInsets.all(13),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      content,
+                      const SizedBox(height: 10),
+                      priority,
+                      const SizedBox(height: 10),
+                      actions,
+                    ],
+                  ),
+                );
+              }
+
+              return Padding(
+                padding: const EdgeInsets.all(13),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: content),
+                        const SizedBox(width: 12),
+                        SizedBox(width: 360, child: priority),
+                      ],
+                    ),
+                    const SizedBox(height: 11),
+                    actions,
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExecutiveBriefContent extends StatelessWidget {
+  const _ExecutiveBriefContent({
+    required this.brief,
+    required this.titleColor,
+    required this.mutedColor,
+  });
+
+  final _ExecutiveBriefSpec brief;
+  final Color titleColor;
+  final Color mutedColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _IconBox(
+              icon: CupertinoIcons.doc_text_fill,
+              color: brief.color,
+              size: 30,
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                'Synthèse exécutive'.tr(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: titleColor,
+                  fontSize: 13.4,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
             ),
           ],
         ),
-        child: Stack(
+        const SizedBox(height: 13),
+        Text.rich(
+          _executiveHighlightedSpan(
+            context,
+            text: brief.title,
+            baseStyle: TextStyle(
+              color: titleColor,
+              fontSize: 16.4,
+              fontWeight: FontWeight.w700,
+              height: 1.16,
+            ),
+            accent: brief.color,
+            highlightColor: titleColor,
+            highlightWeight: FontWeight.w900,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 7),
+        Text.rich(
+          _executiveHighlightedSpan(
+            context,
+            text: brief.body,
+            baseStyle: TextStyle(
+              color: mutedColor,
+              fontSize: 10.7,
+              fontWeight: FontWeight.w600,
+              height: 1.42,
+            ),
+            accent: brief.color,
+            highlightColor: titleColor,
+            highlightWeight: FontWeight.w900,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    );
+  }
+}
+
+class _ExecutivePriorityDecision extends StatelessWidget {
+  const _ExecutivePriorityDecision({
+    required this.brief,
+    required this.textColor,
+    required this.mutedColor,
+    required this.surfaceSoft,
+    required this.borderColor,
+    required this.isDark,
+  });
+
+  final _ExecutiveBriefSpec brief;
+  final Color textColor;
+  final Color mutedColor;
+  final Color surfaceSoft;
+  final Color borderColor;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    const bubbleColor = Color(0xFEFEFEFE);
+    const bubbleAccent = Color(0xFF3730A3);
+
+    return CustomPaint(
+      painter: _ExecutiveSpeechBubblePainter(
+        color: bubbleColor,
+        borderColor: bubbleAccent.withValues(alpha: 0.18),
+        shadowColor: bubbleAccent.withValues(alpha: isDark ? 0.24 : 0.16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(29, 12, 14, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 30, 8),
+            Container(
+              width: 31,
+              height: 31,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: bubbleAccent.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(_radius * 3),
+              ),
+              child: const Icon(
+                CupertinoIcons.chat_bubble_text_fill,
+                color: bubbleAccent,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    item.label.tr(context).toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 7.4,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
-                      letterSpacing: 1.8,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      item.value,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        color: _primary,
-                        fontSize: 10.2,
-                        fontStyle: FontStyle.italic,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
+                  Text.rich(
+                    _executiveHighlightedSpan(
+                      context,
+                      text: brief.recommendation,
+                      baseStyle: TextStyle(
+                        color: mutedColor,
+                        fontSize: 9.8,
+                        fontWeight: FontWeight.w600,
+                        height: 1.36,
                       ),
+                      accent: bubbleAccent,
+                      highlightColor: textColor,
+                      highlightWeight: FontWeight.w900,
                     ),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: _FactInfoButton(item: item),
             ),
           ],
         ),
       ),
     );
   }
+}
+
+class _ExecutiveSpeechBubblePainter extends CustomPainter {
+  const _ExecutiveSpeechBubblePainter({
+    required this.color,
+    required this.borderColor,
+    required this.shadowColor,
+  });
+
+  static const double _tailWidth = 14;
+  static const double _tailHeight = 23;
+  static const double _radius = 14;
+
+  final Color color;
+  final Color borderColor;
+  final Color shadowColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _bubblePath(size);
+    canvas.drawShadow(path, shadowColor, 9, true);
+
+    final fill = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+    canvas.drawPath(path, fill);
+
+    final border = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..isAntiAlias = true;
+    canvas.drawPath(path, border);
+  }
+
+  Path _bubblePath(Size size) {
+    const left = _tailWidth;
+    final right = size.width;
+    const top = 0.0;
+    final bottom = size.height;
+    final radius = math.min(_radius, math.min(size.height, size.width) / 2);
+    final tailCenter =
+        math.min(bottom - radius - 4, math.max(top + radius + 4, 35.0));
+    final tailTop = tailCenter - _tailHeight / 2;
+    final tailBottom = tailCenter + _tailHeight / 2;
+
+    return Path()
+      ..moveTo(left + radius, top)
+      ..lineTo(right - radius, top)
+      ..quadraticBezierTo(right, top, right, top + radius)
+      ..lineTo(right, bottom - radius)
+      ..quadraticBezierTo(right, bottom, right - radius, bottom)
+      ..lineTo(left + radius, bottom)
+      ..quadraticBezierTo(left, bottom, left, bottom - radius)
+      ..lineTo(left, tailBottom)
+      ..quadraticBezierTo(left * 0.58, tailBottom - 2, 0, tailCenter)
+      ..quadraticBezierTo(left * 0.58, tailTop + 2, left, tailTop)
+      ..lineTo(left, top + radius)
+      ..quadraticBezierTo(left, top, left + radius, top)
+      ..close();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ExecutiveSpeechBubblePainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.borderColor != borderColor ||
+        oldDelegate.shadowColor != shadowColor;
+  }
+}
+
+class _ExecutiveActionStrip extends StatelessWidget {
+  const _ExecutiveActionStrip({
+    required this.brief,
+    required this.textColor,
+    required this.mutedColor,
+    required this.surfaceSoft,
+    required this.borderColor,
+    required this.isDark,
+  });
+
+  final _ExecutiveBriefSpec brief;
+  final Color textColor;
+  final Color mutedColor;
+  final Color surfaceSoft;
+  final Color borderColor;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = brief.actions.take(3).toList(growable: false);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked = constraints.maxWidth < 760;
+        final cards = [
+          for (var index = 0; index < actions.length; index++)
+            _ExecutiveActionCard(
+              action: actions[index],
+              index: index,
+              accent: brief.statusColor,
+              highlightColor: textColor,
+              textColor: textColor,
+              mutedColor: mutedColor,
+              surfaceSoft: surfaceSoft,
+              borderColor: borderColor,
+              isDark: isDark,
+            ),
+        ];
+
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var index = 0; index < cards.length; index++) ...[
+                cards[index],
+                if (index != cards.length - 1) const SizedBox(height: 7),
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            for (var index = 0; index < cards.length; index++) ...[
+              Expanded(child: cards[index]),
+              if (index != cards.length - 1) const SizedBox(width: 8),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ExecutiveActionCard extends StatelessWidget {
+  const _ExecutiveActionCard({
+    required this.action,
+    required this.index,
+    required this.accent,
+    required this.highlightColor,
+    required this.textColor,
+    required this.mutedColor,
+    required this.surfaceSoft,
+    required this.borderColor,
+    required this.isDark,
+  });
+
+  final _ExecutiveAction action;
+  final int index;
+  final Color accent;
+  final Color highlightColor;
+  final Color textColor;
+  final Color mutedColor;
+  final Color surfaceSoft;
+  final Color borderColor;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HoverProgress(
+      builder: (context, hover) {
+        final baseSurface =
+            isDark ? surfaceSoft.withValues(alpha: 0.64) : surfaceSoft;
+        final activeSurface = Color.alphaBlend(
+          accent.withValues(alpha: isDark ? 0.12 : 0.045),
+          baseSurface,
+        );
+        final activeBorder = accent.withValues(alpha: isDark ? 0.62 : 0.46);
+        final valueColor = Color.lerp(
+          mutedColor,
+          textColor.withValues(alpha: 0.90),
+          hover,
+        )!;
+
+        return Transform.translate(
+          offset: Offset(0, -3 * hover),
+          child: Transform.scale(
+            scale: 1 + (hover * 0.006),
+            alignment: Alignment.center,
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 58),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+              decoration: BoxDecoration(
+                color: Color.lerp(baseSurface, activeSurface, hover),
+                borderRadius: BorderRadius.circular(_radius),
+                border: Border.all(
+                  color: Color.lerp(borderColor, activeBorder, hover)!,
+                  width: 1 + (hover * 0.35),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(
+                      alpha: (isDark ? 0.16 : 0.11) * hover,
+                    ),
+                    blurRadius: 8 + (hover * 14),
+                    offset: Offset(0, 4 + (hover * 5)),
+                  ),
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Transform.scale(
+                    scale: 1 + (hover * 0.08),
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(
+                          alpha: (isDark ? 0.18 : 0.11) + (hover * 0.08),
+                        ),
+                        borderRadius: BorderRadius.circular(_radius),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.18 + hover * 0.18),
+                        ),
+                      ),
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          color: accent,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text.rich(
+                          _executiveHighlightedSpan(
+                            context,
+                            text: action.label,
+                            baseStyle: TextStyle(
+                              color: textColor,
+                              fontSize: 9.3,
+                              fontWeight: FontWeight.w800,
+                              height: 1.05,
+                            ),
+                            accent: accent,
+                            highlightColor: highlightColor,
+                            highlightWeight: FontWeight.w900,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text.rich(
+                          _executiveHighlightedSpan(
+                            context,
+                            text: action.value,
+                            baseStyle: TextStyle(
+                              color: valueColor,
+                              fontSize: 8.7,
+                              fontWeight: FontWeight.w600,
+                              height: 1.24,
+                            ),
+                            accent: accent,
+                            highlightColor: highlightColor,
+                            highlightWeight: FontWeight.w800,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ExecutiveBriefSpec {
+  const _ExecutiveBriefSpec({
+    required this.title,
+    required this.body,
+    required this.color,
+    required this.statusColor,
+    required this.actions,
+    required this.recommendation,
+  });
+
+  final String title;
+  final String body;
+  final Color color;
+  final Color statusColor;
+  final List<_ExecutiveAction> actions;
+  final String recommendation;
+}
+
+class _ExecutiveAction {
+  const _ExecutiveAction({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+}
+
+class _ExecutiveHighlightRange {
+  const _ExecutiveHighlightRange(this.start, this.end);
+
+  final int start;
+  final int end;
+}
+
+TextSpan _executiveHighlightedSpan(
+  BuildContext context, {
+  required String text,
+  required TextStyle baseStyle,
+  required Color accent,
+  Color? highlightColor,
+  FontWeight highlightWeight = FontWeight.w800,
+}) {
+  final value = text.tr(context);
+  final ranges = <_ExecutiveHighlightRange>[];
+
+  void addPattern(RegExp pattern) {
+    for (final match in pattern.allMatches(value)) {
+      final overlaps = ranges.any(
+        (range) => match.start < range.end && match.end > range.start,
+      );
+      if (!overlaps) {
+        ranges.add(_ExecutiveHighlightRange(match.start, match.end));
+      }
+    }
+  }
+
+  final terms = [
+    'concentration single-name',
+    'limite single-name',
+    'contrepartie dominante',
+    'ratio de solvabilité',
+    'marge de solvabilité',
+    'coussin prudentiel',
+    'seuils de pilotage',
+    'exposition brute',
+    'exposition nette',
+    'collatéraux éligibles',
+    'garanties éligibles',
+    'fonds propres',
+    'allègement RWA',
+    'stress de marché',
+    'choc de taux',
+    'migrations de notation',
+    'consommation de capital',
+    'trajectoire mensuelle',
+    'nouveaux engagements',
+    'single-name',
+    'solvabilité',
+    'concentration',
+    'capital',
+    'VaR',
+    'RWA',
+  ]..sort((left, right) => right.length.compareTo(left.length));
+
+  for (final term in terms) {
+    addPattern(
+      RegExp(RegExp.escape(term), caseSensitive: false, unicode: true),
+    );
+  }
+  addPattern(
+    RegExp(
+      r'\b\d{1,3}(?:[ \u00A0\u202F]\d{3})*(?:,\d+)?[\s\u00A0\u202F]?(?:%|Md FCFA|Mds FCFA|Md|Mds|bps)',
+      caseSensitive: false,
+      unicode: true,
+    ),
+  );
+  addPattern(RegExp(r'\([^)]+\)', unicode: true));
+
+  if (ranges.isEmpty) {
+    return TextSpan(text: value, style: baseStyle);
+  }
+
+  ranges.sort((left, right) => left.start.compareTo(right.start));
+  final spans = <TextSpan>[];
+  var cursor = 0;
+  for (final range in ranges) {
+    if (cursor < range.start) {
+      spans.add(TextSpan(text: value.substring(cursor, range.start)));
+    }
+    spans.add(
+      TextSpan(
+        text: value.substring(range.start, range.end),
+        style: baseStyle.copyWith(
+          color: highlightColor ?? accent,
+          fontWeight: highlightWeight,
+        ),
+      ),
+    );
+    cursor = range.end;
+  }
+  if (cursor < value.length) {
+    spans.add(TextSpan(text: value.substring(cursor)));
+  }
+
+  return TextSpan(style: baseStyle, children: spans);
 }
 
 class _FactInfoButton extends StatelessWidget {
@@ -740,7 +2466,7 @@ class _FactTooltipBody extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFFEAF2FF),
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                     height: 1.08,
                   ),
                 ),
@@ -750,43 +2476,46 @@ class _FactTooltipBody extends StatelessWidget {
           const SizedBox(height: 13),
           Text(item.explanation, style: bodyStyle),
           const SizedBox(height: 12),
-          _FactTooltipSection(
-            title: 'Formule de calcul',
-            color: item.color,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(_radius),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.12),
-                ),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const ClampingScrollPhysics(),
-                child: Math.tex(
-                  item.formulaLatex,
-                  mathStyle: MathStyle.text,
-                  textStyle: const TextStyle(
-                    color: Color(0xFFEAF2FF),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+          if (item.formulaLatex != null) ...[
+            _FactTooltipSection(
+              title: 'Formule de calcul',
+              color: item.color,
+              child: Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(_radius),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12),
                   ),
-                  onErrorFallback: (_) => Text(
-                    item.formulaLatex,
-                    style: const TextStyle(
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const ClampingScrollPhysics(),
+                  child: Math.tex(
+                    item.formulaLatex!,
+                    mathStyle: MathStyle.text,
+                    textStyle: const TextStyle(
                       color: Color(0xFFEAF2FF),
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: FontWeight.w500,
+                    ),
+                    onErrorFallback: (_) => Text(
+                      item.formulaLatex!,
+                      style: const TextStyle(
+                        color: Color(0xFFEAF2FF),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
+          ],
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
             decoration: BoxDecoration(
@@ -844,7 +2573,7 @@ class _FactTooltipSection extends StatelessWidget {
           style: const TextStyle(
             color: Color(0xFFBFD0EA),
             fontSize: 11,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             height: 1.1,
           ),
         ),
@@ -861,7 +2590,7 @@ class _FactSpec {
     required this.value,
     required this.color,
     required this.explanation,
-    required this.formulaLatex,
+    this.formulaLatex,
     required this.analysis,
     required this.impact,
   });
@@ -870,7 +2599,7 @@ class _FactSpec {
   final String value;
   final Color color;
   final String explanation;
-  final String formulaLatex;
+  final String? formulaLatex;
   final String analysis;
   final String impact;
 }
@@ -922,8 +2651,8 @@ class _RiskConcentrationPanel extends StatefulWidget {
 }
 
 class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
-  static const double _bodyHeight = 236;
-  static const double _summaryRailWidth = 146;
+  static const double _bodyHeight = 264;
+  static const double _summaryRailWidth = 128;
   static const List<String> _sectorLabels = [
     'Immobilier',
     'Commerce',
@@ -933,18 +2662,19 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
     'Agriculture',
   ];
   static const List<String> _zoneLabels = [
-    'UEMOA',
     'CEMAC',
-    'Hors Zone',
-    'Europe',
-    'Asie',
+    'UEMOA',
+    'Hors zone',
   ];
   static const List<double> _fictiveZoneShares = [
-    0.42,
     0.18,
-    0.16,
-    0.14,
-    0.10,
+    0.42,
+    0.40,
+  ];
+  static const List<Color> _zoneColors = [
+    _success,
+    _primary,
+    _warning,
   ];
   static const List<Color> _chartColors = [
     _cyan,
@@ -996,7 +2726,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                 textStyle: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
-                  fontWeight: FontWeight.w400,
+                  fontWeight: FontWeight.w500,
                   height: 1.35,
                 ),
                 child: _IconBox(
@@ -1017,7 +2747,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                       style: TextStyle(
                         color: textColor,
                         fontSize: 12.1,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1029,7 +2759,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                       style: TextStyle(
                         color: mutedColor,
                         fontSize: 8.6,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -1121,7 +2851,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
       style: TextStyle(
         color: Color(0xFFE7EEF9),
         fontSize: 11,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w500,
         height: 1.38,
       ),
       children: [
@@ -1130,14 +2860,14 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
           style: TextStyle(
             color: Color(0xFFEAF2FF),
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
           text: 'Objectif : ',
           style: TextStyle(
             color: Color(0xFF67E8F9),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
@@ -1148,7 +2878,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
           text: 'Concentration : ',
           style: TextStyle(
             color: Color(0xFF93C5FD),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
@@ -1166,7 +2896,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
           text: 'Dominance : ',
           style: TextStyle(
             color: Color(0xFFA7F3D0),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
@@ -1177,7 +2907,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
           text: 'Visualisation : ',
           style: TextStyle(
             color: Color(0xFFFBBF24),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
@@ -1188,7 +2918,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
           text: 'Synthèse : ',
           style: TextStyle(
             color: Color(0xFFC4B5FD),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
@@ -1360,6 +3090,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
           child: _ModeBlockEntrance(
             child: _chartShell(
               title: 'Top 5 contreparties les plus exposées',
+              titleWeight: FontWeight.w800,
               child: _horizontalBars(entries),
             ),
           ),
@@ -1484,14 +3215,14 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                 _summaryTile(
                   label: 'Part zone',
                   value: AppFormatters.percent(dominant.percentage),
-                  color: dominant.color,
+                  color: _warning,
                   design: _RiskSummaryDesign.zoneDonut,
                 ),
                 const SizedBox(height: 8),
                 _summaryTile(
                   label: 'Exposition totale',
                   value: _money(total, widget.displayCurrency),
-                  color: _primary,
+                  color: _cyan,
                   design: _RiskSummaryDesign.exposureStack,
                 ),
               ],
@@ -1504,13 +3235,13 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
 
   double _summaryWidthFor(double width) {
     if (width < 360) {
-      return 84;
+      return 78;
     }
     if (width < 430) {
-      return 104;
+      return 94;
     }
     if (width < 520) {
-      return 124;
+      return 112;
     }
     return _summaryRailWidth;
   }
@@ -1583,7 +3314,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                         style: TextStyle(
                           color: _dashboardMutedFor(context),
                           fontSize: compact ? 8 : 9,
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -1599,7 +3330,11 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
     );
   }
 
-  Widget _chartShell({required String title, required Widget child}) {
+  Widget _chartShell({
+    required String title,
+    required Widget child,
+    FontWeight titleWeight = FontWeight.w700,
+  }) {
     final surface = _dashboardSurfaceSoftFor(context);
     final border = _dashboardBorderFor(context);
     final textColor = _dashboardTextFor(context);
@@ -1623,7 +3358,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
             style: TextStyle(
               color: textColor,
               fontSize: 11,
-              fontWeight: FontWeight.w700,
+              fontWeight: titleWeight,
             ),
           ),
           const SizedBox(height: 10),
@@ -1784,7 +3519,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                                       hover * 0.35,
                                     ),
                                     fontSize: compact ? 9 : 10,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
                               ),
@@ -1896,7 +3631,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                                 style: TextStyle(
                                   color: _dashboardTextFor(context),
                                   fontSize: 10,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -1931,7 +3666,8 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                   ),
                 ),
                 const SizedBox(width: 7),
-                Expanded(
+                SizedBox(
+                  width: 78,
                   child: Text(
                     entry.label,
                     maxLines: 1,
@@ -1939,10 +3675,17 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                     style: TextStyle(
                       color: _dashboardTextFor(context),
                       fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _GeoLegendLeader(
+                    color: _dashboardBorderFor(context),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 Text(
                   AppFormatters.percent(entry.percentage),
                   style: TextStyle(
@@ -1965,7 +3708,7 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
         style: TextStyle(
           color: _dashboardMutedFor(context),
           fontSize: 11,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -1973,13 +3716,16 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
 
   List<_ConcentrationEntry> _clientEntries() {
     final totals = <String, double>{};
-    final total = widget.rows.fold<double>(0, (sum, row) => sum + row.ead);
+    final total = widget.rows.fold<double>(
+      0,
+      (sum, row) => sum + row.grossAmount,
+    );
 
     for (final row in widget.rows) {
       totals.update(
         _counterpartyLabel(row),
-        (value) => value + row.ead,
-        ifAbsent: () => row.ead,
+        (value) => value + row.grossAmount,
+        ifAbsent: () => row.grossAmount,
       );
     }
 
@@ -1992,13 +3738,17 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
           label: ranked[index].key,
           amount: ranked[index].value,
           percentage: total == 0 ? 0 : ranked[index].value / total,
-          color: _chartColors[index % _chartColors.length],
+          color: _RiskConcentrationPanelState._chartColors[
+              index % _RiskConcentrationPanelState._chartColors.length],
         ),
     ];
   }
 
   List<_ConcentrationEntry> _sectorEntries() {
-    final totals = {for (final label in _sectorLabels) label: 0.0};
+    final totals = {
+      for (final label in _RiskConcentrationPanelState._sectorLabels)
+        label: 0.0,
+    };
     final unmatched = <DistributionEntry>[];
     final source = widget.sectors.isNotEmpty
         ? widget.sectors
@@ -2015,7 +3765,8 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
 
     if (totals.values.every((value) => value == 0) && unmatched.isNotEmpty) {
       for (var index = 0; index < unmatched.length; index++) {
-        final label = _sectorLabels[index % _sectorLabels.length];
+        final label = _RiskConcentrationPanelState._sectorLabels[
+            index % _RiskConcentrationPanelState._sectorLabels.length];
         totals.update(label, (value) => value + unmatched[index].amount);
       }
     }
@@ -2023,13 +3774,20 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
     final total = totals.values.fold<double>(0, (sum, value) => sum + value);
 
     return [
-      for (var index = 0; index < _sectorLabels.length; index++)
+      for (var index = 0;
+          index < _RiskConcentrationPanelState._sectorLabels.length;
+          index++)
         _ConcentrationEntry(
-          label: _sectorLabels[index],
-          amount: totals[_sectorLabels[index]] ?? 0,
-          percentage:
-              total == 0 ? 0 : (totals[_sectorLabels[index]] ?? 0) / total,
-          color: _chartColors[index % _chartColors.length],
+          label: _RiskConcentrationPanelState._sectorLabels[index],
+          amount:
+              totals[_RiskConcentrationPanelState._sectorLabels[index]] ?? 0,
+          percentage: total == 0
+              ? 0
+              : (totals[_RiskConcentrationPanelState._sectorLabels[index]] ??
+                      0) /
+                  total,
+          color: _RiskConcentrationPanelState._chartColors[
+              index % _RiskConcentrationPanelState._chartColors.length],
         ),
     ];
   }
@@ -2047,12 +3805,16 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
 
     // Donnees temporaires diversifiees pour eviter un affichage concentre a 100%.
     return [
-      for (var index = 0; index < _zoneLabels.length; index++)
+      for (var index = 0;
+          index < _RiskConcentrationPanelState._zoneLabels.length;
+          index++)
         _ConcentrationEntry(
-          label: _zoneLabels[index],
-          amount: baseAmount * _fictiveZoneShares[index],
-          percentage: _fictiveZoneShares[index],
-          color: _chartColors[index % _chartColors.length],
+          label: _RiskConcentrationPanelState._zoneLabels[index],
+          amount: baseAmount *
+              _RiskConcentrationPanelState._fictiveZoneShares[index],
+          percentage: _RiskConcentrationPanelState._fictiveZoneShares[index],
+          color: _RiskConcentrationPanelState._zoneColors[
+              index % _RiskConcentrationPanelState._zoneColors.length],
         ),
     ];
   }
@@ -2106,7 +3868,9 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
     final labels = entries.map((entry) => entry.label).toSet();
     final totalEad = widget.rows.fold<double>(0, (sum, row) => sum + row.ead);
     final totalRwa = widget.rows.fold<double>(0, (sum, row) => sum + row.rwa);
-    final topEad = entries.fold<double>(0, (sum, entry) => sum + entry.amount);
+    final topEad = widget.rows
+        .where((row) => labels.contains(_counterpartyLabel(row)))
+        .fold<double>(0, (sum, row) => sum + row.ead);
     final topRwa = widget.rows
         .where((row) => labels.contains(_counterpartyLabel(row)))
         .fold<double>(0, (sum, row) => sum + row.rwa);
@@ -2174,6 +3938,51 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
   }
 }
 
+class _GeoLegendLeader extends StatelessWidget {
+  const _GeoLegendLeader({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 1,
+      child: CustomPaint(
+        painter: _GeoLegendLeaderPainter(color: color.withValues(alpha: 0.9)),
+      ),
+    );
+  }
+}
+
+class _GeoLegendLeaderPainter extends CustomPainter {
+  const _GeoLegendLeaderPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1
+      ..strokeCap = StrokeCap.round;
+    const dashWidth = 4.0;
+    const dashGap = 3.0;
+    var startX = 0.0;
+    final y = size.height / 2;
+
+    while (startX < size.width) {
+      final endX = math.min(startX + dashWidth, size.width);
+      canvas.drawLine(Offset(startX, y), Offset(endX, y), paint);
+      startX += dashWidth + dashGap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GeoLegendLeaderPainter oldDelegate) {
+    return oldDelegate.color != color;
+  }
+}
+
 class _RiskSummaryTile extends StatefulWidget {
   const _RiskSummaryTile({
     required this.label,
@@ -2206,11 +4015,11 @@ class _RiskSummaryTileState extends State<_RiskSummaryTile> {
           return AnimatedSlide(
             duration: const Duration(milliseconds: 180),
             curve: Curves.easeOutCubic,
-            offset: _hovered ? const Offset(0, -0.025) : Offset.zero,
+            offset: _hovered ? const Offset(0, -0.01) : Offset.zero,
             child: AnimatedScale(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOutCubic,
-              scale: _hovered ? 1.012 : 1,
+              scale: _hovered ? 1.004 : 1,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
@@ -2221,18 +4030,13 @@ class _RiskSummaryTileState extends State<_RiskSummaryTile> {
                   color:
                       widget.color.withValues(alpha: _hovered ? 0.07 : 0.045),
                   borderRadius: BorderRadius.circular(_radius),
-                  border: Border.all(
-                    color: widget.color.withValues(
-                      alpha: _hovered ? 0.28 : 0.16,
-                    ),
-                  ),
                   boxShadow: [
                     BoxShadow(
                       color: widget.color.withValues(
-                        alpha: _hovered ? 0.1 : 0.025,
+                        alpha: _hovered ? 0.065 : 0.025,
                       ),
-                      blurRadius: _hovered ? 15 : 5,
-                      offset: Offset(0, _hovered ? 7 : 2),
+                      blurRadius: _hovered ? 10 : 5,
+                      offset: Offset(0, _hovered ? 4 : 2),
                     ),
                   ],
                 ),
@@ -2249,13 +4053,13 @@ class _RiskSummaryTileState extends State<_RiskSummaryTile> {
                                 ? (compact ? 0.045 : 0.055)
                                 : (compact ? 0.022 : 0.028),
                             child: AnimatedRotation(
-                              turns: _hovered ? 0.012 : 0,
+                              turns: _hovered ? 0.004 : 0,
                               duration: const Duration(milliseconds: 220),
                               curve: Curves.easeOutCubic,
                               child: AnimatedScale(
                                 duration: const Duration(milliseconds: 220),
                                 curve: Curves.easeOutCubic,
-                                scale: _hovered ? 1.08 : 1,
+                                scale: _hovered ? 1.025 : 1,
                                 child: Transform.translate(
                                   offset: Offset(compact ? 18 : 22, 0),
                                   child: SizedBox(
@@ -2287,7 +4091,7 @@ class _RiskSummaryTileState extends State<_RiskSummaryTile> {
                           style: TextStyle(
                             color: _dashboardMutedFor(context),
                             fontSize: compact ? 8 : 9,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         SizedBox(height: compact ? 4 : 5),
@@ -2736,33 +4540,31 @@ class _RwaEvolutionAnalyticsPanelState
   @override
   Widget build(BuildContext context) {
     final series = _visibleSeries();
-    final creditSeries =
+    final exposureSeries =
         series.isEmpty ? const <_RwaChartPoint>[] : series.first.points;
-    final hasRwaData = creditSeries.isNotEmpty;
-    final currentTotal = hasRwaData ? creditSeries.last.value : 0.0;
-    final monthlyVariation = creditSeries.length < 2 ||
-            creditSeries[creditSeries.length - 2].value == 0
-        ? 0.0
-        : (creditSeries.last.value -
-                creditSeries[creditSeries.length - 2].value) /
-            creditSeries[creditSeries.length - 2].value;
+    final hasExposureData = exposureSeries.isNotEmpty;
+    final currentExposure = hasExposureData ? exposureSeries.last.value : 0.0;
+    final averageExposure = hasExposureData
+        ? exposureSeries.fold<double>(0, (sum, point) => sum + point.value) /
+            exposureSeries.length
+        : 0.0;
+    final peakPoint = hasExposureData
+        ? exposureSeries.reduce(
+            (left, right) => left.value >= right.value ? left : right,
+          )
+        : null;
     final periodVariation =
-        creditSeries.length < 2 || creditSeries.first.value == 0
+        exposureSeries.length < 2 || exposureSeries.first.value == 0
             ? 0.0
-            : (creditSeries.last.value - creditSeries.first.value) /
-                creditSeries.first.value;
-    final trend = monthlyVariation > 0.004
-        ? 'Hausse'
-        : monthlyVariation < -0.004
-            ? 'Baisse'
-            : 'Stable';
+            : (exposureSeries.last.value - exposureSeries.first.value) /
+                exposureSeries.first.value;
 
     return _PanelBlock(
-      title: 'Évolution des RWA',
-      subtitle: 'Suivi dynamique des RWA Crédit en approche standard',
+      title: 'Exposition totale mensuelle',
+      subtitle: 'Suivi mensuel du niveau d’exposition du portefeuille',
       icon: CupertinoIcons.chart_bar_square_fill,
       iconTooltip: _rwaEvolutionTooltip(),
-      color: _primary,
+      color: _chartIndigo,
       trailing: _RwaTimelineControls(
         selectedDate: _selectedReferenceDate,
         onDateChanged: (value) => setState(() {
@@ -2778,7 +4580,7 @@ class _RwaEvolutionAnalyticsPanelState
       ),
       child: SizedBox(
         height: _RiskConcentrationPanelState._bodyHeight,
-        child: hasRwaData
+        child: hasExposureData
             ? Column(
                 children: [
                   Expanded(
@@ -2814,14 +4616,15 @@ class _RwaEvolutionAnalyticsPanelState
                   const SizedBox(height: 6),
                   _RwaAnalyticsSummary(
                     displayCurrency: widget.displayCurrency,
-                    total: currentTotal,
-                    variation: monthlyVariation,
-                    trend: trend,
+                    currentExposure: currentExposure,
+                    averageExposure: averageExposure,
+                    peakLabel: peakPoint?.label ?? '-',
+                    peakExposure: peakPoint?.value ?? 0.0,
                     periodVariation: periodVariation,
                   ),
                 ],
               )
-            : const SizedBox.shrink(),
+            : const _RwaEvolutionEmptyState(),
       ),
     );
   }
@@ -2831,71 +4634,61 @@ class _RwaEvolutionAnalyticsPanelState
       style: TextStyle(
         color: Color(0xFFE7EEF9),
         fontSize: 11,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w500,
         height: 1.38,
       ),
       children: [
         TextSpan(
-          text: 'Lecture prudentielle des RWA Crédit\n\n',
+          text: 'Lecture mensuelle de l’exposition\n\n',
           style: TextStyle(
             color: Color(0xFFEAF2FF),
             fontSize: 14,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
           text: 'Objectif : ',
           style: TextStyle(
             color: Color(0xFF67E8F9),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
           text:
-              'suivre l’évolution des actifs pondérés par les risques afin d’évaluer la pression en capital générée par le portefeuille de crédit au fil du temps.\n\n',
+              'suivre le niveau d’exposition totale du portefeuille mois par mois afin d’identifier les phases de croissance ou de réduction du stock de risque.\n\n',
         ),
         TextSpan(
-          text: 'RWA Crédit = actifs pondérés par le risque de crédit. ',
+          text: 'Exposition totale : ',
           style: TextStyle(
             color: Color(0xFF93C5FD),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
-          text: 'Une hausse des RWA peut traduire :\n',
-        ),
-        TextSpan(
           text:
-              '• une augmentation des expositions ;\n• une dégradation du profil de risque ;\n• ou une pondération réglementaire plus élevée.\n\n',
+              'montant consolidé des engagements suivis sur chaque mois de la période sélectionnée.\n\n',
         ),
         TextSpan(
-          text: 'Courbe : ',
+          text: 'Bâtons : ',
           style: TextStyle(
             color: Color(0xFFFBBF24),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
           text:
-              'compare les niveaux de RWA sur la période sélectionnée afin d’identifier :\n',
-        ),
-        TextSpan(
-          text:
-              '• une accélération du risque ;\n• une stabilisation ;\n• ou une amélioration du portefeuille.\n\n',
+              'chaque mois est représenté par un seul bâton pour faciliter la comparaison directe des niveaux d’exposition.\n\n',
         ),
         TextSpan(
           text: 'Synthèse : ',
           style: TextStyle(
             color: Color(0xFFC4B5FD),
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
           ),
         ),
         TextSpan(
-          text: 'les indicateurs affichés permettent une lecture rapide de :\n',
-        ),
-        TextSpan(
           text:
-              '• la tendance globale ;\n• la variation mensuelle ;\n• et l’évolution prudentielle du risque de crédit.',
+              'les indicateurs du bas résument l’exposition actuelle, la moyenne de période, le pic observé et l’évolution globale.',
         ),
       ],
     );
@@ -2913,16 +4706,15 @@ class _RwaEvolutionAnalyticsPanelState
     final visiblePoints = basePoints.length <= takeCount
         ? basePoints
         : basePoints.sublist(basePoints.length - takeCount);
-
     return [
       _RwaSeries(
-        label: 'RWA Crédit',
-        color: _primary,
+        label: 'Exposition totale',
+        color: _chartIndigo,
         points: [
-          for (var index = 0; index < visiblePoints.length; index++)
+          for (final point in visiblePoints)
             _RwaChartPoint(
-              label: visiblePoints[index].label,
-              value: visiblePoints[index].value,
+              label: point.label,
+              value: point.value,
             ),
         ],
       ),
@@ -2958,6 +4750,70 @@ class _RwaEvolutionAnalyticsPanelState
   }
 }
 
+class _RwaEvolutionEmptyState extends StatelessWidget {
+  const _RwaEvolutionEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final textColor = _dashboardTextFor(context);
+    final mutedColor = _dashboardMutedFor(context);
+    final borderColor = _dashboardBorderFor(context);
+
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 360),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: _primary.withValues(alpha: 0.035),
+          borderRadius: BorderRadius.circular(_radius),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: _primary.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(_radius),
+              ),
+              child: const Icon(
+                CupertinoIcons.chart_bar_square,
+                color: _primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Aucune donnée disponible'.tr(context),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                height: 1.1,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Aucun point mensuel ne correspond à la période sélectionnée.'
+                  .tr(context),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: mutedColor,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w500,
+                height: 1.35,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _RwaChartSurface extends StatelessWidget {
   const _RwaChartSurface({
     required this.series,
@@ -2975,10 +4831,31 @@ class _RwaChartSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final unitLabel = _chartMoneyUnitLabel(
+      _RwaEvolutionChartPainter.maxBarValue(series),
+      displayCurrency,
+    );
+
     return Column(
       children: [
-        _RwaLegend(series: series),
-        const SizedBox(height: 8),
+        SizedBox(
+          height: 18,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: _RwaLegend(series: series),
+              ),
+              Positioned(
+                right: 0,
+                top: 0,
+                child: _RwaUnitBadge(unitLabel: unitLabel),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
         Expanded(
           child: LayoutBuilder(
             builder: (context, constraints) {
@@ -3010,9 +4887,12 @@ class _RwaChartSurface extends StatelessWidget {
                     ),
                     if (hoverInfo != null)
                       Positioned(
-                        left: _tooltipLeft(hoverInfo!.position.dx, size.width),
-                        top: _tooltipTop(hoverInfo!.position.dy),
-                        child: _RwaTooltip(
+                        left: _hoverSummaryLeft(
+                          hoverInfo!.position.dx,
+                          constraints.maxWidth,
+                        ),
+                        top: _hoverSummaryTop(),
+                        child: _RwaHoverSummary(
                           info: hoverInfo!,
                           displayCurrency: displayCurrency,
                         ),
@@ -3040,70 +4920,42 @@ class _RwaChartSurface extends StatelessWidget {
       return null;
     }
 
-    final allValues = series
-        .expand((item) => item.points.map((point) => point.value))
-        .toList();
-    final minValue = allValues.reduce(math.min);
-    final maxValue = allValues.reduce(math.max);
-    final span =
-        (maxValue - minValue).abs() < 0.001 ? 1.0 : maxValue - minValue;
     final pointCount = series.first.points.length;
-    final xStep = pointCount <= 1 ? 0.0 : bounds.width / (pointCount - 1);
-    final index = pointCount <= 1
-        ? 0
-        : ((position.dx - bounds.left) / xStep)
-            .round()
-            .clamp(0, pointCount - 1);
-
-    _RwaSeries selectedSeries = series.first;
-    var selectedPoint = selectedSeries.points[index];
-    var selectedDy = _RwaEvolutionChartPainter.valueToY(
+    final groupWidth = bounds.width / pointCount;
+    final index = ((position.dx - bounds.left) / groupWidth)
+        .floor()
+        .clamp(0, pointCount - 1);
+    final selectedPoint = series.first.points[index];
+    final maxTotal = _RwaEvolutionChartPainter.maxBarValue(series);
+    final barTop = _RwaEvolutionChartPainter.valueToY(
       bounds,
       selectedPoint.value,
-      minValue,
-      span,
+      maxTotal,
     );
-    var nearestDistance = (position.dy - selectedDy).abs();
-
-    for (final candidate in series.skip(1)) {
-      final point = candidate.points[index];
-      final dy = _RwaEvolutionChartPainter.valueToY(
-        bounds,
-        point.value,
-        minValue,
-        span,
-      );
-      final distance = (position.dy - dy).abs();
-      if (distance < nearestDistance) {
-        selectedSeries = candidate;
-        selectedPoint = point;
-        selectedDy = dy;
-        nearestDistance = distance;
-      }
-    }
-
-    final previousValue = index == 0
-        ? selectedPoint.value
-        : selectedSeries.points[index - 1].value;
+    final previousValue =
+        index == 0 ? selectedPoint.value : series.first.points[index - 1].value;
     final variation = previousValue == 0
         ? 0.0
         : (selectedPoint.value - previousValue) / previousValue;
+    final x = bounds.left + groupWidth * (index + 0.5);
 
     return _RwaHoverInfo(
-      series: selectedSeries,
+      series: series.first,
       point: selectedPoint,
       index: index,
       variation: variation,
-      position: Offset(bounds.left + xStep * index, selectedDy),
+      position: Offset(x, barTop),
     );
   }
 
-  double _tooltipLeft(double anchorX, double width) {
-    return (anchorX - 86).clamp(8.0, math.max(8.0, width - 172));
+  double _hoverSummaryLeft(double anchorX, double width) {
+    const summaryWidth = 196.0;
+    return (anchorX - summaryWidth / 2)
+        .clamp(8.0, math.max(8.0, width - summaryWidth - 8));
   }
 
-  double _tooltipTop(double anchorY) {
-    return math.max(6, anchorY - 82);
+  double _hoverSummaryTop() {
+    return 2;
   }
 }
 
@@ -3136,7 +4988,7 @@ class _RwaLegend extends StatelessWidget {
                 style: TextStyle(
                   color: _dashboardMutedFor(context),
                   fontSize: 9.8,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -3146,8 +4998,46 @@ class _RwaLegend extends StatelessWidget {
   }
 }
 
-class _RwaTooltip extends StatelessWidget {
-  const _RwaTooltip({
+class _RwaUnitBadge extends StatelessWidget {
+  const _RwaUnitBadge({required this.unitLabel});
+
+  final String unitLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isDashboardDark(context);
+    final color = _dashboardMutedFor(context);
+
+    return Container(
+      height: 18,
+      padding: const EdgeInsets.symmetric(horizontal: 7),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.035)
+            : _primary.withValues(alpha: 0.045),
+        borderRadius: BorderRadius.circular(1),
+        border: Border.all(
+          color: _dashboardBorderFor(context).withValues(alpha: 0.72),
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        'Unité : $unitLabel',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color,
+          fontSize: 8.4,
+          fontWeight: FontWeight.w700,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _RwaHoverSummary extends StatelessWidget {
+  const _RwaHoverSummary({
     required this.info,
     required this.displayCurrency,
   });
@@ -3158,53 +5048,99 @@ class _RwaTooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final variationPrefix = info.variation >= 0 ? '+' : '';
+    final variationColor = info.variation >= 0 ? _warning : _success;
+    final surface = _dashboardSurfaceFor(context);
+    final textColor = _dashboardTextFor(context);
+    final mutedColor = _dashboardMutedFor(context);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF13203A).withValues(alpha: 0.91),
-        borderRadius: BorderRadius.circular(_radius),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF13203A).withValues(alpha: 0.24),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              info.series.label,
-              style: TextStyle(
-                color: info.series.color,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              _money(info.point.value, displayCurrency),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '$variationPrefix${AppFormatters.percent(info.variation)} • ${info.point.label}',
-              style: const TextStyle(
-                color: Color(0xFFC8D4E8),
-                fontSize: 9,
-                fontWeight: FontWeight.w400,
-              ),
+    return SizedBox(
+      width: 196,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: surface.withValues(alpha: 0.97),
+          borderRadius: BorderRadius.circular(_radius),
+          border: Border.all(color: info.series.color.withValues(alpha: 0.35)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF13203A).withValues(alpha: 0.10),
+              blurRadius: 14,
+              offset: const Offset(0, 7),
             ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: info.series.color,
+                      borderRadius: BorderRadius.circular(1.5),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      info.series.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: info.series.color,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              Text(
+                _money(info.point.value, displayCurrency),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      info.point.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: mutedColor,
+                        fontSize: 8.6,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '$variationPrefix${AppFormatters.percent(info.variation)}',
+                    style: TextStyle(
+                      color: variationColor,
+                      fontSize: 8.8,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -3267,7 +5203,7 @@ class _RwaTimelineControls extends StatelessWidget {
                             style: TextStyle(
                               color: textColor,
                               fontSize: 12,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -3300,7 +5236,7 @@ class _RwaTimelineControls extends StatelessWidget {
                   style: TextStyle(
                     color: mutedColor,
                     fontSize: 9,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     height: 1,
                   ),
                 ),
@@ -3333,7 +5269,9 @@ class _RwaTimelineControls extends StatelessWidget {
                   style: TextStyle(
                     color: selectedPeriod == period ? _primary : _textSecondary,
                     fontSize: 9,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: selectedPeriod == period
+                        ? FontWeight.w700
+                        : FontWeight.w600,
                     height: 1,
                   ),
                 ),
@@ -3353,60 +5291,56 @@ class _RwaTimelineControls extends StatelessWidget {
 class _RwaAnalyticsSummary extends StatelessWidget {
   const _RwaAnalyticsSummary({
     required this.displayCurrency,
-    required this.total,
-    required this.variation,
-    required this.trend,
+    required this.currentExposure,
+    required this.averageExposure,
+    required this.peakLabel,
+    required this.peakExposure,
     required this.periodVariation,
   });
 
   final String displayCurrency;
-  final double total;
-  final double variation;
-  final String trend;
+  final double currentExposure;
+  final double averageExposure;
+  final String peakLabel;
+  final double peakExposure;
   final double periodVariation;
 
   @override
   Widget build(BuildContext context) {
-    final variationPrefix = variation >= 0 ? '+' : '';
-    final periodVariationPrefix = periodVariation >= 0 ? '+' : '';
-    final trendColor = trend == 'Hausse'
-        ? _warning
-        : trend == 'Baisse'
-            ? _success
-            : _textSecondary;
+    final variationPrefix = periodVariation >= 0 ? '+' : '';
+    final variationColor = periodVariation >= 0 ? _warning : _success;
 
     return Row(
       children: [
         Expanded(
           child: _RwaSummaryTile(
-            label: 'RWA Crédit actuel',
-            value: _money(total, displayCurrency),
-            color: _primary,
+            label: 'Exposition actuelle',
+            value: _money(currentExposure, displayCurrency),
+            color: _chartIndigo,
           ),
         ),
         const SizedBox(width: 6),
         Expanded(
           child: _RwaSummaryTile(
-            label: 'Variation mensuelle',
-            value: '$variationPrefix${AppFormatters.percent(variation)}',
-            color: variation >= 0 ? _warning : _success,
+            label: 'Moyenne période',
+            value: _money(averageExposure, displayCurrency),
+            color: _chartIndigo,
           ),
         ),
         const SizedBox(width: 6),
         Expanded(
           child: _RwaSummaryTile(
-            label: 'Tendance globale',
-            value: trend,
-            color: trendColor,
+            label: 'Pic mensuel',
+            value: '$peakLabel · ${_money(peakExposure, displayCurrency)}',
+            color: _warning,
           ),
         ),
         const SizedBox(width: 6),
         Expanded(
           child: _RwaSummaryTile(
             label: 'Évolution période',
-            value:
-                '$periodVariationPrefix${AppFormatters.percent(periodVariation)}',
-            color: periodVariation >= 0 ? _warning : _success,
+            value: '$variationPrefix${AppFormatters.percent(periodVariation)}',
+            color: variationColor,
           ),
         ),
       ],
@@ -3449,7 +5383,7 @@ class _RwaSummaryTile extends StatelessWidget {
             style: TextStyle(
               color: muted,
               fontSize: 8.5,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               height: 1,
             ),
           ),
@@ -3488,110 +5422,198 @@ class _RwaEvolutionChartPainter extends CustomPainter {
 
   static Rect chartBounds(Size size) {
     return Rect.fromLTWH(
-      74,
+      70,
       8,
-      math.max(1, size.width - 86),
-      math.max(1, size.height - 28),
+      math.max(1, size.width - 82),
+      math.max(1, size.height - 34),
     );
+  }
+
+  static double maxBarValue(List<_RwaSeries> series) {
+    if (series.isEmpty || series.first.points.isEmpty) {
+      return 1;
+    }
+    var maxValue = 0.0;
+    for (final point in series.first.points) {
+      maxValue = math.max(maxValue, point.value);
+    }
+    return maxValue <= 0 ? 1 : _niceChartMax(maxValue);
+  }
+
+  static double _niceChartMax(double value) {
+    final target = value * 1.14;
+    if (target <= 0) {
+      return 1;
+    }
+    final exponent = math
+        .pow(
+          10,
+          (math.log(target) / math.ln10).floor(),
+        )
+        .toDouble();
+    final normalized = target / exponent;
+    final niceNormalized = normalized <= 1
+        ? 1.0
+        : normalized <= 2
+            ? 2.0
+            : normalized <= 2.5
+                ? 2.5
+                : normalized <= 5
+                    ? 5.0
+                    : 10.0;
+    return niceNormalized * exponent;
   }
 
   static double valueToY(
     Rect bounds,
     double value,
-    double minValue,
-    double span,
+    double maxValue,
   ) {
     const topInset = 18.0;
-    const bottomInset = 3.0;
+    const bottomInset = 7.0;
     final plotTop = bounds.top + topInset;
     final plotBottom = bounds.bottom - bottomInset;
     final plotHeight = math.max(1.0, plotBottom - plotTop);
-    return plotBottom - ((value - minValue) / span * plotHeight);
+    return plotBottom - (value / math.max(1.0, maxValue) * plotHeight);
   }
 
   @override
   void paint(Canvas canvas, Size size) {
     final bounds = chartBounds(size);
+    final hasPoints = series.isNotEmpty && series.first.points.isNotEmpty;
+    final maxValue = hasPoints ? maxBarValue(series) : 1.0;
+    final plotBackground = RRect.fromRectAndRadius(
+      bounds,
+      const Radius.circular(_radius),
+    );
+    canvas.drawRRect(
+      plotBackground,
+      Paint()..color = _surfaceSoft.withValues(alpha: 0.42),
+    );
+
     final gridPaint = Paint()
-      ..color = _border.withValues(alpha: 0.70)
+      ..color = _border.withValues(alpha: 0.54)
       ..strokeWidth = 0.8;
 
     for (var index = 0; index <= 4; index++) {
-      final y = bounds.top + bounds.height * index / 4;
-      canvas.drawLine(
-          Offset(bounds.left, y), Offset(bounds.right, y), gridPaint);
+      final value = maxValue * (1 - index / 4);
+      final y = valueToY(bounds, value, maxValue);
+      _drawDashedLine(
+        canvas,
+        Offset(bounds.left, y),
+        Offset(bounds.right, y),
+        gridPaint,
+      );
     }
 
-    if (series.isEmpty || series.first.points.isEmpty) {
+    canvas.drawLine(
+      Offset(bounds.left, bounds.top),
+      Offset(bounds.left, bounds.bottom),
+      Paint()
+        ..color = axisColor.withValues(alpha: 0.34)
+        ..strokeWidth = 1,
+    );
+    canvas.drawLine(
+      Offset(bounds.left, bounds.bottom),
+      Offset(bounds.right, bounds.bottom),
+      Paint()
+        ..color = axisColor.withValues(alpha: 0.34)
+        ..strokeWidth = 1,
+    );
+
+    if (!hasPoints) {
       return;
     }
 
-    final allValues = series
-        .expand((item) => item.points.map((point) => point.value))
-        .toList();
-    final minValue = allValues.reduce(math.min);
-    final maxValue = allValues.reduce(math.max);
-    final span =
-        (maxValue - minValue).abs() < 0.001 ? 1.0 : maxValue - minValue;
-
-    _drawYAxisLabels(canvas, bounds, minValue, maxValue, span);
+    _drawYAxisLabels(canvas, bounds, maxValue);
     _drawXAxisLabels(canvas, bounds);
 
     canvas.save();
-    canvas.clipRect(Rect.fromLTWH(
-        bounds.left, bounds.top, bounds.width * progress, bounds.height));
+    canvas.clipRect(bounds);
 
-    for (final item in series) {
-      final offsets = _offsetsFor(item, bounds, minValue, span);
-      if (offsets.isEmpty) {
-        continue;
+    final groupWidth = bounds.width / series.first.points.length;
+    final barWidth = math.min(34.0, math.max(16.0, groupWidth * 0.26));
+    for (var index = 0; index < series.first.points.length; index++) {
+      final value = series.first.points[index].value;
+      final centerX = bounds.left + groupWidth * (index + 0.5);
+      final left = centerX - barWidth / 2;
+      final bottom = valueToY(bounds, 0, maxValue);
+      final top = valueToY(bounds, value * progress, maxValue);
+      final isHovered = hoverInfo?.index == index;
+      final faded = hoverInfo != null && !isHovered;
+      final opacity = faded ? 0.42 : 1.0;
+      final barRect = Rect.fromLTRB(left, top, left + barWidth, bottom);
+      const topRadius = Radius.circular(_radius);
+      const bottomRadius = Radius.circular(1.2);
+      final clip = RRect.fromRectAndCorners(
+        barRect,
+        topLeft: topRadius,
+        topRight: topRadius,
+        bottomLeft: bottomRadius,
+        bottomRight: bottomRadius,
+      );
+
+      canvas.drawRRect(
+        RRect.fromRectAndCorners(
+          barRect.shift(const Offset(0, 3)),
+          topLeft: topRadius,
+          topRight: topRadius,
+          bottomLeft: bottomRadius,
+          bottomRight: bottomRadius,
+        ),
+        Paint()..color = series.first.color.withValues(alpha: 0.08 * opacity),
+      );
+
+      canvas.save();
+      canvas.clipRRect(clip);
+      canvas.drawRRect(
+        clip,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color(0xFF6366F1).withValues(alpha: 0.96 * opacity),
+              const Color(0xFF4338CA).withValues(alpha: 0.98 * opacity),
+            ],
+          ).createShader(barRect),
+      );
+      canvas.restore();
+
+      if (isHovered) {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            Rect.fromLTRB(left - 3, top - 3, left + barWidth + 3, bottom + 1),
+            topRadius,
+          ),
+          Paint()
+            ..color = series.first.color.withValues(alpha: 0.24)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.4,
+        );
       }
 
-      final path = _smoothPath(offsets);
-      final fillPath = Path.from(path)
-        ..lineTo(offsets.last.dx, bounds.bottom)
-        ..lineTo(offsets.first.dx, bounds.bottom)
-        ..close();
-      canvas.drawPath(
-        fillPath,
-        Paint()
-          ..color = item.color.withValues(alpha: 0.055)
-          ..style = PaintingStyle.fill,
-      );
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = item.color
-          ..strokeWidth = 2.2
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round
-          ..style = PaintingStyle.stroke,
-      );
+      if (progress > 0.92 &&
+          (series.first.points.length <= 8 || index.isEven)) {
+        _drawBarValueLabel(
+          canvas,
+          bounds,
+          centerX,
+          top - 6,
+          value,
+        );
+      }
     }
     canvas.restore();
 
     if (hoverInfo != null) {
       final hover = hoverInfo!;
-      final x = hover.position.dx;
       canvas.drawLine(
-        Offset(x, bounds.top),
-        Offset(x, bounds.bottom),
+        Offset(hover.position.dx, bounds.top),
+        Offset(hover.position.dx, bounds.bottom),
         Paint()
-          ..color = _textSecondary.withValues(alpha: 0.18)
+          ..color = series.first.color.withValues(alpha: 0.16)
           ..strokeWidth = 1,
-      );
-      canvas.drawCircle(
-        hover.position,
-        4.5,
-        Paint()..color = _surface,
-      );
-      canvas.drawCircle(
-        hover.position,
-        4.5,
-        Paint()
-          ..color = hover.series.color
-          ..strokeWidth = 2.2
-          ..style = PaintingStyle.stroke,
       );
     }
   }
@@ -3599,9 +5621,7 @@ class _RwaEvolutionChartPainter extends CustomPainter {
   void _drawYAxisLabels(
     Canvas canvas,
     Rect bounds,
-    double minValue,
     double maxValue,
-    double span,
   ) {
     final textPainter = TextPainter(
       textDirection: TextDirection.ltr,
@@ -3611,21 +5631,23 @@ class _RwaEvolutionChartPainter extends CustomPainter {
     );
 
     for (var index = 0; index <= 4; index++) {
-      final y = bounds.top + bounds.height * index / 4;
-      final value = maxValue - span * index / 4;
+      final ratio = index / 4;
+      final value = maxValue * (1 - ratio);
+      final y = valueToY(bounds, value, maxValue);
       textPainter.text = TextSpan(
         text: _axisMoneyLabel(value, displayCurrency),
         style: TextStyle(
-          color: axisColor,
-          fontSize: 8,
-          fontWeight: FontWeight.w600,
+          color: axisColor.withValues(alpha: 0.92),
+          fontSize: 8.8,
+          fontWeight: FontWeight.w700,
           height: 1,
         ),
       );
-      textPainter.layout(maxWidth: 62);
+      textPainter.layout(maxWidth: 68);
       textPainter.paint(
         canvas,
-        Offset(bounds.left - textPainter.width - 9, y - textPainter.height / 2),
+        Offset(
+            bounds.left - textPainter.width - 11, y - textPainter.height / 2),
       );
     }
   }
@@ -3637,7 +5659,7 @@ class _RwaEvolutionChartPainter extends CustomPainter {
 
     final points = series.first.points;
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
-    final xStep = points.length <= 1 ? 0.0 : bounds.width / (points.length - 1);
+    final groupWidth = bounds.width / points.length;
     final labelEvery = points.length <= 7 ? 1 : 2;
 
     for (var index = 0; index < points.length; index++) {
@@ -3648,71 +5670,71 @@ class _RwaEvolutionChartPainter extends CustomPainter {
       textPainter.text = TextSpan(
         text: points[index].label,
         style: TextStyle(
-          color: axisColor,
-          fontSize: 8.5,
+          color: axisColor.withValues(alpha: 0.96),
+          fontSize: 8.8,
           fontWeight: FontWeight.w700,
           height: 1,
         ),
       );
       textPainter.layout(maxWidth: 46);
-      final x = bounds.left + xStep * index - textPainter.width / 2;
+      final x =
+          bounds.left + groupWidth * (index + 0.5) - textPainter.width / 2;
       final clampedX =
           x.clamp(bounds.left - 4, bounds.right - textPainter.width + 4);
       textPainter.paint(canvas, Offset(clampedX.toDouble(), bounds.bottom + 8));
     }
   }
 
-  List<Offset> _offsetsFor(
-    _RwaSeries item,
+  void _drawBarValueLabel(
+    Canvas canvas,
     Rect bounds,
-    double minValue,
-    double span,
+    double centerX,
+    double top,
+    double value,
   ) {
-    if (item.points.isEmpty) {
-      return const [];
-    }
-    final xStep =
-        item.points.length <= 1 ? 0.0 : bounds.width / (item.points.length - 1);
-    return [
-      for (var index = 0; index < item.points.length; index++)
-        Offset(
-          bounds.left + xStep * index,
-          valueToY(bounds, item.points[index].value, minValue, span),
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        text: _axisMoneyLabel(value, displayCurrency),
+        style: TextStyle(
+          color: axisColor.withValues(alpha: 0.98),
+          fontSize: 8.4,
+          fontWeight: FontWeight.w700,
+          height: 1,
         ),
-    ];
+      ),
+    )..layout(maxWidth: 54);
+    final x = (centerX - textPainter.width / 2)
+        .clamp(bounds.left, bounds.right - textPainter.width)
+        .toDouble();
+    textPainter.paint(canvas, Offset(x, math.max(bounds.top + 1, top - 10)));
   }
 
-  Path _smoothPath(List<Offset> offsets) {
-    final path = Path()..moveTo(offsets.first.dx, offsets.first.dy);
-    if (offsets.length == 1) {
-      return path;
+  void _drawDashedLine(
+    Canvas canvas,
+    Offset start,
+    Offset end,
+    Paint paint,
+  ) {
+    const dash = 4.0;
+    const gap = 4.0;
+    final delta = end - start;
+    final distance = delta.distance;
+    if (distance <= 0) {
+      return;
     }
-
-    for (var index = 0; index < offsets.length - 1; index++) {
-      final p0 = index == 0 ? offsets[index] : offsets[index - 1];
-      final p1 = offsets[index];
-      final p2 = offsets[index + 1];
-      final p3 = index + 2 < offsets.length ? offsets[index + 2] : p2;
-      final control1 = Offset(
-        p1.dx + (p2.dx - p0.dx) / 6,
-        p1.dy + (p2.dy - p0.dy) / 6,
+    final direction = delta / distance;
+    var drawn = 0.0;
+    while (drawn < distance) {
+      final segmentEnd = math.min(drawn + dash, distance);
+      canvas.drawLine(
+        start + direction * drawn,
+        start + direction * segmentEnd,
+        paint,
       );
-      final control2 = Offset(
-        p2.dx - (p3.dx - p1.dx) / 6,
-        p2.dy - (p3.dy - p1.dy) / 6,
-      );
-
-      path.cubicTo(
-        control1.dx,
-        control1.dy,
-        control2.dx,
-        control2.dy,
-        p2.dx,
-        p2.dy,
-      );
+      drawn += dash + gap;
     }
-
-    return path;
   }
 
   @override
@@ -3852,7 +5874,7 @@ class _PanelBlock extends StatelessWidget {
                       style: TextStyle(
                         color: mutedColor,
                         fontSize: 8.6,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -4223,11 +6245,13 @@ class _StatusPill extends StatelessWidget {
   const _StatusPill({
     required this.icon,
     required this.label,
+    this.caption,
     this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final String? caption;
   final VoidCallback? onTap;
 
   @override
@@ -4236,27 +6260,57 @@ class _StatusPill extends StatelessWidget {
     final border = _dashboardBorderFor(context);
     final textColor = _dashboardTextFor(context);
 
+    final hasCaption = caption != null && caption!.trim().isNotEmpty;
     final pill = Container(
-      height: 24,
-      padding: const EdgeInsets.symmetric(horizontal: 7),
+      height: hasCaption ? 38 : 30,
+      padding: EdgeInsets.symmetric(horizontal: hasCaption ? 11 : 10),
       decoration: BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(_radius),
         border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: _primary.withValues(alpha: 0.045),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: _cyan),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              height: 1,
-            ),
+          Icon(icon, size: 14, color: _cyan),
+          SizedBox(width: hasCaption ? 7 : 6),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (hasCaption) ...[
+                Text(
+                  caption!.tr(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _dashboardMutedFor(context),
+                    fontSize: 7.4,
+                    fontWeight: FontWeight.w600,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: hasCaption ? 9.3 : 9.6,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -4669,134 +6723,102 @@ DashboardMetric _metric(Map<String, DashboardMetric> metrics, String key) {
       );
 }
 
+String _portfolioDisplayRating(String rating) {
+  final trimmed = rating.trim();
+  if (trimmed.isEmpty) {
+    return 'Non noté';
+  }
+  if (prudentialRatings.contains(trimmed)) {
+    return trimmed;
+  }
+  final normalized = trimmed
+      .toUpperCase()
+      .replaceAll('É', 'E')
+      .replaceAll(RegExp(r'\s+'), ' ');
+  if (normalized == 'NON NOTE' || normalized == 'NON NOTÉ') {
+    return 'Non noté';
+  }
+  return 'Non noté';
+}
+
 String _money(double value, String displayCurrency) {
-  return compactCurrencyForDisplay(value, toCurrency: displayCurrency);
+  final compact = compactCurrencyForDisplay(value, toCurrency: displayCurrency);
+  final abbreviated = compact
+      .replaceAll(' milliards ', ' Md ')
+      .replaceAll(' milliard ', ' Md ')
+      .replaceAll(' billions ', ' Bn ')
+      .replaceAll(' billion ', ' Bn ')
+      .replaceAll(' millions ', ' M ')
+      .replaceAll(' million ', ' M ')
+      .replaceAll(' mille ', ' k ')
+      .replaceAll(' thousand ', ' k ');
+  return _groupLeadingMoneyNumber(abbreviated);
+}
+
+String _groupLeadingMoneyNumber(String value) {
+  return value.replaceFirstMapped(
+    RegExp(r'^(-?\d{4,})(?=\s)'),
+    (match) => _groupMoneyDigits(match.group(1)!),
+  );
+}
+
+String _groupMoneyDigits(String value) {
+  final isNegative = value.startsWith('-');
+  final digits = isNegative ? value.substring(1) : value;
+  final buffer = StringBuffer();
+
+  for (var index = 0; index < digits.length; index++) {
+    final remaining = digits.length - index;
+    if (index > 0 && remaining % 3 == 0) {
+      buffer.write(' ');
+    }
+    buffer.write(digits[index]);
+  }
+
+  return isNegative ? '-$buffer' : buffer.toString();
 }
 
 String _axisMoneyLabel(double value, String displayCurrency) {
-  return _money(value, displayCurrency)
-      .replaceAll(' milliards ', ' Md ')
-      .replaceAll(' billion ', ' Bn ')
-      .replaceAll(' billions ', ' Bn ')
-      .replaceAll(' million ', ' M ')
-      .replaceAll(' millions ', ' M ')
-      .replaceAll(' $displayCurrency', '')
-      .trim();
+  final moneyLabel = _money(value, displayCurrency);
+  final match = _moneyUnitPattern.firstMatch(moneyLabel);
+  final scale = match?.group(1)?.trim();
+  final normalizedValue = scale == null || scale.isEmpty
+      ? value
+      : switch (scale) {
+          'k' => value / 1000,
+          'M' => value / 1000000,
+          'Md' || 'Bn' => value / 1000000000,
+          _ => value,
+        };
+  return _compactAxisNumber(normalizedValue);
 }
 
-String _cet1RatioAnalysis(double value) {
-  final display = AppFormatters.percent(value);
-  if (value <= 0) {
-    return 'Le ratio CET1 n’est pas alimenté : aucune couverture en capital exploitable n’est observée sur cette lecture.';
-  }
-  if (value < 0.08) {
-    return 'À $display, le ratio est inférieur au repère prudentiel interne de 8 %. La marge de capital est fragile.';
-  }
-  if (value < 0.105) {
-    return 'À $display, le portefeuille couvre le socle prudentiel, mais la marge reste étroite face à une hausse des RWA.';
-  }
-  return 'À $display, la couverture est confortable : le portefeuille dispose d’une marge de capital plus robuste.';
-}
-
-String _cet1RatioImpact(double value) {
-  if (value < 0.08) {
-    return 'Impact négatif : limitation possible de la croissance des expositions, besoin de renforcer les fonds propres ou de réduire les actifs les plus pondérés.';
-  }
-  if (value < 0.105) {
-    return 'Impact sous surveillance : une dégradation de qualité crédit ou une concentration plus forte peut rapidement consommer la marge disponible.';
-  }
-  return 'Impact favorable : meilleure capacité d’absorption des pertes et plus de souplesse pour piloter le portefeuille.';
-}
-
-String _leverageRatioAnalysis(double value) {
-  final display = AppFormatters.percent(value);
-  if (value <= 0) {
-    return 'Le ratio de levier est nul : les fonds propres éligibles ne couvrent pas l’exposition totale dans cette vue.';
-  }
-  if (value < 0.03) {
-    return 'À $display, le niveau est inférieur au repère usuel de 3 %. Le bilan apparaît trop levierisé.';
-  }
-  if (value < 0.06) {
-    return 'À $display, le levier est acceptable mais demande un suivi rapproché si l’exposition totale progresse.';
-  }
-  return 'À $display, le ratio de levier est solide : l’exposition totale reste bien couverte par le capital disponible.';
-}
-
-String _leverageRatioImpact(double value) {
-  if (value < 0.03) {
-    return 'Impact négatif : risque de contrainte de bilan et pression possible pour augmenter les fonds propres ou réduire les expositions.';
-  }
-  if (value < 0.06) {
-    return 'Impact modéré : la croissance du portefeuille doit rester cohérente avec le capital disponible.';
-  }
-  return 'Impact favorable : le portefeuille conserve une marge de bilan plus confortable, même sans pondération par le risque.';
-}
-
-String _totalExposureAnalysis(double value, String displayCurrency) {
-  final display = _money(value, displayCurrency);
-  if (value <= 0) {
-    return 'Aucune exposition totale n’est détectée sur la base actuelle.';
-  }
-  return 'Le portefeuille porte $display d’exposition. Cette base indique la taille brute du risque avant lecture fine des pondérations.';
-}
-
-String _totalExposureImpact(double value) {
-  if (value <= 0) {
-    return 'Impact nul à ce stade : aucun volume ne vient alimenter les RWA ou le besoin en capital.';
-  }
-  return 'Impact structurel : plus l’exposition totale augmente, plus le portefeuille peut générer de RWA, même si la qualité des contreparties reste stable.';
-}
-
-String _offBalanceExposureAnalysis(
-  double value,
-  double totalExposure,
-  String displayCurrency,
-) {
-  final display = _money(value, displayCurrency);
-  if (value <= 0) {
-    return 'Aucune exposition hors bilan n’est identifiée. Le risque latent lié aux engagements non tirés est limité dans cette vue.';
+String _compactAxisNumber(double value) {
+  if (value.abs() < 0.005) {
+    return '0';
   }
 
-  final share = totalExposure == 0 ? 0.0 : value / totalExposure;
-  return 'Les engagements hors bilan représentent $display, soit ${AppFormatters.percent(share)} de l’exposition totale.';
+  final rounded = (value * 10).roundToDouble() / 10;
+  final hasDecimal = (rounded - rounded.roundToDouble()).abs() > 0.001;
+  if (!hasDecimal) {
+    return rounded.toStringAsFixed(0).replaceAll('.', ',');
+  }
+  return rounded.toStringAsFixed(1).replaceAll('.', ',');
 }
 
-String _offBalanceExposureImpact(double value) {
-  if (value <= 0) {
-    return 'Impact favorable : pas de pression additionnelle visible via les facteurs de conversion hors bilan.';
-  }
-  return 'Impact à surveiller : ces engagements peuvent être convertis en EAD via les CCF et augmenter les RWA si leur utilisation progresse.';
+String _chartMoneyUnitLabel(double value, String displayCurrency) {
+  final moneyLabel = _money(value, displayCurrency);
+  final match = _moneyUnitPattern.firstMatch(moneyLabel);
+  final scale = match?.group(1)?.trim();
+  final currency =
+      match?.group(2)?.trim() ?? displayCurrencyLabel(displayCurrency);
+
+  return scale == null || scale.isEmpty ? currency : '$scale $currency';
 }
 
-String _rwaDensityAnalysis(double value) {
-  final display = AppFormatters.percent(value);
-  if (value <= 0) {
-    return 'La densité RWA est nulle : les expositions ne génèrent pas encore d’actifs pondérés dans cette lecture.';
-  }
-  if (value < 0.5) {
-    return 'À $display, la densité est faible : le portefeuille consomme peu de RWA par unité d’exposition.';
-  }
-  if (value < 1) {
-    return 'À $display, la densité est modérée : la charge en capital reste proportionnée à l’exposition.';
-  }
-  if (value < 1.5) {
-    return 'À $display, la densité est élevée : les RWA dépassent l’exposition, signe d’un portefeuille fortement pondéré.';
-  }
-  return 'À $display, la densité est très élevée : les actifs pondérés excèdent largement l’exposition.';
-}
-
-String _rwaDensityImpact(double value) {
-  if (value <= 0) {
-    return 'Impact nul : aucune consommation de capital n’est matérialisée par les RWA.';
-  }
-  if (value < 1) {
-    return 'Impact contenu : le portefeuille reste relativement efficient en capital, sous réserve de stabilité des notations et garanties.';
-  }
-  if (value < 1.5) {
-    return 'Impact important : la consommation de capital est élevée et peut limiter la capacité de croissance du portefeuille.';
-  }
-  return 'Impact critique : priorité au pilotage des pondérations, des garanties et des concentrations pour réduire la pression sur le capital.';
-}
+final RegExp _moneyUnitPattern = RegExp(
+  r'\s+(?:(Md|M|k|Bn)\s+)?(FCFA|XOF|XAF|EUR|USD|[A-Z]{3,4})$',
+);
 
 List<double> _flatTrend(double value) {
   return List<double>.generate(7, (index) => value);

@@ -11,7 +11,8 @@ class CreditDataTableCard extends StatelessWidget {
     required this.rows,
     this.toolbar,
     this.trailing,
-    this.emptyMessage = 'Aucune donnée disponible pour les filtres sélectionnés.',
+    this.emptyMessage =
+        'Aucune donnée disponible pour les filtres sélectionnés.',
   });
 
   final String title;
@@ -46,7 +47,7 @@ class CreditDataTableCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppTheme.muted,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w500,
                     ),
               ),
             )
