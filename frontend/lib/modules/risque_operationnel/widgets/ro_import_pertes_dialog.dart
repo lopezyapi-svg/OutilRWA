@@ -1,0 +1,1345 @@
+// Dialog d'import Excel pour les pertes opérationnelles.
+import 'dart:math' as math;
+import 'dart:typed_data';
+
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:excel/excel.dart' hide Border;
+import 'package:file_selector/file_selector.dart';
+import 'package:flutter/material.dart';
+
+import '../../../core/services/rwa_api_service.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../shared/utils/file_save.dart';
+
+// ─── Colonnes et valeurs attendues ────────────────────────────────────────────
+
+const _requiredFields = [
+  'date_occurrence',
+  'description',
+  'ligne_metier',
+  'type_evenement',
+  'perte_brute',
+];
+
+const _colAliases = <String, List<String>>{
+  'date_occurrence': [
+    'date_occurrence', 'date occurrence', 'date d occurrence',
+    'date d\'occurrence', 'date', 'date_occ', 'date_incident',
+  ],
+  'description': ['description', 'desc', 'libelle', 'libellé', 'objet'],
+  'ligne_metier': [
+    'ligne_metier', 'ligne de metier', 'ligne de métier',
+    'ligne metier', 'ligne métier', 'metier', 'métier', 'business_line',
+  ],
+  'type_evenement': [
+    'type_evenement', 'type d evenement', "type d'evenement",
+    "type d'événement", 'type evenement', 'type', 'type_evt',
+  ],
+  'cause_racine': [
+    'cause_racine', 'cause racine', 'cause', 'cause_rac', 'root_cause',
+  ],
+  'perte_brute': [
+    'perte_brute', 'perte brute', 'montant brut', 'brut',
+    'perte', 'montant', 'gross_loss',
+  ],
+  'perte_recuperee': [
+    'perte_recuperee', 'perte recuperee', 'perte récupérée',
+    'recuperee', 'recouv', 'récupéré', 'recovery',
+  ],
+  'statut': ['statut', 'etat', 'état', 'status'],
+};
+
+const _lignesMetier = [
+  "Financement d'entreprise",
+  'Activités de marché',
+  'Banque de détail',
+  'Banque commerciale',
+  'Paiements et règlements',
+  "Fonctions d'agent",
+  "Gestion d'actifs",
+  'Courtage de détail',
+];
+
+const _typesEvenement = ['Interne', 'Externe', 'Processus', 'Système', 'Personnel', 'Juridique'];
+const _statutsIncident = ['Ouvert', 'En cours', 'Résolu', 'Clôturé'];
+
+// ─── Point d'entrée ───────────────────────────────────────────────────────────
+
+Future<bool?> showRoImportPertesDialog(
+  BuildContext context, {
+  required RwaApiService api,
+}) {
+  return showDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (ctx) => _RoImportPertesDialog(api: api),
+  );
+}
+
+// ─── Modèle interne ───────────────────────────────────────────────────────────
+
+class _ParsedRow {
+  _ParsedRow({
+    required this.dateOccurrence,
+    required this.description,
+    required this.ligneMetier,
+    required this.typeEvenement,
+    required this.causeRacine,
+    required this.perteBrute,
+    required this.perteRecuperee,
+    required this.statut,
+    required this.errors,
+  });
+
+  final String dateOccurrence;
+  final String description;
+  final String ligneMetier;
+  final String typeEvenement;
+  final String causeRacine;
+  final double perteBrute;
+  final double perteRecuperee;
+  final String statut;
+  final List<String> errors;
+
+  bool get isValid => errors.isEmpty;
+
+  Map<String, dynamic> toJson() => {
+    'date_occurrence': dateOccurrence,
+    'description': description,
+    'ligne_metier': ligneMetier,
+    'type_evenement': typeEvenement,
+    'cause_racine': causeRacine,
+    'perte_brute': perteBrute,
+    'perte_recuperee': perteRecuperee,
+    'statut': statut,
+  };
+}
+
+// ─── Dialog ───────────────────────────────────────────────────────────────────
+
+class _RoImportPertesDialog extends StatefulWidget {
+  const _RoImportPertesDialog({required this.api});
+  final RwaApiService api;
+
+  @override
+  State<_RoImportPertesDialog> createState() => _RoImportPertesDialogState();
+}
+
+class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
+  bool _isDragging = false;
+  bool _isParsing = false;
+  bool _isImporting = false;
+  bool _isDownloadingTemplate = false;
+  String _mode = 'merge';
+  String _importStage = '';
+
+  XFile? _selectedFile;
+  List<_ParsedRow>? _parsedRows;
+  String? _parseError;
+  Map<String, dynamic>? _importResult;
+
+  // ─── Thème ────────────────────────────────────────────────────────────────
+
+  ThemeData get _theme => Theme.of(context);
+  bool get _isDark => _theme.brightness == Brightness.dark;
+  Color get _bg =>
+      _theme.cardTheme.color ?? (_isDark ? AppTheme.darkCard : AppTheme.card);
+  Color get _soft =>
+      _isDark ? const Color(0xFF14233D) : const Color(0xFFF8FAFE);
+  Color get _border => _theme.dividerColor;
+  Color get _text =>
+      _theme.textTheme.bodyLarge?.color ??
+      (_isDark ? AppTheme.darkText : AppTheme.text);
+  Color get _muted => _isDark ? AppTheme.darkMuted : AppTheme.muted;
+  Color get _accent => _theme.colorScheme.primary;
+
+  List<_ParsedRow> get _validRows =>
+      _parsedRows?.where((r) => r.isValid).toList() ?? [];
+  List<_ParsedRow> get _errorRows =>
+      _parsedRows?.where((r) => !r.isValid).toList() ?? [];
+
+  // ─── Fichier ──────────────────────────────────────────────────────────────
+
+  Future<void> _downloadTemplate() async {
+    setState(() => _isDownloadingTemplate = true);
+    try {
+      final bytes = await widget.api.downloadRoImportTemplate();
+      if (!mounted) return;
+      final location = await getSaveLocation(
+        suggestedName: 'modele_import_pertes_op.xlsx',
+        acceptedTypeGroups: const [
+          XTypeGroup(label: 'Excel', extensions: ['xlsx']),
+        ],
+      );
+      if (location == null) return;
+      await saveBytesAtLocation(location, bytes, requiredExtension: '.xlsx');
+      if (mounted) _showMsg('Modèle enregistré.');
+    } catch (e) {
+      if (mounted) _showMsg('Téléchargement impossible: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _isDownloadingTemplate = false);
+    }
+  }
+
+  Future<void> _pickFile() async {
+    final file = await openFile(
+      acceptedTypeGroups: const [
+        XTypeGroup(label: 'Excel', extensions: ['xlsx']),
+      ],
+    );
+    if (file == null) return;
+    await _loadFile(file);
+  }
+
+  Future<void> _loadFile(XFile file) async {
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+      _showMsg('Seuls les fichiers .xlsx sont acceptés.', error: true);
+      return;
+    }
+    setState(() {
+      _isParsing = true;
+      _parsedRows = null;
+      _parseError = null;
+      _selectedFile = file;
+      _importResult = null;
+    });
+    try {
+      final bytes = await file.readAsBytes();
+      final rows = _parseExcel(bytes);
+      if (mounted) setState(() => _parsedRows = rows);
+    } catch (e) {
+      if (mounted) setState(() => _parseError = 'Lecture impossible: $e');
+    } finally {
+      if (mounted) setState(() => _isParsing = false);
+    }
+  }
+
+  // ─── Parsing Excel (client-side) ──────────────────────────────────────────
+
+  static String _norm(String s) => s
+      .toLowerCase()
+      .replaceAll(RegExp(r'[àâä]'), 'a')
+      .replaceAll(RegExp(r'[éèêë]'), 'e')
+      .replaceAll(RegExp(r'[îï]'), 'i')
+      .replaceAll(RegExp(r'[ôö]'), 'o')
+      .replaceAll(RegExp(r'[ùûü]'), 'u')
+      .replaceAll(RegExp(r'[^a-z0-9]'), '_')
+      .replaceAll(RegExp(r'_+'), '_')
+      .replaceAll(RegExp(r'^_|_$'), '');
+
+  static String? _matchField(String rawHeader) {
+    final n = _norm(rawHeader);
+    for (final entry in _colAliases.entries) {
+      for (final alias in entry.value) {
+        if (_norm(alias) == n) return entry.key;
+      }
+    }
+    return null;
+  }
+
+  static String _cellStr(Data? cell) {
+    if (cell == null) return '';
+    try {
+      final v = cell.value;
+      if (v == null) return '';
+      if (v is TextCellValue) return (v.value.text ?? '').trim();
+      if (v is IntCellValue) return v.value.toString();
+      if (v is DoubleCellValue) return v.value.toString();
+      if (v is DateTimeCellValue) {
+        // asDateTimeLocal() peut être null dans certaines versions du package
+        try {
+          final dt = v.asDateTimeLocal();
+          return '${dt.year}-'
+              '${dt.month.toString().padLeft(2, '0')}-'
+              '${dt.day.toString().padLeft(2, '0')}';
+        } catch (_) {
+          // Fallback : construire depuis les champs directs
+          return '${v.year}-'
+              '${v.month.toString().padLeft(2, '0')}-'
+              '${v.day.toString().padLeft(2, '0')}';
+        }
+      }
+      return v.toString().trim();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static double _parseNum(String s) {
+    if (s.isEmpty) return 0;
+    final clean = s
+        .replaceAll(' ', '')
+        .replaceAll(' ', '')
+        .replaceAll(' ', '')
+        .replaceAll(',', '.');
+    return double.tryParse(clean) ?? 0;
+  }
+
+  static String _parseDate(String s) {
+    s = s.trim();
+    if (s.isEmpty) return '';
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(s)) return s.substring(0, 10);
+    final m =
+        RegExp(r'^(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{4})').firstMatch(s);
+    if (m != null) {
+      final y = m.group(3)!;
+      final mo = m.group(2)!.padLeft(2, '0');
+      final d = m.group(1)!.padLeft(2, '0');
+      return '$y-$mo-$d';
+    }
+    return s;
+  }
+
+  static String _matchLigne(String s) {
+    final n = s.trim().toLowerCase();
+    if (n.isEmpty) return s;
+    for (final l in _lignesMetier) {
+      if (l.toLowerCase() == n) return l;
+    }
+    final minLen = math.min(5, n.length);
+    for (final l in _lignesMetier) {
+      if (l.toLowerCase().contains(n.substring(0, minLen))) return l;
+    }
+    return s;
+  }
+
+  static String _matchType(String s) {
+    final n = s.trim().toLowerCase();
+    for (final t in _typesEvenement) {
+      if (t.toLowerCase() == n) return t;
+    }
+    return s;
+  }
+
+  static String _matchStatut(String s) {
+    final n = s.trim().toLowerCase();
+    for (final st in _statutsIncident) {
+      if (st.toLowerCase() == n) return st;
+    }
+    return 'Ouvert';
+  }
+
+  List<_ParsedRow> _parseExcel(Uint8List bytes) {
+    // Décode avec protection contre les erreurs internes du package excel
+    final Excel excel;
+    try {
+      excel = Excel.decodeBytes(bytes);
+    } catch (e) {
+      throw Exception('Fichier illisible ou corrompu : $e');
+    }
+    if (excel.tables.isEmpty) throw Exception('Aucune feuille trouvée.');
+
+    // Cherche la feuille "Incidents" — lookup explicitement null-safe
+    Sheet? sheet;
+    for (final key in excel.tables.keys) {
+      if (key.toLowerCase().contains('incident')) {
+        final candidate = excel.tables[key];
+        if (candidate != null) { sheet = candidate; break; }
+      }
+    }
+    // Fallback : première feuille non nulle
+    if (sheet == null) {
+      for (final key in excel.tables.keys) {
+        final candidate = excel.tables[key];
+        if (candidate != null) { sheet = candidate; break; }
+      }
+    }
+    if (sheet == null) throw Exception('Aucune feuille lisible dans le fichier.');
+
+    final allRows = sheet.rows;
+    if (allRows.isEmpty) throw Exception('Feuille vide.');
+
+    // ── Étape 1 : trouver la ligne d'en-têtes ──────────────────────────────
+    // Scanne les 6 premières lignes et garde celle avec le plus de colonnes
+    // reconnues. Cela gère : fichier simple (headers en ligne 1) ET le
+    // template téléchargé (titre en ligne 1, headers en ligne 2).
+    int headerRowIdx = 0;
+    var bestColMap = <int, String>{};
+
+    for (var ri = 0; ri < math.min(6, allRows.length); ri++) {
+      final row = allRows[ri];
+      final candidate = <int, String>{};
+      for (var ci = 0; ci < row.length; ci++) {
+        final raw = _cellStr(row[ci]);
+        if (raw.isEmpty) continue;
+        final field = _matchField(raw);
+        if (field != null) candidate[ci] = field;
+      }
+      if (candidate.length > bestColMap.length) {
+        bestColMap = candidate;
+        headerRowIdx = ri;
+      }
+    }
+
+    // Vérification colonnes obligatoires
+    final missing =
+        _requiredFields.where((f) => !bestColMap.values.contains(f)).toList();
+    if (missing.isNotEmpty) {
+      throw Exception('Colonnes manquantes : ${missing.join(', ')}');
+    }
+
+    // ── Étape 2 : détecter et sauter les lignes de consignes ──────────────
+    // Le template a une ligne "hints" juste après les en-têtes (ex : "AAAA-MM-JJ
+    // ou JJ/MM/AAAA"). On la saute si elle ne contient pas de date parseable
+    // ET pas de nombre valide dans perte_brute.
+    final dateColIdx = bestColMap.entries
+        .where((e) => e.value == 'date_occurrence')
+        .map((e) => e.key)
+        .firstOrNull;
+    final pertColIdx = bestColMap.entries
+        .where((e) => e.value == 'perte_brute')
+        .map((e) => e.key)
+        .firstOrNull;
+
+    int dataStartRow = headerRowIdx + 1;
+    while (dataStartRow < allRows.length &&
+        dataStartRow <= headerRowIdx + 2) {
+      final row = allRows[dataStartRow];
+      if (row.every((c) => _cellStr(c).isEmpty)) {
+        dataStartRow++;
+        continue;
+      }
+      final dateVal =
+          (dateColIdx != null && dateColIdx < row.length)
+              ? _cellStr(row[dateColIdx])
+              : '';
+      final pertVal =
+          (pertColIdx != null && pertColIdx < row.length)
+              ? _cellStr(row[pertColIdx])
+              : '';
+      final hasDate = _parseDate(dateVal).isNotEmpty;
+      final hasNum  = _parseNum(pertVal) > 0;
+      // Si ni date ni montant valide → ligne hint, on saute
+      if (!hasDate && !hasNum) {
+        dataStartRow++;
+      } else {
+        break;
+      }
+    }
+
+    // ── Étape 3 : parser les lignes de données ─────────────────────────────
+    String getField(List<Data?> row, String field) {
+      final ci = bestColMap.entries
+          .where((e) => e.value == field)
+          .map((e) => e.key)
+          .firstOrNull;
+      if (ci == null) return '';
+      return ci < row.length ? _cellStr(row[ci]) : '';
+    }
+
+    final result = <_ParsedRow>[];
+    for (var ri = dataStartRow; ri < allRows.length; ri++) {
+      final row = allRows[ri];
+      if (row.every((c) => _cellStr(c).isEmpty)) continue;
+
+      final errors = <String>[];
+
+      final dateStr = _parseDate(getField(row, 'date_occurrence'));
+      if (dateStr.isEmpty) errors.add('date_occurrence manquante');
+
+      final desc = getField(row, 'description');
+      if (desc.isEmpty) errors.add('description manquante');
+
+      final ligneRaw = getField(row, 'ligne_metier');
+      final ligne = _matchLigne(ligneRaw);
+      if (!_lignesMetier.contains(ligne)) {
+        errors.add('ligne_metier invalide : "$ligneRaw"');
+      }
+
+      final typeRaw = getField(row, 'type_evenement');
+      final type = _matchType(typeRaw);
+      if (!_typesEvenement.contains(type)) {
+        errors.add('type_evenement invalide : "$typeRaw"');
+      }
+
+      final perteBrute = _parseNum(getField(row, 'perte_brute'));
+      if (perteBrute <= 0) errors.add('perte_brute doit être > 0');
+
+      result.add(_ParsedRow(
+        dateOccurrence: dateStr,
+        description: desc,
+        ligneMetier: ligne,
+        typeEvenement: type,
+        causeRacine: getField(row, 'cause_racine'),
+        perteBrute: perteBrute,
+        perteRecuperee: _parseNum(getField(row, 'perte_recuperee')),
+        statut: _matchStatut(getField(row, 'statut')),
+        errors: errors,
+      ));
+    }
+
+    if (result.isEmpty) throw Exception('Aucune ligne de données trouvée.');
+    return result;
+  }
+
+  // ─── Import ───────────────────────────────────────────────────────────────
+
+  Future<void> _runImport() async {
+    final valid = _validRows;
+    if (valid.isEmpty) return;
+
+    if (_mode == 'replace') {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Confirmer le remplacement'),
+          content: const Text(
+            'Tous les incidents existants seront supprimés, puis remplacés '
+            'par les données du fichier. Cette action est irréversible.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton(
+              style:
+                  FilledButton.styleFrom(backgroundColor: AppTheme.danger),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Remplacer'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+
+    setState(() {
+      _isImporting = true;
+      _importStage = 'Envoi des données au serveur…';
+    });
+
+    try {
+      final result = await widget.api.importRoIncidents(
+        valid.map((r) => r.toJson()).toList(),
+        mode: _mode,
+      );
+      if (!mounted) return;
+      setState(() {
+        _importResult = result;
+        _importStage = 'Terminé';
+      });
+    } catch (e) {
+      if (mounted) _showMsg('Erreur import: $e', error: true);
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  void _showMsg(String msg, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: error ? AppTheme.danger : AppTheme.success,
+    ));
+  }
+
+  // ─── Build principal ──────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: _bg,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 960, maxHeight: 760),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 20),
+              Expanded(child: _buildBody()),
+              const SizedBox(height: 16),
+              _buildFooter(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Header ───────────────────────────────────────────────────────────────
+
+  Widget _buildHeader() => Row(
+    children: [
+      Icon(Icons.upload_file_outlined, color: _accent, size: 22),
+      const SizedBox(width: 10),
+      Text(
+        'Importer des pertes opérationnelles',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: _text,
+        ),
+      ),
+      const SizedBox(width: 8),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: _accent.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          'Excel .xlsx',
+          style: TextStyle(fontSize: 10, color: _accent, fontWeight: FontWeight.w600),
+        ),
+      ),
+      const Spacer(),
+      IconButton(
+        icon: const Icon(Icons.close),
+        onPressed: () => Navigator.pop(context, false),
+      ),
+    ],
+  );
+
+  // ─── Corps ────────────────────────────────────────────────────────────────
+
+  Widget _buildBody() {
+    if (_importResult != null) return _buildResultScreen();
+    if (_parsedRows != null) return _buildPreviewScreen();
+    return _buildDropZoneScreen();
+  }
+
+  // ─── Écran 1 : Drop zone ──────────────────────────────────────────────────
+
+  Widget _buildDropZoneScreen() {
+    return Column(
+      children: [
+        Expanded(child: _buildDropZone()),
+        const SizedBox(height: 12),
+        _buildModeSelector(),
+        const SizedBox(height: 12),
+        _buildFormatCard(),
+      ],
+    );
+  }
+
+  Widget _buildDropZone() {
+    return DropTarget(
+      onDragEntered: (_) => setState(() => _isDragging = true),
+      onDragExited: (_) => setState(() => _isDragging = false),
+      onDragDone: (d) async {
+        setState(() => _isDragging = false);
+        if (d.files.isNotEmpty) await _loadFile(d.files.first);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: _isDragging ? _accent.withValues(alpha: 0.07) : _soft,
+          border: Border.all(
+            color: _isDragging ? _accent : _border,
+            width: _isDragging ? 2 : 1.5,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: _isParsing
+            ? const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 14),
+                    Text('Analyse du fichier…', style: TextStyle(color: AppTheme.muted)),
+                  ],
+                ),
+              )
+            : _parseError != null
+                ? _buildParseErrorContent()
+                : _buildDropContent(),
+      ),
+    );
+  }
+
+  Widget _buildDropContent() => Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: Icon(
+          _isDragging
+              ? Icons.file_download_done_rounded
+              : Icons.cloud_upload_outlined,
+          key: ValueKey(_isDragging),
+          size: 52,
+          color: _isDragging ? _accent : _muted,
+        ),
+      ),
+      const SizedBox(height: 14),
+      Text(
+        _isDragging ? 'Relâcher pour analyser' : 'Glissez votre fichier Excel ici',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: _isDragging ? _accent : _text,
+        ),
+      ),
+      const SizedBox(height: 6),
+      Text('ou', style: TextStyle(color: _muted, fontSize: 12)),
+      const SizedBox(height: 12),
+      FilledButton.icon(
+        onPressed: _pickFile,
+        icon: const Icon(Icons.folder_open_outlined, size: 18),
+        label: const Text('Choisir un fichier .xlsx'),
+      ),
+      const SizedBox(height: 10),
+      Text(
+        'Format .xlsx uniquement — première ligne = en-têtes',
+        style: TextStyle(fontSize: 11, color: _muted),
+      ),
+    ],
+  );
+
+  Widget _buildParseErrorContent() => Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      const Icon(Icons.error_outline, size: 44, color: AppTheme.danger),
+      const SizedBox(height: 12),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Text(
+          _parseError!,
+          style: const TextStyle(color: AppTheme.danger, fontSize: 13),
+          textAlign: TextAlign.center,
+        ),
+      ),
+      const SizedBox(height: 16),
+      OutlinedButton.icon(
+        onPressed: () => setState(() {
+          _parseError = null;
+          _selectedFile = null;
+        }),
+        icon: const Icon(Icons.refresh),
+        label: const Text('Choisir un autre fichier'),
+      ),
+    ],
+  );
+
+  Widget _buildFormatCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _soft,
+        border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.table_rows_outlined, size: 14, color: _accent),
+              const SizedBox(width: 6),
+              Text(
+                'Colonnes attendues dans le fichier Excel',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _text,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '● Obligatoire   ○ Optionnel',
+                style: TextStyle(fontSize: 10, color: _muted),
+              ),
+              const SizedBox(width: 12),
+              TextButton.icon(
+                onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
+                icon: _isDownloadingTemplate
+                    ? const SizedBox(
+                        width: 13,
+                        height: 13,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download_outlined, size: 15),
+                label: const Text('Télécharger le modèle', style: TextStyle(fontSize: 12)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 5,
+            children: [
+              _colChip('Date occurrence',
+                  required: true, hint: 'AAAA-MM-JJ ou JJ/MM/AAAA'),
+              _colChip('Description', required: true),
+              _colChip('Ligne de métier',
+                  required: true,
+                  hint: '8 valeurs : Banque de détail, Activités de marché…'),
+              _colChip("Type d'événement",
+                  required: true,
+                  hint: 'Interne | Externe | Processus | Système | Personnel | Juridique'),
+              _colChip('Perte brute',
+                  required: true, hint: 'Montant en FCFA (nombre)'),
+              _colChip('Cause racine',
+                  required: false,
+                  hint: 'Optionnel — ex : Erreur humaine, Fraude interne…'),
+              _colChip('Perte récupérée',
+                  required: false, hint: 'Optionnel, défaut 0'),
+              _colChip('Statut',
+                  required: false,
+                  hint: 'Optionnel : Ouvert | En cours | Résolu | Clôturé'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _colChip(String label, {required bool required, String? hint}) {
+    return Tooltip(
+      message: hint ?? '',
+      waitDuration: const Duration(milliseconds: 300),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: required
+              ? _accent.withValues(alpha: 0.1)
+              : _border.withValues(alpha: 0.2),
+          border: Border.all(
+            color: required ? _accent.withValues(alpha: 0.35) : _border,
+          ),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              required ? Icons.circle : Icons.radio_button_unchecked,
+              size: 6,
+              color: required ? _accent : _muted,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: required ? _accent : _muted,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Écran 2 : Prévisualisation ────────────────────────────────────────────
+
+  Widget _buildPreviewScreen() {
+    final rows = _parsedRows!;
+    final valid = _validRows;
+    final errors = _errorRows;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFileInfoBar(rows, valid, errors),
+        const SizedBox(height: 12),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPreviewTable(rows),
+                if (errors.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildErrorPanel(errors),
+                ],
+                const SizedBox(height: 12),
+                _buildBiaNotice(valid),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        _buildModeSelector(),
+      ],
+    );
+  }
+
+  Widget _buildFileInfoBar(
+    List<_ParsedRow> rows,
+    List<_ParsedRow> valid,
+    List<_ParsedRow> errors,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _soft,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.table_chart_outlined,
+              size: 18, color: AppTheme.accent),
+          const SizedBox(width: 8),
+          Text(
+            _selectedFile!.name,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: _text,
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(width: 12),
+          _badge('${rows.length} lignes', const Color(0xFF1D4ED8)),
+          const SizedBox(width: 6),
+          _badge('${valid.length} valides', AppTheme.success),
+          if (errors.isNotEmpty) ...[
+            const SizedBox(width: 6),
+            _badge('${errors.length} erreur(s)', AppTheme.danger),
+          ],
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () => setState(() {
+              _parsedRows = null;
+              _selectedFile = null;
+            }),
+            icon: const Icon(Icons.swap_horiz, size: 15),
+            label: const Text('Changer', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPreviewTable(List<_ParsedRow> rows) {
+    final preview = rows.take(10).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Aperçu — ${preview.length} ligne(s) sur ${rows.length}',
+          style: TextStyle(
+            fontSize: 12,
+            color: _muted,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Table(
+            columnWidths: const {
+              0: FixedColumnWidth(105),
+              1: FlexColumnWidth(2.2),
+              2: FixedColumnWidth(155),
+              3: FixedColumnWidth(90),
+              4: FixedColumnWidth(100),
+              5: FixedColumnWidth(28),
+            },
+            children: [
+              _tHeader([
+                'Date',
+                'Description',
+                'Ligne de métier',
+                'Type',
+                'Perte brute',
+                '',
+              ]),
+              ...preview.map(_tRow),
+            ],
+          ),
+        ),
+        if (rows.length > 10)
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Text(
+              '… et ${rows.length - 10} ligne(s) supplémentaire(s)',
+              style: TextStyle(fontSize: 11, color: _muted),
+            ),
+          ),
+      ],
+    );
+  }
+
+  TableRow _tHeader(List<String> cols) => TableRow(
+    decoration: BoxDecoration(color: _accent.withValues(alpha: 0.1)),
+    children: cols
+        .map((c) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+              child: Text(
+                c,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: _text,
+                ),
+              ),
+            ))
+        .toList(),
+  );
+
+  TableRow _tRow(_ParsedRow r) {
+    return TableRow(
+      decoration: BoxDecoration(
+        color: r.isValid ? null : AppTheme.danger.withValues(alpha: 0.04),
+        border: Border(bottom: BorderSide(color: _border.withValues(alpha: 0.4))),
+      ),
+      children: [
+        _tCell(r.dateOccurrence),
+        _tCell(r.description, overflow: true),
+        _tCell(r.ligneMetier, overflow: true),
+        _tCell(r.typeEvenement),
+        _tCell(_fmtCurrency(r.perteBrute), right: true),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+          child: r.isValid
+              ? const Icon(Icons.check_circle_outline,
+                  size: 14, color: AppTheme.success)
+              : Tooltip(
+                  message: r.errors.join('\n'),
+                  child: const Icon(Icons.error_outline,
+                      size: 14, color: AppTheme.danger),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _tCell(String t, {bool right = false, bool overflow = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      child: Text(
+        t,
+        overflow: overflow ? TextOverflow.ellipsis : null,
+        maxLines: overflow ? 1 : null,
+        textAlign: right ? TextAlign.right : TextAlign.left,
+        style: TextStyle(fontSize: 11, color: _text),
+      ),
+    );
+  }
+
+  Widget _buildErrorPanel(List<_ParsedRow> errors) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.danger.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.danger.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_outlined,
+                  size: 14, color: AppTheme.danger),
+              const SizedBox(width: 6),
+              Text(
+                '${errors.length} ligne(s) invalide(s) — seront ignorées à l\'import',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...errors.take(6).map((r) => Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(
+                  '• ${r.errors.join(' | ')}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.danger,
+                  ),
+                ),
+              )),
+          if (errors.length > 6)
+            Padding(
+              padding: const EdgeInsets.only(top: 3),
+              child: Text(
+                '  … et ${errors.length - 6} autre(s)',
+                style: const TextStyle(fontSize: 11, color: AppTheme.danger),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBiaNotice(List<_ParsedRow> valid) {
+    if (valid.isEmpty) return const SizedBox.shrink();
+    final totalBrute = valid.fold(0.0, (s, r) => s + r.perteBrute);
+    final totalNette = valid.fold(
+        0.0, (s, r) => s + r.perteBrute - r.perteRecuperee);
+    final kBia = totalNette * 0.15;
+    final apr = kBia * 12.5;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _accent.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _accent.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.calculate_outlined, size: 14, color: _accent),
+              const SizedBox(width: 6),
+              Text(
+                'Estimation BIA après import (Art. 89)',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: _accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _biaKpi('Perte brute totale', _fmtCurrency(totalBrute)),
+              const SizedBox(width: 20),
+              _biaKpi('Perte nette totale', _fmtCurrency(totalNette)),
+              const SizedBox(width: 20),
+              _biaKpi('K_RO (15 %)', _fmtCurrency(kBia)),
+              const SizedBox(width: 20),
+              _biaKpi('APR estimé (×12,5)', _fmtCurrency(apr)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'K_RO = 15 % × Pertes nettes   |   APR = K_RO ÷ 8 % = K_RO × 12,5',
+            style: TextStyle(fontSize: 10, color: _muted, fontStyle: FontStyle.italic),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _biaKpi(String label, String value) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label, style: TextStyle(fontSize: 10, color: _muted)),
+      const SizedBox(height: 2),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: _text,
+        ),
+      ),
+    ],
+  );
+
+  Widget _buildModeSelector() {
+    return Row(
+      children: [
+        Icon(Icons.merge_type_outlined, size: 15, color: _muted),
+        const SizedBox(width: 6),
+        Text('Mode d\'import :', style: TextStyle(fontSize: 12, color: _muted)),
+        const SizedBox(width: 10),
+        _modeChip(
+          'merge',
+          'Ajout',
+          Icons.playlist_add_check_circle_outlined,
+          const Color(0xFF1D4ED8),
+          'Conserve les incidents existants et ajoute les nouveaux',
+        ),
+        const SizedBox(width: 8),
+        _modeChip(
+          'replace',
+          'Remplacement',
+          Icons.restart_alt_rounded,
+          AppTheme.danger,
+          'Supprime TOUS les incidents existants avant l\'import',
+        ),
+      ],
+    );
+  }
+
+  Widget _modeChip(
+    String value,
+    String label,
+    IconData icon,
+    Color color,
+    String tooltip,
+  ) {
+    final selected = _mode == value;
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: () => setState(() => _mode = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected ? color.withValues(alpha: 0.1) : _soft,
+            border: Border.all(
+              color: selected ? color : _border,
+              width: selected ? 1.5 : 1,
+            ),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: selected ? color : _muted),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: selected ? color : _muted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Écran 3 : Résultat ────────────────────────────────────────────────────
+
+  Widget _buildResultScreen() {
+    final r = _importResult!;
+    final imported = r['imported'] as int? ?? 0;
+    final importErrors = (r['errors'] as List?)?.cast<String>() ?? [];
+
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: AppTheme.success.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle_outline,
+                size: 38, color: AppTheme.success),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Import réussi',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: _text,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$imported incident(s) importé(s) avec succès',
+            style: TextStyle(fontSize: 14, color: _muted),
+          ),
+          if (importErrors.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${importErrors.length} ligne(s) ignorée(s) côté serveur',
+              style: const TextStyle(fontSize: 12, color: AppTheme.danger),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            _mode == 'replace'
+                ? 'Mode : remplacement total'
+                : 'Mode : ajout aux données existantes',
+            style: TextStyle(fontSize: 11, color: _muted),
+          ),
+          const SizedBox(height: 28),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('Fermer et actualiser'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Footer ───────────────────────────────────────────────────────────────
+
+  Widget _buildFooter() {
+    if (_importResult != null) return const SizedBox.shrink();
+
+    final canImport =
+        _parsedRows != null && _validRows.isNotEmpty && !_isImporting;
+
+    return Row(
+      children: [
+        if (_isImporting) ...[
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_importStage,
+                    style: TextStyle(fontSize: 11, color: _muted)),
+                const SizedBox(height: 4),
+                const LinearProgressIndicator(),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+        ] else
+          const Spacer(),
+        TextButton(
+          onPressed:
+              _isImporting ? null : () => Navigator.pop(context, false),
+          child: const Text('Annuler'),
+        ),
+        const SizedBox(width: 8),
+        FilledButton.icon(
+          onPressed: canImport ? _runImport : null,
+          icon: _isImporting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.upload_rounded, size: 18),
+          label: Text(
+            _parsedRows == null
+                ? 'Importer'
+                : 'Importer ${_validRows.length} incident(s)',
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Utilitaires visuels ──────────────────────────────────────────────────
+
+  Widget _badge(String label, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text(
+      label,
+      style: TextStyle(
+        fontSize: 11,
+        color: color,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  );
+
+  String _fmtCurrency(double v) {
+    if (v == 0) return '0';
+    if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(2)} G';
+    if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(2)} M';
+    if (v >= 1e3) return '${(v / 1e3).toStringAsFixed(0)} K';
+    return v.toStringAsFixed(0);
+  }
+}

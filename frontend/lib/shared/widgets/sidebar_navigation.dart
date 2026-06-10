@@ -1,4 +1,4 @@
-// Ce fichier construit la navigation laterale reutilisable.
+﻿// Ce fichier construit la navigation laterale reutilisable.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -264,58 +264,54 @@ const List<_MenuEntry> _operationalRiskChildren = [
     label: 'Dashboard Opérationnel',
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnel,
+    module: AppModule.risqueOperationnelImport,
+    icon: Icons.upload_file_outlined,
+    label: 'Import données',
+  ),
+  _MenuEntry.leaf(
+    module: AppModule.risqueOperationnelIncidents,
     icon: Icons.report_gmailerrorred_rounded,
     label: 'Incidents',
-    selectable: false,
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnel,
+    module: AppModule.risqueOperationnelPertes,
     icon: Icons.monetization_on_outlined,
     label: 'Pertes opérationnelles',
-    selectable: false,
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnel,
+    module: AppModule.risqueOperationnelKri,
     icon: Icons.speed_rounded,
     label: 'KRI',
-    selectable: false,
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnel,
+    module: AppModule.risqueOperationnelCartographie,
     icon: Icons.map_outlined,
     label: 'Cartographie des risques',
-    selectable: false,
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnel,
+    module: AppModule.risqueOperationnelControles,
     icon: Icons.verified_user_outlined,
     label: 'Contrôles internes',
-    selectable: false,
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnel,
+    module: AppModule.risqueOperationnelWorkflow,
     icon: Icons.account_tree_outlined,
     label: 'Workflow incidents',
-    selectable: false,
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnel,
+    module: AppModule.risqueOperationnelPlans,
     icon: Icons.format_list_bulleted_rounded,
-    label: 'Plans d’actions',
-    selectable: false,
+    label: 'Plans d\'actions',
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnel,
+    module: AppModule.risqueOperationnelHistorique,
     icon: Icons.schedule_rounded,
     label: 'Historique événements',
-    selectable: false,
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnel,
+    module: AppModule.risqueOperationnelReporting,
     icon: Icons.summarize_outlined,
     label: 'Reporting opérationnel',
-    selectable: false,
   ),
 ];
 

@@ -209,6 +209,43 @@ class _RwaAppState extends State<RwaApp> {
           view: MarketRiskView.amortizationCapital,
         ),
       AppModule.risqueOperationnel => RisqueOperationnelScreen(api: _api),
+      AppModule.risqueOperationnelImport => RisqueOperationnelScreen(api: _api, view: OperationalRiskView.registre),
+      AppModule.risqueOperationnelIncidents => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.incidents,
+        ),
+      AppModule.risqueOperationnelPertes => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.pertes,
+        ),
+      AppModule.risqueOperationnelKri => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.kri,
+        ),
+      AppModule.risqueOperationnelCartographie => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.cartographie,
+        ),
+      AppModule.risqueOperationnelControles => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.controles,
+        ),
+      AppModule.risqueOperationnelWorkflow => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.workflow,
+        ),
+      AppModule.risqueOperationnelPlans => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.plans,
+        ),
+      AppModule.risqueOperationnelHistorique => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.historique,
+        ),
+      AppModule.risqueOperationnelReporting => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.reporting,
+        ),
       AppModule.analyse => AnalyseScreen(api: _api),
       AppModule.stressTest => StressTestScreen(api: _api),
       AppModule.icap => IcapScreen(api: _api),

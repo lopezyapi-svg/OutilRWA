@@ -14,6 +14,7 @@ class PageHeader extends StatelessWidget {
     this.titleFontSize,
     this.subtitleFontSize,
     this.crossAxisAlignment = CrossAxisAlignment.start,
+    this.subtitleSuffix,
   });
 
   final String title;
@@ -22,6 +23,7 @@ class PageHeader extends StatelessWidget {
   final double? titleFontSize;
   final double? subtitleFontSize;
   final CrossAxisAlignment crossAxisAlignment;
+  final Widget? subtitleSuffix;
 
   @override
   Widget build(BuildContext context) {
@@ -45,13 +47,25 @@ class PageHeader extends StatelessWidget {
                     ),
               ),
               const SizedBox(height: 4),
-              Text(
-                subtitle.tr(context),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: subtitleColor,
-                      fontSize: subtitleFontSize,
-                      fontWeight: FontWeight.w500,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: Text(
+                      subtitle.tr(context),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: subtitleColor,
+                            fontSize: subtitleFontSize,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
+                  ),
+                  if (subtitleSuffix != null) ...[
+                    const SizedBox(width: 6),
+                    subtitleSuffix!,
+                  ],
+                ],
               ),
             ],
           ),

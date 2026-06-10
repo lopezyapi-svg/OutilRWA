@@ -8,6 +8,7 @@ import '../../modules/expositions/models/exposition_models.dart';
 import '../../modules/hors_bilan/models/hors_bilan_models.dart';
 import '../../modules/rapports/models/report_models.dart';
 import '../../modules/referentiels/models/referentiels_models.dart';
+import '../../modules/risque_operationnel/models/ro_models.dart';
 import 'api_client.dart';
 import 'api_runtime_environment.dart' as runtime_environment;
 
@@ -30,7 +31,7 @@ String _resolveDefaultApiBaseUrl() {
   final host =
       runtimeHost == null || runtimeHost.isEmpty ? '127.0.0.1' : runtimeHost;
   final port =
-      runtimePort == null || runtimePort.isEmpty ? '8001' : runtimePort;
+      runtimePort == null || runtimePort.isEmpty ? '8000' : runtimePort;
   return 'http://$host:$port';
 }
 
@@ -504,6 +505,124 @@ class RwaApiService {
       'lines': <Map<String, dynamic>>[],
     },
   ];
+
+  // ─── Risque Opérationnel ─────────────────────────────────────────────────
+
+  Future<RoDashboardData> fetchRoDashboard() async {
+    final json = await _client.get('/risque-operationnel/dashboard') as Map<String, dynamic>;
+    return RoDashboardData.fromJson(json);
+  }
+
+  Future<List<RoIncident>> fetchRoIncidents({String? statut, String? ligneMetier}) async {
+    var path = '/risque-operationnel/incidents';
+    final params = <String>[];
+    if (statut != null) params.add('statut=${Uri.encodeComponent(statut)}');
+    if (ligneMetier != null) params.add('ligne_metier=${Uri.encodeComponent(ligneMetier)}');
+    if (params.isNotEmpty) path = '$path?${params.join('&')}';
+    final json = await _client.get(path) as List<dynamic>;
+    return json.map((e) => RoIncident.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<RoIncident> createRoIncident(Map<String, dynamic> data) async {
+    final json = await _client.post('/risque-operationnel/incidents', data) as Map<String, dynamic>;
+    return RoIncident.fromJson(json);
+  }
+
+  Future<RoIncident> updateRoIncident(String id, Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/incidents/$id', data) as Map<String, dynamic>;
+    return RoIncident.fromJson(json);
+  }
+
+  Future<void> deleteRoIncident(String id) async {
+    await _client.delete('/risque-operationnel/incidents/$id');
+  }
+
+  Future<Uint8List> downloadRoImportTemplate() async {
+    return _client.getBytes('/risque-operationnel/incidents/import/template');
+  }
+
+  Future<Map<String, dynamic>> importRoIncidents(
+    List<Map<String, dynamic>> incidents, {
+    String mode = 'merge',
+  }) async {
+    final json = await _client.post('/risque-operationnel/incidents/import', {
+      'incidents': incidents,
+      'mode': mode,
+    }) as Map<String, dynamic>;
+    return json;
+  }
+
+  Future<RoKriModuleData> fetchRoKri() async {
+    final json = await _client.get('/risque-operationnel/kri') as Map<String, dynamic>;
+    return RoKriModuleData.fromJson(json);
+  }
+
+  Future<RoKriValeur> addRoKriValeur(Map<String, dynamic> data) async {
+    final json = await _client.post('/risque-operationnel/kri/valeurs', data) as Map<String, dynamic>;
+    return RoKriValeur.fromJson(json);
+  }
+
+  Future<List<RoRisque>> fetchRoRisques() async {
+    final json = await _client.get('/risque-operationnel/risques') as List<dynamic>;
+    return json.map((e) => RoRisque.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<RoRisque> createRoRisque(Map<String, dynamic> data) async {
+    final json = await _client.post('/risque-operationnel/risques', data) as Map<String, dynamic>;
+    return RoRisque.fromJson(json);
+  }
+
+  Future<RoRisque> updateRoRisque(String id, Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/risques/$id', data) as Map<String, dynamic>;
+    return RoRisque.fromJson(json);
+  }
+
+  Future<void> deleteRoRisque(String id) async {
+    await _client.delete('/risque-operationnel/risques/$id');
+  }
+
+  Future<List<RoControle>> fetchRoControles() async {
+    final json = await _client.get('/risque-operationnel/controles') as List<dynamic>;
+    return json.map((e) => RoControle.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<RoControle> createRoControle(Map<String, dynamic> data) async {
+    final json = await _client.post('/risque-operationnel/controles', data) as Map<String, dynamic>;
+    return RoControle.fromJson(json);
+  }
+
+  Future<RoControle> updateRoControle(String id, Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/controles/$id', data) as Map<String, dynamic>;
+    return RoControle.fromJson(json);
+  }
+
+  Future<void> deleteRoControle(String id) async {
+    await _client.delete('/risque-operationnel/controles/$id');
+  }
+
+  Future<List<RoPlan>> fetchRoPlans() async {
+    final json = await _client.get('/risque-operationnel/plans') as List<dynamic>;
+    return json.map((e) => RoPlan.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<RoPlan> createRoPlan(Map<String, dynamic> data) async {
+    final json = await _client.post('/risque-operationnel/plans', data) as Map<String, dynamic>;
+    return RoPlan.fromJson(json);
+  }
+
+  Future<RoPlan> updateRoPlan(String id, Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/plans/$id', data) as Map<String, dynamic>;
+    return RoPlan.fromJson(json);
+  }
+
+  Future<void> deleteRoPlan(String id) async {
+    await _client.delete('/risque-operationnel/plans/$id');
+  }
+
+  Future<List<RoHistorique>> fetchRoHistorique({int limit = 200}) async {
+    final json = await _client.get('/risque-operationnel/historique?limit=$limit') as List<dynamic>;
+    return json.map((e) => RoHistorique.fromJson(e as Map<String, dynamic>)).toList();
+  }
 
   void dispose() {
     _portfolioRefreshController.close();

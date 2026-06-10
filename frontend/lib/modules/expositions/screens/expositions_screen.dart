@@ -421,7 +421,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     return AbsorbPointer(
       absorbing: true,
       child: Container(
-        color: (isDark ? Colors.black : Colors.white).withOpacity(0.22),
+        color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.22),
         alignment: Alignment.center,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 360),
@@ -434,7 +434,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.26 : 0.08),
+                color: Colors.black.withValues(alpha: isDark ? 0.26 : 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 8),
               ),
@@ -1215,8 +1215,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               ),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF213252).withOpacity(0.98)
-                    : const Color(0xFF16325C).withOpacity(0.96),
+                    ? const Color(0xFF213252).withValues(alpha: 0.98)
+                    : const Color(0xFF16325C).withValues(alpha: 0.96),
                 borderRadius: BorderRadius.circular(_screenBorderRadius),
                 border: Border.all(
                   color: isDark
@@ -1226,7 +1226,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.32 : 0.18),
+                    color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.18),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -1727,7 +1727,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         ),
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withOpacity(0.10),
+            color: Colors.white.withValues(alpha: 0.10),
           ),
         ),
       ),
@@ -3427,7 +3427,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       MaterialPageRoute<void>(
         builder: (routeContext) {
           return Scaffold(
-            backgroundColor: Colors.black.withOpacity(0.22),
+            backgroundColor: Colors.black.withValues(alpha: 0.22),
             body: SafeArea(
               child: Align(
                 alignment: Alignment.centerRight,
@@ -3752,7 +3752,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.12),
+                  color: accent.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(_screenBorderRadius),
                 ),
                 child: Icon(icon, color: accent, size: 20),
@@ -3910,7 +3910,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         margin: const pw.EdgeInsets.all(14),
         build: (_) => [
           pw.Table(
-            border: pw.TableBorder(
+            border: const pw.TableBorder(
               horizontalInside: pw.BorderSide(
                 color: PdfColor.fromInt(0xFFE2E8F0),
                 width: 0.6,
@@ -3939,7 +3939,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             columnWidths: columnWidths,
             children: [
               pw.TableRow(
-                decoration: pw.BoxDecoration(
+                decoration: const pw.BoxDecoration(
                   color: PdfColor.fromInt(0xFF24467A),
                 ),
                 children: headers
@@ -3983,7 +3983,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         text,
         maxLines: 2,
         style: pw.TextStyle(
-          color: color ?? PdfColor.fromInt(0xFF1F2A44),
+          color: color ?? const PdfColor.fromInt(0xFF1F2A44),
           fontSize: fontSize,
           fontWeight: fontWeight ?? pw.FontWeight.normal,
         ),
@@ -4107,17 +4107,17 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   PdfColor _pdfRowColor(int rowIndex) {
-    return rowIndex.isEven ? PdfColors.white : PdfColor.fromInt(0xFFF7FAFF);
+    return rowIndex.isEven ? PdfColors.white : const PdfColor.fromInt(0xFFF7FAFF);
   }
 
   PdfColor _pdfRwColor(double rwPercent) {
     if (rwPercent <= 50) {
-      return PdfColor.fromInt(0xFF18A957);
+      return const PdfColor.fromInt(0xFF18A957);
     }
     if (rwPercent <= 100) {
-      return PdfColor.fromInt(0xFFD68A00);
+      return const PdfColor.fromInt(0xFFD68A00);
     }
-    return PdfColor.fromInt(0xFFE04F5F);
+    return const PdfColor.fromInt(0xFFE04F5F);
   }
 
   String _exportTimestamp() {
