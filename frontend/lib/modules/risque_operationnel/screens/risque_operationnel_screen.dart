@@ -259,7 +259,7 @@ Widget _badge(String label, Color color) => Container(
       child: Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     );
 
-Widget _kpiBox(BuildContext context, String label, String value, IconData icon, Color color) {
+Widget _kpiBox(BuildContext context, String label, String value, IconData icon, Color color, {String? tooltip}) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return Card(
     margin: EdgeInsets.zero,
@@ -281,7 +281,30 @@ Widget _kpiBox(BuildContext context, String label, String value, IconData icon, 
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: TextStyle(color: isDark ? AppTheme.darkMuted : _kMuted, fontSize: 11, fontWeight: FontWeight.w500)),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(label,
+                        style: TextStyle(color: isDark ? AppTheme.darkMuted : _kMuted, fontSize: 11, fontWeight: FontWeight.w500)),
+                    ),
+                    if (tooltip != null) ...[
+                      const SizedBox(width: 4),
+                      Tooltip(
+                        message: tooltip,
+                        preferBelow: false,
+                        waitDuration: Duration.zero,
+                        showDuration: const Duration(seconds: 10),
+                        textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E2A3A),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: Icon(Icons.info_outline_rounded, size: 13, color: color.withValues(alpha: 0.6)),
+                      ),
+                    ],
+                  ],
+                ),
                 const SizedBox(height: 2),
                 Text(value, style: TextStyle(color: isDark ? AppTheme.darkText : AppTheme.text, fontSize: 16, fontWeight: FontWeight.w700)),
               ],
@@ -511,14 +534,19 @@ class _DashboardViewState extends State<_DashboardView> {
                 title: 'Situation réglementaire',
                 child: Row(
                   children: [
-                    Expanded(child: _kpiBox(context, 'Exigence fonds propres (K)', AppFormatters.currency(d.widget1.exigenceFondsPropres), Icons.account_balance_outlined, _kBlue)),
+                    Expanded(child: _kpiBox(context, 'Exigence fonds propres (K)', AppFormatters.currency(d.widget1.exigenceFondsPropres), Icons.account_balance_outlined, _kBlue,
+                      tooltip: 'Capital réglementaire minimum (Art. 89)\nFormule : K_RO = 15 % × Perte nette totale\nα = 15 % (coefficient BCEAO/UMOA)',
+                    )),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'APR risque opérationnel', AppFormatters.currency(d.widget1.aprRisqueOp), Icons.bar_chart_outlined, _kViolet)),
+                    Expanded(child: _kpiBox(context, 'APR risque opérationnel', AppFormatters.currency(d.widget1.aprRisqueOp), Icons.bar_chart_outlined, _kViolet,
+                      tooltip: 'Actifs Pondérés par le Risque opérationnel (Art. 89)\nFormule : APR = K_RO × 12,5\n12,5 = 1 ÷ 8 % (facteur de conversion prudentiel)',
+                    )),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _kpiBox(context, 'Statut réglementaire', d.widget1.statutReglementaire,
                           d.widget1.statutReglementaire == 'Conforme' ? Icons.check_circle_outline : Icons.warning_amber_outlined,
-                          d.widget1.statutReglementaire == 'Conforme' ? _kSuccess : _kDanger),
+                          d.widget1.statutReglementaire == 'Conforme' ? _kSuccess : _kDanger,
+                          tooltip: 'Conformité réglementaire (Art. 313)\nConforme si ratio Tier 1 ≥ 5 % et ratio global ≥ 8 %\nAPR total = APR_crédit + APR_marché + APR_opérationnel'),
                     ),
                   ],
                 ),
@@ -530,11 +558,17 @@ class _DashboardViewState extends State<_DashboardView> {
                 trailing: _artInfo('Art. 313.b'),
                 child: Row(
                   children: [
-                    Expanded(child: _kpiBox(context, 'Incidents (mois)', '${d.widget2.totalIncidentsMois}', Icons.report_outlined, _kWarning)),
+                    Expanded(child: _kpiBox(context, 'Incidents (mois)', '${d.widget2.totalIncidentsMois}', Icons.report_outlined, _kWarning,
+                      tooltip: 'Nombre d\'incidents déclarés ce mois (Art. 313.b)\nFormule : COUNT(incidents) WHERE mois = mois_courant\nTout incident significatif doit être déclaré ≤ J+5',
+                    )),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'Pertes nettes (mois)', AppFormatters.currency(d.widget2.pertesNettesMois), Icons.trending_down_outlined, _kDanger)),
+                    Expanded(child: _kpiBox(context, 'Pertes nettes (mois)', AppFormatters.currency(d.widget2.pertesNettesMois), Icons.trending_down_outlined, _kDanger,
+                      tooltip: 'Pertes nettes du mois en cours (Art. 313.b)\nFormule : Σ (perte_brute − perte_récupérée)\npour les incidents du mois courant',
+                    )),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'Non clôturés', '${d.widget2.incidentsNonClos}', Icons.pending_outlined, _kCyan)),
+                    Expanded(child: _kpiBox(context, 'Non clôturés', '${d.widget2.incidentsNonClos}', Icons.pending_outlined, _kCyan,
+                      tooltip: 'Incidents encore ouverts ou en cours (Art. 313.b)\nFormule : COUNT(incidents) WHERE statut IN (Ouvert, En cours)\nCes incidents nécessitent un suivi actif',
+                    )),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _kpiBox(
@@ -543,6 +577,7 @@ class _DashboardViewState extends State<_DashboardView> {
                         d.widget2.evolutionPertesPct != null ? '${d.widget2.evolutionPertesPct! >= 0 ? '+' : ''}${d.widget2.evolutionPertesPct!.toStringAsFixed(1)} %' : 'N/A',
                         Icons.compare_arrows_outlined,
                         d.widget2.evolutionPertesPct != null && d.widget2.evolutionPertesPct! > 0 ? _kDanger : _kSuccess,
+                        tooltip: 'Évolution des pertes vs même mois N-1\nFormule : ((Pertes_mois − Pertes_mois_N1) ÷ |Pertes_mois_N1|) × 100\n+ = dégradation   − = amélioration',
                       ),
                     ),
                   ],
@@ -555,11 +590,14 @@ class _DashboardViewState extends State<_DashboardView> {
                 trailing: _artInfo('Art. 313.c'),
                 child: Row(
                   children: [
-                    Expanded(child: _kpiBox(context, 'Actions en retard', '${d.widget3.actionsEnRetard}', Icons.alarm_outlined, d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess)),
+                    Expanded(child: _kpiBox(context, 'Actions en retard', '${d.widget3.actionsEnRetard}', Icons.alarm_outlined, d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
+                      tooltip: 'Plans d\'actions dont la date d\'échéance est dépassée et le statut ≠ «Terminé».\nFormule : COUNT(plans) WHERE date_echeance < aujourd\'hui AND statut ≠ \'Terminé\'.\nIndicateur de pilotage du suivi correctif. (Art. 313.c)')),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'Contrôles non conformes', '${d.widget3.controlesNonConformes}', Icons.rule_outlined, d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess)),
+                    Expanded(child: _kpiBox(context, 'Contrôles non conformes', '${d.widget3.controlesNonConformes}', Icons.rule_outlined, d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
+                      tooltip: 'Contrôles internes dont le résultat est évalué «Non-conforme» lors de la dernière exécution.\nFormule : COUNT(controles) WHERE resultat = \'Non-conforme\'.\nMesure la qualité du dispositif de contrôle. (Art. 314)')),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'KRI hors seuil', '${d.widget3.kriHorsSeuil}', Icons.speed_outlined, d.widget3.kriHorsSeuil > 0 ? _kDanger : _kSuccess)),
+                    Expanded(child: _kpiBox(context, 'KRI hors seuil', '${d.widget3.kriHorsSeuil}', Icons.speed_outlined, d.widget3.kriHorsSeuil > 0 ? _kDanger : _kSuccess,
+                      tooltip: 'Indicateurs Clés de Risque (KRI) dont le statut est «alerte» ou «critique».\nFormule : COUNT(kri) WHERE statut IN (\'alerte\', \'critique\').\nSignale les expositions dépassant les limites tolérées. (Art. 89 / Art. 313)')),
                   ],
                 ),
               ),
@@ -813,7 +851,7 @@ class _IncidentsViewState extends State<_IncidentsView> {
   }
 }
 
-// ─── VIEW 3 : PERTES ──────────────────────────────────────────────────────────
+// ─── VIEW 3 : PERTES (conteneur avec onglets) ─────────────────────────────────
 
 class _PertesView extends StatefulWidget {
   const _PertesView({required this.api});
@@ -822,7 +860,94 @@ class _PertesView extends StatefulWidget {
   State<_PertesView> createState() => _PertesViewState();
 }
 
-class _PertesViewState extends State<_PertesView> {
+class _PertesViewState extends State<_PertesView> with TickerProviderStateMixin {
+  late final TabController _tab;
+
+  static const _tabDefs = [
+    (Icons.monetization_on_outlined,       'Pertes'),
+    (Icons.speed_rounded,                  'KRI'),
+    (Icons.map_outlined,                   'Cartographie'),
+    (Icons.verified_user_outlined,         'Contrôles internes'),
+    (Icons.account_tree_outlined,          'Workflow'),
+    (Icons.format_list_bulleted_rounded,   "Plans d'actions"),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = TabController(length: _tabDefs.length, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isDark ? const Color(0xFF22304B) : const Color(0xFFDDE7F6),
+              width: 0.8,
+            ),
+          ),
+          child: TabBar(
+            controller: _tab,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            indicatorColor: _kBlue,
+            labelColor: _kBlue,
+            unselectedLabelColor: _kMuted,
+            indicatorSize: TabBarIndicatorSize.label,
+            dividerColor: Colors.transparent,
+            labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+            unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            tabs: _tabDefs.map((t) => Tab(
+              height: 38,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(t.$1, size: 14),
+                const SizedBox(width: 6),
+                Text(t.$2),
+              ]),
+            )).toList(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Expanded(
+          child: TabBarView(
+            controller: _tab,
+            children: [
+              _PertesContent(api: widget.api),
+              _KriView(api: widget.api),
+              _CartographieView(api: widget.api),
+              _ControlesView(api: widget.api),
+              _WorkflowView(api: widget.api),
+              _PlansView(api: widget.api),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Contenu Pertes ───────────────────────────────────────────────────────────
+
+class _PertesContent extends StatefulWidget {
+  const _PertesContent({required this.api});
+  final RwaApiService api;
+  @override
+  State<_PertesContent> createState() => _PertesContentState();
+}
+
+class _PertesContentState extends State<_PertesContent> {
   late Future<List<RoIncident>> _future;
 
   @override
@@ -869,15 +994,20 @@ class _PertesViewState extends State<_PertesView> {
               // Barre de commandes
               Row(
                 children: [
-                  Expanded(child: _kpiBox(ctx, 'Perte brute totale', AppFormatters.currency(totalBrute), Icons.money_off, _kDanger)),
+                  Expanded(child: _kpiBox(ctx, 'Perte brute totale', AppFormatters.currency(totalBrute), Icons.money_off, _kDanger,
+                    tooltip: 'Somme des pertes avant déduction des montants récupérés.\nFormule : Σ perte_brute sur tous les incidents de la période.\nReprésenthe l\'exposition totale avant atténuation. (Art. 313.b)')),
                   const SizedBox(width: 10),
-                  Expanded(child: _kpiBox(ctx, 'Perte nette totale', AppFormatters.currency(totalNette), Icons.trending_down, _kDanger)),
+                  Expanded(child: _kpiBox(ctx, 'Perte nette totale', AppFormatters.currency(totalNette), Icons.trending_down, _kDanger,
+                    tooltip: 'Somme des pertes réellement supportées après récupérations.\nFormule : Σ (perte_brute − perte_récupérée).\nC\'est la base de calcul du K_RO selon l\'approche BIA. (Art. 313.b / Art. 89)')),
                   const SizedBox(width: 10),
-                  Expanded(child: _kpiBox(ctx, 'Taux de récupération', '${tauxRecup.toStringAsFixed(1)} %', Icons.savings_outlined, _kSuccess)),
+                  Expanded(child: _kpiBox(ctx, 'Taux de récupération', '${tauxRecup.toStringAsFixed(1)} %', Icons.savings_outlined, _kSuccess,
+                    tooltip: 'Part des pertes brutes récupérée via assurances, provisions ou recours.\nFormule : (Σ perte_récupérée / Σ perte_brute) × 100.\nMesure l\'efficacité des mécanismes d\'atténuation.')),
                   const SizedBox(width: 10),
-                  Expanded(child: _kpiBox(ctx, 'Pertes significatives', '$significatifs', Icons.warning_outlined, _kWarning)),
+                  Expanded(child: _kpiBox(ctx, 'Pertes significatives', '$significatifs', Icons.warning_outlined, _kWarning,
+                    tooltip: 'Incidents dont la perte brute dépasse le seuil de significativité.\nFormule : COUNT(incidents) WHERE perte_brute > seuil.\nPermet d\'identifier les événements à fort impact. (Art. 313.b)')),
                   const SizedBox(width: 10),
-                  Expanded(child: _kpiBox(ctx, 'Perte moyenne / incident', AppFormatters.currency(moyenne), Icons.calculate_outlined, _kMuted)),
+                  Expanded(child: _kpiBox(ctx, 'Perte moyenne / incident', AppFormatters.currency(moyenne), Icons.calculate_outlined, _kMuted,
+                    tooltip: 'Sévérité moyenne des pertes sur la période sélectionnée.\nFormule : Σ perte_nette / nombre d\'incidents.\nIndicateur de gravité unitaire des incidents opérationnels.')),
                 ],
               ),
               const SizedBox(height: 10),
@@ -2503,15 +2633,45 @@ class _RegistreViewState extends State<_RegistreView> {
         const SizedBox(height: 6),
         // ── Footer KPI ────────────────────────────────────────────────────
         IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          SizedBox(width: 110, child: _sumCard('Pertes',              '${cached.length}',                    AppTheme.accent)),
+          SizedBox(width: 110, child: _sumCard('Pertes', '${cached.length}', AppTheme.accent,
+            tooltip:
+              'Nombre de pertes\n'
+              'Rôle : comptage total des incidents\n'
+              'enregistrés dans la base.\n'
+              'Formule : COUNT(incidents)',
+          )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('Perte brute',                     AppFormatters.currency(cBrute),        _kDanger)),
+          Expanded(child: _sumCard('Perte brute', AppFormatters.currency(cBrute), _kDanger,
+            tooltip:
+              'Perte brute totale\n'
+              'Rôle : montant total avant toute récupération.\n'
+              'Formule : Σ perte_brute\n'
+              '(somme de toutes les pertes brutes)',
+          )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('Perte nette',                     AppFormatters.currency(cNette),        _kDanger)),
+          Expanded(child: _sumCard('Perte nette', AppFormatters.currency(cNette), _kDanger,
+            tooltip:
+              'Perte nette totale (Art. 313.b)\n'
+              'Rôle : montant réel supporté après récupérations.\n'
+              'Formule : Σ (perte_brute − perte_récupérée)\n'
+              'Récupérations = assurance + provisions + reversements',
+          )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('K_RO 15 % (Art. 89)',             AppFormatters.currency(cKro),          _kViolet)),
+          Expanded(child: _sumCard('K_RO 15 % (Art. 89)', AppFormatters.currency(cKro), _kViolet,
+            tooltip:
+              'Exigence de fonds propres — Risque Opérationnel\n'
+              'Rôle : capital réglementaire minimum à détenir.\n'
+              'Formule BIA : K_RO = α × Perte nette totale\n'
+              'α = 15 %  (coefficient BCEAO/UMOA, Art. 89)',
+          )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('APR opérationnel',                AppFormatters.currency(cApr),          _kCyan)),
+          Expanded(child: _sumCard('APR opérationnel', AppFormatters.currency(cApr), _kCyan,
+            tooltip:
+              'Actifs Pondérés par le Risque opérationnel\n'
+              'Rôle : base de calcul du ratio de solvabilité.\n'
+              'Formule : APR = K_RO ÷ 8 % = K_RO × 12,5\n'
+              '12,5 = facteur de conversion prudentiel (Art. 89)',
+          )),
         ])),
       ],
     );
@@ -2746,7 +2906,7 @@ class _RegistreViewState extends State<_RegistreView> {
     ),
   );
 
-  Widget _sumCard(String label, String value, Color color) => Container(
+  Widget _sumCard(String label, String value, Color color, {String? tooltip}) => Container(
     clipBehavior: Clip.antiAlias,
     decoration: BoxDecoration(
       color: Colors.white.withValues(alpha: 0.98),
@@ -2759,9 +2919,32 @@ class _RegistreViewState extends State<_RegistreView> {
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(label.toUpperCase(),
-          maxLines: 1, overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: AppTheme.text, fontSize: 10.5, fontWeight: FontWeight.w600, height: 1.2),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(label.toUpperCase(),
+                maxLines: 1, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: AppTheme.text, fontSize: 10.5, fontWeight: FontWeight.w600, height: 1.2),
+              ),
+            ),
+            if (tooltip != null) ...[
+              const SizedBox(width: 4),
+              Tooltip(
+                message: tooltip,
+                preferBelow: false,
+                waitDuration: Duration.zero,
+                showDuration: const Duration(seconds: 10),
+                textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E2A3A),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Icon(Icons.info_outline_rounded, size: 13, color: color.withValues(alpha: 0.7)),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 4),
         FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,

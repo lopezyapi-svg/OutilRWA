@@ -218,26 +218,6 @@ class _RwaAppState extends State<RwaApp> {
           api: _api,
           view: OperationalRiskView.pertes,
         ),
-      AppModule.risqueOperationnelKri => RisqueOperationnelScreen(
-          api: _api,
-          view: OperationalRiskView.kri,
-        ),
-      AppModule.risqueOperationnelCartographie => RisqueOperationnelScreen(
-          api: _api,
-          view: OperationalRiskView.cartographie,
-        ),
-      AppModule.risqueOperationnelControles => RisqueOperationnelScreen(
-          api: _api,
-          view: OperationalRiskView.controles,
-        ),
-      AppModule.risqueOperationnelWorkflow => RisqueOperationnelScreen(
-          api: _api,
-          view: OperationalRiskView.workflow,
-        ),
-      AppModule.risqueOperationnelPlans => RisqueOperationnelScreen(
-          api: _api,
-          view: OperationalRiskView.plans,
-        ),
       AppModule.risqueOperationnelHistorique => RisqueOperationnelScreen(
           api: _api,
           view: OperationalRiskView.historique,

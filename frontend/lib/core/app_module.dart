@@ -23,11 +23,6 @@ enum AppModule {
   risqueOperationnelImport,
   risqueOperationnelIncidents,
   risqueOperationnelPertes,
-  risqueOperationnelKri,
-  risqueOperationnelCartographie,
-  risqueOperationnelControles,
-  risqueOperationnelWorkflow,
-  risqueOperationnelPlans,
   risqueOperationnelHistorique,
   risqueOperationnelReporting,
   analyse,
@@ -80,16 +75,6 @@ extension AppModuleLabel on AppModule {
         return 'Incidents';
       case AppModule.risqueOperationnelPertes:
         return 'Pertes opérationnelles';
-      case AppModule.risqueOperationnelKri:
-        return 'KRI';
-      case AppModule.risqueOperationnelCartographie:
-        return 'Cartographie des risques';
-      case AppModule.risqueOperationnelControles:
-        return 'Contrôles internes';
-      case AppModule.risqueOperationnelWorkflow:
-        return 'Workflow incidents';
-      case AppModule.risqueOperationnelPlans:
-        return 'Plans d\'actions';
       case AppModule.risqueOperationnelHistorique:
         return 'Historique événements';
       case AppModule.risqueOperationnelReporting:
@@ -148,17 +133,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.risqueOperationnelIncidents:
         return 'Déclaration et suivi des incidents opérationnels (Art. 313.b).';
       case AppModule.risqueOperationnelPertes:
-        return 'Analyse détaillée des pertes opérationnelles historiques.';
-      case AppModule.risqueOperationnelKri:
-        return 'Indicateurs clés de risque opérationnel pour la surveillance continue.';
-      case AppModule.risqueOperationnelCartographie:
-        return 'Identification, évaluation et visualisation des risques (matrice 5×5).';
-      case AppModule.risqueOperationnelControles:
-        return 'Gestion et suivi des contrôles internes (Art. 314).';
-      case AppModule.risqueOperationnelWorkflow:
-        return 'Cycle de vie complet des incidents (ouverture, traitement, clôture).';
-      case AppModule.risqueOperationnelPlans:
-        return 'Suivi des actions correctives et préventives (Art. 313.c).';
+        return 'Pertes, KRI, cartographie, contrôles, workflow et plans d\'actions (Art. 89).';
       case AppModule.risqueOperationnelHistorique:
         return 'Traçabilité complète de toutes les actions et modifications (Art. 314).';
       case AppModule.risqueOperationnelReporting:
@@ -218,16 +193,6 @@ extension AppModuleLabel on AppModule {
         return Icons.report_gmailerrorred_rounded;
       case AppModule.risqueOperationnelPertes:
         return Icons.monetization_on_outlined;
-      case AppModule.risqueOperationnelKri:
-        return Icons.speed_rounded;
-      case AppModule.risqueOperationnelCartographie:
-        return Icons.map_outlined;
-      case AppModule.risqueOperationnelControles:
-        return Icons.verified_user_outlined;
-      case AppModule.risqueOperationnelWorkflow:
-        return Icons.account_tree_outlined;
-      case AppModule.risqueOperationnelPlans:
-        return Icons.format_list_bulleted_rounded;
       case AppModule.risqueOperationnelHistorique:
         return Icons.schedule_rounded;
       case AppModule.risqueOperationnelReporting:

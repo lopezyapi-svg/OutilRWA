@@ -279,31 +279,6 @@ const List<_MenuEntry> _operationalRiskChildren = [
     label: 'Pertes opérationnelles',
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnelKri,
-    icon: Icons.speed_rounded,
-    label: 'KRI',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueOperationnelCartographie,
-    icon: Icons.map_outlined,
-    label: 'Cartographie des risques',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueOperationnelControles,
-    icon: Icons.verified_user_outlined,
-    label: 'Contrôles internes',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueOperationnelWorkflow,
-    icon: Icons.account_tree_outlined,
-    label: 'Workflow incidents',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueOperationnelPlans,
-    icon: Icons.format_list_bulleted_rounded,
-    label: 'Plans d\'actions',
-  ),
-  _MenuEntry.leaf(
     module: AppModule.risqueOperationnelHistorique,
     icon: Icons.schedule_rounded,
     label: 'Historique événements',
