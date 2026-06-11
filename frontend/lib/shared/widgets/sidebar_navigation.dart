@@ -11,6 +11,23 @@ import 'rwa_tool_logo.dart';
 const Color _sidebarDeepBlue = Color(0xFF234A84);
 const double _sidebarPanelRadius = 1;
 
+const String settingsSectionLanguageId = 'language';
+const String settingsSectionCurrenciesId = 'currencies';
+const String settingsSectionThemeId = 'theme';
+const String settingsSectionFontId = 'font';
+const String settingsSectionColorsId = 'colors';
+const String settingsSectionServicesId = 'services';
+
+class SettingsSectionSelection {
+  const SettingsSectionSelection({
+    required this.sectionId,
+    required this.anchorRect,
+  });
+
+  final String sectionId;
+  final Rect anchorRect;
+}
+
 /// Barre latérale qui gère la navigation entre les modules.
 class SidebarNavigation extends StatelessWidget {
   const SidebarNavigation({
@@ -21,6 +38,8 @@ class SidebarNavigation extends StatelessWidget {
     this.showBrand = true,
     this.contentTopInset = 0,
     this.headerTrailing,
+    this.onSelectSettingsSection,
+    this.selectedSettingsSectionId,
   });
 
   final AppModule selectedModule;
@@ -29,6 +48,8 @@ class SidebarNavigation extends StatelessWidget {
   final bool showBrand;
   final double contentTopInset;
   final Widget? headerTrailing;
+  final ValueChanged<SettingsSectionSelection>? onSelectSettingsSection;
+  final String? selectedSettingsSectionId;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +58,8 @@ class SidebarNavigation extends StatelessWidget {
             items: _sidebarItems,
             selectedModule: selectedModule,
             onSelectModule: onSelectModule,
+            onSelectSettingsSection: onSelectSettingsSection,
+            selectedSettingsSectionId: selectedSettingsSectionId,
             contentTopInset: contentTopInset,
             headerTrailing: headerTrailing,
           )
@@ -44,15 +67,14 @@ class SidebarNavigation extends StatelessWidget {
             items: _sidebarItems,
             selectedModule: selectedModule,
             onSelectModule: onSelectModule,
+            onSelectSettingsSection: onSelectSettingsSection,
+            selectedSettingsSectionId: selectedSettingsSectionId,
             showBrand: showBrand,
             contentTopInset: contentTopInset,
             headerTrailing: headerTrailing,
           );
 
-    return DefaultTextStyle.merge(
-      style: const TextStyle(fontFamily: AppTheme.fontFamily),
-      child: sidebar,
-    );
+    return sidebar;
   }
 }
 
@@ -63,6 +85,7 @@ class _MenuEntry {
     required this.icon,
     required this.label,
     this.selectable = true,
+    this.settingsSectionId,
   }) : children = const [];
 
   const _MenuEntry.group({
@@ -70,13 +93,15 @@ class _MenuEntry {
     required this.label,
     required this.children,
   })  : module = null,
-        selectable = false;
+        selectable = false,
+        settingsSectionId = null;
 
   final AppModule? module;
   final IconData icon;
   final String label;
   final List<_MenuEntry> children;
   final bool selectable;
+  final String? settingsSectionId;
 
   bool get hasChildren => children.isNotEmpty;
 
@@ -157,10 +182,42 @@ class _MenuSelection {
   const _MenuSelection({
     required this.module,
     required this.id,
+    this.settingsSectionId,
   });
 
   final AppModule module;
   final String id;
+  final String? settingsSectionId;
+}
+
+bool _entrySelected(
+  _MenuEntry entry,
+  AppModule selectedModule,
+  String? selectedSettingsSectionId,
+) {
+  final settingsSectionId = entry.settingsSectionId;
+  if (settingsSectionId != null) {
+    return settingsSectionId == selectedSettingsSectionId;
+  }
+  if (entry.selectable && entry.module == selectedModule) {
+    return true;
+  }
+  return entry.children.any(
+    (child) => _entrySelected(
+      child,
+      selectedModule,
+      selectedSettingsSectionId,
+    ),
+  );
+}
+
+Rect _anchorRectFrom(BuildContext context) {
+  final renderObject = context.findRenderObject();
+  if (renderObject is! RenderBox || !renderObject.attached) {
+    return Rect.zero;
+  }
+  final topLeft = renderObject.localToGlobal(Offset.zero);
+  return topLeft & renderObject.size;
 }
 
 const List<_MenuEntry> _riskCreditChildren = [
@@ -170,20 +227,19 @@ const List<_MenuEntry> _riskCreditChildren = [
     label: 'Dashboard Crédit',
   ),
   _MenuEntry.leaf(
-    module: AppModule.concentrationCredit,
-    icon: Icons.pie_chart_outline_rounded,
-    label: 'Portefeuille',
-  ),
-  _MenuEntry.leaf(
     module: AppModule.expositions,
     icon: Icons.credit_card_outlined,
     label: 'Expositions',
   ),
   _MenuEntry.leaf(
-    module: AppModule.dashboard,
+    module: AppModule.concentrationCredit,
+    icon: Icons.pie_chart_outline_rounded,
+    label: 'Portefeuille',
+  ),
+  _MenuEntry.leaf(
+    module: AppModule.rwaEngine,
     icon: Icons.functions_rounded,
     label: 'RWA Engine',
-    selectable: false,
   ),
   _MenuEntry.leaf(
     module: AppModule.crm,
@@ -473,104 +529,39 @@ const List<_MenuEntry> _capitalPlanningChildren = [
 const List<_MenuEntry> _settingsChildren = [
   _MenuEntry.leaf(
     module: AppModule.referentiels,
-    icon: Icons.table_chart_outlined,
-    label: 'Référentiels',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.groups_2_outlined,
-    label: 'Utilisateurs',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.admin_panel_settings_outlined,
-    label: 'Rôles & permissions',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.description_outlined,
-    label: 'Journaux système',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.tune_rounded,
-    label: 'Paramètres prudentiels',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.assignment_turned_in_outlined,
-    label: 'Paramètres réglementaires',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.schedule_rounded,
-    label: 'Historique calculs',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.verified_outlined,
-    label: 'Audit trail',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.shield_outlined,
-    label: 'Sécurité',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.settings_outlined,
-    label: 'Paramètres application',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.monetization_on_outlined,
-    label: 'Devise',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.referentiels,
-    icon: Icons.public_rounded,
+    icon: CupertinoIcons.globe,
     label: 'Langue',
-    selectable: false,
+    settingsSectionId: settingsSectionLanguageId,
   ),
   _MenuEntry.leaf(
     module: AppModule.referentiels,
-    icon: Icons.tune_rounded,
-    label: 'Configuration moteurs',
-    selectable: false,
+    icon: CupertinoIcons.creditcard,
+    label: 'Devises',
+    settingsSectionId: settingsSectionCurrenciesId,
   ),
   _MenuEntry.leaf(
     module: AppModule.referentiels,
-    icon: Icons.functions_rounded,
-    label: 'Configuration calculs',
-    selectable: false,
+    icon: CupertinoIcons.circle_lefthalf_fill,
+    label: 'Thème Mode',
+    settingsSectionId: settingsSectionThemeId,
   ),
   _MenuEntry.leaf(
     module: AppModule.referentiels,
-    icon: Icons.view_in_ar_outlined,
-    label: 'Templates',
-    selectable: false,
+    icon: CupertinoIcons.textformat_size,
+    label: 'Font de police',
+    settingsSectionId: settingsSectionFontId,
   ),
   _MenuEntry.leaf(
     module: AppModule.referentiels,
-    icon: Icons.notifications_none_rounded,
-    label: 'Seuils alertes',
-    selectable: false,
+    icon: CupertinoIcons.paintbrush,
+    label: 'Couleurs principales',
+    settingsSectionId: settingsSectionColorsId,
   ),
   _MenuEntry.leaf(
     module: AppModule.referentiels,
-    icon: Icons.palette_outlined,
-    label: 'Paramètres graphiques',
-    selectable: false,
+    icon: CupertinoIcons.info_circle,
+    label: 'Services',
+    settingsSectionId: settingsSectionServicesId,
   ),
 ];
 
@@ -624,6 +615,8 @@ class _CompactSidebar extends StatelessWidget {
     required this.selectedModule,
     required this.onSelectModule,
     required this.contentTopInset,
+    this.onSelectSettingsSection,
+    this.selectedSettingsSectionId,
     this.headerTrailing,
   });
 
@@ -631,6 +624,8 @@ class _CompactSidebar extends StatelessWidget {
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
   final double contentTopInset;
+  final ValueChanged<SettingsSectionSelection>? onSelectSettingsSection;
+  final String? selectedSettingsSectionId;
   final Widget? headerTrailing;
 
   @override
@@ -680,12 +675,18 @@ class _CompactSidebar extends StatelessWidget {
                     entry: entry,
                     selectedModule: selectedModule,
                     onSelectModule: onSelectModule,
+                    onSelectSettingsSection: onSelectSettingsSection,
+                    selectedSettingsSectionId: selectedSettingsSectionId,
                   );
                 }
 
                 return _CompactNavButton(
                   entry: entry,
-                  selected: entry.matches(selectedModule),
+                  selected: _entrySelected(
+                    entry,
+                    selectedModule,
+                    selectedSettingsSectionId,
+                  ),
                   onTap: () => onSelectModule(
                     entry.resolveTarget(selectedModule),
                   ),
@@ -737,16 +738,21 @@ class _CompactNavGroup extends StatelessWidget {
     required this.entry,
     required this.selectedModule,
     required this.onSelectModule,
+    this.onSelectSettingsSection,
+    this.selectedSettingsSectionId,
   });
 
   final _MenuEntry entry;
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
+  final ValueChanged<SettingsSectionSelection>? onSelectSettingsSection;
+  final String? selectedSettingsSectionId;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final groupSelected = entry.matches(selectedModule);
+    final groupSelected =
+        _entrySelected(entry, selectedModule, selectedSettingsSectionId);
     final popupBackground = isDark ? const Color(0xFF0F1B31) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF263856) : const Color(0xFFDDE6F4);
@@ -765,7 +771,19 @@ class _CompactNavGroup extends StatelessWidget {
         minWidth: 194,
         maxWidth: 220,
       ),
-      onSelected: (selection) => onSelectModule(selection.module),
+      onSelected: (selection) {
+        final settingsSectionId = selection.settingsSectionId;
+        if (settingsSectionId != null && onSelectSettingsSection != null) {
+          onSelectSettingsSection!(
+            SettingsSectionSelection(
+              sectionId: settingsSectionId,
+              anchorRect: _anchorRectFrom(context),
+            ),
+          );
+          return;
+        }
+        onSelectModule(selection.module);
+      },
       itemBuilder: (context) => [
         for (final child in entry.children)
           PopupMenuItem<_MenuSelection>(
@@ -773,12 +791,17 @@ class _CompactNavGroup extends StatelessWidget {
             value: _MenuSelection(
               module: child.resolveTarget(selectedModule),
               id: '${entry.label}:${child.label}:compact',
+              settingsSectionId: child.settingsSectionId,
             ),
             height: 38,
             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
             child: _CompactFloatingMenuItem(
               entry: child,
-              selected: child.matches(selectedModule),
+              selected: _entrySelected(
+                child,
+                selectedModule,
+                selectedSettingsSectionId,
+              ),
             ),
           ),
       ],
@@ -802,8 +825,7 @@ class _CompactFloatingMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final selectedBlue =
-        isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB);
+    final selectedBlue = Theme.of(context).colorScheme.primary;
     final iconColor = selected ? Colors.white : const Color(0xFF71829F);
     final textColor = selected
         ? Colors.white
@@ -869,8 +891,7 @@ class _CompactNavButtonSurface extends StatelessWidget {
         : (isDark ? const Color(0xFFB8C8E8) : _sidebarDeepBlue);
     const buttonSize = 36.0;
     const iconSize = 16.0;
-    final selectedColor =
-        isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB);
+    final selectedColor = Theme.of(context).colorScheme.primary;
 
     return Container(
       width: buttonSize,
@@ -885,8 +906,8 @@ class _CompactNavButtonSurface extends StatelessWidget {
             ? [
                 BoxShadow(
                   color: isDark
-                      ? const Color(0x553B82F6)
-                      : const Color(0x332563EB),
+                      ? selectedColor.withValues(alpha: 0.34)
+                      : selectedColor.withValues(alpha: 0.20),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -936,6 +957,8 @@ class _ExpandedSidebar extends StatelessWidget {
     required this.onSelectModule,
     required this.showBrand,
     required this.contentTopInset,
+    this.onSelectSettingsSection,
+    this.selectedSettingsSectionId,
     this.headerTrailing,
   });
 
@@ -944,6 +967,8 @@ class _ExpandedSidebar extends StatelessWidget {
   final ValueChanged<AppModule> onSelectModule;
   final bool showBrand;
   final double contentTopInset;
+  final ValueChanged<SettingsSectionSelection>? onSelectSettingsSection;
+  final String? selectedSettingsSectionId;
   final Widget? headerTrailing;
 
   @override
@@ -1009,13 +1034,19 @@ class _ExpandedSidebar extends StatelessWidget {
                         entry: entry,
                         selectedModule: selectedModule,
                         onSelectModule: onSelectModule,
+                        onSelectSettingsSection: onSelectSettingsSection,
+                        selectedSettingsSectionId: selectedSettingsSectionId,
                         showLabel: !isCondensed,
                       );
                     }
 
                     return _ExpandedNavTile(
                       entry: entry,
-                      selected: entry.matches(selectedModule),
+                      selected: _entrySelected(
+                        entry,
+                        selectedModule,
+                        selectedSettingsSectionId,
+                      ),
                       showLabel: !isCondensed,
                       onTap: () => onSelectModule(
                         entry.resolveTarget(selectedModule),
@@ -1054,17 +1085,22 @@ class _ExpandedNavGroup extends StatelessWidget {
     required this.selectedModule,
     required this.onSelectModule,
     required this.showLabel,
+    this.onSelectSettingsSection,
+    this.selectedSettingsSectionId,
   });
 
   final _MenuEntry entry;
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
   final bool showLabel;
+  final ValueChanged<SettingsSectionSelection>? onSelectSettingsSection;
+  final String? selectedSettingsSectionId;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final groupSelected = entry.matches(selectedModule);
+    final groupSelected =
+        _entrySelected(entry, selectedModule, selectedSettingsSectionId);
     final popupBackground = isDark ? const Color(0xFF0F1B31) : Colors.white;
     final borderColor =
         isDark ? const Color(0xFF263856) : const Color(0xFFDDE6F4);
@@ -1087,7 +1123,19 @@ class _ExpandedNavGroup extends StatelessWidget {
           minWidth: 220,
           maxWidth: 252,
         ),
-        onSelected: (selection) => onSelectModule(selection.module),
+        onSelected: (selection) {
+          final settingsSectionId = selection.settingsSectionId;
+          if (settingsSectionId != null && onSelectSettingsSection != null) {
+            onSelectSettingsSection!(
+              SettingsSectionSelection(
+                sectionId: settingsSectionId,
+                anchorRect: _anchorRectFrom(context),
+              ),
+            );
+            return;
+          }
+          onSelectModule(selection.module);
+        },
         itemBuilder: (context) => [
           for (final child in entry.children)
             PopupMenuItem<_MenuSelection>(
@@ -1095,12 +1143,17 @@ class _ExpandedNavGroup extends StatelessWidget {
               value: _MenuSelection(
                 module: child.resolveTarget(selectedModule),
                 id: '${entry.label}:${child.label}:expanded',
+                settingsSectionId: child.settingsSectionId,
               ),
               height: 38,
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
               child: _CompactFloatingMenuItem(
                 entry: child,
-                selected: child.matches(selectedModule),
+                selected: _entrySelected(
+                  child,
+                  selectedModule,
+                  selectedSettingsSectionId,
+                ),
               ),
             ),
         ],
@@ -1279,8 +1332,7 @@ class _ExpandedNavTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final selectedBlue =
-        isDark ? const Color(0xFF3B82F6) : const Color(0xFF2563EB);
+    final selectedBlue = Theme.of(context).colorScheme.primary;
     final iconColor = selected
         ? Colors.white
         : (isDark ? const Color(0xFFB8C8E8) : _sidebarDeepBlue);

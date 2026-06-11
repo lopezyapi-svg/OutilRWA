@@ -9,6 +9,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/utils/file_save.dart';
 import '../../../shared/widgets/page_header.dart';
@@ -155,7 +156,7 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
                   DataColumn(label: Text('Date')),
                   DataColumn(label: Text('Famille')),
                   DataColumn(label: Text('Format')),
-                  DataColumn(label: Text('Lignes')),
+                  DataColumn(label: Text('Expositions')),
                   DataColumn(label: Text('Montant couvert')),
                   DataColumn(label: Text('Fichier')),
                 ],
@@ -169,8 +170,10 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
                           DataCell(Text(item.family.label)),
                           DataCell(Text(item.format.label)),
                           DataCell(Text(item.lineCount.toString())),
-                          DataCell(
-                              Text(AppFormatters.currency(item.totalAmount))),
+                          DataCell(Text(formatCurrencyForDisplay(
+                            item.totalAmount,
+                            toCurrency: 'XOF',
+                          ))),
                           DataCell(Text(item.fileName)),
                         ],
                       ),
@@ -549,7 +552,7 @@ class _FamilySnapshotCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _SnapshotPill(
-                    label: 'Lignes',
+                    label: 'Expositions',
                     value: snapshot.itemCount.toString(),
                   ),
                 ),
@@ -557,7 +560,10 @@ class _FamilySnapshotCard extends StatelessWidget {
                 Expanded(
                   child: _SnapshotPill(
                     label: 'Montant',
-                    value: AppFormatters.currency(snapshot.totalAmount),
+                    value: formatCurrencyForDisplay(
+                      snapshot.totalAmount,
+                      toCurrency: 'XOF',
+                    ),
                   ),
                 ),
               ],

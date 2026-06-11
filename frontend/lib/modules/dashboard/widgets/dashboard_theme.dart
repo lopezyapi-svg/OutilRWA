@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localization.dart';
+import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 
 Color dashboardPanelColor(bool isDark) {
@@ -119,7 +120,8 @@ String dashboardShortMonth(DateTime date) {
 }
 
 String dashboardCompactCurrency(double value) {
-  return 'XOF ${AppFormatters.compactNumber(value)}';
+  final amountUnit = PortfolioAmountUnitPreference.current;
+  return '${AppFormatters.compactNumber(value / amountUnit.divisor)} ${amountUnit.label} XOF';
 }
 
 String dashboardCompactPercent(double value) {

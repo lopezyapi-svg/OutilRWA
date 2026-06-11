@@ -3,10 +3,18 @@ import 'package:flutter/material.dart';
 
 /// Définit les couleurs, espacements et thèmes partagés de l'interface.
 class AppTheme {
-  static const String fontFamily = 'Roboto Flex';
-  static const String dataFontFamily = fontFamily;
-  static const String titleFontFamily = fontFamily;
-  static const double radius = 5;
+  static const String defaultFontFamily = 'Roboto Flex';
+  static String fontFamily = defaultFontFamily;
+  static String get dataFontFamily => fontFamily;
+  static String get titleFontFamily => fontFamily;
+  static const List<String> supportedFontFamilies = [
+    'Roboto Flex',
+    'Aptos',
+    'IBM Plex Sans',
+    'General Sans',
+    'Nunito Sans',
+  ];
+  static const double radius = 2;
   static const double spacing = 10;
   static const double pagePadding = 2;
   static const double pageGap = 2;
@@ -27,7 +35,11 @@ class AppTheme {
   static const Color darkText = Color(0xFFF8FAFC);
   static const Color darkMuted = Color(0xFF94A3B8);
 
-  static ThemeData buildTheme() => _buildTheme(
+  static ThemeData buildTheme({
+    String fontFamily = defaultFontFamily,
+    Color accentColor = accent,
+  }) =>
+      _buildTheme(
         brightness: Brightness.light,
         scaffoldBackground: background,
         surfaceColor: card,
@@ -35,9 +47,15 @@ class AppTheme {
         textColor: text,
         mutedColor: muted,
         inputFillColor: const Color(0xFFFBFCFF),
+        fontFamily: fontFamily,
+        accentColor: accentColor,
       );
 
-  static ThemeData buildDarkTheme() => _buildTheme(
+  static ThemeData buildDarkTheme({
+    String fontFamily = defaultFontFamily,
+    Color accentColor = accent,
+  }) =>
+      _buildTheme(
         brightness: Brightness.dark,
         scaffoldBackground: darkBackground,
         surfaceColor: darkCard,
@@ -45,6 +63,8 @@ class AppTheme {
         textColor: darkText,
         mutedColor: darkMuted,
         inputFillColor: const Color(0xFF111827),
+        fontFamily: fontFamily,
+        accentColor: accentColor,
       );
 
   static ThemeData _buildTheme({
@@ -55,7 +75,10 @@ class AppTheme {
     required Color textColor,
     required Color mutedColor,
     required Color inputFillColor,
+    required String fontFamily,
+    required Color accentColor,
   }) {
+    AppTheme.fontFamily = fontFamily;
     final baseTextTheme = ThemeData(
       brightness: brightness,
       fontFamily: fontFamily,
@@ -73,8 +96,8 @@ class AppTheme {
       textTheme: textTheme,
       colorScheme: ColorScheme.fromSeed(
         brightness: brightness,
-        seedColor: accent,
-        primary: accent,
+        seedColor: accentColor,
+        primary: accentColor,
         surface: surfaceColor,
         onSurface: textColor,
       ),
@@ -114,7 +137,7 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: accent,
+          backgroundColor: accentColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -147,7 +170,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
-          borderSide: const BorderSide(color: accent, width: 1.2),
+          borderSide: BorderSide(color: accentColor, width: 1.2),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),

@@ -25,12 +25,15 @@ class PortfolioRow(BaseModel):
     """Represente une ligne de synthese du portefeuille."""
 
     id: str
+    analysis_date: str
     counterparty: str
     country: str
     category: str
     rating: str
     crm_type: str
     gross_amount: float
+    on_balance_exposure_amount: float = 0.0
+    off_balance_exposure_amount: float = 0.0
     ead: float
     rwa: float
     capital: float

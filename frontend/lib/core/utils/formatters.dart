@@ -19,28 +19,17 @@ class AppFormatters {
   static String compactNumber(num value) {
     final amount = value.toDouble();
     final absolute = amount.abs();
-    final isEnglish = AppLocalizations.isEnglish;
 
-    if (absolute >= 1000000000) {
-      final scaled = amount / 1000000000;
-      return '${_compactScaled(scaled)} ${isEnglish ? _scaleLabel(scaled, singular: 'billion', plural: 'billions') : _scaleLabel(scaled, singular: 'milliard', plural: 'milliards')}';
-    }
-    if (absolute >= 1000000) {
-      final scaled = amount / 1000000;
-      return '${_compactScaled(scaled)} ${_scaleLabel(scaled, singular: 'million', plural: 'millions')}';
-    }
-    if (absolute >= 1000) {
-      final scaled = amount / 1000;
-      return '${_compactScaled(scaled)} ${isEnglish ? 'thousand' : 'mille'}';
-    }
+    final decimals = absolute >= 100
+        ? 0
+        : absolute >= 10
+            ? 1
+            : 2;
+    return _number(decimals).format(amount);
+  }
 
-    if (absolute >= 100) {
-      return _plainNumber().format(amount);
-    }
-    if (absolute >= 10) {
-      return _trimCompact(amount.toStringAsFixed(1));
-    }
-    return _trimCompact(amount.toStringAsFixed(2));
+  static String decimalNumber(num value, {int maxDecimals = 2}) {
+    return _number(maxDecimals).format(value);
   }
 
   static String integer(num value) => _plainNumber().format(value.round());
@@ -72,34 +61,11 @@ class AppFormatters {
   static NumberFormat _plainNumber() =>
       NumberFormat.decimalPattern(AppLocalizations.currentLanguage.intlLocale);
 
-  static String _compactScaled(double value) {
-    final absolute = value.abs();
-    if (absolute >= 100) {
-      return _trimCompact(value.toStringAsFixed(0));
-    }
-    if (absolute >= 10) {
-      return _trimCompact(value.toStringAsFixed(1));
-    }
-    return _trimCompact(value.toStringAsFixed(2));
-  }
-
-  static String _trimCompact(String value) {
-    final normalized =
-        value.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
-    if (normalized.isEmpty) {
-      return _plainNumber().format(0);
-    }
-    return AppLocalizations.isEnglish
-        ? normalized
-        : normalized.replaceAll('.', ',');
-  }
-
-  static String _scaleLabel(
-    double scaledValue, {
-    required String singular,
-    required String plural,
-  }) {
-    final absolute = scaledValue.abs();
-    return absolute >= 2 ? plural : singular;
+  static NumberFormat _number(int decimalDigits) {
+    return NumberFormat.decimalPattern(
+      AppLocalizations.currentLanguage.intlLocale,
+    )
+      ..minimumFractionDigits = 0
+      ..maximumFractionDigits = decimalDigits;
   }
 }

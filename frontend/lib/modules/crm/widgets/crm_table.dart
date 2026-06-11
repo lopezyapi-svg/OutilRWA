@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localization.dart';
+import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -19,6 +20,7 @@ class CrmTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayCurrency = PortfolioCurrencyScope.maybeOf(context);
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -50,23 +52,27 @@ class CrmTable extends StatelessWidget {
               DataCell(Text(row.id)),
               DataCell(Text(row.borrowerName)),
               DataCell(Text(row.guarantorName)),
-              DataCell(Text(formatCurrencyForDisplay(
+              DataCell(Text(formatCurrencyInDisplayUnit(
                 row.coverageAmount,
                 toCurrency: displayCurrency,
+                amountUnit: amountUnit,
               ))),
               DataCell(Text(AppFormatters.percent(row.borrowerRw))),
               DataCell(Text(AppFormatters.percent(row.finalRw))),
-              DataCell(Text(formatCurrencyForDisplay(
+              DataCell(Text(formatCurrencyInDisplayUnit(
                 row.rwaBefore,
                 toCurrency: displayCurrency,
+                amountUnit: amountUnit,
               ))),
-              DataCell(Text(formatCurrencyForDisplay(
+              DataCell(Text(formatCurrencyInDisplayUnit(
                 row.rwaAfter,
                 toCurrency: displayCurrency,
+                amountUnit: amountUnit,
               ))),
-              DataCell(Text(formatCurrencyForDisplay(
+              DataCell(Text(formatCurrencyInDisplayUnit(
                 row.capitalSaving,
                 toCurrency: displayCurrency,
+                amountUnit: amountUnit,
               ))),
             ],
           );

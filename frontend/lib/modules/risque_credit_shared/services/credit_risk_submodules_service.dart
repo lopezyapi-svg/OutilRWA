@@ -219,9 +219,8 @@ class CreditRiskSubmodulesService {
           ? 'Non renseigné'
           : item.categoryLabel.trim();
       final riskWeightBucket = _riskWeightBucket(item.finalRw);
-      final crmCoverage = item.crmCoveragePercent > 1
-          ? item.crmCoveragePercent / 100
-          : item.crmCoveragePercent;
+      final activeCoverage = _crmCoverageRatio(item);
+      final provisionRate = _estimatedProvisionRateForExposure(item);
 
       sectorGroups
           .putIfAbsent(sector, () => _ConcentrationAccumulator(label: sector))
@@ -269,12 +268,19 @@ class CreditRiskSubmodulesService {
           prudentialCategory: category,
           rating: item.ratingLabel,
           status: item.status,
-          hasGuarantee: item.crmModeLabel != 'Aucune' || crmCoverage > 0,
+          hasGuarantee: item.crmModeLabel != 'Aucune' || activeCoverage > 0,
           isDefault: item.isDefaultLike,
           grossAmount: item.grossAmount,
           ead: item.ead,
           rwa: item.rwa,
+          capital: item.capital,
+          originalRiskWeight: _normalizedRiskWeight(item.originalRw),
           riskWeight: _normalizedRiskWeight(item.finalRw),
+          crmCoverageRatio: activeCoverage,
+          pd: _pdFromRating(item.ratingLabel),
+          lgd: _lgdFromCrm(item),
+          estimatedProvision: item.ead * provisionRate,
+          provisionRate: provisionRate,
         ),
       );
     }
@@ -523,11 +529,15 @@ class CreditRiskSubmodulesService {
         defaultRows.fold<double>(0.0, (sum, item) => sum + item.grossAmount);
     final weightedPd = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + _pdFromRating(item.ratingLabel) * item.grossAmount,
+      (sum, item) => sum + _pdFromRating(item.ratingLabel) * item.ead,
     );
     final weightedLgd = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + _lgdFromCrm(item) * item.grossAmount,
+      (sum, item) => sum + _lgdFromCrm(item) * item.ead,
+    );
+    final estimatedProvision = defaultRows.fold<double>(
+      0.0,
+      (sum, item) => sum + item.ead * _estimatedProvisionRateForExposure(item),
     );
     final nplTrend = trends.length < 2
         ? 0.0
@@ -538,10 +548,9 @@ class CreditRiskSubmodulesService {
       defaultRate:
           exposures.isEmpty ? 0.0 : defaultRows.length / exposures.length,
       defaultGross: defaultGross,
-      riskCoverage:
-          totalGross == 0 ? 0.0 : (totalGross - totalNetEad) / totalGross,
-      averagePd: totalGross == 0 ? 0.0 : weightedPd / totalGross,
-      averageLgd: totalGross == 0 ? 0.0 : weightedLgd / totalGross,
+      riskCoverage: defaultGross == 0 ? 0.0 : estimatedProvision / defaultGross,
+      averagePd: totalNetEad == 0 ? 0.0 : weightedPd / totalNetEad,
+      averageLgd: totalNetEad == 0 ? 0.0 : weightedLgd / totalNetEad,
       nplTrend: nplTrend,
       defaultTrend: nplTrend,
       coverageTrend: 0.0,
@@ -732,6 +741,23 @@ class CreditRiskSubmodulesService {
     return rawWeight > 2 ? rawWeight / 100 : rawWeight;
   }
 
+  double _crmCoverageRatio(ExposureRecord exposure) {
+    final rawCoverage = exposure.crmCoveragePercent == 0
+        ? exposure.crmDetails.coveragePercent
+        : exposure.crmCoveragePercent;
+    final normalized = rawCoverage > 1 ? rawCoverage / 100 : rawCoverage;
+    return normalized.clamp(0.0, 1.0).toDouble();
+  }
+
+  double _estimatedProvisionRateForExposure(ExposureRecord exposure) {
+    if (!exposure.isDefaultLike) {
+      return 0.0;
+    }
+    return exposure.defaultedExposureProvisionAtLeastTwentyPercent == true
+        ? 0.20
+        : 0.0;
+  }
+
   double _nplRatio(List<ExposureRecord> exposures) {
     final totalGross = exposures.fold<double>(
       0.0,
@@ -764,9 +790,7 @@ class CreditRiskSubmodulesService {
   }
 
   double _lgdFromCrm(ExposureRecord exposure) {
-    final coverage = exposure.crmCoveragePercent > 1
-        ? exposure.crmCoveragePercent / 100
-        : exposure.crmCoveragePercent;
+    final coverage = _crmCoverageRatio(exposure);
     return (1 - coverage).clamp(0.25, 1.0).toDouble();
   }
 

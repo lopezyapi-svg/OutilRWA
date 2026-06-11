@@ -7,6 +7,7 @@ enum AppModule {
   vueEnsemble,
   dashboard,
   expositions,
+  rwaEngine,
   crm,
   horsBilan,
   garanties,
@@ -43,6 +44,8 @@ extension AppModuleLabel on AppModule {
         return 'Dashboard';
       case AppModule.expositions:
         return 'Risque de crédit';
+      case AppModule.rwaEngine:
+        return 'RWA Engine';
       case AppModule.crm:
         return 'CRM';
       case AppModule.horsBilan:
@@ -102,6 +105,8 @@ extension AppModuleLabel on AppModule {
         return 'Pilotage global des encours, RWA, capital et couverture CRM.';
       case AppModule.expositions:
         return 'Saisie, import, edition et suivi detaille des expositions du portefeuille.';
+      case AppModule.rwaEngine:
+        return 'Calcul, explication, contrôle et simulation du capital réglementaire.';
       case AppModule.crm:
         return 'Techniques de réduction du risque de crédit, couvertures et scénarios CRM.';
       case AppModule.horsBilan:
@@ -161,6 +166,8 @@ extension AppModuleLabel on AppModule {
         return Icons.dashboard_rounded;
       case AppModule.expositions:
         return Icons.credit_card_rounded;
+      case AppModule.rwaEngine:
+        return Icons.functions_rounded;
       case AppModule.crm:
         return Icons.verified_user_rounded;
       case AppModule.horsBilan:

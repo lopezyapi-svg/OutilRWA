@@ -2,7 +2,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart' show NumberFormat;
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/currency_conversion.dart';
@@ -85,35 +84,12 @@ class _ExposureAreaChartCard extends StatefulWidget {
 class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
   String? _activeEntryKey;
 
-  bool get _isFcfaDisplay {
-    final code = widget.displayCurrency.toUpperCase();
-    return code == 'XOF' || code == 'XAF';
-  }
-
-  double _convertFromXof(double value) {
-    return convertCurrencyAmount(
-      value,
-      fromCurrency: 'XOF',
-      toCurrency: widget.displayCurrency,
-    );
-  }
-
   String _compactDisplayAmount(double value) {
-    final convertedValue = _convertFromXof(value);
-    final unit = displayCurrencyLabel(widget.displayCurrency);
-    final absolute = convertedValue.abs();
-    final formatter = NumberFormat.decimalPatternDigits(
-      locale: 'fr_FR',
-      decimalDigits: 0,
+    return formatCurrencyInDisplayUnit(
+      value,
+      toCurrency: widget.displayCurrency,
+      amountUnit: PortfolioAmountUnitPreference.current,
     );
-
-    if (absolute >= 1000000000) {
-      return '${formatter.format(convertedValue / 1000000000)} Md $unit';
-    }
-    if (absolute >= 1000000) {
-      return '${formatter.format(convertedValue / 1000000)} M $unit';
-    }
-    return '${formatter.format(convertedValue)} $unit';
   }
 
   String _precisePercentLabel(double value) {
@@ -162,13 +138,11 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
   }
 
   String _fullAmountValue(double value) {
-    final convertedValue = _convertFromXof(value);
-    final formatter = NumberFormat.decimalPatternDigits(
-      locale: 'fr_FR',
-      decimalDigits: _isFcfaDisplay ? 0 : 2,
+    return formatCurrencyInDisplayUnit(
+      value,
+      toCurrency: widget.displayCurrency,
+      amountUnit: PortfolioAmountUnitPreference.current,
     );
-
-    return '${formatter.format(convertedValue)} ${displayCurrencyLabel(widget.displayCurrency)}';
   }
 
   @override

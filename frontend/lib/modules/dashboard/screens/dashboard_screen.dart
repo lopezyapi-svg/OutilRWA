@@ -248,20 +248,9 @@ String _dashboardKpiCurrencyValue(double value, String displayCurrency) {
     fromCurrency: 'XOF',
     toCurrency: displayCurrency,
   );
-  final absolute = converted.abs();
+  final amountUnit = PortfolioAmountUnitPreference.current;
   final currency = displayCurrencyLabel(displayCurrency);
-
-  if (absolute >= 1000000000) {
-    final unit = AppLocalizations.isEnglish ? 'Bn' : 'Md';
-    return '${_dashboardScaledNumber(converted / 1000000000)} $unit $currency';
-  }
-  if (absolute >= 1000000) {
-    return '${_dashboardScaledNumber(converted / 1000000)} M $currency';
-  }
-  if (absolute >= 1000) {
-    return '${_dashboardScaledNumber(converted / 1000)} k $currency';
-  }
-  return '${_dashboardScaledNumber(converted)} $currency';
+  return '${_dashboardScaledNumber(converted / amountUnit.divisor)} ${amountUnit.label} $currency';
 }
 
 String _dashboardScaledNumber(double value) {

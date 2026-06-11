@@ -11,11 +11,13 @@ class SectionCard extends StatelessWidget {
     required this.title,
     required this.child,
     this.trailing,
+    this.titleStyle,
   });
 
   final String title;
   final Widget child;
   final Widget? trailing;
+  final TextStyle? titleStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -23,40 +25,52 @@ class SectionCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dividerColor = isDark ? AppTheme.darkBorder : AppTheme.border;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(AppTheme.spacing),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (hasHeader) ...[
-              Row(
-                children: [
-                  if (title.trim().isNotEmpty)
-                    Expanded(
-                      child: Text(
-                        title.tr(context),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                      ),
-                    )
-                  else
-                    const Spacer(),
-                  if (trailing != null) trailing!,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final childIsAlreadyFlexible = child is Flexible;
+        final content = constraints.hasBoundedHeight && !childIsAlreadyFlexible
+            ? Expanded(child: child)
+            : child;
+
+        return Card(
+          margin: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacing),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (hasHeader) ...[
+                  Row(
+                    children: [
+                      if (title.trim().isNotEmpty)
+                        Expanded(
+                          child: Text(
+                            title.tr(context),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                )
+                                .merge(titleStyle),
+                          ),
+                        )
+                      else
+                        const Spacer(),
+                      if (trailing != null) trailing!,
+                    ],
+                  ),
+                  const SizedBox(height: AppTheme.spacing),
+                  Divider(color: dividerColor),
+                  const SizedBox(height: AppTheme.spacing),
                 ],
-              ),
-              const SizedBox(height: AppTheme.spacing),
-              Divider(color: dividerColor),
-              const SizedBox(height: AppTheme.spacing),
-            ],
-            child,
-          ],
-        ),
-      ),
+                content,
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

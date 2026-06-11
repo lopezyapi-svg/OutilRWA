@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../risque_credit_shared/models/credit_risk_models.dart';
@@ -171,7 +172,10 @@ class _GarantiesScreenState extends State<GarantiesScreen> {
                             ),
                           ),
                           DataCell(Text(item.type)),
-                          DataCell(Text(AppFormatters.currency(item.value))),
+                          DataCell(Text(formatCurrencyForDisplay(
+                            item.value,
+                            toCurrency: 'XOF',
+                          ))),
                           DataCell(
                             Text(AppFormatters.percent(item.coverageRatio)),
                           ),
@@ -227,7 +231,10 @@ class _GarantiesScreenState extends State<GarantiesScreen> {
       ),
       CreditStatCard(
         label: 'Valeur active',
-        value: AppFormatters.currency(data.summary.activeValue),
+        value: formatCurrencyForDisplay(
+          data.summary.activeValue,
+          toCurrency: 'XOF',
+        ),
         helper: 'Garanties non expirées',
         icon: Icons.verified_user_outlined,
         color: AppTheme.success,

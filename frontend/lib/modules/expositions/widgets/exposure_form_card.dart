@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
@@ -441,15 +442,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     'Garantie etatique',
     'Assurance credit',
     'Garantie bancaire',
-  ];
-  static const List<double> _coverageOptions = [
-    0.0,
-    0.1,
-    0.2,
-    0.4,
-    0.5,
-    0.75,
-    1.0,
   ];
   static const List<_WizardStepMeta> _stepMetas = [
     _WizardStepMeta(
@@ -1064,10 +1056,12 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         normalizeCurrencyCode(sourceCurrency ?? _currency);
     final resolvedTargetCurrency =
         normalizeCurrencyCode(targetCurrency ?? _currency);
-    return formatCurrencyForDisplay(
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
+    return formatCurrencyInDisplayUnit(
       amount,
       fromCurrency: resolvedSourceCurrency,
       toCurrency: resolvedTargetCurrency,
+      amountUnit: amountUnit,
     );
   }
 
@@ -2091,7 +2085,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             _buildFieldCard(
               context: context,
               title: 'ID Exposition',
-              subtitle: 'Identifiant de la ligne',
+              subtitle: 'Identifiant de l’exposition',
               icon: Icons.tag_outlined,
               child: TextFormField(
                 controller: _exposureIdController,
@@ -2691,7 +2685,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       context
           .tr('Granularité : exposition ≤ 0,2 % du portefeuille retail global'),
       context.tr(
-          'Faible montant : encours agrégé par contrepartie ≤ 150 millions FCFA'),
+          'Faible montant : encours agrégé par contrepartie ≤ 150 000 000 FCFA'),
       context.tr(
           'Consentement BIC : accord du client pour transmission des données au BIC'),
     ].join('\n');
@@ -3913,6 +3907,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     final offBalanceExposureAmount = _derivedOffBalanceExposureAmount;
     final isOffBalance = _isOffBalanceCategory;
     final hasOffBalanceExposure = offBalanceExposureAmount > 0;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
     final selectedOffBalanceFcec =
         _offBalanceRiskLevel == null || _offBalanceRiskLevel!.trim().isEmpty
             ? null
@@ -3936,6 +3931,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         preview.ead,
         fromCurrency: _currency,
         toCurrency: displayCurrency,
+        amountUnit: amountUnit,
       ),
       icon: Icons.account_balance_wallet_outlined,
       accent: AppTheme.accent,
@@ -3946,6 +3942,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         preview.rwa,
         fromCurrency: _currency,
         toCurrency: displayCurrency,
+        amountUnit: amountUnit,
       ),
       icon: Icons.analytics_outlined,
       accent: const Color(0xFF2563EB),
@@ -4001,6 +3998,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           loanTotalAmount,
           fromCurrency: _currency,
           toCurrency: displayCurrency,
+          amountUnit: amountUnit,
         ),
         icon: Icons.payments_outlined,
         accent: const Color(0xFF0284C7),
@@ -4011,6 +4009,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           onBalanceExposureAmount,
           fromCurrency: _currency,
           toCurrency: displayCurrency,
+          amountUnit: amountUnit,
         ),
         icon: Icons.account_balance_wallet_outlined,
         accent: const Color(0xFF0F766E),
@@ -4021,6 +4020,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           offBalanceExposureAmount,
           fromCurrency: _currency,
           toCurrency: displayCurrency,
+          amountUnit: amountUnit,
         ),
         icon: Icons.calculate_outlined,
         accent: const Color(0xFF1D4ED8),
@@ -4067,6 +4067,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             (preview.ead - creditCoverage).clamp(0.0, double.infinity),
             fromCurrency: _currency,
             toCurrency: displayCurrency,
+            amountUnit: amountUnit,
           ),
           icon: Icons.remove_circle_outline_rounded,
           accent: const Color(0xFFDC2626),
@@ -4510,7 +4511,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         icon: Icons.info_outline,
                         accent: Color(0xFF0F766E),
                         text:
-                            'La devise, la pondération de chaque actif et la contribution au panier sont calculées ligne par ligne.',
+                            'La devise, la pondération de chaque actif et la contribution au panier sont calculées exposition par exposition.',
                       ),
                     ],
                   ),
@@ -7288,7 +7289,6 @@ class _HeroKpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = _isExposureDark(context);
-    final gradientBase = isDark ? const Color(0xFF0F172A) : Colors.white;
     final cardPadding = compact
         ? const EdgeInsets.fromLTRB(7, 7, 7, 7)
         : const EdgeInsets.fromLTRB(9, 8, 9, 8);
@@ -7297,8 +7297,6 @@ class _HeroKpiCard extends StatelessWidget {
     final labelFontSize = compact ? 7.6 : 8.2;
     final valueFontSize = compact ? 9.2 : 10.2;
     final highlightBackground =
-        isDark ? const Color(0xFF1D4ED8) : const Color(0xFF3B82F6);
-    final highlightBorderColor =
         isDark ? const Color(0xFF1D4ED8) : const Color(0xFF3B82F6);
     const highlightLabelColor = Color(0xFFDCE9FF);
     const highlightValueColor = Colors.white;

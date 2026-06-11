@@ -22,6 +22,44 @@ const double _workspaceTopBarControlRadius = 2;
 const Duration _desktopSidebarOpenDuration = Duration(milliseconds: 60);
 const Duration _desktopSidebarCloseDuration = Duration(milliseconds: 60);
 
+class AppShellNotification {
+  const AppShellNotification({
+    required this.id,
+    required this.title,
+    required this.body,
+    required this.detail,
+    required this.severity,
+    required this.source,
+    required this.date,
+    required this.targetModule,
+    this.isRead = false,
+  });
+
+  final String id;
+  final String title;
+  final String body;
+  final String detail;
+  final String severity;
+  final String source;
+  final DateTime date;
+  final AppModule targetModule;
+  final bool isRead;
+
+  AppShellNotification copyWith({bool? isRead}) {
+    return AppShellNotification(
+      id: id,
+      title: title,
+      body: body,
+      detail: detail,
+      severity: severity,
+      source: source,
+      date: date,
+      targetModule: targetModule,
+      isRead: isRead ?? this.isRead,
+    );
+  }
+}
+
 /// Coquille principale de l'application avec top bar, sidebar et contenu.
 class AppShell extends StatefulWidget {
   const AppShell({
@@ -32,7 +70,14 @@ class AppShell extends StatefulWidget {
     required this.themeMode,
     required this.onThemeModeChanged,
     required this.portfolioDisplayCurrency,
+    required this.portfolioAmountUnit,
     required this.appLanguage,
+    required this.fontFamily,
+    required this.onFontFamilyChanged,
+    required this.primaryColor,
+    required this.onPrimaryColorChanged,
+    required this.onNotificationSelected,
+    this.notifications = const <AppShellNotification>[],
     required this.child,
   });
 
@@ -42,7 +87,14 @@ class AppShell extends StatefulWidget {
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode> onThemeModeChanged;
   final ValueNotifier<String> portfolioDisplayCurrency;
+  final ValueNotifier<PortfolioAmountUnit> portfolioAmountUnit;
   final ValueNotifier<AppLanguage> appLanguage;
+  final String fontFamily;
+  final ValueChanged<String> onFontFamilyChanged;
+  final Color primaryColor;
+  final ValueChanged<Color> onPrimaryColorChanged;
+  final ValueChanged<AppShellNotification> onNotificationSelected;
+  final List<AppShellNotification> notifications;
   final Widget child;
 
   @override
@@ -53,6 +105,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   static const double _screenSpacing = AppTheme.pagePadding;
   bool _isSidebarOverlayOpen = false;
+  String? _activeSettingsSectionId;
 
   @override
   Widget build(BuildContext context) {
@@ -87,12 +140,12 @@ class _AppShellState extends State<AppShell> {
                 children: [
                   // La top bar concentre la marque et les actions globales.
                   _WorkspaceTopBar(
-                    themeMode: widget.themeMode,
-                    onThemeModeChanged: widget.onThemeModeChanged,
                     selectedModule: widget.selectedModule,
                     onReturnToWelcome: widget.onReturnToWelcome,
                     portfolioDisplayCurrency: widget.portfolioDisplayCurrency,
-                    appLanguage: widget.appLanguage,
+                    portfolioAmountUnit: widget.portfolioAmountUnit,
+                    notifications: widget.notifications,
+                    onNotificationSelected: widget.onNotificationSelected,
                   ),
                   const SizedBox(height: AppTheme.pageGap),
                   Expanded(
@@ -126,6 +179,10 @@ class _AppShellState extends State<AppShell> {
                                           selectedModule: widget.selectedModule,
                                           onSelectModule:
                                               _handleDesktopModuleSelection,
+                                          onSelectSettingsSection:
+                                              _openSettingsSectionOverlay,
+                                          selectedSettingsSectionId:
+                                              _activeSettingsSectionId,
                                           showBrand: false,
                                           showToggleButton: true,
                                           onToggleSidebar:
@@ -146,6 +203,10 @@ class _AppShellState extends State<AppShell> {
                                                     widget.selectedModule,
                                                 onSelectModule:
                                                     _handleDesktopModuleSelection,
+                                                onSelectSettingsSection:
+                                                    _openSettingsSectionOverlay,
+                                                selectedSettingsSectionId:
+                                                    _activeSettingsSectionId,
                                                 showBrand: false,
                                                 showToggleButton: true,
                                                 onToggleSidebar:
@@ -212,6 +273,15 @@ class _AppShellState extends State<AppShell> {
   }
 
   void _handleDesktopModuleSelection(AppModule module) {
+    if (module == AppModule.referentiels) {
+      _openSettingsSectionOverlay(
+        const SettingsSectionSelection(
+          sectionId: settingsSectionLanguageId,
+          anchorRect: Rect.zero,
+        ),
+      );
+      return;
+    }
     if (module == AppModule.risqueMarcheImport) {
       widget.onSelectModule(module);
       return;
@@ -234,8 +304,30 @@ class _AppShellState extends State<AppShell> {
           selectedModule: widget.selectedModule,
           onSelectModule: (module) {
             Navigator.of(context).pop();
+            if (module == AppModule.referentiels) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  _openSettingsSectionOverlay(
+                    const SettingsSectionSelection(
+                      sectionId: settingsSectionLanguageId,
+                      anchorRect: Rect.zero,
+                    ),
+                  );
+                }
+              });
+              return;
+            }
             widget.onSelectModule(module);
           },
+          onSelectSettingsSection: (selection) {
+            Navigator.of(context).pop();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _openSettingsSectionOverlay(selection);
+              }
+            });
+          },
+          selectedSettingsSectionId: _activeSettingsSectionId,
           compact: false,
         ),
       ),
@@ -249,6 +341,8 @@ class _AppShellState extends State<AppShell> {
                 selectedModule: widget.selectedModule,
                 showMenuButton: true,
                 onReturnToWelcome: widget.onReturnToWelcome,
+                notifications: widget.notifications,
+                onNotificationSelected: widget.onNotificationSelected,
               ),
               const SizedBox(height: AppTheme.pageGap),
               Expanded(
@@ -271,6 +365,102 @@ class _AppShellState extends State<AppShell> {
         ),
       ),
     );
+  }
+
+  Future<void> _openSettingsSectionOverlay(
+    SettingsSectionSelection selection,
+  ) async {
+    if (!mounted) return;
+    final sectionId = selection.sectionId;
+    final initialSection = _settingsSectionFromId(sectionId);
+    final media = MediaQuery.of(context);
+    final isDesktop = media.size.width >= 1120;
+    final sidebarWidth =
+        _isSidebarOverlayOpen ? _desktopOverlayWidth : _desktopRailWidth;
+    final fallbackLeft = _screenSpacing + sidebarWidth + _desktopPanelGap + 2;
+    final sideLeft = _settingsOverlayLeft(selection.anchorRect, fallbackLeft);
+    final sideTop = _settingsOverlayTop(
+      media,
+      selection.anchorRect,
+      initialSection,
+    );
+
+    setState(() => _activeSettingsSectionId = sectionId);
+    try {
+      await showGeneralDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        barrierLabel: 'Fermer les paramètres',
+        barrierColor: Colors.black.withValues(alpha: 0.14),
+        transitionDuration: const Duration(milliseconds: 160),
+        pageBuilder: (context, _, __) {
+          return _SettingsTopOverlay(
+            initialSection: initialSection,
+            sideAligned: isDesktop,
+            cascade: isDesktop,
+            sideLeft: sideLeft,
+            sideTop: sideTop,
+            themeMode: widget.themeMode,
+            onThemeModeChanged: widget.onThemeModeChanged,
+            portfolioDisplayCurrency: widget.portfolioDisplayCurrency,
+            portfolioAmountUnit: widget.portfolioAmountUnit,
+            appLanguage: widget.appLanguage,
+            fontFamily: widget.fontFamily,
+            onFontFamilyChanged: widget.onFontFamilyChanged,
+            primaryColor: widget.primaryColor,
+            onPrimaryColorChanged: widget.onPrimaryColorChanged,
+          );
+        },
+        transitionBuilder: (context, animation, _, child) {
+          final curved = Curves.easeOutCubic.transform(animation.value);
+          return Opacity(
+            opacity: curved,
+            child: Transform.translate(
+              offset: isDesktop
+                  ? Offset(-18 * (1 - curved), 0)
+                  : Offset(0, -22 * (1 - curved)),
+              child: child,
+            ),
+          );
+        },
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _activeSettingsSectionId = null);
+      }
+    }
+  }
+
+  double _settingsOverlayLeft(Rect anchorRect, double fallbackLeft) {
+    if (anchorRect == Rect.zero) {
+      return fallbackLeft;
+    }
+    return anchorRect.right + 10;
+  }
+
+  double _settingsOverlayTop(
+    MediaQueryData media,
+    Rect anchorRect,
+    _SettingsOverlaySection initialSection,
+  ) {
+    if (anchorRect == Rect.zero) {
+      return _screenSpacing + 82;
+    }
+
+    const menuPaddingTop = 7.0;
+    const menuItemOuterHeight = 38.0;
+    final menuHeight = menuPaddingTop * 2 +
+        _settingsContentSections.length * menuItemOuterHeight;
+    const bottomMargin = 12.0;
+    final sectionIndex = _settingsContentSections.indexOf(initialSection);
+    final activeIndex = sectionIndex < 0 ? 0 : sectionIndex;
+    final preferredTop =
+        anchorRect.top - menuPaddingTop - activeIndex * menuItemOuterHeight;
+    final maxTop = media.size.height - menuHeight - bottomMargin;
+    if (maxTop <= _screenSpacing) {
+      return _screenSpacing;
+    }
+    return preferredTop.clamp(_screenSpacing, maxTop).toDouble();
   }
 }
 
@@ -347,6 +537,1474 @@ class _WorkspaceBackdropPainter extends CustomPainter {
   }
 }
 
+enum _SettingsOverlaySection {
+  menu,
+  language,
+  currencies,
+  theme,
+  font,
+  colors,
+  services,
+}
+
+_SettingsOverlaySection _settingsSectionFromId(String sectionId) {
+  return switch (sectionId) {
+    settingsSectionLanguageId => _SettingsOverlaySection.language,
+    settingsSectionCurrenciesId => _SettingsOverlaySection.currencies,
+    settingsSectionThemeId => _SettingsOverlaySection.theme,
+    settingsSectionFontId => _SettingsOverlaySection.font,
+    settingsSectionColorsId => _SettingsOverlaySection.colors,
+    settingsSectionServicesId => _SettingsOverlaySection.services,
+    _ => _SettingsOverlaySection.menu,
+  };
+}
+
+class _SettingsTopOverlay extends StatefulWidget {
+  const _SettingsTopOverlay({
+    this.initialSection = _SettingsOverlaySection.menu,
+    this.sideAligned = false,
+    this.cascade = false,
+    this.sideLeft = 0,
+    this.sideTop = 14,
+    required this.themeMode,
+    required this.onThemeModeChanged,
+    required this.portfolioDisplayCurrency,
+    required this.portfolioAmountUnit,
+    required this.appLanguage,
+    required this.fontFamily,
+    required this.onFontFamilyChanged,
+    required this.primaryColor,
+    required this.onPrimaryColorChanged,
+  });
+
+  final _SettingsOverlaySection initialSection;
+  final bool sideAligned;
+  final bool cascade;
+  final double sideLeft;
+  final double sideTop;
+  final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueNotifier<String> portfolioDisplayCurrency;
+  final ValueNotifier<PortfolioAmountUnit> portfolioAmountUnit;
+  final ValueNotifier<AppLanguage> appLanguage;
+  final String fontFamily;
+  final ValueChanged<String> onFontFamilyChanged;
+  final Color primaryColor;
+  final ValueChanged<Color> onPrimaryColorChanged;
+
+  @override
+  State<_SettingsTopOverlay> createState() => _SettingsTopOverlayState();
+}
+
+class _SettingsTopOverlayState extends State<_SettingsTopOverlay> {
+  late _SettingsOverlaySection _section;
+  _SettingsOverlaySection? _activeMenuSection;
+  late ThemeMode _themeMode = widget.themeMode;
+  late String _fontFamily = widget.fontFamily;
+  late Color _primaryColor = widget.primaryColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _section = widget.initialSection;
+    if (_section != _SettingsOverlaySection.menu) {
+      _activeMenuSection = _section;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final isMenu = _section == _SettingsOverlaySection.menu;
+    if (widget.cascade && widget.sideAligned) {
+      return _buildCascadeLayout(media);
+    }
+
+    final maxWidth = media.size.width - 24;
+    final targetWidth = isMenu ? 340.0 : 540.0;
+    final width = targetWidth > maxWidth ? maxWidth : targetWidth;
+
+    return SafeArea(
+      child: Material(
+        color: Colors.transparent,
+        child: Align(
+          alignment:
+              widget.sideAligned ? Alignment.topLeft : Alignment.topCenter,
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: widget.sideAligned ? widget.sideLeft : 0,
+              top: widget.sideAligned ? widget.sideTop : 14,
+            ),
+            child: SizedBox(
+              width: width,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 170),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, -0.04),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: isMenu ? _buildMenuPanel() : _buildSectionPanel(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCascadeLayout(MediaQueryData media) {
+    const menuWidth = 220.0;
+    const gap = 8.0;
+    const margin = 12.0;
+    final hasContentPanel = _section != _SettingsOverlaySection.menu;
+    final menuTop = _settingsMenuTop(media);
+    final availableWidth = media.size.width - widget.sideLeft - 12;
+    final contentWidth = _settingsPanelWidth(availableWidth - menuWidth - gap);
+    final contentTop =
+        hasContentPanel ? _cascadePanelTop(media, menuTop) : menuTop;
+    final availablePanelHeight = media.size.height - contentTop - margin;
+    final maxBodyHeight = hasContentPanel
+        ? (availablePanelHeight - 72).clamp(90.0, 460.0).toDouble()
+        : null;
+
+    return Material(
+      color: Colors.transparent,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => Navigator.of(context).maybePop(),
+            ),
+          ),
+          Positioned(
+            left: widget.sideLeft,
+            top: menuTop,
+            width: menuWidth,
+            child: _SettingsCascadeMenu(
+              activeSection: _section,
+              onSelected: _showSection,
+            ),
+          ),
+          if (hasContentPanel)
+            Positioned(
+              left: widget.sideLeft + menuWidth + gap,
+              top: contentTop,
+              width: contentWidth,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 150),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.025, 0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _buildSectionPanel(
+                  showBack: false,
+                  maxBodyHeight: maxBodyHeight,
+                  onClose: _closeCascadeSection,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  double _settingsMenuTop(MediaQueryData media) {
+    const margin = 12.0;
+    final menuHeight = _settingsCascadeMenuHeight();
+    final maxTop = media.size.height - menuHeight - margin;
+    if (maxTop <= margin) {
+      return margin;
+    }
+    return widget.sideTop.clamp(margin, maxTop).toDouble();
+  }
+
+  double _cascadePanelTop(MediaQueryData media, double menuTop) {
+    const margin = 12.0;
+    final activeRowTop = menuTop + _settingsSectionRowTop(_section);
+    final estimatedHeight = _settingsPanelEstimatedHeight(_section)
+        .clamp(180.0, media.size.height - margin * 2)
+        .toDouble();
+    final maxTop = media.size.height - estimatedHeight - margin;
+    if (maxTop <= margin) {
+      return margin;
+    }
+    return activeRowTop.clamp(margin, maxTop).toDouble();
+  }
+
+  double _settingsSectionRowTop(_SettingsOverlaySection section) {
+    const menuPaddingTop = 7.0;
+    const menuItemOuterHeight = 38.0;
+    final sectionIndex = _settingsContentSections.indexOf(section);
+    if (sectionIndex <= 0) {
+      return menuPaddingTop;
+    }
+    return menuPaddingTop + sectionIndex * menuItemOuterHeight;
+  }
+
+  double _settingsCascadeMenuHeight() {
+    const menuPaddingTop = 7.0;
+    const menuItemOuterHeight = 38.0;
+    return menuPaddingTop * 2 +
+        _settingsContentSections.length * menuItemOuterHeight;
+  }
+
+  double _settingsPanelEstimatedHeight(_SettingsOverlaySection section) {
+    return switch (section) {
+      _SettingsOverlaySection.language => 190,
+      _SettingsOverlaySection.currencies => 320,
+      _SettingsOverlaySection.theme => 230,
+      _SettingsOverlaySection.font => 315,
+      _SettingsOverlaySection.colors => 250,
+      _SettingsOverlaySection.services => 330,
+      _SettingsOverlaySection.menu => 220,
+    };
+  }
+
+  double _settingsPanelWidth(double availableWidth) {
+    return switch (_section) {
+      _SettingsOverlaySection.currencies =>
+        availableWidth.clamp(236.0, 260.0).toDouble(),
+      _SettingsOverlaySection.font =>
+        availableWidth.clamp(250.0, 270.0).toDouble(),
+      _SettingsOverlaySection.services =>
+        availableWidth.clamp(250.0, 270.0).toDouble(),
+      _ => availableWidth.clamp(236.0, 260.0).toDouble(),
+    };
+  }
+
+  Widget _buildMenuPanel() {
+    final primary = Theme.of(context).colorScheme.primary;
+    return _SettingsOverlayCard(
+      key: const ValueKey<String>('settings-menu'),
+      title: 'Paramètres',
+      subtitle: 'Choisir une rubrique',
+      icon: CupertinoIcons.slider_horizontal_3,
+      onClose: () => Navigator.of(context).maybePop(),
+      child: Column(
+        children: [
+          _SettingsMenuButton(
+            title: 'Langue',
+            icon: CupertinoIcons.globe,
+            color: primary,
+            selected: _activeMenuSection == _SettingsOverlaySection.language,
+            onTap: () => _showSection(_SettingsOverlaySection.language),
+          ),
+          _SettingsMenuButton(
+            title: 'Devises',
+            icon: CupertinoIcons.creditcard_fill,
+            color: primary,
+            selected: _activeMenuSection == _SettingsOverlaySection.currencies,
+            onTap: () => _showSection(_SettingsOverlaySection.currencies),
+          ),
+          _SettingsMenuButton(
+            title: 'Thème Mode',
+            icon: CupertinoIcons.circle_lefthalf_fill,
+            color: primary,
+            selected: _activeMenuSection == _SettingsOverlaySection.theme,
+            onTap: () => _showSection(_SettingsOverlaySection.theme),
+          ),
+          _SettingsMenuButton(
+            title: 'Font de police',
+            icon: CupertinoIcons.textformat_size,
+            color: primary,
+            selected: _activeMenuSection == _SettingsOverlaySection.font,
+            onTap: () => _showSection(_SettingsOverlaySection.font),
+          ),
+          _SettingsMenuButton(
+            title: 'Couleurs principales',
+            icon: CupertinoIcons.paintbrush_fill,
+            color: primary,
+            selected: _activeMenuSection == _SettingsOverlaySection.colors,
+            onTap: () => _showSection(_SettingsOverlaySection.colors),
+          ),
+          _SettingsMenuButton(
+            title: 'Services',
+            icon: CupertinoIcons.info_circle_fill,
+            color: primary,
+            selected: _activeMenuSection == _SettingsOverlaySection.services,
+            onTap: () => _showSection(_SettingsOverlaySection.services),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionPanel({
+    bool showBack = true,
+    double? maxBodyHeight,
+    VoidCallback? onClose,
+  }) {
+    return _SettingsOverlayCard(
+      key: ValueKey<_SettingsOverlaySection>(_section),
+      title: _sectionTitle(_section),
+      subtitle: _sectionSubtitle(_section),
+      icon: _sectionIcon(_section),
+      onBack:
+          showBack ? () => _showSection(_SettingsOverlaySection.menu) : null,
+      onClose: onClose ?? () => Navigator.of(context).maybePop(),
+      maxBodyHeight: maxBodyHeight,
+      child: _sectionContent(),
+    );
+  }
+
+  Widget _sectionContent() {
+    return switch (_section) {
+      _SettingsOverlaySection.language => _buildLanguageSection(),
+      _SettingsOverlaySection.currencies => _buildCurrenciesSection(),
+      _SettingsOverlaySection.theme => _buildThemeSection(),
+      _SettingsOverlaySection.font => _buildFontSection(),
+      _SettingsOverlaySection.colors => _buildColorsSection(),
+      _SettingsOverlaySection.services => _buildServicesSection(),
+      _SettingsOverlaySection.menu => const SizedBox.shrink(),
+    };
+  }
+
+  Widget _buildLanguageSection() {
+    return ValueListenableBuilder<AppLanguage>(
+      valueListenable: widget.appLanguage,
+      builder: (context, selectedLanguage, _) {
+        return _SettingsOptionGrid<AppLanguage>(
+          selected: selectedLanguage,
+          onChanged: (value) => widget.appLanguage.value = value,
+          options: const [
+            _SettingsOption(
+              value: AppLanguage.francais,
+              title: 'Français',
+              description: 'Interface, libellés et formats en français.',
+              icon: CupertinoIcons.flag_fill,
+              flag: 'FR',
+            ),
+            _SettingsOption(
+              value: AppLanguage.anglais,
+              title: 'English',
+              description: 'Interface labels and formats in English.',
+              icon: CupertinoIcons.flag_fill,
+              flag: 'GB',
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCurrenciesSection() {
+    return ValueListenableBuilder<String>(
+      valueListenable: widget.portfolioDisplayCurrency,
+      builder: (context, selectedCurrency, _) {
+        return _SettingsCurrencyOptionList(
+          selectedCurrency: normalizeCurrencyCode(selectedCurrency),
+          onChanged: (value) {
+            widget.portfolioDisplayCurrency.value =
+                normalizeCurrencyCode(value);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeSection() {
+    return _SettingsOptionGrid<ThemeMode>(
+      selected: _themeMode,
+      onChanged: (value) {
+        setState(() => _themeMode = value);
+        widget.onThemeModeChanged(value);
+      },
+      options: const [
+        _SettingsOption(
+          value: ThemeMode.light,
+          title: 'Clair',
+          description: 'Interface lumineuse.',
+          icon: CupertinoIcons.sun_max_fill,
+        ),
+        _SettingsOption(
+          value: ThemeMode.dark,
+          title: 'Sombre',
+          description: 'Interface sombre.',
+          icon: CupertinoIcons.moon_fill,
+        ),
+        _SettingsOption(
+          value: ThemeMode.system,
+          title: 'Système',
+          description: 'Suit la machine.',
+          icon: CupertinoIcons.device_desktop,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFontSection() {
+    return _SettingsOptionGrid<String>(
+      selected: _fontFamily,
+      onChanged: (value) {
+        setState(() => _fontFamily = value);
+        widget.onFontFamilyChanged(value);
+      },
+      options: [
+        for (final family in AppTheme.supportedFontFamilies)
+          _SettingsOption<String>(
+            value: family,
+            title: family,
+            description: _fontDescription(family),
+            icon: CupertinoIcons.textformat_alt,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildColorsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final choice in _settingsAccentColors)
+          _SettingsColorTile(
+            label: choice.label,
+            color: choice.color,
+            selected: _primaryColor.toARGB32() == choice.color.toARGB32(),
+            onTap: () {
+              setState(() => _primaryColor = choice.color);
+              widget.onPrimaryColorChanged(choice.color);
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildServicesSection() {
+    return const Column(
+      children: [
+        _SettingsServiceTile(
+          icon: CupertinoIcons.envelope_fill,
+          title: 'Nous contacter',
+        ),
+        _SettingsServiceTile(
+          icon: CupertinoIcons.info_circle_fill,
+          title: 'À propos de nous',
+        ),
+        _SettingsServiceTile(
+          icon: CupertinoIcons.lock_shield_fill,
+          title: 'Sécurité & confidentialité',
+        ),
+      ],
+    );
+  }
+
+  void _showSection(_SettingsOverlaySection section) {
+    setState(() {
+      _section = section;
+      if (section != _SettingsOverlaySection.menu) {
+        _activeMenuSection = section;
+      }
+    });
+  }
+
+  void _closeCascadeSection() {
+    setState(() => _section = _SettingsOverlaySection.menu);
+  }
+}
+
+const List<_SettingsOverlaySection> _settingsContentSections = [
+  _SettingsOverlaySection.language,
+  _SettingsOverlaySection.currencies,
+  _SettingsOverlaySection.theme,
+  _SettingsOverlaySection.font,
+  _SettingsOverlaySection.colors,
+  _SettingsOverlaySection.services,
+];
+
+class _SettingsCascadeMenu extends StatelessWidget {
+  const _SettingsCascadeMenu({
+    required this.activeSection,
+    required this.onSelected,
+  });
+
+  final _SettingsOverlaySection activeSection;
+  final ValueChanged<_SettingsOverlaySection> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor =
+        isDark ? const Color(0xFF263856) : const Color(0xFFDDE6F4);
+
+    return Container(
+      width: 220,
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F1B31) : Colors.white,
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.14),
+            blurRadius: 18,
+            offset: const Offset(0, 9),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final section in _settingsContentSections)
+            _SettingsCascadeMenuItem(
+              section: section,
+              selected: section == activeSection,
+              onTap: () => onSelected(section),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsCascadeMenuItem extends StatelessWidget {
+  const _SettingsCascadeMenuItem({
+    required this.section,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _SettingsOverlaySection section;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final muted = isDark ? const Color(0xFF9FB2D6) : const Color(0xFF71829F);
+    final textColor = selected
+        ? Colors.white
+        : (isDark ? const Color(0xFFB8C8E8) : const Color(0xFF60708B));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 130),
+            curve: Curves.easeOutCubic,
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: selected ? primary : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppTheme.radius),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _sectionIcon(section),
+                  size: 16,
+                  color: selected ? Colors.white : muted,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _sectionTitle(section),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 10.4,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                      height: 1,
+                    ),
+                  ),
+                ),
+                if (selected) ...[
+                  const SizedBox(width: 6),
+                  const Icon(
+                    CupertinoIcons.check_mark,
+                    size: 13,
+                    color: Colors.white,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsOverlayCard extends StatelessWidget {
+  const _SettingsOverlayCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.child,
+    this.onBack,
+    required this.onClose,
+    this.maxBodyHeight,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Widget child;
+  final VoidCallback? onBack;
+  final VoidCallback onClose;
+  final double? maxBodyHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final text = isDark ? const Color(0xFFF2F6FF) : AppTheme.text;
+    final muted = isDark ? const Color(0xFF9FB0D0) : AppTheme.muted;
+    final body = maxBodyHeight == null
+        ? child
+        : ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxBodyHeight!),
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: child,
+            ),
+          );
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F1B31) : Colors.white,
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(
+          color: isDark ? const Color(0xFF22304B) : const Color(0xFFDDE6F4),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.34 : 0.16),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              if (onBack != null) ...[
+                _SettingsIconButton(
+                  icon: CupertinoIcons.chevron_left,
+                  onTap: onBack!,
+                ),
+                const SizedBox(width: 6),
+              ],
+              Container(
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: Icon(icon, color: primary, size: 17),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: text,
+                        fontSize: 14.2,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: muted,
+                        fontSize: 10.2,
+                        fontWeight: FontWeight.w600,
+                        height: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _SettingsIconButton(
+                icon: CupertinoIcons.xmark,
+                onTap: onClose,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          body,
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsIconButton extends StatelessWidget {
+  const _SettingsIconButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(2),
+        child: Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(
+              color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
+            ),
+          ),
+          child: Icon(
+            icon,
+            color: isDark ? const Color(0xFFE2E8F0) : AppTheme.muted,
+            size: 13,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsMenuButton extends StatelessWidget {
+  const _SettingsMenuButton({
+    required this.title,
+    required this.icon,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final IconData icon;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFF2F6FF) : AppTheme.text;
+    final mutedColor = isDark ? const Color(0xFF9FB0D0) : AppTheme.muted;
+    final bgColor = selected
+        ? color
+        : (isDark ? const Color(0xFF14233D) : const Color(0xFFF8FAFF));
+    final bdColor = selected
+        ? color
+        : (isDark ? const Color(0xFF253653) : const Color(0xFFE4EAF6));
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(2),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            curve: Curves.easeOutCubic,
+            height: 46,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(2),
+              border: Border.all(color: bdColor),
+              boxShadow: [
+                if (selected)
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.16),
+                    blurRadius: 12,
+                    offset: const Offset(0, 5),
+                  ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : color.withValues(alpha: isDark ? 0.18 : 0.10),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: selected ? Colors.white : color,
+                    size: 17,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: selected ? Colors.white : textColor,
+                      fontSize: 12.2,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 120),
+                  child: Icon(
+                    selected
+                        ? CupertinoIcons.check_mark
+                        : CupertinoIcons.chevron_right,
+                    key: ValueKey<bool>(selected),
+                    color: selected ? Colors.white : mutedColor,
+                    size: selected ? 15 : 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsOption<T> {
+  const _SettingsOption({
+    required this.value,
+    required this.title,
+    required this.description,
+    required this.icon,
+    this.flag,
+    this.currencySymbol,
+  });
+
+  final T value;
+  final String title;
+  final String description;
+  final IconData icon;
+  final String? flag;
+  final String? currencySymbol;
+}
+
+class _SettingsOptionGrid<T> extends StatelessWidget {
+  const _SettingsOptionGrid({
+    required this.options,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<_SettingsOption<T>> options;
+  final T selected;
+  final ValueChanged<T> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final option in options)
+          _SettingsOptionTile<T>(
+            option: option,
+            selected: option.value == selected,
+            onTap: () => onChanged(option.value),
+          ),
+      ],
+    );
+  }
+}
+
+class _SettingsOptionTile<T> extends StatelessWidget {
+  const _SettingsOptionTile({
+    required this.option,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _SettingsOption<T> option;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final text = isDark ? const Color(0xFFF2F6FF) : AppTheme.text;
+    final selectedBg =
+        isDark ? const Color(0xFF16233A) : const Color(0xFFF4F6FA);
+    final flag = option.flag;
+    final currencySymbol = option.currencySymbol;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(2),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: selected ? selectedBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: flag != null ? Colors.transparent : primary,
+                  shape: flag != null ? BoxShape.rectangle : BoxShape.circle,
+                ),
+                child: flag != null
+                    ? _SettingsCountryFlag(code: flag)
+                    : currencySymbol != null
+                        ? _SettingsCurrencySymbol(
+                            symbol: currencySymbol,
+                            selected: selected,
+                          )
+                        : Icon(
+                            option.icon,
+                            color: Colors.white,
+                            size: 13,
+                          ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  option.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 12.8,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsCountryFlag extends StatelessWidget {
+  const _SettingsCountryFlag({required this.code});
+
+  final String code;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: 24,
+      height: 18,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A3A58) : const Color(0xFFD5DCEA),
+          width: 0.7,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(1.4),
+        child: CustomPaint(
+          painter: _SettingsCountryFlagPainter(code),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsCurrencySymbol extends StatelessWidget {
+  const _SettingsCurrencySymbol({
+    required this.symbol,
+    required this.selected,
+  });
+
+  final String symbol;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = selected
+        ? primary
+        : (isDark ? const Color(0xFF9FB0D0) : const Color(0xFF64748B));
+
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        symbol,
+        maxLines: 1,
+        style: TextStyle(
+          color: color,
+          fontSize: symbol.length > 1 ? 9.2 : 14,
+          fontWeight: FontWeight.w900,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsCurrencyOptionList extends StatelessWidget {
+  const _SettingsCurrencyOptionList({
+    required this.selectedCurrency,
+    required this.onChanged,
+  });
+
+  final String selectedCurrency;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SettingsCurrencyOptionRow(
+          code: 'XOF',
+          label: 'XOF - FCFA BCEAO',
+          symbol: 'CFA',
+          color: const Color(0xFF12BBD2),
+          selected: selectedCurrency == 'XOF',
+          onTap: () => onChanged('XOF'),
+        ),
+        _SettingsCurrencyOptionRow(
+          code: 'EUR',
+          label: 'EUR - Euro',
+          symbol: '€',
+          color: const Color(0xFF2563EB),
+          selected: selectedCurrency == 'EUR',
+          onTap: () => onChanged('EUR'),
+        ),
+        _SettingsCurrencyOptionRow(
+          code: 'USD',
+          label: 'USD - Dollar américain',
+          symbol: r'$',
+          color: const Color(0xFF10B981),
+          selected: selectedCurrency == 'USD',
+          onTap: () => onChanged('USD'),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsCurrencyOptionRow extends StatelessWidget {
+  const _SettingsCurrencyOptionRow({
+    required this.code,
+    required this.label,
+    required this.symbol,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String code;
+  final String label;
+  final String symbol;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final text = isDark ? const Color(0xFFF2F6FF) : AppTheme.text;
+    final selectedBg =
+        isDark ? const Color(0xFF16233A) : const Color(0xFFF4F6FA);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(2),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 130),
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: selected ? selectedBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  symbol,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: symbol.length > 1 ? 7.9 : 12,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 12.8,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsCountryFlagPainter extends CustomPainter {
+  const _SettingsCountryFlagPainter(this.code);
+
+  final String code;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final normalized = code.toUpperCase();
+    if (normalized == 'GB') {
+      _paintUnitedKingdom(canvas, size);
+      return;
+    }
+    _paintFrance(canvas, size);
+  }
+
+  void _paintFrance(Canvas canvas, Size size) {
+    final third = size.width / 3;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, third, size.height),
+      Paint()..color = const Color(0xFF1F4E9D),
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(third, 0, third, size.height),
+      Paint()..color = Colors.white,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(third * 2, 0, third, size.height),
+      Paint()..color = const Color(0xFFE23A45),
+    );
+  }
+
+  void _paintUnitedKingdom(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(rect, Paint()..color = const Color(0xFF1E3D7A));
+
+    final whiteDiagonal = Paint()
+      ..color = Colors.white
+      ..strokeWidth = size.height * 0.34
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square;
+    canvas.drawLine(
+        Offset.zero, Offset(size.width, size.height), whiteDiagonal);
+    canvas.drawLine(
+      Offset(size.width, 0),
+      Offset(0, size.height),
+      whiteDiagonal,
+    );
+
+    final redDiagonal = Paint()
+      ..color = const Color(0xFFE43D4B)
+      ..strokeWidth = size.height * 0.16
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square;
+    canvas.drawLine(Offset.zero, Offset(size.width, size.height), redDiagonal);
+    canvas.drawLine(
+      Offset(size.width, 0),
+      Offset(0, size.height),
+      redDiagonal,
+    );
+
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, size.height / 2),
+        width: size.width,
+        height: size.height * 0.40,
+      ),
+      Paint()..color = Colors.white,
+    );
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, size.height / 2),
+        width: size.width * 0.28,
+        height: size.height,
+      ),
+      Paint()..color = Colors.white,
+    );
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, size.height / 2),
+        width: size.width,
+        height: size.height * 0.20,
+      ),
+      Paint()..color = const Color(0xFFE43D4B),
+    );
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(size.width / 2, size.height / 2),
+        width: size.width * 0.14,
+        height: size.height,
+      ),
+      Paint()..color = const Color(0xFFE43D4B),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SettingsCountryFlagPainter oldDelegate) {
+    return oldDelegate.code != code;
+  }
+}
+
+class _SettingsAccentChoice {
+  const _SettingsAccentChoice(this.label, this.color);
+
+  final String label;
+  final Color color;
+}
+
+const List<_SettingsAccentChoice> _settingsAccentColors = [
+  _SettingsAccentChoice('Bleu finance', Color(0xFF2563EB)),
+  _SettingsAccentChoice('Indigo', Color(0xFF4F46E5)),
+  _SettingsAccentChoice('Émeraude', Color(0xFF059669)),
+  _SettingsAccentChoice('Cyan', Color(0xFF0891B2)),
+  _SettingsAccentChoice('Violet', Color(0xFF7C3AED)),
+  _SettingsAccentChoice('Crimson', Color(0xFFE11D48)),
+];
+
+class _SettingsColorTile extends StatelessWidget {
+  const _SettingsColorTile({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final text = isDark ? const Color(0xFFF2F6FF) : AppTheme.text;
+    final selectedBg =
+        isDark ? const Color(0xFF16233A) : const Color(0xFFF4F6FA);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(2),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: selected ? selectedBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 12.8,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsServiceTile extends StatelessWidget {
+  const _SettingsServiceTile({
+    required this.icon,
+    required this.title,
+  });
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final text = isDark ? const Color(0xFFF2F6FF) : AppTheme.text;
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(2)),
+        child: Row(
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: primary,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Colors.white, size: 13),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: text,
+                  fontSize: 12.8,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _sectionTitle(_SettingsOverlaySection section) {
+  return switch (section) {
+    _SettingsOverlaySection.language => 'Langue',
+    _SettingsOverlaySection.currencies => 'Devises',
+    _SettingsOverlaySection.theme => 'Thème Mode',
+    _SettingsOverlaySection.font => 'Font de police',
+    _SettingsOverlaySection.colors => 'Couleurs principales',
+    _SettingsOverlaySection.services => 'Services',
+    _SettingsOverlaySection.menu => 'Paramètres',
+  };
+}
+
+String _sectionSubtitle(_SettingsOverlaySection section) {
+  return switch (section) {
+    _SettingsOverlaySection.language => 'Choisir la langue de travail',
+    _SettingsOverlaySection.currencies => 'Devise d’affichage',
+    _SettingsOverlaySection.theme => 'Choisir le mode visuel',
+    _SettingsOverlaySection.font => 'Choisir la police de l’interface',
+    _SettingsOverlaySection.colors => 'Couleur de sélection et accents',
+    _SettingsOverlaySection.services => 'Informations essentielles',
+    _SettingsOverlaySection.menu => 'Choisir une rubrique',
+  };
+}
+
+IconData _sectionIcon(_SettingsOverlaySection section) {
+  return switch (section) {
+    _SettingsOverlaySection.language => CupertinoIcons.globe,
+    _SettingsOverlaySection.currencies => CupertinoIcons.creditcard,
+    _SettingsOverlaySection.theme => CupertinoIcons.circle_lefthalf_fill,
+    _SettingsOverlaySection.font => CupertinoIcons.textformat_size,
+    _SettingsOverlaySection.colors => CupertinoIcons.paintbrush,
+    _SettingsOverlaySection.services => CupertinoIcons.info_circle,
+    _SettingsOverlaySection.menu => CupertinoIcons.slider_horizontal_3,
+  };
+}
+
+String _fontDescription(String family) {
+  return switch (family) {
+    'Roboto Flex' => 'Standard moderne.',
+    'Aptos' => 'Bureautique premium.',
+    'IBM Plex Sans' => 'Enterprise analytique.',
+    'General Sans' => 'SaaS contemporain.',
+    'Nunito Sans' => 'Lecture douce.',
+    _ => 'Police disponible.',
+  };
+}
+
 IconData _iconForModule(AppModule module) {
   return module.icon;
 }
@@ -354,20 +2012,20 @@ IconData _iconForModule(AppModule module) {
 /// Barre supérieure de l'espace de travail.
 class _WorkspaceTopBar extends StatelessWidget {
   const _WorkspaceTopBar({
-    required this.themeMode,
-    required this.onThemeModeChanged,
     required this.selectedModule,
     required this.onReturnToWelcome,
     required this.portfolioDisplayCurrency,
-    required this.appLanguage,
+    required this.portfolioAmountUnit,
+    required this.notifications,
+    required this.onNotificationSelected,
   });
 
-  final ThemeMode themeMode;
-  final ValueChanged<ThemeMode> onThemeModeChanged;
   final AppModule selectedModule;
   final VoidCallback onReturnToWelcome;
   final ValueNotifier<String> portfolioDisplayCurrency;
-  final ValueNotifier<AppLanguage> appLanguage;
+  final ValueNotifier<PortfolioAmountUnit> portfolioAmountUnit;
+  final List<AppShellNotification> notifications;
+  final ValueChanged<AppShellNotification> onNotificationSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -405,27 +2063,24 @@ class _WorkspaceTopBar extends StatelessWidget {
               const Spacer(),
               _HeaderIconButton(
                 icon: CupertinoIcons.circle_grid_3x3_fill,
-                accent: const Color(0xFF2563EB),
+                accent: Theme.of(context).colorScheme.primary,
                 onPressed: onReturnToWelcome,
               ),
               const SizedBox(width: 6),
               if (showHeaderStatus) ...[
-                const _HeaderIconButton(
+                _NotificationBellButton(
                   icon: CupertinoIcons.bell_fill,
-                  accent: Color(0xFF2563EB),
+                  notifications: notifications,
+                  onNotificationSelected: onNotificationSelected,
                 ),
                 const SizedBox(width: 6),
               ],
+              _PortfolioAmountUnitPicker(
+                  amountUnitListenable: portfolioAmountUnit),
+              const SizedBox(width: 6),
               _PortfolioCurrencyPicker(
                 selectedCurrencyListenable: portfolioDisplayCurrency,
               ),
-              const SizedBox(width: 6),
-              _ThemeModePill(
-                themeMode: themeMode,
-                onThemeModeChanged: onThemeModeChanged,
-              ),
-              const SizedBox(width: 6),
-              _LanguagePicker(appLanguage: appLanguage),
               if (showActionButtons) ...[
                 // Les actions secondaires et primaires ne s'affichent que sur les écrans larges.
                 const SizedBox(width: 8),
@@ -523,6 +2178,8 @@ class _DesktopSidebarFrame extends StatelessWidget {
     required this.width,
     required this.selectedModule,
     required this.onSelectModule,
+    this.onSelectSettingsSection,
+    this.selectedSettingsSectionId,
     this.showBrand = false,
     this.showToggleButton = false,
     this.onToggleSidebar,
@@ -532,6 +2189,8 @@ class _DesktopSidebarFrame extends StatelessWidget {
   final double width;
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
+  final ValueChanged<SettingsSectionSelection>? onSelectSettingsSection;
+  final String? selectedSettingsSectionId;
   final bool showBrand;
   final bool showToggleButton;
   final VoidCallback? onToggleSidebar;
@@ -545,6 +2204,8 @@ class _DesktopSidebarFrame extends StatelessWidget {
           child: SidebarNavigation(
             selectedModule: selectedModule,
             onSelectModule: onSelectModule,
+            onSelectSettingsSection: onSelectSettingsSection,
+            selectedSettingsSectionId: selectedSettingsSectionId,
             compact: compact,
             showBrand: showBrand,
             contentTopInset: 0,
@@ -646,77 +2307,159 @@ class _SidebarToggleButton extends StatelessWidget {
   }
 }
 
-/// Sélecteur de thème affiché sous forme de pill.
-class _ThemeModePill extends StatelessWidget {
-  const _ThemeModePill({
-    required this.themeMode,
-    required this.onThemeModeChanged,
-  });
+class _PortfolioAmountUnitPicker extends StatelessWidget {
+  const _PortfolioAmountUnitPicker({required this.amountUnitListenable});
 
-  final ThemeMode themeMode;
-  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueNotifier<PortfolioAmountUnit> amountUnitListenable;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isDarkMode = themeMode == ThemeMode.dark;
-    final nextMode = isDarkMode ? ThemeMode.light : ThemeMode.dark;
-    final icon =
-        isDarkMode ? Icons.dark_mode_rounded : Icons.light_mode_rounded;
-    final iconColor =
-        isDarkMode ? const Color(0xFFF4F7FF) : const Color(0xFF234A84);
-    final backgroundColor =
-        isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD);
-    final borderColor =
-        isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => onThemeModeChanged(nextMode),
-        borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          width: _workspaceTopBarControlHeight,
-          height: _workspaceTopBarControlHeight,
-          decoration: BoxDecoration(
-            color: backgroundColor,
+    return ValueListenableBuilder<PortfolioAmountUnit>(
+      valueListenable: amountUnitListenable,
+      builder: (context, selectedUnit, _) {
+        return PopupMenuButton<PortfolioAmountUnit>(
+          tooltip: '',
+          padding: EdgeInsets.zero,
+          onSelected: (value) {
+            if (value == selectedUnit) return;
+            amountUnitListenable.value = value;
+          },
+          offset: const Offset(0, _workspaceTopBarControlHeight + 8),
+          color: isDark ? const Color(0xFF14233D) : Colors.white,
+          shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
-            border: Border.all(color: borderColor, width: 0.8),
+            side: BorderSide(
+              color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
+            ),
           ),
-          child: Center(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeOutCubic,
-              transitionBuilder: (child, animation) {
-                return FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(
-                    scale: Tween<double>(
-                      begin: 0.88,
-                      end: 1,
-                    ).animate(animation),
-                    child: child,
+          itemBuilder: (context) => [
+            _buildAmountUnitMenuItem(
+              unit: PortfolioAmountUnit.million,
+              title: 'Million',
+              detail: 'M',
+              selected: selectedUnit == PortfolioAmountUnit.million,
+              isDark: isDark,
+              accentColor: Theme.of(context).colorScheme.primary,
+            ),
+            _buildAmountUnitMenuItem(
+              unit: PortfolioAmountUnit.billion,
+              title: 'Milliard',
+              detail: 'Md',
+              selected: selectedUnit == PortfolioAmountUnit.billion,
+              isDark: isDark,
+              accentColor: Theme.of(context).colorScheme.primary,
+            ),
+          ],
+          child: Container(
+            height: _workspaceTopBarControlHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 7),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
+              borderRadius:
+                  BorderRadius.circular(_workspaceTopBarControlRadius),
+              border: Border.all(
+                color:
+                    isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 15,
+                  height: 15,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius:
+                        BorderRadius.circular(_workspaceTopBarControlRadius),
                   ),
-                );
-              },
-              child: Icon(
-                icon,
-                key: ValueKey<bool>(isDarkMode),
-                size: 13,
-                color: iconColor,
+                  child: const Icon(
+                    CupertinoIcons.number,
+                    size: 9,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  selectedUnit.label,
+                  style: TextStyle(
+                    color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
+                    fontSize: 9.8,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 12,
+                  color: isDark ? const Color(0xFFD7E3FA) : AppTheme.muted,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  PopupMenuItem<PortfolioAmountUnit> _buildAmountUnitMenuItem({
+    required PortfolioAmountUnit unit,
+    required String title,
+    required String detail,
+    required bool selected,
+    required bool isDark,
+    required Color accentColor,
+  }) {
+    final accent = selected ? accentColor : AppTheme.muted;
+    return PopupMenuItem<PortfolioAmountUnit>(
+      value: unit,
+      height: 38,
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: selected ? 0.14 : 0.08),
+              borderRadius:
+                  BorderRadius.circular(_workspaceTopBarControlRadius),
+            ),
+            child: Text(
+              detail,
+              style: TextStyle(
+                color: accent,
+                fontSize: detail.length > 1 ? 8.6 : 9.6,
+                fontWeight: FontWeight.w800,
+                height: 1,
               ),
             ),
           ),
-        ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
+                fontSize: 11,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                height: 1,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Sélecteur de langue compact affiché dans la top bar.
+/// Sélecteur de devise compact affiché dans la top bar.
 class _PortfolioCurrencyPicker extends StatelessWidget {
   const _PortfolioCurrencyPicker({required this.selectedCurrencyListenable});
 
@@ -899,257 +2642,6 @@ class _CurrencyBadge extends StatelessWidget {
   }
 }
 
-/// Sélecteur de langue compact affiché dans la top bar.
-class _LanguagePicker extends StatelessWidget {
-  const _LanguagePicker({required this.appLanguage});
-
-  final ValueNotifier<AppLanguage> appLanguage;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return ValueListenableBuilder<AppLanguage>(
-      valueListenable: appLanguage,
-      builder: (context, selectedLanguage, _) {
-        return PopupMenuButton<AppLanguage>(
-          tooltip: '',
-          padding: EdgeInsets.zero,
-          onSelected: (value) => appLanguage.value = value,
-          offset: const Offset(0, _workspaceTopBarControlHeight + 8),
-          color: isDark ? const Color(0xFF14233D) : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
-            side: BorderSide(
-              color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
-            ),
-          ),
-          itemBuilder: (context) => [
-            _buildLanguageMenuItem(
-              language: AppLanguage.francais,
-              isDark: isDark,
-            ),
-            _buildLanguageMenuItem(
-              language: AppLanguage.anglais,
-              isDark: isDark,
-            ),
-          ],
-          child: Container(
-            height: _workspaceTopBarControlHeight,
-            padding: const EdgeInsets.symmetric(horizontal: 7),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
-              borderRadius:
-                  BorderRadius.circular(_workspaceTopBarControlRadius),
-              border: Border.all(
-                color:
-                    isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _LanguageFlag(
-                  language: selectedLanguage,
-                  width: 16,
-                  height: 12,
-                  showBorder: false,
-                  radius: _workspaceTopBarControlRadius,
-                ),
-                const SizedBox(width: 5),
-                Text(
-                  selectedLanguage.shortLabel,
-                  style: TextStyle(
-                    color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
-                    fontSize: 9.8,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(width: 3),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  size: 12,
-                  color: isDark ? const Color(0xFFD7E3FA) : AppTheme.muted,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  PopupMenuItem<AppLanguage> _buildLanguageMenuItem({
-    required AppLanguage language,
-    required bool isDark,
-  }) {
-    return PopupMenuItem<AppLanguage>(
-      value: language,
-      height: 36,
-      child: Row(
-        children: [
-          _LanguageFlag(language: language, width: 20, height: 14),
-          const SizedBox(width: 8),
-          Text(
-            language.shortLabel,
-            style: TextStyle(
-              color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
-              fontSize: 11.2,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LanguageFlag extends StatelessWidget {
-  const _LanguageFlag({
-    required this.language,
-    required this.width,
-    required this.height,
-    this.showBorder = true,
-    this.radius = 2,
-  });
-
-  final AppLanguage language;
-  final double width;
-  final double height;
-  final bool showBorder;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: SizedBox(
-        width: width,
-        height: height,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: showBorder
-                ? Border.all(color: const Color(0xFFD7DFEE), width: 0.8)
-                : null,
-            borderRadius: BorderRadius.circular(radius),
-          ),
-          child: switch (language) {
-            AppLanguage.francais =>
-              const CustomPaint(painter: _FrenchFlagPainter()),
-            AppLanguage.anglais =>
-              const CustomPaint(painter: _UnionJackPainter()),
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _FrenchFlagPainter extends CustomPainter {
-  const _FrenchFlagPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final stripeWidth = size.width / 3;
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, stripeWidth, size.height),
-      Paint()..color = const Color(0xFF123A73),
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(stripeWidth, 0, stripeWidth, size.height),
-      Paint()..color = Colors.white,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(stripeWidth * 2, 0, stripeWidth, size.height),
-      Paint()..color = const Color(0xFFD90F2D),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _UnionJackPainter extends CustomPainter {
-  const _UnionJackPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final background = Paint()..color = const Color(0xFF15357A);
-    canvas.drawRect(Offset.zero & size, background);
-
-    final whiteWide = size.height * 0.34;
-    final redWide = size.height * 0.18;
-    final whiteCrossWide = size.height * 0.42;
-    final redCrossWide = size.height * 0.22;
-
-    final whiteDiagonal = Paint()
-      ..color = Colors.white
-      ..strokeWidth = whiteWide
-      ..strokeCap = StrokeCap.square;
-    final redDiagonal = Paint()
-      ..color = const Color(0xFFD90F2D)
-      ..strokeWidth = redWide
-      ..strokeCap = StrokeCap.square;
-
-    canvas.drawLine(
-      const Offset(0, 0),
-      Offset(size.width, size.height),
-      whiteDiagonal,
-    );
-    canvas.drawLine(
-      Offset(size.width, 0),
-      Offset(0, size.height),
-      whiteDiagonal,
-    );
-    canvas.drawLine(
-      const Offset(0, 0),
-      Offset(size.width, size.height),
-      redDiagonal,
-    );
-    canvas.drawLine(Offset(size.width, 0), Offset(0, size.height), redDiagonal);
-
-    final whiteCross = Paint()..color = Colors.white;
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, size.height / 2),
-        width: size.width,
-        height: whiteCrossWide,
-      ),
-      whiteCross,
-    );
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, size.height / 2),
-        width: whiteCrossWide,
-        height: size.height,
-      ),
-      whiteCross,
-    );
-
-    final redCross = Paint()..color = const Color(0xFFD90F2D);
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, size.height / 2),
-        width: size.width,
-        height: redCrossWide,
-      ),
-      redCross,
-    );
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, size.height / 2),
-        width: redCrossWide,
-        height: size.height,
-      ),
-      redCross,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
 class _HeaderIconButton extends StatelessWidget {
   const _HeaderIconButton({
     required this.icon,
@@ -1185,6 +2677,475 @@ class _HeaderIconButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NotificationBellButton extends StatelessWidget {
+  const _NotificationBellButton({
+    required this.icon,
+    required this.notifications,
+    required this.onNotificationSelected,
+  });
+
+  final IconData icon;
+  final List<AppShellNotification> notifications;
+  final ValueChanged<AppShellNotification> onNotificationSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = notifications.where((item) => !item.isRead).length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = isDark ? const Color(0xFFA5B4FC) : const Color(0xFF312E81);
+    final controlColor =
+        isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD);
+    final badgeColor =
+        isDark ? const Color(0xFFEFF4FF) : const Color(0xFF111827);
+    final badgeTextColor =
+        isDark ? const Color(0xFF111827) : const Color(0xFFFFFFFF);
+
+    return PopupMenuButton<void>(
+      tooltip: 'Notifications',
+      position: PopupMenuPosition.under,
+      offset: const Offset(0, 8),
+      padding: EdgeInsets.zero,
+      color: Colors.transparent,
+      elevation: 0,
+      constraints: const BoxConstraints.tightFor(width: 620),
+      itemBuilder: (context) => [
+        PopupMenuItem<void>(
+          enabled: false,
+          padding: EdgeInsets.zero,
+          child: _NotificationsPanel(
+            notifications: notifications,
+            onNotificationSelected: onNotificationSelected,
+          ),
+        ),
+      ],
+      child: Container(
+        width: _workspaceTopBarControlHeight,
+        height: _workspaceTopBarControlHeight,
+        decoration: BoxDecoration(
+          color: controlColor,
+          borderRadius: BorderRadius.circular(_workspaceTopBarControlRadius),
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            SizedBox(
+              width: 22,
+              height: 22,
+              child: Stack(
+                clipBehavior: Clip.none,
+                alignment: Alignment.center,
+                children: [
+                  Icon(icon, size: 18, color: accent),
+                  if (count > 0)
+                    Positioned(
+                      right: -1,
+                      top: -1,
+                      child: Container(
+                        constraints: const BoxConstraints(minWidth: 14),
+                        height: 14,
+                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: badgeColor,
+                          borderRadius: BorderRadius.circular(7),
+                          border: Border.all(color: controlColor, width: 1.1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.20 : 0.16,
+                              ),
+                              blurRadius: 5,
+                              offset: const Offset(0, 1.5),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          count > 99 ? '99+' : '$count',
+                          style: TextStyle(
+                            color: badgeTextColor,
+                            fontSize: 7.6,
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationsPanel extends StatelessWidget {
+  const _NotificationsPanel({
+    required this.notifications,
+    required this.onNotificationSelected,
+  });
+
+  final List<AppShellNotification> notifications;
+  final ValueChanged<AppShellNotification> onNotificationSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final unreadCount = notifications.where((item) => !item.isRead).length;
+
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        width: 620,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F1B31) : Colors.white,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isDark ? const Color(0xFF22304B) : AppTheme.border,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.34 : 0.16),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: const Icon(
+                    CupertinoIcons.bell_fill,
+                    color: AppTheme.accent,
+                    size: 14,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Notifications',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: isDark
+                                  ? const Color(0xFFF2F6FF)
+                                  : AppTheme.text,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                              height: 1,
+                            ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Alertes portefeuille synchronisées',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: isDark
+                                  ? const Color(0xFF9FB0D0)
+                                  : AppTheme.muted,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              height: 1,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                _NotificationCountPill(count: unreadCount),
+              ],
+            ),
+            const SizedBox(height: 9),
+            Divider(
+              height: 1,
+              color: isDark ? const Color(0xFF22304B) : AppTheme.border,
+            ),
+            const SizedBox(height: 8),
+            if (notifications.isEmpty)
+              const SizedBox(
+                height: 64,
+                child: _EmptyNotificationsMessage(),
+              )
+            else
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 470),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const ClampingScrollPhysics(),
+                  itemCount: notifications.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 7),
+                  itemBuilder: (context, index) {
+                    return _NotificationTile(
+                      notification: notifications[index],
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        onNotificationSelected(notifications[index]);
+                      },
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationCountPill extends StatelessWidget {
+  const _NotificationCountPill({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = count > 0 ? AppTheme.danger : AppTheme.success;
+
+    return Container(
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        '$count',
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyNotificationsMessage extends StatelessWidget {
+  const _EmptyNotificationsMessage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        'Aucune alerte active.',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppTheme.muted,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
+    );
+  }
+}
+
+class _NotificationTile extends StatelessWidget {
+  const _NotificationTile({
+    required this.notification,
+    required this.onTap,
+  });
+
+  final AppShellNotification notification;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _notificationSeverityColor(notification.severity);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isRead = notification.isRead;
+    final tileColor = isRead
+        ? (isDark ? const Color(0xFF14233D) : const Color(0xFFF8FAFC))
+        : color.withValues(alpha: isDark ? 0.16 : 0.075);
+    final borderColor = isRead
+        ? (isDark ? const Color(0xFF263653) : const Color(0xFFE2E8F0))
+        : color.withValues(alpha: 0.24);
+    final titleColor = isRead
+        ? (isDark ? const Color(0xFFB8C7E6) : const Color(0xFF64748B))
+        : (isDark ? const Color(0xFFF2F6FF) : AppTheme.text);
+    final bodyColor = isRead
+        ? (isDark ? const Color(0xFF93A4C2) : const Color(0xFF64748B))
+        : (isDark ? const Color(0xFFB8C7E6) : AppTheme.text);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
+          decoration: BoxDecoration(
+            color: tileColor,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: isRead ? 0.08 : 0.16),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Icon(
+                  isRead
+                      ? CupertinoIcons.checkmark_circle_fill
+                      : _notificationSeverityIcon(notification.severity),
+                  color: isRead
+                      ? (isDark
+                          ? const Color(0xFF93A4C2)
+                          : const Color(0xFF94A3B8))
+                      : color,
+                  size: 13,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notification.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: titleColor,
+                                      fontSize: 11.2,
+                                      fontWeight: isRead
+                                          ? FontWeight.w700
+                                          : FontWeight.w800,
+                                      height: 1,
+                                    ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        SizedBox(
+                          width: 164,
+                          child: Text(
+                            _notificationDateLabel(notification.date),
+                            maxLines: 1,
+                            textAlign: TextAlign.right,
+                            overflow: TextOverflow.visible,
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall
+                                ?.copyWith(
+                                  color: AppTheme.muted,
+                                  fontSize: 9.2,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      notification.body,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: bodyColor,
+                            fontSize: 10.2,
+                            fontWeight: FontWeight.w600,
+                            height: 1.18,
+                          ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      notification.detail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: isRead
+                                ? (isDark
+                                    ? const Color(0xFF93A4C2)
+                                    : const Color(0xFF64748B))
+                                : color,
+                            fontSize: 9.4,
+                            fontWeight: FontWeight.w800,
+                            height: 1,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _notificationSeverityColor(String severity) {
+  final normalized = severity.toLowerCase();
+  if (normalized == 'élevé' || normalized == 'eleve') {
+    return const Color(0xFF1D4ED8);
+  }
+  if (normalized == 'moyen') {
+    return const Color(0xFF2563EB);
+  }
+  return const Color(0xFF0EA5E9);
+}
+
+IconData _notificationSeverityIcon(String severity) {
+  final normalized = severity.toLowerCase();
+  if (normalized == 'élevé' || normalized == 'eleve') {
+    return CupertinoIcons.exclamationmark_triangle_fill;
+  }
+  if (normalized == 'moyen') {
+    return CupertinoIcons.exclamationmark_circle_fill;
+  }
+  return CupertinoIcons.checkmark_shield_fill;
+}
+
+String _notificationDateLabel(DateTime date) {
+  final day = date.day.toString().padLeft(2, '0');
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  final month = switch (date.month) {
+    1 => 'janvier',
+    2 => 'février',
+    3 => 'mars',
+    4 => 'avril',
+    5 => 'mai',
+    6 => 'juin',
+    7 => 'juillet',
+    8 => 'août',
+    9 => 'septembre',
+    10 => 'octobre',
+    11 => 'novembre',
+    _ => 'décembre',
+  };
+  return '$day $month ${date.year} à $hour:$minute';
 }
 
 /// Bouton secondaire au style discret pour la top bar.
@@ -1281,11 +3242,15 @@ class _TopBar extends StatelessWidget {
     required this.selectedModule,
     required this.showMenuButton,
     required this.onReturnToWelcome,
+    required this.notifications,
+    required this.onNotificationSelected,
   });
 
   final AppModule selectedModule;
   final bool showMenuButton;
   final VoidCallback onReturnToWelcome;
+  final List<AppShellNotification> notifications;
+  final ValueChanged<AppShellNotification> onNotificationSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -1310,7 +3275,10 @@ class _TopBar extends StatelessWidget {
                 icon: const Icon(Icons.menu_rounded),
               ),
             ),
-          Icon(_iconForModule(selectedModule), color: const Color(0xFF2563EB)),
+          Icon(
+            _iconForModule(selectedModule),
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(width: AppTheme.spacing),
           Text(
             selectedModule.title.tr(context),
@@ -1324,11 +3292,15 @@ class _TopBar extends StatelessWidget {
           const Spacer(),
           _HeaderIconButton(
             icon: CupertinoIcons.circle_grid_3x3_fill,
-            accent: const Color(0xFF2563EB),
+            accent: Theme.of(context).colorScheme.primary,
             onPressed: onReturnToWelcome,
           ),
           const SizedBox(width: 8),
-          const Icon(Icons.notifications_none_rounded, color: AppTheme.muted),
+          _NotificationBellButton(
+            icon: CupertinoIcons.bell_fill,
+            notifications: notifications,
+            onNotificationSelected: onNotificationSelected,
+          ),
         ],
       ),
     );

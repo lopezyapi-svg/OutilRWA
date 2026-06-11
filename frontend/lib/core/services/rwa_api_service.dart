@@ -1316,7 +1316,7 @@ class RwaApiService {
     // Les agrégats principaux servent ensuite à tous les KPI et graphiques.
     final gross = exposureModels.fold<double>(
       0.0,
-      (sum, item) => sum + item.grossAmount,
+      (sum, item) => sum + _dashboardGrossAmount(item),
     );
     final totalEad = exposureModels.fold<double>(
       0.0,
@@ -1331,14 +1331,15 @@ class RwaApiService {
         .where((item) => item.crmModeLabel != 'Aucune')
         .fold<double>(
           0.0,
-          (sum, item) => sum + (item.grossAmount * item.crmCoveragePercent),
+          (sum, item) =>
+              sum + (_dashboardGrossAmount(item) * item.crmCoveragePercent),
         );
     final residualRisk =
         (gross - coveredGross).clamp(0.0, double.infinity).toDouble();
     final coveredExposureRatio = gross == 0 ? 0.0 : coveredGross / gross;
     final defaultGross = exposureModels
         .where((item) => item.isDefaultLike)
-        .fold<double>(0.0, (sum, item) => sum + item.grossAmount);
+        .fold<double>(0.0, (sum, item) => sum + _dashboardGrossAmount(item));
     final defaultRate = gross == 0 ? 0.0 : defaultGross / gross;
     final averageRiskRate = totalEad == 0 ? 0.0 : rwa / totalEad;
     final ownFunds = capital * 1.42;
@@ -1422,12 +1423,15 @@ class RwaApiService {
           .map(
             (item) => PortfolioRow(
               id: item.id,
+              analysisDate: item.analysisDate,
               counterparty: item.counterparty.name,
               country: item.counterparty.country,
               category: item.categoryLabel,
               rating: _portfolioDisplayRating(item.counterparty.rating),
               crmType: item.crmModeLabel,
-              grossAmount: item.grossAmount,
+              grossAmount: _dashboardGrossAmount(item),
+              onBalanceExposureAmount: _dashboardOnBalanceAmount(item),
+              offBalanceExposureAmount: _dashboardOffBalanceAmount(item),
               ead: item.ead,
               rwa: item.rwa,
               capital: item.capital,
@@ -1435,6 +1439,28 @@ class RwaApiService {
           )
           .toList(),
     );
+  }
+
+  double _dashboardOnBalanceAmount(ExposureRecord exposure) {
+    return exposure.onBalanceExposureAmount ?? exposure.grossAmount;
+  }
+
+  double _dashboardOffBalanceAmount(ExposureRecord exposure) {
+    return exposure.offBalanceExposureAmount ?? 0.0;
+  }
+
+  double _dashboardGrossAmount(ExposureRecord exposure) {
+    final hasBreakdown = exposure.onBalanceExposureAmount != null ||
+        exposure.offBalanceExposureAmount != null;
+    if (hasBreakdown) {
+      return _dashboardOnBalanceAmount(exposure) +
+          _dashboardOffBalanceAmount(exposure);
+    }
+    final loanTotal = exposure.loanTotalAmount;
+    if (loanTotal != null && loanTotal > 0) {
+      return loanTotal;
+    }
+    return exposure.grossAmount;
   }
 
   String _portfolioDisplayRating(String rating) {
@@ -1460,7 +1486,7 @@ class RwaApiService {
     return ExposureSummary(
       totalExpositions: exposures.fold<double>(
         0.0,
-        (sum, item) => sum + item.grossAmount,
+        (sum, item) => sum + _dashboardGrossAmount(item),
       ),
       totalEad: exposures.fold<double>(0.0, (sum, item) => sum + item.ead),
       totalRwa: exposures.fold<double>(0.0, (sum, item) => sum + item.rwa),
@@ -1646,15 +1672,18 @@ class RwaApiService {
     final totals = <String, double>{};
     final global = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + (useGrossAmount ? item.grossAmount : item.rwa),
+      (sum, item) =>
+          sum + (useGrossAmount ? _dashboardGrossAmount(item) : item.rwa),
     );
     for (final exposure in exposures) {
       // Chaque exposition alimente le seau de sa catégorie prudentielle.
       totals.update(
         exposure.categoryLabel,
         (value) =>
-            value + (useGrossAmount ? exposure.grossAmount : exposure.rwa),
-        ifAbsent: () => useGrossAmount ? exposure.grossAmount : exposure.rwa,
+            value +
+            (useGrossAmount ? _dashboardGrossAmount(exposure) : exposure.rwa),
+        ifAbsent: () =>
+            useGrossAmount ? _dashboardGrossAmount(exposure) : exposure.rwa,
       );
     }
     return totals.entries
@@ -1707,7 +1736,7 @@ class RwaApiService {
     final totals = <String, double>{};
     final global = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + item.grossAmount,
+      (sum, item) => sum + _dashboardGrossAmount(item),
     );
 
     for (final exposure in exposures) {
@@ -1715,8 +1744,8 @@ class RwaApiService {
       final label = _normalizeCrmType(exposure.crmModeLabel);
       totals.update(
         label,
-        (value) => value + exposure.grossAmount,
-        ifAbsent: () => exposure.grossAmount,
+        (value) => value + _dashboardGrossAmount(exposure),
+        ifAbsent: () => _dashboardGrossAmount(exposure),
       );
     }
 
@@ -1737,14 +1766,14 @@ class RwaApiService {
     final totals = <String, double>{};
     final global = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + item.grossAmount,
+      (sum, item) => sum + _dashboardGrossAmount(item),
     );
     for (final exposure in exposures) {
       // La répartition notation s'appuie sur la notation de la contrepartie porteuse.
       totals.update(
         exposure.ratingLabel,
-        (value) => value + exposure.grossAmount,
-        ifAbsent: () => exposure.grossAmount,
+        (value) => value + _dashboardGrossAmount(exposure),
+        ifAbsent: () => _dashboardGrossAmount(exposure),
       );
     }
     return totals.entries

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 // Ce fichier decrit les donnees affichees sur le dashboard.
 /// Modèle d'une métrique affichée sur le tableau de bord.
 class DashboardMetric {
@@ -53,37 +55,64 @@ class DistributionEntry {
 class PortfolioRow {
   const PortfolioRow({
     required this.id,
+    this.analysisDate,
     required this.counterparty,
     required this.country,
     required this.category,
     required this.rating,
     required this.crmType,
     required this.grossAmount,
+    double? onBalanceExposureAmount,
+    required this.offBalanceExposureAmount,
     required this.ead,
     required this.rwa,
     required this.capital,
-  });
+  }) : _onBalanceExposureAmount = onBalanceExposureAmount;
 
   final String id;
+  final DateTime? analysisDate;
   final String counterparty;
   final String country;
   final String category;
   final String rating;
   final String crmType;
   final double grossAmount;
+  final double? _onBalanceExposureAmount;
+  final double offBalanceExposureAmount;
   final double ead;
   final double rwa;
   final double capital;
 
+  double get onBalanceExposureAmount {
+    final value = _onBalanceExposureAmount;
+    if (value != null) return value;
+    if (offBalanceExposureAmount > grossAmount) {
+      return grossAmount;
+    }
+    return math.max(0.0, grossAmount - offBalanceExposureAmount);
+  }
+
   factory PortfolioRow.fromJson(Map<String, dynamic> json) {
+    final grossAmount = (json['gross_amount'] as num).toDouble();
+    final rawAnalysisDate = json['analysis_date'] as String?;
+    final offBalanceExposureAmount =
+        (json['off_balance_exposure_amount'] as num?)?.toDouble() ?? 0.0;
+    final onBalanceExposureAmount =
+        (json['on_balance_exposure_amount'] as num?)?.toDouble();
+
     return PortfolioRow(
       id: json['id'] as String,
+      analysisDate: rawAnalysisDate == null || rawAnalysisDate.isEmpty
+          ? null
+          : DateTime.tryParse(rawAnalysisDate),
       counterparty: json['counterparty'] as String,
       country: (json['country'] ?? '') as String,
       category: json['category'] as String,
       rating: json['rating'] as String,
       crmType: (json['crm_type'] ?? 'Aucune') as String,
-      grossAmount: (json['gross_amount'] as num).toDouble(),
+      grossAmount: grossAmount,
+      onBalanceExposureAmount: onBalanceExposureAmount,
+      offBalanceExposureAmount: offBalanceExposureAmount,
       ead: (json['ead'] as num).toDouble(),
       rwa: (json['rwa'] as num).toDouble(),
       capital: (json['capital'] as num).toDouble(),

@@ -313,7 +313,14 @@ class ConcentrationExposureDetail {
     required this.grossAmount,
     required this.ead,
     required this.rwa,
+    required this.capital,
+    required this.originalRiskWeight,
     required this.riskWeight,
+    required this.crmCoverageRatio,
+    required this.pd,
+    required this.lgd,
+    required this.estimatedProvision,
+    required this.provisionRate,
   });
 
   final String id;
@@ -331,7 +338,14 @@ class ConcentrationExposureDetail {
   final double grossAmount;
   final double ead;
   final double rwa;
+  final double capital;
+  final double originalRiskWeight;
   final double riskWeight;
+  final double crmCoverageRatio;
+  final double pd;
+  final double lgd;
+  final double estimatedProvision;
+  final double provisionRate;
 }
 
 class PortfolioQualitySummary {

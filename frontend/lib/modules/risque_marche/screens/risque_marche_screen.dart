@@ -629,7 +629,7 @@ class _YieldCurveInfoBanner extends StatelessWidget {
         textStyle: const TextStyle(
           color: Colors.white,
           fontSize: 11.5,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
           height: 1.35,
         ),
         child: Semantics(
@@ -791,8 +791,6 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
                       [
                         snapshot.sourceName,
                         snapshot.sourceDateLabel,
-                        if (_yieldExtractionModeLabel(snapshot) != null)
-                          _yieldExtractionModeLabel(snapshot)!,
                       ].join(' · '),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -807,6 +805,13 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
                 ),
               ),
               const SizedBox(width: 10),
+              if (hasDrawableData && primarySeries != null) ...[
+                _YieldCurveInterpretationButton(
+                  snapshot: snapshot,
+                  series: primarySeries,
+                ),
+                const SizedBox(width: 8),
+              ],
               _YieldCurveSourceInfoButton(snapshot: snapshot),
             ],
           ),
@@ -923,6 +928,367 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
                 itemCount: stripItems.length,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _YieldCurveInterpretationButton extends StatefulWidget {
+  const _YieldCurveInterpretationButton({
+    required this.snapshot,
+    required this.series,
+  });
+
+  final _YieldCurveSnapshot snapshot;
+  final _YieldCurveDisplaySeries series;
+
+  @override
+  State<_YieldCurveInterpretationButton> createState() =>
+      _YieldCurveInterpretationButtonState();
+}
+
+class _YieldCurveInterpretationButtonState
+    extends State<_YieldCurveInterpretationButton> {
+  static _YieldCurveInterpretationButtonState? _activeButton;
+
+  final LayerLink _layerLink = LayerLink();
+  OverlayEntry? _entry;
+  bool _isOpen = false;
+
+  void _toggleOverlay() {
+    if (_entry == null) {
+      _showOverlay();
+    } else {
+      _hideOverlay();
+    }
+  }
+
+  void _showOverlay() {
+    if (_entry != null) {
+      _entry!.markNeedsBuild();
+      return;
+    }
+    if (_activeButton != null && _activeButton != this) {
+      _activeButton!._hideOverlay();
+    }
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) return;
+
+    _entry = OverlayEntry(builder: _buildOverlay);
+    _activeButton = this;
+    overlay.insert(_entry!);
+    if (mounted) {
+      setState(() => _isOpen = true);
+    }
+  }
+
+  void _hideOverlay({bool notify = true}) {
+    _entry?.remove();
+    _entry = null;
+    if (_activeButton == this) {
+      _activeButton = null;
+    }
+    if (notify && mounted) {
+      setState(() => _isOpen = false);
+    } else {
+      _isOpen = false;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _YieldCurveInterpretationButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_entry != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _entry?.markNeedsBuild();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _hideOverlay(notify: false);
+    super.dispose();
+  }
+
+  Widget _buildOverlay(BuildContext context) {
+    return Positioned.fill(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          CompositedTransformFollower(
+            link: _layerLink,
+            showWhenUnlinked: false,
+            targetAnchor: Alignment.bottomRight,
+            followerAnchor: Alignment.topRight,
+            offset: const Offset(0, 8),
+            child: Material(
+              color: Colors.transparent,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 190),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, child) {
+                  return Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, (1 - value) * -8),
+                      child: Transform.scale(
+                        scale: 0.975 + value * 0.025,
+                        alignment: Alignment.topRight,
+                        child: child,
+                      ),
+                    ),
+                  );
+                },
+                child: _YieldCurveInterpretationFloatingCard(
+                  snapshot: widget.snapshot,
+                  series: widget.series,
+                  onClose: _hideOverlay,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isMarketDark(context);
+    final color = widget.snapshot.color;
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: Tooltip(
+        message: 'Afficher l’interprétation de la courbe'.tr(context),
+        waitDuration: const Duration(milliseconds: 300),
+        child: Semantics(
+          button: true,
+          label: 'Interprétation de la courbe'.tr(context),
+          child: SizedBox(
+            height: 26,
+            child: TextButton(
+              onPressed: _toggleOverlay,
+              style: TextButton.styleFrom(
+                backgroundColor: color.withValues(
+                  alpha:
+                      _isOpen ? (isDark ? 0.22 : 0.13) : (isDark ? 0.16 : 0.08),
+                ),
+                foregroundColor: color,
+                padding: const EdgeInsets.symmetric(horizontal: 7),
+                minimumSize: const Size(0, 26),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(2),
+                  side: BorderSide(
+                    color: color.withValues(
+                      alpha: _isOpen
+                          ? (isDark ? 0.48 : 0.34)
+                          : (isDark ? 0.30 : 0.20),
+                    ),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(CupertinoIcons.chart_bar_alt_fill, size: 12),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Interprétation'.tr(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 9.8,
+                      fontWeight: FontWeight.w600,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
+  const _YieldCurveInterpretationFloatingCard({
+    required this.snapshot,
+    required this.series,
+    required this.onClose,
+  });
+
+  final _YieldCurveSnapshot snapshot;
+  final _YieldCurveDisplaySeries series;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final interpretation = _yieldCurveInterpretationFor(series);
+    final isDark = _isMarketDark(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final border = _marketBorderFor(context);
+    final panelWidth = math.min(390.0, MediaQuery.sizeOf(context).width - 28);
+
+    return Container(
+      width: panelWidth,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _marketSurfaceFor(context).withValues(alpha: isDark ? 0.98 : 1),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: border.withValues(alpha: 0.94)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.12),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+          BoxShadow(
+            color: snapshot.color.withValues(alpha: isDark ? 0.14 : 0.08),
+            blurRadius: 34,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: snapshot.color.withValues(alpha: isDark ? 0.18 : 0.1),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Icon(
+                  CupertinoIcons.chart_bar_alt_fill,
+                  color: snapshot.color,
+                  size: 14,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  'Interprétation de la courbe'.tr(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 12.6,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                    height: 1,
+                  ),
+                ),
+              ),
+              SizedBox.square(
+                dimension: 26,
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  onPressed: onClose,
+                  icon: Icon(CupertinoIcons.xmark, color: muted, size: 14),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: interpretation.color.withValues(
+                alpha: isDark ? 0.14 : 0.075,
+              ),
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(
+                color: interpretation.color.withValues(
+                  alpha: isDark ? 0.34 : 0.18,
+                ),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'LECTURE MARCHÉ'.tr(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: muted,
+                          fontSize: 8.8,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        interpretation.title.tr(context),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: interpretation.color,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0,
+                          height: 1.12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(
+                  CupertinoIcons.waveform_path_ecg,
+                  color: interpretation.color,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            interpretation.description.tr(context),
+            style: TextStyle(
+              color: muted,
+              fontSize: 11.9,
+              fontWeight: FontWeight.w500,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 1,
+            color: border.withValues(alpha: isDark ? 0.42 : 0.68),
+          ),
+          const SizedBox(height: 9),
+          Text(
+            interpretation.basis,
+            style: TextStyle(
+              color: muted.withValues(alpha: 0.78),
+              fontSize: 10.5,
+              fontStyle: FontStyle.italic,
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+            ),
+          ),
         ],
       ),
     );
@@ -1098,8 +1464,6 @@ class _YieldCurveSourceInfoButton extends StatelessWidget {
     final tooltip = [
       'Source : ${snapshot.sourceName}',
       'Référence : ${snapshot.sourceDateLabel}',
-      if (_yieldExtractionModeLabel(snapshot) != null)
-        'Mode : ${_yieldExtractionModeLabel(snapshot)}',
       snapshot.methodology,
     ].join('\n').tr(context);
 
@@ -1397,7 +1761,7 @@ class _YieldCurvePointTile extends StatelessWidget {
                   style: TextStyle(
                     color: selected ? color : _marketMutedFor(context),
                     fontSize: 7.2,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     height: 1,
                   ),
                 ),
@@ -3004,6 +3368,20 @@ class _YieldCurvePoint {
   }
 }
 
+class _YieldCurveInterpretation {
+  const _YieldCurveInterpretation({
+    required this.title,
+    required this.description,
+    required this.basis,
+    required this.color,
+  });
+
+  final String title;
+  final String description;
+  final String basis;
+  final Color color;
+}
+
 String _formatYieldRate(double value) {
   final formatted = value.toStringAsFixed(2).replaceAll('.', ',');
   return '$formatted %';
@@ -3013,6 +3391,71 @@ String _formatYieldSpread(double basisPoints) {
   final rounded = basisPoints.round();
   final sign = rounded > 0 ? '+' : '';
   return '$sign$rounded pb';
+}
+
+_YieldCurveInterpretation _yieldCurveInterpretationFor(
+  _YieldCurveDisplaySeries series,
+) {
+  final points = [
+    for (final point in series.points)
+      if (point.rate.isFinite) point,
+  ]..sort((a, b) => a.years.compareTo(b.years));
+
+  if (points.length < 2) {
+    return const _YieldCurveInterpretation(
+      title: 'Courbe insuffisamment renseignée',
+      description:
+          'La série ne contient pas assez de maturités exploitables pour qualifier proprement la structure de taux.',
+      basis:
+          'Basé sur les taux lissés disponibles : au moins deux points de maturité sont nécessaires.',
+      color: _marketMuted,
+    );
+  }
+
+  final shortPole = points.where((point) => point.years <= 1.0001).toList();
+  final longPole = points.where((point) => point.years >= 5).toList();
+  final shortPoints = shortPole.isEmpty ? [points.first] : shortPole;
+  final longPoints = longPole.isEmpty ? [points.last] : longPole;
+  final shortRate = _yieldAverageRate(shortPoints);
+  final longRate = _yieldAverageRate(longPoints);
+  final slopeBps = (longRate - shortRate) * 100;
+  final spread = _formatYieldSpread(slopeBps);
+  final basis =
+      'Basé sur l’écart de taux lissés entre le pôle court (≤ 1 an) et le pôle long (≥ 5 ans) : $spread.';
+
+  if (slopeBps >= 50) {
+    return _YieldCurveInterpretation(
+      title: 'Courbe normale (croissante)',
+      description:
+          'La courbe reflète des conditions de marché équilibrées : les investisseurs exigent une prime de terme plus élevée pour prêter sur les maturités longues, en cohérence avec des perspectives de croissance et d’inflation positives.',
+      basis: basis,
+      color: _marketSuccess,
+    );
+  }
+
+  if (slopeBps <= -50) {
+    return _YieldCurveInterpretation(
+      title: 'Courbe inversée (décroissante)',
+      description:
+          'Les rendements courts dépassent les rendements longs. Cette configuration signale généralement une préférence pour la liquidité immédiate, des tensions de financement ou une anticipation de détente des taux à moyen terme.',
+      basis: basis,
+      color: _marketDanger,
+    );
+  }
+
+  return _YieldCurveInterpretation(
+    title: 'Courbe plate',
+    description:
+        'L’écart entre les maturités courtes et longues reste limité. Le marché rémunère peu l’allongement de maturité, ce qui traduit une phase d’attente ou une visibilité réduite sur l’évolution des taux.',
+    basis: basis,
+    color: _marketWarning,
+  );
+}
+
+double _yieldAverageRate(List<_YieldCurvePoint> points) {
+  if (points.isEmpty) return 0;
+  final total = points.fold<double>(0, (sum, point) => sum + point.rate);
+  return total / points.length;
 }
 
 List<String> _yieldKnownCountriesForZone(String zoneId) {
@@ -3034,11 +3477,6 @@ String _yieldZoneDisplayLabel(_YieldCurveSnapshot snapshot) {
     'cemac' => 'CEMAC',
     _ => title.isEmpty ? snapshot.id.toUpperCase() : title,
   };
-}
-
-String? _yieldExtractionModeLabel(_YieldCurveSnapshot snapshot) {
-  if (snapshot.id != 'cemac') return null;
-  return 'Extraction PDF';
 }
 
 Color _yieldCountryColorFor(String country, String zoneId) {
@@ -4019,7 +4457,7 @@ class _MarketCrdEvolutionHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Capital Restant Dû — Évolution mensuelle'.toUpperCase(),
+                'Capital Restant Dû — Profil d’amortissement'.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -4032,7 +4470,7 @@ class _MarketCrdEvolutionHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Projection mensuelle du capital restant dû selon les profils d’amortissement.',
+                'Lecture du CRD par méthode d’amortissement du portefeuille.',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -4169,7 +4607,7 @@ class _MarketCrdKpiCard extends StatelessWidget {
                   style: TextStyle(
                     color: text,
                     fontSize: 13.2,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     height: 1,
                   ),
                 ),
@@ -4181,7 +4619,7 @@ class _MarketCrdKpiCard extends StatelessWidget {
                   style: TextStyle(
                     color: muted,
                     fontSize: 8.8,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     height: 1,
                   ),
                 ),
@@ -4217,7 +4655,7 @@ class _MarketCrdEvolutionChartPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Trajectoire mensuelle du CRD',
+                    'Répartition du CRD par amortissement',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -4229,7 +4667,7 @@ class _MarketCrdEvolutionChartPanel extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Lecture mensuelle du capital encore dû, hors détails techniques de calcul.',
+                    'Montant de capital restant dû regroupé par profil d’amortissement.',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -4396,13 +4834,18 @@ class _BondCrdEvolutionChartState extends State<_BondCrdEvolutionChart> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.result.points.length < 2) {
+    final entries = widget.result.profileBreakdown;
+    if (entries.isEmpty) {
       return const SizedBox.expand();
     }
+    final totalAmount = entries.fold<double>(
+      0,
+      (sum, entry) => sum + entry.amount,
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
-        final metrics = _BondCrdChartMetrics.from(widget.result.points, size);
+        final metrics = _BondCrdChartMetrics.from(entries, size);
         return MouseRegion(
           onHover: (event) {
             final index = metrics.indexNear(event.localPosition.dx);
@@ -4415,6 +4858,7 @@ class _BondCrdEvolutionChartState extends State<_BondCrdEvolutionChart> {
                 size: Size.infinite,
                 painter: _BondCrdEvolutionChartPainter(
                   result: widget.result,
+                  entries: entries,
                   metrics: metrics,
                   hoverIndex: _hoverIndex,
                   displayCurrency: widget.displayCurrency,
@@ -4423,7 +4867,8 @@ class _BondCrdEvolutionChartState extends State<_BondCrdEvolutionChart> {
               ),
               if (_hoverIndex != null)
                 _BondCrdEvolutionTooltip(
-                  point: widget.result.points[_hoverIndex!],
+                  entry: entries[_hoverIndex!],
+                  totalAmount: totalAmount,
                   metrics: metrics,
                   index: _hoverIndex!,
                   displayCurrency: widget.displayCurrency,
@@ -4438,13 +4883,15 @@ class _BondCrdEvolutionChartState extends State<_BondCrdEvolutionChart> {
 
 class _BondCrdEvolutionTooltip extends StatelessWidget {
   const _BondCrdEvolutionTooltip({
-    required this.point,
+    required this.entry,
+    required this.totalAmount,
     required this.metrics,
     required this.index,
     required this.displayCurrency,
   });
 
-  final _BondCrdEvolutionPoint point;
+  final _BondCrdProfileEntry entry;
+  final double totalAmount;
   final _BondCrdChartMetrics metrics;
   final int index;
   final String displayCurrency;
@@ -4452,17 +4899,13 @@ class _BondCrdEvolutionTooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final x = metrics.xForIndex(index);
-    final y = metrics.yForValue(point.crd);
-    const width = 224.0;
-    const height = 96.0;
+    const width = 244.0;
+    const height = 94.0;
     final left = (x + 18).clamp(
       metrics.chart.left + 4,
       metrics.chart.right - width - 4,
     );
-    final top = (y - height / 2).clamp(
-      metrics.chart.top + 4,
-      metrics.chart.bottom - height - 4,
-    );
+    final top = metrics.chart.top + 8;
     final text = _marketTextFor(context);
     final muted = _marketMutedFor(context);
     return Positioned(
@@ -4489,27 +4932,27 @@ class _BondCrdEvolutionTooltip extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _bondCrdMonthLabel(point.date),
+                entry.label,
                 style: TextStyle(
-                  color: text,
+                  color: entry.color,
                   fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w700,
                   height: 1,
                 ),
               ),
               const SizedBox(height: 9),
               Text(
-                'CRD : ${_money(point.crd, displayCurrency)}',
-                style: const TextStyle(
-                  color: _marketWarning,
+                'CRD : ${_money(entry.amount, displayCurrency)}',
+                style: TextStyle(
+                  color: text,
                   fontSize: 11,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w700,
                   height: 1,
                 ),
               ),
               const SizedBox(height: 7),
               Text(
-                'Amort. mois : ${_money(point.monthlyAmortization, displayCurrency)} · ${point.activeCount} actifs',
+                'Titres : ${entry.count}\nPoids : ${AppFormatters.percent(totalAmount <= 0 ? 0 : entry.amount / totalAmount)}',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -4579,43 +5022,48 @@ class _BondCrdEvolutionResult {
   final int activeCount;
   final int totalCount;
   final List<_BondCrdProfileEntry> profileBreakdown;
+
+  bool get isProjectionOpen {
+    return points.isNotEmpty && endingCrd.isFinite && endingCrd > 0.000001;
+  }
 }
 
 class _BondCrdChartMetrics {
   const _BondCrdChartMetrics({
     required this.chart,
     required this.maxValue,
-    required this.pointCount,
+    required this.bucketCount,
   });
 
   factory _BondCrdChartMetrics.from(
-    List<_BondCrdEvolutionPoint> points,
+    List<_BondCrdProfileEntry> entries,
     Size size,
   ) {
     final chart = Rect.fromLTWH(
-      64,
-      18,
-      math.max(1.0, size.width - 88),
-      math.max(1.0, size.height - 72),
+      72,
+      42,
+      math.max(1.0, size.width - 112),
+      math.max(1.0, size.height - 96),
     );
-    final rawMax = points.fold<double>(
+    final rawMax = entries.fold<double>(
       0,
-      (maxValue, point) => math.max(maxValue, point.crd),
+      (maxValue, entry) => math.max(maxValue, entry.amount),
     );
     return _BondCrdChartMetrics(
       chart: chart,
       maxValue: _bondCrdNiceMax(rawMax),
-      pointCount: points.length,
+      bucketCount: entries.length,
     );
   }
 
   final Rect chart;
   final double maxValue;
-  final int pointCount;
+  final int bucketCount;
 
   double xForIndex(int index) {
-    if (pointCount <= 1) return chart.left;
-    return chart.left + index / (pointCount - 1) * chart.width;
+    if (bucketCount <= 0) return chart.left;
+    final slot = chart.width / bucketCount;
+    return chart.left + slot * index + slot / 2;
   }
 
   double yForValue(double value) {
@@ -4624,15 +5072,29 @@ class _BondCrdChartMetrics {
   }
 
   int indexNear(double dx) {
-    if (pointCount <= 1) return 0;
+    if (bucketCount <= 1) return 0;
     final ratio = ((dx - chart.left) / chart.width).clamp(0.0, 1.0);
-    return (ratio * (pointCount - 1)).round().clamp(0, pointCount - 1);
+    return (ratio * bucketCount).floor().clamp(0, bucketCount - 1);
+  }
+
+  Rect barRectForIndex(int index, double value) {
+    final slot = chart.width / math.max(1, bucketCount);
+    final barWidth = math.min(86.0, slot * 0.46).toDouble();
+    final centerX = xForIndex(index);
+    final top = yForValue(value);
+    return Rect.fromLTRB(
+      centerX - barWidth / 2,
+      top,
+      centerX + barWidth / 2,
+      chart.bottom,
+    );
   }
 }
 
 class _BondCrdEvolutionChartPainter extends CustomPainter {
   const _BondCrdEvolutionChartPainter({
     required this.result,
+    required this.entries,
     required this.metrics,
     required this.hoverIndex,
     required this.displayCurrency,
@@ -4640,6 +5102,7 @@ class _BondCrdEvolutionChartPainter extends CustomPainter {
   });
 
   final _BondCrdEvolutionResult result;
+  final List<_BondCrdProfileEntry> entries;
   final _BondCrdChartMetrics metrics;
   final int? hoverIndex;
   final String displayCurrency;
@@ -4647,6 +5110,9 @@ class _BondCrdEvolutionChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (result.points.isEmpty) {
+      return;
+    }
     final chart = metrics.chart;
     final grid = (isDark ? Colors.white : _marketBorder).withValues(
       alpha: isDark ? 0.14 : 0.70,
@@ -4654,6 +5120,7 @@ class _BondCrdEvolutionChartPainter extends CustomPainter {
     final axis = (isDark ? Colors.white : _marketMuted).withValues(alpha: 0.46);
     final labelColor =
         (isDark ? Colors.white : _marketMuted).withValues(alpha: 0.84);
+    final surface = isDark ? const Color(0xFF111827) : const Color(0xFFF8FAFF);
 
     final gridPaint = Paint()
       ..color = grid
@@ -4661,6 +5128,22 @@ class _BondCrdEvolutionChartPainter extends CustomPainter {
     final axisPaint = Paint()
       ..color = axis
       ..strokeWidth = 1.1;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(chart, const Radius.circular(3)),
+      Paint()..color = surface.withValues(alpha: isDark ? 0.26 : 0.72),
+    );
+
+    _paintCrdAxisLabel(
+      canvas,
+      Offset(chart.left, chart.top - 24),
+      '${PortfolioAmountUnitPreference.current.label} $displayCurrency',
+      labelColor,
+      width: 92,
+      align: TextAlign.left,
+      fontSize: 8.6,
+      fontWeight: FontWeight.w600,
+    );
 
     for (var tick = 0; tick <= 4; tick++) {
       final y = chart.bottom - tick / 4 * chart.height;
@@ -4671,7 +5154,7 @@ class _BondCrdEvolutionChartPainter extends CustomPainter {
       _paintCrdAxisLabel(
         canvas,
         Offset(0, y - 5),
-        _axisMoneyLabel(metrics.maxValue * tick / 4, displayCurrency),
+        _bondCrdAxisNumber(metrics.maxValue * tick / 4, displayCurrency),
         labelColor,
         width: chart.left - 8,
         align: TextAlign.right,
@@ -4680,15 +5163,7 @@ class _BondCrdEvolutionChartPainter extends CustomPainter {
       );
     }
 
-    final xTicks = _bondCrdXAxisTicks(
-      result.points.length,
-      maxTicks: chart.width < 520
-          ? 4
-          : chart.width < 820
-              ? 5
-              : 7,
-    );
-    for (final index in xTicks) {
+    for (var index = 0; index < entries.length; index++) {
       final x = metrics.xForIndex(index);
       final path = Path()
         ..moveTo(x, chart.top)
@@ -4701,10 +5176,10 @@ class _BondCrdEvolutionChartPainter extends CustomPainter {
       );
       _paintCrdAxisLabel(
         canvas,
-        Offset(x - 39, chart.bottom + 12),
-        _bondCrdMonthLabel(result.points[index].date),
+        Offset(x - 38, chart.bottom + 12),
+        _profileAxisLabel(entries[index].label),
         labelColor,
-        width: 78,
+        width: 76,
         align: TextAlign.center,
         fontSize: 8.4,
         fontWeight: FontWeight.w500,
@@ -4714,105 +5189,105 @@ class _BondCrdEvolutionChartPainter extends CustomPainter {
     canvas.drawLine(chart.bottomLeft, chart.bottomRight, axisPaint);
     canvas.drawLine(chart.bottomLeft, chart.topLeft, axisPaint);
 
-    if (result.points.length >= 2) {
-      final linePath = Path();
-      for (var index = 0; index < result.points.length; index++) {
-        final point = result.points[index];
-        final offset = Offset(
-          metrics.xForIndex(index),
-          metrics.yForValue(point.crd),
-        );
-        if (index == 0) {
-          linePath.moveTo(offset.dx, offset.dy);
-        } else {
-          linePath.lineTo(offset.dx, offset.dy);
-        }
-      }
-
-      final fillPath = Path.from(linePath)
-        ..lineTo(chart.right, chart.bottom)
-        ..lineTo(chart.left, chart.bottom)
-        ..close();
-      canvas.drawPath(
-        fillPath,
+    for (var index = 0; index < entries.length; index++) {
+      final entry = entries[index];
+      final rect = metrics.barRectForIndex(index, entry.amount);
+      final selected = hoverIndex == index;
+      final rounded = RRect.fromRectAndRadius(
+        rect,
+        const Radius.circular(3),
+      );
+      final shaderRect =
+          Rect.fromLTRB(rect.left, chart.top, rect.right, chart.bottom);
+      canvas.drawRRect(
+        rounded,
         Paint()
+          ..isAntiAlias = true
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              _marketWarning.withValues(alpha: isDark ? 0.30 : 0.24),
-              _marketWarning.withValues(alpha: isDark ? 0.08 : 0.10),
+              entry.color.withValues(alpha: selected ? 0.96 : 0.82),
+              entry.color.withValues(alpha: selected ? 0.58 : 0.38),
             ],
-          ).createShader(chart),
+          ).createShader(shaderRect),
       );
-      canvas.drawPath(
-        linePath,
-        Paint()
-          ..isAntiAlias = true
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round
-          ..strokeWidth = 2.1
-          ..color = _marketWarning,
-      );
+      if (selected) {
+        canvas.drawRRect(
+          rounded.inflate(2),
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.4
+            ..color = entry.color.withValues(alpha: 0.75),
+        );
+      }
+      if (chart.width >= 520 && rect.height > 24) {
+        _paintCrdAxisLabel(
+          canvas,
+          Offset(rect.left - 14, rect.top - 16),
+          _bondCrdAxisNumber(entry.amount, displayCurrency),
+          labelColor,
+          width: rect.width + 28,
+          align: TextAlign.center,
+          fontSize: 8.0,
+          fontWeight: FontWeight.w600,
+        );
+      }
     }
 
     final selected = hoverIndex;
-    if (selected != null && selected >= 0 && selected < result.points.length) {
-      final point = result.points[selected];
+    if (selected != null && selected >= 0 && selected < entries.length) {
+      final entry = entries[selected];
       final x = metrics.xForIndex(selected);
-      final y = metrics.yForValue(point.crd);
       canvas.drawLine(
         Offset(x, chart.top),
         Offset(x, chart.bottom),
         Paint()
-          ..color = _marketWarning.withValues(alpha: 0.35)
+          ..color = entry.color.withValues(alpha: 0.35)
           ..strokeWidth = 1.1,
       );
+      final rect = metrics.barRectForIndex(selected, entry.amount);
       canvas.drawCircle(
-        Offset(x, y),
-        5.5,
+        Offset(x, rect.top),
+        4.8,
         Paint()..color = _marketSurface,
-      );
-      canvas.drawCircle(
-        Offset(x, y),
-        5.5,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.2
-          ..color = _marketWarning,
       );
     }
 
     final legendY = math.min(size.height - 9, chart.bottom + 42);
-    final legendX = chart.left + chart.width / 2 - 27;
-    canvas.drawCircle(
-      Offset(legendX, legendY - 1),
-      3.2,
-      Paint()..color = _marketWarning,
-    );
-    canvas.drawLine(
-      Offset(legendX + 7, legendY - 1),
-      Offset(legendX + 24, legendY - 1),
-      Paint()
-        ..color = _marketWarning
-        ..strokeWidth = 2,
+    final legendX = chart.left + chart.width / 2 - 68;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(legendX, legendY - 6, 12, 10),
+        const Radius.circular(2),
+      ),
+      Paint()..color = _marketPrimary,
     );
     _paintCrdAxisLabel(
       canvas,
-      Offset(legendX + 30, legendY - 7),
-      'CRD',
+      Offset(legendX + 18, legendY - 8),
+      'CRD par profil d’amortissement',
       labelColor,
-      width: 60,
+      width: 172,
       align: TextAlign.left,
       fontSize: 8.6,
       fontWeight: FontWeight.w500,
     );
   }
 
+  String _profileAxisLabel(String label) {
+    return switch (label) {
+      'In fine / bullet' => 'In fine',
+      'Amortissement linéaire' => 'Linéaire',
+      'Annuités constantes' => 'Annuités',
+      _ => label,
+    };
+  }
+
   @override
   bool shouldRepaint(covariant _BondCrdEvolutionChartPainter oldDelegate) {
     return oldDelegate.result != result ||
+        oldDelegate.entries != entries ||
         oldDelegate.metrics != metrics ||
         oldDelegate.hoverIndex != hoverIndex ||
         oldDelegate.displayCurrency != displayCurrency ||
@@ -5081,41 +5556,21 @@ double _bondCrdNiceMax(double rawMax) {
   return multiplier * base;
 }
 
-List<int> _bondCrdXAxisTicks(
-  int pointCount, {
-  int maxTicks = 6,
-}) {
-  if (pointCount <= 1) return const [0];
-  final tickCount = math.min(maxTicks.clamp(2, 8), pointCount);
-  final ticks = <int>{};
-  for (var index = 0; index < tickCount; index++) {
-    ticks.add((index * (pointCount - 1) / (tickCount - 1)).round());
-  }
-  return ticks.toList()..sort();
+String _bondCrdAxisNumber(double value, String displayCurrency) {
+  final converted = convertCurrencyAmount(
+    value,
+    fromCurrency: 'XOF',
+    toCurrency: displayCurrency,
+  );
+  return _axisNumberLabel(
+    converted / PortfolioAmountUnitPreference.current.divisor,
+  );
 }
 
 String _bondCrdShortDate(DateTime? date) {
   if (date == null) return '-';
   String two(int value) => value.toString().padLeft(2, '0');
   return '${two(date.day)}/${two(date.month)}/${date.year}';
-}
-
-String _bondCrdMonthLabel(DateTime date) {
-  const months = [
-    'janv.',
-    'févr.',
-    'mars',
-    'avr.',
-    'mai',
-    'juin',
-    'juil.',
-    'août',
-    'sept.',
-    'oct.',
-    'nov.',
-    'déc.',
-  ];
-  return '${months[date.month - 1]} ${date.year.toString().substring(2)}';
 }
 
 void _paintCrdAxisLabel(
@@ -5229,7 +5684,7 @@ class _BondKeyIndicatorsHeader extends StatelessWidget {
                   style: TextStyle(
                     color: text,
                     fontSize: 13.5,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     height: 1,
                   ),
                 ),
@@ -5239,7 +5694,7 @@ class _BondKeyIndicatorsHeader extends StatelessWidget {
                   style: TextStyle(
                     color: muted,
                     fontSize: 9.5,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     height: 1,
                   ),
                 ),
@@ -5543,7 +5998,7 @@ Future<_BondIndicatorRowsBundle> _computeBondIndicatorRowsAsync(
       debugLabel: 'bond-indicator-rows',
     );
   } catch (error) {
-    debugPrint('Calcul asynchrone lignes obligations indisponible: $error');
+    debugPrint('Calcul asynchrone titres obligations indisponible: $error');
     return _computeBondIndicatorRows(stats);
   }
 }
@@ -6159,7 +6614,8 @@ class _BondZoneAllocationCard extends StatelessWidget {
               Expanded(
                 child: _BondZoneMetricText(
                   label: 'Capital',
-                  value: '${_bondIndicatorMdValue(row.capital)} Md',
+                  value:
+                      '${_bondIndicatorMdValue(row.capital)} ${PortfolioAmountUnitPreference.current.label}',
                   text: text,
                   muted: muted,
                 ),
@@ -6404,8 +6860,10 @@ extension _BondTitleColumnMeta on _BondTitleColumn {
         _BondTitleColumn.rating => 'Notation externe',
         _BondTitleColumn.issueDate => 'Date d\'émission',
         _BondTitleColumn.maturityDate => 'Date d\'échéance',
-        _BondTitleColumn.capital => 'Capital restant dû (Md)',
-        _BondTitleColumn.presentValue => 'Valeur actualisée (Md)',
+        _BondTitleColumn.capital =>
+          'Capital restant dû (${PortfolioAmountUnitPreference.current.label})',
+        _BondTitleColumn.presentValue =>
+          'Valeur actualisée (${PortfolioAmountUnitPreference.current.label})',
         _BondTitleColumn.share => 'Part du portefeuille',
         _BondTitleColumn.ytm => 'Rendement actuariel (YTM)',
         _BondTitleColumn.coupon => 'Coupon',
@@ -6737,7 +7195,7 @@ class _BondTitleIndicatorsTableState extends State<_BondTitleIndicatorsTable> {
                   style: TextStyle(
                     color: muted,
                     fontSize: 11.8,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0.85,
                     height: 1,
                   ),
@@ -7010,7 +7468,7 @@ class _BondTitleHeaderCell extends StatelessWidget {
                   style: TextStyle(
                     color: sorted ? _marketPrimary : _marketDashboardDeepBlue,
                     fontSize: 8.8,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: sorted ? FontWeight.w800 : FontWeight.w700,
                     height: 1.10,
                     letterSpacing: 0,
                   ),
@@ -7503,7 +7961,7 @@ class _BondTitleTableCell extends StatelessWidget {
               style: TextStyle(
                 color: selected ? _marketDashboardDeepBlue : text,
                 fontSize: 11.2,
-                fontWeight: selected ? FontWeight.w500 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 height: 1.05,
                 letterSpacing: 0,
               ),
@@ -7514,7 +7972,7 @@ class _BondTitleTableCell extends StatelessWidget {
               style: TextStyle(
                 color: selected ? _marketDashboardDeepBlue : text,
                 fontSize: 11.2,
-                fontWeight: selected ? FontWeight.w500 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                 height: 1.05,
                 letterSpacing: 0,
               ),
@@ -8161,7 +8619,7 @@ class _BondIndicatorInfoDialog extends StatelessWidget {
                     style: TextStyle(
                       color: text,
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w700,
                       height: 1,
                     ),
                   ),
@@ -8661,28 +9119,19 @@ class _BondSensitivityPainter extends CustomPainter {
 
 String _bondIndicatorMoneyValue(double value) {
   if (!value.isFinite) return '-';
-  final normalized = value.abs();
-  if (normalized >= 1000000000) {
-    return '${_marketDecimalNumberText(
-      value / 1000000000,
-      decimals: 2,
-      trimTrailingZeros: false,
-    )} Md';
-  }
-  if (normalized >= 1000000) {
-    return '${_marketDecimalNumberText(
-      value / 1000000,
-      decimals: 2,
-      trimTrailingZeros: false,
-    )} M';
-  }
-  return value.toStringAsFixed(0).replaceAll('.', ',');
+  final amountUnit = PortfolioAmountUnitPreference.current;
+  return '${_marketDecimalNumberText(
+    value / amountUnit.divisor,
+    decimals: 2,
+    trimTrailingZeros: false,
+  )} ${amountUnit.label}';
 }
 
 String _bondIndicatorMdValue(double value) {
   if (!value.isFinite) return '-';
+  final amountUnit = PortfolioAmountUnitPreference.current;
   return _marketDecimalNumberText(
-    value / 1000000000,
+    value / amountUnit.divisor,
     decimals: 2,
     trimTrailingZeros: false,
   );
@@ -9019,9 +9468,9 @@ class _MarketVisualHeader extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: text,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
+                  color: text.withValues(alpha: 0.98),
+                  fontSize: 15.6,
+                  fontWeight: FontWeight.w800,
                   height: 1.1,
                 ),
               ),
@@ -9127,9 +9576,10 @@ class _MarketPortfolioTypeToggleButton extends StatelessWidget {
               Text(
                 type.label.tr(context),
                 style: TextStyle(
-                  color: selected ? Colors.white : muted,
+                  color:
+                      selected ? Colors.white : muted.withValues(alpha: 0.92),
                   fontSize: 10.8,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
                   height: 1,
                   letterSpacing: 0,
                 ),
@@ -10228,9 +10678,9 @@ class _BondDashboardKpiCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: muted,
+                    color: muted.withValues(alpha: 0.92),
                     fontSize: 7.2,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0,
                     height: 1,
                   ),
@@ -10241,9 +10691,9 @@ class _BondDashboardKpiCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: text,
-                    fontSize: 11.7,
-                    fontWeight: FontWeight.w500,
+                    color: text.withValues(alpha: 0.98),
+                    fontSize: 12.2,
+                    fontWeight: FontWeight.w800,
                     height: 1,
                   ),
                 ),
@@ -10286,9 +10736,9 @@ class _BondSectionPanel extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            color: text,
-            fontSize: 13.1,
-            fontWeight: FontWeight.w500,
+            color: text.withValues(alpha: 0.98),
+            fontSize: 13.6,
+            fontWeight: FontWeight.w800,
             height: 1,
           ),
         ),
@@ -10299,9 +10749,9 @@ class _BondSectionPanel extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: muted,
+              color: muted.withValues(alpha: 0.90),
               fontSize: 10.0,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               height: 1,
             ),
           ),
@@ -11267,9 +11717,9 @@ class _BondRatingPanel extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: text,
-                fontSize: 12.8,
-                fontWeight: FontWeight.w500,
+                color: text.withValues(alpha: 0.98),
+                fontSize: 13.6,
+                fontWeight: FontWeight.w800,
                 height: 1,
               ),
             ),
@@ -11279,9 +11729,9 @@ class _BondRatingPanel extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: muted,
+                color: muted.withValues(alpha: 0.90),
                 fontSize: 9.8,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 height: 1,
               ),
             ),
@@ -11398,7 +11848,7 @@ class _BondRatingBarChartPainter extends CustomPainter {
         align: TextAlign.right,
         color: muted.withValues(alpha: 0.80),
         fontSize: 8.4,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w600,
       );
     }
 
@@ -11465,9 +11915,9 @@ class _BondRatingBarChartPainter extends CustomPainter {
         Offset(centerX - groupWidth * 0.46, rect.top - 15),
         width: groupWidth * 0.92,
         align: TextAlign.center,
-        color: isHovered ? entry.color : text.withValues(alpha: 0.84),
+        color: isHovered ? entry.color : text.withValues(alpha: 0.94),
         fontSize: isHovered ? 9.6 : 9.0,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w700,
       );
       _paintSmallText(
         canvas,
@@ -11475,9 +11925,9 @@ class _BondRatingBarChartPainter extends CustomPainter {
         Offset(centerX - groupWidth * 0.48, chart.bottom + 9),
         width: groupWidth * 0.96,
         align: TextAlign.center,
-        color: isHovered ? entry.color : muted,
+        color: isHovered ? entry.color : muted.withValues(alpha: 0.92),
         fontSize: 8.9,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w600,
       );
     }
 
@@ -11519,7 +11969,7 @@ class _BondRatingBarChartPainter extends CustomPainter {
       align: TextAlign.center,
       color: muted,
       fontSize: 10,
-      fontWeight: FontWeight.w500,
+      fontWeight: FontWeight.w600,
     );
   }
 
@@ -13684,9 +14134,10 @@ class _BondMaturityHistogramPainter extends CustomPainter {
 }
 
 String _marketAxisMdAmount(double value) {
-  final amount = _marketAmountInBillions(value);
+  final amountUnit = PortfolioAmountUnitPreference.current;
+  final amount = value / amountUnit.divisor;
   if (amount.abs() < 0.005) return '0';
-  return '${_marketMoneyNumber(amount)} Md';
+  return '${_marketMoneyNumber(amount)} ${amountUnit.label}';
 }
 
 class _BondCouponCurvePainter extends CustomPainter {
@@ -13942,7 +14393,7 @@ class _MarketConcentrationPanel extends StatelessWidget {
     final entries = _marketTopExposureEntries(dataset, limit: 5);
     final isBonds = dataset.portfolioType == MarketPortfolioType.bonds;
     return _MarketVisualPanel(
-      title: isBonds ? 'Émetteurs obligataires' : 'Top lignes actions',
+      title: isBonds ? 'Émetteurs obligataires' : 'Top positions actions',
       subtitle: isBonds
           ? '${dataset.dominantIssuer} pèse ${AppFormatters.percent(dataset.concentrationRatio)}'
           : 'Top 5 par poids de marché',
@@ -15561,9 +16012,9 @@ class _MarketMicroMetric extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: _marketMutedFor(context),
+              color: _marketMutedFor(context).withValues(alpha: 0.92),
               fontSize: 9.0,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 4),
@@ -15573,8 +16024,8 @@ class _MarketMicroMetric extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color,
-              fontSize: 12.0,
-              fontWeight: FontWeight.w500,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
               height: 1,
             ),
           ),
@@ -16390,8 +16841,8 @@ class _MarketPortfolioMetricStrip extends StatelessWidget {
     final cards = [
       _MarketPortfolioMetricData(
         label: portfolioType == MarketPortfolioType.bonds
-            ? 'Lignes titres'
-            : 'Lignes actions',
+            ? 'Titres'
+            : 'Positions actions',
         value: AppFormatters.integer(records.length),
         color: _marketPrimary,
         icon: CupertinoIcons.square_stack_3d_up_fill,
@@ -16518,9 +16969,9 @@ class _MarketPortfolioMetricCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: text,
-                    fontSize: 11.2,
-                    fontWeight: FontWeight.w500,
+                    color: text.withValues(alpha: 0.98),
+                    fontSize: 11.6,
+                    fontWeight: FontWeight.w800,
                     height: 1,
                   ),
                 ),
@@ -16530,9 +16981,9 @@ class _MarketPortfolioMetricCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: muted,
+                    color: muted.withValues(alpha: 0.90),
                     fontSize: 8.2,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                     height: 1,
                   ),
                 ),
@@ -16673,7 +17124,7 @@ class _MarketPortfolioDetailsTableState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: _marketPrimary,
-        content: Text('Ligne mise à jour.'.tr(context)),
+        content: Text('Titre mis à jour.'.tr(context)),
       ),
     );
   }
@@ -16690,7 +17141,7 @@ class _MarketPortfolioDetailsTableState
       builder: (context) => _MarketPortfolioEditDialog(
         portfolioType: widget.portfolioType,
         record: emptyRecord,
-        title: 'Ajouter une ligne',
+        title: 'Ajouter un titre',
         confirmLabel: 'Ajouter',
       ),
     );
@@ -16700,7 +17151,7 @@ class _MarketPortfolioDetailsTableState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: _marketSuccess,
-        content: Text('Ligne ajoutée.'.tr(context)),
+        content: Text('Titre ajouté.'.tr(context)),
       ),
     );
   }
@@ -16715,9 +17166,9 @@ class _MarketPortfolioDetailsTableState
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(2),
           ),
-          title: Text('Supprimer la ligne ?'.tr(context)),
+          title: Text('Supprimer le titre ?'.tr(context)),
           content: Text(
-            'Cette ligne sera retirée du portefeuille importé localement.'
+            'Ce titre sera retiré du portefeuille importé localement.'
                 .tr(context),
           ),
           actions: [
@@ -16742,7 +17193,7 @@ class _MarketPortfolioDetailsTableState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: _marketDanger,
-        content: Text('Ligne supprimée.'.tr(context)),
+        content: Text('Titre supprimé.'.tr(context)),
       ),
     );
   }
@@ -16961,7 +17412,7 @@ class _MarketPortfolioDetailsTableState
                                 Expanded(
                                   child: Center(
                                     child: Text(
-                                      'Aucune ligne ne correspond aux filtres.'
+                                      'Aucun titre ne correspond aux filtres.'
                                           .tr(context),
                                       style: TextStyle(
                                         color: muted,
@@ -17085,7 +17536,7 @@ class _MarketPortfolioTableToolbar extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Rechercher une ligne...'.tr(context),
+                  hintText: 'Rechercher un titre...'.tr(context),
                   hintStyle: TextStyle(
                     color: muted.withValues(alpha: 0.75),
                     fontSize: 10.2,
@@ -17948,7 +18399,7 @@ class _MarketPortfolioEditDialog extends StatefulWidget {
   const _MarketPortfolioEditDialog({
     required this.portfolioType,
     required this.record,
-    this.title = 'Modifier la ligne',
+    this.title = 'Modifier le titre',
     this.confirmLabel = 'Enregistrer',
   });
 
@@ -18005,7 +18456,7 @@ class _MarketPortfolioEditDialogState
         style: TextStyle(
           color: text,
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w700,
         ),
       ),
       content: SizedBox(
@@ -18118,6 +18569,7 @@ class _MarketPortfolioActionsHeader extends StatelessWidget {
           fontSize: 9.4,
           fontWeight: FontWeight.w500,
           letterSpacing: 1.4,
+          height: 1.18,
         ),
       ),
     );
@@ -18170,14 +18622,14 @@ class _MarketPortfolioActionRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _MarketPortfolioActionButton(
-            tooltip: 'Modifier la ligne',
+            tooltip: 'Modifier le titre',
             icon: CupertinoIcons.square_pencil,
             color: _marketTextFor(context),
             onTap: onEdit,
           ),
           const SizedBox(width: 10),
           _MarketPortfolioActionButton(
-            tooltip: 'Supprimer la ligne',
+            tooltip: 'Supprimer le titre',
             icon: CupertinoIcons.trash,
             color: _marketDanger,
             onTap: onDelete,
@@ -18317,8 +18769,8 @@ class _MarketPortfolioHeaderCell extends StatelessWidget {
                   style: TextStyle(
                     color: sorted ? _marketPrimary : _marketDashboardDeepBlue,
                     fontSize: 10.2,
-                    fontWeight: FontWeight.w500,
-                    height: 1.03,
+                    fontWeight: sorted ? FontWeight.w800 : FontWeight.w700,
+                    height: 1.22,
                   ),
                 ),
               ),
@@ -18455,8 +18907,8 @@ class _MarketPortfolioValueBadge extends StatelessWidget {
                     style: TextStyle(
                       color: style.foreground,
                       fontSize: 10.8,
-                      fontWeight: FontWeight.w500,
-                      height: 1,
+                      fontWeight: FontWeight.w600,
+                      height: 1.18,
                     ),
                   ),
                 ),
@@ -18497,7 +18949,8 @@ Widget _marketPortfolioCellContent({
       style: TextStyle(
         color: textColor,
         fontSize: 10.8,
-        fontWeight: emphasized ? FontWeight.w500 : FontWeight.w500,
+        fontWeight: emphasized ? FontWeight.w800 : FontWeight.w600,
+        height: 1.2,
       ),
     );
   }
@@ -18532,7 +18985,8 @@ Widget _marketPortfolioCellContent({
     style: TextStyle(
       color: textColor,
       fontSize: 10.8,
-      fontWeight: emphasized ? FontWeight.w500 : FontWeight.w500,
+      fontWeight: emphasized ? FontWeight.w800 : FontWeight.w600,
+      height: 1.2,
     ),
   );
 }
@@ -19078,14 +19532,9 @@ String _marketMoneyText(
           toCurrency: displayCurrency,
         )
       : value;
-  final amountInBillions = _marketAmountInBillions(converted);
-  return '${_marketMoneyNumber(amountInBillions, maxDecimals: maxDecimals)} Md ${displayCurrencyLabel(displayCurrency)}';
-}
-
-double _marketAmountInBillions(double value) {
-  final absolute = value.abs();
-  if (absolute >= 1000000) return value / 1000000000;
-  return value;
+  final amountUnit = PortfolioAmountUnitPreference.current;
+  final scaled = converted / amountUnit.divisor;
+  return '${_marketMoneyNumber(scaled, maxDecimals: maxDecimals)} ${amountUnit.label} ${displayCurrencyLabel(displayCurrency)}';
 }
 
 String _marketMoneyNumber(double value, {int maxDecimals = 2}) {
@@ -24619,7 +25068,9 @@ String _axisTickLabel(
     fromCurrency: 'XOF',
     toCurrency: displayCurrency,
   );
-  return _axisNumberLabel(_marketAmountInBillions(converted));
+  return _axisNumberLabel(
+    converted / PortfolioAmountUnitPreference.current.divisor,
+  );
 }
 
 String _axisUnitLabel(
@@ -24627,7 +25078,7 @@ String _axisUnitLabel(
   double maxValue,
   String displayCurrency,
 ) {
-  return 'Md ${displayCurrencyLabel(displayCurrency)}';
+  return '${PortfolioAmountUnitPreference.current.label} ${displayCurrencyLabel(displayCurrency)}';
 }
 
 String _axisNumberLabel(double value) {

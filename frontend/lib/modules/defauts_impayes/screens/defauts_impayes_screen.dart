@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../risque_credit_shared/models/credit_risk_models.dart';
@@ -177,8 +178,10 @@ class _DefautsImpayesScreenState extends State<DefautsImpayesScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(AppFormatters.currency(
-                                    item.estimatedProvision)),
+                                Text(formatCurrencyForDisplay(
+                                  item.estimatedProvision,
+                                  toCurrency: 'XOF',
+                                )),
                                 Text(
                                   AppFormatters.percent(item.provisionRate),
                                   style: Theme.of(context)
@@ -221,14 +224,20 @@ class _DefautsImpayesScreenState extends State<DefautsImpayesScreen> {
       ),
       CreditStatCard(
         label: 'Encours surveillé',
-        value: AppFormatters.currency(data.summary.totalDefaultGross),
+        value: formatCurrencyForDisplay(
+          data.summary.totalDefaultGross,
+          toCurrency: 'XOF',
+        ),
         helper: 'Montant brut exposé',
         icon: Icons.account_balance_wallet_outlined,
         color: AppTheme.sidebarLight,
       ),
       CreditStatCard(
         label: 'Provision estimée',
-        value: AppFormatters.currency(data.summary.totalProvision),
+        value: formatCurrencyForDisplay(
+          data.summary.totalProvision,
+          toCurrency: 'XOF',
+        ),
         helper: 'Lecture prudentielle',
         icon: Icons.savings_outlined,
         color: AppTheme.danger,

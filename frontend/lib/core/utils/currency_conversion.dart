@@ -1,5 +1,19 @@
 import 'formatters.dart';
 
+enum PortfolioAmountUnit {
+  million('M', 1000000),
+  billion('Md', 1000000000);
+
+  const PortfolioAmountUnit(this.label, this.divisor);
+
+  final String label;
+  final double divisor;
+}
+
+class PortfolioAmountUnitPreference {
+  static PortfolioAmountUnit current = PortfolioAmountUnit.billion;
+}
+
 const Map<String, double> _currencyRatesInXof = {
   'XOF': 1.0,
   'EUR': 655.957,
@@ -44,24 +58,45 @@ String formatCurrencyForDisplay(
   double amount, {
   String fromCurrency = 'XOF',
   required String toCurrency,
+  int maxDecimals = 2,
 }) {
-  final converted = convertCurrencyAmount(
+  return formatCurrencyInDisplayUnit(
     amount,
     fromCurrency: fromCurrency,
     toCurrency: toCurrency,
+    amountUnit: PortfolioAmountUnitPreference.current,
+    maxDecimals: maxDecimals,
   );
-  return AppFormatters.currency(converted, currencyCode: toCurrency);
 }
 
 String compactCurrencyForDisplay(
   double amount, {
   String fromCurrency = 'XOF',
   required String toCurrency,
+  PortfolioAmountUnit? amountUnit,
+  int maxDecimals = 2,
+}) {
+  return formatCurrencyInDisplayUnit(
+    amount,
+    fromCurrency: fromCurrency,
+    toCurrency: toCurrency,
+    amountUnit: amountUnit ?? PortfolioAmountUnitPreference.current,
+    maxDecimals: maxDecimals,
+  );
+}
+
+String formatCurrencyInDisplayUnit(
+  double amount, {
+  String fromCurrency = 'XOF',
+  required String toCurrency,
+  required PortfolioAmountUnit amountUnit,
+  int maxDecimals = 2,
 }) {
   final converted = convertCurrencyAmount(
     amount,
     fromCurrency: fromCurrency,
     toCurrency: toCurrency,
   );
-  return '${AppFormatters.compactNumber(converted)} ${displayCurrencyLabel(toCurrency)}';
+  final scaled = converted / amountUnit.divisor;
+  return '${AppFormatters.decimalNumber(scaled, maxDecimals: maxDecimals)} ${amountUnit.label} ${displayCurrencyLabel(toCurrency)}';
 }

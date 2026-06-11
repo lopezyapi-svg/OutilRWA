@@ -31,6 +31,17 @@ String _normalizeExposureLabel(String value) {
       .replaceAll(RegExp(r'\s+'), ' ');
 }
 
+String _stripExposureCategoryCodePrefix(String value) {
+  return value.replaceFirst(
+    RegExp(r'^\s*\([a-z]\)\s*', caseSensitive: false),
+    '',
+  );
+}
+
+String _normalizeExposureCategoryLookupLabel(String value) {
+  return _normalizeExposureLabel(_stripExposureCategoryCodePrefix(value));
+}
+
 class ExposureCategoryOption {
   const ExposureCategoryOption({
     required this.code,
@@ -380,10 +391,33 @@ ExposureCategoryOption exposureCategoryByCode(String code) {
   );
 }
 
+ExposureCategoryOption? tryExposureCategoryByName(String label) {
+  final normalized = _normalizeExposureCategoryLookupLabel(label);
+  if (normalized.isEmpty) {
+    return null;
+  }
+  if (normalized == _normalizeExposureCategoryLookupLabel('Hors bilan')) {
+    return null;
+  }
+  for (final item in exposureCategories) {
+    if (normalized == _normalizeExposureCategoryLookupLabel(item.label) ||
+        normalized ==
+            _normalizeExposureCategoryLookupLabel(item.prudentialLabel) ||
+        normalized ==
+            _normalizeExposureCategoryLookupLabel(item.legacyLabel ?? '')) {
+      return item;
+    }
+  }
+  return null;
+}
+
 ExposureCategoryOption exposureCategoryByName(String label) {
-  final normalized = _normalizeExposureLabel(label);
-  if (normalized == _normalizeExposureLabel('Hors bilan') ||
-      normalized == _normalizeExposureLabel('(l) Hors bilan')) {
+  final matched = tryExposureCategoryByName(label);
+  if (matched != null) {
+    return matched;
+  }
+  final normalized = _normalizeExposureCategoryLookupLabel(label);
+  if (normalized == _normalizeExposureCategoryLookupLabel('Hors bilan')) {
     return exposureCategories.firstWhere(
       (item) => item.code == 'e',
       orElse: () => exposureCategories[4],
@@ -391,9 +425,11 @@ ExposureCategoryOption exposureCategoryByName(String label) {
   }
   return exposureCategories.firstWhere(
     (item) =>
-        _normalizeExposureLabel(item.label) == normalized ||
-        _normalizeExposureLabel(item.prudentialLabel) == normalized ||
-        _normalizeExposureLabel(item.legacyLabel ?? '') == normalized,
+        _normalizeExposureCategoryLookupLabel(item.label) == normalized ||
+        _normalizeExposureCategoryLookupLabel(item.prudentialLabel) ==
+            normalized ||
+        _normalizeExposureCategoryLookupLabel(item.legacyLabel ?? '') ==
+            normalized,
     orElse: () => exposureCategories[4],
   );
 }
@@ -1914,7 +1950,15 @@ class ExposureRecord {
   ExposureCategoryOption get categoryOption =>
       exposureCategoryByName(counterparty.category);
   String get categoryCode => categoryOption.code;
-  String get categoryLabel => categoryOption.prudentialLabel;
+  String get categoryLabel {
+    final matchedCategory = tryExposureCategoryByName(counterparty.category);
+    if (matchedCategory != null) {
+      return matchedCategory.prudentialLabel;
+    }
+    final rawCategory = counterparty.category.trim();
+    return rawCategory.isEmpty ? 'Non renseigné' : rawCategory;
+  }
+
   String get ratingLabel => bucketizeRating(counterparty.rating);
   String get crmModeLabel => crmDetails.mode;
   String get zone => computeZone(counterparty.country);

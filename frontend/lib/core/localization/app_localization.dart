@@ -551,8 +551,8 @@ const Map<String, String> _englishTranslations = {
       'Relevant products: short/medium/long-term loans, overdrafts, credit cards, leasing and SME facilities',
   'Granularité : exposition ≤ 0,2 % du portefeuille retail global':
       'Granularity: exposure <= 0.2% of the overall retail portfolio',
-  'Faible montant : encours agrégé par contrepartie ≤ 150 millions FCFA':
-      'Low amount: aggregate outstanding per counterparty <= 150 million FCFA',
+  'Faible montant : encours agrégé par contrepartie ≤ 150 000 000 FCFA':
+      'Low amount: aggregate outstanding per counterparty <= 150,000,000 FCFA',
   'Consentement BIC : accord du client pour transmission des données au BIC':
       'Credit bureau consent: client approval for sharing data with the BIC',
   'En cas de défaut, l’exposition relève de la catégorie des expositions en défaut.':

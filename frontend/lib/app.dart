@@ -8,8 +8,10 @@ import 'core/app_module.dart';
 import 'core/localization/app_language.dart';
 import 'core/localization/app_localization.dart';
 import 'core/services/rwa_api_service.dart';
+import 'core/state/portfolio_amount_unit_scope.dart';
 import 'core/state/portfolio_currency_scope.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/currency_conversion.dart';
 import 'modules/analyse/screens/analyse_screen.dart';
 import 'modules/capital_planing/screens/capital_planing_screen.dart';
 import 'modules/concentration/screens/concentration_screen.dart';
@@ -21,12 +23,14 @@ import 'modules/garanties/screens/garanties_screen.dart';
 import 'modules/hors_bilan/screens/hors_bilan_screen.dart';
 import 'modules/icap/screens/icap_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
-import 'modules/referentiels/screens/referentiels_screen.dart';
 import 'modules/reporting_credit/screens/reporting_credit_screen.dart';
+import 'modules/risque_credit_shared/models/credit_risk_models.dart';
+import 'modules/risque_credit_shared/services/credit_risk_submodules_service.dart';
 import 'modules/risque_marche/screens/market_data_import_screen.dart';
 import 'modules/risque_marche/screens/risque_marche_screen.dart';
 import 'modules/risque_marche/services/market_data_import_store.dart';
 import 'modules/risque_operationnel/screens/risque_operationnel_screen.dart';
+import 'modules/rwa_engine/screens/rwa_engine_screen.dart';
 import 'modules/stress_test/screens/stress_test_screen.dart';
 import 'modules/vue_ensemble/screens/vue_ensemble_screen.dart';
 import 'modules/welcome/screens/welcome_screen.dart';
@@ -47,27 +51,51 @@ class _RwaAppState extends State<RwaApp> {
   final ValueNotifier<String> _portfolioDisplayCurrency = ValueNotifier<String>(
     'XOF',
   );
+  final ValueNotifier<PortfolioAmountUnit> _portfolioAmountUnit =
+      ValueNotifier<PortfolioAmountUnit>(
+    PortfolioAmountUnit.billion,
+  );
   final ValueNotifier<AppLanguage> _appLanguage = ValueNotifier<AppLanguage>(
     AppLanguage.francais,
   );
   AppModule _selectedModule = AppModule.vueEnsemble;
   ThemeMode _themeMode = ThemeMode.light;
+  String _fontFamily = AppTheme.defaultFontFamily;
+  Color _primaryColor = AppTheme.accent;
   bool _showWelcomeScreen = true;
   bool _isMarketImportDialogOpen = false;
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
+  CreditRiskSubmodulesService? _creditRiskService;
+  Future<List<AppShellNotification>>? _notificationsFuture;
+  StreamSubscription<int>? _portfolioNotificationSubscription;
+  final Set<String> _readNotificationIds = <String>{};
 
   @override
   void initState() {
     super.initState();
+    _creditRiskService = CreditRiskSubmodulesService(_api);
+    _notificationsFuture = _loadNotifications();
     AppLocalizations.setCurrentLanguage(_appLanguage.value);
+    PortfolioAmountUnitPreference.current = _portfolioAmountUnit.value;
+    _portfolioAmountUnit.addListener(_handleAmountUnitChanged);
     _appLanguage.addListener(_handleLanguageChanged);
+    _portfolioNotificationSubscription =
+        _api.portfolioRefreshStream.listen((_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _notificationsFuture = _loadNotifications());
+    });
     unawaited(MarketDataImportStore.instance.configureSqlBackend(_api));
   }
 
   @override
   void dispose() {
+    _portfolioNotificationSubscription?.cancel();
+    _portfolioAmountUnit.removeListener(_handleAmountUnitChanged);
     _appLanguage.removeListener(_handleLanguageChanged);
     _portfolioDisplayCurrency.dispose();
+    _portfolioAmountUnit.dispose();
     _appLanguage.dispose();
     _api.dispose();
     super.dispose();
@@ -91,32 +119,67 @@ class _RwaAppState extends State<RwaApp> {
                 .map((language) => language.locale)
                 .toList(growable: false),
             localizationsDelegates: GlobalMaterialLocalizations.delegates,
-            theme: AppTheme.buildTheme(),
-            darkTheme: AppTheme.buildDarkTheme(),
+            theme: AppTheme.buildTheme(
+              fontFamily: _fontFamily,
+              accentColor: _primaryColor,
+            ),
+            darkTheme: AppTheme.buildDarkTheme(
+              fontFamily: _fontFamily,
+              accentColor: _primaryColor,
+            ),
             themeMode: _themeMode,
             home: PortfolioCurrencyScope(
               notifier: _portfolioDisplayCurrency,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 240),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeOutCubic,
-                child: _showWelcomeScreen
-                    ? WelcomeScreen(
-                        key: const ValueKey<String>('welcome-screen'),
-                        onOpenHome: _openHome,
-                      )
-                    : AppShell(
-                        key: const ValueKey<String>('app-shell'),
-                        selectedModule: _selectedModule,
-                        onSelectModule: _selectModule,
-                        onReturnToWelcome: _returnToWelcome,
-                        themeMode: _themeMode,
-                        onThemeModeChanged: (themeMode) =>
-                            setState(() => _themeMode = themeMode),
-                        portfolioDisplayCurrency: _portfolioDisplayCurrency,
-                        appLanguage: _appLanguage,
-                        child: _buildSelectedScreen(),
-                      ),
+              child: PortfolioAmountUnitScope(
+                notifier: _portfolioAmountUnit,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeOutCubic,
+                  child: _showWelcomeScreen
+                      ? WelcomeScreen(
+                          key: const ValueKey<String>('welcome-screen'),
+                          onOpenHome: _openHome,
+                        )
+                      : FutureBuilder<List<AppShellNotification>>(
+                          key: const ValueKey<String>('app-shell'),
+                          future: _notificationsFuture ??= _loadNotifications(),
+                          builder: (context, snapshot) {
+                            final notifications = (snapshot.data ??
+                                    const <AppShellNotification>[])
+                                .map(
+                                  (notification) => notification.copyWith(
+                                    isRead: _readNotificationIds
+                                        .contains(notification.id),
+                                  ),
+                                )
+                                .toList(growable: false);
+
+                            return AppShell(
+                              selectedModule: _selectedModule,
+                              onSelectModule: _selectModule,
+                              onReturnToWelcome: _returnToWelcome,
+                              themeMode: _themeMode,
+                              onThemeModeChanged: (themeMode) =>
+                                  setState(() => _themeMode = themeMode),
+                              portfolioDisplayCurrency:
+                                  _portfolioDisplayCurrency,
+                              portfolioAmountUnit: _portfolioAmountUnit,
+                              appLanguage: _appLanguage,
+                              fontFamily: _fontFamily,
+                              onFontFamilyChanged: (fontFamily) =>
+                                  setState(() => _fontFamily = fontFamily),
+                              primaryColor: _primaryColor,
+                              onPrimaryColorChanged: (primaryColor) =>
+                                  setState(() => _primaryColor = primaryColor),
+                              onNotificationSelected:
+                                  _handleNotificationSelected,
+                              notifications: notifications,
+                              child: _buildSelectedScreen(),
+                            );
+                          },
+                        ),
+                ),
               ),
             ),
           ),
@@ -131,7 +194,73 @@ class _RwaAppState extends State<RwaApp> {
     setState(() {});
   }
 
+  void _handleAmountUnitChanged() {
+    PortfolioAmountUnitPreference.current = _portfolioAmountUnit.value;
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  Future<List<AppShellNotification>> _loadNotifications() async {
+    try {
+      final service = _creditRiskService ??= CreditRiskSubmodulesService(_api);
+      final data = await service.fetchConcentrationModule();
+      final alerts = data.alerts.toList(growable: false)
+        ..sort((left, right) {
+          final severityComparison = _notificationSeverityRank(left.severity)
+              .compareTo(_notificationSeverityRank(right.severity));
+          if (severityComparison != 0) {
+            return severityComparison;
+          }
+          return right.date.compareTo(left.date);
+        });
+
+      return [
+        for (var index = 0; index < alerts.length; index++)
+          _notificationFromConcentrationAlert(alerts[index]),
+      ];
+    } catch (_) {
+      return const <AppShellNotification>[];
+    }
+  }
+
+  AppShellNotification _notificationFromConcentrationAlert(
+    ConcentrationAlert alert,
+  ) {
+    return AppShellNotification(
+      id: 'portefeuille-${alert.level}-${alert.severity}-${alert.message}-${alert.date.millisecondsSinceEpoch}',
+      title: '${alert.level} · ${alert.severity}',
+      body: alert.message,
+      detail: alert.recommendation,
+      severity: alert.severity,
+      source: 'Portefeuille',
+      date: alert.date,
+      targetModule: AppModule.concentrationCredit,
+    );
+  }
+
+  void _handleNotificationSelected(AppShellNotification notification) {
+    setState(() {
+      _readNotificationIds.add(notification.id);
+      _showWelcomeScreen = false;
+      _selectedModule = notification.targetModule;
+    });
+  }
+
+  int _notificationSeverityRank(String severity) {
+    final normalized = severity.toLowerCase();
+    if (normalized == 'élevé' || normalized == 'eleve') {
+      return 0;
+    }
+    if (normalized == 'moyen') {
+      return 1;
+    }
+    return 2;
+  }
+
   void _selectModule(AppModule module) {
+    if (module == AppModule.referentiels) {
+      return;
+    }
     if (module == AppModule.risqueMarcheImport) {
       _openMarketImportDialog();
       return;
@@ -184,6 +313,7 @@ class _RwaAppState extends State<RwaApp> {
           api: _api,
           displayCurrencyListenable: _portfolioDisplayCurrency,
         ),
+      AppModule.rwaEngine => RwaEngineScreen(api: _api),
       AppModule.crm => CrmScreen(api: _api),
       AppModule.horsBilan => HorsBilanScreen(api: _api),
       AppModule.garanties => GarantiesScreen(api: _api),
@@ -230,7 +360,7 @@ class _RwaAppState extends State<RwaApp> {
       AppModule.stressTest => StressTestScreen(api: _api),
       AppModule.icap => IcapScreen(api: _api),
       AppModule.capitalPlaning => CapitalPlaningScreen(api: _api),
-      AppModule.referentiels => ReferentielsScreen(api: _api),
+      AppModule.referentiels => _screenFor(AppModule.vueEnsemble),
       AppModule.rapports => RapportsScreen(api: _api),
     };
   }

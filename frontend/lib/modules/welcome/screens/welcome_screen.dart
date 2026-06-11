@@ -336,7 +336,7 @@ class _WelcomeMark extends StatelessWidget {
           style: TextStyle(
             color: isDark ? const Color(0xFFEAF1FF) : const Color(0xFF123A73),
             fontSize: compact ? 24 : 28,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             height: 1.05,
           ),
         ),
@@ -350,7 +350,7 @@ class _WelcomeMark extends StatelessWidget {
           style: TextStyle(
             color: isDark ? const Color(0xFF9FB2D6) : const Color(0xFF365F9A),
             fontSize: 13,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             height: 1.25,
           ),
         ),
@@ -391,7 +391,7 @@ class _WelcomeCopy extends StatelessWidget {
           style: TextStyle(
             color: isDark ? const Color(0xFFF2F6FF) : const Color(0xFF13203A),
             fontSize: 34,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
             height: 1.08,
           ),
         ),
@@ -402,9 +402,9 @@ class _WelcomeCopy extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           softWrap: true,
           style: TextStyle(
-            color: isDark ? const Color(0xFFC0CBE0) : const Color(0xFF53617A),
+            color: isDark ? const Color(0xFFD3DCEE) : const Color(0xFF45546E),
             fontSize: 14.5,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
             height: 1.55,
           ),
         ),
@@ -836,7 +836,7 @@ class _WelcomeInsightMessageViewState extends State<_WelcomeInsightMessageView>
               style: TextStyle(
                 color: widget.message.color,
                 fontSize: 12.5,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 height: 1,
                 letterSpacing: 0.18,
               ),
@@ -852,7 +852,7 @@ class _WelcomeInsightMessageViewState extends State<_WelcomeInsightMessageView>
                   cursorColor: widget.message.color,
                   color: widget.textColor,
                   fontSize: 28,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   height: 1.08,
                   maxLines: 2,
                 ),
@@ -866,9 +866,9 @@ class _WelcomeInsightMessageViewState extends State<_WelcomeInsightMessageView>
                   text: widget.message.body.substring(0, bodyCharacters),
                   showCursor: showBodyCursor && cursorVisible,
                   cursorColor: widget.message.color,
-                  color: widget.mutedColor,
+                  color: const Color(0xFF123A73),
                   fontSize: 19,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                   height: 1.36,
                   maxLines: 5,
                 ),
@@ -952,7 +952,7 @@ class _OpenHomeButton extends StatelessWidget {
           ),
           textStyle: const TextStyle(
             fontSize: 13.5,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -974,51 +974,54 @@ class _WelcomeBrandInsideCard extends StatelessWidget {
     final color = isDark ? const Color(0xFF9FB2D6) : const Color(0xFF52647F);
     final year = DateTime.now().year;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          "© $year Heymann's Inc. Tous droits réservés.",
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isDark ? const Color(0xFFE2EAFE) : const Color(0xFF314765),
-            fontSize: compact ? 10.8 : 11.6,
-            fontWeight: FontWeight.w500,
-            height: 1.18,
+    return Transform.translate(
+      offset: Offset(compact ? 24 : 68, 0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            "© $year Heymann's Inc. Tous droits réservés.",
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isDark ? const Color(0xFFE2EAFE) : const Color(0xFF314765),
+              fontSize: compact ? 10.8 : 11.6,
+              fontWeight: FontWeight.w500,
+              height: 1.18,
+            ),
           ),
-        ),
-        SizedBox(height: compact ? 6 : 8),
-        Text(
-          'Propriété et confidentialité',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: color,
-            fontSize: compact ? 10.4 : 11.1,
-            fontWeight: FontWeight.w500,
-            height: 1.28,
+          SizedBox(height: compact ? 6 : 8),
+          Text(
+            'Propriété et confidentialité',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: color,
+              fontSize: compact ? 10.4 : 11.1,
+              fontWeight: FontWeight.w500,
+              height: 1.28,
+            ),
           ),
-        ),
-        SizedBox(height: compact ? 4 : 6),
-        Text(
-          'Toute reproduction ou diffusion non autorisée est interdite.',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          softWrap: false,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: color.withValues(alpha: 0.82),
-            fontSize: compact ? 9.6 : 10.0,
-            fontWeight: FontWeight.w500,
-            height: 1.2,
+          SizedBox(height: compact ? 4 : 6),
+          Text(
+            'Toute reproduction ou diffusion non autorisée est interdite.',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: color.withValues(alpha: 0.82),
+              fontSize: compact ? 9.6 : 10.0,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

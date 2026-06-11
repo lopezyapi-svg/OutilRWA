@@ -1,6 +1,7 @@
 // Ce fichier affiche une carte KPI reutilisable.
 import 'package:flutter/material.dart';
 
+import '../../core/state/portfolio_amount_unit_scope.dart';
 import '../../core/state/portfolio_currency_scope.dart';
 import '../../core/utils/currency_conversion.dart';
 import '../../core/utils/formatters.dart';
@@ -35,12 +36,14 @@ class MetricCard extends StatelessWidget {
       context,
       fallback: currencyCode,
     );
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
     final formattedValue = isPercent
         ? AppFormatters.percent(value)
-        : formatCurrencyForDisplay(
+        : formatCurrencyInDisplayUnit(
             value,
             fromCurrency: currencyCode,
             toCurrency: displayCurrency,
+            amountUnit: amountUnit,
           );
 
     return KpiMetricCard(

@@ -12,6 +12,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../../core/localization/app_localization.dart';
 import '../../../core/services/api_client.dart';
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
@@ -54,7 +55,7 @@ class ExpositionsScreen extends StatefulWidget {
 
 class _ExpositionsScreenState extends State<ExpositionsScreen> {
   static const double _mainTableMinWidth = 4300;
-  static const double _fixedIdColumnWidth = 112;
+  static const double _fixedIdColumnWidth = 128;
   static const double _fixedActionsColumnWidth = 112;
   static const double _controlGap = 8;
   static const double _filterControlHeight = 30;
@@ -480,13 +481,13 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     );
   }
 
-  final TextStyle _tableHeadingStyle = const TextStyle(
+  final TextStyle _tableHeadingStyle = TextStyle(
     fontFamily: AppTheme.fontFamily,
     fontWeight: FontWeight.w700,
     fontSize: 10,
     height: 1.0,
     letterSpacing: 0.18,
-    color: Color(0xFFF5F8FF),
+    color: const Color(0xFFF5F8FF),
   );
 
   TextStyle get _tableCellStyle {
@@ -554,9 +555,28 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               height: constraints.maxHeight,
               child: Row(
                 children: [
-                  SizedBox(
+                  Container(
                     width: leadingWidth,
                     height: constraints.maxHeight,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        right: BorderSide(
+                          color: isDark
+                              ? const Color(0xFF304764)
+                              : const Color(0xFFD6E0EF),
+                          width: 1,
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.20 : 0.06,
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(3, 0),
+                        ),
+                      ],
+                    ),
                     child: Column(
                       children: [
                         _buildStickyTableHeader(
@@ -720,7 +740,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     context,
                     label: 'Expositions',
                     value: '$visibleCount',
-                    detail: 'Lignes affichées',
+                    detail: 'Expositions affichées',
                     color: AppTheme.sidebarLight,
                   ),
                 ),
@@ -731,8 +751,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     child: _buildCompactSummaryCard(
                       context,
                       label: 'Exposition totale brute',
-                      value:
-                          '${AppFormatters.compactNumber(summary.totalExpositions)} $_displayCurrencyLabel',
+                      value: _formatDisplayAmount(summary.totalExpositions),
                       detail: 'Périmètre filtré',
                       color: AppTheme.sidebarLight,
                     ),
@@ -745,8 +764,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     child: _buildCompactSummaryCard(
                       context,
                       label: 'RWA total',
-                      value:
-                          '${AppFormatters.compactNumber(summary.totalRwa)} $_displayCurrencyLabel',
+                      value: _formatDisplayAmount(summary.totalRwa),
                       detail: 'RW ${rwAverage.toStringAsFixed(0)}%',
                       color: AppTheme.success,
                     ),
@@ -759,8 +777,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     child: _buildCompactSummaryCard(
                       context,
                       label: 'Capital requis',
-                      value:
-                          '${AppFormatters.compactNumber(summary.totalCapital)} $_displayCurrencyLabel',
+                      value: _formatDisplayAmount(summary.totalCapital),
                       detail: 'Exigence réglementaire',
                       color: AppTheme.warning,
                     ),
@@ -786,7 +803,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 context,
                 label: 'Expositions',
                 value: '$visibleCount',
-                detail: 'Lignes affichées',
+                detail: 'Expositions affichées',
                 color: AppTheme.sidebarLight,
               ),
             ),
@@ -796,8 +813,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               child: _buildCompactSummaryCard(
                 context,
                 label: 'Exposition totale brute',
-                value:
-                    '${AppFormatters.compactNumber(summary.totalExpositions)} $_displayCurrencyLabel',
+                value: _formatDisplayAmount(summary.totalExpositions),
                 detail: 'Périmètre filtré',
                 color: AppTheme.sidebarLight,
               ),
@@ -808,8 +824,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               child: _buildCompactSummaryCard(
                 context,
                 label: 'RWA total',
-                value:
-                    '${AppFormatters.compactNumber(summary.totalRwa)} $_displayCurrencyLabel',
+                value: _formatDisplayAmount(summary.totalRwa),
                 detail: 'RW ${rwAverage.toStringAsFixed(0)}%',
                 color: AppTheme.success,
               ),
@@ -820,8 +835,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               child: _buildCompactSummaryCard(
                 context,
                 label: 'Capital requis',
-                value:
-                    '${AppFormatters.compactNumber(summary.totalCapital)} $_displayCurrencyLabel',
+                value: _formatDisplayAmount(summary.totalCapital),
                 detail: 'Exigence réglementaire',
                 color: AppTheme.warning,
               ),
@@ -862,7 +876,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     label.tr(context).toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.text,
                       fontFamily: AppTheme.fontFamily,
                       fontSize: 6.8,
@@ -1101,6 +1115,23 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   double _sumWidths(List<double> widths) {
     return widths.fold<double>(0, (sum, width) => sum + width);
+  }
+
+  List<double> _fitColumnWidthsToAvailableWidth(
+    List<double> widths,
+    double availableWidth,
+  ) {
+    if (!availableWidth.isFinite || widths.isEmpty) {
+      return widths;
+    }
+
+    final totalWidth = _sumWidths(widths);
+    if (totalWidth <= availableWidth || totalWidth <= 0) {
+      return widths;
+    }
+
+    final scale = (availableWidth / totalWidth).clamp(0.0, 1.0).toDouble();
+    return widths.map((width) => width * scale).toList(growable: false);
   }
 
   List<double> _columnWidthsForKeys(
@@ -1714,35 +1745,44 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     _ExposureTableMode mode,
     List<ExposureRecord> rows,
   ) {
-    return Container(
-      height: 40,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF2A518A),
-            Color(0xFF23477A),
-          ],
-        ),
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withValues(alpha: 0.10),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fittedWidths = _fitColumnWidthsToAvailableWidth(
+          widths,
+          constraints.maxWidth,
+        );
+
+        return Container(
+          height: 40,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF2A518A),
+                Color(0xFF23477A),
+              ],
+            ),
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.white.withValues(alpha: 0.10),
+              ),
+            ),
           ),
-        ),
-      ),
-      child: Row(
-        children: List<Widget>.generate(columnKeys.length, (index) {
-          final key = columnKeys[index];
-          return _buildStickyHeaderCell(
-            width: widths[index],
-            label: _columnLabelForKey(key, mode),
-            sortKey: _sortKeyForColumn(key),
-            alignment: _columnAlignment(key),
-            textAlign: _columnTextAlign(key),
-          );
-        }),
-      ),
+          child: Row(
+            children: List<Widget>.generate(columnKeys.length, (index) {
+              final key = columnKeys[index];
+              return _buildStickyHeaderCell(
+                width: fittedWidths[index],
+                label: _columnLabelForKey(key, mode),
+                sortKey: _sortKeyForColumn(key),
+                alignment: _columnAlignment(key),
+                textAlign: _columnTextAlign(key),
+              );
+            }),
+          ),
+        );
+      },
     );
   }
 
@@ -1825,37 +1865,51 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         ? (isDark ? const Color(0xFF5B7DB0) : const Color(0xFF8AB8FF))
         : (isDark ? const Color(0xFF25354E) : const Color(0xFFE4EAF3));
 
-    return Container(
-      height: _tableRowHeight,
-      decoration: BoxDecoration(
-        color: rowColor,
-        border: Border(
-          bottom: BorderSide(color: borderColor, width: 0.7),
-        ),
-      ),
-      child: Row(
-        children: List<Widget>.generate(columnKeys.length, (index) {
-          final key = columnKeys[index];
-          final cell = _tableCellForKey(row, key, widths[index]);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fittedWidths = _fitColumnWidthsToAvailableWidth(
+          widths,
+          constraints.maxWidth,
+        );
 
-          if (key == 'actions') {
-            return SizedBox(
-                width: widths[index], height: _tableRowHeight, child: cell);
-          }
-
-          return SizedBox(
-            width: widths[index],
-            height: _tableRowHeight,
-            child: InkWell(
-              onTap: () => _selectExposureRow(row),
-              hoverColor: isSelected
-                  ? Colors.transparent
-                  : AppTheme.accent.withValues(alpha: isDark ? 0.12 : 0.06),
-              child: cell,
+        return Container(
+          height: _tableRowHeight,
+          decoration: BoxDecoration(
+            color: rowColor,
+            border: Border(
+              bottom: BorderSide(color: borderColor, width: 0.7),
             ),
-          );
-        }),
-      ),
+          ),
+          child: Row(
+            children: List<Widget>.generate(columnKeys.length, (index) {
+              final key = columnKeys[index];
+              final width = fittedWidths[index];
+              final cell = _tableCellForKey(row, key, width);
+
+              if (key == 'actions') {
+                return SizedBox(
+                  width: width,
+                  height: _tableRowHeight,
+                  child: cell,
+                );
+              }
+
+              return SizedBox(
+                width: width,
+                height: _tableRowHeight,
+                child: InkWell(
+                  onTap: () => _selectExposureRow(row),
+                  onDoubleTap: _clearExposureSelection,
+                  hoverColor: isSelected
+                      ? Colors.transparent
+                      : AppTheme.accent.withValues(alpha: isDark ? 0.12 : 0.06),
+                  child: cell,
+                ),
+              );
+            }),
+          ),
+        );
+      },
     );
   }
 
@@ -1864,6 +1918,13 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       return;
     }
     setState(() => _selectedExposureId = row.id);
+  }
+
+  void _clearExposureSelection() {
+    if (_selectedExposureId == null) {
+      return;
+    }
+    setState(() => _selectedExposureId = null);
   }
 
   Widget _tableCellForKey(
@@ -1877,7 +1938,16 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'analysis_date':
         return _tableText(_formatExposureDate(row.analysisDate), width);
       case 'id':
-        return _tableText(row.id, width);
+        return _tableText(
+          row.id,
+          width,
+          style: _tableCellStyle.copyWith(
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFFF7FAFF)
+                : const Color(0xFF12213A),
+          ),
+        );
       case 'grant_date':
         return _tableText(_formatExposureDate(row.grantDate), width);
       case 'maturity_date':
@@ -2396,7 +2466,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             elevation: 1,
             shadowColor:
                 isDark ? const Color(0x22040A16) : const Color(0x102563EB),
-            textStyle: const TextStyle(
+            textStyle: TextStyle(
               fontFamily: AppTheme.fontFamily,
               fontSize: 10.8,
               fontWeight: FontWeight.w500,
@@ -2472,7 +2542,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               borderRadius: BorderRadius.circular(_screenBorderRadius),
             ),
             visualDensity: VisualDensity.compact,
-            textStyle: const TextStyle(
+            textStyle: TextStyle(
               fontFamily: AppTheme.fontFamily,
               fontSize: 10.4,
               fontWeight: FontWeight.w500,
@@ -3256,7 +3326,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       totalExpositions: rows.fold<double>(
           0,
           (sum, item) =>
-              sum + _convertRowAmount(item.grossAmount, item.currency)),
+              sum +
+              _convertRowAmount(_loanTotalAmountValue(item), item.currency)),
       totalEad: rows.fold<double>(
           0, (sum, item) => sum + _convertRowAmount(item.ead, item.currency)),
       totalRwa: rows.fold<double>(
@@ -3285,6 +3356,14 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   double _convertRowAmount(double amount, String sourceCurrency) {
     return _convertAmountForDisplay(amount, sourceCurrency);
+  }
+
+  PortfolioAmountUnit get _amountUnit =>
+      PortfolioAmountUnitScope.maybeOf(context);
+
+  String _formatDisplayAmount(double value) {
+    final scaled = value / _amountUnit.divisor;
+    return '${AppFormatters.compactNumber(scaled)} ${_amountUnit.label} $_displayCurrencyLabel';
   }
 
   Future<void> _refresh() async {
@@ -4025,27 +4104,23 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         );
       case 'gross':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(row.grossAmount, row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(row.grossAmount, row.currency)),
         );
       case 'loan_total':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(_loanTotalAmountValue(row), row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(_loanTotalAmountValue(row), row.currency)),
         );
       case 'on_balance_amount':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(_onBalanceAmountValue(row), row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(_onBalanceAmountValue(row), row.currency)),
         );
       case 'off_balance_amount':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(_offBalanceAmountValue(row), row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(_offBalanceAmountValue(row), row.currency)),
         );
       case 'source_currency':
         return _pdfTableCell(row.currency);
@@ -4055,51 +4130,41 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         return _pdfTableCell(_crmTypeTableValue(row));
       case 'ead_bilan':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(_eadBilanAmountValue(row), row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(_eadBilanAmountValue(row), row.currency)),
         );
       case 'ead_hb':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(_eadHbAmountValue(row), row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(_eadHbAmountValue(row), row.currency)),
         );
       case 'ead_hb_ccf':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(_eadHbCcfAmountValue(row), row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(_eadHbCcfAmountValue(row), row.currency)),
         );
       case 'ead_total':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(_eadTotalAmountValue(row), row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(_eadTotalAmountValue(row), row.currency)),
         );
       case 'rwa_eb':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(_rwaEbAmountValue(row), row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(_rwaEbAmountValue(row), row.currency)),
         );
       case 'rwa_hb':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(_rwaHbAmountValue(row), row.currency),
-          ),
+          _formatDisplayAmount(
+              _convertRowAmount(_rwaHbAmountValue(row), row.currency)),
         );
       case 'rwa':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(row.rwa, row.currency),
-          ),
+          _formatDisplayAmount(_convertRowAmount(row.rwa, row.currency)),
         );
       case 'capital':
         return _pdfTableCell(
-          AppFormatters.compactNumber(
-            _convertRowAmount(row.capital, row.currency),
-          ),
+          _formatDisplayAmount(_convertRowAmount(row.capital, row.currency)),
         );
       default:
         return _pdfTableCell('');
@@ -4107,7 +4172,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   PdfColor _pdfRowColor(int rowIndex) {
-    return rowIndex.isEven ? PdfColors.white : const PdfColor.fromInt(0xFFF7FAFF);
+    return rowIndex.isEven
+        ? const PdfColor.fromInt(0xFFFFFFFF)
+        : const PdfColor.fromInt(0xFFF7FAFF);
   }
 
   PdfColor _pdfRwColor(double rwPercent) {
@@ -4155,7 +4222,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         backgroundColor: AppTheme.success,
         content: Text(
           rejectedRows > 0
-              ? 'Import terminé. $rejectedRows ligne(s) rejetée(s), $importedRows importée(s), $updatedRows mise(s) à jour.'
+              ? 'Import terminé. $rejectedRows exposition(s) rejetée(s), $importedRows importée(s), $updatedRows mise(s) à jour.'
               : 'Import terminé avec succès.',
         ),
       ),

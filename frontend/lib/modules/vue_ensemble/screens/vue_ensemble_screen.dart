@@ -188,6 +188,9 @@ class _ExecutiveDashboard extends StatelessWidget {
     final capitalMetric = _metric(metrics, 'capital');
     final defaultMetric = _metric(metrics, 'taux_defaut');
     final solvencyMetric = _metric(metrics, 'solvabilite');
+    final valueAtRiskMetric = _metric(metrics, 'value_at_risk');
+    final criticalIncidentsMetric = _metric(metrics, 'incidents_critiques');
+    final concentrationMaxMetric = _metric(metrics, 'concentration_max');
     final portfolioTotals =
         _PortfolioKpiTotals.fromRows(data.portfolioOverview);
     final exposureValue = portfolioTotals.grossAmount > 0
@@ -206,31 +209,46 @@ class _ExecutiveDashboard extends StatelessWidget {
     final tier1Ratio = rwaValue == 0 ? 0.0 : capitalValue / rwaValue;
     final leverageRatio = eadTotal == 0 ? 0.0 : availableCapital / eadTotal;
     final rwaDensity = eadTotal == 0 ? 0.0 : rwaValue / eadTotal;
-    final offBalanceExposure = data.portfolioOverview
+    final categorizedOffBalanceExposure = data.portfolioOverview
         .where(
           (item) =>
               item.category.toLowerCase().contains('hors bilan') ||
               item.id.toUpperCase().startsWith('HB'),
         )
         .fold<double>(0, (sum, item) => sum + item.grossAmount);
-    final globalVar = _valueAtRiskFromPortfolio(
+    final offBalanceExposure = portfolioTotals.offBalanceExposureAmount > 0
+        ? portfolioTotals.offBalanceExposureAmount
+        : categorizedOffBalanceExposure;
+    final onBalanceExposure = portfolioTotals.onBalanceExposureAmount > 0
+        ? portfolioTotals.onBalanceExposureAmount
+        : math.max(0.0, exposureValue - offBalanceExposure);
+    final computedGlobalVar = _valueAtRiskFromPortfolio(
       rows: data.portfolioOverview,
       rwaTrend: rwaMetric.trend,
       totalRwa: rwaValue,
       totalExposure: exposureValue,
     );
-    final criticalIncidents = _criticalIncidentsFromPortfolio(
+    final globalVar = valueAtRiskMetric.value > 0
+        ? valueAtRiskMetric.value
+        : computedGlobalVar;
+    final computedCriticalIncidents = _criticalIncidentsFromPortfolio(
       rows: data.portfolioOverview,
       nplRatio: defaultMetric.value,
       totalRwa: rwaValue,
       totalExposure: exposureValue,
     );
+    final criticalIncidents = criticalIncidentsMetric.value > 0
+        ? criticalIncidentsMetric.value.round()
+        : computedCriticalIncidents;
     final sortedRows = [...data.portfolioOverview]
       ..sort((a, b) => b.grossAmount.compareTo(a.grossAmount));
     final topExposure = sortedRows.isEmpty ? null : sortedRows.first;
-    final topExposureShare = topExposure == null || exposureValue == 0
+    final computedTopExposureShare = topExposure == null || exposureValue == 0
         ? 0.0
         : topExposure.grossAmount / exposureValue;
+    final topExposureShare = concentrationMaxMetric.value > 0
+        ? concentrationMaxMetric.value
+        : computedTopExposureShare;
     final topExposureLabel =
         topExposure == null || topExposure.counterparty.trim().isEmpty
             ? 'Première contrepartie'
@@ -274,7 +292,7 @@ class _ExecutiveDashboard extends StatelessWidget {
         detail: 'Value at Risk',
         icon: CupertinoIcons.waveform_circle_fill,
         color: _primary,
-        trend: rwaMetric.trend,
+        trend: valueAtRiskMetric.trend,
       ),
       _KpiSpec(
         label: 'Incidents critiques',
@@ -282,7 +300,7 @@ class _ExecutiveDashboard extends StatelessWidget {
         detail: 'Operational Risk',
         icon: CupertinoIcons.exclamationmark_octagon_fill,
         color: _danger,
-        trend: _flatTrend(criticalIncidents.toDouble()),
+        trend: criticalIncidentsMetric.trend,
       ),
       _KpiSpec(
         label: 'Concentration max',
@@ -290,7 +308,7 @@ class _ExecutiveDashboard extends StatelessWidget {
         detail: topExposureLabel,
         icon: CupertinoIcons.person_2_fill,
         color: _violet,
-        trend: _flatTrend(topExposureShare),
+        trend: concentrationMaxMetric.trend,
       ),
     ];
 
@@ -356,7 +374,7 @@ class _ExecutiveDashboard extends StatelessWidget {
         value: '$countryCount',
         color: _cyan,
         explanation:
-            'Mesure l’étendue géographique du portefeuille à partir des pays renseignés sur les lignes importées.',
+            'Mesure l’étendue géographique du portefeuille à partir des pays renseignés sur les expositions importées.',
         analysis:
             '$countryCount pays distinct(s) sont représentés. Cette lecture complète l’analyse de concentration géographique.',
         impact:
@@ -391,7 +409,7 @@ class _ExecutiveDashboard extends StatelessWidget {
         value: AppFormatters.percent(crmShare),
         color: _success,
         explanation:
-            'Indique la part de l’exposition brute portée par des lignes disposant d’un dispositif CRM ou d’une garantie renseignée.',
+            'Indique la part de l’exposition brute portée par des expositions disposant d’un dispositif CRM ou d’une garantie renseignée.',
         formulaLatex:
             r'\text{CRM}=\frac{\sum \text{Exposition avec CRM}}{\text{Exposition totale}}',
         analysis:
@@ -482,6 +500,7 @@ class _ExecutiveDashboard extends StatelessWidget {
                     solvencyRatio: solvencyRatio,
                     availableCapital: availableCapital,
                     rwaValue: rwaValue,
+                    onBalanceExposure: onBalanceExposure,
                     offBalanceExposure: offBalanceExposure,
                     tier1Ratio: tier1Ratio,
                     leverageRatio: leverageRatio,
@@ -507,8 +526,7 @@ class _ExecutiveDashboard extends StatelessWidget {
                           SizedBox(width: AppTheme.pageGap),
                           Expanded(
                             child: _RwaEvolutionAnalyticsPanel(
-                              points: data.rwaProjection,
-                              totalRwa: rwaMetric.value,
+                              rows: data.portfolioOverview,
                               displayCurrency: displayCurrency,
                             ),
                           ),
@@ -610,6 +628,7 @@ class _CommandCenterPanel extends StatelessWidget {
     required this.solvencyRatio,
     required this.availableCapital,
     required this.rwaValue,
+    required this.onBalanceExposure,
     required this.offBalanceExposure,
     required this.tier1Ratio,
     required this.leverageRatio,
@@ -621,13 +640,14 @@ class _CommandCenterPanel extends StatelessWidget {
   final double solvencyRatio;
   final double availableCapital;
   final double rwaValue;
+  final double onBalanceExposure;
   final double offBalanceExposure;
   final double tier1Ratio;
   final double leverageRatio;
   final double rwaDensity;
   final String displayCurrency;
   static const double _desktopPanelHeight = 238;
-  static const double _desktopRiskLedgerHeight = 306;
+  static const double _desktopRiskLedgerHeight = _desktopPanelHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -638,6 +658,14 @@ class _CommandCenterPanel extends StatelessWidget {
     final soft = _dashboardSurfaceSoftFor(context);
     final rwa = items[0];
     final exposure = items.length > 1 ? items[1] : rwa;
+    final onBalance = _KpiSpec(
+      label: 'Exposition au bilan',
+      value: _money(onBalanceExposure, displayCurrency),
+      detail: 'Engagements portés au bilan',
+      icon: CupertinoIcons.building_2_fill,
+      color: const Color(0xFF67E8F9),
+      trend: _flatTrend(onBalanceExposure),
+    );
     final offBalance = _KpiSpec(
       label: 'Exposition au hors bilan',
       value: _money(offBalanceExposure, displayCurrency),
@@ -673,6 +701,7 @@ class _CommandCenterPanel extends StatelessWidget {
               final primary = _CommandPrimaryBlock(
                 rwa: rwa,
                 exposure: exposure,
+                onBalance: onBalance,
                 offBalance: offBalance,
               );
               final compass = _CapitalCompassPanel(
@@ -747,11 +776,13 @@ class _CommandPrimaryBlock extends StatelessWidget {
   const _CommandPrimaryBlock({
     required this.rwa,
     required this.exposure,
+    required this.onBalance,
     required this.offBalance,
   });
 
   final _KpiSpec rwa;
   final _KpiSpec exposure;
+  final _KpiSpec onBalance;
   final _KpiSpec offBalance;
 
   @override
@@ -776,7 +807,7 @@ class _CommandPrimaryBlock extends StatelessWidget {
         boxShadow: _commandCardElevation(context, _primary),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(15, 12, 15, 11),
+        padding: const EdgeInsets.fromLTRB(15, 11, 15, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -803,7 +834,7 @@ class _CommandPrimaryBlock extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
             Text(
               rwa.label.tr(context).toUpperCase(),
               maxLines: 1,
@@ -815,7 +846,7 @@ class _CommandPrimaryBlock extends StatelessWidget {
                 letterSpacing: 0.6,
               ),
             ),
-            const SizedBox(height: 7),
+            const SizedBox(height: 5),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -824,23 +855,31 @@ class _CommandPrimaryBlock extends StatelessWidget {
                 maxLines: 1,
                 style: const TextStyle(
                   color: valueColor,
-                  fontSize: 35,
+                  fontSize: 33,
                   fontWeight: FontWeight.w700,
                   height: 0.96,
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _CommandPrimaryDivider(color: dividerColor),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             _CommandMeasureRow(
               item: exposure,
               labelColor: labelColor,
               valueColor: valueColor,
             ),
-            const SizedBox(height: 7),
+            const SizedBox(height: 6),
             _CommandPrimaryDivider(color: dividerColor),
-            const SizedBox(height: 7),
+            const SizedBox(height: 6),
+            _CommandMeasureRow(
+              item: onBalance,
+              labelColor: labelColor,
+              valueColor: valueColor,
+            ),
+            const SizedBox(height: 6),
+            _CommandPrimaryDivider(color: dividerColor),
+            const SizedBox(height: 6),
             _CommandMeasureRow(
               item: offBalance,
               labelColor: labelColor,
@@ -1324,7 +1363,7 @@ class _CommandRiskLedger extends StatelessWidget {
         boxShadow: _commandCardElevation(context, _primary),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 9),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1334,31 +1373,31 @@ class _CommandRiskLedger extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: titleColor,
-                fontSize: 16,
+                fontSize: 14.2,
                 fontWeight: FontWeight.w800,
                 height: 1,
               ),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 3),
             Text(
               'Les signaux qui orientent la surveillance immédiate.'
                   .tr(context),
-              maxLines: 2,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: mutedColor,
-                fontSize: 9.2,
+                fontSize: 8.4,
                 fontWeight: FontWeight.w600,
-                height: 1.25,
+                height: 1.1,
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             _CommandRiskRow(item: valueAtRisk),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             _CommandRiskRow(item: npl),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             _CommandRiskRow(item: incidents),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             _CommandRiskRow(item: concentration),
           ],
         ),
@@ -1390,18 +1429,18 @@ class _CommandRiskRowState extends State<_CommandRiskRow> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedScale(
-        scale: _hovered ? 1.012 : 1,
+        scale: _hovered ? 1.004 : 1,
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           transform: Matrix4.translationValues(
-            _hovered ? 4 : 0,
-            _hovered ? -2 : 0,
+            _hovered ? 2 : 0,
+            _hovered ? -1 : 0,
             0,
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 13.5),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8.2),
           decoration: BoxDecoration(
             color: isDark
                 ? accentColor.withValues(alpha: _hovered ? 0.17 : 0.12)
@@ -1428,7 +1467,7 @@ class _CommandRiskRowState extends State<_CommandRiskRow> {
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
                 width: 26,
-                height: 26,
+                height: 24,
                 alignment: Alignment.center,
                 transform: Matrix4.translationValues(0, _hovered ? -1 : 0, 0),
                 decoration: BoxDecoration(
@@ -1439,7 +1478,7 @@ class _CommandRiskRowState extends State<_CommandRiskRow> {
                   ),
                   borderRadius: BorderRadius.circular(_radius),
                 ),
-                child: Icon(widget.item.icon, color: accentColor, size: 13),
+                child: Icon(widget.item.icon, color: accentColor, size: 12.5),
               ),
               const SizedBox(width: 9),
               Expanded(
@@ -1452,18 +1491,19 @@ class _CommandRiskRowState extends State<_CommandRiskRow> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: textColor,
-                        fontSize: 11.4,
+                        fontSize: 10.2,
                         fontWeight: FontWeight.w700,
+                        height: 1,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1.5),
                     Text(
                       widget.item.detail.tr(context),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: mutedColor.withValues(alpha: 0.96),
-                        fontSize: 8,
+                        fontSize: 7.5,
                         fontWeight: FontWeight.w600,
                         height: 1,
                       ),
@@ -1482,7 +1522,7 @@ class _CommandRiskRowState extends State<_CommandRiskRow> {
                     maxLines: 1,
                     style: TextStyle(
                       color: accentColor,
-                      fontSize: _hovered ? 14.7 : 14.2,
+                      fontSize: _hovered ? 13.6 : 13.2,
                       fontWeight: FontWeight.w700,
                       height: 1,
                     ),
@@ -1919,59 +1959,85 @@ class _ExecutivePriorityDecision extends StatelessWidget {
     const bubbleColor = Color(0xFEFEFEFE);
     const bubbleAccent = Color(0xFF3730A3);
 
-    return CustomPaint(
-      painter: _ExecutiveSpeechBubblePainter(
-        color: bubbleColor,
-        borderColor: bubbleAccent.withValues(alpha: 0.18),
-        shadowColor: bubbleAccent.withValues(alpha: isDark ? 0.24 : 0.16),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(29, 12, 14, 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 31,
-              height: 31,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: bubbleAccent.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(_radius * 3),
+    return _HoverProgress(
+      builder: (context, hover) {
+        final animatedBorder = bubbleAccent.withValues(
+          alpha: 0.18 + hover * 0.16,
+        );
+        final animatedShadow = bubbleAccent.withValues(
+          alpha: (isDark ? 0.24 : 0.16) + hover * 0.10,
+        );
+
+        return Transform.translate(
+          offset: Offset(hover * 1.5, 9 - hover * 3),
+          child: Transform.scale(
+            scale: 1 + hover * 0.008,
+            alignment: Alignment.center,
+            child: CustomPaint(
+              painter: _ExecutiveSpeechBubblePainter(
+                color: bubbleColor,
+                borderColor: animatedBorder,
+                shadowColor: animatedShadow,
               ),
-              child: const Icon(
-                CupertinoIcons.chat_bubble_text_fill,
-                color: bubbleAccent,
-                size: 16,
-              ),
-            ),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text.rich(
-                    _executiveHighlightedSpan(
-                      context,
-                      text: brief.recommendation,
-                      baseStyle: TextStyle(
-                        color: mutedColor,
-                        fontSize: 9.8,
-                        fontWeight: FontWeight.w600,
-                        height: 1.36,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(29, 12, 14, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Transform.translate(
+                      offset: Offset(0, -hover * 1.5),
+                      child: Transform.scale(
+                        scale: 1 + hover * 0.045,
+                        child: Container(
+                          width: 31,
+                          height: 31,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: bubbleAccent.withValues(
+                              alpha: 0.10 + hover * 0.05,
+                            ),
+                            borderRadius: BorderRadius.circular(_radius * 3),
+                          ),
+                          child: const Icon(
+                            CupertinoIcons.chat_bubble_text_fill,
+                            color: bubbleAccent,
+                            size: 16,
+                          ),
+                        ),
                       ),
-                      accent: bubbleAccent,
-                      highlightColor: textColor,
-                      highlightWeight: FontWeight.w900,
                     ),
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text.rich(
+                            _executiveHighlightedSpan(
+                              context,
+                              text: brief.recommendation,
+                              baseStyle: TextStyle(
+                                color: mutedColor,
+                                fontSize: 9.8,
+                                fontWeight: FontWeight.w600,
+                                height: 1.36,
+                              ),
+                              accent: bubbleAccent,
+                              highlightColor: textColor,
+                              highlightWeight: FontWeight.w900,
+                            ),
+                            maxLines: 4,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -2666,11 +2732,6 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
     'UEMOA',
     'Hors zone',
   ];
-  static const List<double> _fictiveZoneShares = [
-    0.18,
-    0.42,
-    0.40,
-  ];
   static const List<Color> _zoneColors = [
     _success,
     _primary,
@@ -3185,7 +3246,6 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
   Widget _geographyContent(double width) {
     final entries = _geographyEntries();
     final dominant = _dominant(entries);
-    final total = entries.fold<double>(0, (sum, entry) => sum + entry.amount);
     final sideGap = _sideGapFor(width);
 
     return Row(
@@ -3220,8 +3280,8 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                 ),
                 const SizedBox(height: 8),
                 _summaryTile(
-                  label: 'Exposition totale',
-                  value: _money(total, widget.displayCurrency),
+                  label: 'Exp. zone dominante',
+                  value: _money(dominant.amount, widget.displayCurrency),
                   color: _cyan,
                   design: _RiskSummaryDesign.exposureStack,
                 ),
@@ -3389,11 +3449,6 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
       return _emptyChart();
     }
 
-    final maxShare = entries.fold<double>(
-      0,
-      (maxValue, entry) => math.max(maxValue, entry.percentage),
-    );
-
     return _EntranceProgress(
       builder: (context, enter) {
         return LayoutBuilder(
@@ -3450,17 +3505,9 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                             Expanded(
                               child: LayoutBuilder(
                                 builder: (context, constraints) {
-                                  final targetWidth = maxShare == 0
-                                      ? 0.0
-                                      : constraints.maxWidth *
-                                          (entry.percentage / maxShare)
-                                              .clamp(0.0, 1.0);
-                                  final width = targetWidth * enter;
-                                  final animatedWidth =
-                                      (width + hover * 8).clamp(
-                                    0.0,
-                                    constraints.maxWidth,
-                                  );
+                                  final targetWidth = constraints.maxWidth *
+                                      entry.percentage.clamp(0.0, 1.0);
+                                  final animatedWidth = targetWidth * enter;
 
                                   return Stack(
                                     alignment: Alignment.centerLeft,
@@ -3542,11 +3589,6 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
       return _emptyChart();
     }
 
-    final maxShare = entries.fold<double>(
-      0,
-      (maxValue, entry) => math.max(maxValue, entry.percentage),
-    );
-
     return _EntranceProgress(
       builder: (context, enter) {
         return Row(
@@ -3583,11 +3625,8 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
                             child: Align(
                               alignment: Alignment.bottomCenter,
                               child: FractionallySizedBox(
-                                heightFactor: maxShare == 0
-                                    ? 0
-                                    : (entry.percentage / maxShare)
-                                            .clamp(0.04, 1.0) *
-                                        enter,
+                                heightFactor:
+                                    entry.percentage.clamp(0.0, 1.0) * enter,
                                 child: Transform.translate(
                                   offset: Offset(0, -hover * 3),
                                   child: Transform.scale(
@@ -3793,26 +3832,32 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
   }
 
   List<_ConcentrationEntry> _geographyEntries() {
-    final source = widget.countries.isNotEmpty
-        ? widget.countries
-        : _countryDistributionFromRows();
-    final sourceTotal =
-        source.fold<double>(0, (sum, entry) => sum + entry.amount);
-    final portfolioTotal =
-        widget.rows.fold<double>(0, (sum, row) => sum + row.rwa);
-    final displayTotal = sourceTotal > 0 ? sourceTotal : portfolioTotal;
-    final baseAmount = displayTotal > 0 ? displayTotal : 100.0;
+    final totals = {
+      for (final label in _RiskConcentrationPanelState._zoneLabels) label: 0.0,
+    };
 
-    // Donnees temporaires diversifiees pour eviter un affichage concentre a 100%.
+    for (final row in widget.rows) {
+      final zone = computeZone(row.country);
+      totals.update(
+        zone,
+        (value) => value + row.grossAmount,
+        ifAbsent: () => row.grossAmount,
+      );
+    }
+
+    final total = totals.values.fold<double>(0, (sum, value) => sum + value);
+
     return [
       for (var index = 0;
           index < _RiskConcentrationPanelState._zoneLabels.length;
           index++)
         _ConcentrationEntry(
           label: _RiskConcentrationPanelState._zoneLabels[index],
-          amount: baseAmount *
-              _RiskConcentrationPanelState._fictiveZoneShares[index],
-          percentage: _RiskConcentrationPanelState._fictiveZoneShares[index],
+          amount: totals[_RiskConcentrationPanelState._zoneLabels[index]] ?? 0,
+          percentage: total == 0
+              ? 0
+              : (totals[_RiskConcentrationPanelState._zoneLabels[index]] ?? 0) /
+                  total,
           color: _RiskConcentrationPanelState._zoneColors[
               index % _RiskConcentrationPanelState._zoneColors.length],
         ),
@@ -3830,27 +3875,6 @@ class _RiskConcentrationPanelState extends State<_RiskConcentrationPanel> {
         row.category,
         (value) => value + row.grossAmount,
         ifAbsent: () => row.grossAmount,
-      );
-    }
-    return totals.entries
-        .map(
-          (entry) => DistributionEntry(
-            label: entry.key,
-            amount: entry.value,
-            percentage: total == 0 ? 0 : entry.value / total,
-          ),
-        )
-        .toList();
-  }
-
-  List<DistributionEntry> _countryDistributionFromRows() {
-    final totals = <String, double>{};
-    final total = widget.rows.fold<double>(0, (sum, row) => sum + row.rwa);
-    for (final row in widget.rows) {
-      totals.update(
-        row.country,
-        (value) => value + row.rwa,
-        ifAbsent: () => row.rwa,
       );
     }
     return totals.entries
@@ -4416,13 +4440,11 @@ class _RiskSummaryDesignPainter extends CustomPainter {
 
 class _RwaEvolutionAnalyticsPanel extends StatefulWidget {
   const _RwaEvolutionAnalyticsPanel({
-    required this.points,
-    required this.totalRwa,
+    required this.rows,
     required this.displayCurrency,
   });
 
-  final List<DashboardProjectionPoint> points;
-  final double totalRwa;
+  final List<PortfolioRow> rows;
   final String displayCurrency;
 
   @override
@@ -4447,95 +4469,41 @@ class _RwaEvolutionAnalyticsPanelState
     'Nov.',
     'Déc.',
   ];
-  static const List<List<double>> _creditRwaProfiles = [
-    [
-      0.960,
-      0.990,
-      0.975,
-      1.015,
-      1.000,
-      1.038,
-      1.022,
-      1.052,
-      1.034,
-      1.060,
-      1.045,
-      1.072
-    ],
-    [
-      0.910,
-      0.940,
-      0.925,
-      0.955,
-      0.985,
-      0.965,
-      1.005,
-      1.025,
-      1.010,
-      1.040,
-      1.018,
-      1.050
-    ],
-    [
-      0.880,
-      0.905,
-      0.935,
-      0.918,
-      0.950,
-      0.975,
-      0.955,
-      0.990,
-      1.020,
-      1.000,
-      1.028,
-      1.012
-    ],
-    [
-      0.840,
-      0.870,
-      0.862,
-      0.890,
-      0.925,
-      0.910,
-      0.945,
-      0.965,
-      0.952,
-      0.982,
-      1.005,
-      0.992
-    ],
-    [
-      0.800,
-      0.830,
-      0.815,
-      0.848,
-      0.872,
-      0.858,
-      0.895,
-      0.922,
-      0.905,
-      0.936,
-      0.956,
-      0.945
-    ],
-    [
-      0.780,
-      0.802,
-      0.828,
-      0.812,
-      0.840,
-      0.867,
-      0.850,
-      0.882,
-      0.914,
-      0.895,
-      0.924,
-      0.948
-    ],
-  ];
   String _selectedPeriod = '6M';
   DateTime _selectedReferenceDate = DateTime.now();
   _RwaHoverInfo? _hoverInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedReferenceDate = _latestPortfolioDate();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RwaEvolutionAnalyticsPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.rows != widget.rows &&
+        !_hasDataForYear(_selectedReferenceDate.year)) {
+      _selectedReferenceDate = _latestPortfolioDate();
+      _hoverInfo = null;
+    }
+  }
+
+  DateTime _latestPortfolioDate() {
+    final dates = widget.rows
+        .map((row) => row.analysisDate)
+        .whereType<DateTime>()
+        .toList(growable: false);
+    if (dates.isEmpty) {
+      return DateTime.now();
+    }
+    dates.sort();
+    return dates.last;
+  }
+
+  bool _hasDataForYear(int year) {
+    return widget.rows.any((row) => row.analysisDate?.year == year);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -4697,9 +4665,9 @@ class _RwaEvolutionAnalyticsPanelState
   List<_RwaSeries> _visibleSeries() {
     final basePoints = _basePoints();
     final takeCount = switch (_selectedPeriod) {
-      '1M' => 2,
-      '3M' => 4,
-      '6M' => 7,
+      '1M' => 1,
+      '3M' => 3,
+      '6M' => 6,
       '1Y' => 12,
       _ => basePoints.length,
     };
@@ -4722,29 +4690,31 @@ class _RwaEvolutionAnalyticsPanelState
   }
 
   List<DashboardProjectionPoint> _basePoints() {
-    final currentDate = DateTime.now();
-    if (_selectedReferenceDate.year != currentDate.year) {
+    final monthTotals = List<double>.filled(12, 0.0);
+    for (final row in widget.rows) {
+      final date = row.analysisDate;
+      if (date == null || date.year != _selectedReferenceDate.year) {
+        continue;
+      }
+      monthTotals[date.month - 1] += row.grossAmount;
+    }
+
+    final activeMonths = <int>[
+      for (var index = 0; index < monthTotals.length; index++)
+        if (monthTotals[index] > 0) index,
+    ];
+    if (activeMonths.isEmpty) {
       return const [];
     }
 
-    final selectedYearOffset = (currentDate.year - _selectedReferenceDate.year)
-        .clamp(0, _creditRwaProfiles.length - 1)
-        .toInt();
-    final monthCount = _selectedReferenceDate.month.clamp(1, 12).toInt();
-    final profile = _creditRwaProfiles[selectedYearOffset];
-    final normalizedIndex =
-        (monthCount - 1).clamp(0, profile.length - 1).toInt();
-    final normalizedValue =
-        profile[normalizedIndex] == 0 ? 1.0 : profile[normalizedIndex];
-    final creditShare =
-        (0.69 - selectedYearOffset * 0.035).clamp(0.52, 0.72).toDouble();
-    final creditAnchor = widget.totalRwa * creditShare;
+    final firstMonth = activeMonths.first;
+    final lastMonth = activeMonths.last;
 
     return [
-      for (var index = 0; index < monthCount; index++)
+      for (var index = firstMonth; index <= lastMonth; index++)
         DashboardProjectionPoint(
           label: _monthLabels[index],
-          value: creditAnchor * profile[index] / normalizedValue,
+          value: monthTotals[index],
         ),
     ];
   }
@@ -5005,32 +4975,42 @@ class _RwaUnitBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = _isDashboardDark(context);
-    final color = _dashboardMutedFor(context);
-
     return Container(
-      height: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 7),
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 9),
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.035)
-            : _primary.withValues(alpha: 0.045),
+        color: _primary,
         borderRadius: BorderRadius.circular(1),
-        border: Border.all(
-          color: _dashboardBorderFor(context).withValues(alpha: 0.72),
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: _primary.withValues(alpha: 0.16),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       alignment: Alignment.center,
-      child: Text(
-        'Unité : $unitLabel',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: color,
-          fontSize: 8.4,
-          fontWeight: FontWeight.w700,
-          height: 1,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            CupertinoIcons.number,
+            size: 12,
+            color: Colors.white,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            'Montants en $unitLabel',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10.2,
+              fontWeight: FontWeight.w800,
+              height: 1,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -6689,12 +6669,16 @@ class _KpiSpec {
 class _PortfolioKpiTotals {
   const _PortfolioKpiTotals({
     required this.grossAmount,
+    required this.onBalanceExposureAmount,
+    required this.offBalanceExposureAmount,
     required this.ead,
     required this.rwa,
     required this.capital,
   });
 
   final double grossAmount;
+  final double onBalanceExposureAmount;
+  final double offBalanceExposureAmount;
   final double ead;
   final double rwa;
   final double capital;
@@ -6704,6 +6688,14 @@ class _PortfolioKpiTotals {
       grossAmount: rows.fold<double>(
         0,
         (sum, item) => sum + item.grossAmount,
+      ),
+      onBalanceExposureAmount: rows.fold<double>(
+        0,
+        (sum, item) => sum + item.onBalanceExposureAmount,
+      ),
+      offBalanceExposureAmount: rows.fold<double>(
+        0,
+        (sum, item) => sum + item.offBalanceExposureAmount,
       ),
       ead: rows.fold<double>(0, (sum, item) => sum + item.ead),
       rwa: rows.fold<double>(0, (sum, item) => sum + item.rwa),
@@ -6742,17 +6734,8 @@ String _portfolioDisplayRating(String rating) {
 }
 
 String _money(double value, String displayCurrency) {
-  final compact = compactCurrencyForDisplay(value, toCurrency: displayCurrency);
-  final abbreviated = compact
-      .replaceAll(' milliards ', ' Md ')
-      .replaceAll(' milliard ', ' Md ')
-      .replaceAll(' billions ', ' Bn ')
-      .replaceAll(' billion ', ' Bn ')
-      .replaceAll(' millions ', ' M ')
-      .replaceAll(' million ', ' M ')
-      .replaceAll(' mille ', ' k ')
-      .replaceAll(' thousand ', ' k ');
-  return _groupLeadingMoneyNumber(abbreviated);
+  final amount = compactCurrencyForDisplay(value, toCurrency: displayCurrency);
+  return _groupLeadingMoneyNumber(amount);
 }
 
 String _groupLeadingMoneyNumber(String value) {
