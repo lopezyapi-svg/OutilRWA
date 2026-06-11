@@ -176,7 +176,7 @@ class RisqueOperationnelScreen extends StatelessWidget {
     final (title, subtitle, artRef) = switch (view) {
       OperationalRiskView.dashboard   => ('Dashboard Opérationnel',    'KPI réglementaires et alertes (Art. 313)',                      'Art. 313'),
       OperationalRiskView.registre    => ('Registre des pertes RO',     'Registre BCEAO/UMOA — pertes, K_RO et APR (Art. 89 & 313.b)',  'Art. 89'),
-      OperationalRiskView.incidents   => ('Incidents',                  'Déclaration et suivi des incidents (Art. 313.b)',               'Art. 313.b'),
+      OperationalRiskView.incidents   => ('Simulation de crise',        'Stress testing PIEAFP — scénarios de vulnérabilité (Art. 545)', 'Art. 545'),
       OperationalRiskView.pertes      => ('Pertes opérationnelles',     'Base de pertes historiques — calcul APR BIA (Art. 89)',         'Art. 89'),
       OperationalRiskView.kri         => ('KRI',                        'Indicateurs clés de risque — surveillance continue (Art. 313)', 'Art. 313'),
       OperationalRiskView.cartographie=> ('Cartographie des risques',   'Identification et évaluation — matrice 5×5 (Art. 313)',         'Art. 313'),
@@ -189,7 +189,7 @@ class RisqueOperationnelScreen extends StatelessWidget {
     final content = switch (view) {
       OperationalRiskView.dashboard => _DashboardView(api: api),
       OperationalRiskView.registre  => _RegistreView(api: api),
-      OperationalRiskView.incidents => _IncidentsView(api: api),
+      OperationalRiskView.incidents => _SimulationCriseView(api: api),
       OperationalRiskView.pertes => _PertesView(api: api),
       OperationalRiskView.kri => _KriView(api: api),
       OperationalRiskView.cartographie => _CartographieView(api: api),
@@ -872,259 +872,313 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 }
 
-// ─── VIEW 2 : INCIDENTS ───────────────────────────────────────────────────────
+// ─── VIEW 2 : SIMULATION DE CRISE — Art. 545 PIEAFP ─────────────────────────
 
-class _IncidentsView extends StatefulWidget {
-  const _IncidentsView({required this.api});
+class _SimulationCriseView extends StatefulWidget {
+  const _SimulationCriseView({required this.api});
   final RwaApiService api;
   @override
-  State<_IncidentsView> createState() => _IncidentsViewState();
+  State<_SimulationCriseView> createState() => _SimulationCriseViewState();
 }
 
-class _IncidentsViewState extends State<_IncidentsView> {
+class _SimulationCriseViewState extends State<_SimulationCriseView> {
   late Future<List<RoIncident>> _future;
-  String? _filterStatut;
+
+  final _fpCtrl    = TextEditingController();
+  final _aprCtrl   = TextEditingController();
+  final _provCtrl  = TextEditingController();
+  final _assurCtrl = TextEditingController();
+  final _seuilCtrl = TextEditingController(text: '8.0');
+
+  bool _simulated = false;
+
+  // (code, label, choc_losses_multiplier, accent_color)
+  // S1 Optimiste : pertes ×0.90  (-10 %)
+  // S2 Neutre    : pertes ×1.00  ( 0 %)
+  // S3 Pessimiste: pertes ×1.20  (+20 %)
+  // S4 Crise     : pertes ×1.35  (+35 %)
+  static const _sc = [
+    ('S1', 'Optimiste',    0.90, Color(0xFF43A047)),
+    ('S2', 'Neutre',       1.00, Color(0xFF1E88E5)),
+    ('S3', 'Pessimiste',   1.20, Color(0xFFFB8C00)),
+    ('S4', 'Crise sévère', 1.35, Color(0xFFE53935)),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _reload();
+    _future = widget.api.fetchRoIncidents();
+    for (final c in [_fpCtrl, _aprCtrl, _provCtrl, _assurCtrl, _seuilCtrl]) {
+      c.addListener(_onFieldChanged);
+    }
   }
 
-  void _reload() {
-    setState(() { _future = widget.api.fetchRoIncidents(statut: _filterStatut); });
+  void _onFieldChanged() {
+    setState(() => _simulated = [_fpCtrl, _aprCtrl, _provCtrl, _assurCtrl]
+        .any((c) => c.text.trim().isNotEmpty));
   }
 
-  Future<void> _showForm({RoIncident? edit}) async {
-    final dateCtrl = TextEditingController(text: edit?.dateOccurrence ?? '');
-    final descCtrl = TextEditingController(text: edit?.description ?? '');
-    String? causeRacine = edit != null && edit.causeRacine.isNotEmpty ? edit.causeRacine : _causesRacine.first;
-    final brutCtrl = TextEditingController(text: edit != null ? edit.perteBrute.toStringAsFixed(0) : '');
-    final recupCtrl = TextEditingController(text: edit != null ? edit.perteRecuperee.toStringAsFixed(0) : '');
-    String? ligne = edit?.ligneMetier ?? _lignesMetier.first;
-    String? type = edit?.typeEvenement ?? _typesEvenement.first;
-    String? statut = edit?.statut ?? _statutsIncident.first;
-    final formKey = GlobalKey<FormState>();
+  @override
+  void dispose() {
+    for (final c in [_fpCtrl, _aprCtrl, _provCtrl, _assurCtrl, _seuilCtrl]) {
+      c.removeListener(_onFieldChanged);
+      c.dispose();
+    }
+    super.dispose();
+  }
 
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) => AlertDialog(
-          titlePadding: EdgeInsets.zero,
-          title: Container(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
-            decoration: BoxDecoration(
-              color: _kDanger.withValues(alpha: 0.06),
-              border: Border(bottom: BorderSide(color: _kDanger.withValues(alpha: 0.15))),
-            ),
-            child: Row(children: [
-              Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  color: _kDanger.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: const Icon(Icons.report_gmailerrorred_rounded, color: _kDanger, size: 18),
+  double? _d(TextEditingController c) =>
+      double.tryParse(c.text.trim().replaceAll(' ', '').replaceAll(',', '.'));
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return FutureBuilder<List<RoIncident>>(
+      future: _future,
+      builder: (ctx, snap) {
+        if (snap.connectionState != ConnectionState.done) return _loadingBox();
+        if (snap.hasError) return _errorBox(snap.error!);
+        final items      = snap.data!;
+        final pertesHisto = items.fold(0.0, (s, i) => s + i.perteNette);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Bandeau réglementaire ─────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1565C0).withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(color: const Color(0xFF1565C0).withValues(alpha: 0.18)),
               ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(edit == null ? 'Nouvel incident opérationnel' : 'Modifier l\'incident',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Déclaration conforme Art. 313.b UMOA',
-                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
-              ])),
-            ]),
-          ),
-          content: SizedBox(
-            width: 560,
-            child: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 4),
+              child: Row(children: [
+                const Icon(Icons.science_rounded, color: Color(0xFF1565C0), size: 18),
+                const SizedBox(width: 10),
+                Expanded(child: Text(
+                  'Art. 545 UMOA — Évaluation de la vulnérabilité à des événements exceptionnels mais plausibles (PIEAFP).\n'
+                  'Base historique : ${items.length} incident(s) | Pertes nettes : ${AppFormatters.currency(pertesHisto)}',
+                  style: const TextStyle(fontSize: 11, color: _kMuted),
+                )),
+                _artInfo('Art. 545'),
+              ]),
+            ),
+            const SizedBox(height: 14),
+
+            // ── Paramètres ────────────────────────────────────────────────────
+            Card(
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: const EdgeInsets.all(14),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _formSection('Identification', icon: Icons.calendar_today_rounded, color: _kDanger),
-                    _formRow(
-                      _dateField(ctx, 'Date d\'occurrence', dateCtrl, required: true),
-                      _dropdown('Statut', statut, _statutsIncident, (v) => setD(() => statut = v),
-                        required: true, icon: Icons.flag_rounded),
+                    const Text('Paramètres de la simulation',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 10,
+                      children: [
+                        _simField('Fonds propres disponibles (FCFA)', _fpCtrl),
+                        _simField('APR de référence (FCFA)',           _aprCtrl),
+                        _simField('Provisions constituées (FCFA)',     _provCtrl),
+                        _simField('Couverture assurance (FCFA)',       _assurCtrl),
+                        _simField('Seuil ratio résistance (%)',        _seuilCtrl, width: 220),
+                      ],
                     ),
-                    _formSection('Classification', icon: Icons.category_rounded, color: _kWarning),
-                    _formRow(
-                      _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
-                        required: true, icon: Icons.business_rounded),
-                      _dropdown('Type d\'événement', type, _typesEvenement, (v) => setD(() => type = v),
-                        required: true, icon: Icons.label_rounded),
-                    ),
-                    _dropdown('Cause racine', causeRacine, _causesRacine, (v) => setD(() => causeRacine = v),
-                      icon: Icons.search_rounded),
-                    _formSection('Description', icon: Icons.notes_rounded),
-                    _field('Description de l\'incident', descCtrl, multiline: true, required: true,
-                      hint: 'Décrivez les circonstances, le contexte et les conséquences de l\'incident...'),
-                    _formSection('Impact financier', icon: Icons.monetization_on_rounded, color: _kDanger),
-                    _formRow(
-                      _field('Perte brute (FCFA)', brutCtrl, keyboardType: TextInputType.number,
-                        required: true, icon: Icons.trending_down_rounded,
-                        hint: 'Ex: 500000'),
-                      _field('Perte récupérée (FCFA)', recupCtrl, keyboardType: TextInputType.number,
-                        icon: Icons.trending_up_rounded, hint: 'Ex: 150000'),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.icon(
+                        icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                        label: const Text('Lancer la simulation'),
+                        onPressed: () => setState(() => _simulated = true),
+                        style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-          actions: [
-            OutlinedButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler'),
-            ),
-            const SizedBox(width: 8),
-            FilledButton.icon(
-              icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded, size: 16),
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
-                final data = {
-                  'date_occurrence': dateCtrl.text.trim(),
-                  'description': descCtrl.text.trim(),
-                  'ligne_metier': ligne,
-                  'type_evenement': type,
-                  'cause_racine': causeRacine ?? '',
-                  'perte_brute': double.tryParse(brutCtrl.text) ?? 0,
-                  'perte_recuperee': double.tryParse(recupCtrl.text) ?? 0,
-                  'statut': statut,
-                };
-                try {
-                  if (edit == null) {
-                    await widget.api.createRoIncident(data);
-                  } else {
-                    await widget.api.updateRoIncident(edit.id, data);
-                  }
-                  if (ctx.mounted) Navigator.pop(ctx, true);
-                } catch (e) {
-                  if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
-                  }
-                }
-              },
-              style: FilledButton.styleFrom(backgroundColor: _kDanger),
-              label: Text(edit == null ? 'Déclarer' : 'Enregistrer'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (ok == true) _reload();
-  }
+            const SizedBox(height: 14),
 
-  Future<void> _showWizard() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => _RoIncidentWizardDialog(api: widget.api),
-    );
-    if (ok == true) _reload();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Filtres + bouton
-        Row(
-          children: [
-            SizedBox(
-              width: 180,
-              child: DropdownButtonFormField<String?>(
-                initialValue: _filterStatut,
-                decoration: const InputDecoration(labelText: 'Filtrer par statut', isDense: true, border: OutlineInputBorder()),
-                items: [
-                  const DropdownMenuItem(value: null, child: Text('Tous')),
-                  ..._statutsIncident.map((s) => DropdownMenuItem(value: s, child: Text(s))),
-                ],
-                onChanged: (v) { setState(() => _filterStatut = v); _reload(); },
-              ),
-            ),
-            const Spacer(),
-            FilledButton.icon(
-              onPressed: _showWizard,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Déclarer incident'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: FutureBuilder<List<RoIncident>>(
-            future: _future,
-            builder: (ctx, snap) {
-              if (snap.connectionState != ConnectionState.done) return _loadingBox();
-              if (snap.hasError) return _errorBox(snap.error!);
-              final items = snap.data!;
-              if (items.isEmpty) {
-                return const Center(child: Text('Aucun incident enregistré.', style: TextStyle(color: _kMuted)));
-              }
-              return Card(
-                margin: EdgeInsets.zero,
+            // ── Résultats ─────────────────────────────────────────────────────
+            if (_simulated) ...[
+              const Text('Résultats — 4 scénarios BCEAO',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+              const SizedBox(height: 8),
+              Expanded(
                 child: SingleChildScrollView(
-                  child: Table(
-                    columnWidths: const {
-                      0: FixedColumnWidth(120),
-                      1: FixedColumnWidth(90),
-                      2: FlexColumnWidth(2),
-                      3: FlexColumnWidth(1.5),
-                      4: FixedColumnWidth(90),
-                      5: FixedColumnWidth(90),
-                      6: FixedColumnWidth(80),
-                      7: FixedColumnWidth(90),
-                    },
+                  child: Column(
                     children: [
-                      _tableHeader(['Référence', 'Date', 'Description', 'Ligne métier', 'Perte brute', 'Perte nette', 'Statut', 'Actions']),
-                      ...items.map((inc) => TableRow(
-                        decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
-                        children: [
-                          _cell(inc.reference, bold: true),
-                          _cell(inc.dateOccurrence),
-                          _cellFlex(inc.description),
-                          _cellFlex(inc.ligneMetier),
-                          _cell(AppFormatters.currency(inc.perteBrute), right: true),
-                          _cell(AppFormatters.currency(inc.perteNette), right: true, color: inc.perteNette > 0 ? _kDanger : null),
-                          TableCell(
-                            verticalAlignment: TableCellVerticalAlignment.middle,
-                            child: Padding(padding: const EdgeInsets.all(8), child: _badge(inc.statut, _statutColor(inc.statut))),
-                          ),
-                          TableCell(
-                            verticalAlignment: TableCellVerticalAlignment.middle,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(icon: const Icon(Icons.edit_outlined, size: 16), tooltip: 'Modifier', onPressed: () => _showForm(edit: inc)),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, size: 16, color: _kDanger),
-                                  tooltip: 'Supprimer',
-                                  onPressed: () => _confirm(context, 'Supprimer cet incident ?', () async {
-                                    await widget.api.deleteRoIncident(inc.id);
-                                    _reload();
-                                  }),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      )),
+                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Expanded(child: _scCard(_sc[0], pertesHisto, isDark)),
+                        const SizedBox(width: 12),
+                        Expanded(child: _scCard(_sc[1], pertesHisto, isDark)),
+                      ]),
+                      const SizedBox(height: 12),
+                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Expanded(child: _scCard(_sc[2], pertesHisto, isDark)),
+                        const SizedBox(width: 12),
+                        Expanded(child: _scCard(_sc[3], pertesHisto, isDark)),
+                      ]),
                     ],
                   ),
                 ),
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ] else
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.science_outlined, size: 52,
+                        color: _kMuted.withValues(alpha: 0.35)),
+                      const SizedBox(height: 12),
+                      const Text('Saisissez au moins un paramètre pour lancer la simulation',
+                        style: TextStyle(color: _kMuted, fontSize: 13)),
+                      const SizedBox(height: 4),
+                      const Text('Les résultats s\'affichent automatiquement — tous les champs ne sont pas obligatoires',
+                        style: TextStyle(color: _kMuted, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
+
+  Widget _simField(String label, TextEditingController ctrl, {double width = 240}) =>
+    SizedBox(
+      width: width,
+      child: TextFormField(
+        controller: ctrl,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        style: const TextStyle(fontSize: 12),
+        decoration: InputDecoration(
+          labelText: label,
+          isDense: true,
+          border: const OutlineInputBorder(),
+          labelStyle: const TextStyle(fontSize: 11),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+    );
+
+  Widget _scCard(
+    (String, String, double, Color) sc,
+    double pertesHisto,
+    bool isDark,
+  ) {
+    final (code, label, factor, color) = sc;
+    final fp    = _d(_fpCtrl)    ?? 0;
+    final apr   = _d(_aprCtrl)   ?? 0;
+    final prov  = _d(_provCtrl)  ?? 0;
+    final assur = _d(_assurCtrl) ?? 0;
+    final seuil = (_d(_seuilCtrl) ?? 8.0) / 100;
+
+    // Formules BCEAO Art. 545
+    final pertesSimulees = pertesHisto * factor;
+    final impactNet      = pertesSimulees - prov - assur;
+    final fpApresChoc    = fp - (impactNet > 0 ? impactNet : 0);
+    final resilience     = fp - pertesSimulees;
+    final aprStresses    = apr > 0 ? apr * factor : 0.0;
+    final ratio          = aprStresses > 0 ? fpApresChoc / aprStresses : 0.0;
+    final pass           = resilience >= 0 && (apr == 0 || ratio >= seuil);
+
+    final pctLabel = factor == 1.0 ? '0%' : factor < 1.0
+        ? '−${((1 - factor) * 100).round()}% pertes'
+        : '+${((factor - 1) * 100).round()}% pertes';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // En-tête scénario
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.13),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text('$code — $label  ($pctLabel)',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+            ),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: (pass ? const Color(0xFF43A047) : _kDanger).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(pass ? '✓ RÉSILIENT' : '✗ VULNÉRABLE',
+                style: TextStyle(
+                  fontSize: 9, fontWeight: FontWeight.w800,
+                  color: pass ? const Color(0xFF43A047) : _kDanger)),
+            ),
+          ]),
+          const SizedBox(height: 12),
+          // KPI row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _mini('Pertes simulées',
+                AppFormatters.currency(pertesSimulees),
+                factor > 1.0 ? _kDanger : const Color(0xFF43A047))),
+              const SizedBox(width: 8),
+              Expanded(child: _mini('Impact net',
+                AppFormatters.currency(impactNet),
+                impactNet > 0 ? _kDanger : const Color(0xFF43A047))),
+              const SizedBox(width: 8),
+              Expanded(child: _mini('Résilience FP',
+                AppFormatters.currency(resilience),
+                resilience >= 0 ? const Color(0xFF43A047) : _kDanger)),
+              if (apr > 0) ...[
+                const SizedBox(width: 8),
+                Expanded(child: _mini('Ratio résistance',
+                  '${(ratio * 100).toStringAsFixed(1)}%',
+                  ratio >= seuil ? const Color(0xFF43A047) : _kDanger,
+                  sub: 'seuil ${(_d(_seuilCtrl) ?? 8.0).toStringAsFixed(1)}%')),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mini(String label, String value, Color color, {String? sub}) =>
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 9, color: _kMuted, height: 1.4)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(value,
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800,
+              color: color, height: 1.2)),
+        ),
+        if (sub != null)
+          Text(sub, style: TextStyle(fontSize: 9,
+            color: _kMuted.withValues(alpha: 0.7), height: 1.3)),
+      ],
+    );
 }
 
 // ─── VIEW 3 : PERTES (conteneur avec onglets) ─────────────────────────────────
@@ -2576,6 +2630,56 @@ class _ReportingViewState extends State<_ReportingView> {
   String _destinataire = 'Organe exécutif';
   bool _generating = false;
   String? _savedFileName;
+  final _dateDebutCtrl = TextEditingController();
+  final _dateFinCtrl   = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _applyQuickPeriod('Mensuel');
+  }
+
+  @override
+  void dispose() {
+    _dateDebutCtrl.dispose();
+    _dateFinCtrl.dispose();
+    super.dispose();
+  }
+
+  void _applyQuickPeriod(String periode) {
+    final now = DateTime.now();
+    final DateTime debut;
+    switch (periode) {
+      case 'Trimestriel':
+        final q = ((now.month - 1) ~/ 3) * 3 + 1;
+        debut = DateTime(now.year, q, 1);
+      case 'Semestriel':
+        debut = DateTime(now.year, now.month <= 6 ? 1 : 7, 1);
+      case 'Annuel':
+        debut = DateTime(now.year, 1, 1);
+      default:
+        debut = DateTime(now.year, now.month, 1);
+    }
+    setState(() {
+      _periode = periode;
+      _dateDebutCtrl.text = debut.toIso8601String().substring(0, 10);
+      _dateFinCtrl.text   = now.toIso8601String().substring(0, 10);
+    });
+  }
+
+  String _fmtDisp(String iso) {
+    try {
+      final d = DateTime.parse(iso);
+      return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    } catch (_) { return iso; }
+  }
+
+  String get _periodeLabel {
+    final d = _dateDebutCtrl.text;
+    final f = _dateFinCtrl.text;
+    if (d.isNotEmpty && f.isNotEmpty) return '${_fmtDisp(d)} — ${_fmtDisp(f)}';
+    return _periode;
+  }
 
   // ─── Génération + dialog de sauvegarde ──────────────────────────────────────
 
@@ -2592,11 +2696,21 @@ class _ReportingViewState extends State<_ReportingView> {
         widget.api.fetchRoPlans(),
       ]);
       final dash      = results[0] as RoDashboardData;
-      final incidents = results[1] as List<RoIncident>;
       final kriData   = results[2] as RoKriModuleData;
       final risques   = results[3] as List<RoRisque>;
       final controles = results[4] as List<RoControle>;
       final plans     = results[5] as List<RoPlan>;
+
+      final debut = _dateDebutCtrl.text.isNotEmpty ? DateTime.tryParse(_dateDebutCtrl.text) : null;
+      final fin   = _dateFinCtrl.text.isNotEmpty   ? DateTime.tryParse(_dateFinCtrl.text)   : null;
+      final incidents = (results[1] as List<RoIncident>).where((i) {
+        try {
+          final d = DateTime.parse(i.dateOccurrence);
+          if (debut != null && d.isBefore(debut)) return false;
+          if (fin   != null && d.isAfter(fin.add(const Duration(days: 1)))) return false;
+          return true;
+        } catch (_) { return true; }
+      }).toList();
 
       // 2. Construire le PDF
       final now = DateTime.now();
@@ -2700,7 +2814,7 @@ class _ReportingViewState extends State<_ReportingView> {
         padding: const pw.EdgeInsets.only(bottom: 6),
         decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
         child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-          pw.Text('Rapport Risque Opérationnel -- $_periode', style: mutedStyle),
+          pw.Text('Rapport Risque Opérationnel -- $_periodeLabel', style: mutedStyle),
           pw.Text('$_destinataire  ·  $dateStr', style: mutedStyle),
         ]),
       ),
@@ -2723,7 +2837,7 @@ class _ReportingViewState extends State<_ReportingView> {
             pw.Text('RAPPORT DE RISQUE OPÉRATIONNEL',
                 style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
             pw.SizedBox(height: 6),
-            pw.Text('Période : $_periode  ·  Destinataire : $_destinataire',
+            pw.Text('Période : $_periodeLabel  ·  Destinataire : $_destinataire',
                 style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey300)),
             pw.Text('Date de génération : $dateStr',
                 style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey300)),
@@ -2885,12 +2999,54 @@ class _ReportingViewState extends State<_ReportingView> {
         children: [
           SectionCard(
             title: 'Paramètres du rapport',
-            child: Row(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _dropdown('Période', _periode, ['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'], (v) => setState(() => _periode = v ?? 'Mensuel'))),
-                const SizedBox(width: 12),
-                Expanded(child: _dropdown('Destinataire', _destinataire, ['Organe exécutif', 'Organe délibérant', 'Commission Bancaire'], (v) => setState(() => _destinataire = v ?? 'Organe exécutif'))),
+                Row(
+                  children: [
+                    Text('Période rapide :',
+                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
+                        color: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkMuted : _kMuted)),
+                    const SizedBox(width: 10),
+                    ...['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'].map((p) {
+                      final sel = _periode == p &&
+                          _dateDebutCtrl.text.isNotEmpty && _dateFinCtrl.text.isNotEmpty;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => _applyQuickPeriod(p),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: sel ? _kBlue : _kBlue.withValues(alpha: 0.07),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: sel ? _kBlue : _kBlue.withValues(alpha: 0.25)),
+                            ),
+                            child: Text(p, style: TextStyle(
+                              fontSize: 11.5, fontWeight: FontWeight.w600,
+                              color: sel ? Colors.white : _kBlue,
+                            )),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _reportingDateField(context, 'Date de début', _dateDebutCtrl)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _reportingDateField(context, 'Date de fin', _dateFinCtrl)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _dropdown('Destinataire', _destinataire,
+                      ['Organe exécutif', 'Organe délibérant', 'Commission Bancaire'],
+                      (v) => setState(() => _destinataire = v ?? 'Organe exécutif'))),
+                  ],
+                ),
               ],
             ),
           ),
@@ -2901,17 +3057,99 @@ class _ReportingViewState extends State<_ReportingView> {
               mainAxisSize: MainAxisSize.min,
               children: [_artInfo('Art. 313.c'), const SizedBox(width: 4), _artInfo('Art. 546')],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Table(
+              columnWidths: const {
+                0: FixedColumnWidth(44),
+                1: FlexColumnWidth(1.4),
+                2: FlexColumnWidth(3),
+                3: FixedColumnWidth(52),
+              },
               children: [
-                _reportSection('1. SYNTHÈSE GÉNÉRALE', ['Exigence de fonds propres (Art. 301/307)', 'APR risque opérationnel (Art. 89)', 'Statut de conformité', 'Évolution N-1']),
-                _reportSection('2. INCIDENTS ET PERTES (Art. 313.b)', ['Nombre total d\'incidents', 'Pertes nettes totales', 'Top 5 incidents par perte', 'Répartition par ligne de métier']),
-                _reportSection('3. INDICATEURS CLÉS (KRI)', ['Tableau des KRI avec statut', 'Évolutions significatives', 'Alertes et actions associées']),
-                _reportSection('4. CARTOGRAPHIE DES RISQUES', ['Matrice des risques (heatmap)', 'Top 5 risques critiques', 'Évolution risque résiduel']),
-                _reportSection('5. CONTRÔLES INTERNES (Art. 314)', ['Taux de conformité global', 'Contrôles non conformes', 'Plan de contrôle', 'Actions correctives en cours']),
-                _reportSection('6. PLANS D\'ACTION', ['Taux de réalisation', 'Actions en retard', 'Actions terminées (période)']),
-                _reportSection('7. SIMULATION DE CRISE (Art. 545)', ['Scénario optimiste (+10 %)', 'Scénario neutre (0 %)', 'Scénario pessimiste (-20 %)', 'Scénario crise sévère (-35 %)']),
-                _reportSection('8. ANNEXES', ['Détail des incidents', 'Journal des modifications', 'Glossaire']),
+                _tableHeader(['#', 'Section', 'Éléments inclus', 'Réf.']),
+                ...[
+                  ('1', 'Synthèse générale',       '',           ['Exigence de fonds propres (Art. 301/307)', 'APR risque opérationnel (Art. 89)', 'Statut de conformité', 'Évolution N-1']),
+                  ('2', 'Incidents et pertes',      'Art. 313.b', ['Nombre total d\'incidents', 'Pertes nettes totales', 'Top 5 incidents par perte', 'Répartition par ligne de métier']),
+                  ('3', 'Indicateurs clés (KRI)',   '',           ['Tableau des KRI avec statut', 'Évolutions significatives', 'Alertes et actions associées']),
+                  ('4', 'Cartographie des risques', '',           ['Matrice des risques (heatmap)', 'Top 5 risques critiques', 'Évolution risque résiduel']),
+                  ('5', 'Contrôles internes',       'Art. 314',   ['Taux de conformité global', 'Contrôles non conformes', 'Plan de contrôle', 'Actions correctives en cours']),
+                  ('6', 'Plans d\'action',          'Art. 313.c', ['Taux de réalisation', 'Actions en retard', 'Actions terminées (période)']),
+                  ('7', 'Simulation de crise',      'Art. 545',   ['Scénario optimiste (+10 %)', 'Scénario neutre (0 %)', 'Scénario pessimiste (-20 %)', 'Scénario crise sévère (-35 %)']),
+                  ('8', 'Annexes',                  '',           ['Détail des incidents', 'Journal des modifications', 'Glossaire']),
+                ].map<TableRow>((r) => TableRow(
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Color(0x11000000))),
+                  ),
+                  children: [
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        child: Center(
+                          child: Container(
+                            width: 24, height: 24,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: _kBlue.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(r.$1,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: _kBlue)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        child: Text(r.$2,
+                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: r.$4.map((item) {
+                            final refs = _extractArtRefs(item);
+                            final clean = _stripArtRefs(item);
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 3),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 4, height: 4,
+                                    decoration: BoxDecoration(
+                                      color: _kBlue.withValues(alpha: 0.40),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 7),
+                                  Text(clean, style: const TextStyle(fontSize: 12)),
+                                  ...refs.map((ref) => Padding(
+                                    padding: const EdgeInsets.only(left: 4),
+                                    child: _artInfo(ref),
+                                  )),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    TableCell(
+                      verticalAlignment: TableCellVerticalAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        child: r.$3.isNotEmpty ? _artInfo(r.$3) : const SizedBox(),
+                      ),
+                    ),
+                  ],
+                )),
               ],
             ),
           ),
@@ -2923,7 +3161,7 @@ class _ReportingViewState extends State<_ReportingView> {
                 icon: _generating
                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                label: Text(_generating ? 'Génération en cours…' : 'Générer et enregistrer le rapport $_periode'),
+                label: Text(_generating ? 'Génération en cours…' : 'Générer le rapport · $_periodeLabel'),
               ),
               if (_savedFileName != null) ...[
                 const SizedBox(width: 14),
@@ -2938,46 +3176,53 @@ class _ReportingViewState extends State<_ReportingView> {
     );
   }
 
-  Widget _reportSection(String title, List<String> items) {
-    final titleRefs = _extractArtRefs(title);
-    final cleanTitle = _stripArtRefs(title);
+  Widget _reportingDateField(BuildContext context, String label, TextEditingController ctrl) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(cleanTitle, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-              ...titleRefs.map((ref) => Padding(
-                padding: const EdgeInsets.only(left: 5),
-                child: _artInfo(ref),
-              )),
-            ],
-          ),
-          const SizedBox(height: 4),
-          ...items.map((item) {
-            final itemRefs = _extractArtRefs(item);
-            final cleanItem = _stripArtRefs(item);
-            return Padding(
-              padding: const EdgeInsets.only(left: 16, bottom: 2),
-              child: Row(
-                children: [
-                  const Text('├── ', style: TextStyle(color: _kMuted, fontFamily: 'monospace')),
-                  Expanded(child: Text(cleanItem, style: const TextStyle(fontSize: 12))),
-                  ...itemRefs.map((ref) => Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: _artInfo(ref),
-                  )),
-                ],
+          Row(children: [
+            const Icon(Icons.calendar_month_outlined, size: 12, color: _kBlue),
+            const SizedBox(width: 5),
+            Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: _kMuted, letterSpacing: 0.1)),
+          ]),
+          const SizedBox(height: 5),
+          TextFormField(
+            controller: ctrl,
+            readOnly: true,
+            style: const TextStyle(fontSize: 13.5),
+            decoration: InputDecoration(
+              hintText: 'jj/mm/aaaa',
+              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              suffixIcon: Container(
+                margin: const EdgeInsets.all(6),
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(color: _kBlue.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
+                child: const Icon(Icons.calendar_month_outlined, size: 14, color: _kBlue),
               ),
-            );
-          }),
+            ),
+            onTap: () async {
+              DateTime? current;
+              try { if (ctrl.text.isNotEmpty) current = DateTime.parse(ctrl.text); } catch (_) {}
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: current ?? DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+                helpText: 'Sélectionner une date',
+              );
+              if (picked != null) setState(() => ctrl.text = picked.toIso8601String().substring(0, 10));
+            },
+          ),
         ],
       ),
     );
   }
+
 }
 
 // ─── VIEW : REGISTRE DES PERTES RO (BCEAO/UMOA) ──────────────────────────────
@@ -3035,6 +3280,126 @@ class _RegistreViewState extends State<_RegistreView> {
     if (ok == true) _reload();
   }
 
+  Future<void> _showEditForm(RoIncident edit) async {
+    final dateCtrl  = TextEditingController(text: edit.dateOccurrence);
+    final descCtrl  = TextEditingController(text: edit.description);
+    final brutCtrl  = TextEditingController(text: edit.perteBrute.toStringAsFixed(0));
+    final recupCtrl = TextEditingController(text: edit.perteRecuperee.toStringAsFixed(0));
+    String? causeRacine = _causesRacine.contains(edit.causeRacine) ? edit.causeRacine : null;
+    String? ligne  = _lignesMetier.contains(edit.ligneMetier)       ? edit.ligneMetier   : _lignesMetier.first;
+    String? type   = _typesEvenement.contains(edit.typeEvenement)   ? edit.typeEvenement : _typesEvenement.first;
+    String? statut = _statutsIncident.contains(edit.statut)         ? edit.statut        : _statutsIncident.first;
+    final formKey  = GlobalKey<FormState>();
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            decoration: BoxDecoration(
+              color: _kBlue.withValues(alpha: 0.06),
+              border: Border(bottom: BorderSide(color: _kBlue.withValues(alpha: 0.15))),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _kBlue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(Icons.edit_outlined, color: _kBlue, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Modifier — ${edit.reference}',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                const Text('Mise à jour conforme Art. 313.b UMOA',
+                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
+              ])),
+            ]),
+          ),
+          content: SizedBox(
+            width: 560,
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _formSection('Identification', icon: Icons.calendar_today_rounded, color: _kBlue),
+                    _formRow(
+                      _dateField(ctx, 'Date d\'occurrence', dateCtrl, required: true),
+                      _dropdown('Statut', statut, _statutsIncident, (v) => setD(() => statut = v),
+                        required: true, icon: Icons.flag_rounded),
+                    ),
+                    _formSection('Classification', icon: Icons.category_rounded, color: _kWarning),
+                    _formRow(
+                      _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
+                        required: true, icon: Icons.business_rounded),
+                      _dropdown('Type d\'événement', type, _typesEvenement, (v) => setD(() => type = v),
+                        required: true, icon: Icons.label_rounded),
+                    ),
+                    _dropdown('Cause racine', causeRacine, _causesRacine,
+                      (v) => setD(() => causeRacine = v), icon: Icons.search_rounded),
+                    _formSection('Description', icon: Icons.notes_rounded),
+                    _field('Description de l\'incident', descCtrl,
+                      multiline: true, required: true),
+                    _formSection('Impact financier', icon: Icons.monetization_on_rounded, color: _kDanger),
+                    _formRow(
+                      _field('Perte brute (FCFA)', brutCtrl,
+                        keyboardType: TextInputType.number, required: true,
+                        icon: Icons.trending_down_rounded),
+                      _field('Perte récupérée (FCFA)', recupCtrl,
+                        keyboardType: TextInputType.number, icon: Icons.trending_up_rounded),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              icon: const Icon(Icons.save_rounded, size: 16),
+              onPressed: () async {
+                if (!formKey.currentState!.validate()) return;
+                try {
+                  await widget.api.updateRoIncident(edit.id, {
+                    'date_occurrence': dateCtrl.text.trim(),
+                    'description':     descCtrl.text.trim(),
+                    'ligne_metier':    ligne,
+                    'type_evenement':  type,
+                    'cause_racine':    causeRacine ?? '',
+                    'perte_brute':     double.tryParse(brutCtrl.text)  ?? 0,
+                    'perte_recuperee': double.tryParse(recupCtrl.text) ?? 0,
+                    'statut':          statut,
+                  });
+                  if (ctx.mounted) { Navigator.pop(ctx, true); }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text('Erreur : $e'), backgroundColor: _kDanger));
+                  }
+                }
+              },
+              label: const Text('Enregistrer'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (ok == true) _reload();
+  }
+
   List<RoIncident> _apply(List<RoIncident> all) => all.where((i) {
     if (_filterStatut != null && i.statut != _filterStatut) return false;
     if (_filterLigne  != null && i.ligneMetier   != _filterLigne)  return false;
@@ -3051,13 +3416,13 @@ class _RegistreViewState extends State<_RegistreView> {
   static const _colLabels = [
     'Référence', 'Date', 'Ligne de métier', "Type d'événement",
     'Description', 'Cause racine', 'Perte brute (FCFA)', 'Récupéré (FCFA)',
-    'Perte nette (FCFA)', 'K_RO 15 %', 'APR (×12,5)', 'Statut',
+    'Perte nette (FCFA)', 'K_RO 15 %', 'APR (×12,5)', 'Statut', 'Actions',
   ];
 
-  static const _colW = [120.0, 95.0, 170.0, 130.0, 220.0, 170.0, 120.0, 120.0, 120.0, 100.0, 120.0, 90.0];
+  static const _colW = [120.0, 95.0, 170.0, 130.0, 220.0, 170.0, 120.0, 120.0, 120.0, 100.0, 120.0, 90.0, 80.0];
 
   // Visibilité des colonnes
-  final List<bool> _visibleCols = List.filled(12, true);
+  final List<bool> _visibleCols = List.filled(13, true);
   final _colMenuCtrl = MenuController();
 
   List<(String, double)> get _visibleColDefs => [
@@ -3443,6 +3808,36 @@ class _RegistreViewState extends State<_RegistreView> {
           _rc(AppFormatters.currency(kro),              100, right: true, color: _kViolet),                                            // 9
           _rc(AppFormatters.currency(apr),              120, right: true, color: _kCyan),                                              // 10
           SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8), child: _badge(i.statut, _statutColor(i.statut)))),      // 11
+          SizedBox(
+            width: 80,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 32, height: 32,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.edit_outlined, size: 15,
+                      color: isDark ? Colors.white54 : _kMuted),
+                    tooltip: 'Modifier',
+                    onPressed: () => _showEditForm(i),
+                  ),
+                ),
+                SizedBox(
+                  width: 32, height: 32,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.delete_outline, size: 15, color: _kDanger),
+                    tooltip: 'Supprimer',
+                    onPressed: () => _confirm(context, 'Supprimer cet incident ?', () async {
+                      await widget.api.deleteRoIncident(i.id);
+                      _reload();
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),  // 12
         ];
         return Container(
           decoration: rowDecoration,

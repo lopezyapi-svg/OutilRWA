@@ -910,12 +910,12 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
   }
 
   Widget _buildPreviewTable(List<_ParsedRow> rows) {
-    final preview = rows.take(10).toList();
+    final previewEntries = rows.asMap().entries.take(10).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Aperçu — ${preview.length} ligne(s) sur ${rows.length}',
+          'Aperçu — ${previewEntries.length} ligne(s) sur ${rows.length}',
           style: TextStyle(
             fontSize: 12,
             color: _muted,
@@ -927,23 +927,17 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
           borderRadius: BorderRadius.circular(8),
           child: Table(
             columnWidths: const {
-              0: FixedColumnWidth(105),
+              0: FixedColumnWidth(100),
               1: FlexColumnWidth(2.2),
-              2: FixedColumnWidth(155),
-              3: FixedColumnWidth(90),
-              4: FixedColumnWidth(100),
-              5: FixedColumnWidth(28),
+              2: FixedColumnWidth(145),
+              3: FixedColumnWidth(85),
+              4: FixedColumnWidth(95),
+              5: FixedColumnWidth(24),
+              6: FixedColumnWidth(70),
             },
             children: [
-              _tHeader([
-                'Date',
-                'Description',
-                'Ligne de métier',
-                'Type',
-                'Perte brute',
-                '',
-              ]),
-              ...preview.map(_tRow),
+              _tHeader(['Date', 'Description', 'Ligne de métier', 'Type', 'Perte brute', '', 'Actions']),
+              ...previewEntries.map((e) => _tRow(e.key, e.value)),
             ],
           ),
         ),
@@ -976,7 +970,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
         .toList(),
   );
 
-  TableRow _tRow(_ParsedRow r) {
+  TableRow _tRow(int index, _ParsedRow r) {
     return TableRow(
       decoration: BoxDecoration(
         color: r.isValid ? null : AppTheme.danger.withValues(alpha: 0.04),
@@ -991,16 +985,227 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
           child: r.isValid
-              ? const Icon(Icons.check_circle_outline,
-                  size: 14, color: AppTheme.success)
+              ? const Icon(Icons.check_circle_outline, size: 14, color: AppTheme.success)
               : Tooltip(
                   message: r.errors.join('\n'),
-                  child: const Icon(Icons.error_outline,
-                      size: 14, color: AppTheme.danger),
+                  child: const Icon(Icons.error_outline, size: 14, color: AppTheme.danger),
                 ),
+        ),
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 28, height: 28,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(Icons.edit_outlined, size: 14, color: _muted),
+                  tooltip: 'Modifier',
+                  onPressed: () => _editRow(index, r),
+                ),
+              ),
+              SizedBox(
+                width: 28, height: 28,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(Icons.delete_outline, size: 14, color: AppTheme.danger),
+                  tooltip: 'Supprimer',
+                  onPressed: () => setState(() => _parsedRows!.removeAt(index)),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  Future<void> _editRow(int index, _ParsedRow original) async {
+    final dateCtrl  = TextEditingController(text: original.dateOccurrence);
+    final descCtrl  = TextEditingController(text: original.description);
+    final bruteCtrl = TextEditingController(text: original.perteBrute.toStringAsFixed(0));
+    final recupCtrl = TextEditingController(
+        text: original.perteRecuperee == 0 ? '' : original.perteRecuperee.toStringAsFixed(0));
+    final causeCtrl = TextEditingController(text: original.causeRacine);
+    String ligne  = _lignesMetier.contains(original.ligneMetier)  ? original.ligneMetier  : _lignesMetier.first;
+    String type   = _typesEvenement.contains(original.typeEvenement) ? original.typeEvenement : _typesEvenement.first;
+    String statut = _statutsIncident.contains(original.statut) ? original.statut : _statutsIncident.first;
+    final formKey = GlobalKey<FormState>();
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) {
+          Widget textField(String label, TextEditingController ctrl,
+              {bool number = false, bool required = true, String? hint}) =>
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: TextFormField(
+                controller: ctrl,
+                keyboardType: number ? TextInputType.number : TextInputType.text,
+                style: const TextStyle(fontSize: 13),
+                decoration: InputDecoration(
+                  labelText: label,
+                  hintText: hint,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: const OutlineInputBorder(),
+                ),
+                validator: required
+                    ? (v) => (v == null || v.trim().isEmpty) ? 'Champ requis' : null
+                    : null,
+              ),
+            );
+
+          Widget dropField<T>(String label, T val, List<T> items, void Function(T?) onChange) =>
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: DropdownButtonFormField<T>(
+                initialValue: val,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: label,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: const OutlineInputBorder(),
+                ),
+                items: items
+                    .map((e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e.toString(), style: const TextStyle(fontSize: 13))))
+                    .toList(),
+                onChanged: onChange,
+              ),
+            );
+
+          return AlertDialog(
+            titlePadding: EdgeInsets.zero,
+            title: Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              decoration: BoxDecoration(
+                color: _accent.withValues(alpha: 0.07),
+                border: Border(bottom: BorderSide(color: _border)),
+              ),
+              child: Row(children: [
+                Icon(Icons.edit_outlined, color: _accent, size: 18),
+                const SizedBox(width: 10),
+                const Text('Modifier la ligne', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+              ]),
+            ),
+            content: SizedBox(
+              width: 520,
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Date
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: TextFormField(
+                          controller: dateCtrl,
+                          readOnly: true,
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            labelText: 'Date d\'occurrence *',
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(),
+                            suffixIcon: Icon(Icons.calendar_month_outlined, size: 16),
+                          ),
+                          validator: (v) => (v == null || v.isEmpty) ? 'Requis' : null,
+                          onTap: () async {
+                            DateTime? cur;
+                            try { cur = DateTime.parse(dateCtrl.text); } catch (_) {}
+                            final picked = await showDatePicker(
+                              context: ctx,
+                              initialDate: cur ?? DateTime.now(),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now(),
+                            );
+                            if (picked != null) {
+                              dateCtrl.text =
+                                  '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+                            }
+                          },
+                        ),
+                      ),
+                      textField('Description *', descCtrl),
+                      Row(children: [
+                        Expanded(child: dropField<String>('Ligne de métier *', ligne, _lignesMetier,
+                            (v) => setD(() => ligne = v ?? ligne))),
+                        const SizedBox(width: 12),
+                        Expanded(child: dropField<String>("Type d'événement *", type, _typesEvenement,
+                            (v) => setD(() => type = v ?? type))),
+                      ]),
+                      Row(children: [
+                        Expanded(child: textField('Perte brute (FCFA) *', bruteCtrl, number: true, hint: 'Ex: 500000')),
+                        const SizedBox(width: 12),
+                        Expanded(child: textField('Perte récupérée', recupCtrl, number: true, required: false, hint: 'Ex: 0')),
+                      ]),
+                      Row(children: [
+                        Expanded(child: textField('Cause racine', causeCtrl, required: false, hint: 'Optionnel')),
+                        const SizedBox(width: 12),
+                        Expanded(child: dropField<String>('Statut', statut, _statutsIncident,
+                            (v) => setD(() => statut = v ?? statut))),
+                      ]),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            actions: [
+              OutlinedButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Annuler'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                icon: const Icon(Icons.save_outlined, size: 16),
+                onPressed: () {
+                  if (!formKey.currentState!.validate()) return;
+                  Navigator.pop(ctx, true);
+                },
+                label: const Text('Enregistrer'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (ok == true) {
+      final errors = <String>[];
+      final dateStr = dateCtrl.text.trim();
+      if (dateStr.isEmpty) errors.add('date_occurrence manquante');
+      final desc = descCtrl.text.trim();
+      if (desc.isEmpty) errors.add('description manquante');
+      if (!_lignesMetier.contains(ligne)) errors.add('ligne_metier invalide');
+      if (!_typesEvenement.contains(type)) errors.add('type_evenement invalide');
+      final perteBrute = double.tryParse(bruteCtrl.text.replaceAll(' ', '')) ?? 0;
+      if (perteBrute <= 0) errors.add('perte_brute doit être > 0');
+
+      setState(() => _parsedRows![index] = _ParsedRow(
+        dateOccurrence: dateStr,
+        description: desc,
+        ligneMetier: ligne,
+        typeEvenement: type,
+        causeRacine: causeCtrl.text.trim(),
+        perteBrute: perteBrute,
+        perteRecuperee: double.tryParse(recupCtrl.text.replaceAll(' ', '')) ?? 0,
+        statut: statut,
+        errors: errors,
+      ));
+    }
+    dateCtrl.dispose();
+    descCtrl.dispose();
+    bruteCtrl.dispose();
+    recupCtrl.dispose();
+    causeCtrl.dispose();
   }
 
   Widget _tCell(String t, {bool right = false, bool overflow = false}) {

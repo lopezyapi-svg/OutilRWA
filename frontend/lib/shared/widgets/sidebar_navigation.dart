@@ -326,8 +326,8 @@ const List<_MenuEntry> _operationalRiskChildren = [
   ),
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnelIncidents,
-    icon: Icons.report_gmailerrorred_rounded,
-    label: 'Incidents',
+    icon: Icons.science_rounded,
+    label: 'Simulation de crise',
   ),
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnelPertes,
