@@ -1,11 +1,11 @@
 // Dialog d'import Excel pour les pertes opérationnelles.
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:excel/excel.dart' hide Border;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
@@ -1044,13 +1044,16 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
               child: TextFormField(
                 controller: ctrl,
                 keyboardType: number ? TextInputType.number : TextInputType.text,
+                inputFormatters: number
+                    ? [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))]
+                    : null,
                 style: const TextStyle(fontSize: 13),
                 decoration: InputDecoration(
                   labelText: label,
                   hintText: hint,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: const OutlineInputBorder(),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                 ),
                 validator: required
                     ? (v) => (v == null || v.trim().isEmpty) ? 'Champ requis' : null
@@ -1068,7 +1071,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
                   labelText: label,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: const OutlineInputBorder(),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                 ),
                 items: items
                     .map((e) => DropdownMenuItem(

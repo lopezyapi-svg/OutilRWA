@@ -1,10 +1,10 @@
 // Ecran principal du module Risque Opérationnel — 10 vues.
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -14,6 +14,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../shared/utils/file_save.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../../shared/widgets/section_card.dart';
+import '../../dashboard/models/dashboard_models.dart';
 import '../models/ro_models.dart';
 import '../widgets/ro_import_pertes_dialog.dart';
 
@@ -104,19 +105,19 @@ const _artExplanations = <String, String>{
       '  Couverture = Nb processus contrôlés / Nb processus totaux × 100\n'
       '  Fréquences : permanent (quotidien/hebdo) | périodique (mensuel/annuel)',
   'Art. 89':
-      'Calcul des APR opérationnels — méthode Indicateur de Base (BIA).\n\n'
+      'Calcul des RWA opérationnels — méthode Indicateur de Base (BIA).\n\n'
       'Formule BIA :\n'
       '  K_RO = α × PNBmoy₃\n'
       '  α = 15 %   (coefficient réglementaire BCEAO)\n'
       '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
-      '  APR_opérationnel = K_RO ÷ 8 %   (facteur 12,5)',
+      '  RWA_opérationnel = K_RO ÷ 8 %   (facteur 12,5)',
   'Art. 301/307':
       'Exigences minimales en fonds propres (dispositif prudentiel BCEAO).\n\n'
       'Ratios réglementaires :\n'
-      '  Ratio Tier 1 = Fonds propres de base / APR total  ≥ 5 %\n'
-      '  Ratio global = Fonds propres totaux / APR total   ≥ 8 %\n'
-      '  APR total = APR_crédit + APR_marché + APR_opérationnel\n'
-      '  Coussin de conservation : + 2,5 % des APR (si applicable)',
+      '  Ratio Tier 1 = Fonds propres de base / RWA total  ≥ 5 %\n'
+      '  Ratio global = Fonds propres totaux / RWA total   ≥ 8 %\n'
+      '  RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
+      '  Coussin de conservation : + 2,5 % des RWA (si applicable)',
   'Art. 545':
       'Stress testing — simulations de scénarios de crise pour évaluer\n'
       'la résilience du dispositif de gestion des risques.\n\n'
@@ -124,12 +125,12 @@ const _artExplanations = <String, String>{
       '  S1 : Optimiste  |  S2 : Neutre  |  S3 : Pessimiste  |  S4 : Crise\n'
       '  Impact net = Pertes simulées − (Provisions + Couverture assurance)\n'
       '  Résilience = Fonds propres disponibles − Pertes simulées  ≥ 0\n'
-      '  Ratio de résistance = FP après choc / APR stressés  ≥ seuil',
+      '  Ratio de résistance = FP après choc / RWA stressés  ≥ seuil',
   'Art. 546':
       'Rapport annuel sur le dispositif de gestion des risques opérationnels,\n'
       'transmis à la Commission Bancaire de l\'UMOA.\n\n'
       'Indicateurs clés à reporter :\n'
-      '  • APR opérationnel = K_BIA × 12,5   (avec K_BIA = 15 % × PNBmoy₃)\n'
+      '  • RWA opérationnel = K_BIA × 12,5   (avec K_BIA = 15 % × PNBmoy₃)\n'
       '  • Pertes totales nettes = Σ (Perte brute − Récupérations)\n'
       '  • Taux couverture plans = Actions terminées / Total plans × 100\n'
       '  • Résultats stress tests : ΔFP sous S3 et S4',
@@ -175,9 +176,9 @@ class RisqueOperationnelScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final (title, subtitle, artRef) = switch (view) {
       OperationalRiskView.dashboard   => ('Dashboard Opérationnel',    'KPI réglementaires et alertes (Art. 313)',                      'Art. 313'),
-      OperationalRiskView.registre    => ('Registre des pertes RO',     'Registre BCEAO/UMOA — pertes, K_RO et APR (Art. 89 & 313.b)',  'Art. 89'),
+      OperationalRiskView.registre    => ('Registre des pertes RO',     'Registre BCEAO/UMOA — pertes, K_RO et RWA (Art. 89 & 313.b)',  'Art. 89'),
       OperationalRiskView.incidents   => ('Simulation de crise',        'Stress testing PIEAFP — scénarios de vulnérabilité (Art. 545)', 'Art. 545'),
-      OperationalRiskView.pertes      => ('Pertes opérationnelles',     'Base de pertes historiques — calcul APR BIA (Art. 89)',         'Art. 89'),
+      OperationalRiskView.pertes      => ('Pertes opérationnelles',     'Base de pertes historiques — calcul RWA BIA (Art. 89)',         'Art. 89'),
       OperationalRiskView.kri         => ('KRI',                        'Indicateurs clés de risque — surveillance continue (Art. 313)', 'Art. 313'),
       OperationalRiskView.cartographie=> ('Cartographie des risques',   'Identification et évaluation — matrice 5×5 (Art. 313)',         'Art. 313'),
       OperationalRiskView.controles   => ('Contrôles internes',         'Gestion des contrôles périodiques (Art. 314)',                  'Art. 314'),
@@ -440,13 +441,17 @@ Widget _field(String label, TextEditingController ctrl,
           controller: ctrl,
           maxLines: multiline ? 3 : 1,
           keyboardType: keyboardType,
+          inputFormatters: (keyboardType == TextInputType.number ||
+                  keyboardType == const TextInputType.numberWithOptions(decimal: true))
+              ? [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))]
+              : null,
           style: const TextStyle(fontSize: 13.5),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.zero),
           ),
           validator: required ? (v) => (v == null || v.isEmpty) ? 'Champ requis' : null : null,
         ),
@@ -485,7 +490,7 @@ Widget _dateField(
             hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.zero),
             suffixIcon: Container(
               margin: const EdgeInsets.all(6),
               padding: const EdgeInsets.all(6),
@@ -613,7 +618,7 @@ Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onC
             hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.zero),
           ),
           validator: required ? (v) => v == null ? 'Champ requis' : null : null,
         ),
@@ -697,7 +702,7 @@ Widget _roStatusBanner(BuildContext context, RoDashboardData d) {
               _bannerStat('K_RO', AppFormatters.currency(d.widget1.exigenceFondsPropres)),
               Container(width: 1, height: 28, margin: const EdgeInsets.symmetric(horizontal: 12),
                 color: Colors.white.withValues(alpha: 0.22)),
-              _bannerStat('APR', AppFormatters.currency(d.widget1.aprRisqueOp)),
+              _bannerStat('RWA', AppFormatters.currency(d.widget1.aprRisqueOp)),
             ]),
             if (alertCount > 0) ...[
               const SizedBox(height: 6),
@@ -763,15 +768,15 @@ class _DashboardViewState extends State<_DashboardView> {
                       tooltip: 'Capital réglementaire minimum (Art. 89)\nFormule : K_RO = 15 % × Perte nette totale\nα = 15 % (coefficient BCEAO/UMOA)',
                     )),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'APR risque opérationnel', AppFormatters.currency(d.widget1.aprRisqueOp), Icons.bar_chart_outlined, _kViolet,
-                      tooltip: 'Actifs Pondérés par le Risque opérationnel (Art. 89)\nFormule : APR = K_RO × 12,5\n12,5 = 1 ÷ 8 % (facteur de conversion prudentiel)',
+                    Expanded(child: _kpiBox(context, 'RWA risque opérationnel', AppFormatters.currency(d.widget1.aprRisqueOp), Icons.bar_chart_outlined, _kViolet,
+                      tooltip: 'Actifs Pondérés par le Risque opérationnel (Art. 89)\nFormule : RWA = K_RO × 12,5\n12,5 = 1 ÷ 8 % (facteur de conversion prudentiel)',
                     )),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _kpiBox(context, 'Statut réglementaire', d.widget1.statutReglementaire,
                           d.widget1.statutReglementaire == 'Conforme' ? Icons.check_circle_outline : Icons.warning_amber_outlined,
                           d.widget1.statutReglementaire == 'Conforme' ? _kSuccess : _kDanger,
-                          tooltip: 'Conformité réglementaire (Art. 313)\nConforme si ratio Tier 1 ≥ 5 % et ratio global ≥ 8 %\nAPR total = APR_crédit + APR_marché + APR_opérationnel'),
+                          tooltip: 'Conformité réglementaire (Art. 313)\nConforme si ratio Tier 1 ≥ 5 % et ratio global ≥ 8 %\nRWA total = RWA_crédit + RWA_marché + RWA_opérationnel'),
                     ),
                   ],
                 ),
@@ -888,7 +893,8 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
   final _aprCtrl   = TextEditingController();
   final _provCtrl  = TextEditingController();
   final _assurCtrl = TextEditingController();
-  final _seuilCtrl = TextEditingController(text: '8.0');
+
+  double _seuilValue = 8.0;
 
   bool _simulated = false;
 
@@ -908,9 +914,37 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
   void initState() {
     super.initState();
     _future = widget.api.fetchRoIncidents();
-    for (final c in [_fpCtrl, _aprCtrl, _provCtrl, _assurCtrl, _seuilCtrl]) {
+    for (final c in [_fpCtrl, _aprCtrl, _provCtrl, _assurCtrl]) {
       c.addListener(_onFieldChanged);
     }
+    // Pré-remplir provisions depuis les incidents RO
+    _future.then((incidents) {
+      if (!mounted) return;
+      final totalRecupere = incidents.fold(0.0, (s, i) => s + i.perteRecuperee);
+      setState(() {
+        if (totalRecupere > 0 && _provCtrl.text.isEmpty) {
+          _provCtrl.text = totalRecupere.round().toString();
+        }
+        if (incidents.isNotEmpty) _simulated = true;
+      });
+    }).catchError((_) {});
+    // Pré-remplir fonds propres et RWA depuis le dashboard
+    widget.api.fetchDashboard().then((DashboardSnapshot snap) {
+      if (!mounted) return;
+      final capitalMetricVal = snap.metrics
+          .where((m) => m.key == 'capital').firstOrNull?.value ?? 0.0;
+      final rwaMetricVal = snap.metrics
+          .where((m) => m.key == 'rwa').firstOrNull?.value ?? 0.0;
+      final totalCapital = snap.portfolioOverview.fold(0.0, (s, r) => s + r.capital);
+      final totalRwa     = snap.portfolioOverview.fold(0.0, (s, r) => s + r.rwa);
+      final capitalValue = totalCapital > 0 ? totalCapital : capitalMetricVal;
+      final rwaValue     = totalRwa     > 0 ? totalRwa     : rwaMetricVal;
+      final fp = capitalValue * 1.35;
+      setState(() {
+        if (fp > 0 && _fpCtrl.text.isEmpty)  _fpCtrl.text  = fp.round().toString();
+        if (rwaValue > 0 && _aprCtrl.text.isEmpty) _aprCtrl.text = rwaValue.round().toString();
+      });
+    }).catchError((_) {});
   }
 
   void _onFieldChanged() {
@@ -920,7 +954,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
 
   @override
   void dispose() {
-    for (final c in [_fpCtrl, _aprCtrl, _provCtrl, _assurCtrl, _seuilCtrl]) {
+    for (final c in [_fpCtrl, _aprCtrl, _provCtrl, _assurCtrl]) {
       c.removeListener(_onFieldChanged);
       c.dispose();
     }
@@ -983,21 +1017,50 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                       runSpacing: 10,
                       children: [
                         _simField('Fonds propres disponibles (FCFA)', _fpCtrl),
-                        _simField('APR de référence (FCFA)',           _aprCtrl),
+                        _simField('RWA de référence (FCFA)',           _aprCtrl),
                         _simField('Provisions constituées (FCFA)',     _provCtrl),
                         _simField('Couverture assurance (FCFA)',       _assurCtrl),
-                        _simField('Seuil ratio résistance (%)',        _seuilCtrl, width: 220),
+                        SizedBox(
+                          width: 260,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(children: [
+                                const Text('Seuil ratio résistance',
+                                  style: TextStyle(fontSize: 11, color: _kMuted)),
+                                const Spacer(),
+                                Text('${_seuilValue.toStringAsFixed(1)} %',
+                                  style: const TextStyle(fontSize: 12,
+                                    fontWeight: FontWeight.w700, color: Color(0xFF1565C0))),
+                              ]),
+                              SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  trackHeight: 4,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                                ),
+                                child: Slider(
+                                  value: _seuilValue,
+                                  min: 4.0,
+                                  max: 25.0,
+                                  divisions: 210,
+                                  activeColor: const Color(0xFF1565C0),
+                                  onChanged: (v) => setState(() { _seuilValue = v; _simulated = true; }),
+                                ),
+                              ),
+                              const Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('4 %', style: TextStyle(fontSize: 10, color: _kMuted)),
+                                  Text('Régl. BCEAO : 8 %', style: TextStyle(fontSize: 10, color: _kMuted)),
+                                  Text('25 %', style: TextStyle(fontSize: 10, color: _kMuted)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: FilledButton.icon(
-                        icon: const Icon(Icons.play_arrow_rounded, size: 18),
-                        label: const Text('Lancer la simulation'),
-                        onPressed: () => setState(() => _simulated = true),
-                        style: FilledButton.styleFrom(backgroundColor: const Color(0xFF1565C0)),
-                      ),
                     ),
                   ],
                 ),
@@ -1059,11 +1122,12 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
       child: TextFormField(
         controller: ctrl,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
         style: const TextStyle(fontSize: 12),
         decoration: InputDecoration(
           labelText: label,
           isDense: true,
-          border: const OutlineInputBorder(),
+          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
           labelStyle: const TextStyle(fontSize: 11),
           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         ),
@@ -1081,7 +1145,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
     final apr   = _d(_aprCtrl)   ?? 0;
     final prov  = _d(_provCtrl)  ?? 0;
     final assur = _d(_assurCtrl) ?? 0;
-    final seuil = (_d(_seuilCtrl) ?? 8.0) / 100;
+    final seuil = _seuilValue / 100;
 
     // Formules BCEAO Art. 545
     final pertesSimulees = pertesHisto * factor;
@@ -1152,7 +1216,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                 Expanded(child: _mini('Ratio résistance',
                   '${(ratio * 100).toStringAsFixed(1)}%',
                   ratio >= seuil ? const Color(0xFF43A047) : _kDanger,
-                  sub: 'seuil ${(_d(_seuilCtrl) ?? 8.0).toStringAsFixed(1)}%')),
+                  sub: 'seuil ${_seuilValue.toStringAsFixed(1)}%')),
               ],
             ],
           ),
@@ -2275,7 +2339,7 @@ class _PlansViewState extends State<_PlansView> {
                                   hintText: 'AUD-2024-Q1',
                                   hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                                 ),
                               )
                             else if (opts.isEmpty)
@@ -2303,7 +2367,7 @@ class _PlansViewState extends State<_PlansView> {
                                   hintText: 'Sélectionner…',
                                   hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                                 ),
                                 items: opts.map((o) => DropdownMenuItem(
                                   value: o.$1,
@@ -2852,7 +2916,7 @@ class _ReportingViewState extends State<_ReportingView> {
         sectionBanner('1. SYNTHÈSE GÉNÉRALE  '),
         kpiGrid([
           ('Exigence fonds propres (K)', AppFormatters.currency(dash.widget1.exigenceFondsPropres)),
-          ('APR risque opérationnel',    AppFormatters.currency(dash.widget1.aprRisqueOp)),
+          ('RWA risque opérationnel',    AppFormatters.currency(dash.widget1.aprRisqueOp)),
           ('Statut réglementaire',       dash.widget1.statutReglementaire),
           ('Incidents (mois)',           '${dash.widget2.totalIncidentsMois}'),
           ('Non clôturés',              '${dash.widget2.incidentsNonClos}'),
@@ -2965,7 +3029,7 @@ class _ReportingViewState extends State<_ReportingView> {
         // ── 7. SIMULATION DE CRISE ───────────────────────────────────────────
         sectionBanner('7. SIMULATION DE CRISE  '),
         table(
-          ['Scénario', 'Variation PNB', 'APR estimé', 'Exigence fonds propres'],
+          ['Scénario', 'Variation PNB', 'RWA estimé', 'Exigence fonds propres'],
           [
             ['Optimiste',    '+10 %', AppFormatters.currency(dash.widget1.aprRisqueOp * 1.10), AppFormatters.currency(dash.widget1.exigenceFondsPropres * 1.10)],
             ['Neutre',        '0 %',  AppFormatters.currency(dash.widget1.aprRisqueOp),        AppFormatters.currency(dash.widget1.exigenceFondsPropres)],
@@ -3067,7 +3131,7 @@ class _ReportingViewState extends State<_ReportingView> {
               children: [
                 _tableHeader(['#', 'Section', 'Éléments inclus', 'Réf.']),
                 ...[
-                  ('1', 'Synthèse générale',       '',           ['Exigence de fonds propres (Art. 301/307)', 'APR risque opérationnel (Art. 89)', 'Statut de conformité', 'Évolution N-1']),
+                  ('1', 'Synthèse générale',       '',           ['Exigence de fonds propres (Art. 301/307)', 'RWA risque opérationnel (Art. 89)', 'Statut de conformité', 'Évolution N-1']),
                   ('2', 'Incidents et pertes',      'Art. 313.b', ['Nombre total d\'incidents', 'Pertes nettes totales', 'Top 5 incidents par perte', 'Répartition par ligne de métier']),
                   ('3', 'Indicateurs clés (KRI)',   '',           ['Tableau des KRI avec statut', 'Évolutions significatives', 'Alertes et actions associées']),
                   ('4', 'Cartographie des risques', '',           ['Matrice des risques (heatmap)', 'Top 5 risques critiques', 'Évolution risque résiduel']),
@@ -3197,7 +3261,7 @@ class _ReportingViewState extends State<_ReportingView> {
               hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
               suffixIcon: Container(
                 margin: const EdgeInsets.all(6),
                 padding: const EdgeInsets.all(6),
@@ -3416,7 +3480,7 @@ class _RegistreViewState extends State<_RegistreView> {
   static const _colLabels = [
     'Référence', 'Date', 'Ligne de métier', "Type d'événement",
     'Description', 'Cause racine', 'Perte brute (FCFA)', 'Récupéré (FCFA)',
-    'Perte nette (FCFA)', 'K_RO 15 %', 'APR (×12,5)', 'Statut', 'Actions',
+    'Perte nette (FCFA)', 'K_RO 15 %', 'RWA (×12,5)', 'Statut', 'Actions',
   ];
 
   static const _colW = [120.0, 95.0, 170.0, 130.0, 220.0, 170.0, 120.0, 120.0, 120.0, 100.0, 120.0, 90.0, 80.0];
@@ -3483,11 +3547,11 @@ class _RegistreViewState extends State<_RegistreView> {
                 constraints: const BoxConstraints(minHeight: 32, maxHeight: 32),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                 floatingLabelBehavior: FloatingLabelBehavior.never,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(5),
+                border: OutlineInputBorder(borderRadius: BorderRadius.zero,
                   borderSide: BorderSide(color: isDark ? const Color(0xFF22304B) : const Color(0xFFDCE5F1))),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(5),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.zero,
                   borderSide: BorderSide(color: isDark ? const Color(0xFF22304B) : const Color(0xFFDCE5F1))),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(5),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.zero,
                   borderSide: const BorderSide(color: AppTheme.accent, width: 1.2)),
               ),
             ),
@@ -3673,11 +3737,11 @@ class _RegistreViewState extends State<_RegistreView> {
               'α = 15 %  (coefficient BCEAO/UMOA, Art. 89)',
           )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('APR opérationnel', AppFormatters.currency(cApr), _kCyan,
+          Expanded(child: _sumCard('RWA opérationnel', AppFormatters.currency(cApr), _kCyan,
             tooltip:
               'Actifs Pondérés par le Risque opérationnel\n'
               'Rôle : base de calcul du ratio de solvabilité.\n'
-              'Formule : APR = K_RO ÷ 8 % = K_RO × 12,5\n'
+              'Formule : RWA = K_RO ÷ 8 % = K_RO × 12,5\n'
               '12,5 = facteur de conversion prudentiel (Art. 89)',
           )),
         ])),
@@ -4328,7 +4392,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                       Expanded(child: _biaKpi('Perte brute', AppFormatters.currency(brut))),
                       Expanded(child: _biaKpi('Perte nette', AppFormatters.currency(nette))),
                       Expanded(child: _biaKpi('K_RO (15 %)', AppFormatters.currency(kBia))),
-                      Expanded(child: _biaKpi('APR estimé', AppFormatters.currency(apr))),
+                      Expanded(child: _biaKpi('RWA estimé', AppFormatters.currency(apr))),
                     ],
                   ),
                 ],

@@ -161,25 +161,28 @@ class AppTheme {
           color: mutedColor,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: BorderRadius.zero,
           borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: BorderRadius.zero,
           borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: BorderRadius.zero,
           borderSide: BorderSide(color: accentColor, width: 1.2),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: BorderRadius.zero,
           borderSide: const BorderSide(color: danger, width: 1.2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(radius),
+          borderRadius: BorderRadius.zero,
           borderSide: const BorderSide(color: danger),
         ),
+      ),
+      dialogTheme: const DialogThemeData(
+        shape: RoundedRectangleBorder(),
       ),
       scrollbarTheme: const ScrollbarThemeData(
         radius: Radius.circular(999),
