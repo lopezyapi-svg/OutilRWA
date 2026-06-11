@@ -249,65 +249,123 @@ String _kriStatutLabel(String s) => switch (s) {
       _ => 'N/A',
     };
 
-Widget _badge(String label, Color color) => Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
+Widget _badge(String label, Color color) => FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: 0.30)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 5, height: 5, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            const SizedBox(width: 4),
+            Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.1)),
+          ],
+        ),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     );
 
 Widget _kpiBox(BuildContext context, String label, String value, IconData icon, Color color, {String? tooltip}) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
-  return Card(
-    margin: EdgeInsets.zero,
-    child: Padding(
-      padding: const EdgeInsets.all(14),
+  // Border uniforme obligatoire pour combiner borderRadius + couleurs distinctes
+  // => strip gauche coloré en interne via un Container(width:4)
+  return Container(
+    decoration: BoxDecoration(
+      color: isDark ? AppTheme.darkCard : Colors.white,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.border),
+      boxShadow: isDark ? null : [
+        BoxShadow(color: color.withValues(alpha: 0.09), blurRadius: 14, offset: const Offset(0, 3)),
+      ],
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 36, height: 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: isDark ? 0.18 : 0.12),
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
+          Container(width: 4, color: color),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(label,
-                        style: TextStyle(color: isDark ? AppTheme.darkMuted : _kMuted, fontSize: 11, fontWeight: FontWeight.w500)),
-                    ),
-                    if (tooltip != null) ...[
-                      const SizedBox(width: 4),
-                      Tooltip(
-                        message: tooltip,
-                        preferBelow: false,
-                        waitDuration: Duration.zero,
-                        showDuration: const Duration(seconds: 10),
-                        textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E2A3A),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: Icon(Icons.info_outline_rounded, size: 13, color: color.withValues(alpha: 0.6)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42, height: 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          color.withValues(alpha: isDark ? 0.25 : 0.16),
+                          color.withValues(alpha: isDark ? 0.10 : 0.06),
+                        ],
                       ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(value, style: TextStyle(color: isDark ? AppTheme.darkText : AppTheme.text, fontSize: 16, fontWeight: FontWeight.w700)),
-              ],
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: Icon(icon, color: color, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(label,
+                                style: TextStyle(
+                                  color: isDark ? AppTheme.darkMuted : _kMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.1,
+                                ),
+                              ),
+                            ),
+                            if (tooltip != null) ...[
+                              const SizedBox(width: 4),
+                              Tooltip(
+                                message: tooltip,
+                                preferBelow: false,
+                                waitDuration: Duration.zero,
+                                showDuration: const Duration(seconds: 10),
+                                textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1E2A3A),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                child: Icon(Icons.info_outline_rounded, size: 13, color: color.withValues(alpha: 0.6)),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(value,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: isDark ? AppTheme.darkText : AppTheme.text,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.5,
+                              height: 1.1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -342,27 +400,53 @@ Widget _errorBox(Object e) => Center(
 
 // ─── Form helpers ─────────────────────────────────────────────────────────────
 
+// Titre de section dans un formulaire
+Widget _formSection(String title, {IconData? icon, Color color = _kBlue}) => Padding(
+  padding: const EdgeInsets.only(top: 8, bottom: 12),
+  child: Row(
+    children: [
+      Container(width: 3, height: 15,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
+      const SizedBox(width: 8),
+      if (icon != null) ...[Icon(icon, size: 12, color: color), const SizedBox(width: 5)],
+      Text(title,
+        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+          color: color, letterSpacing: 0.3)),
+    ],
+  ),
+);
+
+// Deux champs côte à côte
+Widget _formRow(Widget left, Widget right) => Row(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [Expanded(child: left), const SizedBox(width: 12), Expanded(child: right)],
+);
+
 Widget _field(String label, TextEditingController ctrl,
-    {bool multiline = false, TextInputType? keyboardType, String? hint, bool required = false}) {
+    {bool multiline = false, TextInputType? keyboardType, String? hint, bool required = false, IconData? icon}) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.only(bottom: 14),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          required ? '$label *' : label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kMuted),
-        ),
-        const SizedBox(height: 4),
+        Row(children: [
+          if (icon != null) ...[Icon(icon, size: 12, color: _kBlue), const SizedBox(width: 5)],
+          Text(required ? '$label *' : label,
+            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
+              color: _kMuted, letterSpacing: 0.1)),
+        ]),
+        const SizedBox(height: 5),
         TextFormField(
           controller: ctrl,
           maxLines: multiline ? 3 : 1,
           keyboardType: keyboardType,
+          style: const TextStyle(fontSize: 13.5),
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
           validator: required ? (v) => (v == null || v.isEmpty) ? 'Champ requis' : null : null,
         ),
@@ -380,24 +464,37 @@ Widget _dateField(
   VoidCallback? onPicked,
 }) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.only(bottom: 14),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          required ? '$label *' : label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kMuted),
-        ),
-        const SizedBox(height: 4),
+        Row(children: [
+          const Icon(Icons.calendar_month_outlined, size: 12, color: _kBlue),
+          const SizedBox(width: 5),
+          Text(required ? '$label *' : label,
+            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
+              color: _kMuted, letterSpacing: 0.1)),
+        ]),
+        const SizedBox(height: 5),
         TextFormField(
           controller: ctrl,
           readOnly: true,
+          style: const TextStyle(fontSize: 13.5),
           decoration: InputDecoration(
-            hintText: 'Sélectionner une date',
+            hintText: 'jj/mm/aaaa',
+            hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
-            suffixIcon: const Icon(Icons.calendar_month_outlined, size: 18, color: _kMuted),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            suffixIcon: Container(
+              margin: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: _kBlue.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(Icons.calendar_month_outlined, size: 14, color: _kBlue),
+            ),
           ),
           validator: required ? (v) => (v == null || v.isEmpty) ? 'Champ requis' : null : null,
           onTap: () async {
@@ -427,33 +524,50 @@ Widget _dateField(
 }
 
 Widget _sliderInt(String label, int value, void Function(int) onChanged) {
+  final color = value >= 100 ? _kSuccess : value >= 50 ? _kBlue : value > 0 ? _kWarning : _kMuted;
   return Padding(
-    padding: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.only(bottom: 14),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kMuted)),
+            Row(children: [
+              const Icon(Icons.bar_chart_rounded, size: 12, color: _kBlue),
+              const SizedBox(width: 5),
+              Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
+                color: _kMuted, letterSpacing: 0.1)),
+            ]),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
-                color: _kBlue.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: _kBlue.withValues(alpha: 0.35)),
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: color.withValues(alpha: 0.35)),
               ),
-              child: Text('$value %', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _kBlue)),
+              child: Text('$value %',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color)),
             ),
           ],
         ),
-        Slider(
-          value: value.toDouble(),
-          min: 0,
-          max: 100,
-          divisions: 20,
-          label: '$value %',
-          onChanged: (v) => onChanged(v.round()),
+        const SizedBox(height: 6),
+        SliderTheme(
+          data: SliderThemeData(
+            trackHeight: 5,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+            activeTrackColor: color,
+            inactiveTrackColor: color.withValues(alpha: 0.15),
+            thumbColor: color,
+            overlayColor: color.withValues(alpha: 0.12),
+          ),
+          child: Slider(
+            value: value.toDouble(),
+            min: 0, max: 100, divisions: 20,
+            label: '$value %',
+            onChanged: (v) => onChanged(v.round()),
+          ),
         ),
         const Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -470,26 +584,36 @@ Widget _sliderInt(String label, int value, void Function(int) onChanged) {
   );
 }
 
-Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onChanged, {bool required = false}) {
+Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onChanged,
+    {bool required = false, IconData? icon, String? hint}) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.only(bottom: 14),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          required ? '$label *' : label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kMuted),
-        ),
-        const SizedBox(height: 4),
+        Row(children: [
+          if (icon != null) ...[Icon(icon, size: 12, color: _kBlue), const SizedBox(width: 5)],
+          Text(required ? '$label *' : label,
+            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
+              color: _kMuted, letterSpacing: 0.1)),
+        ]),
+        const SizedBox(height: 5),
         DropdownButtonFormField<T>(
           initialValue: value,
           isExpanded: true,
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e.toString(), overflow: TextOverflow.ellipsis))).toList(),
+          icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
+          items: items.map((e) => DropdownMenuItem(
+            value: e,
+            child: Text(e.toString(), style: const TextStyle(fontSize: 13.5),
+              overflow: TextOverflow.ellipsis),
+          )).toList(),
           onChanged: onChanged,
           decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
           validator: required ? (v) => v == null ? 'Champ requis' : null : null,
         ),
@@ -500,6 +624,104 @@ Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onC
 
 
 // ─── VIEW 1 : DASHBOARD ───────────────────────────────────────────────────────
+
+Widget _bannerStat(String label, String value) => Column(
+  crossAxisAlignment: CrossAxisAlignment.end,
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    Text(label,
+      style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 9.5,
+        fontWeight: FontWeight.w600, letterSpacing: 0.4)),
+    const SizedBox(height: 2),
+    Text(value,
+      style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
+  ],
+);
+
+Widget _roStatusBanner(BuildContext context, RoDashboardData d) {
+  final isConforme = d.widget1.statutReglementaire == 'Conforme';
+  final alertCount = d.widget3.actionsEnRetard + d.widget3.kriHorsSeuil + d.widget3.controlesNonConformes;
+  final gradStart = isConforme ? const Color(0xFF042B16) : const Color(0xFF3D0A0A);
+  final gradEnd   = isConforme ? const Color(0xFF0D5C30) : const Color(0xFF7A1212);
+  return Container(
+    width: double.infinity,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [gradStart, gradEnd],
+      ),
+      borderRadius: BorderRadius.circular(10),
+      boxShadow: [
+        BoxShadow(color: (isConforme ? _kSuccess : _kDanger).withValues(alpha: 0.18),
+          blurRadius: 18, offset: const Offset(0, 4)),
+      ],
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+    child: Row(
+      children: [
+        Container(
+          width: 46, height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            isConforme ? Icons.shield_rounded : Icons.warning_rounded,
+            color: Colors.white, size: 24,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('CONFORMITÉ RÉGLEMENTAIRE · BCEAO / UMOA',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.65),
+                  fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.7)),
+              const SizedBox(height: 2),
+              Text(d.widget1.statutReglementaire,
+                style: const TextStyle(color: Colors.white, fontSize: 20,
+                  fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+            ],
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              _bannerStat('K_RO', AppFormatters.currency(d.widget1.exigenceFondsPropres)),
+              Container(width: 1, height: 28, margin: const EdgeInsets.symmetric(horizontal: 12),
+                color: Colors.white.withValues(alpha: 0.22)),
+              _bannerStat('APR', AppFormatters.currency(d.widget1.aprRisqueOp)),
+            ]),
+            if (alertCount > 0) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _kWarning.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: _kWarning.withValues(alpha: 0.50)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.notifications_active_outlined, color: Colors.white, size: 12),
+                  const SizedBox(width: 5),
+                  Text('$alertCount alerte${alertCount > 1 ? 's' : ''}',
+                    style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                ]),
+              ),
+            ],
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
 class _DashboardView extends StatefulWidget {
   const _DashboardView({required this.api});
@@ -529,6 +751,9 @@ class _DashboardViewState extends State<_DashboardView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Banner statut réglementaire
+              _roStatusBanner(context, d),
+              const SizedBox(height: 14),
               // Widget 1 — Situation réglementaire
               SectionCard(
                 title: 'Situation réglementaire',
@@ -685,31 +910,81 @@ class _IncidentsViewState extends State<_IncidentsView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
-          title: Text(edit == null ? 'Nouvel incident' : 'Modifier l\'incident'),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            decoration: BoxDecoration(
+              color: _kDanger.withValues(alpha: 0.06),
+              border: Border(bottom: BorderSide(color: _kDanger.withValues(alpha: 0.15))),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _kDanger.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(Icons.report_gmailerrorred_rounded, color: _kDanger, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(edit == null ? 'Nouvel incident opérationnel' : 'Modifier l\'incident',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                const Text('Déclaration conforme Art. 313.b UMOA',
+                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
+              ])),
+            ]),
+          ),
           content: SizedBox(
-            width: 520,
+            width: 560,
             child: Form(
               key: formKey,
               child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 4),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _dateField(ctx, 'Date d\'occurrence', dateCtrl, required: true),
-                    _field('Description', descCtrl, multiline: true, required: true),
-                    _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v), required: true),
-                    _dropdown('Type d\'événement', type, _typesEvenement, (v) => setD(() => type = v), required: true),
-                    _dropdown('Cause racine', causeRacine, _causesRacine, (v) => setD(() => causeRacine = v)),
-                    _field('Perte brute (FCFA)', brutCtrl, keyboardType: TextInputType.number, required: true),
-                    _field('Perte récupérée (FCFA)', recupCtrl, keyboardType: TextInputType.number),
-                    _dropdown('Statut', statut, _statutsIncident, (v) => setD(() => statut = v), required: true),
+                    _formSection('Identification', icon: Icons.calendar_today_rounded, color: _kDanger),
+                    _formRow(
+                      _dateField(ctx, 'Date d\'occurrence', dateCtrl, required: true),
+                      _dropdown('Statut', statut, _statutsIncident, (v) => setD(() => statut = v),
+                        required: true, icon: Icons.flag_rounded),
+                    ),
+                    _formSection('Classification', icon: Icons.category_rounded, color: _kWarning),
+                    _formRow(
+                      _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
+                        required: true, icon: Icons.business_rounded),
+                      _dropdown('Type d\'événement', type, _typesEvenement, (v) => setD(() => type = v),
+                        required: true, icon: Icons.label_rounded),
+                    ),
+                    _dropdown('Cause racine', causeRacine, _causesRacine, (v) => setD(() => causeRacine = v),
+                      icon: Icons.search_rounded),
+                    _formSection('Description', icon: Icons.notes_rounded),
+                    _field('Description de l\'incident', descCtrl, multiline: true, required: true,
+                      hint: 'Décrivez les circonstances, le contexte et les conséquences de l\'incident...'),
+                    _formSection('Impact financier', icon: Icons.monetization_on_rounded, color: _kDanger),
+                    _formRow(
+                      _field('Perte brute (FCFA)', brutCtrl, keyboardType: TextInputType.number,
+                        required: true, icon: Icons.trending_down_rounded,
+                        hint: 'Ex: 500000'),
+                      _field('Perte récupérée (FCFA)', recupCtrl, keyboardType: TextInputType.number,
+                        icon: Icons.trending_up_rounded, hint: 'Ex: 150000'),
+                    ),
                   ],
                 ),
               ),
             ),
           ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-            FilledButton(
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded, size: 16),
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 final data = {
@@ -735,7 +1010,8 @@ class _IncidentsViewState extends State<_IncidentsView> {
                   }
                 }
               },
-              child: Text(edit == null ? 'Créer' : 'Enregistrer'),
+              style: FilledButton.styleFrom(backgroundColor: _kDanger),
+              label: Text(edit == null ? 'Déclarer' : 'Enregistrer'),
             ),
           ],
         ),
@@ -891,26 +1167,32 @@ class _PertesViewState extends State<_PertesView> with TickerProviderStateMixin 
       children: [
         Container(
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF),
-            borderRadius: BorderRadius.circular(6),
+            color: isDark ? const Color(0xFF0D1829) : const Color(0xFFF0F4FB),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isDark ? const Color(0xFF22304B) : const Color(0xFFDDE7F6),
-              width: 0.8,
+              color: isDark ? const Color(0xFF1E2E48) : const Color(0xFFD8E4F5),
             ),
           ),
+          padding: const EdgeInsets.all(5),
           child: TabBar(
             controller: _tab,
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            indicatorColor: _kBlue,
-            labelColor: _kBlue,
-            unselectedLabelColor: _kMuted,
-            indicatorSize: TabBarIndicatorSize.label,
+            indicator: BoxDecoration(
+              color: _kBlue,
+              borderRadius: BorderRadius.circular(7),
+              boxShadow: [BoxShadow(color: _kBlue.withValues(alpha: 0.30), blurRadius: 8, offset: const Offset(0, 2))],
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
             dividerColor: Colors.transparent,
+            labelColor: Colors.white,
+            unselectedLabelColor: isDark ? AppTheme.darkMuted : _kMuted,
             labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
             unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
             tabs: _tabDefs.map((t) => Tab(
-              height: 38,
+              height: 34,
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 Icon(t.$1, size: 14),
                 const SizedBox(width: 6),
@@ -960,11 +1242,6 @@ class _PertesContentState extends State<_PertesContent> {
     setState(() { _future = widget.api.fetchRoIncidents(); });
   }
 
-  Future<void> _openImport() async {
-    final imported = await showRoImportPertesDialog(context, api: widget.api);
-    if (imported == true) _reload();
-  }
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<RoIncident>>(
@@ -1009,21 +1286,6 @@ class _PertesContentState extends State<_PertesContent> {
                   Expanded(child: _kpiBox(ctx, 'Perte moyenne / incident', AppFormatters.currency(moyenne), Icons.calculate_outlined, _kMuted,
                     tooltip: 'Sévérité moyenne des pertes sur la période sélectionnée.\nFormule : Σ perte_nette / nombre d\'incidents.\nIndicateur de gravité unitaire des incidents opérationnels.')),
                 ],
-              ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: OutlinedButton.icon(
-                  onPressed: _openImport,
-                  icon: const Icon(Icons.upload_file_outlined, size: 16),
-                  label: const Text('Importer Excel'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: _kBlue,
-                    side: const BorderSide(color: _kBlue),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                ),
               ),
               const SizedBox(height: 10),
               Row(
@@ -1098,25 +1360,68 @@ class _KriViewState extends State<_KriView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
-          title: const Text('Saisir une valeur KRI'),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            decoration: BoxDecoration(
+              color: _kViolet.withValues(alpha: 0.06),
+              border: Border(bottom: BorderSide(color: _kViolet.withValues(alpha: 0.15))),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _kViolet.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(Icons.speed_rounded, color: _kViolet, size: 18),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Saisir une valeur KRI',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                Text('Indicateur de risque clé — mesure périodique',
+                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
+              ])),
+            ]),
+          ),
           content: SizedBox(
-            width: 420,
+            width: 460,
             child: Form(
               key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _dropdown('Indicateur KRI', kriId, kris.map((k) => k.definition.id).toList(), (v) => setD(() => kriId = v), required: true),
-                  _dateField(ctx, 'Date de mesure', dateCtrl, required: true),
-                  _field('Valeur mesurée', valCtrl, keyboardType: TextInputType.number, required: true),
-                  _field('Commentaire', commCtrl),
-                ],
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 4),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _formSection('Sélection de l\'indicateur', icon: Icons.speed_rounded, color: _kViolet),
+                    _dropdown('Indicateur KRI', kriId, kris.map((k) => k.definition.id).toList(),
+                      (v) => setD(() => kriId = v), required: true, icon: Icons.analytics_rounded,
+                      hint: 'Choisir l\'indicateur à mesurer'),
+                    _formSection('Mesure', icon: Icons.straighten_rounded, color: _kBlue),
+                    _formRow(
+                      _dateField(ctx, 'Date de mesure', dateCtrl, required: true),
+                      _field('Valeur mesurée', valCtrl, keyboardType: TextInputType.number,
+                        required: true, icon: Icons.numbers_rounded, hint: 'Ex: 2.5'),
+                    ),
+                    _field('Commentaire', commCtrl, icon: Icons.notes_rounded,
+                      hint: 'Contexte ou explication de la mesure...'),
+                  ],
+                ),
               ),
             ),
           ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-            FilledButton(
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              icon: const Icon(Icons.save_rounded, size: 16),
+              style: FilledButton.styleFrom(backgroundColor: _kViolet),
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 try {
@@ -1131,7 +1436,7 @@ class _KriViewState extends State<_KriView> {
                   if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
                 }
               },
-              child: const Text('Enregistrer'),
+              label: const Text('Enregistrer'),
             ),
           ],
         ),
@@ -1251,33 +1556,83 @@ class _CartographieViewState extends State<_CartographieView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
-          title: Text(edit == null ? 'Nouveau risque' : 'Modifier le risque'),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            decoration: BoxDecoration(
+              color: _kBlue.withValues(alpha: 0.06),
+              border: Border(bottom: BorderSide(color: _kBlue.withValues(alpha: 0.15))),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _kBlue.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(Icons.map_rounded, color: _kBlue, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(edit == null ? 'Nouveau risque cartographié' : 'Modifier le risque',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                const Text('Cartographie des risques opérationnels',
+                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
+              ])),
+            ]),
+          ),
           content: SizedBox(
-            width: 520,
+            width: 560,
             child: Form(
               key: formKey,
               child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 4),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _field('Nom du risque', nomCtrl, required: true),
-                    _dropdown('Catégorie', cat, _categoriesRisque, (v) => setD(() => cat = v), required: true),
-                    _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v), required: true),
-                    _dropdown('Probabilité (1–5)', proba, [1, 2, 3, 4, 5], (v) => setD(() => proba = v ?? 1)),
-                    _dropdown('Impact (1–5)', impact, [1, 2, 3, 4, 5], (v) => setD(() => impact = v ?? 1)),
-                    _field('Contrôle existant', controleCtrl),
-                    _dropdown('Efficacité contrôle (1–5)', eff, [1, 2, 3, 4, 5], (v) => setD(() => eff = v ?? 3)),
+                    _formSection('Identification du risque', icon: Icons.search_rounded, color: _kBlue),
+                    _field('Nom du risque', nomCtrl, required: true,
+                      icon: Icons.label_rounded, hint: 'Ex: Risque de fraude interne'),
+                    _formRow(
+                      _dropdown('Catégorie', cat, _categoriesRisque, (v) => setD(() => cat = v),
+                        required: true, icon: Icons.category_rounded),
+                      _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
+                        required: true, icon: Icons.business_rounded),
+                    ),
+                    _formSection('Évaluation du risque brut', icon: Icons.bar_chart_rounded, color: _kWarning),
+                    _formRow(
+                      _dropdown('Probabilité (1–5)', proba, [1, 2, 3, 4, 5],
+                        (v) => setD(() => proba = v ?? 1), icon: Icons.repeat_rounded),
+                      _dropdown('Impact (1–5)', impact, [1, 2, 3, 4, 5],
+                        (v) => setD(() => impact = v ?? 1), icon: Icons.flash_on_rounded),
+                    ),
+                    _formSection('Contrôle interne', icon: Icons.shield_rounded, color: _kSuccess),
+                    _field('Contrôle existant', controleCtrl, icon: Icons.notes_rounded,
+                      hint: 'Décrivez les contrôles en place...', multiline: true),
+                    _dropdown('Efficacité du contrôle (1–5)', eff, [1, 2, 3, 4, 5],
+                      (v) => setD(() => eff = v ?? 3), icon: Icons.tune_rounded),
                   ],
                 ),
               ),
             ),
           ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-            FilledButton(
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded, size: 16),
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
-                final data = {'nom': nomCtrl.text.trim(), 'categorie': cat, 'ligne_metier': ligne, 'probabilite': proba, 'impact': impact, 'controle_existant': controleCtrl.text.trim(), 'efficacite_controle': eff};
+                final data = {
+                  'nom': nomCtrl.text.trim(), 'categorie': cat, 'ligne_metier': ligne,
+                  'probabilite': proba, 'impact': impact,
+                  'controle_existant': controleCtrl.text.trim(), 'efficacite_controle': eff,
+                };
                 try {
                   edit == null ? await widget.api.createRoRisque(data) : await widget.api.updateRoRisque(edit.id, data);
                   if (ctx.mounted) Navigator.pop(ctx, true);
@@ -1285,7 +1640,7 @@ class _CartographieViewState extends State<_CartographieView> {
                   if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
                 }
               },
-              child: Text(edit == null ? 'Créer' : 'Enregistrer'),
+              label: Text(edit == null ? 'Créer' : 'Enregistrer'),
             ),
           ],
         ),
@@ -1404,32 +1759,84 @@ class _ControlesViewState extends State<_ControlesView> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
-          title: Text(edit == null ? 'Nouveau contrôle' : 'Modifier le contrôle'),
+          titlePadding: EdgeInsets.zero,
+          title: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            decoration: BoxDecoration(
+              color: _kSuccess.withValues(alpha: 0.06),
+              border: Border(bottom: BorderSide(color: _kSuccess.withValues(alpha: 0.15))),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: _kSuccess.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: const Icon(Icons.shield_rounded, color: _kSuccess, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(edit == null ? 'Nouveau contrôle interne' : 'Modifier le contrôle',
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                const Text('Dispositif de contrôle opérationnel',
+                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
+              ])),
+            ]),
+          ),
           content: SizedBox(
-            width: 520,
+            width: 560,
             child: Form(
               key: formKey,
               child: SingleChildScrollView(
+                padding: const EdgeInsets.only(top: 4),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _field('Périmètre contrôlé', perCtrl, required: true),
-                    _dropdown('Type de contrôle', typeC, _typesControle, (v) => setD(() => typeC = v), required: true),
-                    _dropdown('Fréquence', freq, _frequences, (v) => setD(() => freq = v), required: true),
-                    _dateField(ctx, 'Date dernier test', dateCtrl),
-                    _dropdown('Résultat', resultat, ['Conforme', 'Non-conforme', 'En cours', 'Non applicable'], (v) => setD(() => resultat = v)),
-                    _field('Points conformes', pcCtrl, keyboardType: TextInputType.number),
-                    _field('Points contrôlés', ptcCtrl, keyboardType: TextInputType.number),
-                    _field('Non-conformités détectées', nonConfCtrl, multiline: true),
-                    _field('Validateur', validCtrl),
+                    _formSection('Définition du contrôle', icon: Icons.tune_rounded, color: _kSuccess),
+                    _field('Périmètre contrôlé', perCtrl, required: true,
+                      icon: Icons.domain_rounded, hint: 'Ex: Processus de validation des crédits'),
+                    _formRow(
+                      _dropdown('Type de contrôle', typeC, _typesControle, (v) => setD(() => typeC = v),
+                        required: true, icon: Icons.category_rounded),
+                      _dropdown('Fréquence', freq, _frequences, (v) => setD(() => freq = v),
+                        required: true, icon: Icons.schedule_rounded),
+                    ),
+                    _formSection('Résultat du test', icon: Icons.fact_check_rounded, color: _kWarning),
+                    _formRow(
+                      _dateField(ctx, 'Date dernier test', dateCtrl),
+                      _dropdown('Résultat', resultat,
+                        ['Conforme', 'Non-conforme', 'En cours', 'Non applicable'],
+                        (v) => setD(() => resultat = v), icon: Icons.check_circle_rounded),
+                    ),
+                    _formRow(
+                      _field('Points conformes', pcCtrl, keyboardType: TextInputType.number,
+                        icon: Icons.check_rounded, hint: 'Ex: 18'),
+                      _field('Points contrôlés', ptcCtrl, keyboardType: TextInputType.number,
+                        icon: Icons.list_rounded, hint: 'Ex: 20'),
+                    ),
+                    _field('Non-conformités détectées', nonConfCtrl, multiline: true,
+                      icon: Icons.warning_amber_rounded,
+                      hint: 'Décrivez les écarts observés...'),
+                    _formSection('Validation', icon: Icons.verified_rounded, color: _kBlue),
+                    _field('Validateur', validCtrl, icon: Icons.person_rounded,
+                      hint: 'Nom du responsable de la validation'),
                   ],
                 ),
               ),
             ),
           ),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-            FilledButton(
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            const SizedBox(width: 8),
+            FilledButton.icon(
+              icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded, size: 16),
+              style: FilledButton.styleFrom(backgroundColor: _kSuccess),
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 final data = {
@@ -1446,7 +1853,7 @@ class _ControlesViewState extends State<_ControlesView> {
                   if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
                 }
               },
-              child: Text(edit == null ? 'Créer' : 'Enregistrer'),
+              label: Text(edit == null ? 'Créer' : 'Enregistrer'),
             ),
           ],
         ),
@@ -1665,73 +2072,253 @@ class _PlansViewState extends State<_PlansView> {
 
   void _reload() => setState(() { _future = widget.api.fetchRoPlans(); });
 
+  Color _sourceColor(String s) => switch (s) {
+    'Incident'     => _kDanger,
+    'Contrôle'     => _kWarning,
+    'KRI'          => _kViolet,
+    'Audit'        => _kCyan,
+    'Cartographie' => _kBlue,
+    _              => _kMuted,
+  };
+
   Future<void> _showForm({RoPlan? edit}) async {
+    // Charger toutes les sources en parallèle avant d'ouvrir le dialog
+    final results = await Future.wait([
+      widget.api.fetchRoIncidents(),
+      widget.api.fetchRoKri(),
+      widget.api.fetchRoControles(),
+      widget.api.fetchRoRisques(),
+    ]);
+    final incidents  = results[0] as List<RoIncident>;
+    final kriData    = results[1] as RoKriModuleData;
+    final controles  = results[2] as List<RoControle>;
+    final risques    = results[3] as List<RoRisque>;
+
+    // Construit pour chaque type de source la liste (valeur_stockée, libellé_affiché)
+    List<(String, String)> optionsFor(String src) => switch (src) {
+      'Incident'     => incidents.map((i) {
+          final desc = i.description.length > 40 ? '${i.description.substring(0, 40)}…' : i.description;
+          return (i.reference, '${i.reference}  ·  $desc');
+        }).toList(),
+      'KRI'          => kriData.kriList.map((k) => (k.definition.nom, k.definition.nom)).toList(),
+      'Contrôle'     => controles.map((c) {
+          final peri = c.perimetre.length > 40 ? '${c.perimetre.substring(0, 40)}…' : c.perimetre;
+          return (c.reference, '${c.reference}  ·  $peri');
+        }).toList(),
+      'Cartographie' => risques.map((r) => (r.nom, r.nom)).toList(),
+      _              => <(String, String)>[],
+    };
+
     final titreCtrl = TextEditingController(text: edit?.titre ?? '');
-    final descCtrl = TextEditingController(text: edit?.description ?? '');
-    final respCtrl = TextEditingController(text: edit?.responsable ?? '');
+    final descCtrl  = TextEditingController(text: edit?.description ?? '');
+    final respCtrl  = TextEditingController(text: edit?.responsable ?? '');
     final debutCtrl = TextEditingController(text: edit?.dateDebut ?? '');
-    final echeCtrl = TextEditingController(text: edit?.dateEcheance ?? '');
-    int avancement = edit?.avancement ?? 0;
-    String? type = edit?.typeAction ?? _typesAction.first;
-    String? source = edit?.source ?? _sourcesAction.first;
-    String? prio = edit?.priorite ?? _priorites[1];
-    String? statut = edit?.statut ?? _statutsPlan.first;
-    DateTime? debutDate = edit?.dateDebut != null && edit!.dateDebut.isNotEmpty ? DateTime.tryParse(edit.dateDebut) : null;
+    final echeCtrl  = TextEditingController(text: edit?.dateEcheance ?? '');
+    final auditCtrl = TextEditingController(text: edit?.sourceRef ?? '');
+    int avancement  = edit?.avancement ?? 0;
+    String? type    = edit?.typeAction ?? _typesAction.first;
+    String? source  = edit?.source ?? _sourcesAction.first;
+    String? sourceRef = edit?.sourceRef.isNotEmpty == true ? edit!.sourceRef : null;
+    String? prio    = edit?.priorite ?? _priorites[1];
+    String? statut  = edit?.statut ?? _statutsPlan.first;
+    DateTime? debutDate = edit?.dateDebut != null && edit!.dateDebut.isNotEmpty
+        ? DateTime.tryParse(edit.dateDebut) : null;
     final formKey = GlobalKey<FormState>();
+    if (!mounted) return;
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) => AlertDialog(
-          title: Text(edit == null ? 'Nouveau plan d\'action' : 'Modifier le plan'),
-          content: SizedBox(
-            width: 560,
-            child: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _field('Titre', titreCtrl, required: true),
-                    _field('Description', descCtrl, multiline: true),
-                    _dropdown('Type', type, _typesAction, (v) => setD(() => type = v), required: true),
-                    _dropdown('Source', source, _sourcesAction, (v) => setD(() => source = v), required: true),
-                    _field('Responsable', respCtrl),
-                    _dateField(ctx, 'Date de début', debutCtrl, onPicked: () {
-                      setD(() { debutDate = DateTime.tryParse(debutCtrl.text); });
-                    }),
-                    _dateField(ctx, 'Date d\'échéance', echeCtrl, firstDate: debutDate),
-                    _dropdown('Priorité', prio, _priorites, (v) => setD(() => prio = v), required: true),
-                    _dropdown('Statut', statut, _statutsPlan, (v) => setD(() => statut = v), required: true),
-                    _sliderInt('Avancement (%)', avancement, (v) => setD(() => avancement = v)),
-                  ],
+        builder: (ctx, setD) {
+          final opts = optionsFor(source ?? '');
+          // Si la source change, réinitialiser la ref si la valeur n'est plus dans la liste
+          if (opts.isNotEmpty && !opts.any((o) => o.$1 == sourceRef)) {
+            sourceRef = null;
+          }
+          final srcColor = _sourceColor(source ?? '');
+          return AlertDialog(
+            titlePadding: EdgeInsets.zero,
+            title: Container(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+              decoration: BoxDecoration(
+                color: _kCyan.withValues(alpha: 0.06),
+                border: Border(bottom: BorderSide(color: _kCyan.withValues(alpha: 0.15))),
+              ),
+              child: Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(
+                    color: _kCyan.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: const Icon(Icons.task_alt_rounded, color: _kCyan, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(edit == null ? 'Nouveau plan d\'action' : 'Modifier le plan',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  const Text('Suivi et traçabilité des actions correctives',
+                    style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
+                ])),
+              ]),
+            ),
+            content: SizedBox(
+              width: 580,
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _formSection('Identification du plan', icon: Icons.label_rounded, color: _kCyan),
+                      _field('Titre du plan d\'action', titreCtrl, required: true,
+                        icon: Icons.title_rounded, hint: 'Ex: Renforcer le contrôle des accès'),
+                      _formRow(
+                        _dropdown('Type d\'action', type, _typesAction,
+                          (v) => setD(() => type = v), required: true, icon: Icons.category_rounded),
+                        _dropdown('Priorité', prio, _priorites,
+                          (v) => setD(() => prio = v), required: true, icon: Icons.priority_high_rounded),
+                      ),
+                      _field('Description', descCtrl, multiline: true, icon: Icons.notes_rounded,
+                        hint: 'Décrivez les actions à mener et les objectifs attendus...'),
+
+                      _formSection('Origine du plan', icon: Icons.link_rounded, color: srcColor),
+                      _dropdown('Source déclencheuse', source, _sourcesAction,
+                        (v) => setD(() { source = v; sourceRef = null; }),
+                        required: true, icon: Icons.account_tree_rounded),
+
+                      // Sélecteur dynamique selon la source
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [
+                              Container(width: 7, height: 7,
+                                margin: const EdgeInsets.only(right: 6),
+                                decoration: BoxDecoration(color: srcColor, shape: BoxShape.circle)),
+                              Text(
+                                switch (source) {
+                                  'Incident'     => 'Incident déclencheur *',
+                                  'Contrôle'     => 'Contrôle non conforme *',
+                                  'KRI'          => 'KRI hors seuil *',
+                                  'Audit'        => 'Référence du rapport d\'audit',
+                                  'Cartographie' => 'Risque identifié en cartographie',
+                                  _              => 'Élément source',
+                                },
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: srcColor),
+                              ),
+                            ]),
+                            const SizedBox(height: 5),
+                            if (source == 'Audit')
+                              TextFormField(
+                                controller: auditCtrl,
+                                style: const TextStyle(fontSize: 13.5),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: 'AUD-2024-Q1',
+                                  hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              )
+                            else if (opts.isEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppTheme.border),
+                                  color: const Color(0xFFFBFCFF),
+                                ),
+                                child: const Row(children: [
+                                  Icon(Icons.info_outline, size: 14, color: _kMuted),
+                                  SizedBox(width: 8),
+                                  Text('Aucun enregistrement disponible',
+                                    style: TextStyle(fontSize: 12.5, color: _kMuted)),
+                                ]),
+                              )
+                            else
+                              DropdownButtonFormField<String>(
+                                initialValue: sourceRef,
+                                isExpanded: true,
+                                icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  hintText: 'Sélectionner…',
+                                  hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                items: opts.map((o) => DropdownMenuItem(
+                                  value: o.$1,
+                                  child: Text(o.$2, overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 13.5)),
+                                )).toList(),
+                                onChanged: (v) => setD(() => sourceRef = v),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      _formSection('Planification', icon: Icons.calendar_month_rounded, color: _kWarning),
+                      _field('Responsable', respCtrl, icon: Icons.person_rounded,
+                        hint: 'Nom du responsable de l\'action'),
+                      _formRow(
+                        _dateField(ctx, 'Date de début', debutCtrl, onPicked: () {
+                          setD(() { debutDate = DateTime.tryParse(debutCtrl.text); });
+                        }),
+                        _dateField(ctx, 'Date d\'échéance', echeCtrl, firstDate: debutDate),
+                      ),
+                      _formRow(
+                        _dropdown('Statut', statut, _statutsPlan,
+                          (v) => setD(() => statut = v), required: true, icon: Icons.flag_rounded),
+                        const SizedBox(), // spacer
+                      ),
+                      _sliderInt('Avancement (%)', avancement, (v) => setD(() => avancement = v)),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-            FilledButton(
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
-                final data = {
-                  'titre': titreCtrl.text.trim(), 'description': descCtrl.text.trim(),
-                  'type_action': type, 'source': source, 'responsable': respCtrl.text.trim(),
-                  'date_debut': debutCtrl.text.trim(), 'date_echeance': echeCtrl.text.trim(),
-                  'priorite': prio, 'statut': statut,
-                  'avancement': avancement,
-                };
-                try {
-                  edit == null ? await widget.api.createRoPlan(data) : await widget.api.updateRoPlan(edit.id, data);
-                  if (ctx.mounted) Navigator.pop(ctx, true);
-                } catch (e) {
-                  if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
-                }
-              },
-              child: Text(edit == null ? 'Créer' : 'Enregistrer'),
-            ),
-          ],
-        ),
+            actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            actions: [
+              OutlinedButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Annuler'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded, size: 16),
+                style: FilledButton.styleFrom(backgroundColor: _kCyan),
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+                  final ref = source == 'Audit' ? auditCtrl.text.trim() : (sourceRef ?? '');
+                  final data = {
+                    'titre': titreCtrl.text.trim(), 'description': descCtrl.text.trim(),
+                    'type_action': type, 'source': source, 'source_ref': ref,
+                    'responsable': respCtrl.text.trim(),
+                    'date_debut': debutCtrl.text.trim(), 'date_echeance': echeCtrl.text.trim(),
+                    'priorite': prio, 'statut': statut, 'avancement': avancement,
+                  };
+                  try {
+                    edit == null
+                        ? await widget.api.createRoPlan(data)
+                        : await widget.api.updateRoPlan(edit.id, data);
+                    if (ctx.mounted) Navigator.pop(ctx, true);
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
+                    }
+                  }
+                },
+                label: Text(edit == null ? 'Créer' : 'Enregistrer'),
+              ),
+            ],
+          );
+        },
       ),
     );
     if (ok == true) _reload();
@@ -1766,20 +2353,76 @@ class _PlansViewState extends State<_PlansView> {
                     ? const Center(child: Text('Aucun plan d\'action enregistré.', style: TextStyle(color: _kMuted)))
                     : SingleChildScrollView(
                         child: Table(
-                          columnWidths: const {0: FixedColumnWidth(110), 1: FlexColumnWidth(2), 2: FixedColumnWidth(80), 3: FixedColumnWidth(90), 4: FixedColumnWidth(70), 5: FixedColumnWidth(110), 6: FixedColumnWidth(80), 7: FixedColumnWidth(90)},
+                          columnWidths: const {0: FixedColumnWidth(110), 1: FlexColumnWidth(2), 2: FixedColumnWidth(130), 3: FixedColumnWidth(80), 4: FixedColumnWidth(90), 5: FixedColumnWidth(100), 6: FixedColumnWidth(80), 7: FixedColumnWidth(90)},
                           children: [
-                            _tableHeader(['Référence', 'Titre', 'Priorité', 'Responsable', 'Échéance', 'Avancement', 'Statut', 'Actions']),
+                            _tableHeader(['Référence', 'Titre', 'Origine', 'Priorité', 'Responsable', 'Avancement', 'Statut', 'Actions']),
                             ...items.map((p) => TableRow(
                               decoration: BoxDecoration(
                                 border: const Border(bottom: BorderSide(color: Color(0x11000000))),
                                 color: p.enRetard ? _kDanger.withValues(alpha: 0.04) : null,
                               ),
                               children: [
-                                _cell(p.reference, bold: true, color: p.enRetard ? _kDanger : null),
+                                // Référence + date échéance
+                                TableCell(
+                                  verticalAlignment: TableCellVerticalAlignment.middle,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(p.reference, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: p.enRetard ? _kDanger : null)),
+                                        if (p.dateEcheance.isNotEmpty) ...[
+                                          const SizedBox(height: 2),
+                                          Text(p.dateEcheance,
+                                            style: TextStyle(fontSize: 10, color: p.enRetard ? _kDanger : _kMuted,
+                                              fontWeight: p.enRetard ? FontWeight.w600 : FontWeight.normal)),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
                                 _cellFlex(p.titre),
+                                // Colonne Origine — source + référence source
+                                TableCell(
+                                  verticalAlignment: TableCellVerticalAlignment.middle,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: _sourceColor(p.source).withValues(alpha: 0.10),
+                                              borderRadius: BorderRadius.circular(20),
+                                              border: Border.all(color: _sourceColor(p.source).withValues(alpha: 0.30)),
+                                            ),
+                                            child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                              Container(width: 5, height: 5,
+                                                decoration: BoxDecoration(color: _sourceColor(p.source), shape: BoxShape.circle)),
+                                              const SizedBox(width: 4),
+                                              Text(p.source, style: TextStyle(color: _sourceColor(p.source),
+                                                fontSize: 10, fontWeight: FontWeight.w600)),
+                                            ]),
+                                          ),
+                                        ),
+                                        if (p.sourceRef.isNotEmpty) ...[
+                                          const SizedBox(height: 3),
+                                          Text(p.sourceRef,
+                                            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: _kMuted),
+                                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
                                 TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: Padding(padding: const EdgeInsets.all(8), child: _badge(p.priorite, p.priorite == 'Haute' ? _kDanger : p.priorite == 'Moyenne' ? _kWarning : _kMuted))),
                                 _cell(p.responsable.isEmpty ? '—' : p.responsable),
-                                _cell(p.dateEcheance.isEmpty ? '—' : p.dateEcheance),
                                 TableCell(
                                   verticalAlignment: TableCellVerticalAlignment.middle,
                                   child: Padding(
@@ -2909,50 +3552,68 @@ class _RegistreViewState extends State<_RegistreView> {
   Widget _sumCard(String label, String value, Color color, {String? tooltip}) => Container(
     clipBehavior: Clip.antiAlias,
     decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.98),
-      borderRadius: BorderRadius.circular(5),
-      border: Border.all(color: color.withValues(alpha: 0.24)),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [color.withValues(alpha: 0.11), color.withValues(alpha: 0.05)],
+      ),
+      borderRadius: BorderRadius.circular(9),
+      border: Border.all(color: color.withValues(alpha: 0.22)),
     ),
-    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: Text(label.toUpperCase(),
-                maxLines: 1, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: AppTheme.text, fontSize: 10.5, fontWeight: FontWeight.w600, height: 1.2),
+    child: IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(width: 3, color: color),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(11, 10, 12, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(label.toUpperCase(),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: color, fontSize: 9.5, fontWeight: FontWeight.w700,
+                            letterSpacing: 0.7, height: 1.2),
+                        ),
+                      ),
+                      if (tooltip != null) ...[
+                        const SizedBox(width: 4),
+                        Tooltip(
+                          message: tooltip,
+                          preferBelow: false,
+                          waitDuration: Duration.zero,
+                          showDuration: const Duration(seconds: 10),
+                          textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E2A3A),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Icon(Icons.info_outline_rounded, size: 12, color: color.withValues(alpha: 0.70)),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
+                    child: Text(value, maxLines: 1,
+                      style: TextStyle(color: color, fontSize: 15.5, fontWeight: FontWeight.w800,
+                        height: 1, letterSpacing: -0.3),
+                    ),
+                  ),
+                ],
               ),
             ),
-            if (tooltip != null) ...[
-              const SizedBox(width: 4),
-              Tooltip(
-                message: tooltip,
-                preferBelow: false,
-                waitDuration: Duration.zero,
-                showDuration: const Duration(seconds: 10),
-                textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E2A3A),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Icon(Icons.info_outline_rounded, size: 13, color: color.withValues(alpha: 0.7)),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 4),
-        FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
-          child: Text(value, maxLines: 1,
-            style: TextStyle(color: color, fontSize: 14.5, fontWeight: FontWeight.w700, height: 1),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
@@ -3176,9 +3837,17 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
           subtitle: 'Art. 313.b — Déclarez dans les 5 jours ouvrés suivant la détection',
         ),
         const SizedBox(height: 16),
+        _formSection('Quand et où ?', icon: Icons.calendar_today_rounded, color: _kDanger),
         _dateField(context, 'Date d\'occurrence', _dateCtrl, required: true),
-        _dropdown('Ligne de métier', _ligne, _lignesMetier, (v) { if (v != null) setState(() => _ligne = v); }, required: true),
-        _dropdown('Type d\'événement', _type, _typesEvenement, (v) { if (v != null) setState(() => _type = v); }, required: true),
+        _formSection('Classification', icon: Icons.category_rounded, color: _kWarning),
+        _formRow(
+          _dropdown('Ligne de métier', _ligne, _lignesMetier,
+            (v) { if (v != null) setState(() => _ligne = v); },
+            required: true, icon: Icons.business_rounded),
+          _dropdown('Type d\'événement', _type, _typesEvenement,
+            (v) { if (v != null) setState(() => _type = v); },
+            required: true, icon: Icons.label_rounded),
+        ),
       ],
     ),
   );
@@ -3195,8 +3864,14 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
           subtitle: 'Décrivez précisément l\'incident et identifiez sa cause principale',
         ),
         const SizedBox(height: 16),
-        _field('Description de l\'incident', _descCtrl, multiline: true, required: true, hint: 'Que s\'est-il passé ? Quels systèmes / processus sont concernés ?'),
-        _dropdown('Cause racine', _causeRacine, _causesRacine, (v) { if (v != null) setState(() => _causeRacine = v); }),
+        _formSection('Que s\'est-il passé ?', icon: Icons.notes_rounded, color: _kBlue),
+        _field('Description de l\'incident', _descCtrl, multiline: true, required: true,
+          icon: Icons.description_rounded,
+          hint: 'Que s\'est-il passé ? Quels systèmes / processus sont concernés ?'),
+        _formSection('Analyse', icon: Icons.search_rounded, color: _kWarning),
+        _dropdown('Cause racine identifiée', _causeRacine, _causesRacine,
+          (v) { if (v != null) setState(() => _causeRacine = v); },
+          icon: Icons.account_tree_rounded),
       ],
     ),
   );
@@ -3213,15 +3888,16 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
           subtitle: 'Art. 89 — Perte nette = Perte brute − Récupérations. Saisir en FCFA.',
         ),
         const SizedBox(height: 16),
-        _field(
-          'Perte brute (FCFA)', _brutCtrl,
-          keyboardType: TextInputType.number, required: true,
-          hint: 'Montant total de la perte avant récupérations',
-        ),
-        _field(
-          'Perte récupérée (FCFA)', _recupCtrl,
-          keyboardType: TextInputType.number,
-          hint: 'Assurances, provisions, reversements — laisser vide si aucune',
+        _formSection('Montants de perte', icon: Icons.monetization_on_rounded, color: _kDanger),
+        _formRow(
+          _field('Perte brute (FCFA)', _brutCtrl,
+            keyboardType: TextInputType.number, required: true,
+            icon: Icons.trending_down_rounded,
+            hint: 'Montant total avant récupérations'),
+          _field('Perte récupérée (FCFA)', _recupCtrl,
+            keyboardType: TextInputType.number,
+            icon: Icons.trending_up_rounded,
+            hint: 'Assurances, provisions, reversements'),
         ),
         const SizedBox(height: 4),
         // Estimation BIA temps réel
@@ -3514,63 +4190,86 @@ class _RoPieChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = items.fold(0, (s, e) => s + e.valeur);
     if (total == 0) return const SizedBox();
-    final palette = [_kBlue, _kSuccess, _kWarning, _kDanger, _kViolet, _kCyan, const Color(0xFFF97316), const Color(0xFF84CC16)];
-    return Row(
-      children: [
-        SizedBox(
-          width: 100,
-          height: 100,
-          child: CustomPaint(
-            painter: _PiePainter(items: items, total: total, palette: palette),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: items.asMap().entries.map((entry) {
-              final c = palette[entry.key % palette.length];
-              final pct = total > 0 ? (entry.value.valeur / total * 100).toStringAsFixed(1) : '0';
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
+    final palette = [_kDanger, _kWarning, _kBlue, _kSuccess, _kViolet, _kCyan, const Color(0xFFF97316), const Color(0xFF84CC16)];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final sorted = items.asMap().entries.toList()
+      ..sort((a, b) => b.value.valeur.compareTo(a.value.valeur));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: sorted.map((entry) {
+          final c = palette[entry.key % palette.length];
+          final pct = total > 0 ? entry.value.valeur / total : 0.0;
+          final pctStr = (pct * 100).toStringAsFixed(1);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Container(width: 8, height: 8, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
-                    const SizedBox(width: 6),
-                    Expanded(child: Text(entry.value.label, style: const TextStyle(fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    Text('$pct %', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kMuted)),
+                    Container(
+                      width: 9, height: 9,
+                      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        entry.value.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? AppTheme.darkText : AppTheme.text,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$pctStr %',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c),
+                    ),
                   ],
                 ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 9,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: isDark ? c.withValues(alpha: 0.14) : c.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: pct.clamp(0.0, 1.0),
+                        child: Container(
+                          height: 9,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [c.withValues(alpha: 0.75), c],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
-}
-
-class _PiePainter extends CustomPainter {
-  const _PiePainter({required this.items, required this.total, required this.palette});
-  final List<RoRepartitionItem> items;
-  final int total;
-  final List<Color> palette;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.stroke..strokeWidth = size.width * 0.22..strokeCap = StrokeCap.butt;
-    var start = -math.pi / 2;
-    for (var i = 0; i < items.length; i++) {
-      paint.color = palette[i % palette.length];
-      final sweep = (items[i].valeur / total) * math.pi * 2;
-      canvas.drawArc(Rect.fromLTWH(size.width * 0.11, size.height * 0.11, size.width * 0.78, size.height * 0.78), start, sweep - 0.04, false, paint);
-      start += sweep;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _PiePainter old) => old.items != items;
 }
 
 class _RoLineChartPainter extends CustomPainter {
@@ -3642,12 +4341,17 @@ class _RoLineChartPainter extends CustomPainter {
 
 TableRow _tableHeader(List<String> headers) {
   return TableRow(
-    decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x22000000), width: 1.5))),
+    decoration: const BoxDecoration(
+      color: Color(0xFFF4F7FD),
+      border: Border(bottom: BorderSide(color: Color(0xFFDDE5F5), width: 1.5)),
+    ),
     children: headers.map((h) => TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-        child: Text(h, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _kMuted)),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+        child: Text(h.toUpperCase(),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 9.5,
+            color: _kMuted, letterSpacing: 0.5)),
       ),
     )).toList(),
   );
@@ -3656,11 +4360,16 @@ TableRow _tableHeader(List<String> headers) {
 TableCell _cell(String text, {bool bold = false, bool right = false, Color? color}) => TableCell(
   verticalAlignment: TableCellVerticalAlignment.middle,
   child: Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
     child: Text(
       text,
       textAlign: right ? TextAlign.right : TextAlign.left,
-      style: TextStyle(fontWeight: bold ? FontWeight.w700 : FontWeight.normal, fontSize: 12, color: color),
+      style: TextStyle(
+        fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+        fontSize: 12,
+        color: color,
+        letterSpacing: bold ? 0.1 : 0,
+      ),
       overflow: TextOverflow.ellipsis,
     ),
   ),
@@ -3669,7 +4378,7 @@ TableCell _cell(String text, {bool bold = false, bool right = false, Color? colo
 TableCell _cellFlex(String text) => TableCell(
   verticalAlignment: TableCellVerticalAlignment.middle,
   child: Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
     child: Text(text, style: const TextStyle(fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
   ),
 );
