@@ -259,7 +259,7 @@ class _WelcomeContent extends StatelessWidget {
               color: isDark
                   ? const Color(0xFF0F1B31).withValues(alpha: 0.86)
                   : Colors.white.withValues(alpha: 0.88),
-              borderRadius: BorderRadius.zero,
+              borderRadius: BorderRadius.circular(5),
               boxShadow: [
                 BoxShadow(
                   color: isDark
@@ -315,10 +315,10 @@ class _WelcomeMark extends StatelessWidget {
           padding: EdgeInsets.all(compact ? 14 : 20),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF132642) : const Color(0xFFF7FAFF),
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(5),
           ),
           child: const ClipRRect(
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(5),
             child: DesktopAssetImage(
               'assets/images/logo.png',
               fit: BoxFit.contain,
@@ -379,7 +379,7 @@ class _WelcomeCopy extends StatelessWidget {
           width: 72,
           decoration: const BoxDecoration(
             color: Color(0xFF2563EB),
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(5),
           ),
         ),
         const SizedBox(height: 18),
@@ -576,7 +576,7 @@ class _WelcomeInsightCarouselState extends State<_WelcomeInsightCarousel> {
             color: widget.isDark
                 ? const Color(0xFF111F37).withValues(alpha: 0.82)
                 : Colors.white.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.zero,
+            borderRadius: BorderRadius.circular(5),
             boxShadow: [
               BoxShadow(
                 color: widget.isDark
@@ -599,7 +599,7 @@ class _WelcomeInsightCarouselState extends State<_WelcomeInsightCarousel> {
                       color: headerAccent.withValues(
                         alpha: widget.isDark ? 0.16 : 0.10,
                       ),
-                      borderRadius: BorderRadius.zero,
+                      borderRadius: BorderRadius.circular(5),
                     ),
                     child: const Icon(
                       CupertinoIcons.book_fill,
@@ -1044,7 +1044,7 @@ class _WelcomeBrandAdStrip extends StatelessWidget {
         color: isDark
             ? const Color(0xFF15243D).withValues(alpha: 0.72)
             : const Color(0xFFF6F9FD),
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(5),
       ),
       child: Row(
         children: [

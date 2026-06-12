@@ -2,9 +2,68 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Mapping
 
 from app.core.config import settings
+
+# ============================================================================
+# CONSTANTES REGLEMENTAIRES UMOA / BALE III
+# ============================================================================
+
+# Ratios minimaux réglementaires UMOA (Bâle III adapté)
+MIN_CET1_RATIO = 0.05  # 5% - Common Equity Tier 1
+MIN_TIER1_RATIO = 0.06  # 6% - Tier 1 Capital
+MIN_SOLVENCY_RATIO = 0.09  # 9% - Ratio de solvabilité total (CAR)
+MIN_LEVERAGE_RATIO = 0.03  # 3% - Ratio de levier
+
+# Ratio de capital par défaut (8% Bâle standard)
+DEFAULT_CAPITAL_RATIO = 0.08
+
+# Seuils de concentration (HHI - Herfindahl-Hirschman Index)
+HHI_LOW_CONCENTRATION = 0.15  # Concentration faible
+HHI_MODERATE_CONCENTRATION = 0.25  # Concentration modérée
+# Au-dessus de 0.25 = concentration élevée
+
+# Mapping PD (Probability of Default) par notation externe
+# Source: Tables de correspondance Bâle II/III
+PD_BY_RATING = {
+    "AAA": 0.0003,  # 0.03%
+    "AA+": 0.0004,
+    "AA": 0.0005,  # 0.05%
+    "AA-": 0.0006,
+    "A+": 0.0008,
+    "A": 0.0010,  # 0.10%
+    "A-": 0.0012,
+    "BBB+": 0.0020,
+    "BBB": 0.0030,  # 0.30%
+    "BBB-": 0.0050,
+    "BB+": 0.0100,  # 1.00%
+    "BB": 0.0150,
+    "BB-": 0.0200,
+    "B+": 0.0300,
+    "B": 0.0500,  # 5.00%
+    "B-": 0.0800,
+    "CCC+": 0.1500,
+    "CCC": 0.2000,  # 20.00%
+    "CCC-": 0.2500,
+    "CC": 0.3500,
+    "C": 0.5000,
+    "D": 1.0000,  # 100% - défaut
+}
+
+# LGD standard (Loss Given Default) Bâle
+LGD_SENIOR_SECURED = 0.40  # 40% - créances garanties senior
+LGD_SENIOR_UNSECURED = 0.45  # 45% - créances non garanties senior
+LGD_SUBORDINATED = 0.75  # 75% - créances subordonnées
+
+# Z-scores pour calcul VaR (distribution normale)
+VAR_Z_SCORES = {
+    0.90: 1.282,  # 90% de confiance
+    0.95: 1.645,  # 95% de confiance
+    0.99: 2.326,  # 99% de confiance
+    0.999: 3.090,  # 99.9% de confiance
+}
 
 
 _CURRENCY_RATES_IN_XAF = {

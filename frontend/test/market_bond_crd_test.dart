@@ -291,4 +291,80 @@ void main() {
       expect(first.contentSignature, isNot(changed.contentSignature));
     });
   });
+
+  group('Market prudential capital', () {
+    test('applies zero specific risk and maturity general risk to UEMOA bonds',
+        () {
+      const record = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.bonds,
+        values: {
+          'ID Titre': 'TPCI-2032',
+          'Pays émetteur': 'Côte d\'Ivoire',
+          'Type d\'instrument': 'Obligation du trésor',
+          'Code type d\'instrument': 'OT',
+          'Emetteur': 'Trésor public',
+          'Devise': 'XOF',
+          'Capital initial': 1000000000,
+          'Profil d\'amortissement': 'In fine',
+          'Fréquence de paiement des intérêts': 'Annuelle',
+          'Maturité résiduelle (mois)': 72,
+          'Coupon (%)': 0.05,
+        },
+      );
+
+      final result = calculateMarketPrudentialCapital(records: const [record]);
+
+      expect(result.interestRateSpecificRisk, 0);
+      expect(
+        result.interestRateGeneralRisk,
+        moreOrLessEquals(32500000, epsilon: 0.01),
+      );
+      expect(
+        result.marketRwa,
+        moreOrLessEquals(406250000, epsilon: 0.01),
+      );
+    });
+
+    test('converts equity specific and general requirements into market RWA',
+        () {
+      const record = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.equities,
+        values: {
+          'ID Instrument': 'EQ-001',
+          'Émetteur / Société': 'Société cotée',
+          'Devise': 'XOF',
+          'Quantité': 1000,
+          'Cours actuel': 100000,
+          'Valeur de marché': 100000000,
+        },
+      );
+
+      final result = calculateMarketPrudentialCapital(records: const [record]);
+
+      expect(result.equitySpecificRisk, 8000000);
+      expect(result.equityGeneralRisk, 8000000);
+      expect(result.capitalRequirement, 16000000);
+      expect(result.marketRwa, 200000000);
+    });
+
+    test('measures non-XOF open currency positions at spot-equivalent value',
+        () {
+      const record = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.equities,
+        values: {
+          'ID Instrument': 'USD-001',
+          'Émetteur / Société': 'USD listed issuer',
+          'Devise': 'USD',
+          'Quantité': 10,
+          'Cours actuel': 100,
+          'Valeur de marché': 1000,
+        },
+      );
+
+      final result = calculateMarketPrudentialCapital(records: const [record]);
+
+      expect(result.foreignExchangeGlobalNetPosition, 600000);
+      expect(result.foreignExchangeRisk, 48000);
+    });
+  });
 }

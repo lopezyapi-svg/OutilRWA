@@ -5735,6 +5735,7 @@ class _BondKeyIndicatorSpec {
   final String reading;
 
   static List<_BondKeyIndicatorSpec> fromStats(_BondDashboardStats stats) {
+    final prudentialCapital = stats.dataset.prudentialCapital;
     return [
       _BondKeyIndicatorSpec(
         label: 'Capital restant dû',
@@ -5781,7 +5782,7 @@ class _BondKeyIndicatorSpec {
       _BondKeyIndicatorSpec(
         label: 'Coupon moyen pondéré',
         value: _bondIndicatorPercent(stats.weightedCoupon),
-        unit: 'coupon',
+        unit: '',
         icon: CupertinoIcons.percent,
         color: _marketCyan,
         formula: r'\bar{c}=\frac{\sum_i c_i\times w_i}{\sum_i w_i}',
@@ -5874,6 +5875,34 @@ class _BondKeyIndicatorSpec {
         category: 'Sensibilité',
         method: 'Second ordre des flux actualisés',
         reading: 'Effet non linéaire taux/prix',
+      ),
+      _BondKeyIndicatorSpec(
+        label: 'Exigence marché',
+        value: _bondIndicatorMoneyValue(prudentialCapital.capitalRequirement),
+        unit: 'FCFA',
+        icon: CupertinoIcons.lock_shield_fill,
+        color: _marketPrimary,
+        formula: r'K_{marché}=K_{taux}+K_{actions}+K_{change}+K_{matières}',
+        detail:
+            'Somme des exigences prudentielles calculées selon l’approche standard: taux, actions, change et produits de base.',
+        caption: 'Capital réglementaire marché',
+        category: 'Prudentiel',
+        method: 'Agrégation des exigences standard',
+        reading: 'Fonds propres requis avant conversion en RWA',
+      ),
+      _BondKeyIndicatorSpec(
+        label: 'RWA marché',
+        value: _bondIndicatorMoneyValue(prudentialCapital.marketRwa),
+        unit: 'FCFA',
+        icon: CupertinoIcons.chart_pie_fill,
+        color: _marketDanger,
+        formula: r'RWA_{marché}=K_{marché}\times12{,}5',
+        detail:
+            'Conversion de l’exigence de fonds propres marché en actifs pondérés, avec l’inverse du ratio minimal de 8 %.',
+        caption: 'Actifs pondérés marché',
+        category: 'Prudentiel',
+        method: 'Exigence multipliée par 12,5',
+        reading: 'Impact marché dans le dénominateur de solvabilité',
       ),
     ];
   }
@@ -6168,7 +6197,7 @@ class _BondIndicatorRowsBundle {
 
 enum _BondIndicatorOverviewMode { kpis, zones }
 
-const double _bondIndicatorOverviewHeight = 154;
+const double _bondIndicatorOverviewHeight = 214;
 
 class _BondIndicatorOverviewSwitcher extends StatefulWidget {
   const _BondIndicatorOverviewSwitcher({
@@ -10597,8 +10626,8 @@ class _BondDashboardKpiStrip extends StatelessWidget {
         color: _marketPrimary,
       ),
       _BondDashboardKpiItem(
-        label: 'Top 5 émetteurs',
-        value: AppFormatters.percent(stats.topFiveConcentration),
+        label: 'RWA marché',
+        value: _marketShortXofAmount(stats.dataset.prudentialCapital.marketRwa),
         icon: CupertinoIcons.chart_pie_fill,
         color: _marketDanger,
       ),
@@ -10606,7 +10635,7 @@ class _BondDashboardKpiStrip extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      height: 46,
+      height: 54,
       child: Row(
         children: [
           for (var index = 0; index < items.length; index++) ...[
@@ -10644,7 +10673,7 @@ class _BondDashboardKpiCard extends StatelessWidget {
     final muted = _marketMutedFor(context);
     final isDark = _isMarketDark(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
+      padding: const EdgeInsets.fromLTRB(9, 6, 9, 6),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.035)
@@ -10658,43 +10687,44 @@ class _BondDashboardKpiCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 21,
-            height: 21,
+            width: 26,
+            height: 26,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: item.color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(2),
             ),
-            child: Icon(item.icon, size: 11.5, color: item.color),
+            child: Icon(item.icon, size: 14, color: item.color),
           ),
-          const SizedBox(width: 7),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.label.toUpperCase(),
+                  item.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: muted.withValues(alpha: 0.92),
-                    fontSize: 7.2,
+                    color: muted.withValues(alpha: isDark ? 0.96 : 0.98),
+                    fontSize: 9.3,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
-                    height: 1,
+                    height: 1.05,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
                   item.value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: text.withValues(alpha: 0.98),
-                    fontSize: 12.2,
+                    color: text,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    height: 1,
+                    letterSpacing: 0,
+                    height: 1.02,
                   ),
                 ),
               ],
@@ -16832,11 +16862,10 @@ class _MarketPortfolioMetricStrip extends StatelessWidget {
         .where((value) => value.trim().isNotEmpty)
         .toSet()
         .length;
-    final zones = records.map((record) => record.zone).toSet().length;
-    final currencies = records.map((record) => record.currency).toSet().length;
     final residualYears = dataset?.weightedResidualYears ?? 0;
     final coupon = dataset?.averageCoupon ?? 0;
     final exposure = dataset?.totalExposure ?? 0;
+    final prudentialCapital = dataset?.prudentialCapital;
 
     final cards = [
       _MarketPortfolioMetricData(
@@ -16852,18 +16881,6 @@ class _MarketPortfolioMetricStrip extends StatelessWidget {
         value: AppFormatters.integer(issuers),
         color: _marketCyan,
         icon: CupertinoIcons.person_2_fill,
-      ),
-      _MarketPortfolioMetricData(
-        label: 'Zones',
-        value: AppFormatters.integer(zones),
-        color: _marketViolet,
-        icon: CupertinoIcons.globe,
-      ),
-      _MarketPortfolioMetricData(
-        label: 'Devises',
-        value: AppFormatters.integer(currencies),
-        color: _marketSuccess,
-        icon: CupertinoIcons.money_dollar_circle_fill,
       ),
       _MarketPortfolioMetricData(
         label: portfolioType == MarketPortfolioType.bonds
@@ -16892,6 +16909,18 @@ class _MarketPortfolioMetricStrip extends StatelessWidget {
             : AppFormatters.percent(dataset?.annualizedVolatility ?? 0),
         color: _marketCyan,
         icon: CupertinoIcons.percent,
+      ),
+      _MarketPortfolioMetricData(
+        label: 'Capital prudentiel',
+        value: _marketCompactMoney(prudentialCapital?.capitalRequirement ?? 0),
+        color: _marketViolet,
+        icon: CupertinoIcons.lock_shield_fill,
+      ),
+      _MarketPortfolioMetricData(
+        label: 'RWA marché',
+        value: _marketCompactMoney(prudentialCapital?.marketRwa ?? 0),
+        color: _marketDanger,
+        icon: CupertinoIcons.chart_pie_fill,
       ),
     ];
 

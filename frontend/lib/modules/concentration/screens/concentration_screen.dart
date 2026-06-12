@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -14,26 +15,6 @@ import '../../risque_credit_shared/models/credit_risk_models.dart';
 import '../../risque_credit_shared/services/credit_risk_submodules_service.dart';
 import '../../risque_credit_shared/widgets/credit_data_table_card.dart';
 
-const Color _concentrationIndigo = Color(0xFF4338CA);
-const Color _concentrationIndigo800 = Color(0xFF3730A3);
-const Color _concentrationIndigo900 = Color(0xFF312E81);
-const Color _counterpartyBlue500 = Color(0xFF3B82F6);
-const Color _riskWeightEadGreen = Color(0xFFBFDBFE);
-const Color _riskWeightEadText = Color(0xFF2563EB);
-const Color _riskWeightRwaBlue = Color(0xFF312E81);
-const Color _riskWeightTrack = Color(0xFFE2E8F0);
-const Color _riskWeightPanelAccent = Color(0xFF475569);
-const Color _ratingInvestmentGreen = Color(0xFF10B981);
-const Color _zoneUemoaGreen = Color(0xFF16A34A);
-const Color _zoneCemacYellow = Color(0xFFEAB308);
-const Color _zoneOutsideCrimson = Color(0xFFDC143C);
-const Color _alertConnectorCrimson = Color(0xFFDC143C);
-const Color _prudentialCapitalBlue = Color(0xFF1E40AF);
-const Color _prudentialTierEmerald = Color(0xFF059669);
-const Color _prudentialSolvencyViolet = Color(0xFF7C3AED);
-const Color _prudentialLeverageAmber = Color(0xFFD97706);
-const Color _prudentialBufferRose = Color(0xFFBE123C);
-const Color _prudentialComplianceCrimson = Color(0xFFE11D48);
 const double _umoaCet1Minimum = 0.05;
 const double _umoaTier1Minimum = 0.06;
 const double _umoaSolvencyMinimum = 0.09;
@@ -43,12 +24,6 @@ const double _umoaTier1Target = _umoaTier1Minimum + _umoaConservationBuffer;
 const double _umoaSolvencyTarget =
     _umoaSolvencyMinimum + _umoaConservationBuffer;
 const double _umoaLeverageMinimum = 0.03;
-const Color _qualitySapphire = Color(0xFF3B82F6);
-const Color _qualityIndigo = Color(0xFF6366F1);
-const Color _qualityTeal = Color(0xFF14B8A6);
-const Color _qualityCyan = Color(0xFF0EA5E9);
-const Color _qualityViolet = Color(0xFF8B5CF6);
-const Color _qualityEmerald = Color(0xFF10B981);
 const int _counterpartyTopCount = 10;
 const int _issuerResidenceCountryTopCount = 10;
 const int _concentrationViewModelVersion = 5;
@@ -354,7 +329,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
     return SectionCard(
       title: 'Qualité du portefeuille',
       titleStyle: const TextStyle(
-        color: _concentrationIndigo800,
+        color: AppColors.concentrationDark,
         fontSize: 18,
         fontWeight: FontWeight.w700,
       ),
@@ -515,8 +490,8 @@ class _PortfolioTabButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected
-        ? _concentrationIndigo900
-        : _concentrationIndigo900.withValues(alpha: 0.76);
+        ? AppColors.concentrationDeeper
+        : AppColors.concentrationDeeper.withValues(alpha: 0.76);
 
     return SizedBox(
       width: label.startsWith('Visualisation')
@@ -529,8 +504,8 @@ class _PortfolioTabButton extends StatelessWidget {
       height: double.infinity,
       child: InkWell(
         onTap: onTap,
-        splashColor: _concentrationIndigo900.withValues(alpha: 0.06),
-        highlightColor: _concentrationIndigo900.withValues(alpha: 0.035),
+        splashColor: AppColors.concentrationDeeper.withValues(alpha: 0.06),
+        highlightColor: AppColors.concentrationDeeper.withValues(alpha: 0.035),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
@@ -540,7 +515,7 @@ class _PortfolioTabButton extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: selected ? _concentrationIndigo900 : Colors.transparent,
+                color: selected ? AppColors.concentrationDeeper : Colors.transparent,
                 width: 2,
               ),
             ),
@@ -1744,11 +1719,11 @@ class _RwaAmountUnitLegend extends StatelessWidget {
         height: 24,
         padding: const EdgeInsets.symmetric(horizontal: 9),
         decoration: BoxDecoration(
-          color: _concentrationIndigo,
+          color: AppColors.concentrationPrimary,
           borderRadius: BorderRadius.circular(_concentrationRadius),
           boxShadow: [
             BoxShadow(
-              color: _concentrationIndigo.withValues(alpha: 0.16),
+              color: AppColors.concentrationPrimary.withValues(alpha: 0.16),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -2387,9 +2362,9 @@ class _RiskWeightLegend extends StatelessWidget {
     return const Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _RiskWeightLegendItem(label: 'EAD', color: _riskWeightEadGreen),
+        _RiskWeightLegendItem(label: 'EAD', color: AppColors.riskWeightGreen),
         SizedBox(width: 10),
-        _RiskWeightLegendItem(label: 'RWA', color: _riskWeightRwaBlue),
+        _RiskWeightLegendItem(label: 'RWA', color: AppColors.riskWeightDark),
       ],
     );
   }
@@ -2464,7 +2439,7 @@ class _IssuerResidenceCountryCardState
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(5),
         side: BorderSide(color: border),
       ),
       child: Padding(
@@ -2480,7 +2455,7 @@ class _IssuerResidenceCountryCardState
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: _concentrationIndigo,
+                          color: AppColors.concentrationPrimary,
                           fontSize: 13.4,
                           fontWeight: FontWeight.w700,
                           height: 1,
@@ -2599,10 +2574,10 @@ class _ModeSwitchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = item.selected ? Colors.white : _concentrationIndigo;
+    final color = item.selected ? Colors.white : AppColors.concentrationPrimary;
     final background = item.selected
-        ? _concentrationIndigo
-        : _concentrationIndigo.withValues(alpha: 0.065);
+        ? AppColors.concentrationPrimary
+        : AppColors.concentrationPrimary.withValues(alpha: 0.065);
 
     return Tooltip(
       message: item.label,
@@ -2620,13 +2595,13 @@ class _ModeSwitchButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(_concentrationRadius),
             border: Border.all(
               color: item.selected
-                  ? _concentrationIndigo
-                  : _concentrationIndigo.withValues(alpha: 0.26),
+                  ? AppColors.concentrationPrimary
+                  : AppColors.concentrationPrimary.withValues(alpha: 0.26),
             ),
             boxShadow: item.selected
                 ? [
                     BoxShadow(
-                      color: _concentrationIndigo.withValues(alpha: 0.15),
+                      color: AppColors.concentrationPrimary.withValues(alpha: 0.15),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -2683,7 +2658,7 @@ class _IssuerResidenceCountryBars extends StatelessWidget {
                 label: row.label,
                 share: row.percentage,
                 labelWidth: 124,
-                color: _concentrationIndigo,
+                color: AppColors.concentrationPrimary,
               ),
             );
           }),
@@ -2787,7 +2762,7 @@ class _ZoneDistributionView extends StatelessWidget {
                         label: 'Exp. zone dominante',
                         value:
                             '${_amountMd(dominant.amount)} ${_amountUnitLabel()}',
-                        color: _riskWeightRwaBlue,
+                        color: AppColors.riskWeightDark,
                       ),
                     ],
                   ),
@@ -2881,7 +2856,7 @@ class _ZoneDonutPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.butt;
 
-    paint.color = _riskWeightTrack.withValues(alpha: 0.72);
+    paint.color = AppColors.riskWeightTrack.withValues(alpha: 0.72);
     canvas.drawArc(arcRect, -math.pi / 2, math.pi * 2, false, paint);
 
     var startAngle = -math.pi / 2;
@@ -3070,7 +3045,7 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
+        borderRadius: BorderRadius.circular(5),
         side: BorderSide(color: border),
       ),
       child: Padding(
@@ -3083,7 +3058,7 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: _concentrationIndigo,
+                    color: AppColors.concentrationPrimary,
                     fontSize: 13.4,
                     fontWeight: FontWeight.w600,
                     height: 1,
@@ -3125,8 +3100,8 @@ class _CounterpartyBars extends StatelessWidget {
                 label: row.counterpartyName,
                 share: row.share,
                 labelWidth: 158,
-                color: _counterpartyBlue500,
-                valueColor: _counterpartyBlue500,
+                color: AppColors.counterpartyBlue,
+                valueColor: AppColors.counterpartyBlue,
               ),
             );
           }),
@@ -3166,7 +3141,7 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
     final labelColor =
         _hovered ? AppTheme.text : AppTheme.text.withValues(alpha: 0.92);
     final valueColor =
-        _hovered ? widget.color : widget.valueColor ?? _concentrationIndigo800;
+        _hovered ? widget.color : widget.valueColor ?? AppColors.concentrationDark;
     final barHeight = _hovered ? 13.0 : 11.0;
 
     return MouseRegion(
@@ -3327,7 +3302,7 @@ class _RiskWeightDistributionCardState
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: _concentrationIndigo800,
+                          color: AppColors.concentrationDark,
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
