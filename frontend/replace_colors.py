@@ -1,49 +1,46 @@
 #!/usr/bin/env python3
-"""Script to replace hardcoded colors with AppColors constants."""
+"""Script to replace market risk color constants with AppColors and AppTheme."""
 
 import re
 
 # Read the file
-file_path = r"C:\OutilRWA\frontend\lib\modules\concentration\screens\concentration_screen.dart"
+file_path = r"C:\OutilRWA\frontend\lib\modules\risque_marche\screens\risque_marche_screen.dart"
 
 with open(file_path, 'r', encoding='utf-8') as f:
     content = f.read()
 
-# Define replacements
+# Define replacements (order matters - replace more specific names first)
 replacements = [
-    ('_concentrationIndigo900', 'AppColors.concentrationDeeper'),
-    ('_concentrationIndigo800', 'AppColors.concentrationDark'),
-    ('_concentrationIndigo', 'AppColors.concentrationPrimary'),
-    ('_counterpartyBlue500', 'AppColors.counterpartyBlue'),
-    ('_riskWeightEadGreen', 'AppColors.riskWeightGreen'),
-    ('_riskWeightEadText', 'AppColors.riskWeightText'),
-    ('_riskWeightRwaBlue', 'AppColors.riskWeightDark'),
-    ('_riskWeightTrack', 'AppColors.riskWeightTrack'),
-    ('_riskWeightPanelAccent', 'AppColors.panelAccent'),
-    ('_ratingInvestmentGreen', 'AppColors.ratingInvestment'),
-    ('_zoneUemoaGreen', 'AppColors.zoneUemoa'),
-    ('_zoneCemacYellow', 'AppColors.zoneCemac'),
-    ('_zoneOutsideCrimson', 'AppColors.zoneOutside'),
-    ('_alertConnectorCrimson', 'AppColors.alertCritical'),
-    ('_prudentialCapitalBlue', 'AppColors.prudentialCapital'),
-    ('_prudentialTierEmerald', 'AppColors.prudentialTier'),
-    ('_prudentialSolvencyViolet', 'AppColors.prudentialSolvency'),
-    ('_prudentialLeverageAmber', 'AppColors.prudentialLeverage'),
-    ('_prudentialBufferRose', 'AppColors.prudentialBuffer'),
-    ('_prudentialComplianceCrimson', 'AppColors.prudentialCompliance'),
-    ('_qualitySapphire', 'AppColors.qualityExcellent'),
-    ('_qualityIndigo', 'AppColors.qualityGood'),
-    ('_qualityTeal', 'AppColors.qualityAverage'),
-    ('_qualityCyan', 'AppColors.qualityFair'),
-    ('_qualityViolet', 'AppColors.qualityPoor'),
+    ('_marketPrimary', 'AppColors.accent'),
+    ('_marketCyan', 'AppColors.marketNeutral'),
+    ('_marketSuccess', 'AppColors.success'),
+    ('_marketWarning', 'AppColors.warning'),
+    ('_marketViolet', 'AppColors.prudentialSolvency'),
+    ('_marketDanger', 'AppColors.danger'),
+    ('_marketDashboardDeepBlue', 'AppColors.sidebar'),
+    ('_marketTextFor', 'AppTheme.textFor'),
+    ('_marketMutedFor', 'AppTheme.mutedFor'),
+    ('_marketBorderFor', 'AppTheme.borderFor'),
+    ('_marketSurfaceFor', 'AppTheme.surfaceFor'),
+    ('_marketSurfaceSoftFor', 'AppTheme.surfaceSoftFor'),
+    ('_marketText', 'AppTheme.text'),
+    ('_marketMuted', 'AppTheme.muted'),
+    ('_marketBorder', 'AppTheme.border'),
+    ('_marketSurface', 'AppColors.surfaceLight'),
+    ('_marketSurfaceSoft', 'AppColors.surfaceLight'),
 ]
 
 # Apply replacements
+count = 0
 for old, new in replacements:
+    occurrences = content.count(old)
     content = content.replace(old, new)
+    count += occurrences
+    if occurrences > 0:
+        print(f"  {old} -> {new} ({occurrences} occurrences)")
 
 # Write back
 with open(file_path, 'w', encoding='utf-8') as f:
     f.write(content)
 
-print(f"Replaced {len(replacements)} color constants in {file_path}")
+print(f"\nTotal: {count} replacements in {file_path}")

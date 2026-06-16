@@ -19,7 +19,9 @@ enum AppModule {
   risqueMarcheVar,
   risqueMarcheIndicateurs,
   risqueMarcheCourbeTaux,
+  risqueMarcheCalculPrudentiel,
   risqueMarcheAmortissementCrd,
+  risqueMarchePilotage,
   risqueOperationnel,
   risqueOperationnelImport,
   risqueOperationnelIncidents,
@@ -68,8 +70,12 @@ extension AppModuleLabel on AppModule {
         return 'Indicateurs clés';
       case AppModule.risqueMarcheCourbeTaux:
         return 'Courbe des taux';
+      case AppModule.risqueMarcheCalculPrudentiel:
+        return 'Calcul Prudentiel';
       case AppModule.risqueMarcheAmortissementCrd:
         return 'Amortissement CRD';
+      case AppModule.risqueMarchePilotage:
+        return 'Pilotage des Risques';
       case AppModule.risqueOperationnel:
         return 'Dashboard Opérationnel';
       case AppModule.risqueOperationnelImport:
@@ -129,8 +135,12 @@ extension AppModuleLabel on AppModule {
         return 'Synthèse des indicateurs clés du portefeuille de marché.';
       case AppModule.risqueMarcheCourbeTaux:
         return 'Courbes de taux UEMOA et CEMAC utilisées pour l’actualisation.';
+      case AppModule.risqueMarcheCalculPrudentiel:
+        return 'Calcul réglementaire et simulation des exigences en fonds propres.';
       case AppModule.risqueMarcheAmortissementCrd:
         return 'Evolution mensuelle du capital restant dû et des amortissements.';
+      case AppModule.risqueMarchePilotage:
+        return 'Tableau de bord, indicateurs, VaR et courbe des taux.';
       case AppModule.risqueOperationnel:
         return 'Vue d\'ensemble des KPI réglementaires et alertes opérationnelles.';
       case AppModule.risqueOperationnelImport:
@@ -190,8 +200,12 @@ extension AppModuleLabel on AppModule {
         return CupertinoIcons.chart_bar_alt_fill;
       case AppModule.risqueMarcheCourbeTaux:
         return CupertinoIcons.waveform_path_ecg;
+      case AppModule.risqueMarcheCalculPrudentiel:
+        return Icons.calculate_rounded;
       case AppModule.risqueMarcheAmortissementCrd:
         return CupertinoIcons.graph_square_fill;
+      case AppModule.risqueMarchePilotage:
+        return Icons.dashboard_rounded;
       case AppModule.risqueOperationnel:
         return Icons.dashboard_outlined;
       case AppModule.risqueOperationnelImport:

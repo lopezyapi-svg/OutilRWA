@@ -1308,7 +1308,7 @@ class _RwaExposureTableCardState extends State<_RwaExposureTableCard> {
                 const SizedBox(height: 6),
                 const _RwaAmountUnitLegend(),
                 const SizedBox(height: 6),
-                _buildTable(context, sortedRows),
+                Expanded(child: _buildTable(context, sortedRows)),
               ],
             ),
     );
@@ -2298,7 +2298,7 @@ class _RwaShareCell extends StatelessWidget {
 
 Color _crmCoverageColor(double value) {
   if (value >= 0.50) return AppTheme.success;
-  if (value > 0) return _qualityTeal;
+  if (value > 0) return AppColors.qualityAverage;
   return AppTheme.muted;
 }
 
@@ -3025,9 +3025,9 @@ String _standardZoneLabel(String label) {
 
 Color _geoZoneColor(String label) {
   return switch (_standardZoneLabel(label)) {
-    'UEMOA' => _zoneUemoaGreen,
-    'CEMAC' => _zoneCemacYellow,
-    _ => _zoneOutsideCrimson,
+    'UEMOA' => AppColors.zoneUemoa,
+    'CEMAC' => AppColors.zoneCemac,
+    _ => AppColors.zoneOutside,
   };
 }
 
@@ -3422,7 +3422,7 @@ class _RatingSummaryBand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = _concentrationIndigo;
+    const accent = AppColors.concentrationPrimary;
     final rating = dominant?.label ?? 'N/D';
     final share =
         dominant == null ? '' : AppFormatters.percent(dominant!.percentage);
@@ -3629,7 +3629,7 @@ class _RatingBarColumnState extends State<_RatingBarColumn> {
                         curve: Curves.easeOutCubic,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: _riskWeightTrack,
+                          color: AppColors.riskWeightTrack,
                           borderRadius:
                               BorderRadius.circular(_concentrationRadius),
                         ),
@@ -3792,7 +3792,7 @@ class _RiskWeightSummaryBand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = _riskWeightPanelAccent;
+    const accent = AppColors.panelAccent;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
@@ -3870,7 +3870,7 @@ class _RiskWeightBucketCard extends StatefulWidget {
 class _RiskWeightBucketCardState extends State<_RiskWeightBucketCard> {
   @override
   Widget build(BuildContext context) {
-    const accent = _riskWeightPanelAccent;
+    const accent = AppColors.panelAccent;
     final eadShare = widget.row.portfolioShare;
     final rwaShare = widget.row.rwaShare;
 
@@ -3939,8 +3939,8 @@ class _RiskWeightBucketCardState extends State<_RiskWeightBucketCard> {
                     share: eadShare,
                     amount: widget.row.ead,
                     shareLabel: 'Part portefeuille',
-                    color: _riskWeightEadGreen,
-                    valueColor: _riskWeightEadText,
+                    color: AppColors.riskWeightGreen,
+                    valueColor: AppColors.riskWeightText,
                   ),
                 ),
                 const SizedBox(width: 7),
@@ -3950,8 +3950,8 @@ class _RiskWeightBucketCardState extends State<_RiskWeightBucketCard> {
                     share: rwaShare,
                     amount: widget.row.rwa,
                     shareLabel: 'Part RWA',
-                    color: _riskWeightRwaBlue,
-                    valueColor: _riskWeightRwaBlue,
+                    color: AppColors.riskWeightDark,
+                    valueColor: AppColors.riskWeightDark,
                   ),
                 ),
               ],
@@ -4133,7 +4133,7 @@ class _RiskWeightShareMeterState extends State<_RiskWeightShareMeter> {
                             decoration: BoxDecoration(
                               color: _hovered
                                   ? widget.color.withValues(alpha: 0.13)
-                                  : _riskWeightTrack,
+                                  : AppColors.riskWeightTrack,
                               borderRadius:
                                   BorderRadius.circular(_concentrationRadius),
                             ),
@@ -4180,13 +4180,13 @@ class _RiskWeightShareMeterState extends State<_RiskWeightShareMeter> {
 
 Color _ratingGradeColor(String rating) {
   if (rating == 'AAA' || rating.startsWith('AA') || rating.startsWith('A')) {
-    return _ratingInvestmentGreen;
+    return AppColors.ratingInvestment;
   }
   if (rating.startsWith('BBB') || rating.startsWith('BB')) {
-    return _concentrationIndigo;
+    return AppColors.concentrationPrimary;
   }
   if (rating.startsWith('B')) {
-    return _riskWeightRwaBlue;
+    return AppColors.riskWeightDark;
   }
   return AppTheme.muted;
 }
@@ -5409,7 +5409,7 @@ class _KpiHeaderBadge extends StatelessWidget {
           ),
           borderRadius: BorderRadius.circular(40),
           border: Border.all(
-            color: _alertConnectorCrimson,
+            color: AppColors.alertCritical,
             width: 1.2,
           ),
           boxShadow: [
@@ -6019,7 +6019,7 @@ List<_PrudentialMetricSpec> _prudentialMetricSpecs(
       thresholdLabel: 'Seuil à respecter',
       thresholdValue: '7,5 %',
       margin: cet1 - _umoaCet1Target,
-      color: _prudentialCapitalBlue,
+      color: AppColors.prudentialCapital,
       icon: CupertinoIcons.shield_fill,
       description:
           'Mesure le noyau dur absorbant les pertes; une marge positive protège la banque avant tension.',
@@ -6030,7 +6030,7 @@ List<_PrudentialMetricSpec> _prudentialMetricSpecs(
       thresholdLabel: 'Seuil à respecter',
       thresholdValue: '8,5 %',
       margin: tier1 - _umoaTier1Target,
-      color: _prudentialTierEmerald,
+      color: AppColors.prudentialTier,
       icon: CupertinoIcons.layers_alt_fill,
       description:
           'Élargit la lecture du capital de base; une faiblesse signale un besoin de renfort ou de baisse RWA.',
@@ -6041,7 +6041,7 @@ List<_PrudentialMetricSpec> _prudentialMetricSpecs(
       thresholdLabel: 'Seuil à respecter',
       thresholdValue: '11,5 %',
       margin: solvency - _umoaSolvencyTarget,
-      color: _prudentialSolvencyViolet,
+      color: AppColors.prudentialSolvency,
       icon: CupertinoIcons.gauge,
       description:
           'Couvre l’ensemble des risques pondérés; c’est le repère central de conformité prudentielle.',
@@ -6052,7 +6052,7 @@ List<_PrudentialMetricSpec> _prudentialMetricSpecs(
       thresholdLabel: 'Norme minimale UMOA',
       thresholdValue: '3 %',
       margin: leverage - _umoaLeverageMinimum,
-      color: _prudentialLeverageAmber,
+      color: AppColors.prudentialLeverage,
       icon: CupertinoIcons.arrow_up_right_circle_fill,
       description:
           'Contrôle l’exposition sans pondération, utile quand le bilan grossit malgré des actifs peu risqués.',
@@ -6063,7 +6063,7 @@ List<_PrudentialMetricSpec> _prudentialMetricSpecs(
       thresholdLabel: 'Exigence du régulateur',
       thresholdValue: '2,5 %',
       margin: conservationBuffer - _umoaConservationBuffer,
-      color: _prudentialBufferRose,
+      color: AppColors.prudentialBuffer,
       icon: CupertinoIcons.lock_shield_fill,
       description:
           'Réserve destinée à absorber les chocs sans passer sous les minima réglementaires.',
@@ -6075,8 +6075,8 @@ List<_PrudentialMetricSpec> _prudentialMetricSpecs(
       thresholdLabel: 'Écart minimum aux exigences UMOA',
       margin: complianceMargin,
       color: complianceMargin >= 0
-          ? _prudentialTierEmerald
-          : _prudentialComplianceCrimson,
+          ? AppColors.prudentialTier
+          : AppColors.prudentialCompliance,
       icon: complianceMargin >= 0
           ? CupertinoIcons.check_mark_circled_solid
           : CupertinoIcons.exclamationmark_shield_fill,
@@ -6126,7 +6126,7 @@ class _PrudentialHeaderBadge extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: _concentrationIndigo900,
+                  color: AppColors.concentrationDeeper,
                   fontSize: 23,
                   fontWeight: FontWeight.w900,
                   height: 1,
@@ -6585,7 +6585,7 @@ class _QualityGrid extends StatelessWidget {
         value: AppFormatters.percent(quality.nplRatio),
         caption: 'créances sensibles',
         icon: CupertinoIcons.exclamationmark_octagon_fill,
-        color: _qualitySapphire,
+        color: AppColors.qualityExcellent,
         progress: (quality.nplRatio / 0.10).clamp(0.02, 1.0),
         role:
             'Mesure la part des encours non performants dans le portefeuille.',
@@ -6608,7 +6608,7 @@ class _QualityGrid extends StatelessWidget {
         value: AppFormatters.percent(quality.defaultRate),
         caption: 'défauts observés',
         icon: CupertinoIcons.xmark_shield_fill,
-        color: _qualityIndigo,
+        color: AppColors.qualityGood,
         progress: (quality.defaultRate / 0.08).clamp(0.02, 1.0),
         role: 'Mesure la fréquence des expositions marquées en défaut.',
         formula:
@@ -6631,7 +6631,7 @@ class _QualityGrid extends StatelessWidget {
         value: _amountMd(quality.defaultGross),
         caption: 'montant exposé',
         icon: CupertinoIcons.creditcard_fill,
-        color: _qualityTeal,
+        color: AppColors.qualityAverage,
         progress: quality.defaultGross > 0 ? 0.66 : 0.02,
         role: 'Indique le stock monétaire déjà classé en défaut.',
         formula:
@@ -6654,7 +6654,7 @@ class _QualityGrid extends StatelessWidget {
         value: AppFormatters.percent(quality.averagePd),
         caption: 'probabilité défaut',
         icon: CupertinoIcons.percent,
-        color: _qualityCyan,
+        color: AppColors.qualityFair,
         progress: (quality.averagePd / 0.10).clamp(0.02, 1.0),
         role: 'Estime le risque moyen de défaut futur du portefeuille.',
         formula: 'PD moyenne = somme(PD x EAD) / somme(EAD).',
@@ -6676,7 +6676,7 @@ class _QualityGrid extends StatelessWidget {
         value: AppFormatters.percent(quality.averageLgd),
         caption: 'perte en cas défaut',
         icon: CupertinoIcons.chart_bar_fill,
-        color: _qualityViolet,
+        color: AppColors.qualityPoor,
         progress: quality.averageLgd.clamp(0.02, 1.0),
         role:
             'Mesure la perte moyenne attendue si une contrepartie fait défaut.',
@@ -6699,7 +6699,7 @@ class _QualityGrid extends StatelessWidget {
         value: AppFormatters.percent(quality.riskCoverage),
         caption: 'provisions / défauts',
         icon: CupertinoIcons.shield_lefthalf_fill,
-        color: _qualityEmerald,
+        color: AppColors.success,
         progress: (quality.riskCoverage.clamp(0.0, 1.25) / 1.25).toDouble(),
         role:
             'Évalue la capacité des provisions à absorber les encours en défaut.',

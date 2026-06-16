@@ -871,7 +871,7 @@ class _IcapScreenState extends State<IcapScreen> {
         cet1PostStress: baseData.cet1Capital - 62.3e9,
         ratioPostStress: (baseData.cet1Capital - 62.3e9) / baseData.totalRwa,
         isCompliant: true,
-        color: AppColors.prudentialOperational,
+        color: AppColors.operationalHigh,
         icon: CupertinoIcons.bolt_fill,
       ),
       _StressScenario(

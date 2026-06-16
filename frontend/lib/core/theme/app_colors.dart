@@ -80,7 +80,7 @@ class AppColors {
   // Couleurs pour le risque de marché
   static const Color marketPositive = Color(0xFF10B981);
   static const Color marketNegative = Color(0xFFEF4444);
-  static const Color marketNeutral = Color(0xFF64748B);
+  static const Color marketNeutral = Color(0xFF06B6D4);
   static const Color marketVolatility = Color(0xFF8B5CF6);
 
   // Couleurs pour le risque opérationnel

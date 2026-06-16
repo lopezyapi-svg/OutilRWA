@@ -732,6 +732,7 @@ const Map<String, String> _englishTranslations = {
   'Risk management': 'Risk management',
   'Risque Crédit': 'Credit Risk',
   'Risque du Marché': 'Market Risk',
+  'Pilotage RWA Crédit': 'RWA Credit Management',
   'Risque Opérationnel': 'Operational Risk',
   'Paramètres': 'Settings',
   'Défauts / Impayés': 'Defaults / Past dues',

@@ -317,7 +317,7 @@ class _WelcomeMark extends StatelessWidget {
             color: isDark ? const Color(0xFF132642) : const Color(0xFFF7FAFF),
             borderRadius: BorderRadius.circular(5),
           ),
-          child: const ClipRRect(
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(5),
             child: DesktopAssetImage(
               'assets/images/logo.png',
@@ -377,8 +377,8 @@ class _WelcomeCopy extends StatelessWidget {
         Container(
           height: 3,
           width: 72,
-          decoration: const BoxDecoration(
-            color: Color(0xFF2563EB),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2563EB),
             borderRadius: BorderRadius.circular(5),
           ),
         ),

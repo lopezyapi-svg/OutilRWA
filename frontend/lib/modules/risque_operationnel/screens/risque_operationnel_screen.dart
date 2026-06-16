@@ -9,6 +9,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/utils/file_save.dart';
@@ -41,8 +42,6 @@ const _kSuccess = AppTheme.success;
 const _kWarning = AppTheme.warning;
 const _kDanger = AppTheme.danger;
 const _kMuted = AppTheme.muted;
-const Color _kViolet = Color(0xFF7C3AED);
-const Color _kCyan = Color(0xFF06B6D4);
 
 const _lignesMetier = [
   "Financement d'entreprise",
@@ -223,7 +222,7 @@ class RisqueOperationnelScreen extends StatelessWidget {
 Color _statutColor(String statut) => switch (statut) {
       'Ouvert' => _kDanger,
       'En cours' => _kWarning,
-      'Résolu' => _kCyan,
+      'Résolu' => AppColors.marketNeutral,
       'Clôturé' => _kSuccess,
       _ => _kMuted,
     };
@@ -768,8 +767,8 @@ class _DashboardViewState extends State<_DashboardView> {
                       tooltip: 'Capital réglementaire minimum (Art. 89)\nFormule : K_RO = 15 % × Perte nette totale\nα = 15 % (coefficient BCEAO/UMOA)',
                     )),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'RWA risque opérationnel', AppFormatters.currency(d.widget1.aprRisqueOp), Icons.bar_chart_outlined, _kViolet,
-                      tooltip: 'Actifs Pondérés par le Risque opérationnel (Art. 89)\nFormule : RWA = K_RO × 12,5\n12,5 = 1 ÷ 8 % (facteur de conversion prudentiel)',
+                    Expanded(child: _kpiBox(context, 'APR risque opérationnel', AppFormatters.currency(d.widget1.aprRisqueOp), Icons.bar_chart_outlined, AppColors.prudentialSolvency,
+                      tooltip: 'Actifs Pondérés par le Risque opérationnel (Art. 89)\nFormule : APR = K_RO × 12,5\n12,5 = 1 ÷ 8 % (facteur de conversion prudentiel)',
                     )),
                     const SizedBox(width: 10),
                     Expanded(
@@ -796,7 +795,7 @@ class _DashboardViewState extends State<_DashboardView> {
                       tooltip: 'Pertes nettes du mois en cours (Art. 313.b)\nFormule : Σ (perte_brute − perte_récupérée)\npour les incidents du mois courant',
                     )),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'Non clôturés', '${d.widget2.incidentsNonClos}', Icons.pending_outlined, _kCyan,
+                    Expanded(child: _kpiBox(context, 'Non clôturés', '${d.widget2.incidentsNonClos}', Icons.pending_outlined, AppColors.marketNeutral,
                       tooltip: 'Incidents encore ouverts ou en cours (Art. 313.b)\nFormule : COUNT(incidents) WHERE statut IN (Ouvert, En cours)\nCes incidents nécessitent un suivi actif',
                     )),
                     const SizedBox(width: 10),
@@ -2675,7 +2674,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
     'CREATE' => _kSuccess,
     'UPDATE' => _kBlue,
     'DELETE' => _kDanger,
-    'EXPORT' => _kViolet,
+    'EXPORT' => AppColors.prudentialSolvency,
     _ => _kMuted,
   };
 }
@@ -3729,7 +3728,7 @@ class _RegistreViewState extends State<_RegistreView> {
               'Récupérations = assurance + provisions + reversements',
           )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('K_RO 15 % (Art. 89)', AppFormatters.currency(cKro), _kViolet,
+          Expanded(child: _sumCard('K_RO 15 % (Art. 89)', AppFormatters.currency(cKro), AppColors.prudentialSolvency,
             tooltip:
               'Exigence de fonds propres — Risque Opérationnel\n'
               'Rôle : capital réglementaire minimum à détenir.\n'
@@ -3737,7 +3736,11 @@ class _RegistreViewState extends State<_RegistreView> {
               'α = 15 %  (coefficient BCEAO/UMOA, Art. 89)',
           )),
           const SizedBox(width: 6),
+<<<<<<< HEAD
           Expanded(child: _sumCard('RWA opérationnel', AppFormatters.currency(cApr), _kCyan,
+=======
+          Expanded(child: _sumCard('APR opérationnel', AppFormatters.currency(cApr), AppColors.marketNeutral,
+>>>>>>> 45ce36e (Modifications Pascal : 16/06/2026/16:36)
             tooltip:
               'Actifs Pondérés par le Risque opérationnel\n'
               'Rôle : base de calcul du ratio de solvabilité.\n'
@@ -3869,8 +3872,8 @@ class _RegistreViewState extends State<_RegistreView> {
           _rc(AppFormatters.currency(i.perteBrute),     120, right: true),                                                             // 6
           _rc(AppFormatters.currency(i.perteRecuperee), 120, right: true, color: i.perteRecuperee > 0 ? _kSuccess : _kMuted),          // 7
           _rc(AppFormatters.currency(i.perteNette),     120, right: true, color: i.perteNette > 0 ? _kDanger : null),                  // 8
-          _rc(AppFormatters.currency(kro),              100, right: true, color: _kViolet),                                            // 9
-          _rc(AppFormatters.currency(apr),              120, right: true, color: _kCyan),                                              // 10
+          _rc(AppFormatters.currency(kro),              100, right: true, color: AppColors.prudentialSolvency),                                            // 9
+          _rc(AppFormatters.currency(apr),              120, right: true, color: AppColors.marketNeutral),                                              // 10
           SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8), child: _badge(i.statut, _statutColor(i.statut)))),      // 11
           SizedBox(
             width: 80,
@@ -4649,6 +4652,7 @@ class _RoPieChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = items.fold(0, (s, e) => s + e.valeur);
     if (total == 0) return const SizedBox();
+<<<<<<< HEAD
     final palette = [_kDanger, _kWarning, _kBlue, _kSuccess, _kViolet, _kCyan, const Color(0xFFF97316), const Color(0xFF84CC16)];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -4669,6 +4673,29 @@ class _RoPieChart extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+=======
+    final palette = [_kBlue, _kSuccess, _kWarning, _kDanger, AppColors.prudentialSolvency, AppColors.marketNeutral, const Color(0xFFF97316), const Color(0xFF84CC16)];
+    return Row(
+      children: [
+        SizedBox(
+          width: 100,
+          height: 100,
+          child: CustomPaint(
+            painter: _PiePainter(items: items, total: total, palette: palette),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: items.asMap().entries.map((entry) {
+              final c = palette[entry.key % palette.length];
+              final pct = total > 0 ? (entry.value.valeur / total * 100).toStringAsFixed(1) : '0';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+>>>>>>> 45ce36e (Modifications Pascal : 16/06/2026/16:36)
                   children: [
                     Container(
                       width: 9, height: 9,
