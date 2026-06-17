@@ -14,7 +14,7 @@ const double _sidebarToggleButtonWidth = 28;
 const double _sidebarToggleButtonHeight = 28;
 const double _sidebarToggleHitArea = 42;
 const double _sidebarToggleButtonRadius = 6;
-const double _desktopPanelGap = AppTheme.pageGap;
+const double _desktopPanelGap = 8.0;
 const double _desktopRailWidth = 54;
 const double _desktopOverlayWidth = 220;
 const double _workspaceTopBarControlHeight = 24;
@@ -103,7 +103,7 @@ class AppShell extends StatefulWidget {
 
 /// Etat interne qui pilote la sidebar et la top bar.
 class _AppShellState extends State<AppShell> {
-  static const double _screenSpacing = AppTheme.pagePadding;
+  static const double _screenSpacing = 8.0;
   bool _isSidebarOverlayOpen = false;
   String? _activeSettingsSectionId;
 
@@ -127,14 +127,16 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       backgroundColor:
-          isDark ? const Color(0xFF091224) : const Color(0xFFEAE9F8),
+          isDark ? const Color(0xFF091224) : AppTheme.background,
       body: Stack(
         children: [
           // Ce fond reste fixe derrière tout l'espace de travail.
           _DecorativeBackdrop(dark: isDark),
           SafeArea(
+            top: false,
+            bottom: false,
             child: Padding(
-              padding: const EdgeInsets.all(_screenSpacing),
+              padding: const EdgeInsets.symmetric(horizontal: _screenSpacing),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -147,7 +149,7 @@ class _AppShellState extends State<AppShell> {
                     notifications: widget.notifications,
                     onNotificationSelected: widget.onNotificationSelected,
                   ),
-                  const SizedBox(height: AppTheme.pageGap),
+                  const SizedBox(height: 6),
                   Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -297,7 +299,7 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       backgroundColor:
-          isDark ? const Color(0xFF091224) : const Color(0xFFF0F2F8),
+          isDark ? const Color(0xFF091224) : AppTheme.background,
       // Sur mobile, la navigation passe dans un drawer pour conserver de l'espace utile.
       drawer: Drawer(
         child: SidebarNavigation(
@@ -333,7 +335,7 @@ class _AppShellState extends State<AppShell> {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(_screenSpacing),
+          padding: const EdgeInsets.symmetric(horizontal: _screenSpacing),
           child: Column(
             children: [
               // La barre mobile garde seulement le contexte courant et l'accès au menu.
@@ -474,7 +476,7 @@ class _DecorativeBackdrop extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = dark
         ? const [Color(0xFF091224), Color(0xFF0B1630), Color(0xFF0F1B31)]
-        : const [Color(0xFFF3F6FB), Color(0xFFEAF0F8), Color(0xFFF8FAFC)];
+        : const [Color(0xFFF8FAFC), Color(0xFFF1F5F9), Color(0xFFF8FAFC)];
 
     return DecoratedBox(
       decoration: BoxDecoration(

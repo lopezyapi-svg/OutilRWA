@@ -14,10 +14,10 @@ class AppTheme {
     'General Sans',
     'Nunito Sans',
   ];
-  static const double radius = 2;
+  static const double radius = 5;
   static const double spacing = 10;
-  static const double pagePadding = 2;
-  static const double pageGap = 2;
+  static const double pagePadding = 16;
+  static const double pageGap = 12;
   static const Color sidebar = Color(0xFF172B4D);
   static const Color sidebarLight = Color(0xFF23477A);
   static const Color accent = Color(0xFF2563EB);

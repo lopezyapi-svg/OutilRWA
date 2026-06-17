@@ -1,4 +1,4 @@
-﻿// Ce fichier construit la navigation laterale reutilisable.
+// Ce fichier construit la navigation laterale reutilisable.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -178,18 +178,6 @@ class _MenuEntry {
   }
 }
 
-class _MenuSelection {
-  const _MenuSelection({
-    required this.module,
-    required this.id,
-    this.settingsSectionId,
-  });
-
-  final AppModule module;
-  final String id;
-  final String? settingsSectionId;
-}
-
 bool _entrySelected(
   _MenuEntry entry,
   AppModule selectedModule,
@@ -239,39 +227,7 @@ const List<_MenuEntry> _riskCreditChildren = [
   _MenuEntry.leaf(
     module: AppModule.rwaEngine,
     icon: Icons.functions_rounded,
-    label: 'RWA Engine',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.crm,
-    icon: Icons.verified_user_outlined,
-    label: 'CRM',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.garanties,
-    icon: Icons.home_work_outlined,
-    label: 'Immobilier',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.horsBilan,
-    icon: Icons.file_copy_outlined,
-    label: 'Hors bilan',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.defautsImpayes,
-    icon: Icons.warning_amber_rounded,
-    label: 'Défaut',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.defautsImpayes,
-    icon: Icons.bar_chart_rounded,
-    label: 'PD / Scoring',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.stressTest,
-    icon: Icons.science_outlined,
-    label: 'Stress Crédit',
-    selectable: false,
+    label: 'Pilotage RWA Crédit',
   ),
   _MenuEntry.leaf(
     module: AppModule.reportingCredit,
@@ -280,38 +236,6 @@ const List<_MenuEntry> _riskCreditChildren = [
   ),
 ];
 
-const List<_MenuEntry> _marketRiskChildren = [
-  _MenuEntry.leaf(
-    module: AppModule.risqueMarche,
-    icon: Icons.dashboard_outlined,
-    label: 'Dashboard Marché',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueMarcheImport,
-    icon: CupertinoIcons.doc_text_fill,
-    label: 'Import données',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueMarcheVar,
-    icon: Icons.multiline_chart_rounded,
-    label: 'VaR',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueMarcheIndicateurs,
-    icon: CupertinoIcons.chart_bar_alt_fill,
-    label: 'Indicateurs clés',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueMarcheCourbeTaux,
-    icon: CupertinoIcons.waveform_path_ecg,
-    label: 'Courbe des taux',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueMarcheAmortissementCrd,
-    icon: CupertinoIcons.graph_square_fill,
-    label: 'Amortissement CRD',
-  ),
-];
 
 const List<_MenuEntry> _operationalRiskChildren = [
   _MenuEntry.leaf(
@@ -578,8 +502,24 @@ const List<_MenuEntry> _sidebarItems = [
   ),
   _MenuEntry.group(
     icon: Icons.show_chart_rounded,
-    label: 'Risque du Marché',
-    children: _marketRiskChildren,
+    label: 'Risque de Marché',
+    children: [
+      _MenuEntry.leaf(
+        module: AppModule.risqueMarcheCalculPrudentiel,
+        icon: Icons.calculate_rounded,
+        label: 'Calcul Prudentiel',
+      ),
+      _MenuEntry.leaf(
+        module: AppModule.risqueMarchePilotage,
+        icon: Icons.show_chart_rounded,
+        label: 'Pilotage des risques',
+      ),
+      _MenuEntry.leaf(
+        module: AppModule.risqueMarcheImport,
+        icon: CupertinoIcons.doc_text_fill,
+        label: 'Import des données',
+      ),
+    ],
   ),
   _MenuEntry.group(
     icon: Icons.shield_outlined,
@@ -732,6 +672,58 @@ class _CompactSidebarLogo extends StatelessWidget {
   }
 }
 
+/// Ouvre un menu popup imbriqué pour un groupe de navigation.
+/// Retourne l'entrée feuille sélectionnée, ou `null` si le menu est fermé.
+/// Si un enfant est lui-même un groupe, un sous-menu s'ouvre récursivement.
+Future<_MenuEntry?> _showNestedMenuForEntry(
+  BuildContext context,
+  _MenuEntry menuEntry,
+  AppModule currentModule,
+  String? selectedSettingsSectionId, {
+  Offset popupOffset = const Offset(205, -4),
+}) async {
+  final renderBox = context.findRenderObject() as RenderBox?;
+  if (renderBox == null || !renderBox.attached) return null;
+  final topLeft = renderBox.localToGlobal(Offset.zero);
+  final anchorRect = topLeft + popupOffset & const Size(1, 1);
+  final mediaQuerySize = MediaQuery.of(context).size;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final popupBackground = isDark ? const Color(0xFF0F1B31) : Colors.white;
+  final borderColor =
+      isDark ? const Color(0xFF263856) : const Color(0xFFDDE6F4);
+
+  final selection = await showMenu<_MenuEntry>(
+    context: context,
+    position: RelativeRect.fromRect(anchorRect, Offset.zero & mediaQuerySize),
+    color: popupBackground,
+    elevation: 10,
+    surfaceTintColor: Colors.transparent,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppTheme.radius),
+      side: BorderSide(color: borderColor),
+    ),
+    constraints: const BoxConstraints(minWidth: 194, maxWidth: 220),
+    items: [
+      for (final child in menuEntry.children)
+        PopupMenuItem<_MenuEntry>(
+          value: child,
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          child: _CompactFloatingMenuItem(
+            entry: child,
+            selected: _entrySelected(child, currentModule, selectedSettingsSectionId),
+          ),
+        ),
+    ],
+  );
+
+  if (selection == null) return null;
+  if (selection.hasChildren) {
+    return _showNestedMenuForEntry(context, selection, currentModule, selectedSettingsSectionId, popupOffset: popupOffset);
+  }
+  return selection;
+}
+
 /// Groupe de navigation compact affiché dans une carte flottante.
 class _CompactNavGroup extends StatelessWidget {
   const _CompactNavGroup({
@@ -750,61 +742,29 @@ class _CompactNavGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final groupSelected =
         _entrySelected(entry, selectedModule, selectedSettingsSectionId);
-    final popupBackground = isDark ? const Color(0xFF0F1B31) : Colors.white;
-    final borderColor =
-        isDark ? const Color(0xFF263856) : const Color(0xFFDDE6F4);
 
-    return PopupMenuButton<_MenuSelection>(
-      tooltip: '',
-      offset: const Offset(48, -4),
-      color: popupBackground,
-      elevation: 10,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        side: BorderSide(color: borderColor),
-      ),
-      constraints: const BoxConstraints(
-        minWidth: 194,
-        maxWidth: 220,
-      ),
-      onSelected: (selection) {
+    return GestureDetector(
+      onTap: () async {
+        final selection = await _showNestedMenuForEntry(
+          context, entry, selectedModule, selectedSettingsSectionId,
+          popupOffset: const Offset(48, -4),
+        );
+        if (selection == null) return;
         final settingsSectionId = selection.settingsSectionId;
         if (settingsSectionId != null && onSelectSettingsSection != null) {
+          final anchorRect = _anchorRectFrom(context);
           onSelectSettingsSection!(
             SettingsSectionSelection(
               sectionId: settingsSectionId,
-              anchorRect: _anchorRectFrom(context),
+              anchorRect: anchorRect,
             ),
           );
           return;
         }
-        onSelectModule(selection.module);
+        onSelectModule(selection.resolveTarget(selectedModule));
       },
-      itemBuilder: (context) => [
-        for (final child in entry.children)
-          PopupMenuItem<_MenuSelection>(
-            key: ValueKey('${entry.label}:${child.label}:compact'),
-            value: _MenuSelection(
-              module: child.resolveTarget(selectedModule),
-              id: '${entry.label}:${child.label}:compact',
-              settingsSectionId: child.settingsSectionId,
-            ),
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            child: _CompactFloatingMenuItem(
-              entry: child,
-              selected: _entrySelected(
-                child,
-                selectedModule,
-                selectedSettingsSectionId,
-              ),
-            ),
-          ),
-      ],
       child: _CompactNavButtonSurface(
         entry: entry,
         selected: groupSelected,
@@ -1078,7 +1038,7 @@ class _ExpandedSidebar extends StatelessWidget {
   }
 }
 
-/// Groupe de navigation ouvert affichant ses sous-sections en panneau flottant.
+/// Groupe de navigation ouvert affichant ses sous-sections en popup.
 class _ExpandedNavGroup extends StatelessWidget {
   const _ExpandedNavGroup({
     required this.entry,
@@ -1101,83 +1061,41 @@ class _ExpandedNavGroup extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final groupSelected =
         _entrySelected(entry, selectedModule, selectedSettingsSectionId);
-    final popupBackground = isDark ? const Color(0xFF0F1B31) : Colors.white;
-    final borderColor =
-        isDark ? const Color(0xFF263856) : const Color(0xFFDDE6F4);
-    final popupOffset =
-        showLabel ? const Offset(205, -4) : const Offset(48, -4);
 
-    return TooltipVisibility(
-      visible: false,
-      child: PopupMenuButton<_MenuSelection>(
-        tooltip: '',
-        offset: popupOffset,
-        color: popupBackground,
-        elevation: 10,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          side: BorderSide(color: borderColor),
-        ),
-        constraints: const BoxConstraints(
-          minWidth: 220,
-          maxWidth: 252,
-        ),
-        onSelected: (selection) {
-          final settingsSectionId = selection.settingsSectionId;
-          if (settingsSectionId != null && onSelectSettingsSection != null) {
-            onSelectSettingsSection!(
-              SettingsSectionSelection(
-                sectionId: settingsSectionId,
-                anchorRect: _anchorRectFrom(context),
-              ),
-            );
-            return;
-          }
-          onSelectModule(selection.module);
-        },
-        itemBuilder: (context) => [
-          for (final child in entry.children)
-            PopupMenuItem<_MenuSelection>(
-              key: ValueKey('${entry.label}:${child.label}:expanded'),
-              value: _MenuSelection(
-                module: child.resolveTarget(selectedModule),
-                id: '${entry.label}:${child.label}:expanded',
-                settingsSectionId: child.settingsSectionId,
-              ),
-              height: 38,
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              child: _CompactFloatingMenuItem(
-                entry: child,
-                selected: _entrySelected(
-                  child,
-                  selectedModule,
-                  selectedSettingsSectionId,
-                ),
-              ),
-            ),
-        ],
-        child: IgnorePointer(
-          child: _ExpandedNavTile(
-            entry: entry,
-            selected: groupSelected,
-            showLabel: showLabel,
-            trailing: showLabel
-                ? Icon(
-                    Icons.chevron_right_rounded,
-                    size: 12,
-                    color: groupSelected
-                        ? Colors.white.withValues(alpha: 0.95)
-                        : (isDark
-                            ? const Color(0xFFD7E3FA)
-                            : const Color(0xFF5270A7)),
-                  )
-                : null,
-            onTap: () {},
-          ),
-        ),
-      ),
+    return _ExpandedNavTile(
+      entry: entry,
+      selected: groupSelected,
+      showLabel: showLabel,
+      trailing: showLabel
+          ? Icon(
+              Icons.chevron_right_rounded,
+              size: 12,
+              color: groupSelected
+                  ? Colors.white.withValues(alpha: 0.95)
+                  : (isDark ? const Color(0xFFD7E3FA) : const Color(0xFF5270A7)),
+            )
+          : null,
+      onTap: () => _openPopupMenu(context),
     );
+  }
+
+  Future<void> _openPopupMenu(BuildContext context) async {
+    final selection = await _showNestedMenuForEntry(
+      context, entry, selectedModule, selectedSettingsSectionId,
+    );
+    if (selection == null) return;
+    final settingsSectionId = selection.settingsSectionId;
+    if (settingsSectionId != null && onSelectSettingsSection != null) {
+      final anchorRect = _anchorRectFrom(context);
+      onSelectSettingsSection!(
+        SettingsSectionSelection(
+          sectionId: settingsSectionId,
+          anchorRect: anchorRect,
+        ),
+      );
+      return;
+    }
+    onSelectModule(selection.resolveTarget(selectedModule));
   }
 }
 

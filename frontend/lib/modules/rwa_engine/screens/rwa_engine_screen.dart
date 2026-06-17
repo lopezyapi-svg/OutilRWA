@@ -5,13 +5,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../expositions/models/exposition_models.dart';
 
-const Color _engineDeepBlue = Color(0xFF172554);
-const Color _engineBlue = Color(0xFF2563EB);
-const Color _engineIndigo = Color(0xFF4338CA);
-const Color _engineSidebarBg = Color(0xFFF5F7FF);
 const double _radius = 2;
 
 class RwaEngineScreen extends StatefulWidget {
@@ -301,7 +298,7 @@ class _EngineHeader extends StatelessWidget {
             children: [
               const _EngineIconBox(
                 icon: CupertinoIcons.function,
-                color: _engineIndigo,
+                color: AppColors.concentrationPrimary,
                 size: 40,
               ),
               const SizedBox(width: 12),
@@ -310,10 +307,10 @@ class _EngineHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'RWA Engine',
+                      'Pilotage RWA Crédit',
                       style:
                           Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                color: _engineDeepBlue,
+                                color: AppColors.sidebar,
                                 fontSize: 24,
                                 fontWeight: FontWeight.w900,
                                 height: 1,
@@ -334,7 +331,7 @@ class _EngineHeader extends StatelessWidget {
               ),
               _EngineStatusPill(
                 label: '${view.exposures.length} expositions',
-                color: _engineBlue,
+                color: AppColors.accent,
               ),
             ],
           ),
@@ -363,11 +360,11 @@ class _EngineSideBar extends StatelessWidget {
       curve: Curves.easeOutCubic,
       width: expanded ? expandedWidth : collapsedWidth,
       decoration: BoxDecoration(
-        color: _engineSidebarBg,
+        color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(_radius),
         boxShadow: [
           BoxShadow(
-            color: _engineIndigo.withValues(alpha: 0.10),
+            color: AppColors.concentrationPrimary.withValues(alpha: 0.10),
             blurRadius: 18,
             offset: const Offset(6, 0),
           ),
@@ -446,13 +443,13 @@ class _EngineSplitPanelIconPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final stroke = Paint()
-      ..color = _engineDeepBlue
+      ..color = AppColors.sidebar
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.8
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
     final fill = Paint()
-      ..color = _engineDeepBlue.withValues(alpha: expanded ? 0.12 : 0.22)
+      ..color = AppColors.sidebar.withValues(alpha: expanded ? 0.12 : 0.22)
       ..style = PaintingStyle.fill;
 
     final rect = RRect.fromRectAndRadius(
@@ -585,13 +582,13 @@ class _EngineEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const _EngineIconBox(
-                icon: CupertinoIcons.function, color: _engineIndigo, size: 44),
+                icon: CupertinoIcons.function, color: AppColors.concentrationPrimary, size: 44),
             const SizedBox(height: 12),
             Text(
               'Aucune exposition chargée',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: _engineDeepBlue,
+                    color: AppColors.sidebar,
                     fontWeight: FontWeight.w900,
                   ),
             ),

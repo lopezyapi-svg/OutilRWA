@@ -100,3 +100,14 @@ String formatCurrencyInDisplayUnit(
   final scaled = converted / amountUnit.divisor;
   return '${AppFormatters.decimalNumber(scaled, maxDecimals: maxDecimals)} ${amountUnit.label} ${displayCurrencyLabel(toCurrency)}';
 }
+
+/// Formate un montant de devise de manière compacte (sans devise de départ).
+String formatCurrencyCompact(
+  double amount, {
+  String toCurrency = 'XOF',
+  int maxDecimals = 1,
+}) {
+  final unit = PortfolioAmountUnitPreference.current;
+  final scaled = amount / unit.divisor;
+  return '${AppFormatters.decimalNumber(scaled, maxDecimals: maxDecimals)} ${unit.label}';
+}

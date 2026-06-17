@@ -320,19 +320,30 @@ class _RwaAppState extends State<RwaApp> {
       AppModule.defautsImpayes => DefautsImpayesScreen(api: _api),
       AppModule.concentrationCredit => ConcentrationScreen(api: _api),
       AppModule.reportingCredit => ReportingCreditScreen(api: _api),
-      AppModule.risqueMarche => RisqueMarcheScreen(api: _api),
+      AppModule.risqueMarche => RisqueMarcheScreen(
+          api: _api,
+          view: MarketRiskView.dashboard,
+        ),
       AppModule.risqueMarcheImport => RisqueMarcheScreen(api: _api),
+      AppModule.risqueMarcheCalculPrudentiel => RisqueMarcheScreen(
+          api: _api,
+          view: MarketRiskView.calculPrudentiel,
+        ),
+      AppModule.risqueMarchePilotage => RisqueMarcheScreen(
+          api: _api,
+          view: MarketRiskView.dashboard,
+        ),
       AppModule.risqueMarcheVar => RisqueMarcheScreen(
           api: _api,
           view: MarketRiskView.varRisk,
         ),
-      AppModule.risqueMarcheIndicateurs => RisqueMarcheScreen(
-          api: _api,
-          view: MarketRiskView.indicators,
-        ),
       AppModule.risqueMarcheCourbeTaux => RisqueMarcheScreen(
           api: _api,
           view: MarketRiskView.yieldCurves,
+        ),
+      AppModule.risqueMarcheIndicateurs => RisqueMarcheScreen(
+          api: _api,
+          view: MarketRiskView.indicators,
         ),
       AppModule.risqueMarcheAmortissementCrd => RisqueMarcheScreen(
           api: _api,

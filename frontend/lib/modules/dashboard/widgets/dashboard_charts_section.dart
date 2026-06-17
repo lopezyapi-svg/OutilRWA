@@ -325,7 +325,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                           0,
                                         ),
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.zero,
+                                          borderRadius: BorderRadius.circular(5),
                                           child: Stack(
                                             children: [
                                               AnimatedContainer(

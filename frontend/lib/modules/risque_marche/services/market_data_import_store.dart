@@ -8,8 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:xml/xml.dart';
 
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/utils/currency_conversion.dart';
 import 'market_country_resolver.dart';
 import 'market_data_local_storage.dart' as local_storage;
+import 'market_risk_orchestrator.dart';
 
 const String marketPortfolioSheetName = 'Saisir donnée';
 const String marketEquityPortfolioSheetName = 'Actions';
@@ -105,6 +107,101 @@ class MarketParametricVarResult {
 
   double get annualVolatility => dailyVolatility * math.sqrt(252);
   double get effectiveVolatility => dailyVolatility * timeScale;
+}
+
+class MarketCommodityPosition {
+  const MarketCommodityPosition({
+    required this.product,
+    required this.amount,
+    this.currency = 'XOF',
+  });
+
+  final String product;
+  final double amount;
+  final String currency;
+}
+
+class MarketPrudentialCapitalResult {
+  const MarketPrudentialCapitalResult({
+    required this.interestRateSpecificRisk,
+    required this.interestRateGeneralRisk,
+    required this.equitySpecificRisk,
+    required this.equityGeneralRisk,
+    required this.foreignExchangeRisk,
+    required this.commodityDirectionalRisk,
+    required this.commodityBasisRisk,
+    required this.interestRateSpecificRiskWeightAverage,
+    required this.interestRateGeneralRiskWeightAverage,
+    required this.equityGrossPosition,
+    required this.equityNetPosition,
+    required this.foreignExchangeGlobalNetPosition,
+    required this.commodityGrossPosition,
+    required this.commodityNetPosition,
+  });
+
+  final double interestRateSpecificRisk;
+  final double interestRateGeneralRisk;
+  final double equitySpecificRisk;
+  final double equityGeneralRisk;
+  final double foreignExchangeRisk;
+  final double commodityDirectionalRisk;
+  final double commodityBasisRisk;
+  final double interestRateSpecificRiskWeightAverage;
+  final double interestRateGeneralRiskWeightAverage;
+  final double equityGrossPosition;
+  final double equityNetPosition;
+  final double foreignExchangeGlobalNetPosition;
+  final double commodityGrossPosition;
+  final double commodityNetPosition;
+
+  double get interestRateRisk =>
+      interestRateSpecificRisk + interestRateGeneralRisk;
+  double get equityRisk => equitySpecificRisk + equityGeneralRisk;
+  double get commodityRisk => commodityDirectionalRisk + commodityBasisRisk;
+  double get capitalRequirement =>
+      interestRateRisk + equityRisk + foreignExchangeRisk + commodityRisk;
+  double get marketRwa => capitalRequirement * 12.5;
+}
+
+MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
+  required Iterable<MarketPortfolioRecord> records,
+  Iterable<MarketCommodityPosition> commodityPositions = const [],
+}) {
+  final marketRecords = records.toList(growable: false);
+  final bondRecords = marketRecords
+      .where((record) => record.portfolioType == MarketPortfolioType.bonds)
+      .toList(growable: false);
+  final equityRecords = marketRecords
+      .where((record) => record.portfolioType == MarketPortfolioType.equities)
+      .toList(growable: false);
+  final interestSpecific = _marketInterestRateSpecificRisk(bondRecords);
+  final interestGeneral = _marketInterestRateGeneralRisk(bondRecords);
+  final bondPosition = bondRecords.fold<double>(
+    0,
+    (sum, record) => sum + _marketPrudentialBondPositionValue(record).abs(),
+  );
+  final equityPosition = _marketEquityPositionMeasure(equityRecords);
+  final commodityMeasure = _marketCommodityPositionMeasure(commodityPositions);
+
+  return MarketPrudentialCapitalResult(
+    interestRateSpecificRisk: interestSpecific,
+    interestRateGeneralRisk: interestGeneral,
+    equitySpecificRisk: equityPosition.grossPosition * 0.08,
+    equityGeneralRisk: equityPosition.netPosition.abs() * 0.08,
+    foreignExchangeRisk: _marketForeignExchangeRisk(marketRecords),
+    commodityDirectionalRisk: commodityMeasure.netPosition.abs() * 0.15,
+    commodityBasisRisk: commodityMeasure.grossPosition * 0.03,
+    interestRateSpecificRiskWeightAverage:
+        bondPosition <= 0 ? 0 : interestSpecific / bondPosition,
+    interestRateGeneralRiskWeightAverage:
+        bondPosition <= 0 ? 0 : interestGeneral / bondPosition,
+    equityGrossPosition: equityPosition.grossPosition,
+    equityNetPosition: equityPosition.netPosition,
+    foreignExchangeGlobalNetPosition:
+        _marketForeignExchangeGlobalNetPosition(marketRecords),
+    commodityGrossPosition: commodityMeasure.grossPosition,
+    commodityNetPosition: commodityMeasure.netPosition,
+  );
 }
 
 MarketParametricVarResult calculateMarketParametricVar({
@@ -237,6 +334,449 @@ double _marketNormalizedVolatility(num value) {
   final resolved = _marketDecimalRate(value).abs();
   if (!resolved.isFinite || resolved == 0) return 0.000001;
   return resolved.clamp(0.000001, 5.0).toDouble();
+}
+
+class _MarketPositionMeasure {
+  const _MarketPositionMeasure({
+    required this.grossPosition,
+    required this.netPosition,
+  });
+
+  final double grossPosition;
+  final double netPosition;
+}
+
+class _MarketGeneralRiskBucket {
+  const _MarketGeneralRiskBucket({
+    required this.index,
+    required this.zone,
+    required this.weight,
+  });
+
+  final int index;
+  final int zone;
+  final double weight;
+}
+
+class _MarketBucketBalance {
+  double long = 0;
+  double short = 0;
+
+  void add(double signedWeightedPosition) {
+    if (signedWeightedPosition >= 0) {
+      long += signedWeightedPosition;
+    } else {
+      short += signedWeightedPosition.abs();
+    }
+  }
+}
+
+enum _MarketCreditQuality { aaaToAa, aToBbb, bbToB, belowB, unrated }
+
+double _marketInterestRateSpecificRisk(List<MarketPortfolioRecord> records) {
+  var capital = 0.0;
+  for (final record in records) {
+    final position = _marketPrudentialBondPositionValue(record).abs();
+    if (position <= 0) continue;
+    capital += position * _marketSpecificDebtRiskWeight(record);
+  }
+  return capital;
+}
+
+double _marketInterestRateGeneralRisk(List<MarketPortfolioRecord> records) {
+  final balancesByCurrency = <String, Map<int, _MarketBucketBalance>>{};
+  final bucketsByIndex = <int, _MarketGeneralRiskBucket>{};
+
+  for (final record in records) {
+    final position = _marketPrudentialBondPositionValue(record);
+    if (position == 0) continue;
+    final bucket = _marketGeneralRiskBucket(record);
+    bucketsByIndex[bucket.index] = bucket;
+    final weightedPosition =
+        position * _marketRecordPositionSign(record) * bucket.weight;
+    if (weightedPosition == 0) continue;
+    final currency = normalizeCurrencyCode(record.currency);
+    balancesByCurrency
+        .putIfAbsent(currency, () => <int, _MarketBucketBalance>{})
+        .putIfAbsent(bucket.index, () => _MarketBucketBalance())
+        .add(weightedPosition);
+  }
+
+  var capital = 0.0;
+  for (final entry in balancesByCurrency.entries) {
+    final zoneLong = List<double>.filled(3, 0);
+    final zoneShort = List<double>.filled(3, 0);
+
+    for (final bucketEntry in entry.value.entries) {
+      final bucket = bucketsByIndex[bucketEntry.key];
+      if (bucket == null) continue;
+      final balance = bucketEntry.value;
+      final matched = math.min(balance.long, balance.short);
+      capital += matched * 0.10;
+      final residual = balance.long - balance.short;
+      final zoneIndex = (bucket.zone - 1).clamp(0, 2).toInt();
+      if (residual >= 0) {
+        zoneLong[zoneIndex] += residual;
+      } else {
+        zoneShort[zoneIndex] += residual.abs();
+      }
+    }
+
+    final zoneResidual = List<double>.filled(3, 0);
+    const intraZoneFactors = [0.40, 0.30, 0.30];
+    for (var index = 0; index < 3; index++) {
+      final matched = math.min(zoneLong[index], zoneShort[index]);
+      capital += matched * intraZoneFactors[index];
+      zoneResidual[index] = zoneLong[index] - zoneShort[index];
+    }
+
+    capital += _marketMatchMaturityZones(zoneResidual, 0, 1, 0.40);
+    capital += _marketMatchMaturityZones(zoneResidual, 1, 2, 0.40);
+    capital += _marketMatchMaturityZones(zoneResidual, 0, 2, 1.00);
+    capital += zoneResidual.fold<double>(0, (sum, value) => sum + value).abs();
+  }
+
+  return capital;
+}
+
+double _marketMatchMaturityZones(
+  List<double> zoneResidual,
+  int left,
+  int right,
+  double factor,
+) {
+  final leftValue = zoneResidual[left];
+  final rightValue = zoneResidual[right];
+  if (leftValue == 0 || rightValue == 0 || leftValue.sign == rightValue.sign) {
+    return 0;
+  }
+  final matched = math.min(leftValue.abs(), rightValue.abs());
+  zoneResidual[left] += leftValue.isNegative ? matched : -matched;
+  zoneResidual[right] += rightValue.isNegative ? matched : -matched;
+  return matched * factor;
+}
+
+_MarketPositionMeasure _marketEquityPositionMeasure(
+  List<MarketPortfolioRecord> records,
+) {
+  var gross = 0.0;
+  var net = 0.0;
+  for (final record in records) {
+    final signed = _marketPrudentialEquityPositionValue(record) *
+        _marketRecordPositionSign(record);
+    gross += signed.abs();
+    net += signed;
+  }
+  return _MarketPositionMeasure(grossPosition: gross, netPosition: net);
+}
+
+_MarketPositionMeasure _marketCommodityPositionMeasure(
+  Iterable<MarketCommodityPosition> positions,
+) {
+  final netByProduct = <String, double>{};
+  var gross = 0.0;
+  for (final position in positions) {
+    final amount = convertCurrencyAmount(
+      position.amount,
+      fromCurrency: position.currency,
+      toCurrency: 'XOF',
+    );
+    if (amount == 0 || !amount.isFinite) continue;
+    final key = _foldMarketText(position.product);
+    gross += amount.abs();
+    netByProduct.update(key, (value) => value + amount, ifAbsent: () => amount);
+  }
+  final net = netByProduct.values.fold<double>(
+    0,
+    (sum, value) => sum + value.abs(),
+  );
+  return _MarketPositionMeasure(grossPosition: gross, netPosition: net);
+}
+
+double _marketForeignExchangeRisk(List<MarketPortfolioRecord> records) {
+  return _marketForeignExchangeGlobalNetPosition(records) * 0.08;
+}
+
+double _marketForeignExchangeGlobalNetPosition(
+  List<MarketPortfolioRecord> records,
+) {
+  final netByCurrency = <String, double>{};
+  for (final record in records) {
+    final currency = normalizeCurrencyCode(record.currency);
+    if (currency.isEmpty || currency == 'XOF') continue;
+    final amount = _marketPrudentialRecordPositionValue(record);
+    if (amount <= 0) continue;
+    netByCurrency.update(
+      currency,
+      (value) => value + amount * _marketRecordPositionSign(record),
+      ifAbsent: () => amount * _marketRecordPositionSign(record),
+    );
+  }
+  var longPositions = 0.0;
+  var shortPositions = 0.0;
+  for (final value in netByCurrency.values) {
+    if (value >= 0) {
+      longPositions += value;
+    } else {
+      shortPositions += value.abs();
+    }
+  }
+  return math.max(longPositions, shortPositions).toDouble();
+}
+
+double _marketPrudentialRecordPositionValue(MarketPortfolioRecord record) {
+  return switch (record.portfolioType) {
+    MarketPortfolioType.bonds => _marketPrudentialBondPositionValue(record),
+    MarketPortfolioType.equities =>
+      _marketPrudentialEquityPositionValue(record),
+  };
+}
+
+double _marketPrudentialBondPositionValue(MarketPortfolioRecord record) {
+  final value = _bondMarketValue(record);
+  if (value <= 0 || !value.isFinite) return 0;
+  return convertCurrencyAmount(
+    value,
+    fromCurrency: record.currency,
+    toCurrency: 'XOF',
+  );
+}
+
+double _marketPrudentialEquityPositionValue(MarketPortfolioRecord record) {
+  final value = record.valuationAmount > 0
+      ? record.valuationAmount
+      : record.exposureAmount;
+  if (value <= 0 || !value.isFinite) return 0;
+  return convertCurrencyAmount(
+    value,
+    fromCurrency: record.currency,
+    toCurrency: 'XOF',
+  );
+}
+
+double _marketRecordPositionSign(MarketPortfolioRecord record) {
+  final signedQuantity = record.portfolioType == MarketPortfolioType.equities
+      ? record.shares
+      : record.quantity;
+  if (signedQuantity < 0) return -1;
+  final rawSide = [
+    record.values['Sens'],
+    record.values['Position'],
+    record.values['Long/Short'],
+    record.values['Achat/Vente'],
+  ].whereType<Object>().map((value) => value.toString()).join(' ');
+  final side = _foldMarketText(rawSide);
+  if (side.contains('short') ||
+      side.contains('courte') ||
+      side.contains('vente') ||
+      side.contains('vendu')) {
+    return -1;
+  }
+  return 1;
+}
+
+double _marketSpecificDebtRiskWeight(MarketPortfolioRecord record) {
+  if (_marketIsUemoaSovereignFcfa(record)) return 0;
+
+  final quality = _marketCreditQuality(record.rating);
+  final sovereign = _marketIsSovereignDebt(record);
+  if (sovereign) {
+    return switch (quality) {
+      _MarketCreditQuality.aaaToAa => 0,
+      _MarketCreditQuality.aToBbb => _marketSpecificMaturityRiskWeight(record),
+      _MarketCreditQuality.bbToB => 0.08,
+      _MarketCreditQuality.belowB => 0.12,
+      _MarketCreditQuality.unrated => 0.08,
+    };
+  }
+
+  if (_marketIsEligibleDebt(record, quality)) {
+    return _marketSpecificMaturityRiskWeight(record);
+  }
+
+  if (_marketIsOtherDebtEightPercent(record.rating)) return 0.08;
+  if (quality == _MarketCreditQuality.bbToB ||
+      quality == _MarketCreditQuality.belowB) {
+    return 0.12;
+  }
+  return 0.08;
+}
+
+double _marketSpecificMaturityRiskWeight(MarketPortfolioRecord record) {
+  final years = _bondRecordResidualYears(record);
+  if (years < 0.5) return 0.0025;
+  if (years <= 2) return 0.01;
+  return 0.016;
+}
+
+_MarketGeneralRiskBucket _marketGeneralRiskBucket(
+  MarketPortfolioRecord record,
+) {
+  final years = math.max(0.0, _bondRecordResidualYears(record)).toDouble();
+  final coupon = _marketRateFraction(record.coupon);
+  if (coupon < 0.03) {
+    return _marketGeneralRiskBucketFromThresholds(
+      years,
+      const [
+        1 / 12,
+        3 / 12,
+        6 / 12,
+        1.0,
+        1.9,
+        2.8,
+        3.6,
+        4.3,
+        5.7,
+        7.3,
+        9.3,
+        10.6,
+        12.0,
+        20.0,
+        double.infinity,
+      ],
+    );
+  }
+  return _marketGeneralRiskBucketFromThresholds(
+    years,
+    const [
+      1 / 12,
+      3 / 12,
+      6 / 12,
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      7.0,
+      10.0,
+      15.0,
+      20.0,
+      double.infinity,
+    ],
+  );
+}
+
+_MarketGeneralRiskBucket _marketGeneralRiskBucketFromThresholds(
+  double years,
+  List<double> thresholds,
+) {
+  const weights = [
+    0.0000,
+    0.0020,
+    0.0040,
+    0.0070,
+    0.0125,
+    0.0175,
+    0.0225,
+    0.0275,
+    0.0325,
+    0.0375,
+    0.0450,
+    0.0525,
+    0.0600,
+    0.0800,
+    0.1250,
+  ];
+  var index = thresholds.indexWhere((threshold) => years <= threshold);
+  if (index < 0) index = thresholds.length - 1;
+  final zone = index <= 3
+      ? 1
+      : index <= 7
+          ? 2
+          : 3;
+  return _MarketGeneralRiskBucket(
+    index: index,
+    zone: zone,
+    weight: weights[index],
+  );
+}
+
+bool _marketIsUemoaSovereignFcfa(MarketPortfolioRecord record) {
+  return _marketIsSovereignDebt(record) &&
+      _marketIsUemoaCountry(record.issuerCountryIso3) &&
+      normalizeCurrencyCode(record.currency) == 'XOF';
+}
+
+bool _marketIsSovereignDebt(MarketPortfolioRecord record) {
+  final text = _foldMarketText(
+    [
+      record.issuer,
+      record.instrumentType,
+      record.instrumentCode,
+      record.issuerCountry,
+    ].join(' '),
+  );
+  return text.contains('tresor') ||
+      text.contains('etat') ||
+      text.contains('republique') ||
+      text.contains('souverain') ||
+      text.contains('ministere') ||
+      text.contains('obligation du tresor') ||
+      text.contains('bon du tresor') ||
+      text == 'bt' ||
+      text == 'ot' ||
+      text.contains(' bt ') ||
+      text.contains(' ot ');
+}
+
+bool _marketIsEligibleDebt(
+  MarketPortfolioRecord record,
+  _MarketCreditQuality quality,
+) {
+  if (quality == _MarketCreditQuality.aaaToAa ||
+      quality == _MarketCreditQuality.aToBbb) {
+    return true;
+  }
+  final text = _foldMarketText('${record.issuer} ${record.instrumentType}');
+  return text.contains('boad') ||
+      text.contains('bceao') ||
+      text.contains('bad') ||
+      text.contains('bid') ||
+      text.contains('bird') ||
+      text.contains('banque mondiale') ||
+      text.contains('multilaterale') ||
+      text.contains('organisme public');
+}
+
+bool _marketIsOtherDebtEightPercent(String rating) {
+  final normalized = _foldMarketText(rating).toUpperCase();
+  return normalized == 'BB+' || normalized == 'BB' || normalized == 'BB-';
+}
+
+bool _marketIsUemoaCountry(String iso3) {
+  return const {'BEN', 'BFA', 'CIV', 'GNB', 'MLI', 'NER', 'SEN', 'TGO'}
+      .contains(iso3.toUpperCase());
+}
+
+_MarketCreditQuality _marketCreditQuality(String rating) {
+  final normalized = _foldMarketText(rating)
+      .toUpperCase()
+      .replaceAll(' ', '')
+      .replaceAll('NOTÉ', 'NOTE');
+  if (normalized.isEmpty ||
+      normalized.contains('NONNOTE') ||
+      normalized.contains('SANSNOTE') ||
+      normalized.contains('NR')) {
+    return _MarketCreditQuality.unrated;
+  }
+  if (normalized.contains('SOUSB-') ||
+      normalized.contains('<B-') ||
+      normalized.startsWith('CCC') ||
+      normalized.startsWith('CC') ||
+      normalized == 'C' ||
+      normalized == 'D') {
+    return _MarketCreditQuality.belowB;
+  }
+  if (const {'AAA', 'AA+', 'AA', 'AA-', 'AAA/AA'}.contains(normalized)) {
+    return _MarketCreditQuality.aaaToAa;
+  }
+  if (const {'A+', 'A', 'A-', 'BBB+', 'BBB', 'BBB-'}.contains(normalized)) {
+    return _MarketCreditQuality.aToBbb;
+  }
+  if (const {'BB+', 'BB', 'BB-', 'B+', 'B', 'B-'}.contains(normalized)) {
+    return _MarketCreditQuality.bbToB;
+  }
+  return _MarketCreditQuality.unrated;
 }
 
 const List<String> marketBondPortfolioRequiredHeaders = [
@@ -692,6 +1232,8 @@ class MarketPortfolioDataset {
   late final double bondRateShockWorstLoss = bondRateShockLosses.isEmpty
       ? 0.0
       : math.max(0.0, bondRateShockLosses.last).toDouble();
+  late final MarketPrudentialCapitalResult prudentialCapital =
+      calculateMarketPrudentialCapital(records: records);
   late final String contentSignature = _marketDatasetContentSignature(this);
 
   double get parametricRiskValue => portfolioValue;
@@ -1709,6 +2251,8 @@ class MarketDataImportStore {
 
   MarketDataSnapshot get snapshot => snapshotNotifier.value;
 
+  MarketRiskOrchestrator get riskOrchestrator => MarketRiskOrchestrator.instance;
+
   bool _publishDatasets(
     Map<MarketPortfolioType, MarketPortfolioDataset> datasets, {
     MarketPortfolioType? activeType,
@@ -1733,6 +2277,7 @@ class MarketDataImportStore {
     snapshotNotifier.value = published;
     datasetsNotifier.value = published.datasets;
     datasetNotifier.value = published.activeDataset;
+    MarketRiskOrchestrator.instance.loadFromSnapshot(published);
     if (persist) _schedulePersistDatasets();
     return true;
   }
