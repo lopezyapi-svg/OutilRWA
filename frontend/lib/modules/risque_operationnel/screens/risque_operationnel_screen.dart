@@ -2794,13 +2794,13 @@ class _RisqueListItem extends StatelessWidget {
                     const SizedBox(width: 14),
                     Icon(Icons.arrow_forward_ios_rounded, size: 9, color: _kMuted.withValues(alpha: 0.4)),
                     const SizedBox(width: 6),
-                    Text('Résiduel ', style: const TextStyle(fontSize: 10, color: _kMuted)),
+                    const Text('Résiduel ', style: TextStyle(fontSize: 10, color: _kMuted)),
                     Text(r.niveauResiduel.toStringAsFixed(1),
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
                         color: isDark ? AppTheme.darkText : AppTheme.text)),
                     if (r.controleExistant.isNotEmpty) ...[
                       const SizedBox(width: 10),
-                      Icon(Icons.shield_outlined, size: 11, color: _kSuccess),
+                      const Icon(Icons.shield_outlined, size: 11, color: _kSuccess),
                       const SizedBox(width: 3),
                       Text('Ctrl ${r.efficaciteControle}/5',
                         style: const TextStyle(fontSize: 10, color: _kMuted)),
@@ -4359,10 +4359,11 @@ class _RegistreViewState extends State<_RegistreView> {
 
   void _onVBody()  => _syncV(_vBodyCtrl);
   void _onVFixed() => _syncV(_vFixedCtrl);
+  void _onVTrail() => _syncV(_vTrailCtrl);
   void _syncV(ScrollController src) {
     if (_isSyncV || !src.hasClients) return;
     _isSyncV = true;
-    for (final c in [_vBodyCtrl, _vFixedCtrl]) {
+    for (final c in [_vBodyCtrl, _vFixedCtrl, _vTrailCtrl]) {
       if (c == src || !c.hasClients) continue;
       final t = src.offset.clamp(c.position.minScrollExtent, c.position.maxScrollExtent);
       if ((c.offset - t).abs() > 0.5) c.jumpTo(t);
@@ -4376,6 +4377,7 @@ class _RegistreViewState extends State<_RegistreView> {
     _searchCtrl.addListener(() => setState(() => _search = _searchCtrl.text.toLowerCase()));
     _vBodyCtrl.addListener(_onVBody);
     _vFixedCtrl.addListener(_onVFixed);
+    _vTrailCtrl.addListener(_onVTrail);
     _reload();
   }
 
@@ -4385,8 +4387,10 @@ class _RegistreViewState extends State<_RegistreView> {
     _hCtrl.dispose();
     _vBodyCtrl.removeListener(_onVBody);
     _vFixedCtrl.removeListener(_onVFixed);
+    _vTrailCtrl.removeListener(_onVTrail);
     _vBodyCtrl.dispose();
     _vFixedCtrl.dispose();
+    _vTrailCtrl.dispose();
     super.dispose();
   }
 
@@ -4544,10 +4548,11 @@ class _RegistreViewState extends State<_RegistreView> {
     return true;
   }).toList();
 
-  final _hCtrl      = ScrollController();
-  final _vBodyCtrl  = ScrollController();
-  final _vFixedCtrl = ScrollController();
-  bool  _isSyncV    = false;
+  final _hCtrl       = ScrollController();
+  final _vBodyCtrl   = ScrollController();
+  final _vFixedCtrl  = ScrollController();
+  final _vTrailCtrl  = ScrollController();
+  bool  _isSyncV     = false;
 
   static const _rowH = 48.0;
 
@@ -4568,9 +4573,9 @@ class _RegistreViewState extends State<_RegistreView> {
 
   int    get _visibleCount => _visibleCols.where((v) => v).length;
 
-  // Colonnes défilantes (exclut col 0 quand elle est figée)
+  // Colonnes défilantes (exclut col 0 figée à gauche et col 12 figée à droite)
   List<(String, double)> get _scrollableColDefs => [
-    for (int i = 1; i < _colLabels.length; i++)
+    for (int i = 1; i <= 11; i++)
       if (_visibleCols[i]) (_colLabels[i], _colW[i]),
   ];
   double get _scrollableMinW => _scrollableColDefs.fold(0.0, (s, c) => s + c.$2);
@@ -4950,8 +4955,10 @@ class _RegistreViewState extends State<_RegistreView> {
     return LayoutBuilder(builder: (_, bc) {
       final fixedVisible = _visibleCols[0];
       final fixedW       = fixedVisible ? _colW[0] : 0.0;
+      final trailVisible = _visibleCols[12];
+      final trailW       = trailVisible ? _colW[12] : 0.0;
       final scrollColW   = _scrollableMinW;
-      final availW       = (bc.maxWidth.isFinite ? bc.maxWidth : scrollColW) - fixedW;
+      final availW       = (bc.maxWidth.isFinite ? bc.maxWidth : scrollColW) - fixedW - trailW;
       final scrollMinW   = math.max(scrollColW, availW > 0 ? availW : scrollColW);
 
       const headerStyle  = TextStyle(color: Color(0xFFF5F8FF), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.18, height: 1);
@@ -4959,9 +4966,11 @@ class _RegistreViewState extends State<_RegistreView> {
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF2A518A), Color(0xFF23477A)]),
         border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF))),
       );
+
       // ── Données ligne par ligne ──────────────────────────────────────────
       final fixedCells      = <Widget>[];
       final scrollableCells = <Widget>[];
+      final trailCells      = <Widget>[];
 
       for (var (rowIdx, i) in items.indexed) {
         final kro        = i.perteNette * 0.15;
@@ -5001,7 +5010,7 @@ class _RegistreViewState extends State<_RegistreView> {
           ),
         ));
 
-        // Cols 1-12 — zone défilante
+        // Cols 1-11 — zone défilante
         final scrollCols = <Widget>[
           if (_visibleCols[1])  _rc(i.dateOccurrence,                    _colW[1]),
           if (_visibleCols[2])  _rcf(i.ligneMetier,                      _colW[2]),
@@ -5014,27 +5023,39 @@ class _RegistreViewState extends State<_RegistreView> {
           if (_visibleCols[9])  _rc(AppFormatters.currency(kro),              _colW[9],  right: true, color: AppColors.prudentialSolvency),
           if (_visibleCols[10]) _rc(AppFormatters.currency(apr),              _colW[10], right: true, color: AppColors.marketNeutral),
           if (_visibleCols[11]) SizedBox(width: _colW[11], child: Padding(padding: const EdgeInsets.all(8), child: _badge(i.statut, _statutColor(i.statut)))),
-          if (_visibleCols[12]) SizedBox(
-            width: _colW[12],
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              SizedBox(width: 32, height: 32, child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: Icon(Icons.edit_outlined, size: 15, color: isDark ? Colors.white54 : _kMuted),
-                tooltip: 'Modifier',
-                onPressed: () => _showEditForm(i),
-              )),
-              SizedBox(width: 32, height: 32, child: IconButton(
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.delete_outline, size: 15, color: _kDanger),
-                tooltip: 'Supprimer',
-                onPressed: () => _confirm(context, 'Supprimer cet incident ?', () async {
-                  await widget.api.deleteRoIncident(i.id);
-                  _reload();
-                }),
-              )),
-            ]),
-          ),
         ];
+
+        // Col 12 — colonne Actions figée à droite
+        trailCells.add(SizedBox(
+          height: _rowH,
+          child: Material(
+            color: rowBg,
+            child: InkWell(
+              onTap: onTap,
+              hoverColor: hoverColor,
+              child: Container(
+                decoration: rowDeco,
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  SizedBox(width: 32, height: 32, child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: Icon(Icons.edit_outlined, size: 15, color: isDark ? Colors.white54 : _kMuted),
+                    tooltip: 'Modifier',
+                    onPressed: () => _showEditForm(i),
+                  )),
+                  SizedBox(width: 32, height: 32, child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.delete_outline, size: 15, color: _kDanger),
+                    tooltip: 'Supprimer',
+                    onPressed: () => _confirm(context, 'Supprimer cet incident ?', () async {
+                      await widget.api.deleteRoIncident(i.id);
+                      _reload();
+                    }),
+                  )),
+                ]),
+              ),
+            ),
+          ),
+        ));
 
         scrollableCells.add(SizedBox(
           height: _rowH,
@@ -5083,7 +5104,7 @@ class _RegistreViewState extends State<_RegistreView> {
                     ),
                   ),
                 ),
-                // En-têtes défilants
+                // En-têtes défilants (cols 1-11)
                 Expanded(
                   child: ClipRect(
                     child: AnimatedBuilder(
@@ -5116,12 +5137,30 @@ class _RegistreViewState extends State<_RegistreView> {
                     ),
                   ),
                 ),
+                // En-tête Actions figé à droite
+                if (trailVisible) Container(
+                  width: trailW,
+                  height: 40,
+                  decoration: headerGrad.copyWith(
+                    border: const Border(
+                      bottom: BorderSide(color: Color(0x1AFFFFFF)),
+                      left:   BorderSide(color: Color(0x33FFFFFF)),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(_colLabels[12], style: headerStyle, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ),
               ]),
             ),
             // ── Corps ────────────────────────────────────────────────────────
             Expanded(
               child: Row(children: [
-                // Colonne figée — défile uniquement verticalement
+                // Colonne Référence figée à gauche
                 if (fixedVisible) Container(
                   width: fixedW,
                   decoration: BoxDecoration(
@@ -5136,7 +5175,7 @@ class _RegistreViewState extends State<_RegistreView> {
                     ),
                   ),
                 ),
-                // Zone défilante — défile horizontalement et verticalement
+                // Zone défilante (cols 1-11)
                 Expanded(
                   child: SingleChildScrollView(
                     controller: _vBodyCtrl,
@@ -5150,6 +5189,21 @@ class _RegistreViewState extends State<_RegistreView> {
                           children: scrollableCells,
                         ),
                       ),
+                    ),
+                  ),
+                ),
+                // Colonne Actions figée à droite
+                if (trailVisible) Container(
+                  width: trailW,
+                  decoration: BoxDecoration(
+                    border: Border(left: BorderSide(color: isDark ? const Color(0xFF304764) : const Color(0xFFD6E0EF))),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.06), blurRadius: 10, offset: const Offset(-3, 0))],
+                  ),
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                    child: SingleChildScrollView(
+                      controller: _vTrailCtrl,
+                      child: Column(children: trailCells),
                     ),
                   ),
                 ),
@@ -5771,7 +5825,7 @@ class _RoRiskMatrix extends StatelessWidget {
             // Colonne gauche : label vertical + numéros P
             Column(children: [
               // Espace pour aligner avec le label "IMPACT →" + chiffres
-              SizedBox(height: 34),
+              const SizedBox(height: 34),
               // Numéros P (5 → 1, top → bottom)
               ...List.generate(5, (pi) {
                 final p = 5 - pi;
@@ -5779,9 +5833,9 @@ class _RoRiskMatrix extends StatelessWidget {
                   height: cellSz + 3,
                   child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                     if (pi == 2)
-                      RotatedBox(quarterTurns: -1,
+                      const RotatedBox(quarterTurns: -1,
                         child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
+                          padding: EdgeInsets.only(right: 4),
                           child: Text('PROBABILITÉ ↑',
                             style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700,
                               color: _kMuted, letterSpacing: 0.7)),
@@ -5801,7 +5855,7 @@ class _RoRiskMatrix extends StatelessWidget {
               children: [
                 // Axe Impact
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('IMPACT →',
+                  const Text('IMPACT →',
                     style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700,
                       color: _kMuted, letterSpacing: 0.8)),
                   const SizedBox(height: 4),
