@@ -1,4 +1,4 @@
-﻿// Ecran principal du module Risque OpÃ©rationnel â€” 10 vues.
+// Ecran principal du module Risque Opérationnel — 10 vues.
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -19,7 +19,7 @@ import '../../dashboard/models/dashboard_models.dart';
 import '../models/ro_models.dart';
 import '../widgets/ro_import_pertes_dialog.dart';
 
-// â”€â”€â”€ Enum vues â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Enum vues ────────────────────────────────────────────────────────────────
 
 enum OperationalRiskView {
   dashboard,
@@ -35,7 +35,7 @@ enum OperationalRiskView {
   reporting,
 }
 
-// â”€â”€â”€ Constantes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Constantes ───────────────────────────────────────────────────────────────
 
 const _kBlue = AppTheme.accent;
 const _kSuccess = AppTheme.success;
@@ -45,94 +45,94 @@ const _kMuted = AppTheme.muted;
 
 const _lignesMetier = [
   "Financement d'entreprise",
-  'ActivitÃ©s de marchÃ©',
-  'Banque de dÃ©tail',
+  'Activités de marché',
+  'Banque de détail',
   'Banque commerciale',
-  'Paiements et rÃ¨glements',
+  'Paiements et règlements',
   "Fonctions d'agent",
   "Gestion d'actifs",
-  'Courtage de dÃ©tail',
+  'Courtage de détail',
 ];
-const _typesEvenement = ['Interne', 'Externe', 'Processus', 'SystÃ¨me', 'Personnel', 'Juridique'];
-const _statutsIncident = ['Ouvert', 'En cours', 'RÃ©solu', 'ClÃ´turÃ©'];
+const _typesEvenement = ['Interne', 'Externe', 'Processus', 'Système', 'Personnel', 'Juridique'];
+const _statutsIncident = ['Ouvert', 'En cours', 'Résolu', 'Clôturé'];
 const _causesRacine = [
   'Erreur humaine',
-  'DÃ©faillance systÃ¨me',
-  'Processus inadÃ©quat',
+  'Défaillance système',
+  'Processus inadéquat',
   'Fraude interne',
   'Fraude externe',
-  'Ã‰vÃ©nement externe',
-  'Non dÃ©finie',
+  'Événement externe',
+  'Non définie',
 ];
-const _categoriesRisque = ['Processus', 'Personnel', 'SystÃ¨me', 'Externe', 'Juridique'];
-const _typesControle = ['Permanent', 'PÃ©riodique', 'Ponctuel', 'Sur piÃ¨ces', 'Sur place'];
+const _categoriesRisque = ['Processus', 'Personnel', 'Système', 'Externe', 'Juridique'];
+const _typesControle = ['Permanent', 'Périodique', 'Ponctuel', 'Sur pièces', 'Sur place'];
 const _frequences = ['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'];
-const _typesAction = ['Corrective', 'PrÃ©ventive', 'AmÃ©liorative'];
-const _sourcesAction = ['Incident', 'ContrÃ´le', 'KRI', 'Audit', 'Cartographie'];
+const _typesAction = ['Corrective', 'Préventive', 'Améliorative'];
+const _sourcesAction = ['Incident', 'Contrôle', 'KRI', 'Audit', 'Cartographie'];
 const _priorites = ['Haute', 'Moyenne', 'Basse'];
-const _statutsPlan = ['A faire', 'En cours', 'TerminÃ©', 'AbandonnÃ©'];
+const _statutsPlan = ['A faire', 'En cours', 'Terminé', 'Abandonné'];
 
-// â”€â”€â”€ Articles rÃ©glementaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Articles réglementaires ──────────────────────────────────────────────────
 
 const _artExplanations = <String, String>{
   'Art. 313':
-      'Gestion du risque opÃ©rationnel â€” dispositif d\'identification, de mesure,\n'
-      'de surveillance et de contrÃ´le obligatoire (Instruction UMOA).\n\n'
-      'Mesure du risque (matrice 5Ã—5) :\n'
-      '  Score = Impact Ã— ProbabilitÃ©   (Ã©chelle 1 â€“ 5)\n'
-      '  Zone rouge : Score â‰¥ 15   |   Zone orange : 8 â€“ 14\n'
-      '  Piliers : Identification â†’ Mesure â†’ Surveillance â†’ ContrÃ´le',
+      'Gestion du risque opérationnel — dispositif d\'identification, de mesure,\n'
+      'de surveillance et de contrôle obligatoire (Instruction UMOA).\n\n'
+      'Mesure du risque (matrice 5×5) :\n'
+      '  Score = Impact × Probabilité   (échelle 1 – 5)\n'
+      '  Zone rouge : Score ≥ 15   |   Zone orange : 8 – 14\n'
+      '  Piliers : Identification → Mesure → Surveillance → Contrôle',
   'Art. 313.b':
-      'DÃ©claration des incidents opÃ©rationnels â€” tout incident significatif\n'
-      'doit Ãªtre documentÃ© (cause racine, pertes) avec suivi formel imposÃ©.\n\n'
+      'Déclaration des incidents opérationnels — tout incident significatif\n'
+      'doit être documenté (cause racine, pertes) avec suivi formel imposé.\n\n'
       'Calcul de la perte nette :\n'
-      '  Perte nette = Perte brute âˆ’ RÃ©cupÃ©rations\n'
-      '  RÃ©cupÃ©rations : assurance + provisions + reversements\n'
-      '  DÃ©lai de dÃ©claration : â‰¤ J+5 ouvrÃ©s aprÃ¨s dÃ©tection',
+      '  Perte nette = Perte brute − Récupérations\n'
+      '  Récupérations : assurance + provisions + reversements\n'
+      '  Délai de déclaration : ≤ J+5 ouvrés après détection',
   'Art. 313.c':
-      'Plans d\'actions correctives et prÃ©ventives â€” documentÃ©s, assignÃ©s\n'
-      'Ã  un responsable avec Ã©chÃ©ance et taux d\'avancement obligatoires.\n\n'
+      'Plans d\'actions correctives et préventives — documentés, assignés\n'
+      'à un responsable avec échéance et taux d\'avancement obligatoires.\n\n'
       'Indicateurs de suivi :\n'
-      '  Avancement (%) = (Actions terminÃ©es / Actions totales) Ã— 100\n'
-      '  Taux global = Î£ avancement_i / n   (n = nb plans actifs)\n'
-      '  Retard = Date_Ã©chÃ©ance âˆ’ Date_aujourd\'hui  < 0 â†’ en retard',
+      '  Avancement (%) = (Actions terminées / Actions totales) × 100\n'
+      '  Taux global = Σ avancement_i / n   (n = nb plans actifs)\n'
+      '  Retard = Date_échéance − Date_aujourd\'hui  < 0 → en retard',
   'Art. 314':
-      'ContrÃ´le interne â€” dispositif permanent et pÃ©riodique obligatoire.\n'
-      'Conservation des documents : â‰¥ 7 ans (exigence UMOA).\n\n'
-      'EfficacitÃ© du contrÃ´le :\n'
-      '  Taux de conformitÃ© = (ContrÃ´les conformes / ContrÃ´les rÃ©alisÃ©s) Ã— 100\n'
-      '  Couverture = Nb processus contrÃ´lÃ©s / Nb processus totaux Ã— 100\n'
-      '  FrÃ©quences : permanent (quotidien/hebdo) | pÃ©riodique (mensuel/annuel)',
+      'Contrôle interne — dispositif permanent et périodique obligatoire.\n'
+      'Conservation des documents : ≥ 7 ans (exigence UMOA).\n\n'
+      'Efficacité du contrôle :\n'
+      '  Taux de conformité = (Contrôles conformes / Contrôles réalisés) × 100\n'
+      '  Couverture = Nb processus contrôlés / Nb processus totaux × 100\n'
+      '  Fréquences : permanent (quotidien/hebdo) | périodique (mensuel/annuel)',
   'Art. 89':
-      'Calcul des RWA opÃ©rationnels â€” mÃ©thode Indicateur de Base (BIA).\n\n'
+      'Calcul des RWA opérationnels — méthode Indicateur de Base (BIA).\n\n'
       'Formule BIA :\n'
-      '  Capital minimal = Î± Ã— PNBmoyâ‚ƒ\n'
-      '  Î± = 15 %   (coefficient rÃ©glementaire BCEAO)\n'
-      '  PNBmoyâ‚ƒ = Î£ PNBáµ¢ (positifs) / n   sur 3 derniers exercices\n'
-      '  RWA_opÃ©rationnel = Capital minimal Ã· 8 %   (facteur 12,5)',
+      '  Capital minimal = α × PNBmoy₃\n'
+      '  α = 15 %   (coefficient réglementaire BCEAO)\n'
+      '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
+      '  RWA_opérationnel = Capital minimal ÷ 8 %   (facteur 12,5)',
   'Art. 301/307':
       'Exigences minimales en fonds propres (dispositif prudentiel BCEAO).\n\n'
-      'Ratios rÃ©glementaires :\n'
-      '  Ratio Tier 1 = Fonds propres de base / RWA total  â‰¥ 5 %\n'
-      '  Ratio global = Fonds propres totaux / RWA total   â‰¥ 8 %\n'
-      '  RWA total = RWA_crÃ©dit + RWA_marchÃ© + RWA_opÃ©rationnel\n'
+      'Ratios réglementaires :\n'
+      '  Ratio Tier 1 = Fonds propres de base / RWA total  ≥ 5 %\n'
+      '  Ratio global = Fonds propres totaux / RWA total   ≥ 8 %\n'
+      '  RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
       '  Coussin de conservation : + 2,5 % des RWA (si applicable)',
   'Art. 545':
-      'Stress testing â€” simulations de scÃ©narios de crise pour Ã©valuer\n'
-      'la rÃ©silience du dispositif de gestion des risques.\n\n'
-      'ScÃ©narios types et formule d\'impact :\n'
+      'Stress testing — simulations de scénarios de crise pour évaluer\n'
+      'la résilience du dispositif de gestion des risques.\n\n'
+      'Scénarios types et formule d\'impact :\n'
       '  S1 : Optimiste  |  S2 : Neutre  |  S3 : Pessimiste  |  S4 : Crise\n'
-      '  Impact net = Pertes simulÃ©es âˆ’ (Provisions + Couverture assurance)\n'
-      '  RÃ©silience = Fonds propres disponibles âˆ’ Pertes simulÃ©es  â‰¥ 0\n'
-      '  Ratio de rÃ©sistance = FP aprÃ¨s choc / RWA stressÃ©s  â‰¥ seuil',
+      '  Impact net = Pertes simulées − (Provisions + Couverture assurance)\n'
+      '  Résilience = Fonds propres disponibles − Pertes simulées  ≥ 0\n'
+      '  Ratio de résistance = FP après choc / RWA stressés  ≥ seuil',
   'Art. 546':
-      'Rapport annuel sur le dispositif de gestion des risques opÃ©rationnels,\n'
-      'transmis Ã  la Commission Bancaire de l\'UMOA.\n\n'
-      'Indicateurs clÃ©s Ã  reporter :\n'
-      '  â€¢ RWA opÃ©rationnel = K_BIA Ã— 12,5   (avec K_BIA = 15 % Ã— PNBmoyâ‚ƒ)\n'
-      '  â€¢ Pertes totales nettes = Î£ (Perte brute âˆ’ RÃ©cupÃ©rations)\n'
-      '  â€¢ Taux couverture plans = Actions terminÃ©es / Total plans Ã— 100\n'
-      '  â€¢ RÃ©sultats stress tests : Î”FP sous S3 et S4',
+      'Rapport annuel sur le dispositif de gestion des risques opérationnels,\n'
+      'transmis à la Commission Bancaire de l\'UMOA.\n\n'
+      'Indicateurs clés à reporter :\n'
+      '  • RWA opérationnel = K_BIA × 12,5   (avec K_BIA = 15 % × PNBmoy₃)\n'
+      '  • Pertes totales nettes = Σ (Perte brute − Récupérations)\n'
+      '  • Taux couverture plans = Actions terminées / Total plans × 100\n'
+      '  • Résultats stress tests : ΔFP sous S3 et S4',
 };
 
 List<String> _extractArtRefs(String text) =>
@@ -161,7 +161,7 @@ Widget _artInfo(String artRef) {
   );
 }
 
-// â”€â”€â”€ Ecran principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Ecran principal ──────────────────────────────────────────────────────────
 
 class RisqueOperationnelScreen extends StatelessWidget {
   const RisqueOperationnelScreen({
@@ -176,17 +176,17 @@ class RisqueOperationnelScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (title, subtitle, artRef) = switch (view) {
-      OperationalRiskView.dashboard   => ('Dashboard OpÃ©rationnel',    'KPI rÃ©glementaires et alertes (Art. 313)',                      'Art. 313'),
-      OperationalRiskView.registre    => ('Registre des pertes RO',     'Registre BCEAO/UMOA â€” pertes, Capital minimal et RWA (Art. 89 & 313.b)',  'Art. 89'),
-      OperationalRiskView.incidents   => ('Simulation de crise',        'Stress testing PIEAFP â€” scÃ©narios de vulnÃ©rabilitÃ© (Art. 545)', 'Art. 545'),
-      OperationalRiskView.pertes      => ('Pertes opÃ©rationnelles',     'Base de pertes historiques â€” calcul RWA BIA (Art. 89)',         'Art. 89'),
-      OperationalRiskView.kri         => ('KRI',                        'Indicateurs clÃ©s de risque â€” surveillance continue (Art. 313)', 'Art. 313'),
-      OperationalRiskView.cartographie=> ('Cartographie des risques',   'Identification et Ã©valuation â€” matrice 5Ã—5 (Art. 313)',         'Art. 313'),
-      OperationalRiskView.controles   => ('ContrÃ´les internes',         'Gestion des contrÃ´les pÃ©riodiques (Art. 314)',                  'Art. 314'),
+      OperationalRiskView.dashboard   => ('Dashboard Opérationnel',    'KPI réglementaires et alertes (Art. 313)',                      'Art. 313'),
+      OperationalRiskView.registre    => ('Registre des pertes RO',     'Registre BCEAO/UMOA — pertes, Capital minimal et RWA (Art. 89 & 313.b)',  'Art. 89'),
+      OperationalRiskView.incidents   => ('Simulation de crise',        'Stress testing PIEAFP — scénarios de vulnérabilité (Art. 545)', 'Art. 545'),
+      OperationalRiskView.pertes      => ('Pertes opérationnelles',     'Base de pertes historiques — calcul RWA BIA (Art. 89)',         'Art. 89'),
+      OperationalRiskView.kri         => ('KRI',                        'Indicateurs clés de risque — surveillance continue (Art. 313)', 'Art. 313'),
+      OperationalRiskView.cartographie=> ('Cartographie des risques',   'Identification et évaluation — matrice 5×5 (Art. 313)',         'Art. 313'),
+      OperationalRiskView.controles   => ('Contrôles internes',         'Gestion des contrôles périodiques (Art. 314)',                  'Art. 314'),
       OperationalRiskView.workflow    => ('Workflow incidents',          'Pipeline de traitement des incidents (Art. 313.b)',             'Art. 313.b'),
-      OperationalRiskView.plans       => ('Plans d\'actions',           'Actions correctives et prÃ©ventives (Art. 313.c)',               'Art. 313.c'),
-      OperationalRiskView.historique  => ('Historique Ã©vÃ©nements',      'Journal de traÃ§abilitÃ© (Art. 314) â€” 7 ans UMOA',               'Art. 314'),
-      OperationalRiskView.reporting   => ('Reporting opÃ©rationnel',     'GÃ©nÃ©ration des rapports rÃ©glementaires (Art. 313.c)',           'Art. 313.c'),
+      OperationalRiskView.plans       => ('Plans d\'actions',           'Actions correctives et préventives (Art. 313.c)',               'Art. 313.c'),
+      OperationalRiskView.historique  => ('Historique événements',      'Journal de traçabilité (Art. 314) — 7 ans UMOA',               'Art. 314'),
+      OperationalRiskView.reporting   => ('Reporting opérationnel',     'Génération des rapports réglementaires (Art. 313.c)',           'Art. 313.c'),
     };
     final content = switch (view) {
       OperationalRiskView.dashboard => _DashboardView(api: api),
@@ -221,20 +221,20 @@ class RisqueOperationnelScreen extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ Helpers partagÃ©s â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helpers partagés ─────────────────────────────────────────────────────────
 
 Color _statutColor(String statut) => switch (statut) {
       'Ouvert' => _kDanger,
       'En cours' => _kWarning,
-      'RÃ©solu' => AppColors.marketNeutral,
-      'ClÃ´turÃ©' => _kSuccess,
+      'Résolu' => AppColors.marketNeutral,
+      'Clôturé' => _kSuccess,
       _ => _kMuted,
     };
 
 Color _niveauColor(String label) => switch (label) {
       'Faible' => _kSuccess,
       'Moyen' => _kWarning,
-      'Ã‰levÃ©' => const Color(0xFFF97316),
+      'Élevé' => const Color(0xFFF97316),
       'Critique' => _kDanger,
       _ => _kMuted,
     };
@@ -277,7 +277,7 @@ Widget _badge(String label, Color color) => FittedBox(
 Widget _kpiBox(BuildContext context, String label, String value, IconData icon, Color color, {String? tooltip}) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   // Border uniforme obligatoire pour combiner borderRadius + couleurs distinctes
-  // => strip gauche colorÃ© en interne via un Container(width:4)
+  // => strip gauche coloré en interne via un Container(width:4)
   return Container(
     decoration: BoxDecoration(
       color: isDark ? AppTheme.darkCard : Colors.white,
@@ -404,7 +404,7 @@ Widget _errorBox(Object e) => Center(
       ),
     );
 
-// â”€â”€â”€ Form helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Form helpers ─────────────────────────────────────────────────────────────
 
 // Titre de section dans un formulaire
 Widget _formSection(String title, {IconData? icon, Color color = _kBlue}) => Padding(
@@ -422,7 +422,7 @@ Widget _formSection(String title, {IconData? icon, Color color = _kBlue}) => Pad
   ),
 );
 
-// Deux champs cÃ´te Ã  cÃ´te
+// Deux champs côte à côte
 Widget _formRow(Widget left, Widget right) => Row(
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [Expanded(child: left), const SizedBox(width: 12), Expanded(child: right)],
@@ -520,7 +520,7 @@ Widget _dateField(
               initialDate: initial.isBefore(min) ? min : initial,
               firstDate: min,
               lastDate: DateTime(2100),
-              helpText: 'SÃ©lectionner une date',
+              helpText: 'Sélectionner une date',
             );
             if (picked != null) {
               ctrl.text = picked.toIso8601String().substring(0, 10);
@@ -633,7 +633,7 @@ Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onC
 }
 
 
-// â”€â”€â”€ VIEW 1 : DASHBOARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 1 : DASHBOARD ───────────────────────────────────────────────────────
 
 Widget _bannerStat(String label, String value) => Column(
   crossAxisAlignment: CrossAxisAlignment.end,
@@ -688,7 +688,7 @@ Widget _roStatusBanner(BuildContext context, RoDashboardData d) {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('CONFORMITÃ‰ RÃ‰GLEMENTAIRE Â· BCEAO / UMOA',
+              Text('CONFORMITÉ RÉGLEMENTAIRE · BCEAO / UMOA',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.65),
                   fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.7)),
@@ -761,94 +761,94 @@ class _DashboardViewState extends State<_DashboardView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Banner statut rÃ©glementaire
+              // Banner statut réglementaire
               _roStatusBanner(context, d),
               const SizedBox(height: 14),
-              // Widget 1 â€” Situation rÃ©glementaire
+              // Widget 1 — Situation réglementaire
               SectionCard(
-                title: 'Situation rÃ©glementaire',
+                title: 'Situation réglementaire',
                 child: Row(
                   children: [
                     Expanded(child: _kpiBox(context, 'Exigence fonds propres (K)', AppFormatters.currency(d.widget1.exigenceFondsPropres), Icons.account_balance_outlined, _kBlue,
-                      tooltip: 'Capital rÃ©glementaire minimum (Art. 89)\nFormule : Capital minimal = 15 % Ã— Perte nette totale\nÎ± = 15 % (coefficient BCEAO/UMOA)',
+                      tooltip: 'Capital réglementaire minimum (Art. 89)\nFormule : Capital minimal = 15 % × Perte nette totale\nα = 15 % (coefficient BCEAO/UMOA)',
                     )),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'APR risque opÃ©rationnel', AppFormatters.currency(d.widget1.aprRisqueOp), Icons.bar_chart_outlined, AppColors.prudentialSolvency,
-                      tooltip: 'Actifs PondÃ©rÃ©s par le Risque opÃ©rationnel (Art. 89)\nFormule : APR = K_RO Ã— 12,5\n12,5 = 1 Ã· 8 % (facteur de conversion prudentiel)',
+                    Expanded(child: _kpiBox(context, 'APR risque opérationnel', AppFormatters.currency(d.widget1.aprRisqueOp), Icons.bar_chart_outlined, AppColors.prudentialSolvency,
+                      tooltip: 'Actifs Pondérés par le Risque opérationnel (Art. 89)\nFormule : APR = K_RO × 12,5\n12,5 = 1 ÷ 8 % (facteur de conversion prudentiel)',
                     )),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: _kpiBox(context, 'Statut rÃ©glementaire', d.widget1.statutReglementaire,
+                      child: _kpiBox(context, 'Statut réglementaire', d.widget1.statutReglementaire,
                           d.widget1.statutReglementaire == 'Conforme' ? Icons.check_circle_outline : Icons.warning_amber_outlined,
                           d.widget1.statutReglementaire == 'Conforme' ? _kSuccess : _kDanger,
-                          tooltip: 'ConformitÃ© rÃ©glementaire (Art. 313)\nConforme si ratio Tier 1 â‰¥ 5 % et ratio global â‰¥ 8 %\nRWA total = RWA_crÃ©dit + RWA_marchÃ© + RWA_opÃ©rationnel'),
+                          tooltip: 'Conformité réglementaire (Art. 313)\nConforme si ratio Tier 1 ≥ 5 % et ratio global ≥ 8 %\nRWA total = RWA_crédit + RWA_marché + RWA_opérationnel'),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
-              // Widget 2 â€” Incidents
+              // Widget 2 — Incidents
               SectionCard(
-                title: 'SynthÃ¨se des incidents',
+                title: 'Synthèse des incidents',
                 trailing: _artInfo('Art. 313.b'),
                 child: Row(
                   children: [
                     Expanded(child: _kpiBox(context, 'Incidents (mois)', '${d.widget2.totalIncidentsMois}', Icons.report_outlined, _kWarning,
-                      tooltip: 'Nombre d\'incidents dÃ©clarÃ©s ce mois (Art. 313.b)\nFormule : COUNT(incidents) WHERE mois = mois_courant\nTout incident significatif doit Ãªtre dÃ©clarÃ© â‰¤ J+5',
+                      tooltip: 'Nombre d\'incidents déclarés ce mois (Art. 313.b)\nFormule : COUNT(incidents) WHERE mois = mois_courant\nTout incident significatif doit être déclaré ≤ J+5',
                     )),
                     const SizedBox(width: 10),
                     Expanded(child: _kpiBox(context, 'Pertes nettes (mois)', AppFormatters.currency(d.widget2.pertesNettesMois), Icons.trending_down_outlined, _kDanger,
-                      tooltip: 'Pertes nettes du mois en cours (Art. 313.b)\nFormule : Î£ (perte_brute âˆ’ perte_rÃ©cupÃ©rÃ©e)\npour les incidents du mois courant',
+                      tooltip: 'Pertes nettes du mois en cours (Art. 313.b)\nFormule : Σ (perte_brute − perte_récupérée)\npour les incidents du mois courant',
                     )),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'Non clÃ´turÃ©s', '${d.widget2.incidentsNonClos}', Icons.pending_outlined, AppColors.marketNeutral,
-                      tooltip: 'Incidents encore ouverts ou en cours (Art. 313.b)\nFormule : COUNT(incidents) WHERE statut IN (Ouvert, En cours)\nCes incidents nÃ©cessitent un suivi actif',
+                    Expanded(child: _kpiBox(context, 'Non clôturés', '${d.widget2.incidentsNonClos}', Icons.pending_outlined, AppColors.marketNeutral,
+                      tooltip: 'Incidents encore ouverts ou en cours (Art. 313.b)\nFormule : COUNT(incidents) WHERE statut IN (Ouvert, En cours)\nCes incidents nécessitent un suivi actif',
                     )),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _kpiBox(
                         context,
-                        'Ã‰volution / N-1',
+                        'Évolution / N-1',
                         d.widget2.evolutionPertesPct != null ? '${d.widget2.evolutionPertesPct! >= 0 ? '+' : ''}${d.widget2.evolutionPertesPct!.toStringAsFixed(1)} %' : 'N/A',
                         Icons.compare_arrows_outlined,
                         d.widget2.evolutionPertesPct != null && d.widget2.evolutionPertesPct! > 0 ? _kDanger : _kSuccess,
-                        tooltip: 'Ã‰volution des pertes vs mÃªme mois N-1\nFormule : ((Pertes_mois âˆ’ Pertes_mois_N1) Ã· |Pertes_mois_N1|) Ã— 100\n+ = dÃ©gradation   âˆ’ = amÃ©lioration',
+                        tooltip: 'Évolution des pertes vs même mois N-1\nFormule : ((Pertes_mois − Pertes_mois_N1) ÷ |Pertes_mois_N1|) × 100\n+ = dégradation   − = amélioration',
                       ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
-              // Widget 3 â€” Alertes
+              // Widget 3 — Alertes
               SectionCard(
                 title: 'Alertes et actions',
                 trailing: _artInfo('Art. 313.c'),
                 child: Row(
                   children: [
                     Expanded(child: _kpiBox(context, 'Actions en retard', '${d.widget3.actionsEnRetard}', Icons.alarm_outlined, d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
-                      tooltip: 'Plans d\'actions dont la date d\'Ã©chÃ©ance est dÃ©passÃ©e et le statut â‰  Â«TerminÃ©Â».\nFormule : COUNT(plans) WHERE date_echeance < aujourd\'hui AND statut â‰  \'TerminÃ©\'.\nIndicateur de pilotage du suivi correctif. (Art. 313.c)')),
+                      tooltip: 'Plans d\'actions dont la date d\'échéance est dépassée et le statut ≠ «Terminé».\nFormule : COUNT(plans) WHERE date_echeance < aujourd\'hui AND statut ≠ \'Terminé\'.\nIndicateur de pilotage du suivi correctif. (Art. 313.c)')),
                     const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'ContrÃ´les non conformes', '${d.widget3.controlesNonConformes}', Icons.rule_outlined, d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
-                      tooltip: 'ContrÃ´les internes dont le rÃ©sultat est Ã©valuÃ© Â«Non-conformeÂ» lors de la derniÃ¨re exÃ©cution.\nFormule : COUNT(controles) WHERE resultat = \'Non-conforme\'.\nMesure la qualitÃ© du dispositif de contrÃ´le. (Art. 314)')),
+                    Expanded(child: _kpiBox(context, 'Contrôles non conformes', '${d.widget3.controlesNonConformes}', Icons.rule_outlined, d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
+                      tooltip: 'Contrôles internes dont le résultat est évalué «Non-conforme» lors de la dernière exécution.\nFormule : COUNT(controles) WHERE resultat = \'Non-conforme\'.\nMesure la qualité du dispositif de contrôle. (Art. 314)')),
                     const SizedBox(width: 10),
                     Expanded(child: _kpiBox(context, 'KRI hors seuil', '${d.widget3.kriHorsSeuil}', Icons.speed_outlined, d.widget3.kriHorsSeuil > 0 ? _kDanger : _kSuccess,
-                      tooltip: 'Indicateurs ClÃ©s de Risque (KRI) dont le statut est Â«alerteÂ» ou Â«critiqueÂ».\nFormule : COUNT(kri) WHERE statut IN (\'alerte\', \'critique\').\nSignale les expositions dÃ©passant les limites tolÃ©rÃ©es. (Art. 89 / Art. 313)')),
+                      tooltip: 'Indicateurs Clés de Risque (KRI) dont le statut est «alerte» ou «critique».\nFormule : COUNT(kri) WHERE statut IN (\'alerte\', \'critique\').\nSignale les expositions dépassant les limites tolérées. (Art. 89 / Art. 313)')),
                   ],
                 ),
               ),
               const SizedBox(height: 12),
-              // Widget 4 â€” Charts
+              // Widget 4 — Charts
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     flex: 2,
                     child: SectionCard(
-                      title: 'Ã‰volution des pertes (12 mois)',
+                      title: 'Évolution des pertes (12 mois)',
                       child: SizedBox(
                         height: 180,
                         child: d.evolutionPertes.isEmpty
-                            ? const Center(child: Text('Aucune donnÃ©e', style: TextStyle(color: _kMuted)))
+                            ? const Center(child: Text('Aucune donnée', style: TextStyle(color: _kMuted)))
                             : CustomPaint(
                                 painter: _RoLineChartPainter(
                                   dataBlue: d.evolutionPertes.map((e) => e.perteBrute).toList(),
@@ -863,7 +863,7 @@ class _DashboardViewState extends State<_DashboardView> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: SectionCard(
-                      title: 'RÃ©partition par ligne de mÃ©tier',
+                      title: 'Répartition par ligne de métier',
                       child: d.repartitionLigneMetier.isEmpty
                           ? const Padding(
                               padding: EdgeInsets.all(20),
@@ -882,7 +882,7 @@ class _DashboardViewState extends State<_DashboardView> {
   }
 }
 
-// â”€â”€â”€ VIEW 2 : SIMULATION DE CRISE â€” Art. 545 PIEAFP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 2 : SIMULATION DE CRISE — Art. 545 PIEAFP ─────────────────────────
 
 class _SimulationCriseView extends StatefulWidget {
   const _SimulationCriseView({required this.api});
@@ -904,15 +904,15 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
   bool _simulated = false;
 
   // (code, label, choc_losses_multiplier, accent_color)
-  // S1 Optimiste : pertes Ã—0.90  (-10 %)
-  // S2 Neutre    : pertes Ã—1.00  ( 0 %)
-  // S3 Pessimiste: pertes Ã—1.20  (+20 %)
-  // S4 Crise     : pertes Ã—1.35  (+35 %)
+  // S1 Optimiste : pertes ×0.90  (-10 %)
+  // S2 Neutre    : pertes ×1.00  ( 0 %)
+  // S3 Pessimiste: pertes ×1.20  (+20 %)
+  // S4 Crise     : pertes ×1.35  (+35 %)
   static const _sc = [
     ('S1', 'Optimiste',    0.90, Color(0xFF43A047)),
     ('S2', 'Neutre',       1.00, Color(0xFF1E88E5)),
     ('S3', 'Pessimiste',   1.20, Color(0xFFFB8C00)),
-    ('S4', 'Crise sÃ©vÃ¨re', 1.35, Color(0xFFE53935)),
+    ('S4', 'Crise sévère', 1.35, Color(0xFFE53935)),
   ];
 
   @override
@@ -922,7 +922,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
     for (final c in [_fpCtrl, _aprCtrl, _provCtrl, _assurCtrl]) {
       c.addListener(_onFieldChanged);
     }
-    // PrÃ©-remplir provisions depuis les incidents RO
+    // Pré-remplir provisions depuis les incidents RO
     _future.then((incidents) {
       if (!mounted) return;
       final totalRecupere = incidents.fold(0.0, (s, i) => s + i.perteRecuperee);
@@ -933,7 +933,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
         if (incidents.isNotEmpty) _simulated = true;
       });
     }).catchError((_) {});
-    // PrÃ©-remplir fonds propres et RWA depuis le dashboard
+    // Pré-remplir fonds propres et RWA depuis le dashboard
     widget.api.fetchDashboard().then((DashboardSnapshot snap) {
       if (!mounted) return;
       final capitalMetricVal = snap.metrics
@@ -984,7 +984,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // â”€â”€ Bandeau rÃ©glementaire â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Bandeau réglementaire ─────────────────────────────────────────
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
@@ -996,7 +996,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                 const Icon(Icons.science_rounded, color: Color(0xFF1565C0), size: 18),
                 const SizedBox(width: 10),
                 Expanded(child: Text(
-                  'Art. 545 UMOA â€” Ã‰valuation de la vulnÃ©rabilitÃ© Ã  des Ã©vÃ©nements exceptionnels mais plausibles (PIEAFP).\n'
+                  'Art. 545 UMOA — Évaluation de la vulnérabilité à des événements exceptionnels mais plausibles (PIEAFP).\n'
                   'Base historique : ${items.length} incident(s) | Pertes nettes : ${AppFormatters.currency(pertesHisto)}',
                   style: const TextStyle(fontSize: 11, color: _kMuted),
                 )),
@@ -1005,7 +1005,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
             ),
             const SizedBox(height: 14),
 
-            // â”€â”€ ParamÃ¨tres â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Paramètres ────────────────────────────────────────────────────
             Card(
               margin: EdgeInsets.zero,
               child: Padding(
@@ -1014,7 +1014,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('ParamÃ¨tres de la simulation',
+                    const Text('Paramètres de la simulation',
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                     const SizedBox(height: 10),
                     Wrap(
@@ -1022,8 +1022,8 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                       runSpacing: 10,
                       children: [
                         _simField('Fonds propres disponibles (FCFA)', _fpCtrl),
-                        _simField('RWA de rÃ©fÃ©rence (FCFA)',           _aprCtrl),
-                        _simField('Provisions constituÃ©es (FCFA)',     _provCtrl),
+                        _simField('RWA de référence (FCFA)',           _aprCtrl),
+                        _simField('Provisions constituées (FCFA)',     _provCtrl),
                         _simField('Couverture assurance (FCFA)',       _assurCtrl),
                         SizedBox(
                           width: 260,
@@ -1032,7 +1032,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Row(children: [
-                                const Text('Seuil ratio rÃ©sistance',
+                                const Text('Seuil ratio résistance',
                                   style: TextStyle(fontSize: 11, color: _kMuted)),
                                 const Spacer(),
                                 Text('${_seuilValue.toStringAsFixed(1)} %',
@@ -1058,7 +1058,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('4 %', style: TextStyle(fontSize: 10, color: _kMuted)),
-                                  Text('RÃ©gl. BCEAO : 8 %', style: TextStyle(fontSize: 10, color: _kMuted)),
+                                  Text('Régl. BCEAO : 8 %', style: TextStyle(fontSize: 10, color: _kMuted)),
                                   Text('25 %', style: TextStyle(fontSize: 10, color: _kMuted)),
                                 ],
                               ),
@@ -1073,9 +1073,9 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
             ),
             const SizedBox(height: 14),
 
-            // â”€â”€ RÃ©sultats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Résultats ─────────────────────────────────────────────────────
             if (_simulated) ...[
-              const Text('RÃ©sultats â€” 4 scÃ©narios BCEAO',
+              const Text('Résultats — 4 scénarios BCEAO',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
               const SizedBox(height: 8),
               Expanded(
@@ -1106,10 +1106,10 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                       Icon(Icons.science_outlined, size: 52,
                         color: _kMuted.withValues(alpha: 0.35)),
                       const SizedBox(height: 12),
-                      const Text('Saisissez au moins un paramÃ¨tre pour lancer la simulation',
+                      const Text('Saisissez au moins un paramètre pour lancer la simulation',
                         style: TextStyle(color: _kMuted, fontSize: 13)),
                       const SizedBox(height: 4),
-                      const Text('Les rÃ©sultats s\'affichent automatiquement â€” tous les champs ne sont pas obligatoires',
+                      const Text('Les résultats s\'affichent automatiquement — tous les champs ne sont pas obligatoires',
                         style: TextStyle(color: _kMuted, fontSize: 11)),
                     ],
                   ),
@@ -1162,7 +1162,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
     final pass           = resilience >= 0 && (apr == 0 || ratio >= seuil);
 
     final pctLabel = factor == 1.0 ? '0%' : factor < 1.0
-        ? 'âˆ’${((1 - factor) * 100).round()}% pertes'
+        ? '−${((1 - factor) * 100).round()}% pertes'
         : '+${((factor - 1) * 100).round()}% pertes';
 
     return Container(
@@ -1176,7 +1176,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // En-tÃªte scÃ©nario
+          // En-tête scénario
           Row(children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1184,7 +1184,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                 color: color.withValues(alpha: 0.13),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Text('$code â€” $label  ($pctLabel)',
+              child: Text('$code — $label  ($pctLabel)',
                 style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
             ),
             const Spacer(),
@@ -1194,7 +1194,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                 color: (pass ? const Color(0xFF43A047) : _kDanger).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Text(pass ? 'âœ“ RÃ‰SILIENT' : 'âœ— VULNÃ‰RABLE',
+              child: Text(pass ? '✓ RÉSILIENT' : '✗ VULNÉRABLE',
                 style: TextStyle(
                   fontSize: 9, fontWeight: FontWeight.w800,
                   color: pass ? const Color(0xFF43A047) : _kDanger)),
@@ -1205,7 +1205,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _mini('Pertes simulÃ©es',
+              Expanded(child: _mini('Pertes simulées',
                 AppFormatters.currency(pertesSimulees),
                 factor > 1.0 ? _kDanger : const Color(0xFF43A047))),
               const SizedBox(width: 8),
@@ -1213,12 +1213,12 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                 AppFormatters.currency(impactNet),
                 impactNet > 0 ? _kDanger : const Color(0xFF43A047))),
               const SizedBox(width: 8),
-              Expanded(child: _mini('RÃ©silience FP',
+              Expanded(child: _mini('Résilience FP',
                 AppFormatters.currency(resilience),
                 resilience >= 0 ? const Color(0xFF43A047) : _kDanger)),
               if (apr > 0) ...[
                 const SizedBox(width: 8),
-                Expanded(child: _mini('Ratio rÃ©sistance',
+                Expanded(child: _mini('Ratio résistance',
                   '${(ratio * 100).toStringAsFixed(1)}%',
                   ratio >= seuil ? const Color(0xFF43A047) : _kDanger,
                   sub: 'seuil ${_seuilValue.toStringAsFixed(1)}%')),
@@ -1250,7 +1250,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
     );
 }
 
-// â”€â”€â”€ VIEW 3 : PERTES (conteneur avec onglets) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 3 : PERTES (conteneur avec onglets) ─────────────────────────────────
 
 class _PertesView extends StatefulWidget {
   const _PertesView({required this.api});
@@ -1266,7 +1266,7 @@ class _PertesViewState extends State<_PertesView> with TickerProviderStateMixin 
     (Icons.monetization_on_outlined,       'Pertes'),
     (Icons.speed_rounded,                  'KRI'),
     (Icons.map_outlined,                   'Cartographie'),
-    (Icons.verified_user_outlined,         'ContrÃ´les internes'),
+    (Icons.verified_user_outlined,         'Contrôles internes'),
     (Icons.account_tree_outlined,          'Workflow'),
     (Icons.format_list_bulleted_rounded,   "Plans d'actions"),
   ];
@@ -1343,7 +1343,7 @@ class _PertesViewState extends State<_PertesView> with TickerProviderStateMixin 
   }
 }
 
-// â”€â”€â”€ Contenu Pertes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Contenu Pertes ───────────────────────────────────────────────────────────
 
 class _PertesContent extends StatefulWidget {
   const _PertesContent({required this.api});
@@ -1395,19 +1395,19 @@ class _PertesContentState extends State<_PertesContent> {
               Row(
                 children: [
                   Expanded(child: _kpiBox(ctx, 'Perte brute totale', AppFormatters.currency(totalBrute), Icons.money_off, _kDanger,
-                    tooltip: 'Somme des pertes avant dÃ©duction des montants rÃ©cupÃ©rÃ©s.\nFormule : Î£ perte_brute sur tous les incidents de la pÃ©riode.\nReprÃ©senthe l\'exposition totale avant attÃ©nuation. (Art. 313.b)')),
+                    tooltip: 'Somme des pertes avant déduction des montants récupérés.\nFormule : Σ perte_brute sur tous les incidents de la période.\nReprésenthe l\'exposition totale avant atténuation. (Art. 313.b)')),
                   const SizedBox(width: 10),
                   Expanded(child: _kpiBox(ctx, 'Perte nette totale', AppFormatters.currency(totalNette), Icons.trending_down, _kDanger,
-                    tooltip: 'Somme des pertes rÃ©ellement supportÃ©es aprÃ¨s rÃ©cupÃ©rations.\nFormule : Î£ (perte_brute âˆ’ perte_rÃ©cupÃ©rÃ©e).\nC\'est la base de calcul du Capital minimal selon l\'approche BIA. (Art. 313.b / Art. 89)')),
+                    tooltip: 'Somme des pertes réellement supportées après récupérations.\nFormule : Σ (perte_brute − perte_récupérée).\nC\'est la base de calcul du Capital minimal selon l\'approche BIA. (Art. 313.b / Art. 89)')),
                   const SizedBox(width: 10),
-                  Expanded(child: _kpiBox(ctx, 'Taux de rÃ©cupÃ©ration', '${tauxRecup.toStringAsFixed(1)} %', Icons.savings_outlined, _kSuccess,
-                    tooltip: 'Part des pertes brutes rÃ©cupÃ©rÃ©e via assurances, provisions ou recours.\nFormule : (Î£ perte_rÃ©cupÃ©rÃ©e / Î£ perte_brute) Ã— 100.\nMesure l\'efficacitÃ© des mÃ©canismes d\'attÃ©nuation.')),
+                  Expanded(child: _kpiBox(ctx, 'Taux de récupération', '${tauxRecup.toStringAsFixed(1)} %', Icons.savings_outlined, _kSuccess,
+                    tooltip: 'Part des pertes brutes récupérée via assurances, provisions ou recours.\nFormule : (Σ perte_récupérée / Σ perte_brute) × 100.\nMesure l\'efficacité des mécanismes d\'atténuation.')),
                   const SizedBox(width: 10),
                   Expanded(child: _kpiBox(ctx, 'Pertes significatives', '$significatifs', Icons.warning_outlined, _kWarning,
-                    tooltip: 'Incidents dont la perte brute dÃ©passe le seuil de significativitÃ©.\nFormule : COUNT(incidents) WHERE perte_brute > seuil.\nPermet d\'identifier les Ã©vÃ©nements Ã  fort impact. (Art. 313.b)')),
+                    tooltip: 'Incidents dont la perte brute dépasse le seuil de significativité.\nFormule : COUNT(incidents) WHERE perte_brute > seuil.\nPermet d\'identifier les événements à fort impact. (Art. 313.b)')),
                   const SizedBox(width: 10),
                   Expanded(child: _kpiBox(ctx, 'Perte moyenne / incident', AppFormatters.currency(moyenne), Icons.calculate_outlined, _kMuted,
-                    tooltip: 'SÃ©vÃ©ritÃ© moyenne des pertes sur la pÃ©riode sÃ©lectionnÃ©e.\nFormule : Î£ perte_nette / nombre d\'incidents.\nIndicateur de gravitÃ© unitaire des incidents opÃ©rationnels.')),
+                    tooltip: 'Sévérité moyenne des pertes sur la période sélectionnée.\nFormule : Σ perte_nette / nombre d\'incidents.\nIndicateur de gravité unitaire des incidents opérationnels.')),
                 ],
               ),
               const SizedBox(height: 10),
@@ -1422,7 +1422,7 @@ class _PertesContentState extends State<_PertesContent> {
                           : Table(
                               columnWidths: const {0: FixedColumnWidth(120), 1: FlexColumnWidth(), 2: FixedColumnWidth(110)},
                               children: [
-                                _tableHeader(['RÃ©fÃ©rence', 'Description', 'Perte nette']),
+                                _tableHeader(['Référence', 'Description', 'Perte nette']),
                                 ...top5.map((i) => TableRow(
                                   decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
                                   children: [_cell(i.reference, bold: true), _cellFlex(i.description), _cell(AppFormatters.currency(i.perteNette), right: true, color: _kDanger)],
@@ -1434,9 +1434,9 @@ class _PertesContentState extends State<_PertesContent> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: SectionCard(
-                      title: 'Pertes par ligne de mÃ©tier',
+                      title: 'Pertes par ligne de métier',
                       child: byLigne.isEmpty
-                          ? const Padding(padding: EdgeInsets.all(16), child: Text('Aucune donnÃ©e.', style: TextStyle(color: _kMuted)))
+                          ? const Padding(padding: EdgeInsets.all(16), child: Text('Aucune donnée.', style: TextStyle(color: _kMuted)))
                           : _RoPieChart(
                               items: byLigne.entries.map((e) => RoRepartitionItem(label: e.key, valeur: e.value.round())).toList(),
                             ),
@@ -1452,28 +1452,28 @@ class _PertesContentState extends State<_PertesContent> {
   }
 }
 
-// â”€â”€â”€ VIEW 4 : KRI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 4 : KRI ─────────────────────────────────────────────────────────────
 
 const _kriNumSources = <int, (String, IconData)>{
-  1: ('Service IT â€” logs systÃ¨me', Icons.computer_rounded),
-  2: ('Service IT â€” monitoring', Icons.monitor_heart_rounded),
-  3: ('Service IT / SÃ©curitÃ© informatique', Icons.security_rounded),
+  1: ('Service IT — logs système', Icons.computer_rounded),
+  2: ('Service IT — monitoring', Icons.monitor_heart_rounded),
+  3: ('Service IT / Sécurité informatique', Icons.security_rounded),
   4: ('Audit interne', Icons.fact_check_rounded),
-  5: ('Responsable risque opÃ©rationnel', Icons.manage_accounts_rounded),
+  5: ('Responsable risque opérationnel', Icons.manage_accounts_rounded),
   6: ('Service RH', Icons.people_rounded),
-  7: ('Responsable risque opÃ©rationnel', Icons.manage_accounts_rounded),
-  8: ('Responsable risque opÃ©rationnel', Icons.manage_accounts_rounded),
+  7: ('Responsable risque opérationnel', Icons.manage_accounts_rounded),
+  8: ('Responsable risque opérationnel', Icons.manage_accounts_rounded),
 };
 
 const _kriNumDescriptions = <int, String>{
-  1: 'Erreurs de saisie sur les opÃ©rations (virements, comptes) par jour ouvrable.',
-  2: 'DisponibilitÃ© du core banking en pourcentage sur la pÃ©riode.',
-  3: 'Tentatives de connexion Ã©chouÃ©es ou accÃ¨s Ã  des modules sans droits par semaine.',
-  4: 'ContrÃ´les planifiÃ©s dont l\'Ã©chÃ©ance est dÃ©passÃ©e sans rÃ©alisation (tolÃ©rance zÃ©ro).',
-  5: 'Incidents au statut Â«OuvertÂ» ou Â«En coursÂ» depuis plus de 30 jours (critique : 1).',
-  6: 'EmployÃ©s ayant quittÃ© la banque sur le trimestre (% des effectifs totaux).',
-  7: 'DÃ©lai moyen en jours entre la dÃ©tection d\'un incident et sa dÃ©claration (Art. 313.b â‰¤ 5 j).',
-  8: 'Plans d\'actions dont l\'Ã©chÃ©ance est dÃ©passÃ©e avec avancement < 100 % (tolÃ©rance zÃ©ro).',
+  1: 'Erreurs de saisie sur les opérations (virements, comptes) par jour ouvrable.',
+  2: 'Disponibilité du core banking en pourcentage sur la période.',
+  3: 'Tentatives de connexion échouées ou accès à des modules sans droits par semaine.',
+  4: 'Contrôles planifiés dont l\'échéance est dépassée sans réalisation (tolérance zéro).',
+  5: 'Incidents au statut «Ouvert» ou «En cours» depuis plus de 30 jours (critique : 1).',
+  6: 'Employés ayant quitté la banque sur le trimestre (% des effectifs totaux).',
+  7: 'Délai moyen en jours entre la détection d\'un incident et sa déclaration (Art. 313.b ≤ 5 j).',
+  8: 'Plans d\'actions dont l\'échéance est dépassée avec avancement < 100 % (tolérance zéro).',
 };
 
 int _extractKriNum(String nom) {
@@ -1534,7 +1534,7 @@ class _KriViewState extends State<_KriView> {
           final selKri = kris.firstWhere((k) => k.definition.id == kriId, orElse: () => kris.first);
           final d = selKri.definition;
           final kriNum = _extractKriNum(d.nom);
-          final (srcDefault, srcIcon) = _kriNumSources[kriNum] ?? ('Responsable risque opÃ©rationnel', Icons.manage_accounts_rounded);
+          final (srcDefault, srcIcon) = _kriNumSources[kriNum] ?? ('Responsable risque opérationnel', Icons.manage_accounts_rounded);
           source ??= srcDefault;
           final desc = _kriNumDescriptions[kriNum] ?? d.formule;
 
@@ -1555,7 +1555,7 @@ class _KriViewState extends State<_KriView> {
                 const SizedBox(width: 12),
                 const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Saisir une valeur KRI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                  Text('Indicateur clÃ© de risque â€” mesure pÃ©riodique (Art. 313)',
+                  Text('Indicateur clé de risque — mesure périodique (Art. 313)',
                     style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
                 ])),
               ]),
@@ -1570,7 +1570,7 @@ class _KriViewState extends State<_KriView> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _formSection('SÃ©lection de l\'indicateur', icon: Icons.speed_rounded, color: AppColors.prudentialSolvency),
+                      _formSection('Sélection de l\'indicateur', icon: Icons.speed_rounded, color: AppColors.prudentialSolvency),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 14),
                         child: Column(
@@ -1603,7 +1603,7 @@ class _KriViewState extends State<_KriView> {
                           ],
                         ),
                       ),
-                      // Fiche info du KRI sÃ©lectionnÃ©
+                      // Fiche info du KRI sélectionné
                       Container(
                         margin: const EdgeInsets.only(bottom: 14),
                         padding: const EdgeInsets.all(12),
@@ -1633,28 +1633,28 @@ class _KriViewState extends State<_KriView> {
                       ),
                       _formSection('Mesure', icon: Icons.straighten_rounded, color: _kBlue),
                       _formRow(
-                        _dropdown('PÃ©riode', periode, ['Hebdomadaire', 'Mensuel', 'Trimestriel'],
+                        _dropdown('Période', periode, ['Hebdomadaire', 'Mensuel', 'Trimestriel'],
                           (v) => setD(() => periode = v), required: true, icon: Icons.calendar_view_month_rounded),
                         _dateField(ctx, 'Date de mesure', dateCtrl, required: true),
                       ),
-                      _field('Valeur mesurÃ©e', valCtrl,
+                      _field('Valeur mesurée', valCtrl,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         required: true, icon: Icons.numbers_rounded,
-                        hint: 'Saisir la valeur observÃ©e (ex: 3, 98.5, 2.0)'),
+                        hint: 'Saisir la valeur observée (ex: 3, 98.5, 2.0)'),
                       _formSection('Contexte et source', icon: Icons.info_outline_rounded, color: _kMuted),
-                      _dropdown('Source de la donnÃ©e', source, [
-                        'Service IT â€” logs systÃ¨me',
-                        'Service IT â€” monitoring',
-                        'Service IT / SÃ©curitÃ© informatique',
+                      _dropdown('Source de la donnée', source, [
+                        'Service IT — logs système',
+                        'Service IT — monitoring',
+                        'Service IT / Sécurité informatique',
                         'Audit interne',
                         'Service RH',
-                        'Responsable risque opÃ©rationnel',
-                        'Superviseur / Chef d\'Ã©quipe',
+                        'Responsable risque opérationnel',
+                        'Superviseur / Chef d\'équipe',
                       ], (v) => setD(() => source = v), icon: Icons.people_rounded,
                         hint: 'Qui a fourni cette valeur ?'),
                       _field('Commentaire / contexte', commCtrl, multiline: true,
                         icon: Icons.notes_rounded,
-                        hint: 'Contexte, cause identifiÃ©e ou action dÃ©clenchÃ©e...'),
+                        hint: 'Contexte, cause identifiée ou action déclenchée...'),
                     ],
                   ),
                 ),
@@ -1729,11 +1729,11 @@ class _KriViewState extends State<_KriView> {
 
         return Column(
           children: [
-            // â”€â”€ Bandeau conformitÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Bandeau conformité ────────────────────────────────────────────
             _KriBanner(total: kris.length, normal: normal, alerte: alerte,
               critique: critique, nonRens: nonRens),
             const SizedBox(height: 12),
-            // â”€â”€ Barre d'actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Barre d'actions ───────────────────────────────────────────────
             Row(children: [
               if (data.kriHorsSeuil > 0)
                 Container(
@@ -1746,7 +1746,7 @@ class _KriViewState extends State<_KriView> {
                   child: Row(children: [
                     const Icon(Icons.notifications_active_rounded, color: _kDanger, size: 14),
                     const SizedBox(width: 6),
-                    Text('${data.kriHorsSeuil} KRI hors seuil â€” action immÃ©diate requise',
+                    Text('${data.kriHorsSeuil} KRI hors seuil — action immédiate requise',
                       style: const TextStyle(color: _kDanger, fontSize: 11.5, fontWeight: FontWeight.w700)),
                   ]),
                 ),
@@ -1765,13 +1765,13 @@ class _KriViewState extends State<_KriView> {
               ),
             ]),
             const SizedBox(height: 12),
-            // â”€â”€ Grille de cartes KRI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Grille de cartes KRI ──────────────────────────────────────────
             Expanded(
               child: kris.isEmpty
                   ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                       Icon(Icons.speed_outlined, size: 52, color: _kMuted.withValues(alpha: 0.3)),
                       const SizedBox(height: 12),
-                      const Text('Aucun KRI configurÃ©', style: TextStyle(color: _kMuted, fontSize: 13)),
+                      const Text('Aucun KRI configuré', style: TextStyle(color: _kMuted, fontSize: 13)),
                     ]))
                   : SingleChildScrollView(
                       child: Column(
@@ -1812,7 +1812,7 @@ class _KriViewState extends State<_KriView> {
   }
 }
 
-// â”€â”€â”€ KRI Compliance Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── KRI Compliance Banner ────────────────────────────────────────────────────
 
 class _KriBanner extends StatelessWidget {
   const _KriBanner({required this.total, required this.normal, required this.alerte,
@@ -1840,11 +1840,11 @@ class _KriBanner extends StatelessWidget {
       color: Colors.white.withValues(alpha: 0.18));
 
     final headline = critique > 0
-        ? '$critique KRI CRITIQUE${critique > 1 ? 'S' : ''} â€” ACTION IMMÃ‰DIATE REQUISE'
+        ? '$critique KRI CRITIQUE${critique > 1 ? 'S' : ''} — ACTION IMMÉDIATE REQUISE'
         : alerte > 0
-            ? '$alerte KRI EN ALERTE â€” SURVEILLANCE RENFORCÃ‰E'
-            : total == 0 ? 'AUCUN KRI CONFIGURÃ‰'
-            : nonRens == total ? 'SAISIR LES PREMIÃˆRES VALEURS POUR ACTIVER LA SURVEILLANCE'
+            ? '$alerte KRI EN ALERTE — SURVEILLANCE RENFORCÉE'
+            : total == 0 ? 'AUCUN KRI CONFIGURÉ'
+            : nonRens == total ? 'SAISIR LES PREMIÈRES VALEURS POUR ACTIVER LA SURVEILLANCE'
             : 'TOUS LES KRI DANS LES SEUILS';
 
     return Container(
@@ -1874,7 +1874,7 @@ class _KriBanner extends StatelessWidget {
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
           children: [
-            Text('INDICATEURS CLÃ‰S DE RISQUE Â· ART. 313 BCEAO/UMOA',
+            Text('INDICATEURS CLÉS DE RISQUE · ART. 313 BCEAO/UMOA',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.65),
                 fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.7)),
             const SizedBox(height: 2),
@@ -1897,7 +1897,7 @@ class _KriBanner extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ KRI Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── KRI Card ─────────────────────────────────────────────────────────────────
 
 class _KriCard extends StatelessWidget {
   const _KriCard({required this.kri, required this.kriNum,
@@ -1913,7 +1913,7 @@ class _KriCard extends StatelessWidget {
     final d = kri.definition;
     final sc = _kriStatutColor(kri.statut);
     final sl = _kriStatutLabel(kri.statut);
-    final (srcLabel, srcIcon) = _kriNumSources[kriNum] ?? ('Non spÃ©cifiÃ©', Icons.help_outline_rounded);
+    final (srcLabel, srcIcon) = _kriNumSources[kriNum] ?? ('Non spécifié', Icons.help_outline_rounded);
     final description = _kriNumDescriptions[kriNum] ?? d.formule;
     final isCrit = kri.statut == 'critique';
     final isAlt  = kri.statut == 'alerte';
@@ -1946,7 +1946,7 @@ class _KriCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // En-tÃªte
+                  // En-tête
                   Row(children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -1981,7 +1981,7 @@ class _KriCard extends StatelessWidget {
                                 : kri.derniereValeur!.toStringAsFixed(1),
                             style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900,
                               color: sc, height: 1.0, letterSpacing: -1.0))
-                        : Text('â€”', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900,
+                        : Text('—', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900,
                             color: _kMuted.withValues(alpha: 0.35), height: 1.0)),
                     const SizedBox(width: 5),
                     Padding(padding: const EdgeInsets.only(bottom: 4),
@@ -2054,7 +2054,7 @@ class _KriCard extends StatelessWidget {
                       ),
                     ),
                   ]),
-                  // BanniÃ¨re d'alerte contextuelle
+                  // Bannière d'alerte contextuelle
                   if (isCrit) ...[
                     const SizedBox(height: 8),
                     Container(
@@ -2067,7 +2067,7 @@ class _KriCard extends StatelessWidget {
                       child: const Row(children: [
                         Icon(Icons.warning_rounded, color: _kDanger, size: 12),
                         SizedBox(width: 6),
-                        Expanded(child: Text('Action immÃ©diate â€” dÃ©clencher un plan d\'action',
+                        Expanded(child: Text('Action immédiate — déclencher un plan d\'action',
                           style: TextStyle(fontSize: 10, color: _kDanger, fontWeight: FontWeight.w600))),
                       ]),
                     ),
@@ -2098,7 +2098,7 @@ class _KriCard extends StatelessWidget {
   }
 }
 
-// â”€â”€â”€ KRI Gauge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── KRI Gauge ────────────────────────────────────────────────────────────────
 
 class _KriGauge extends StatelessWidget {
   const _KriGauge({required this.kri});
@@ -2161,7 +2161,7 @@ class _KriGaugePainter extends CustomPainter {
     }
     canvas.restore();
 
-    // SÃ©parateurs de seuil
+    // Séparateurs de seuil
     final divP = Paint()..color = Colors.white.withValues(alpha: 0.65)
       ..strokeWidth = 1.5..style = PaintingStyle.stroke;
     canvas.drawLine(Offset(pA, barTop), Offset(pA, barTop + barH), divP);
@@ -2186,7 +2186,7 @@ class _KriGaugePainter extends CustomPainter {
   bool shouldRepaint(_KriGaugePainter old) => true;
 }
 
-// â”€â”€â”€ Historique Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Historique Dialog ────────────────────────────────────────────────────────
 
 class _KriHistoriqueDialog extends StatelessWidget {
   const _KriHistoriqueDialog({required this.kri, required this.kriNum, required this.onSaisir});
@@ -2198,7 +2198,7 @@ class _KriHistoriqueDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = kri.definition;
     final color = _kriStatutColor(kri.statut);
-    final (srcLabel, srcIcon) = _kriNumSources[kriNum] ?? ('Non spÃ©cifiÃ©', Icons.help_outline_rounded);
+    final (srcLabel, srcIcon) = _kriNumSources[kriNum] ?? ('Non spécifié', Icons.help_outline_rounded);
     final hist = List<RoKriValeur>.from(kri.historique)
       ..sort((a, b) => b.dateMesure.compareTo(a.dateMesure));
 
@@ -2224,7 +2224,7 @@ class _KriHistoriqueDialog extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(d.nom, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                Text('${d.unite} Â· ${d.frequence}',
+                Text('${d.unite} · ${d.frequence}',
                   style: const TextStyle(fontSize: 10.5, color: _kMuted)),
               ])),
               _badge(_kriStatutLabel(kri.statut), color),
@@ -2246,7 +2246,7 @@ class _KriHistoriqueDialog extends StatelessWidget {
                   Expanded(child: _infoTile('Seuil critique',
                     '${d.sens == 'superieur' ? '>' : '<'} ${d.seuilCritique} ${d.unite}', _kDanger)),
                   const SizedBox(width: 10),
-                  Expanded(child: _infoTile('DerniÃ¨re valeur',
+                  Expanded(child: _infoTile('Dernière valeur',
                     kri.derniereValeur != null
                         ? '${kri.derniereValeur! % 1 == 0 ? kri.derniereValeur!.toInt() : kri.derniereValeur!.toStringAsFixed(1)} ${d.unite}'
                         : 'N/A',
@@ -2259,7 +2259,7 @@ class _KriHistoriqueDialog extends StatelessWidget {
                 // Sparkline
                 if (kri.historique.length >= 2) ...[
                   Row(children: [
-                    const Text('Ã‰volution des mesures',
+                    const Text('Évolution des mesures',
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                     const Spacer(),
                     Text('${kri.historique.length} mesure(s)',
@@ -2296,10 +2296,10 @@ class _KriHistoriqueDialog extends StatelessWidget {
                         child: Column(mainAxisSize: MainAxisSize.min, children: [
                           Icon(Icons.history_rounded, size: 36, color: _kMuted.withValues(alpha: 0.3)),
                           const SizedBox(height: 10),
-                          const Text('Aucune mesure enregistrÃ©e',
+                          const Text('Aucune mesure enregistrée',
                             style: TextStyle(color: _kMuted, fontSize: 12)),
                           const SizedBox(height: 4),
-                          const Text('Cliquez Â«Saisir une valeurÂ» pour commencer le suivi',
+                          const Text('Cliquez «Saisir une valeur» pour commencer le suivi',
                             style: TextStyle(color: _kMuted, fontSize: 10.5)),
                         ]),
                       )
@@ -2345,7 +2345,7 @@ class _KriHistoriqueDialog extends StatelessWidget {
                                     child: _badge(_kriStatutLabel(hs), hc),
                                   ),
                                 ),
-                                _cellFlex(v.commentaire.isEmpty ? 'â€”' : v.commentaire),
+                                _cellFlex(v.commentaire.isEmpty ? '—' : v.commentaire),
                               ],
                             );
                           }),
@@ -2355,7 +2355,7 @@ class _KriHistoriqueDialog extends StatelessWidget {
                 Row(children: [
                   Icon(srcIcon, size: 12, color: _kMuted),
                   const SizedBox(width: 6),
-                  Text('Source de la donnÃ©e : $srcLabel',
+                  Text('Source de la donnée : $srcLabel',
                     style: const TextStyle(fontSize: 11, color: _kMuted)),
                 ]),
               ]),
@@ -2399,7 +2399,7 @@ class _KriHistoriqueDialog extends StatelessWidget {
   );
 }
 
-// â”€â”€â”€ KRI Sparkline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── KRI Sparkline ────────────────────────────────────────────────────────────
 
 class _KriSparklinePainter extends CustomPainter {
   const _KriSparklinePainter({required this.values, required this.seuilAlerte,
@@ -2444,7 +2444,7 @@ class _KriSparklinePainter extends CustomPainter {
     canvas.drawPath(fillPath, Paint()
       ..color = _kBlue.withValues(alpha: 0.08)..style = PaintingStyle.fill);
 
-    // Points colorÃ©s par statut
+    // Points colorés par statut
     for (int i = 0; i < values.length; i++) {
       Color dc;
       if (sens == 'superieur') {
@@ -2465,7 +2465,7 @@ class _KriSparklinePainter extends CustomPainter {
   bool shouldRepaint(_KriSparklinePainter old) => true;
 }
 
-// â”€â”€â”€ VIEW 5 : CARTOGRAPHIE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 5 : CARTOGRAPHIE ────────────────────────────────────────────────────
 
 class _CartographieView extends StatefulWidget {
   const _CartographieView({required this.api});
@@ -2517,9 +2517,9 @@ class _CartographieViewState extends State<_CartographieView> {
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(edit == null ? 'Nouveau risque cartographiÃ©' : 'Modifier le risque',
+                Text(edit == null ? 'Nouveau risque cartographié' : 'Modifier le risque',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Cartographie des risques opÃ©rationnels',
+                const Text('Cartographie des risques opérationnels',
                   style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
               ])),
             ]),
@@ -2538,22 +2538,22 @@ class _CartographieViewState extends State<_CartographieView> {
                     _field('Nom du risque', nomCtrl, required: true,
                       icon: Icons.label_rounded, hint: 'Ex: Risque de fraude interne'),
                     _formRow(
-                      _dropdown('CatÃ©gorie', cat, _categoriesRisque, (v) => setD(() => cat = v),
+                      _dropdown('Catégorie', cat, _categoriesRisque, (v) => setD(() => cat = v),
                         required: true, icon: Icons.category_rounded),
-                      _dropdown('Ligne de mÃ©tier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
+                      _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
                         required: true, icon: Icons.business_rounded),
                     ),
-                    _formSection('Ã‰valuation du risque brut', icon: Icons.bar_chart_rounded, color: _kWarning),
+                    _formSection('Évaluation du risque brut', icon: Icons.bar_chart_rounded, color: _kWarning),
                     _formRow(
-                      _dropdown('ProbabilitÃ© (1â€“5)', proba, [1, 2, 3, 4, 5],
+                      _dropdown('Probabilité (1–5)', proba, [1, 2, 3, 4, 5],
                         (v) => setD(() => proba = v ?? 1), icon: Icons.repeat_rounded),
-                      _dropdown('Impact (1â€“5)', impact, [1, 2, 3, 4, 5],
+                      _dropdown('Impact (1–5)', impact, [1, 2, 3, 4, 5],
                         (v) => setD(() => impact = v ?? 1), icon: Icons.flash_on_rounded),
                     ),
-                    _formSection('ContrÃ´le interne', icon: Icons.shield_rounded, color: _kSuccess),
-                    _field('ContrÃ´le existant', controleCtrl, icon: Icons.notes_rounded,
-                      hint: 'DÃ©crivez les contrÃ´les en place...', multiline: true),
-                    _dropdown('EfficacitÃ© du contrÃ´le (1â€“5)', eff, [1, 2, 3, 4, 5],
+                    _formSection('Contrôle interne', icon: Icons.shield_rounded, color: _kSuccess),
+                    _field('Contrôle existant', controleCtrl, icon: Icons.notes_rounded,
+                      hint: 'Décrivez les contrôles en place...', multiline: true),
+                    _dropdown('Efficacité du contrôle (1–5)', eff, [1, 2, 3, 4, 5],
                       (v) => setD(() => eff = v ?? 3), icon: Icons.tune_rounded),
                   ],
                 ),
@@ -2583,7 +2583,7 @@ class _CartographieViewState extends State<_CartographieView> {
                   if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
                 }
               },
-              label: Text(edit == null ? 'CrÃ©er' : 'Enregistrer'),
+              label: Text(edit == null ? 'Créer' : 'Enregistrer'),
             ),
           ],
         ),
@@ -2607,23 +2607,23 @@ class _CartographieViewState extends State<_CartographieView> {
 
         return Column(
           children: [
-            // â”€â”€ KPI + action â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── KPI + action ──────────────────────────────────────────────
             Row(children: [
-              Expanded(child: _kpiBox(ctx, 'Risques cartographiÃ©s', '${items.length}',
+              Expanded(child: _kpiBox(ctx, 'Risques cartographiés', '${items.length}',
                 Icons.map_rounded, _kBlue,
-                tooltip: 'Nombre total de risques positionnÃ©s sur la matrice 5Ã—5 (Art. 313)')),
+                tooltip: 'Nombre total de risques positionnés sur la matrice 5×5 (Art. 313)')),
               const SizedBox(width: 10),
               Expanded(child: _kpiBox(ctx, 'Niveau faible', '$faible',
                 Icons.check_circle_outline_rounded, _kSuccess,
-                tooltip: 'Score PÃ—I â‰¤ 4 â€” risque acceptable, surveillance standard')),
+                tooltip: 'Score P×I ≤ 4 — risque acceptable, surveillance standard')),
               const SizedBox(width: 10),
-              Expanded(child: _kpiBox(ctx, 'Niveau Ã©levÃ©', '$eleve',
+              Expanded(child: _kpiBox(ctx, 'Niveau élevé', '$eleve',
                 Icons.report_outlined, const Color(0xFFF97316),
-                tooltip: 'Score PÃ—I 10â€“16 â€” plan d\'action recommandÃ©')),
+                tooltip: 'Score P×I 10–16 — plan d\'action recommandé')),
               const SizedBox(width: 10),
               Expanded(child: _kpiBox(ctx, 'Niveau critique', '$critique',
                 Icons.warning_amber_rounded, _kDanger,
-                tooltip: 'Score PÃ—I > 16 â€” action immÃ©diate et plan obligatoire (Art. 313)')),
+                tooltip: 'Score P×I > 16 — action immédiate et plan obligatoire (Art. 313)')),
               const SizedBox(width: 14),
               FilledButton.icon(
                 onPressed: () => _showForm(),
@@ -2632,7 +2632,7 @@ class _CartographieViewState extends State<_CartographieView> {
               ),
             ]),
             const SizedBox(height: 14),
-            // â”€â”€ Layout principal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Layout principal ──────────────────────────────────────────
             Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2641,7 +2641,7 @@ class _CartographieViewState extends State<_CartographieView> {
                   SizedBox(
                     width: 330,
                     child: SectionCard(
-                      title: 'Matrice d\'exposition 5Ã—5',
+                      title: 'Matrice d\'exposition 5×5',
                       child: SingleChildScrollView(
                         child: _RoRiskMatrix(risques: items),
                       ),
@@ -2654,7 +2654,7 @@ class _CartographieViewState extends State<_CartographieView> {
                         ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                             Icon(Icons.map_outlined, size: 52, color: _kMuted.withValues(alpha: 0.3)),
                             const SizedBox(height: 12),
-                            const Text('Aucun risque enregistrÃ©.', style: TextStyle(color: _kMuted, fontSize: 13)),
+                            const Text('Aucun risque enregistré.', style: TextStyle(color: _kMuted, fontSize: 13)),
                             const SizedBox(height: 8),
                             OutlinedButton.icon(
                               onPressed: () => _showForm(),
@@ -2666,7 +2666,7 @@ class _CartographieViewState extends State<_CartographieView> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(children: [
-                                Text('${items.length} risque${items.length > 1 ? 's' : ''} cartographiÃ©${items.length > 1 ? 's' : ''}',
+                                Text('${items.length} risque${items.length > 1 ? 's' : ''} cartographié${items.length > 1 ? 's' : ''}',
                                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                                 const Spacer(),
                                 if (critique > 0)
@@ -2702,7 +2702,7 @@ class _CartographieViewState extends State<_CartographieView> {
   }
 }
 
-// â”€â”€â”€ Risque List Item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Risque List Item ─────────────────────────────────────────────────────────
 
 class _RisqueListItem extends StatelessWidget {
   const _RisqueListItem({required this.risque, required this.onEdit, required this.onDelete});
@@ -2723,7 +2723,7 @@ class _RisqueListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: r.niveauLabel == 'Critique' ? _kDanger.withValues(alpha: 0.35)
-              : r.niveauLabel == 'Ã‰levÃ©' ? const Color(0xFFF97316).withValues(alpha: 0.28)
+              : r.niveauLabel == 'Élevé' ? const Color(0xFFF97316).withValues(alpha: 0.28)
               : isDark ? AppTheme.darkBorder : AppTheme.border,
           width: r.niveauLabel == 'Critique' ? 1.5 : 1.0,
         ),
@@ -2755,7 +2755,7 @@ class _RisqueListItem extends StatelessWidget {
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: lc, height: 1.0)),
               ),
               const SizedBox(height: 3),
-              Text('PÃ—I', style: TextStyle(fontSize: 8, color: lc.withValues(alpha: 0.7),
+              Text('P×I', style: TextStyle(fontSize: 8, color: lc.withValues(alpha: 0.7),
                 fontWeight: FontWeight.w700)),
             ]),
           ),
@@ -2784,7 +2784,7 @@ class _RisqueListItem extends StatelessWidget {
                   Row(children: [
                     _metricTile('P', '${r.probabilite}', _kWarning),
                     Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Text('Ã—', style: TextStyle(fontSize: 12,
+                      child: Text('×', style: TextStyle(fontSize: 12,
                         color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 0.7)))),
                     _metricTile('I', '${r.impact}', const Color(0xFFF97316)),
                     Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -2794,7 +2794,7 @@ class _RisqueListItem extends StatelessWidget {
                     const SizedBox(width: 14),
                     Icon(Icons.arrow_forward_ios_rounded, size: 9, color: _kMuted.withValues(alpha: 0.4)),
                     const SizedBox(width: 6),
-                    Text('RÃ©siduel ', style: const TextStyle(fontSize: 10, color: _kMuted)),
+                    Text('Résiduel ', style: const TextStyle(fontSize: 10, color: _kMuted)),
                     Text(r.niveauResiduel.toStringAsFixed(1),
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
                         color: isDark ? AppTheme.darkText : AppTheme.text)),
@@ -2873,7 +2873,7 @@ class _RisqueListItem extends StatelessWidget {
   );
 }
 
-// â”€â”€â”€ VIEW 6 : CONTROLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 6 : CONTROLES ───────────────────────────────────────────────────────
 
 class _ControlesView extends StatefulWidget {
   const _ControlesView({required this.api});
@@ -2927,9 +2927,9 @@ class _ControlesViewState extends State<_ControlesView> {
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(edit == null ? 'Nouveau contrÃ´le interne' : 'Modifier le contrÃ´le',
+                Text(edit == null ? 'Nouveau contrôle interne' : 'Modifier le contrôle',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Dispositif de contrÃ´le opÃ©rationnel',
+                const Text('Dispositif de contrôle opérationnel',
                   style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
               ])),
             ]),
@@ -2944,31 +2944,31 @@ class _ControlesViewState extends State<_ControlesView> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _formSection('DÃ©finition du contrÃ´le', icon: Icons.tune_rounded, color: _kSuccess),
-                    _field('PÃ©rimÃ¨tre contrÃ´lÃ©', perCtrl, required: true,
-                      icon: Icons.domain_rounded, hint: 'Ex: Processus de validation des crÃ©dits'),
+                    _formSection('Définition du contrôle', icon: Icons.tune_rounded, color: _kSuccess),
+                    _field('Périmètre contrôlé', perCtrl, required: true,
+                      icon: Icons.domain_rounded, hint: 'Ex: Processus de validation des crédits'),
                     _formRow(
-                      _dropdown('Type de contrÃ´le', typeC, _typesControle, (v) => setD(() => typeC = v),
+                      _dropdown('Type de contrôle', typeC, _typesControle, (v) => setD(() => typeC = v),
                         required: true, icon: Icons.category_rounded),
-                      _dropdown('FrÃ©quence', freq, _frequences, (v) => setD(() => freq = v),
+                      _dropdown('Fréquence', freq, _frequences, (v) => setD(() => freq = v),
                         required: true, icon: Icons.schedule_rounded),
                     ),
-                    _formSection('RÃ©sultat du test', icon: Icons.fact_check_rounded, color: _kWarning),
+                    _formSection('Résultat du test', icon: Icons.fact_check_rounded, color: _kWarning),
                     _formRow(
                       _dateField(ctx, 'Date dernier test', dateCtrl),
-                      _dropdown('RÃ©sultat', resultat,
+                      _dropdown('Résultat', resultat,
                         ['Conforme', 'Non-conforme', 'En cours', 'Non applicable'],
                         (v) => setD(() => resultat = v), icon: Icons.check_circle_rounded),
                     ),
                     _formRow(
                       _field('Points conformes', pcCtrl, keyboardType: TextInputType.number,
                         icon: Icons.check_rounded, hint: 'Ex: 18'),
-                      _field('Points contrÃ´lÃ©s', ptcCtrl, keyboardType: TextInputType.number,
+                      _field('Points contrôlés', ptcCtrl, keyboardType: TextInputType.number,
                         icon: Icons.list_rounded, hint: 'Ex: 20'),
                     ),
-                    _field('Non-conformitÃ©s dÃ©tectÃ©es', nonConfCtrl, multiline: true,
+                    _field('Non-conformités détectées', nonConfCtrl, multiline: true,
                       icon: Icons.warning_amber_rounded,
-                      hint: 'DÃ©crivez les Ã©carts observÃ©s...'),
+                      hint: 'Décrivez les écarts observés...'),
                     _formSection('Validation', icon: Icons.verified_rounded, color: _kBlue),
                     _field('Validateur', validCtrl, icon: Icons.person_rounded,
                       hint: 'Nom du responsable de la validation'),
@@ -3003,7 +3003,7 @@ class _ControlesViewState extends State<_ControlesView> {
                   if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
                 }
               },
-              label: Text(edit == null ? 'CrÃ©er' : 'Enregistrer'),
+              label: Text(edit == null ? 'Créer' : 'Enregistrer'),
             ),
           ],
         ),
@@ -3027,11 +3027,11 @@ class _ControlesViewState extends State<_ControlesView> {
           children: [
             Row(
               children: [
-                _badge('$nonConf contrÃ´le(s) non conforme(s)', nonConf > 0 ? _kDanger : _kSuccess),
+                _badge('$nonConf contrôle(s) non conforme(s)', nonConf > 0 ? _kDanger : _kSuccess),
                 const SizedBox(width: 10),
                 _badge('Taux moyen : ${tauxMoyen.toStringAsFixed(1)} %', tauxMoyen >= 80 ? _kSuccess : _kWarning),
                 const Spacer(),
-                FilledButton.icon(onPressed: () => _showForm(), icon: const Icon(Icons.add, size: 18), label: const Text('Nouveau contrÃ´le')),
+                FilledButton.icon(onPressed: () => _showForm(), icon: const Icon(Icons.add, size: 18), label: const Text('Nouveau contrôle')),
               ],
             ),
             const SizedBox(height: 12),
@@ -3044,12 +3044,12 @@ class _ControlesViewState extends State<_ControlesView> {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: items.isEmpty
-                    ? const Center(child: Text('Aucun contrÃ´le enregistrÃ©.', style: TextStyle(color: _kMuted)))
+                    ? const Center(child: Text('Aucun contrôle enregistré.', style: TextStyle(color: _kMuted)))
                     : SingleChildScrollView(
                         child: Table(
                           columnWidths: const {0: FixedColumnWidth(110), 1: FlexColumnWidth(2), 2: FixedColumnWidth(100), 3: FixedColumnWidth(90), 4: FixedColumnWidth(100), 5: FixedColumnWidth(90), 6: FixedColumnWidth(90)},
                           children: [
-                            _tableHeader(['RÃ©fÃ©rence', 'PÃ©rimÃ¨tre', 'Type', 'FrÃ©quence', 'Taux conf.', 'RÃ©sultat', 'Actions']),
+                            _tableHeader(['Référence', 'Périmètre', 'Type', 'Fréquence', 'Taux conf.', 'Résultat', 'Actions']),
                             ...items.map((c) => TableRow(
                               decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
                               children: [
@@ -3070,7 +3070,7 @@ class _ControlesViewState extends State<_ControlesView> {
                                       IconButton(icon: const Icon(Icons.edit_outlined, size: 16), onPressed: () => _showForm(edit: c)),
                                       IconButton(
                                         icon: const Icon(Icons.delete_outline, size: 16, color: _kDanger),
-                                        onPressed: () => _confirm(context, 'Supprimer ce contrÃ´le ?', () async { await widget.api.deleteRoControle(c.id); _reload(); }),
+                                        onPressed: () => _confirm(context, 'Supprimer ce contrôle ?', () async { await widget.api.deleteRoControle(c.id); _reload(); }),
                                       ),
                                     ],
                                   ),
@@ -3089,7 +3089,7 @@ class _ControlesViewState extends State<_ControlesView> {
   }
 }
 
-// â”€â”€â”€ VIEW 7 : WORKFLOW (KANBAN) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 7 : WORKFLOW (KANBAN) ───────────────────────────────────────────────
 
 class _WorkflowView extends StatefulWidget {
   const _WorkflowView({required this.api});
@@ -3179,7 +3179,7 @@ class _WorkflowViewState extends State<_WorkflowView> {
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                         decoration: BoxDecoration(color: _statutColor(ns).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3), border: Border.all(color: _statutColor(ns).withValues(alpha: 0.4))),
-                                        child: Text('â†’ $ns', style: TextStyle(fontSize: 10, color: _statutColor(ns), fontWeight: FontWeight.w600)),
+                                        child: Text('→ $ns', style: TextStyle(fontSize: 10, color: _statutColor(ns), fontWeight: FontWeight.w600)),
                                       ),
                                     )).toList(),
                                   ),
@@ -3202,13 +3202,13 @@ class _WorkflowViewState extends State<_WorkflowView> {
 
   List<String> _nextStatuts(String current) => switch (current) {
     'Ouvert' => ['En cours'],
-    'En cours' => ['RÃ©solu'],
-    'RÃ©solu' => ['ClÃ´turÃ©', 'En cours'],
+    'En cours' => ['Résolu'],
+    'Résolu' => ['Clôturé', 'En cours'],
     _ => [],
   };
 }
 
-// â”€â”€â”€ VIEW 8 : PLANS D'ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 8 : PLANS D'ACTIONS ─────────────────────────────────────────────────
 
 class _PlansView extends StatefulWidget {
   const _PlansView({required this.api});
@@ -3230,7 +3230,7 @@ class _PlansViewState extends State<_PlansView> {
 
   Color _sourceColor(String s) => switch (s) {
     'Incident'     => _kDanger,
-    'ContrÃ´le'     => _kWarning,
+    'Contrôle'     => _kWarning,
     'KRI'          => AppColors.prudentialSolvency,
     'Audit'        => AppColors.marketNeutral,
     'Cartographie' => _kBlue,
@@ -3238,7 +3238,7 @@ class _PlansViewState extends State<_PlansView> {
   };
 
   Future<void> _showForm({RoPlan? edit}) async {
-    // Charger toutes les sources en parallÃ¨le avant d'ouvrir le dialog
+    // Charger toutes les sources en parallèle avant d'ouvrir le dialog
     final results = await Future.wait([
       widget.api.fetchRoIncidents(),
       widget.api.fetchRoKri(),
@@ -3250,16 +3250,16 @@ class _PlansViewState extends State<_PlansView> {
     final controles  = results[2] as List<RoControle>;
     final risques    = results[3] as List<RoRisque>;
 
-    // Construit pour chaque type de source la liste (valeur_stockÃ©e, libellÃ©_affichÃ©)
+    // Construit pour chaque type de source la liste (valeur_stockée, libellé_affiché)
     List<(String, String)> optionsFor(String src) => switch (src) {
       'Incident'     => incidents.map((i) {
-          final desc = i.description.length > 40 ? '${i.description.substring(0, 40)}â€¦' : i.description;
-          return (i.reference, '${i.reference}  Â·  $desc');
+          final desc = i.description.length > 40 ? '${i.description.substring(0, 40)}…' : i.description;
+          return (i.reference, '${i.reference}  ·  $desc');
         }).toList(),
       'KRI'          => kriData.kriList.map((k) => (k.definition.nom, k.definition.nom)).toList(),
-      'ContrÃ´le'     => controles.map((c) {
-          final peri = c.perimetre.length > 40 ? '${c.perimetre.substring(0, 40)}â€¦' : c.perimetre;
-          return (c.reference, '${c.reference}  Â·  $peri');
+      'Contrôle'     => controles.map((c) {
+          final peri = c.perimetre.length > 40 ? '${c.perimetre.substring(0, 40)}…' : c.perimetre;
+          return (c.reference, '${c.reference}  ·  $peri');
         }).toList(),
       'Cartographie' => risques.map((r) => (r.nom, r.nom)).toList(),
       _              => <(String, String)>[],
@@ -3287,7 +3287,7 @@ class _PlansViewState extends State<_PlansView> {
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) {
           final opts = optionsFor(source ?? '');
-          // Si la source change, rÃ©initialiser la ref si la valeur n'est plus dans la liste
+          // Si la source change, réinitialiser la ref si la valeur n'est plus dans la liste
           if (opts.isNotEmpty && !opts.any((o) => o.$1 == sourceRef)) {
             sourceRef = null;
           }
@@ -3313,7 +3313,7 @@ class _PlansViewState extends State<_PlansView> {
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(edit == null ? 'Nouveau plan d\'action' : 'Modifier le plan',
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                  const Text('Suivi et traÃ§abilitÃ© des actions correctives',
+                  const Text('Suivi et traçabilité des actions correctives',
                     style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
                 ])),
               ]),
@@ -3330,22 +3330,22 @@ class _PlansViewState extends State<_PlansView> {
                     children: [
                       _formSection('Identification du plan', icon: Icons.label_rounded, color: AppColors.marketNeutral),
                       _field('Titre du plan d\'action', titreCtrl, required: true,
-                        icon: Icons.title_rounded, hint: 'Ex: Renforcer le contrÃ´le des accÃ¨s'),
+                        icon: Icons.title_rounded, hint: 'Ex: Renforcer le contrôle des accès'),
                       _formRow(
                         _dropdown('Type d\'action', type, _typesAction,
                           (v) => setD(() => type = v), required: true, icon: Icons.category_rounded),
-                        _dropdown('PrioritÃ©', prio, _priorites,
+                        _dropdown('Priorité', prio, _priorites,
                           (v) => setD(() => prio = v), required: true, icon: Icons.priority_high_rounded),
                       ),
                       _field('Description', descCtrl, multiline: true, icon: Icons.notes_rounded,
-                        hint: 'DÃ©crivez les actions Ã  mener et les objectifs attendus...'),
+                        hint: 'Décrivez les actions à mener et les objectifs attendus...'),
 
                       _formSection('Origine du plan', icon: Icons.link_rounded, color: srcColor),
-                      _dropdown('Source dÃ©clencheuse', source, _sourcesAction,
+                      _dropdown('Source déclencheuse', source, _sourcesAction,
                         (v) => setD(() { source = v; sourceRef = null; }),
                         required: true, icon: Icons.account_tree_rounded),
 
-                      // SÃ©lecteur dynamique selon la source
+                      // Sélecteur dynamique selon la source
                       Padding(
                         padding: const EdgeInsets.only(bottom: 14),
                         child: Column(
@@ -3357,12 +3357,12 @@ class _PlansViewState extends State<_PlansView> {
                                 decoration: BoxDecoration(color: srcColor, shape: BoxShape.circle)),
                               Text(
                                 switch (source) {
-                                  'Incident'     => 'Incident dÃ©clencheur *',
-                                  'ContrÃ´le'     => 'ContrÃ´le non conforme *',
+                                  'Incident'     => 'Incident déclencheur *',
+                                  'Contrôle'     => 'Contrôle non conforme *',
                                   'KRI'          => 'KRI hors seuil *',
-                                  'Audit'        => 'RÃ©fÃ©rence du rapport d\'audit',
-                                  'Cartographie' => 'Risque identifiÃ© en cartographie',
-                                  _              => 'Ã‰lÃ©ment source',
+                                  'Audit'        => 'Référence du rapport d\'audit',
+                                  'Cartographie' => 'Risque identifié en cartographie',
+                                  _              => 'Élément source',
                                 },
                                 style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: srcColor),
                               ),
@@ -3402,7 +3402,7 @@ class _PlansViewState extends State<_PlansView> {
                                 icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
                                 decoration: const InputDecoration(
                                   isDense: true,
-                                  hintText: 'SÃ©lectionnerâ€¦',
+                                  hintText: 'Sélectionner…',
                                   hintStyle: TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
                                   contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.zero),
@@ -3422,10 +3422,10 @@ class _PlansViewState extends State<_PlansView> {
                       _field('Responsable', respCtrl, icon: Icons.person_rounded,
                         hint: 'Nom du responsable de l\'action'),
                       _formRow(
-                        _dateField(ctx, 'Date de dÃ©but', debutCtrl, onPicked: () {
+                        _dateField(ctx, 'Date de début', debutCtrl, onPicked: () {
                           setD(() { debutDate = DateTime.tryParse(debutCtrl.text); });
                         }),
-                        _dateField(ctx, 'Date d\'Ã©chÃ©ance', echeCtrl, firstDate: debutDate),
+                        _dateField(ctx, 'Date d\'échéance', echeCtrl, firstDate: debutDate),
                       ),
                       _formRow(
                         _dropdown('Statut', statut, _statutsPlan,
@@ -3470,7 +3470,7 @@ class _PlansViewState extends State<_PlansView> {
                     }
                   }
                 },
-                label: Text(edit == null ? 'CrÃ©er' : 'Enregistrer'),
+                label: Text(edit == null ? 'Créer' : 'Enregistrer'),
               ),
             ],
           );
@@ -3497,7 +3497,7 @@ class _PlansViewState extends State<_PlansView> {
               children: [
                 _badge('$retard action(s) en retard', retard > 0 ? _kDanger : _kSuccess),
                 const SizedBox(width: 10),
-                _badge('RÃ©alisation : ${txReal.toStringAsFixed(0)} %', txReal >= 80 ? _kSuccess : _kWarning),
+                _badge('Réalisation : ${txReal.toStringAsFixed(0)} %', txReal >= 80 ? _kSuccess : _kWarning),
                 const Spacer(),
                 FilledButton.icon(onPressed: () => _showForm(), icon: const Icon(Icons.add, size: 18), label: const Text('Nouveau plan')),
               ],
@@ -3512,19 +3512,19 @@ class _PlansViewState extends State<_PlansView> {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: items.isEmpty
-                    ? const Center(child: Text('Aucun plan d\'action enregistrÃ©.', style: TextStyle(color: _kMuted)))
+                    ? const Center(child: Text('Aucun plan d\'action enregistré.', style: TextStyle(color: _kMuted)))
                     : SingleChildScrollView(
                         child: Table(
                           columnWidths: const {0: FixedColumnWidth(110), 1: FlexColumnWidth(2), 2: FixedColumnWidth(130), 3: FixedColumnWidth(80), 4: FixedColumnWidth(90), 5: FixedColumnWidth(100), 6: FixedColumnWidth(80), 7: FixedColumnWidth(90)},
                           children: [
-                            _tableHeader(['RÃ©fÃ©rence', 'Titre', 'Origine', 'PrioritÃ©', 'Responsable', 'Avancement', 'Statut', 'Actions']),
+                            _tableHeader(['Référence', 'Titre', 'Origine', 'Priorité', 'Responsable', 'Avancement', 'Statut', 'Actions']),
                             ...items.map((p) => TableRow(
                               decoration: BoxDecoration(
                                 border: const Border(bottom: BorderSide(color: Color(0x11000000))),
                                 color: p.enRetard ? _kDanger.withValues(alpha: 0.04) : null,
                               ),
                               children: [
-                                // RÃ©fÃ©rence + date Ã©chÃ©ance
+                                // Référence + date échéance
                                 TableCell(
                                   verticalAlignment: TableCellVerticalAlignment.middle,
                                   child: Padding(
@@ -3545,7 +3545,7 @@ class _PlansViewState extends State<_PlansView> {
                                   ),
                                 ),
                                 _cellFlex(p.titre),
-                                // Colonne Origine â€” source + rÃ©fÃ©rence source
+                                // Colonne Origine — source + référence source
                                 TableCell(
                                   verticalAlignment: TableCellVerticalAlignment.middle,
                                   child: Padding(
@@ -3584,7 +3584,7 @@ class _PlansViewState extends State<_PlansView> {
                                   ),
                                 ),
                                 TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: Padding(padding: const EdgeInsets.all(8), child: _badge(p.priorite, p.priorite == 'Haute' ? _kDanger : p.priorite == 'Moyenne' ? _kWarning : _kMuted))),
-                                _cell(p.responsable.isEmpty ? 'â€”' : p.responsable),
+                                _cell(p.responsable.isEmpty ? '—' : p.responsable),
                                 TableCell(
                                   verticalAlignment: TableCellVerticalAlignment.middle,
                                   child: Padding(
@@ -3633,15 +3633,15 @@ class _PlansViewState extends State<_PlansView> {
   }
 
   Color _planStatutColor(String s) => switch (s) {
-    'TerminÃ©' => _kSuccess,
+    'Terminé' => _kSuccess,
     'En cours' => _kBlue,
     'A faire' => _kMuted,
-    'AbandonnÃ©' => _kDanger,
+    'Abandonné' => _kDanger,
     _ => _kMuted,
   };
 }
 
-// â”€â”€â”€ VIEW 9 : HISTORIQUE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 9 : HISTORIQUE ──────────────────────────────────────────────────────
 
 class _HistoriqueView extends StatefulWidget {
   const _HistoriqueView({required this.api});
@@ -3675,9 +3675,9 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
               children: [
                 const Icon(Icons.lock_outline, size: 14, color: _kMuted),
                 const SizedBox(width: 6),
-                const Text('Journal non modifiable â€” conservation 7 ans (UMOA)', style: TextStyle(fontSize: 12, color: _kMuted)),
+                const Text('Journal non modifiable — conservation 7 ans (UMOA)', style: TextStyle(fontSize: 12, color: _kMuted)),
                 const Spacer(),
-                _badge('${items.length} entrÃ©es', _kBlue),
+                _badge('${items.length} entrées', _kBlue),
               ],
             ),
             const SizedBox(height: 10),
@@ -3690,12 +3690,12 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: items.isEmpty
-                    ? const Center(child: Text('Aucun Ã©vÃ©nement enregistrÃ©.', style: TextStyle(color: _kMuted)))
+                    ? const Center(child: Text('Aucun événement enregistré.', style: TextStyle(color: _kMuted)))
                     : SingleChildScrollView(
                         child: Table(
                           columnWidths: const {0: FixedColumnWidth(150), 1: FixedColumnWidth(90), 2: FixedColumnWidth(90), 3: FixedColumnWidth(80), 4: FixedColumnWidth(120), 5: FlexColumnWidth()},
                           children: [
-                            _tableHeader(['Date', 'Menu', 'Action', 'Utilisateur', 'Ã‰lÃ©ment', 'DÃ©tail']),
+                            _tableHeader(['Date', 'Menu', 'Action', 'Utilisateur', 'Élément', 'Détail']),
                             ...items.map((h) => TableRow(
                               decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
                               children: [
@@ -3730,7 +3730,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
   };
 }
 
-// â”€â”€â”€ VIEW 10 : REPORTING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW 10 : REPORTING ──────────────────────────────────────────────────────
 
 class _ReportingView extends StatefulWidget {
   const _ReportingView({required this.api});
@@ -3741,7 +3741,7 @@ class _ReportingView extends StatefulWidget {
 
 class _ReportingViewState extends State<_ReportingView> {
   String _periode = 'Mensuel';
-  String _destinataire = 'Organe exÃ©cutif';
+  String _destinataire = 'Organe exécutif';
   bool _generating = false;
   String? _savedFileName;
   final _dateDebutCtrl = TextEditingController();
@@ -3791,16 +3791,16 @@ class _ReportingViewState extends State<_ReportingView> {
   String get _periodeLabel {
     final d = _dateDebutCtrl.text;
     final f = _dateFinCtrl.text;
-    if (d.isNotEmpty && f.isNotEmpty) return '${_fmtDisp(d)} â€” ${_fmtDisp(f)}';
+    if (d.isNotEmpty && f.isNotEmpty) return '${_fmtDisp(d)} — ${_fmtDisp(f)}';
     return _periode;
   }
 
-  // â”€â”€â”€ GÃ©nÃ©ration + dialog de sauvegarde â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Génération + dialog de sauvegarde ──────────────────────────────────────
 
   Future<void> _generateAndSave() async {
     setState(() { _generating = true; _savedFileName = null; });
     try {
-      // 1. RÃ©cupÃ©rer les donnÃ©es
+      // 1. Récupérer les données
       final results = await Future.wait([
         widget.api.fetchRoDashboard(),
         widget.api.fetchRoIncidents(),
@@ -3849,7 +3849,7 @@ class _ReportingViewState extends State<_ReportingView> {
       setState(() => _savedFileName = fileName);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         backgroundColor: _kSuccess,
-        content: Text('Rapport enregistrÃ© : $fileName'),
+        content: Text('Rapport enregistré : $fileName'),
         duration: const Duration(seconds: 5),
       ));
     } catch (e) {
@@ -3864,7 +3864,7 @@ class _ReportingViewState extends State<_ReportingView> {
     }
   }
 
-  // â”€â”€â”€ Construction du document PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Construction du document PDF ───────────────────────────────────────────
 
   Future<Uint8List> _buildPdf(
     RoDashboardData dash,
@@ -3928,8 +3928,8 @@ class _ReportingViewState extends State<_ReportingView> {
         padding: const pw.EdgeInsets.only(bottom: 6),
         decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
         child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-          pw.Text('Rapport Risque OpÃ©rationnel -- $_periodeLabel', style: mutedStyle),
-          pw.Text('$_destinataire  Â·  $dateStr', style: mutedStyle),
+          pw.Text('Rapport Risque Opérationnel -- $_periodeLabel', style: mutedStyle),
+          pw.Text('$_destinataire  ·  $dateStr', style: mutedStyle),
         ]),
       ),
       footer: (ctx) => pw.Container(
@@ -3942,18 +3942,18 @@ class _ReportingViewState extends State<_ReportingView> {
       ),
       build: (_) => [
 
-        // â”€â”€ COUVERTURE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── COUVERTURE ────────────────────────────────────────────────────────
         pw.Container(
           width: double.infinity,
           padding: const pw.EdgeInsets.all(22),
           decoration: pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.circular(6)),
           child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-            pw.Text('RAPPORT DE RISQUE OPÃ‰RATIONNEL',
+            pw.Text('RAPPORT DE RISQUE OPÉRATIONNEL',
                 style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
             pw.SizedBox(height: 6),
-            pw.Text('PÃ©riode : $_periodeLabel  Â·  Destinataire : $_destinataire',
+            pw.Text('Période : $_periodeLabel  ·  Destinataire : $_destinataire',
                 style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey300)),
-            pw.Text('Date de gÃ©nÃ©ration : $dateStr',
+            pw.Text('Date de génération : $dateStr',
                 style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey300)),
             pw.SizedBox(height: 4),
             pw.Text('Art. 313, 313.b, 313.c, 314, 545, 546 -- UMOA/BCEAO',
@@ -3962,19 +3962,19 @@ class _ReportingViewState extends State<_ReportingView> {
         ),
         pw.SizedBox(height: 16),
 
-        // â”€â”€ 1. SYNTHÃˆSE GÃ‰NÃ‰RALE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        sectionBanner('1. SYNTHÃˆSE GÃ‰NÃ‰RALE  '),
+        // ── 1. SYNTHÈSE GÉNÉRALE ─────────────────────────────────────────────
+        sectionBanner('1. SYNTHÈSE GÉNÉRALE  '),
         kpiGrid([
           ('Exigence fonds propres (K)', AppFormatters.currency(dash.widget1.exigenceFondsPropres)),
-          ('RWA risque opÃ©rationnel',    AppFormatters.currency(dash.widget1.aprRisqueOp)),
-          ('Statut rÃ©glementaire',       dash.widget1.statutReglementaire),
+          ('RWA risque opérationnel',    AppFormatters.currency(dash.widget1.aprRisqueOp)),
+          ('Statut réglementaire',       dash.widget1.statutReglementaire),
           ('Incidents (mois)',           '${dash.widget2.totalIncidentsMois}'),
-          ('Non clÃ´turÃ©s',              '${dash.widget2.incidentsNonClos}'),
+          ('Non clôturés',              '${dash.widget2.incidentsNonClos}'),
           ('Actions en retard',         '${dash.widget3.actionsEnRetard}'),
         ]),
         pw.SizedBox(height: 12),
 
-        // â”€â”€ 2. INCIDENTS ET PERTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── 2. INCIDENTS ET PERTES ───────────────────────────────────────────
         sectionBanner('2. INCIDENTS ET PERTES  '),
         kpiGrid([
           ('Pertes brutes totales', AppFormatters.currency(incidents.fold(0.0, (s, i) => s + i.perteBrute))),
@@ -3983,10 +3983,10 @@ class _ReportingViewState extends State<_ReportingView> {
         ]),
         pw.SizedBox(height: 6),
         if (incidents.isEmpty)
-          pw.Text('Aucun incident enregistrÃ©.', style: mutedStyle)
+          pw.Text('Aucun incident enregistré.', style: mutedStyle)
         else ...[
           table(
-            ['RÃ©fÃ©rence', 'Date', 'Ligne mÃ©tier', 'Perte brute', 'Perte nette', 'Statut'],
+            ['Référence', 'Date', 'Ligne métier', 'Perte brute', 'Perte nette', 'Statut'],
             incidents.take(15).map((i) => [
               i.reference, i.dateOccurrence, i.ligneMetier,
               AppFormatters.currency(i.perteBrute),
@@ -4002,13 +4002,13 @@ class _ReportingViewState extends State<_ReportingView> {
         ],
         pw.SizedBox(height: 12),
 
-        // â”€â”€ 3. INDICATEURS CLÃ‰S (KRI) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        sectionBanner('3. INDICATEURS CLÃ‰S DE RISQUE  '),
+        // ── 3. INDICATEURS CLÉS (KRI) ────────────────────────────────────────
+        sectionBanner('3. INDICATEURS CLÉS DE RISQUE  '),
         if (kris.isEmpty)
-          pw.Text('Aucun KRI configurÃ©.', style: mutedStyle)
+          pw.Text('Aucun KRI configuré.', style: mutedStyle)
         else
           table(
-            ['KRI', 'UnitÃ©', 'Seuil alerte', 'DerniÃ¨re valeur', 'DerniÃ¨re date', 'Statut'],
+            ['KRI', 'Unité', 'Seuil alerte', 'Dernière valeur', 'Dernière date', 'Statut'],
             kris.map((k) => [
               k.definition.nom, k.definition.unite,
               k.definition.sens == 'superieur' ? '> ${k.definition.seuilAlerte}' : '< ${k.definition.seuilAlerte}',
@@ -4019,13 +4019,13 @@ class _ReportingViewState extends State<_ReportingView> {
           ),
         pw.SizedBox(height: 12),
 
-        // â”€â”€ 4. CARTOGRAPHIE DES RISQUES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── 4. CARTOGRAPHIE DES RISQUES ──────────────────────────────────────
         sectionBanner('4. CARTOGRAPHIE DES RISQUES  '),
         if (risques.isEmpty)
-          pw.Text('Aucun risque enregistrÃ©.', style: mutedStyle)
+          pw.Text('Aucun risque enregistré.', style: mutedStyle)
         else
           table(
-            ['Risque', 'CatÃ©gorie', 'Prob.', 'Impact', 'Niveau brut', 'Niveau rÃ©siduel'],
+            ['Risque', 'Catégorie', 'Prob.', 'Impact', 'Niveau brut', 'Niveau résiduel'],
             risques.map((r) => [
               r.nom, r.categorie,
               '${r.probabilite}/5', '${r.impact}/5',
@@ -4034,66 +4034,66 @@ class _ReportingViewState extends State<_ReportingView> {
           ),
         pw.SizedBox(height: 12),
 
-        // â”€â”€ 5. CONTRÃ”LES INTERNES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        sectionBanner('5. CONTRÃ”LES INTERNES  '),
+        // ── 5. CONTRÔLES INTERNES ────────────────────────────────────────────
+        sectionBanner('5. CONTRÔLES INTERNES  '),
         if (controles.isNotEmpty) ...[
           kpiGrid([
-            ('Total contrÃ´les', '${controles.length}'),
+            ('Total contrôles', '${controles.length}'),
             ('Non conformes', '${controles.where((c) => c.resultat == 'Non-conforme').length}'),
             ('Taux moyen', '${(controles.fold(0.0, (s, c) => s + c.tauxConformite) / controles.length).toStringAsFixed(1)} %'),
           ]),
           table(
-            ['RÃ©fÃ©rence', 'PÃ©rimÃ¨tre', 'Type', 'FrÃ©quence', 'Taux conf.', 'RÃ©sultat'],
+            ['Référence', 'Périmètre', 'Type', 'Fréquence', 'Taux conf.', 'Résultat'],
             controles.map((c) => [
               c.reference, c.perimetre, c.typeControle, c.frequence,
               '${c.tauxConformite.toStringAsFixed(1)} %', c.resultat,
             ]).toList(),
           ),
         ] else
-          pw.Text('Aucun contrÃ´le enregistrÃ©.', style: mutedStyle),
+          pw.Text('Aucun contrôle enregistré.', style: mutedStyle),
         pw.SizedBox(height: 12),
 
-        // â”€â”€ 6. PLANS D'ACTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── 6. PLANS D'ACTIONS ───────────────────────────────────────────────
         sectionBanner('6. PLANS D\'ACTIONS  '),
         if (plans.isNotEmpty) ...[
           kpiGrid([
             ('Plans total', '${plans.length}'),
             ('En retard', '${plans.where((p) => p.enRetard).length}'),
-            ('RÃ©alisation moy.', '${(plans.fold(0.0, (s, p) => s + p.avancement) / plans.length).toStringAsFixed(0)} %'),
+            ('Réalisation moy.', '${(plans.fold(0.0, (s, p) => s + p.avancement) / plans.length).toStringAsFixed(0)} %'),
           ]),
           table(
-            ['RÃ©fÃ©rence', 'Titre', 'PrioritÃ©', 'Responsable', 'Ã‰chÃ©ance', 'Avancement', 'Statut'],
+            ['Référence', 'Titre', 'Priorité', 'Responsable', 'Échéance', 'Avancement', 'Statut'],
             plans.map((p) => [
               p.reference,
-              p.titre.length > 30 ? '${p.titre.substring(0, 28)}â€¦' : p.titre,
+              p.titre.length > 30 ? '${p.titre.substring(0, 28)}…' : p.titre,
               p.priorite,
-              p.responsable.isEmpty ? 'â€”' : p.responsable,
-              p.dateEcheance.isEmpty ? 'â€”' : p.dateEcheance,
+              p.responsable.isEmpty ? '—' : p.responsable,
+              p.dateEcheance.isEmpty ? '—' : p.dateEcheance,
               '${p.avancement} %', p.statut,
             ]).toList(),
           ),
         ] else
-          pw.Text('Aucun plan d\'action enregistrÃ©.', style: mutedStyle),
+          pw.Text('Aucun plan d\'action enregistré.', style: mutedStyle),
         pw.SizedBox(height: 12),
 
-        // â”€â”€ 7. SIMULATION DE CRISE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── 7. SIMULATION DE CRISE ───────────────────────────────────────────
         sectionBanner('7. SIMULATION DE CRISE  '),
         table(
-          ['ScÃ©nario', 'Variation PNB', 'RWA estimÃ©', 'Exigence fonds propres'],
+          ['Scénario', 'Variation PNB', 'RWA estimé', 'Exigence fonds propres'],
           [
             ['Optimiste',    '+10 %', AppFormatters.currency(dash.widget1.aprRisqueOp * 1.10), AppFormatters.currency(dash.widget1.exigenceFondsPropres * 1.10)],
             ['Neutre',        '0 %',  AppFormatters.currency(dash.widget1.aprRisqueOp),        AppFormatters.currency(dash.widget1.exigenceFondsPropres)],
             ['Pessimiste',   '-20 %', AppFormatters.currency(dash.widget1.aprRisqueOp * 0.80), AppFormatters.currency(dash.widget1.exigenceFondsPropres * 0.80)],
-            ['Crise sÃ©vÃ¨re', '-35 %', AppFormatters.currency(dash.widget1.aprRisqueOp * 0.65), AppFormatters.currency(dash.widget1.exigenceFondsPropres * 0.65)],
+            ['Crise sévère', '-35 %', AppFormatters.currency(dash.widget1.aprRisqueOp * 0.65), AppFormatters.currency(dash.widget1.exigenceFondsPropres * 0.65)],
           ],
         ),
         pw.SizedBox(height: 16),
 
-        // â”€â”€ PIED â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── PIED ─────────────────────────────────────────────────────────────
         pw.Divider(color: PdfColors.grey300),
         pw.SizedBox(height: 4),
         pw.Text(
-          'Rapport gÃ©nÃ©rÃ© le $dateStr -- Outil RWA -- Confidentiel',
+          'Rapport généré le $dateStr -- Outil RWA -- Confidentiel',
           style: mutedStyle,
           textAlign: pw.TextAlign.center,
         ),
@@ -4103,7 +4103,7 @@ class _ReportingViewState extends State<_ReportingView> {
     return doc.save();
   }
 
-  // â”€â”€â”€ Interface â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Interface ──────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -4112,13 +4112,13 @@ class _ReportingViewState extends State<_ReportingView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionCard(
-            title: 'ParamÃ¨tres du rapport',
+            title: 'Paramètres du rapport',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Text('PÃ©riode rapide :',
+                    Text('Période rapide :',
                       style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
                         color: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkMuted : _kMuted)),
                     const SizedBox(width: 10),
@@ -4152,13 +4152,13 @@ class _ReportingViewState extends State<_ReportingView> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _reportingDateField(context, 'Date de dÃ©but', _dateDebutCtrl)),
+                    Expanded(child: _reportingDateField(context, 'Date de début', _dateDebutCtrl)),
                     const SizedBox(width: 12),
                     Expanded(child: _reportingDateField(context, 'Date de fin', _dateFinCtrl)),
                     const SizedBox(width: 12),
                     Expanded(child: _dropdown('Destinataire', _destinataire,
-                      ['Organe exÃ©cutif', 'Organe dÃ©libÃ©rant', 'Commission Bancaire'],
-                      (v) => setState(() => _destinataire = v ?? 'Organe exÃ©cutif'))),
+                      ['Organe exécutif', 'Organe délibérant', 'Commission Bancaire'],
+                      (v) => setState(() => _destinataire = v ?? 'Organe exécutif'))),
                   ],
                 ),
               ],
@@ -4179,16 +4179,16 @@ class _ReportingViewState extends State<_ReportingView> {
                 3: FixedColumnWidth(52),
               },
               children: [
-                _tableHeader(['#', 'Section', 'Ã‰lÃ©ments inclus', 'RÃ©f.']),
+                _tableHeader(['#', 'Section', 'Éléments inclus', 'Réf.']),
                 ...[
-                  ('1', 'SynthÃ¨se gÃ©nÃ©rale',       '',           ['Exigence de fonds propres (Art. 301/307)', 'RWA risque opÃ©rationnel (Art. 89)', 'Statut de conformitÃ©', 'Ã‰volution N-1']),
-                  ('2', 'Incidents et pertes',      'Art. 313.b', ['Nombre total d\'incidents', 'Pertes nettes totales', 'Top 5 incidents par perte', 'RÃ©partition par ligne de mÃ©tier']),
-                  ('3', 'Indicateurs clÃ©s (KRI)',   '',           ['Tableau des KRI avec statut', 'Ã‰volutions significatives', 'Alertes et actions associÃ©es']),
-                  ('4', 'Cartographie des risques', '',           ['Matrice des risques (heatmap)', 'Top 5 risques critiques', 'Ã‰volution risque rÃ©siduel']),
-                  ('5', 'ContrÃ´les internes',       'Art. 314',   ['Taux de conformitÃ© global', 'ContrÃ´les non conformes', 'Plan de contrÃ´le', 'Actions correctives en cours']),
-                  ('6', 'Plans d\'action',          'Art. 313.c', ['Taux de rÃ©alisation', 'Actions en retard', 'Actions terminÃ©es (pÃ©riode)']),
-                  ('7', 'Simulation de crise',      'Art. 545',   ['ScÃ©nario optimiste (+10 %)', 'ScÃ©nario neutre (0 %)', 'ScÃ©nario pessimiste (-20 %)', 'ScÃ©nario crise sÃ©vÃ¨re (-35 %)']),
-                  ('8', 'Annexes',                  '',           ['DÃ©tail des incidents', 'Journal des modifications', 'Glossaire']),
+                  ('1', 'Synthèse générale',       '',           ['Exigence de fonds propres (Art. 301/307)', 'RWA risque opérationnel (Art. 89)', 'Statut de conformité', 'Évolution N-1']),
+                  ('2', 'Incidents et pertes',      'Art. 313.b', ['Nombre total d\'incidents', 'Pertes nettes totales', 'Top 5 incidents par perte', 'Répartition par ligne de métier']),
+                  ('3', 'Indicateurs clés (KRI)',   '',           ['Tableau des KRI avec statut', 'Évolutions significatives', 'Alertes et actions associées']),
+                  ('4', 'Cartographie des risques', '',           ['Matrice des risques (heatmap)', 'Top 5 risques critiques', 'Évolution risque résiduel']),
+                  ('5', 'Contrôles internes',       'Art. 314',   ['Taux de conformité global', 'Contrôles non conformes', 'Plan de contrôle', 'Actions correctives en cours']),
+                  ('6', 'Plans d\'action',          'Art. 313.c', ['Taux de réalisation', 'Actions en retard', 'Actions terminées (période)']),
+                  ('7', 'Simulation de crise',      'Art. 545',   ['Scénario optimiste (+10 %)', 'Scénario neutre (0 %)', 'Scénario pessimiste (-20 %)', 'Scénario crise sévère (-35 %)']),
+                  ('8', 'Annexes',                  '',           ['Détail des incidents', 'Journal des modifications', 'Glossaire']),
                 ].map<TableRow>((r) => TableRow(
                   decoration: const BoxDecoration(
                     border: Border(bottom: BorderSide(color: Color(0x11000000))),
@@ -4275,7 +4275,7 @@ class _ReportingViewState extends State<_ReportingView> {
                 icon: _generating
                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                label: Text(_generating ? 'GÃ©nÃ©ration en coursâ€¦' : 'GÃ©nÃ©rer le rapport Â· $_periodeLabel'),
+                label: Text(_generating ? 'Génération en cours…' : 'Générer le rapport · $_periodeLabel'),
               ),
               if (_savedFileName != null) ...[
                 const SizedBox(width: 14),
@@ -4327,7 +4327,7 @@ class _ReportingViewState extends State<_ReportingView> {
                 initialDate: current ?? DateTime.now(),
                 firstDate: DateTime(2000),
                 lastDate: DateTime(2100),
-                helpText: 'SÃ©lectionner une date',
+                helpText: 'Sélectionner une date',
               );
               if (picked != null) setState(() => ctrl.text = picked.toIso8601String().substring(0, 10));
             },
@@ -4339,8 +4339,8 @@ class _ReportingViewState extends State<_ReportingView> {
 
 }
 
-// â”€â”€â”€ VIEW : REGISTRE DES PERTES RO (BCEAO/UMOA) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Design alignÃ© sur le Tableau des expositions (dÃ©gradÃ© navy, panel F6F9FF, KPI footer)
+// ─── VIEW : REGISTRE DES PERTES RO (BCEAO/UMOA) ──────────────────────────────
+// Design aligné sur le Tableau des expositions (dégradé navy, panel F6F9FF, KPI footer)
 
 class _RegistreView extends StatefulWidget {
   const _RegistreView({required this.api});
@@ -4390,7 +4390,7 @@ class _RegistreViewState extends State<_RegistreView> {
     super.dispose();
   }
 
-  // Cache pour le footer (mis Ã  jour quand le future se rÃ©sout)
+  // Cache pour le footer (mis à jour quand le future se résout)
   List<RoIncident> _cachedItems = [];
 
   void _reload() {
@@ -4446,9 +4446,9 @@ class _RegistreViewState extends State<_RegistreView> {
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Modifier â€” ${edit.reference}',
+                Text('Modifier — ${edit.reference}',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Mise Ã  jour conforme Art. 313.b UMOA',
+                const Text('Mise à jour conforme Art. 313.b UMOA',
                   style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
               ])),
             ]),
@@ -4471,9 +4471,9 @@ class _RegistreViewState extends State<_RegistreView> {
                     ),
                     _formSection('Classification', icon: Icons.category_rounded, color: _kWarning),
                     _formRow(
-                      _dropdown('Ligne de mÃ©tier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
+                      _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
                         required: true, icon: Icons.business_rounded),
-                      _dropdown('Type d\'Ã©vÃ©nement', type, _typesEvenement, (v) => setD(() => type = v),
+                      _dropdown('Type d\'événement', type, _typesEvenement, (v) => setD(() => type = v),
                         required: true, icon: Icons.label_rounded),
                     ),
                     _dropdown('Cause racine', causeRacine, _causesRacine,
@@ -4486,7 +4486,7 @@ class _RegistreViewState extends State<_RegistreView> {
                       _field('Perte brute (FCFA)', brutCtrl,
                         keyboardType: TextInputType.number, required: true,
                         icon: Icons.trending_down_rounded),
-                      _field('Perte rÃ©cupÃ©rÃ©e (FCFA)', recupCtrl,
+                      _field('Perte récupérée (FCFA)', recupCtrl,
                         keyboardType: TextInputType.number, icon: Icons.trending_up_rounded),
                     ),
                   ],
@@ -4552,23 +4552,23 @@ class _RegistreViewState extends State<_RegistreView> {
   static const _rowH = 48.0;
 
   static const _colLabels = [
-    'RÃ©fÃ©rence', 'Date', 'Ligne de mÃ©tier', "Type d'Ã©vÃ©nement",
-    'Description', 'Cause racine', 'Perte brute (FCFA)', 'RÃ©cupÃ©rÃ© (FCFA)',
-    'Perte nette (FCFA)', 'Capital minimal 15 %', 'RWA (Ã—12,5)', 'Statut', 'Actions',
+    'Référence', 'Date', 'Ligne de métier', "Type d'événement",
+    'Description', 'Cause racine', 'Perte brute (FCFA)', 'Récupéré (FCFA)',
+    'Perte nette (FCFA)', 'Capital minimal 15 %', 'RWA (×12,5)', 'Statut', 'Actions',
   ];
 
   static const _colW = [140.0, 110.0, 190.0, 160.0, 260.0, 190.0, 155.0, 150.0, 155.0, 160.0, 145.0, 105.0, 80.0];
 
-  // VisibilitÃ© des colonnes
+  // Visibilité des colonnes
   final List<bool> _visibleCols = List.filled(13, true);
   final _colMenuCtrl = MenuController();
 
-  // SÃ©lection de ligne
+  // Sélection de ligne
   String? _selectedId;
 
   int    get _visibleCount => _visibleCols.where((v) => v).length;
 
-  // Colonnes dÃ©filantes (exclut col 0 quand elle est figÃ©e)
+  // Colonnes défilantes (exclut col 0 quand elle est figée)
   List<(String, double)> get _scrollableColDefs => [
     for (int i = 1; i < _colLabels.length; i++)
       if (_visibleCols[i]) (_colLabels[i], _colW[i]),
@@ -4597,7 +4597,7 @@ class _RegistreViewState extends State<_RegistreView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // â”€â”€ Panneau de contrÃ´les â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Panneau de contrôles ─────────────────────────────────────────
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
@@ -4627,9 +4627,9 @@ class _RegistreViewState extends State<_RegistreView> {
             child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               _fDropLabeled('Statut',           _filterStatut, _statutsIncident, (v) => setState(() => _filterStatut = v), 100, isDark),
               const SizedBox(width: 6),
-              _fDropLabeled('Ligne de mÃ©tier',  _filterLigne,  _lignesMetier,    (v) => setState(() => _filterLigne  = v), 138, isDark),
+              _fDropLabeled('Ligne de métier',  _filterLigne,  _lignesMetier,    (v) => setState(() => _filterLigne  = v), 138, isDark),
               const SizedBox(width: 6),
-              _fDropLabeled("Type d'Ã©vÃ©nement", _filterType,   _typesEvenement,  (v) => setState(() => _filterType   = v), 130, isDark),
+              _fDropLabeled("Type d'événement", _filterType,   _typesEvenement,  (v) => setState(() => _filterType   = v), 130, isDark),
               const SizedBox(width: 6),
               Expanded(
                 child: Column(
@@ -4644,7 +4644,7 @@ class _RegistreViewState extends State<_RegistreView> {
                       controller: _searchCtrl,
                       style: const TextStyle(fontSize: 11),
                       decoration: const InputDecoration(
-                        hintText: 'RÃ©fÃ©renceâ€¦',
+                        hintText: 'Référence…',
                         prefixIcon: Icon(Icons.search_outlined, size: 14),
                         prefixIconConstraints: BoxConstraints(minWidth: 28, minHeight: 28),
                       ),
@@ -4654,7 +4654,7 @@ class _RegistreViewState extends State<_RegistreView> {
               ),
               const SizedBox(width: 6),
               SizedBox(width: 34, height: 34,
-                child: Tooltip(message: 'RÃ©initialiser les filtres',
+                child: Tooltip(message: 'Réinitialiser les filtres',
                   child: OutlinedButton(
                     onPressed: _resetFilters,
                     style: OutlinedButton.styleFrom(
@@ -4672,7 +4672,7 @@ class _RegistreViewState extends State<_RegistreView> {
                 ),
               ),
               const SizedBox(width: 6),
-              // â”€â”€ SÃ©lecteur de colonnes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // ── Sélecteur de colonnes ──────────────────────────────────────
               MenuAnchor(
                 controller: _colMenuCtrl,
                 alignmentOffset: const Offset(0, 4),
@@ -4760,7 +4760,7 @@ class _RegistreViewState extends State<_RegistreView> {
               const SizedBox(width: 6),
               _topBtn('Exporter', Icons.file_download_outlined, const Color(0xFF14A44D),
                 _cachedItems.isEmpty ? null : () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Export Excel â€” Ã  implÃ©menter'))),
+                  const SnackBar(content: Text('Export Excel — à implémenter'))),
                 isDark),
               const SizedBox(width: 10),
               SizedBox(height: 32,
@@ -4781,7 +4781,7 @@ class _RegistreViewState extends State<_RegistreView> {
           ),
         ),
         const SizedBox(height: 8),
-        // â”€â”€ Tableau â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Tableau ──────────────────────────────────────────────────────
         Expanded(
           child: FutureBuilder<List<RoIncident>>(
             future: _future,
@@ -4792,45 +4792,45 @@ class _RegistreViewState extends State<_RegistreView> {
           ),
         ),
         const SizedBox(height: 6),
-        // â”€â”€ Footer KPI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Footer KPI ────────────────────────────────────────────────────
         IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           SizedBox(width: 110, child: _sumCard('Pertes', '${cached.length}', AppTheme.accent,
             tooltip:
               'Nombre de pertes\n'
-              'RÃ´le : comptage total des incidents\n'
-              'enregistrÃ©s dans la base.\n'
+              'Rôle : comptage total des incidents\n'
+              'enregistrés dans la base.\n'
               'Formule : COUNT(incidents)',
           )),
           const SizedBox(width: 6),
           Expanded(child: _sumCard('Perte brute', AppFormatters.currency(cBrute), _kDanger,
             tooltip:
               'Perte brute totale\n'
-              'RÃ´le : montant total avant toute rÃ©cupÃ©ration.\n'
-              'Formule : Î£ perte_brute\n'
+              'Rôle : montant total avant toute récupération.\n'
+              'Formule : Σ perte_brute\n'
               '(somme de toutes les pertes brutes)',
           )),
           const SizedBox(width: 6),
           Expanded(child: _sumCard('Perte nette', AppFormatters.currency(cNette), _kDanger,
             tooltip:
               'Perte nette totale (Art. 313.b)\n'
-              'RÃ´le : montant rÃ©el supportÃ© aprÃ¨s rÃ©cupÃ©rations.\n'
-              'Formule : Î£ (perte_brute âˆ’ perte_rÃ©cupÃ©rÃ©e)\n'
-              'RÃ©cupÃ©rations = assurance + provisions + reversements',
+              'Rôle : montant réel supporté après récupérations.\n'
+              'Formule : Σ (perte_brute − perte_récupérée)\n'
+              'Récupérations = assurance + provisions + reversements',
           )),
           const SizedBox(width: 6),
           Expanded(child: _sumCard('K_RO 15 % (Art. 89)', AppFormatters.currency(cKro), AppColors.prudentialSolvency,
             tooltip:
-              'Exigence de fonds propres â€” Risque OpÃ©rationnel\n'
-              'RÃ´le : capital rÃ©glementaire minimum Ã  dÃ©tenir.\n'
-              'Formule BIA : Capital minimal = Î± Ã— Perte nette totale\n'
-              'Î± = 15 %  (coefficient BCEAO/UMOA, Art. 89)',
+              'Exigence de fonds propres — Risque Opérationnel\n'
+              'Rôle : capital réglementaire minimum à détenir.\n'
+              'Formule BIA : Capital minimal = α × Perte nette totale\n'
+              'α = 15 %  (coefficient BCEAO/UMOA, Art. 89)',
           )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('APR opÃ©rationnel', AppFormatters.currency(cApr), AppColors.marketNeutral,
+          Expanded(child: _sumCard('APR opérationnel', AppFormatters.currency(cApr), AppColors.marketNeutral,
             tooltip:
-              'Actifs PondÃ©rÃ©s par le Risque opÃ©rationnel\n'
-              'RÃ´le : base de calcul du ratio de solvabilitÃ©.\n'
-              'Formule : RWA = Capital minimal Ã· 8 % = Capital minimal Ã— 12,5\n'
+              'Actifs Pondérés par le Risque opérationnel\n'
+              'Rôle : base de calcul du ratio de solvabilité.\n'
+              'Formule : RWA = Capital minimal ÷ 8 % = Capital minimal × 12,5\n'
               '12,5 = facteur de conversion prudentiel (Art. 89)',
           )),
         ])),
@@ -4839,7 +4839,7 @@ class _RegistreViewState extends State<_RegistreView> {
   }
 
 
-  // â”€â”€ helpers UI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── helpers UI ──────────────────────────────────────────────────────────────
 
   Widget _topBtn(String label, IconData icon, Color color, VoidCallback? onPressed, bool isDark) => SizedBox(
     height: 30,
@@ -4935,7 +4935,7 @@ class _RegistreViewState extends State<_RegistreView> {
         child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(Icons.table_rows_outlined, size: 48, color: _kMuted.withValues(alpha: 0.4)),
           const SizedBox(height: 14),
-          const Text('Aucune entrÃ©e dans le registre', style: TextStyle(color: _kMuted, fontSize: 14, fontWeight: FontWeight.w600)),
+          const Text('Aucune entrée dans le registre', style: TextStyle(color: _kMuted, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           const Text('Ajoutez une perte ou importez un fichier Excel', style: TextStyle(color: _kMuted, fontSize: 12)),
           const SizedBox(height: 18),
@@ -4959,7 +4959,7 @@ class _RegistreViewState extends State<_RegistreView> {
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF2A518A), Color(0xFF23477A)]),
         border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF))),
       );
-      // â”€â”€ DonnÃ©es ligne par ligne â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── Données ligne par ligne ──────────────────────────────────────────
       final fixedCells      = <Widget>[];
       final scrollableCells = <Widget>[];
 
@@ -4984,7 +4984,7 @@ class _RegistreViewState extends State<_RegistreView> {
             : AppTheme.accent.withValues(alpha: isDark ? 0.10 : 0.05);
         void onTap() => setState(() => _selectedId = isSelected ? null : i.id);
 
-        // Col 0 â€” colonne figÃ©e
+        // Col 0 — colonne figée
         fixedCells.add(SizedBox(
           height: _rowH,
           child: Material(
@@ -5001,7 +5001,7 @@ class _RegistreViewState extends State<_RegistreView> {
           ),
         ));
 
-        // Cols 1-12 â€” zone dÃ©filante
+        // Cols 1-12 — zone défilante
         final scrollCols = <Widget>[
           if (_visibleCols[1])  _rc(i.dateOccurrence,                    _colW[1]),
           if (_visibleCols[2])  _rcf(i.ligneMetier,                      _colW[2]),
@@ -5061,11 +5061,11 @@ class _RegistreViewState extends State<_RegistreView> {
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            // â”€â”€ En-tÃªte â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── En-tête ──────────────────────────────────────────────────────
             SizedBox(
               height: 40,
               child: Row(children: [
-                // Cellule d'en-tÃªte de la colonne figÃ©e
+                // Cellule d'en-tête de la colonne figée
                 if (fixedVisible) Container(
                   width: fixedW,
                   height: 40,
@@ -5083,7 +5083,7 @@ class _RegistreViewState extends State<_RegistreView> {
                     ),
                   ),
                 ),
-                // En-tÃªtes dÃ©filants
+                // En-têtes défilants
                 Expanded(
                   child: ClipRect(
                     child: AnimatedBuilder(
@@ -5118,10 +5118,10 @@ class _RegistreViewState extends State<_RegistreView> {
                 ),
               ]),
             ),
-            // â”€â”€ Corps â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Corps ────────────────────────────────────────────────────────
             Expanded(
               child: Row(children: [
-                // Colonne figÃ©e â€” dÃ©file uniquement verticalement
+                // Colonne figée — défile uniquement verticalement
                 if (fixedVisible) Container(
                   width: fixedW,
                   decoration: BoxDecoration(
@@ -5136,7 +5136,7 @@ class _RegistreViewState extends State<_RegistreView> {
                     ),
                   ),
                 ),
-                // Zone dÃ©filante â€” dÃ©file horizontalement et verticalement
+                // Zone défilante — défile horizontalement et verticalement
                 Expanded(
                   child: SingleChildScrollView(
                     controller: _vBodyCtrl,
@@ -5253,7 +5253,7 @@ class _RegistreViewState extends State<_RegistreView> {
 }
 
 
-// â”€â”€â”€ Wizard â€” DÃ©clarer un incident opÃ©rationnel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Wizard — Déclarer un incident opérationnel ───────────────────────────────
 
 class _RoIncidentWizardDialog extends StatefulWidget {
   const _RoIncidentWizardDialog({required this.api});
@@ -5268,20 +5268,20 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
   static const int _totalSteps = 4;
   bool _submitting = false;
 
-  // Ã‰tape 1 â€” Identification
+  // Étape 1 — Identification
   final _dateCtrl = TextEditingController();
   String _ligne = _lignesMetier.first;
   String _type = _typesEvenement.first;
 
-  // Ã‰tape 2 â€” Description
+  // Étape 2 — Description
   final _descCtrl = TextEditingController();
   String _causeRacine = _causesRacine.first;
 
-  // Ã‰tape 3 â€” Impact
+  // Étape 3 — Impact
   final _brutCtrl = TextEditingController();
   final _recupCtrl = TextEditingController();
 
-  // Ã‰tape 4 â€” Validation
+  // Étape 4 — Validation
   String _statut = _statutsIncident.first;
 
   final _step1Key = GlobalKey<FormState>();
@@ -5291,9 +5291,9 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
   static const _stepLabels = ['Identification', 'Description', 'Impact', 'Validation'];
   static const _stepSubtitles = [
     'Date, ligne, type',
-    'DÃ©tails et cause',
+    'Détails et cause',
     'Pertes (FCFA)',
-    'RÃ©capitulatif',
+    'Récapitulatif',
   ];
   static const _stepIcons = [
     Icons.badge_outlined,
@@ -5361,7 +5361,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // En-tÃªte
+              // En-tête
               Row(
                 children: [
                   Container(
@@ -5377,8 +5377,8 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('DÃ©clarer un incident', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                        Text('Risque opÃ©rationnel â€” Art. 313 BCEAO', style: TextStyle(fontSize: 11, color: _kMuted)),
+                        Text('Déclarer un incident', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        Text('Risque opérationnel — Art. 313 BCEAO', style: TextStyle(fontSize: 11, color: _kMuted)),
                       ],
                     ),
                   ),
@@ -5389,12 +5389,12 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                 ],
               ),
               const SizedBox(height: 20),
-              // Indicateur d'Ã©tapes
+              // Indicateur d'étapes
               _buildStepBar(),
               const SizedBox(height: 20),
               const Divider(height: 1),
               const SizedBox(height: 16),
-              // Contenu de l'Ã©tape
+              // Contenu de l'étape
               Expanded(
                 child: SingleChildScrollView(
                   child: switch (_step) {
@@ -5417,7 +5417,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
     );
   }
 
-  // â”€â”€ Indicateur d'Ã©tapes horizontal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Indicateur d'étapes horizontal ────────────────────────────────────────
   Widget _buildStepBar() {
     return Row(
       children: List.generate(_totalSteps * 2 - 1, (i) {
@@ -5459,7 +5459,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
     );
   }
 
-  // â”€â”€ Ã‰tape 1 : Identification â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Étape 1 : Identification ───────────────────────────────────────────────
   Widget _buildStep1() => Form(
     key: _step1Key,
     child: Column(
@@ -5468,17 +5468,17 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         _wizBanner(
           icon: Icons.badge_outlined,
           title: 'Identification de l\'incident',
-          subtitle: 'Art. 313.b â€” DÃ©clarez dans les 5 jours ouvrÃ©s suivant la dÃ©tection',
+          subtitle: 'Art. 313.b — Déclarez dans les 5 jours ouvrés suivant la détection',
         ),
         const SizedBox(height: 16),
-        _formSection('Quand et oÃ¹ ?', icon: Icons.calendar_today_rounded, color: _kDanger),
+        _formSection('Quand et où ?', icon: Icons.calendar_today_rounded, color: _kDanger),
         _dateField(context, 'Date d\'occurrence', _dateCtrl, required: true),
         _formSection('Classification', icon: Icons.category_rounded, color: _kWarning),
         _formRow(
-          _dropdown('Ligne de mÃ©tier', _ligne, _lignesMetier,
+          _dropdown('Ligne de métier', _ligne, _lignesMetier,
             (v) { if (v != null) setState(() => _ligne = v); },
             required: true, icon: Icons.business_rounded),
-          _dropdown('Type d\'Ã©vÃ©nement', _type, _typesEvenement,
+          _dropdown('Type d\'événement', _type, _typesEvenement,
             (v) { if (v != null) setState(() => _type = v); },
             required: true, icon: Icons.label_rounded),
         ),
@@ -5486,7 +5486,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
     ),
   );
 
-  // â”€â”€ Ã‰tape 2 : Description â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Étape 2 : Description ─────────────────────────────────────────────────
   Widget _buildStep2() => Form(
     key: _step2Key,
     child: Column(
@@ -5495,22 +5495,22 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         _wizBanner(
           icon: Icons.edit_note_outlined,
           title: 'Description et cause racine',
-          subtitle: 'DÃ©crivez prÃ©cisÃ©ment l\'incident et identifiez sa cause principale',
+          subtitle: 'Décrivez précisément l\'incident et identifiez sa cause principale',
         ),
         const SizedBox(height: 16),
-        _formSection('Que s\'est-il passÃ© ?', icon: Icons.notes_rounded, color: _kBlue),
+        _formSection('Que s\'est-il passé ?', icon: Icons.notes_rounded, color: _kBlue),
         _field('Description de l\'incident', _descCtrl, multiline: true, required: true,
           icon: Icons.description_rounded,
-          hint: 'Que s\'est-il passÃ© ? Quels systÃ¨mes / processus sont concernÃ©s ?'),
+          hint: 'Que s\'est-il passé ? Quels systèmes / processus sont concernés ?'),
         _formSection('Analyse', icon: Icons.search_rounded, color: _kWarning),
-        _dropdown('Cause racine identifiÃ©e', _causeRacine, _causesRacine,
+        _dropdown('Cause racine identifiée', _causeRacine, _causesRacine,
           (v) { if (v != null) setState(() => _causeRacine = v); },
           icon: Icons.account_tree_rounded),
       ],
     ),
   );
 
-  // â”€â”€ Ã‰tape 3 : Impact financier â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Étape 3 : Impact financier ────────────────────────────────────────────
   Widget _buildStep3() => Form(
     key: _step3Key,
     child: Column(
@@ -5519,7 +5519,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         _wizBanner(
           icon: Icons.account_balance_wallet_outlined,
           title: 'Impact financier',
-          subtitle: 'Art. 89 â€” Perte nette = Perte brute âˆ’ RÃ©cupÃ©rations. Saisir en FCFA.',
+          subtitle: 'Art. 89 — Perte nette = Perte brute − Récupérations. Saisir en FCFA.',
         ),
         const SizedBox(height: 16),
         _formSection('Montants de perte', icon: Icons.monetization_on_rounded, color: _kDanger),
@@ -5527,14 +5527,14 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
           _field('Perte brute (FCFA)', _brutCtrl,
             keyboardType: TextInputType.number, required: true,
             icon: Icons.trending_down_rounded,
-            hint: 'Montant total avant rÃ©cupÃ©rations'),
-          _field('Perte rÃ©cupÃ©rÃ©e (FCFA)', _recupCtrl,
+            hint: 'Montant total avant récupérations'),
+          _field('Perte récupérée (FCFA)', _recupCtrl,
             keyboardType: TextInputType.number,
             icon: Icons.trending_up_rounded,
             hint: 'Assurances, provisions, reversements'),
         ),
         const SizedBox(height: 4),
-        // Estimation BIA temps rÃ©el
+        // Estimation BIA temps réel
         ListenableBuilder(
           listenable: Listenable.merge([_brutCtrl, _recupCtrl]),
           builder: (_, __) {
@@ -5558,7 +5558,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                     children: [
                       Icon(Icons.calculate_outlined, size: 13, color: _kBlue),
                       SizedBox(width: 6),
-                      Text('Estimation BIA (Art. 89) â€” indicative', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kBlue)),
+                      Text('Estimation BIA (Art. 89) — indicative', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kBlue)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -5567,7 +5567,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                       Expanded(child: _biaKpi('Perte brute', AppFormatters.currency(brut))),
                       Expanded(child: _biaKpi('Perte nette', AppFormatters.currency(nette))),
                       Expanded(child: _biaKpi('Capital minimal (15 %)', AppFormatters.currency(kBia))),
-                      Expanded(child: _biaKpi('RWA estimÃ©', AppFormatters.currency(apr))),
+                      Expanded(child: _biaKpi('RWA estimé', AppFormatters.currency(apr))),
                     ],
                   ),
                 ],
@@ -5579,7 +5579,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
     ),
   );
 
-  // â”€â”€ Ã‰tape 4 : RÃ©capitulatif + validation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Étape 4 : Récapitulatif + validation ──────────────────────────────────
   Widget _buildStep4() {
     final brut = double.tryParse(_brutCtrl.text) ?? 0;
     final recup = double.tryParse(_recupCtrl.text) ?? 0;
@@ -5591,10 +5591,10 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         _wizBanner(
           icon: Icons.task_alt_outlined,
           title: 'Validation finale',
-          subtitle: 'VÃ©rifiez les informations avant d\'enregistrer l\'incident',
+          subtitle: 'Vérifiez les informations avant d\'enregistrer l\'incident',
         ),
         const SizedBox(height: 16),
-        // RÃ©capitulatif
+        // Récapitulatif
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(14),
@@ -5606,19 +5606,19 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('RÃ©capitulatif', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _kBlue)),
+              const Text('Récapitulatif', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _kBlue)),
               const SizedBox(height: 12),
-              _recap('Date d\'occurrence', _dateCtrl.text.isEmpty ? 'â€”' : _dateCtrl.text),
-              _recap('Ligne de mÃ©tier', _ligne),
-              _recap('Type d\'Ã©vÃ©nement', _type),
+              _recap('Date d\'occurrence', _dateCtrl.text.isEmpty ? '—' : _dateCtrl.text),
+              _recap('Ligne de métier', _ligne),
+              _recap('Type d\'événement', _type),
               _recap('Cause racine', _causeRacine),
               _recap('Description', () {
                 final s = _descCtrl.text.trim();
-                return s.length > 90 ? '${s.substring(0, 87)}â€¦' : (s.isEmpty ? 'â€”' : s);
+                return s.length > 90 ? '${s.substring(0, 87)}…' : (s.isEmpty ? '—' : s);
               }()),
               const Divider(height: 16),
               _recap('Perte brute', AppFormatters.currency(brut)),
-              _recap('Perte rÃ©cupÃ©rÃ©e', AppFormatters.currency(recup)),
+              _recap('Perte récupérée', AppFormatters.currency(recup)),
               _recap('Perte nette', AppFormatters.currency(nette), highlight: nette > 0),
             ],
           ),
@@ -5639,7 +5639,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'L\'incident sera ajoutÃ© Ã  la base de pertes et inclus dans le calcul BIA (Art. 89).',
+                  'L\'incident sera ajouté à la base de pertes et inclus dans le calcul BIA (Art. 89).',
                   style: TextStyle(fontSize: 11, color: _kSuccess),
                 ),
               ),
@@ -5650,7 +5650,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
     );
   }
 
-  // â”€â”€ Helpers visuels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Helpers visuels ───────────────────────────────────────────────────────
   Widget _wizBanner({required IconData icon, required String title, required String subtitle}) => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -5699,14 +5699,14 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
     ),
   );
 
-  // â”€â”€ Boutons navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Boutons navigation ────────────────────────────────────────────────────
   Widget _buildNavRow() => Row(
     children: [
       if (_step > 1)
         OutlinedButton.icon(
           onPressed: _prev,
           icon: const Icon(Icons.chevron_left, size: 18),
-          label: const Text('PrÃ©cÃ©dent'),
+          label: const Text('Précédent'),
           style: OutlinedButton.styleFrom(foregroundColor: _kMuted, side: const BorderSide(color: _kMuted)),
         ),
       const Spacer(),
@@ -5716,7 +5716,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         FilledButton.icon(
           onPressed: _next,
           icon: const Icon(Icons.chevron_right, size: 18),
-          label: Text('Ã‰tape suivante ($_step/$_totalSteps)'),
+          label: Text('Étape suivante ($_step/$_totalSteps)'),
         )
       else
         FilledButton.icon(
@@ -5731,7 +5731,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
   );
 }
 
-// â”€â”€â”€ Shared visual widgets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Shared visual widgets ────────────────────────────────────────────────────
 
 class _RoRiskMatrix extends StatelessWidget {
   const _RoRiskMatrix({required this.risques});
@@ -5749,7 +5749,7 @@ class _RoRiskMatrix extends StatelessWidget {
     final s = p * i;
     if (s <= 4) return 'Faible';
     if (s <= 9) return 'Moyen';
-    if (s <= 16) return 'Ã‰levÃ©';
+    if (s <= 16) return 'Élevé';
     return 'Critique';
   }
 
@@ -5764,15 +5764,15 @@ class _RoRiskMatrix extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // â”€â”€ Axes + grille â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Axes + grille ─────────────────────────────────────────────────
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Colonne gauche : label vertical + numÃ©ros P
+            // Colonne gauche : label vertical + numéros P
             Column(children: [
-              // Espace pour aligner avec le label "IMPACT â†’" + chiffres
+              // Espace pour aligner avec le label "IMPACT →" + chiffres
               SizedBox(height: 34),
-              // NumÃ©ros P (5 â†’ 1, top â†’ bottom)
+              // Numéros P (5 → 1, top → bottom)
               ...List.generate(5, (pi) {
                 final p = 5 - pi;
                 return SizedBox(
@@ -5782,7 +5782,7 @@ class _RoRiskMatrix extends StatelessWidget {
                       RotatedBox(quarterTurns: -1,
                         child: Padding(
                           padding: const EdgeInsets.only(right: 4),
-                          child: Text('PROBABILITÃ‰ â†‘',
+                          child: Text('PROBABILITÉ ↑',
                             style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700,
                               color: _kMuted, letterSpacing: 0.7)),
                         ))
@@ -5801,7 +5801,7 @@ class _RoRiskMatrix extends StatelessWidget {
               children: [
                 // Axe Impact
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('IMPACT â†’',
+                  Text('IMPACT →',
                     style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700,
                       color: _kMuted, letterSpacing: 0.8)),
                   const SizedBox(height: 4),
@@ -5813,7 +5813,7 @@ class _RoRiskMatrix extends StatelessWidget {
                   ))),
                 ]),
                 const SizedBox(height: 4),
-                // Grille 5Ã—5
+                // Grille 5×5
                 ...List.generate(5, (pi) {
                   final p = 5 - pi;
                   return Row(
@@ -5829,8 +5829,8 @@ class _RoRiskMatrix extends StatelessWidget {
                         child: Tooltip(
                         key: ValueKey('matrix_${p}_$impact'),
                         message: cnt == 0
-                            ? 'P=$p Ã— I=$impact = $score ($zl)\nAucun risque positionnÃ© ici'
-                            : 'P=$p Ã— I=$impact = $score ($zl)\n${names.join('\n')}',
+                            ? 'P=$p × I=$impact = $score ($zl)\nAucun risque positionné ici'
+                            : 'P=$p × I=$impact = $score ($zl)\n${names.join('\n')}',
                         waitDuration: const Duration(milliseconds: 300),
                         showDuration: const Duration(seconds: 6),
                         textStyle: const TextStyle(fontSize: 11, color: Colors.white, height: 1.55),
@@ -5889,11 +5889,11 @@ class _RoRiskMatrix extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        // â”€â”€ LÃ©gende â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Légende ───────────────────────────────────────────────────────
         Wrap(spacing: 10, runSpacing: 6, children: [
-          _legendItem('Faible â‰¤4', _kSuccess),
-          _legendItem('Moyen 5â€“9', _kWarning),
-          _legendItem('Ã‰levÃ© 10â€“16', const Color(0xFFF97316)),
+          _legendItem('Faible ≤4', _kSuccess),
+          _legendItem('Moyen 5–9', _kWarning),
+          _legendItem('Élevé 10–16', const Color(0xFFF97316)),
           _legendItem('Critique >16', _kDanger),
         ]),
         if (risques.isNotEmpty) ...[
@@ -6074,7 +6074,7 @@ class _RoLineChartPainter extends CustomPainter {
       textPainter.paint(canvas, Offset(padL + i * step - textPainter.width / 2, padT + h + 6));
     }
 
-    // LÃ©gende
+    // Légende
     canvas.drawLine(const Offset(padL, padT - 4), const Offset(padL + 20, padT - 4), Paint()..color = _kBlue..strokeWidth = 2);
     textPainter.text = const TextSpan(text: 'Brute', style: TextStyle(color: _kMuted, fontSize: 8));
     textPainter.layout();
@@ -6089,7 +6089,7 @@ class _RoLineChartPainter extends CustomPainter {
   bool shouldRepaint(covariant _RoLineChartPainter old) => old.dataBlue != dataBlue;
 }
 
-// â”€â”€â”€ Table helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Table helpers ────────────────────────────────────────────────────────────
 
 TableRow _tableHeader(List<String> headers) {
   return TableRow(
