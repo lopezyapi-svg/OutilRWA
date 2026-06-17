@@ -45,8 +45,8 @@ construit selon la methode MERISE (Methode d'Etude et de Realisation Informatiqu
 pour les Systemes d'Entreprise) normalisee en 3NF (troisieme forme normale), ce
 qui garantit l'absence de redondance et l'integrite des donnees.
 
-ORGANISATION DES TABLES (5 groupes)
--------------------------------------
+ORGANISATION DES TABLES (6 groupes - 35 tables au total)
+----------------------------------------------------------
 1. ENTITES CENTRALES (2 tables) :
    - contreparties : enregistre chaque entite economique (banque, entreprise,
      Etat, organisme public, etc.) avec sa categorie prudentielle et sa notation.
@@ -93,12 +93,24 @@ ORGANISATION DES TABLES (5 groupes)
    - references_notation      : nomenclature officielle des echelons de notation
    - references_pays_souverains: notation souveraine et ponderation par pays
 
-5. REPORTING ET AUDIT (5 tables) :
+5. REPORTING, AUDIT ET SYSTEME (7 tables) :
    - rapports / lignes_rapport   : historique des rapports Excel/PDF generes
    - engagements_hors_bilan      : module dedie aux engagements hors bilan
    - historique_imports          : traçabilite de chaque import CSV/Excel
    - journal_operations          : journal de toutes les operations (CREATE,
      UPDATE, DELETE) pour l'audit
+   - schema_migrations           : versionnement du schema de la base de donnees
+   - metadonnees_app             : parametres et metadonnees de l'application
+
+6. MODULE RISQUE OPERATIONNEL (7 tables) :
+   Module de gestion du risque operationnel (Basel II - Pilier 1 & 2).
+   - ro_incidents      : incidents et evenements de perte operationnelle
+   - ro_kri_definitions: definition des indicateurs cles de risque (KRI)
+   - ro_kri_valeurs    : valeurs mesurees des KRI dans le temps
+   - ro_risques        : cartographie des risques (probabilite x impact)
+   - ro_controles      : resultats des controles de conformite
+   - ro_plans_action   : plans d'action corrective ou preventive
+   - ro_historique     : journal d'audit du module risque operationnel
 
 POINT CLE : LE DISCRIMINANT MERISE
 ------------------------------------
@@ -153,13 +165,17 @@ class expositions as "expositions\n(Expositions)" {
   +crm_existe : INTEGER
   +crm_type : TEXT
   +crm_mode : TEXT
+  +crm_libelle : TEXT
   +crm_couverture_pct : REAL
   +ponderation_initiale : REAL
   +ponderation_finale : REAL
   +ead : REAL
   +rwa : REAL
   +capital : REAL
+  +commentaire : TEXT
   +champs_source_json : TEXT
+  +cree_le : TEXT
+  +modifie_le : TEXT
 }
 
 note bottom of expositions
@@ -252,10 +268,15 @@ class crm_financee as "crm_financee\n(CRM Financee - Collateral)" {
   +type_emetteur : TEXT
   +notation_emetteur : TEXT
   +tranche_maturite : TEXT
-  +elements_panier_json : TEXT
+  +convertible_indice_principal : INTEGER
   +opcvm_decote_max : REAL
+  +elements_panier_json : TEXT
   +decote_change : REAL
   +decote : REAL
+  +devise_exposition : TEXT
+  +ponderation : REAL
+  +collateral_eligible : INTEGER
+  +motif_ineligibilite : TEXT
   +he : REAL
   +hc : REAL
   +hfx : REAL
@@ -264,7 +285,6 @@ class crm_financee as "crm_financee\n(CRM Financee - Collateral)" {
   +ead_apres_crm_financee : REAL
   +rwa_final : REAL
   +gain_crm : REAL
-  +collateral_eligible : INTEGER
 }
 
 class crm_non_financee as "crm_non_financee\n(CRM Non Financee - Garantie)" {
@@ -288,6 +308,8 @@ class crm_garanties as "crm_garanties\n(Garanties multiples)" {
   +montant_couverture : REAL
   +type_garantie : TEXT
   +type_scenario : TEXT
+  +cree_le : TEXT
+  +modifie_le : TEXT
 }
 
 ' ── Engagements hors bilan (module dedie) ────────────────────────────────────
@@ -303,6 +325,9 @@ class engagements_hors_bilan as "engagements_hors_bilan\n(Engagements hors bilan
   +ponderation : REAL
   +rwa : REAL
   +capital : REAL
+  +commentaire : TEXT
+  +cree_le : TEXT
+  +modifie_le : TEXT
 }
 
 ' ── Tables de referentiel (baremes reglementaires) ───────────────────────────
@@ -342,6 +367,9 @@ class rapports as "rapports\n(Rapports generes)" {
   +periode : TEXT
   +type_rapport : TEXT
   +devise : TEXT
+  +perimetre_exposition : TEXT
+  +inclure_graphe_categorie : INTEGER
+  +inclure_graphe_notation : INTEGER
   +chemin_export_excel : TEXT
   +chemin_export_pdf : TEXT
 }
@@ -370,6 +398,7 @@ class historique_imports as "historique_imports\n(Historique imports)" {
   +lignes_importees : INTEGER
   +lignes_rejetees : INTEGER
   +statut : TEXT
+  +details_json : TEXT
 }
 
 class journal_operations as "journal_operations\n(Journal des operations)" {
@@ -379,6 +408,116 @@ class journal_operations as "journal_operations\n(Journal des operations)" {
   +operation : TEXT
   +payload_json : TEXT
   +cree_le : TEXT
+}
+
+' ── Tables systeme (versionnement et metadonnees) ────────────────────────────
+
+class schema_migrations as "schema_migrations\n(Versionnement schema)" {
+  +version : INTEGER <<PK>>
+  +name : TEXT
+  +applied_at : TEXT
+}
+
+class metadonnees_app as "metadonnees_app\n(Metadonnees application)" {
+  +cle : TEXT <<PK>>
+  +valeur : TEXT
+}
+
+' ── Module Risque Operationnel (6 tables) ─────────────────────────────────────
+
+class ro_incidents as "ro_incidents\n(Incidents RO)" {
+  +id : TEXT <<PK>>
+  +reference : TEXT
+  +date_occurrence : TEXT
+  +description : TEXT
+  +ligne_metier : TEXT
+  +type_evenement : TEXT
+  +cause_racine : TEXT
+  +perte_brute : REAL
+  +perte_recuperee : REAL
+  +statut : TEXT
+  +cree_le : TEXT
+  +modifie_le : TEXT
+}
+
+class ro_kri_definitions as "ro_kri_definitions\n(Definitions KRI)" {
+  +id : TEXT <<PK>>
+  +nom : TEXT
+  +unite : TEXT
+  +formule : TEXT
+  +seuil_alerte : REAL
+  +seuil_critique : REAL
+  +sens : TEXT
+  +frequence : TEXT
+}
+
+class ro_kri_valeurs as "ro_kri_valeurs\n(Valeurs KRI)" {
+  +id : TEXT <<PK>>
+  +kri_id : TEXT <<FK>>
+  +date_mesure : TEXT
+  +valeur : REAL
+  +commentaire : TEXT
+  +cree_le : TEXT
+}
+
+class ro_risques as "ro_risques\n(Cartographie risques)" {
+  +id : TEXT <<PK>>
+  +nom : TEXT
+  +categorie : TEXT
+  +ligne_metier : TEXT
+  +probabilite : INTEGER
+  +impact : INTEGER
+  +controle_existant : TEXT
+  +efficacite_controle : INTEGER
+  +plan_action_ref : TEXT
+  +cree_le : TEXT
+  +modifie_le : TEXT
+}
+
+class ro_controles as "ro_controles\n(Controles conformite)" {
+  +id : TEXT <<PK>>
+  +reference : TEXT
+  +perimetre : TEXT
+  +type_controle : TEXT
+  +frequence : TEXT
+  +date_dernier_test : TEXT
+  +resultat : TEXT
+  +points_conformes : INTEGER
+  +points_controles : INTEGER
+  +non_conformites : TEXT
+  +validateur : TEXT
+  +cree_le : TEXT
+  +modifie_le : TEXT
+}
+
+class ro_plans_action as "ro_plans_action\n(Plans d'action)" {
+  +id : TEXT <<PK>>
+  +reference : TEXT
+  +titre : TEXT
+  +description : TEXT
+  +type_action : TEXT
+  +source : TEXT
+  +source_ref : TEXT
+  +responsable : TEXT
+  +date_debut : TEXT
+  +date_echeance : TEXT
+  +priorite : TEXT
+  +statut : TEXT
+  +avancement : INTEGER
+  +cree_le : TEXT
+  +modifie_le : TEXT
+}
+
+class ro_historique as "ro_historique\n(Journal audit RO)" {
+  +id : INTEGER <<PK>>
+  +date_evenement : TEXT
+  +utilisateur : TEXT
+  +menu : TEXT
+  +type_action : TEXT
+  +element : TEXT
+  +ancienne_valeur : TEXT
+  +nouvelle_valeur : TEXT
+  +commentaire : TEXT
 }
 
 ' ── Relations ────────────────────────────────────────────────────────────────
@@ -404,6 +543,8 @@ expositions "1" --> "0..1" crm_non_financee
 expositions "1" --> "0..*" crm_garanties : exposition_id
 
 rapports "1" --> "1..*" lignes_rapport : rapport_id
+
+ro_kri_definitions "1" --> "0..*" ro_kri_valeurs : kri_id
 
 @enduml
 
@@ -534,8 +675,8 @@ package "Backend FastAPI (localhost:8000)" {
 }
 
 database "SQLite rwa_data.db" {
-  [29 Tables]
-  [20 Migrations versionnees]
+  [35 Tables]
+  [22 Migrations versionnees]
 }
 
 ' Flux Frontend -> Backend
@@ -1200,14 +1341,15 @@ database/ (persistance et calcul)
   - services/ : le moteur de calcul RWA (rwa_calculation_service, ~1536 lignes
     implementant les formules BCEAO), le service d'import Excel et le service
     d'export PDF/Excel.
-  - migrations/ : 21 fichiers SQL numerotes (001 a 021) appliques
+  - migrations/ : 22 fichiers SQL numerotes (001 a 022) appliques
     sequentiellement par connection.py a chaque demarrage. Ce systeme de
     migrations versionnees garantit que toute base existante est mise a niveau
     automatiquement, sans perte de donnees.
   - connection.py : gestionnaire de connexion SQLite, gestion des migrations,
     des transactions ACID et de la compatibilite runtime.
-  - schema.sql : definition complete des 29 tables en SQL, utilisee pour les
-    nouvelles installations (base vierge).
+  - schema.sql : definition du schema de base (28 tables) en SQL, completee
+    par les migrations (migration 022 ajoute 7 tables risque operationnel),
+    pour un total de 35 tables sur les nouvelles installations.
 
 PACKAGE FRONTEND
 ----------------
@@ -1230,7 +1372,7 @@ Les fleches pointillees montrent les dependances de compilation ou d'appel :
 Cette structure en oignon garantit qu'aucune couche ne depend d'une couche
 superieure, ce qui rend le systeme testable et evolutif.
 
-SYSTEME DE MIGRATIONS VERSIONNEES (001 a 021)
+SYSTEME DE MIGRATIONS VERSIONNEES (001 a 022)
 ----------------------------------------------
 Chaque fichier de migration est un script SQL numerote. Au demarrage de
 l'application, connection.py verifie la table schema_migrations pour savoir
@@ -1238,8 +1380,9 @@ quelles migrations ont deja ete appliquees, et n'execute que les nouvelles.
 Ce mecanisme permet de deployer des mises a jour de schema (ajout de colonnes,
 renommage de tables, creation de nouvelles tables) sur des bases existantes
 sans recreer la base depuis zero ni perdre les donnees des utilisateurs.
-La migration 021 (021_renommage_francais.sql) est la plus recente : elle
-renomme toutes les tables et colonnes de l'anglais vers le francais.
+La migration 021 (021_renommage_francais.sql) renomme toutes les tables et
+colonnes de l'anglais vers le francais. La migration 022 (022_risque_operationnel.sql)
+ajoute les 7 tables du module de gestion du risque operationnel.
 
 @startuml DiagrammePaquetage
 
@@ -1326,6 +1469,7 @@ package "OutilRWA" {
         [019_exposure_type_tables]
         [020_prudential_type_discriminant]
         [021_renommage_francais]
+        [022_risque_operationnel]
       }
       [connection.py]
       [schema.sql]
@@ -1350,6 +1494,7 @@ package "OutilRWA" {
         [capital_planning_screen]
         [referentiels_screen]
         [rapports_screen]
+        [risque_operationnel_screen]
       }
       package "shared" {
         [app_shell]
