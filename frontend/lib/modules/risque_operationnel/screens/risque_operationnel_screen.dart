@@ -4588,6 +4588,16 @@ class _RegistreViewState extends State<_RegistreView> {
     _search = '';
   });
 
+  // Recadre le scroll horizontal dans ses limites après un changement de colonnes visibles
+  void _clampHScroll() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_hCtrl.hasClients) {
+        final max = _hCtrl.position.maxScrollExtent;
+        if (_hCtrl.offset > max) _hCtrl.jumpTo(max);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -4703,12 +4713,15 @@ class _RegistreViewState extends State<_RegistreView> {
                           color: isDark ? Colors.white70 : const Color(0xFF374151))),
                       const Spacer(),
                       GestureDetector(
-                        onTap: () => setState(() {
-                          final allOn = _visibleCols.every((v) => v);
-                          for (int k = 0; k < _visibleCols.length; k++) {
-                            _visibleCols[k] = !allOn;
-                          }
-                        }),
+                        onTap: () {
+                          setState(() {
+                            final allOn = _visibleCols.every((v) => v);
+                            for (int k = 0; k < _visibleCols.length; k++) {
+                              _visibleCols[k] = !allOn;
+                            }
+                          });
+                          _clampHScroll();
+                        },
                         child: Text(
                           _visibleCols.every((v) => v) ? 'Aucune' : 'Toutes',
                           style: const TextStyle(fontSize: 11, color: AppTheme.accent,
@@ -4722,7 +4735,10 @@ class _RegistreViewState extends State<_RegistreView> {
                     CheckboxMenuButton(
                       value: _visibleCols[ci],
                       onChanged: (v) {
-                        if (v != null) setState(() => _visibleCols[ci] = v);
+                        if (v != null) {
+                          setState(() => _visibleCols[ci] = v);
+                          _clampHScroll();
+                        }
                       },
                       child: Text(_colLabels[ci],
                         style: TextStyle(fontSize: 12,
