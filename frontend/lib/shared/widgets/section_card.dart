@@ -27,47 +27,74 @@ class SectionCard extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final childIsAlreadyFlexible = child is Flexible;
-        final content = constraints.hasBoundedHeight && !childIsAlreadyFlexible
-            ? Expanded(child: child)
-            : child;
+        // Flexible doit rester enfant direct d'un Flex — on insère le padding à l'intérieur.
+        const pad = EdgeInsets.all(AppTheme.spacing);
+        Widget content;
+        if (child is Flexible) {
+          final f = child as Flexible;
+          content = Flexible(
+            flex: f.flex,
+            fit: f.fit,
+            child: Padding(padding: pad, child: f.child),
+          );
+        } else if (constraints.hasBoundedHeight) {
+          content = Expanded(child: Padding(padding: pad, child: child));
+        } else {
+          content = Padding(padding: pad, child: child);
+        }
 
         return Card(
           margin: EdgeInsets.zero,
           clipBehavior: Clip.antiAlias,
-          child: Padding(
-            padding: const EdgeInsets.all(AppTheme.spacing),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (hasHeader) ...[
-                  Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (hasHeader) ...[
+                Container(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppTheme.spacing, AppTheme.spacing - 2,
+                    AppTheme.spacing, AppTheme.spacing - 2,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: dividerColor, width: 0.8),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      if (title.trim().isNotEmpty)
+                      if (title.trim().isNotEmpty) ...[
+                        Container(
+                          width: 3,
+                          height: 14,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accent,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                         Expanded(
                           child: Text(
                             title.tr(context),
                             style: Theme.of(context)
                                 .textTheme
-                                .titleMedium
+                                .titleSmall
                                 ?.copyWith(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? AppTheme.darkText : AppTheme.text,
+                                  letterSpacing: 0.1,
                                 )
                                 .merge(titleStyle),
                           ),
-                        )
-                      else
+                        ),
+                      ] else
                         const Spacer(),
                       if (trailing != null) trailing!,
                     ],
                   ),
-                  const SizedBox(height: AppTheme.spacing),
-                  Divider(color: dividerColor),
-                  const SizedBox(height: AppTheme.spacing),
-                ],
-                content,
+                ),
               ],
-            ),
+              content,
+            ],
           ),
         );
       },

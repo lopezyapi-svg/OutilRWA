@@ -4873,7 +4873,8 @@ class _BondCrdEvolutionChartState extends State<_BondCrdEvolutionChart> {
             final index = metrics.indexNear(event.localPosition.dx);
             if (index != _hoverIndex) setState(() => _hoverIndex = index);
           },
-          onExit: (_) => setState(() => _hoverIndex = null),
+          onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverIndex = null); }),
+
           child: Stack(
             children: [
               CustomPaint(
@@ -11665,7 +11666,8 @@ class _BondRatingBarChartState extends State<_BondRatingBarChart> {
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) => setState(() => _hoverPosition = event.localPosition),
-      onExit: (_) => setState(() => _hoverPosition = null),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
+
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0, end: 1),
         duration: const Duration(milliseconds: 420),
@@ -12085,8 +12087,8 @@ class _BondProfileBreakdownPieState extends State<_BondProfileBreakdownPie> {
             _hoverPosition = event.localPosition;
             _isHovering = true;
           }),
-          onExit: (_) => setState(() {
-            _isHovering = false;
+          onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() { _isHovering = false; });
           }),
           child: SizedBox.square(
             dimension: chartSize,
@@ -12600,8 +12602,10 @@ class _BondDistributionBarRowState extends State<_BondDistributionBarRow> {
           '${widget.entry.label}\n${AppFormatters.percent(widget.entry.share)} du portefeuille\n${_marketReadableMoney(widget.entry.amount)}',
       waitDuration: const Duration(milliseconds: 220),
       child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
+        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
@@ -12790,8 +12794,10 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
           '#${widget.rank} ${widget.entry.label}\n${AppFormatters.percent(widget.entry.share)} du portefeuille\n${_marketReadableMoney(widget.entry.amount)}',
       waitDuration: const Duration(milliseconds: 220),
       child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
+        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
@@ -13043,7 +13049,8 @@ class _BondZoneDonutBreakdownState extends State<_BondZoneDonutBreakdown> {
                 onHover: (event) {
                   setState(() => _hoverPosition = event.localPosition);
                 },
-                onExit: (_) => setState(() => _hoverPosition = null),
+                onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
+
                 child: TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: 1),
                   duration: const Duration(milliseconds: 360),
@@ -13304,8 +13311,10 @@ class _BondZoneRowState extends State<_BondZoneRow> {
     final muted = _marketMutedFor(context);
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 155),
         curve: Curves.easeOutCubic,
@@ -13455,7 +13464,8 @@ class _BondLossDistributionChartState
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) => setState(() => _hoverPosition = event.localPosition),
-      onExit: (_) => setState(() => _hoverPosition = null),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
+
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0, end: _hoverPosition == null ? 0 : 1),
         duration: const Duration(milliseconds: 170),
@@ -13506,7 +13516,8 @@ class _BondMaturityHistogramChartState
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) => setState(() => _hoverPosition = event.localPosition),
-      onExit: (_) => setState(() => _hoverPosition = null),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
+
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0, end: _hoverPosition == null ? 0 : 1),
         duration: const Duration(milliseconds: 170),
@@ -13549,7 +13560,8 @@ class _BondCouponCurveChartState extends State<_BondCouponCurveChart> {
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) => setState(() => _hoverPosition = event.localPosition),
-      onExit: (_) => setState(() => _hoverPosition = null),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
+
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0, end: _hoverPosition == null ? 0 : 1),
         duration: const Duration(milliseconds: 170),
@@ -14590,7 +14602,8 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
             onHover: (event) {
               setState(() => _hoverPosition = event.localPosition);
             },
-            onExit: (_) => setState(() => _hoverPosition = null),
+            onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
+
             child: TweenAnimationBuilder<double>(
               tween: Tween<double>(
                 begin: 0,
@@ -20526,8 +20539,10 @@ class _VarResetDefaultsButtonState extends State<_VarResetDefaultsButton> {
       waitDuration: const Duration(milliseconds: 350),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
+        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: widget.onPressed,
@@ -23846,7 +23861,8 @@ class _MonteCarloDistributionChartState
                     setState(() => _hover = hover);
                   }
                 },
-                onExit: (_) => setState(() => _hover = null),
+                onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hover = null); }),
+
                 child: Stack(
                   children: [
                     TweenAnimationBuilder<double>(
@@ -27066,8 +27082,10 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
     final (numberPart, unitPart) = _splitValue(widget.value);
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,

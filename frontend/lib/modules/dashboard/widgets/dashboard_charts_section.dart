@@ -272,14 +272,14 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                   bottom: index == entries.length - 1 ? 0 : 6,
                                 ),
                                 child: MouseRegion(
-                                  onEnter: (_) => setState(
-                                    () => _activeEntryKey = entryKey,
-                                  ),
-                                  onExit: (_) {
-                                    if (_activeEntryKey == entryKey) {
+                                  onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    if (mounted) setState(() => _activeEntryKey = entryKey);
+                                  }),
+                                  onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    if (mounted && _activeEntryKey == entryKey) {
                                       setState(() => _activeEntryKey = null);
                                     }
-                                  },
+                                  }),
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment:
@@ -1069,12 +1069,14 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                   return Expanded(
                     child: MouseRegion(
                       cursor: SystemMouseCursors.click,
-                      onEnter: (_) => setState(() => _hoveredIndex = index),
-                      onExit: (_) {
-                        if (_hoveredIndex == index) {
+                      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted) setState(() => _hoveredIndex = index);
+                      }),
+                      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && _hoveredIndex == index) {
                           setState(() => _hoveredIndex = null);
                         }
-                      },
+                      }),
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: () => setState(() => _selectedIndex = index),

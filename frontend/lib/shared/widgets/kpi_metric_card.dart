@@ -40,13 +40,13 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surface = isDark
-        ? Colors.white.withValues(alpha: 0.035)
-        : widget.color.withValues(alpha: 0.050);
-    final border = widget.color.withValues(
-      alpha: _hovered ? (isDark ? 0.38 : 0.42) : (isDark ? 0.24 : 0.28),
+        ? Colors.white.withValues(alpha: 0.04)
+        : AppTheme.card;
+    final borderColor = widget.color.withValues(
+      alpha: _hovered ? (isDark ? 0.40 : 0.45) : (isDark ? 0.18 : 0.0),
     );
     final titleColor = isDark ? AppTheme.darkText : AppTheme.text;
-    final mutedColor = isDark ? AppTheme.darkMuted : const Color(0xFF5E6B82);
+    final mutedColor = isDark ? AppTheme.darkMuted : AppTheme.muted;
     final indicatorInfo = _KpiIndicatorInfo.resolve(
       label: widget.label,
       helper: widget.helper,
@@ -54,9 +54,24 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
     final label = widget.label.tr(context).toUpperCase();
     final value = widget.value;
 
+    // Calcul du trend (variation entre avant-dernier et dernier point)
+    String? trendStr;
+    Color? trendColor;
+    if (widget.trend.length >= 2) {
+      final last = widget.trend.last;
+      final prev = widget.trend[widget.trend.length - 2];
+      if (prev != 0) {
+        final pct = ((last - prev) / prev) * 100;
+        trendStr = '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(1)}%';
+        trendColor = pct >= 0 ? AppTheme.success : AppTheme.danger;
+      }
+    }
+
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
       child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
@@ -64,26 +79,21 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
           height: widget.height,
-          transform: Matrix4.translationValues(0, _hovered ? -1 : 0, 0),
-          padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
+          transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
           decoration: BoxDecoration(
             color: surface,
             borderRadius: BorderRadius.circular(widget.borderRadius),
-            border: Border.all(
-              color: border,
-              width: _hovered ? 1 : 0.8,
-            ),
-            boxShadow: _hovered
-                ? [
-                    BoxShadow(
-                      color: isDark
-                          ? Colors.black.withValues(alpha: 0.12)
-                          : const Color(0xFF334155).withValues(alpha: 0.07),
-                      blurRadius: 11,
-                      offset: const Offset(0, 5),
-                    ),
-                  ]
-                : null,
+            border: Border.all(color: borderColor, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.18)
+                    : const Color(0xFF4318FF).withValues(alpha: _hovered ? 0.10 : 0.05),
+                blurRadius: _hovered ? 18 : 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -93,21 +103,21 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
                 isDark: isDark,
                 borderRadius: widget.borderRadius,
                 child: Container(
-                  width: 21,
-                  height: 21,
+                  width: 40,
+                  height: 40,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: isDark ? 0.16 : 0.12),
-                    borderRadius: BorderRadius.circular(widget.borderRadius),
+                    color: widget.color.withValues(alpha: isDark ? 0.18 : 0.10),
+                    borderRadius: BorderRadius.circular(widget.borderRadius * 0.7),
                   ),
                   child: Icon(
                     widget.icon,
                     color: widget.color,
-                    size: 11.5,
+                    size: 18,
                   ),
                 ),
               ),
-              const SizedBox(width: 7),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -120,13 +130,13 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
                       style: TextStyle(
                         color: mutedColor,
                         fontFamily: AppTheme.fontFamily,
-                        fontSize: 7.2,
+                        fontSize: 8.5,
                         fontWeight: FontWeight.w600,
-                        letterSpacing: 0,
+                        letterSpacing: 0.2,
                         height: 1,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 5),
                     SizedBox(
                       width: double.infinity,
                       child: FittedBox(
@@ -138,14 +148,39 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
                           style: TextStyle(
                             color: titleColor,
                             fontFamily: AppTheme.fontFamily,
-                            fontSize: 11.7,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
                             height: 1,
                           ),
                         ),
                       ),
                     ),
+                    if (trendStr != null) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            trendColor == AppTheme.success
+                                ? Icons.arrow_upward_rounded
+                                : Icons.arrow_downward_rounded,
+                            size: 9,
+                            color: trendColor,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            trendStr,
+                            style: TextStyle(
+                              color: trendColor,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

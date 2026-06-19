@@ -14,21 +14,21 @@ class AppTheme {
     'General Sans',
     'Nunito Sans',
   ];
-  static const double radius = 5;
-  static const double spacing = 10;
-  static const double pagePadding = 16;
-  static const double pageGap = 12;
-  static const Color sidebar = Color(0xFF172B4D);
-  static const Color sidebarLight = Color(0xFF23477A);
-  static const Color accent = Color(0xFF2563EB);
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color danger = Color(0xFFEF4444);
-  static const Color background = Color(0xFFF0F1F6);
+  static const double radius = 14;
+  static const double spacing = 12;
+  static const double pagePadding = 18;
+  static const double pageGap = 14;
+  static const Color sidebar = Color(0xFF11047A);
+  static const Color sidebarLight = Color(0xFF190793);
+  static const Color accent = Color(0xFF4318FF);
+  static const Color success = Color(0xFF05CD99);
+  static const Color warning = Color(0xFFFFB547);
+  static const Color danger = Color(0xFFEE5D50);
+  static const Color background = Color(0xFFF4F7FE);
   static const Color card = Color(0xFFFFFFFF);
-  static const Color border = Color(0xFFE2E7F2);
-  static const Color text = Color(0xFF13203A);
-  static const Color muted = Color(0xFF64748B);
+  static const Color border = Color(0xFFE9EDF7);
+  static const Color text = Color(0xFF1B2559);
+  static const Color muted = Color(0xFF707EAE);
   static const Color darkBackground = Color(0xFF081028);
   static const Color darkCard = Color(0xFF111827);
   static const Color darkBorder = Color(0xFF1F2937);
@@ -103,10 +103,13 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: surfaceColor,
-        elevation: 0,
+        elevation: brightness == Brightness.light ? 1 : 0,
+        shadowColor: const Color(0xFF4318FF).withValues(alpha: 0.07),
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.all(Radius.circular(radius)),
-          side: BorderSide(color: borderColor),
+          side: brightness == Brightness.dark
+              ? BorderSide(color: borderColor, width: 0.5)
+              : BorderSide.none,
         ),
       ),
       appBarTheme: AppBarTheme(
@@ -161,28 +164,30 @@ class AppTheme {
           color: mutedColor,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(radius / 2),
           borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(radius / 2),
           borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
+          borderRadius: BorderRadius.circular(radius / 2),
           borderSide: BorderSide(color: accentColor, width: 1.2),
         ),
-        focusedErrorBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: danger, width: 1.2),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radius / 2),
+          borderSide: const BorderSide(color: danger, width: 1.2),
         ),
-        errorBorder: const OutlineInputBorder(
-          borderRadius: BorderRadius.zero,
-          borderSide: BorderSide(color: danger),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(radius / 2),
+          borderSide: const BorderSide(color: danger),
         ),
       ),
-      dialogTheme: const DialogThemeData(
-        shape: RoundedRectangleBorder(),
+      dialogTheme: DialogThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius),
+        ),
       ),
       scrollbarTheme: const ScrollbarThemeData(
         radius: Radius.circular(999),

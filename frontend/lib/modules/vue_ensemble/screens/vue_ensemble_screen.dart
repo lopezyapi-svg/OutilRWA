@@ -1407,8 +1407,10 @@ class _CommandRiskRowState extends State<_CommandRiskRow> {
     final accentColor = widget.item.color;
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
       child: AnimatedScale(
         scale: _hovered ? 1.004 : 1,
         duration: const Duration(milliseconds: 180),
@@ -4011,8 +4013,10 @@ class _RiskSummaryTileState extends State<_RiskSummaryTile> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 112;
@@ -6553,8 +6557,10 @@ class _HoverProgressState extends State<_HoverProgress> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(end: _hovered ? 1 : 0),
         duration: const Duration(milliseconds: 240),

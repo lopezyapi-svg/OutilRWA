@@ -144,8 +144,10 @@ class _KpiCardState extends State<_KpiCard> {
       message: tooltipMessage,
       waitDuration: const Duration(milliseconds: 300),
       child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
+        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
         child: GestureDetector(
           onTap: widget.onTap,
           behavior: HitTestBehavior.opaque,
@@ -376,8 +378,10 @@ class _DensityMiniCardState extends State<_DensityMiniCard> {
     );
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+
       child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
