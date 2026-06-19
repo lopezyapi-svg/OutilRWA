@@ -522,7 +522,7 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                     flex: 2,
                     child: Text(
                       formatCurrencyCompact(exposure.rwa),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: AppColors.danger,
@@ -538,7 +538,7 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.ratingColor(exposure.rating)
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
@@ -572,7 +572,7 @@ class _AnalyseScreenState extends State<AnalyseScreen> {
       child: Center(
         child: Column(
           children: [
-            Icon(
+            const Icon(
               Icons.check_circle_outline,
               size: 48,
               color: AppColors.success,

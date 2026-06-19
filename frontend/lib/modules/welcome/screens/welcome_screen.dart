@@ -319,7 +319,7 @@ class _WelcomeMark extends StatelessWidget {
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(5),
-            child: DesktopAssetImage(
+            child: const DesktopAssetImage(
               'assets/images/logo.png',
               fit: BoxFit.contain,
               filterQuality: FilterQuality.high,

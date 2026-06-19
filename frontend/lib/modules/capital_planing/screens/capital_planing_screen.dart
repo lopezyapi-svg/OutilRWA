@@ -476,7 +476,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         CupertinoIcons.lightbulb_fill,
                         size: 18,
                         color: AppColors.warning,
@@ -510,7 +510,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     CupertinoIcons.check_mark_circled_solid,
                     size: 20,
                     color: AppColors.success,
@@ -602,7 +602,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
                 width: 6,
                 height: 6,
                 margin: const EdgeInsets.only(top: 6),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.warning,
                   shape: BoxShape.circle,
                 ),
@@ -626,7 +626,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
                       ),
                       TextSpan(
                         text: AppFormatters.currency(gap),
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           color: AppColors.warning,
                         ),
@@ -665,7 +665,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
     for (var i = 0; i < 5; i++) {
       final year = baseYear + i;
       final rwa = baseRWA * math.pow(1 + growthRate, i);
-      final capital = baseCapital; // Capital stable
+      const capital = baseCapital; // Capital stable
       final ratio = capital / rwa;
 
       projections.add(
@@ -743,7 +743,7 @@ class _CapitalProjectionChartPainter extends CustomPainter {
       ..strokeWidth = 1.5;
 
     canvas.drawLine(
-      Offset(leftPadding, padding),
+      const Offset(leftPadding, padding),
       Offset(leftPadding, padding + chartHeight),
       axisPaint,
     );
@@ -774,7 +774,7 @@ class _CapitalProjectionChartPainter extends CustomPainter {
 
     // Draw threshold label
     final thresholdTextPainter = TextPainter(
-      text: TextSpan(
+      text: const TextSpan(
         text: 'Seuil 10.5%',
         style: TextStyle(
           color: AppColors.danger,
@@ -869,7 +869,7 @@ class _CapitalProjectionChartPainter extends CustomPainter {
     }
 
     // Draw Y-axis labels
-    final numYLabels = 5;
+    const numYLabels = 5;
     for (var i = 0; i <= numYLabels; i++) {
       final ratio = minY + (maxY - minY) * (i / numYLabels);
       final y = padding + chartHeight * (1 - i / numYLabels);

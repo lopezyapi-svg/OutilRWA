@@ -26433,7 +26433,6 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
 
   List<MarketPortfolioRecord> get _bonds {
     final snapshot = MarketDataImportStore.instance.snapshotNotifier.value;
-    if (snapshot == null) return [];
     final dataset = snapshot.datasetFor(MarketPortfolioType.bonds);
     if (dataset == null) return [];
     return dataset.records;
@@ -26457,7 +26456,9 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
 
   double _positionValue(MarketPortfolioRecord r) {
     if (r.maturityDate != null &&
-        !r.maturityDate!.isAfter(r.resolvedAnalysisDate)) return 0;
+        !r.maturityDate!.isAfter(r.resolvedAnalysisDate)) {
+      return 0;
+    }
     if (r.presentValue > 0) return convertCurrencyAmount(r.presentValue, fromCurrency: r.currency, toCurrency: 'XOF');
     if (r.quantity > 0 && r.marketPrice > 0) return convertCurrencyAmount(r.quantity * r.marketPrice, fromCurrency: r.currency, toCurrency: 'XOF');
     final explicit = math.max(0.0, r.valuationAmount);
@@ -26568,8 +26569,8 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           )),
           const SizedBox(height: 8),
           _selectedView == 0
-              ? _totalRow('Total Risque Spécifique', '${_fmt(totalSpecific)}')
-              : _totalRow('Exigence Risque Général', '${_fmt(totalGeneral)}'),
+              ? _totalRow('Total Risque Spécifique', _fmt(totalSpecific))
+              : _totalRow('Exigence Risque Général', _fmt(totalGeneral)),
         ],
       ),
     );
@@ -26620,7 +26621,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
             Expanded(child: Text(_fmt(pos), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: textColor))),
             Expanded(child: Text(r.rating.isNotEmpty ? r.rating : 'NR', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
             Expanded(child: Text('${(w * 100).toStringAsFixed(1)} %', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
-            Expanded(child: Text('${_fmt(exigence)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.accent))),
+            Expanded(child: Text(_fmt(exigence), textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.accent))),
           ]),
         );
       }).toList(),
@@ -26651,7 +26652,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
             Expanded(child: Text(r.issuer, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
             Expanded(child: Text(_fmt(pos), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: textColor))),
             Expanded(child: Text(label, textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
-            Expanded(child: Text('${_fmt(exigence)}', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.accent))),
+            Expanded(child: Text(_fmt(exigence), textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.accent))),
           ]),
         );
       }).toList(),
@@ -26728,8 +26729,7 @@ class _TauxSummaryRow extends StatelessWidget {
     this.generalRisk = '21 000 000 FCFA',
     this.exigenceFP = '40 000 000 FCFA',
     this.rwa = '500 000 000 FCFA',
-    this.contribution = '45.2 %',
-  });
+  }) : contribution = '45.2 %';
   final Color textColor, muted, border, surface;
   final String specificRisk, generalRisk, exigenceFP, rwa, contribution;
 
@@ -26783,13 +26783,13 @@ RWA Taux = 40 000 000 × 12,5 = 500 000 000 FCFA''';
                 ),
                 child: Row(children: [
                   Expanded(child: _TauxSummaryItem(label: 'Risque Spécifique', value: specificRisk, accentColor: const Color(0xFF2563EB), icon: Icons.shield_outlined)),
-                  _TauxSummaryDivider(),
+                  const _TauxSummaryDivider(),
                   Expanded(child: _TauxSummaryItem(label: 'Risque Général', value: generalRisk, accentColor: const Color(0xFF7C3AED), icon: Icons.multiline_chart_rounded)),
-                  _TauxSummaryDivider(),
+                  const _TauxSummaryDivider(),
                   Expanded(child: _TauxSummaryItem(label: 'Exigence FP Taux', value: exigenceFP, accentColor: const Color(0xFF059669), icon: Icons.account_balance_wallet_rounded)),
-                  _TauxSummaryDivider(),
+                  const _TauxSummaryDivider(),
                   Expanded(child: _TauxSummaryItem(label: 'RWA Taux', value: rwa, accentColor: const Color(0xFFD97706), icon: Icons.account_balance_rounded)),
-                  _TauxSummaryDivider(),
+                  const _TauxSummaryDivider(),
                   Expanded(child: _TauxSummaryItem(label: 'Contribution Risque Marché', value: contribution, accentColor: const Color(0xFFDC2626), icon: Icons.pie_chart_rounded)),
                 ]),
               ),
@@ -26809,7 +26809,7 @@ RWA Taux = 40 000 000 × 12,5 = 500 000 000 FCFA''';
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(color: const Color(0xFF4F46E5).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
-              child: Icon(Icons.info_outline, size: 12, color: const Color(0xFF4F46E5)),
+              child: const Icon(Icons.info_outline, size: 12, color: Color(0xFF4F46E5)),
             ),
           ),
         ),
@@ -26849,7 +26849,7 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
             const SizedBox(height: 4),
             Text(widget.value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: widget.accentColor, letterSpacing: -0.3)),
             const SizedBox(height: 2),
-            Text(widget.label, style: TextStyle(fontSize: 10, color: const Color(0xFF234A84), letterSpacing: 0.2)),
+            Text(widget.label, style: const TextStyle(fontSize: 10, color: Color(0xFF234A84), letterSpacing: 0.2)),
           ],
         ),
       ),
@@ -26886,14 +26886,14 @@ class _TauxTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final border = const Color(0xFF234A84);
+    const border = Color(0xFF234A84);
     return Column(
       children: [
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.08)),
-          child: Row(children: columns.map((c) => Expanded(child: Text(c, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.accent)))).toList()),
+          child: Row(children: columns.map((c) => Expanded(child: Text(c, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.accent)))).toList()),
         ),
         ...rows.map((row) => Container(
           width: double.infinity,
@@ -26927,7 +26927,7 @@ class _TauxTotalRow extends StatelessWidget {
       child: Row(children: [
         Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _marketTextFor(context))),
         const Spacer(),
-        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.accent)),
+        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.accent)),
       ]),
     );
   }
@@ -26961,7 +26961,7 @@ class _TauxAuditLine extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(width: 160, child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _marketMutedFor(context)))),
-          Expanded(child: Text(value, style: TextStyle(fontSize: 12, color: AppColors.accent))),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 12, color: AppColors.accent))),
         ],
       ),
     );
@@ -27135,7 +27135,7 @@ class _GenericSummaryRow extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(color: const Color(0xFF4F46E5).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
-              child: Icon(Icons.info_outline, size: 12, color: const Color(0xFF4F46E5)),
+              child: const Icon(Icons.info_outline, size: 12, color: Color(0xFF4F46E5)),
             ),
           ),
         ),
@@ -27160,7 +27160,7 @@ class _ChangeRiskScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding, AppTheme.pageGap, AppTheme.pagePadding, AppTheme.pagePadding),
       child: Column(
         children: [
-          _GenericSummaryRow(
+          const _GenericSummaryRow(
             tooltipContent: '''
 Risque de Change — Dispositif prudentiel UEMOA
 
@@ -27172,7 +27172,7 @@ Positions par devise :
 
 Exigence FP Change = max(Positions_longues, Positions_courtes) × 8 %
 RWA Change = Exigence FP Change × 12,5''',
-            items: const [
+            items: [
               _SummaryItemData(label: 'Position Nette Globale', value: '1 350 000 000 FCFA', accentColor: Color(0xFF2563EB), icon: Icons.trending_up_rounded),
               _SummaryItemData(label: 'Position Brute Globale', value: '1 950 000 000 FCFA', accentColor: Color(0xFF7C3AED), icon: Icons.compare_arrows_rounded),
               _SummaryItemData(label: 'Plus Grande Jambe', value: '1 700 000 000 FCFA', accentColor: Color(0xFF059669), icon: Icons.straighten_rounded),
@@ -27203,22 +27203,22 @@ RWA Change = Exigence FP Change × 12,5''',
   }
 
   Widget _buildBloc1(BuildContext context) {
-    return _MarketCard(
+    return const _MarketCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TauxBlockHeader(title: 'Positions par Devise', icon: Icons.currency_exchange_rounded),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTable(
-            columns: const ['Devise', 'Position Longue', 'Position Courte', 'Position Nette', 'Position Brute'],
-            rows: const [
+            columns: ['Devise', 'Position Longue', 'Position Courte', 'Position Nette', 'Position Brute'],
+            rows: [
               ['EUR', '800 000 000', '-200 000 000', '600 000 000', '1 000 000 000'],
               ['USD', '500 000 000', '-100 000 000', '400 000 000', '600 000 000'],
               ['GBP', '300 000 000', '-50 000 000', '250 000 000', '350 000 000'],
               ['JPY', '100 000 000', '0', '100 000 000', '100 000 000'],
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTotalRow(label: 'Total Positions', value: '1 950 000 000 FCFA'),
         ],
       ),
@@ -27230,11 +27230,11 @@ RWA Change = Exigence FP Change × 12,5''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(title: 'Scénarios de Choc', icon: Icons.bolt_rounded),
+          const _TauxBlockHeader(title: 'Scénarios de Choc', icon: Icons.bolt_rounded),
           const SizedBox(height: 12),
-          _TauxTable(
-            columns: const ['Scénario', 'Impact sur Long', 'Impact sur Short', 'Impact Net'],
-            rows: const [
+          const _TauxTable(
+            columns: ['Scénario', 'Impact sur Long', 'Impact sur Short', 'Impact Net'],
+            rows: [
               ['Dépréciation 5 %', '85 000 000', '-42 500 000', '42 500 000'],
               ['Dépréciation 10 %', '170 000 000', '-85 000 000', '85 000 000'],
             ],
@@ -27243,9 +27243,9 @@ RWA Change = Exigence FP Change × 12,5''',
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.warning),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text('Choc de 10 % : impact net estimé à 85 000 000 FCFA', style: TextStyle(fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.w500)),
             ]),
           ),
@@ -27259,20 +27259,20 @@ RWA Change = Exigence FP Change × 12,5''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(title: 'Résultat Prudentiel', icon: Icons.calculate_rounded),
+          const _TauxBlockHeader(title: 'Résultat Prudentiel', icon: Icons.calculate_rounded),
           const SizedBox(height: 16),
-          _TauxResultLine(label: 'Plus Grande Jambe (Longue)', value: '1 700 000 000 FCFA'),
-          _TauxResultLine(label: 'Taux Applicable', value: '8 %'),
+          const _TauxResultLine(label: 'Plus Grande Jambe (Longue)', value: '1 700 000 000 FCFA'),
+          const _TauxResultLine(label: 'Taux Applicable', value: '8 %'),
           const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(height: 1)),
-          _TauxResultLine(label: 'Exigence FP Change', value: '136 000 000 FCFA', bold: true),
-          _TauxResultLine(label: 'RWA Change', value: '1 700 000 000 FCFA', bold: true),
+          const _TauxResultLine(label: 'Exigence FP Change', value: '136 000 000 FCFA', bold: true),
+          const _TauxResultLine(label: 'RWA Change', value: '1 700 000 000 FCFA', bold: true),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.info_outline, size: 16, color: AppColors.accent),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text('Formule : Exigence Change = max(Positions longues, Positions courtes) × 8 %', style: TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.w500)),
             ]),
           ),
@@ -27282,23 +27282,23 @@ RWA Change = Exigence FP Change × 12,5''',
   }
 
   Widget _buildBloc4(BuildContext context) {
-    return _MarketCard(
+    return const _MarketCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TauxBlockHeader(title: 'Audit', icon: Icons.description_outlined),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxAuditLine(label: 'Données utilisées', value: 'Portefeuille devises au 31/05/2026 (4 devises)'),
           _TauxAuditLine(label: 'Source', value: 'Système de gestion centralisé (Bloomberg / Reuters)'),
           _TauxAuditLine(label: 'Méthode de calcul', value: 'Méthode standard Bâle II / BCEAO'),
           _TauxAuditLine(label: 'Devise de référence', value: 'FCFA (XOF)'),
           _TauxAuditLine(label: 'Taux de change utilisé', value: 'Cours BCEAO au 31/05/2026'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTableHeader('Journal détaillé des calculs'),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _TauxTable(
-            columns: const ['Étape', 'Description', 'Valeur'],
-            rows: const [
+            columns: ['Étape', 'Description', 'Valeur'],
+            rows: [
               ['1', 'Extraction des positions en devises', '4 devises hors XOF'],
               ['2', 'Calcul des positions nettes par devise', 'Terminé'],
               ['3', 'Détermination de la plus grande jambe', '1 700 000 000 FCFA'],
@@ -27329,7 +27329,7 @@ class _ActionRiskScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding, AppTheme.pageGap, AppTheme.pagePadding, AppTheme.pagePadding),
       child: Column(
         children: [
-          _GenericSummaryRow(
+          const _GenericSummaryRow(
             tooltipContent: '''
 Risque Actions — Dispositif prudentiel UEMOA
 
@@ -27345,7 +27345,7 @@ Risque Général :
 
 Exigence FP Actions = Position brute × 8 %
 RWA Actions = Exigence FP Actions × 12,5''',
-            items: const [
+            items: [
               _SummaryItemData(label: 'Valeur de Marché', value: '2 000 000 000 FCFA', accentColor: Color(0xFF2563EB), icon: Icons.trending_up_rounded),
               _SummaryItemData(label: 'Beta Portefeuille', value: '1.15', accentColor: Color(0xFF7C3AED), icon: Icons.show_chart_rounded),
               _SummaryItemData(label: 'Volatilité', value: '18.3 %', accentColor: Color(0xFF059669), icon: Icons.multiline_chart_rounded),
@@ -27376,15 +27376,15 @@ RWA Actions = Exigence FP Actions × 12,5''',
   }
 
   Widget _buildBloc1(BuildContext context) {
-    return _MarketCard(
+    return const _MarketCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TauxBlockHeader(title: 'Portefeuille Actions', icon: Icons.show_chart_rounded),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTable(
-            columns: const ['Émetteur', 'Valeur Marché', 'Pondération', 'Beta', 'Contribution'],
-            rows: const [
+            columns: ['Émetteur', 'Valeur Marché', 'Pondération', 'Beta', 'Contribution'],
+            rows: [
               ['ORANGE CI', '500 000 000', '25.0 %', '1.20', '0.30'],
               ['ECOBANK CI', '400 000 000', '20.0 %', '1.05', '0.21'],
               ['SGB CI', '300 000 000', '15.0 %', '1.10', '0.17'],
@@ -27395,7 +27395,7 @@ RWA Actions = Exigence FP Actions × 12,5''',
               ['Autres', '50 000 000', '2.5 %', '1.00', '0.03'],
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTotalRow(label: 'Total Portefeuille', value: '2 000 000 000 FCFA'),
         ],
       ),
@@ -27407,11 +27407,11 @@ RWA Actions = Exigence FP Actions × 12,5''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(title: 'Indicateurs Synthétiques', icon: Icons.analytics_rounded),
+          const _TauxBlockHeader(title: 'Indicateurs Synthétiques', icon: Icons.analytics_rounded),
           const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Column(children: const [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Column(children: [
               _TauxResultLine(label: 'Rendement du Portefeuille', value: '12.5 %'),
               _TauxResultLine(label: 'Volatilité du Portefeuille', value: '18.3 %'),
               _TauxResultLine(label: 'Beta du Portefeuille', value: '1.15'),
@@ -27423,9 +27423,9 @@ RWA Actions = Exigence FP Actions × 12,5''',
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.info_outline, size: 16, color: AppColors.accent),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text('β_portefeuille = Σ(β_i × poids_i)', style: TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.w500)),
             ]),
           ),
@@ -27439,20 +27439,20 @@ RWA Actions = Exigence FP Actions × 12,5''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(title: 'Résultat Prudentiel', icon: Icons.calculate_rounded),
+          const _TauxBlockHeader(title: 'Résultat Prudentiel', icon: Icons.calculate_rounded),
           const SizedBox(height: 16),
-          _TauxResultLine(label: 'Position Brute Actions', value: '2 000 000 000 FCFA'),
-          _TauxResultLine(label: 'Taux Applicable', value: '8 %'),
+          const _TauxResultLine(label: 'Position Brute Actions', value: '2 000 000 000 FCFA'),
+          const _TauxResultLine(label: 'Taux Applicable', value: '8 %'),
           const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(height: 1)),
-          _TauxResultLine(label: 'Exigence FP Actions', value: '160 000 000 FCFA', bold: true),
-          _TauxResultLine(label: 'RWA Actions', value: '2 000 000 000 FCFA', bold: true),
+          const _TauxResultLine(label: 'Exigence FP Actions', value: '160 000 000 FCFA', bold: true),
+          const _TauxResultLine(label: 'RWA Actions', value: '2 000 000 000 FCFA', bold: true),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.info_outline, size: 16, color: AppColors.accent),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text('Formule : Exigence Actions = Position_brute × 8 % (Bâle II standard)', style: TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.w500)),
             ]),
           ),
@@ -27462,23 +27462,23 @@ RWA Actions = Exigence FP Actions × 12,5''',
   }
 
   Widget _buildBloc4(BuildContext context) {
-    return _MarketCard(
+    return const _MarketCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TauxBlockHeader(title: 'Audit', icon: Icons.description_outlined),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxAuditLine(label: 'Données utilisées', value: 'Portefeuille actions au 31/05/2026 (8 lignes)'),
           _TauxAuditLine(label: 'Source', value: 'Système de gestion centralisé (Bloomberg / Reuters)'),
           _TauxAuditLine(label: 'Méthode de calcul', value: 'Méthode standard (Bâle II / BCEAO)'),
           _TauxAuditLine(label: 'Place de cotation', value: 'BRVM / Bourse Régionale'),
           _TauxAuditLine(label: 'Devise de cotation', value: 'FCFA (XOF)'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTableHeader('Journal détaillé des calculs'),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _TauxTable(
-            columns: const ['Étape', 'Description', 'Valeur'],
-            rows: const [
+            columns: ['Étape', 'Description', 'Valeur'],
+            rows: [
               ['1', 'Extraction des lignes actions', '8 émetteurs'],
               ['2', 'Valorisation des positions', '2 000 000 000 FCFA'],
               ['3', 'Calcul des pondérations et beta', 'Terminé'],
@@ -27509,7 +27509,7 @@ class _ExigenceFPScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding, AppTheme.pageGap, AppTheme.pagePadding, AppTheme.pagePadding),
       child: Column(
         children: [
-          _GenericSummaryRow(
+          const _GenericSummaryRow(
             tooltipContent: '''
 Exigence Fonds Propres Marché — Dispositif prudentiel UEMOA
 
@@ -27522,7 +27522,7 @@ L'exigence de fonds propres pour risque de marché est la somme des exigences pa
 RWA Marché = Exigence FP Marché × 12,5
 
 Ratio de solvabilité = FP / RWA ≥ 8 % (BCEAO)''',
-            items: const [
+            items: [
               _SummaryItemData(label: 'Risque de Taux', value: '12 980 000 FCFA', accentColor: Color(0xFF2563EB), icon: Icons.trending_up_rounded),
               _SummaryItemData(label: 'Risque Actions', value: '160 000 000 FCFA', accentColor: Color(0xFF7C3AED), icon: Icons.show_chart_rounded),
               _SummaryItemData(label: 'Risque de Change', value: '136 000 000 FCFA', accentColor: Color(0xFF059669), icon: Icons.currency_exchange_rounded),
@@ -27557,11 +27557,11 @@ Ratio de solvabilité = FP / RWA ≥ 8 % (BCEAO)''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(title: 'Synthèse par Type de Risque', icon: Icons.pie_chart_rounded),
+          const _TauxBlockHeader(title: 'Synthèse par Type de Risque', icon: Icons.pie_chart_rounded),
           const SizedBox(height: 12),
-          _TauxTable(
-            columns: const ['Type de Risque', 'Spécifique', 'Général', 'Total', 'RWA'],
-            rows: const [
+          const _TauxTable(
+            columns: ['Type de Risque', 'Spécifique', 'Général', 'Total', 'RWA'],
+            rows: [
               ['Risque de Taux', '19 000 000', '21 000 000', '40 000 000', '500 000 000'],
               ['Risque Actions', '160 000 000', '0', '160 000 000', '2 000 000 000'],
               ['Risque de Change', '0', '136 000 000', '136 000 000', '1 700 000 000'],
@@ -27571,10 +27571,10 @@ Ratio de solvabilité = FP / RWA ≥ 8 % (BCEAO)''',
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: const Color(0xFF4F46E5).withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
-            child: Row(children: [
-              Icon(Icons.info_outline, size: 16, color: const Color(0xFF4F46E5)),
-              const SizedBox(width: 8),
-              Text('RWA Marché = Exigence FP Marché × 12,5 (BCEAO - Article 45)', style: TextStyle(fontSize: 12, color: const Color(0xFF4F46E5), fontWeight: FontWeight.w500)),
+            child: const Row(children: [
+              Icon(Icons.info_outline, size: 16, color: Color(0xFF4F46E5)),
+              SizedBox(width: 8),
+              Text('RWA Marché = Exigence FP Marché × 12,5 (BCEAO - Article 45)', style: TextStyle(fontSize: 12, color: Color(0xFF4F46E5), fontWeight: FontWeight.w500)),
             ]),
           ),
         ],
@@ -27583,15 +27583,15 @@ Ratio de solvabilité = FP / RWA ≥ 8 % (BCEAO)''',
   }
 
   Widget _buildBloc2(BuildContext context) {
-    return _MarketCard(
+    return const _MarketCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TauxBlockHeader(title: 'Détail des Composants', icon: Icons.details_rounded),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Column(children: const [
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Column(children: [
               _TauxResultLine(label: 'Interest Rate Specific Risk', value: '19 000 000 FCFA'),
               _TauxResultLine(label: 'Interest Rate General Risk', value: '21 000 000 FCFA'),
               _TauxResultLine(label: 'Equity Specific Risk', value: '160 000 000 FCFA'),
@@ -27611,19 +27611,19 @@ Ratio de solvabilité = FP / RWA ≥ 8 % (BCEAO)''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(title: 'Vérification Réglementaire', icon: Icons.verified_rounded),
+          const _TauxBlockHeader(title: 'Vérification Réglementaire', icon: Icons.verified_rounded),
           const SizedBox(height: 16),
-          _TauxResultLine(label: 'Fonds Propres Disponibles', value: '4 200 000 000 FCFA'),
-          _TauxResultLine(label: 'RWA Marché', value: '3 862 250 000 FCFA'),
-          _TauxResultLine(label: 'Ratio de Solvabilité', value: '108.7 %'),
-          _TauxResultLine(label: 'Seuil Minimal (BCEAO)', value: '8.0 %'),
+          const _TauxResultLine(label: 'Fonds Propres Disponibles', value: '4 200 000 000 FCFA'),
+          const _TauxResultLine(label: 'RWA Marché', value: '3 862 250 000 FCFA'),
+          const _TauxResultLine(label: 'Ratio de Solvabilité', value: '108.7 %'),
+          const _TauxResultLine(label: 'Seuil Minimal (BCEAO)', value: '8.0 %'),
           const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(height: 1)),
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.check_circle, size: 16, color: AppColors.success),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text('Conforme — Ratio de solvabilité supérieur au seuil réglementaire', style: TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w500)),
             ]),
           ),
@@ -27633,23 +27633,23 @@ Ratio de solvabilité = FP / RWA ≥ 8 % (BCEAO)''',
   }
 
   Widget _buildBloc4(BuildContext context) {
-    return _MarketCard(
+    return const _MarketCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TauxBlockHeader(title: 'Audit', icon: Icons.description_outlined),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxAuditLine(label: 'Données utilisées', value: 'Portefeuille global au 31/05/2026'),
           _TauxAuditLine(label: 'Source', value: 'Modules Taux / Actions / Change'),
           _TauxAuditLine(label: 'Réglementation', value: 'BCEAO Règlement Fonds Propres (Article 45)'),
           _TauxAuditLine(label: 'Norme', value: 'Bâle II/III - Approche standard marché'),
           _TauxAuditLine(label: 'Devise de référence', value: 'FCFA (XOF)'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTableHeader('Journal détaillé des calculs'),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _TauxTable(
-            columns: const ['Étape', 'Description', 'Valeur'],
-            rows: const [
+            columns: ['Étape', 'Description', 'Valeur'],
+            rows: [
               ['1', 'Agrégation des exigences par risque', 'Terminé'],
               ['2', 'Risque de Taux (Spécifique + Général)', '12 980 000 FCFA'],
               ['3', 'Risque Actions (8 % de la position brute)', '160 000 000 FCFA'],
@@ -27680,7 +27680,7 @@ class _RwaScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding, AppTheme.pageGap, AppTheme.pagePadding, AppTheme.pagePadding),
       child: Column(
         children: [
-          _GenericSummaryRow(
+          const _GenericSummaryRow(
             tooltipContent: '''
 RWA Marché — Risk-Weighted Assets (Actifs Pondérés)
 
@@ -27693,7 +27693,7 @@ RWA par type :
 
 RWA Marché Total = Σ(RWA par type)
 Ratio de solvabilité = Fonds Propres / RWA Marché''',
-            items: const [
+            items: [
               _SummaryItemData(label: 'RWA Taux', value: '162 250 000 FCFA', accentColor: Color(0xFF2563EB), icon: Icons.trending_up_rounded),
               _SummaryItemData(label: 'RWA Actions', value: '2 000 000 000 FCFA', accentColor: Color(0xFF7C3AED), icon: Icons.show_chart_rounded),
               _SummaryItemData(label: 'RWA Change', value: '1 700 000 000 FCFA', accentColor: Color(0xFF059669), icon: Icons.currency_exchange_rounded),
@@ -27724,21 +27724,21 @@ Ratio de solvabilité = Fonds Propres / RWA Marché''',
   }
 
   Widget _buildBloc1(BuildContext context) {
-    return _MarketCard(
+    return const _MarketCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TauxBlockHeader(title: 'RWA par Type de Risque', icon: Icons.pie_chart_rounded),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTable(
-            columns: const ['Type de Risque', 'Exigence FP', 'Multiplicateur', 'RWA', 'Contribution'],
-            rows: const [
+            columns: ['Type de Risque', 'Exigence FP', 'Multiplicateur', 'RWA', 'Contribution'],
+            rows: [
               ['Risque de Taux', '40 000 000', '× 12,5', '500 000 000', '4.2 %'],
               ['Risque Actions', '160 000 000', '× 12,5', '2 000 000 000', '51.8 %'],
               ['Risque de Change', '136 000 000', '× 12,5', '1 700 000 000', '44.0 %'],
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTotalRow(label: 'RWA Marché Total', value: '3 862 250 000 FCFA'),
         ],
       ),
@@ -27750,11 +27750,11 @@ Ratio de solvabilité = Fonds Propres / RWA Marché''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(title: 'Comparaison Fonds Propres / RWA', icon: Icons.balance_rounded),
+          const _TauxBlockHeader(title: 'Comparaison Fonds Propres / RWA', icon: Icons.balance_rounded),
           const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Column(children: const [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: Column(children: [
               _TauxResultLine(label: 'Fonds Propres Réglementaires', value: '4 200 000 000 FCFA'),
               _TauxResultLine(label: 'RWA Marché Total', value: '3 862 250 000 FCFA'),
               Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Divider(height: 1)),
@@ -27767,9 +27767,9 @@ Ratio de solvabilité = Fonds Propres / RWA Marché''',
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.check_circle, size: 16, color: AppColors.success),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text('Ratio FP/RWA = 108.7 % — Conforme au seuil de 8 % (BCEAO)', style: TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w500)),
             ]),
           ),
@@ -27783,11 +27783,11 @@ Ratio de solvabilité = Fonds Propres / RWA Marché''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(title: 'Limites Réglementaires', icon: Icons.gavel_rounded),
+          const _TauxBlockHeader(title: 'Limites Réglementaires', icon: Icons.gavel_rounded),
           const SizedBox(height: 12),
-          _TauxTable(
-            columns: const ['Indicateur', 'Valeur', 'Seuil', 'Conforme'],
-            rows: const [
+          const _TauxTable(
+            columns: ['Indicateur', 'Valeur', 'Seuil', 'Conforme'],
+            rows: [
               ['Ratio de Solvabilité Marché', '108.7 %', '≥ 8 %', '✓'],
               ['Exigence FP / FP Disponibles', '7.4 %', '≤ 100 %', '✓'],
               ['Concentration Actions', '25.0 %', '≤ 30 %', '✓'],
@@ -27798,9 +27798,9 @@ Ratio de solvabilité = Fonds Propres / RWA Marché''',
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(4)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.check_circle, size: 16, color: AppColors.success),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text('Tous les indicateurs respectent les limites réglementaires UEMOA/BCEAO', style: TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w500)),
             ]),
           ),
@@ -27810,23 +27810,23 @@ Ratio de solvabilité = Fonds Propres / RWA Marché''',
   }
 
   Widget _buildBloc4(BuildContext context) {
-    return _MarketCard(
+    return const _MarketCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TauxBlockHeader(title: 'Audit', icon: Icons.description_outlined),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxAuditLine(label: 'Données utilisées', value: 'Exigences FP par risque au 31/05/2026'),
           _TauxAuditLine(label: 'Source', value: 'Modules Taux / Actions / Change'),
           _TauxAuditLine(label: 'Réglementation', value: 'BCEAO Règlement Fonds Propres (Article 45)'),
           _TauxAuditLine(label: 'Multiplicateur RWA', value: '12,5 (inverse du ratio de solvabilité 8 %)'),
           _TauxAuditLine(label: 'Devise de référence', value: 'FCFA (XOF)'),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           _TauxTableHeader('Journal détaillé des calculs'),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           _TauxTable(
-            columns: const ['Étape', 'Description', 'Valeur'],
-            rows: const [
+            columns: ['Étape', 'Description', 'Valeur'],
+            rows: [
               ['1', 'Calcul RWA Taux = 12 980 000 × 12,5', '162 250 000 FCFA'],
               ['2', 'Calcul RWA Actions = 160 000 000 × 12,5', '2 000 000 000 FCFA'],
               ['3', 'Calcul RWA Change = 136 000 000 × 12,5', '1 700 000 000 FCFA'],
