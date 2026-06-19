@@ -25,6 +25,9 @@ String normalizeCurrencyCode(String currencyCode) {
   if (normalized == 'XAF' || normalized == 'FCFA') {
     return 'XOF';
   }
+  if (normalized == 'EURO') {
+    return 'EUR';
+  }
   return normalized;
 }
 

@@ -3,16 +3,31 @@ import 'package:intl/intl.dart';
 
 import '../localization/app_localization.dart';
 
+/// Top-level formatter functions for easy access
+String formatLargeNumber(num value) => AppFormatters.compactNumber(value);
+
+String formatDecimal(num value, int decimals) =>
+    AppFormatters.decimalNumber(value, maxDecimals: decimals);
+
 /// Centralise les formats d'affichage des montants, pourcentages et dates.
 class AppFormatters {
+  static final Map<String, NumberFormat> _currencyFormatCache = {};
+  static final Map<String, NumberFormat> _percentFormatCache = {};
+  static final Map<String, DateFormat> _shortDateFormatCache = {};
+
   static String currency(num value, {String currencyCode = 'XOF'}) {
-    final formatter = NumberFormat.currency(
-      locale: currencyCode.toUpperCase() == 'USD'
-          ? 'en_US'
-          : AppLocalizations.currentLanguage.intlLocale,
-      symbol: _currencySymbol(currencyCode),
-      decimalDigits: 0,
-    );
+    final upper = currencyCode.toUpperCase();
+    final locale = upper == 'USD'
+        ? 'en_US'
+        : AppLocalizations.currentLanguage.intlLocale;
+    final key = '$locale:$upper';
+    final formatter = _currencyFormatCache.putIfAbsent(key, () {
+      return NumberFormat.currency(
+        locale: locale,
+        symbol: _currencySymbol(currencyCode),
+        decimalDigits: 0,
+      );
+    });
     return formatter.format(value);
   }
 
@@ -34,15 +49,22 @@ class AppFormatters {
 
   static String integer(num value) => _plainNumber().format(value.round());
 
-  static String percent(num value) => NumberFormat.decimalPercentPattern(
-        locale: AppLocalizations.currentLanguage.intlLocale,
-        decimalDigits: 1,
-      ).format(value);
+  static String percent(num value) {
+    final locale = AppLocalizations.currentLanguage.intlLocale;
+    final formatter = _percentFormatCache.putIfAbsent(locale, () {
+      return NumberFormat.decimalPercentPattern(locale: locale, decimalDigits: 1);
+    });
+    return formatter.format(value);
+  }
 
-  static String shortDate(DateTime value) => DateFormat(
-        'dd/MM/yyyy',
-        AppLocalizations.currentLanguage.intlLocale,
-      ).format(value);
+  static String shortDate(DateTime value) {
+    final locale = AppLocalizations.currentLanguage.intlLocale;
+    final formatter = _shortDateFormatCache.putIfAbsent(
+      locale,
+      () => DateFormat('dd/MM/yyyy', locale),
+    );
+    return formatter.format(value);
+  }
 
   static String _currencySymbol(String currencyCode) {
     switch (currencyCode.toUpperCase()) {
@@ -58,14 +80,24 @@ class AppFormatters {
     }
   }
 
-  static NumberFormat _plainNumber() =>
-      NumberFormat.decimalPattern(AppLocalizations.currentLanguage.intlLocale);
+  static final Map<String, NumberFormat> _plainFormatCache = {};
+  static final Map<String, NumberFormat> _numberFormatCache = {};
+
+  static NumberFormat _plainNumber() {
+    final locale = AppLocalizations.currentLanguage.intlLocale;
+    return _plainFormatCache.putIfAbsent(
+      locale,
+      () => NumberFormat.decimalPattern(locale),
+    );
+  }
 
   static NumberFormat _number(int decimalDigits) {
-    return NumberFormat.decimalPattern(
-      AppLocalizations.currentLanguage.intlLocale,
-    )
-      ..minimumFractionDigits = 0
-      ..maximumFractionDigits = decimalDigits;
+    final locale = AppLocalizations.currentLanguage.intlLocale;
+    final key = '$locale:$decimalDigits';
+    return _numberFormatCache.putIfAbsent(key, () {
+      return NumberFormat.decimalPattern(locale)
+        ..minimumFractionDigits = 0
+        ..maximumFractionDigits = decimalDigits;
+    });
   }
 }

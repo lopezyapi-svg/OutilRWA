@@ -246,16 +246,14 @@ class _RwaAppState extends State<RwaApp> {
     });
   }
 
-  int _notificationSeverityRank(String severity) {
-    final normalized = severity.toLowerCase();
-    if (normalized == 'élevé' || normalized == 'eleve') {
-      return 0;
-    }
-    if (normalized == 'moyen') {
-      return 1;
-    }
-    return 2;
-  }
+  static const Map<String, int> _severityRanks = {
+    'élevé': 0,
+    'eleve': 0,
+    'moyen': 1,
+  };
+
+  int _notificationSeverityRank(String severity) =>
+      _severityRanks[severity.toLowerCase()] ?? 2;
 
   void _selectModule(AppModule module) {
     if (module == AppModule.referentiels) {
@@ -331,7 +329,7 @@ class _RwaAppState extends State<RwaApp> {
         ),
       AppModule.risqueMarchePilotage => RisqueMarcheScreen(
           api: _api,
-          view: MarketRiskView.dashboard,
+          view: MarketRiskView.pilotage,
         ),
       AppModule.risqueMarcheVar => RisqueMarcheScreen(
           api: _api,

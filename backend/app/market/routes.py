@@ -124,9 +124,9 @@ _HTTP_HEADERS = {
 def get_market_portfolios() -> dict[str, Any]:
     """Retourne le portefeuille marché persistant depuis SQLite local."""
 
-    with database_manager.connect() as connection:
+    with database_manager.read_connection() as connection:
         row = connection.execute(
-            "SELECT value FROM app_metadata WHERE key = ?",
+            "SELECT valeur AS value FROM metadonnees_app WHERE cle = ?",
             (_MARKET_PORTFOLIOS_PAYLOAD_KEY,),
         ).fetchone()
 
@@ -175,25 +175,25 @@ def save_market_portfolios(body: dict[str, Any]) -> dict[str, Any]:
     with database_manager.transaction() as connection:
         connection.execute(
             """
-            INSERT INTO app_metadata(key, value)
+            INSERT INTO metadonnees_app(cle, valeur)
             VALUES (?, ?)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur
             """,
             (_MARKET_PORTFOLIOS_PAYLOAD_KEY, encoded_payload),
         )
         connection.execute(
             """
-            INSERT INTO app_metadata(key, value)
+            INSERT INTO metadonnees_app(cle, valeur)
             VALUES (?, ?)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur
             """,
             (_MARKET_PORTFOLIOS_SAVED_AT_KEY, saved_at),
         )
         connection.execute(
             """
-            INSERT INTO app_metadata(key, value)
+            INSERT INTO metadonnees_app(cle, valeur)
             VALUES (?, ?)
-            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur
             """,
             ("market_storage_backend", "sqlite"),
         )

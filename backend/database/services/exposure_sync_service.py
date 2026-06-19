@@ -293,12 +293,12 @@ class ExposureSyncService:
 
     def _read_sync_metadata(self) -> dict[str, str]:
         placeholders = ", ".join("?" for _ in _SYNC_METADATA_KEYS)
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             rows = connection.execute(
                 f"""
-                SELECT key, value
-                FROM app_metadata
-                WHERE key IN ({placeholders})
+                SELECT cle AS key, valeur AS value
+                FROM metadonnees_app
+                WHERE cle IN ({placeholders})
                 """,
                 _SYNC_METADATA_KEYS,
             ).fetchall()
@@ -335,9 +335,9 @@ class ExposureSyncService:
         for key, value in payload.items():
             connection.execute(
                 """
-                INSERT INTO app_metadata(key, value)
+                INSERT INTO metadonnees_app(cle, valeur)
                 VALUES(?, ?)
-                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur
                 """,
                 (key, value),
             )

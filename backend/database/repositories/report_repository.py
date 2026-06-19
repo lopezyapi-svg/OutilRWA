@@ -16,7 +16,7 @@ class ReportRepository:
     """Persiste les rapports et leurs lignes dans SQLite."""
 
     def list_reports(self) -> list[dict[str, Any]]:
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             report_rows = connection.execute(
                 """
                 SELECT
@@ -83,21 +83,12 @@ class ReportRepository:
         return reports
 
     def next_report_id(self) -> str:
-        with database_manager.connect() as connection:
-            rows = connection.execute(
-                """
-                SELECT id
-                FROM rapports
-                WHERE id LIKE 'RPT%'
-                """
-            ).fetchall()
-        max_index = 0
-        for row in rows:
-            identifier = str(row["id"])
-            try:
-                max_index = max(max_index, int(identifier[3:]))
-            except ValueError:
-                continue
+        with database_manager.read_connection() as connection:
+            row = connection.execute(
+                "SELECT MAX(CAST(SUBSTR(id, 4) AS INTEGER)) AS max_index "
+                "FROM rapports WHERE id GLOB 'RPT[0-9]*'"
+            ).fetchone()
+        max_index = int(row["max_index"]) if row and row["max_index"] is not None else 0
         return f"RPT{max_index + 1:03d}"
 
     def save_report(self, report: dict[str, Any], *, connection=None) -> dict[str, Any]:

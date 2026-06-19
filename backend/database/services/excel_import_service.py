@@ -89,9 +89,9 @@ def _finish_import_run(
 def _write_metadata(connection, key: str, value: str) -> None:
     connection.execute(
         """
-        INSERT INTO app_metadata(key, value)
+        INSERT INTO metadonnees_app(cle, valeur)
         VALUES(?, ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur
         """,
         (key, value),
     )

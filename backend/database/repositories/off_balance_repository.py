@@ -49,26 +49,17 @@ class OffBalanceRepository:
             params.append(engagement_type)
         query += " ORDER BY hb.id"
 
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             rows = connection.execute(query, params).fetchall()
         return [dict(row) for row in rows]
 
     def next_commitment_id(self) -> str:
-        with database_manager.connect() as connection:
-            rows = connection.execute(
-                """
-                SELECT id
-                FROM engagements_hors_bilan
-                WHERE id LIKE 'HB%'
-                """
-            ).fetchall()
-        max_index = 0
-        for row in rows:
-            identifier = str(row["id"])
-            try:
-                max_index = max(max_index, int(identifier[2:]))
-            except ValueError:
-                continue
+        with database_manager.read_connection() as connection:
+            row = connection.execute(
+                "SELECT MAX(CAST(SUBSTR(id, 3) AS INTEGER)) AS max_index "
+                "FROM engagements_hors_bilan WHERE id GLOB 'HB[0-9]*'"
+            ).fetchone()
+        max_index = int(row["max_index"]) if row and row["max_index"] is not None else 0
         return f"HB{max_index + 1:03d}"
 
     def get_existing_ids(self, commitment_ids: list[str], *, connection=None) -> set[str]:

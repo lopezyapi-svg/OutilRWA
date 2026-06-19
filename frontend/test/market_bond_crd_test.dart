@@ -4,7 +4,7 @@ import 'package:rwa_calculator/modules/risque_marche/services/market_data_import
 void main() {
   group('Bond reconstructed CRD', () {
     test('reconstructs active constant profile with linear principal', () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'ID Titre': 'CP0003',
@@ -29,7 +29,7 @@ void main() {
     });
 
     test('reconstructs active constant annuity profile after paid periods', () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'ID Titre': 'CP0007',
@@ -54,7 +54,7 @@ void main() {
 
     test('reconstructs active short monthly Treasury bill with linear profile',
         () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'ID Titre': 'CP0344',
@@ -82,7 +82,7 @@ void main() {
 
     test('reconstructs active long monthly Treasury bill with linear profile',
         () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'ID Titre': 'CP0138',
@@ -140,7 +140,7 @@ void main() {
     });
 
     test('keeps present value distinct from active capital', () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'Capital initial': 1000000000,
@@ -153,7 +153,7 @@ void main() {
     });
 
     test('builds issuer analysis identity from country and issuer', () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'Pays émetteur': 'Côte d\'Ivoire',
@@ -167,7 +167,7 @@ void main() {
     });
 
     test('zero coupon profile does not create coupon cashflows', () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'Profil d\'amortissement': 'Zéro coupon',
@@ -201,7 +201,7 @@ void main() {
     });
 
     test('redemption price does not reduce principal cashflow', () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'Profil d\'amortissement': 'Zéro coupon',
@@ -221,7 +221,7 @@ void main() {
 
   group('Market data snapshot architecture', () {
     test('dataset content signature ignores technical import timestamp', () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'ID Titre': 'CP0001',
@@ -234,14 +234,14 @@ void main() {
         fileName: 'base.xlsx',
         importedAt: DateTime(2026, 6),
         headers: const ['ID Titre', 'Capital initial', 'Coupon (%)'],
-        records: const [record],
+        records: [record],
       );
       final restored = MarketPortfolioDataset(
         portfolioType: MarketPortfolioType.bonds,
         fileName: 'base.xlsx',
         importedAt: DateTime(2026, 6, 2, 12),
         headers: const ['ID Titre', 'Capital initial', 'Coupon (%)'],
-        records: const [record],
+        records: [record],
       );
 
       expect(first.contentSignature, restored.contentSignature);
@@ -262,7 +262,7 @@ void main() {
         fileName: 'base.xlsx',
         importedAt: DateTime(2026, 6),
         headers: const ['ID Titre', 'Capital initial'],
-        records: const [
+        records: [
           MarketPortfolioRecord(
             portfolioType: MarketPortfolioType.bonds,
             values: {
@@ -277,7 +277,7 @@ void main() {
         fileName: 'base.xlsx',
         importedAt: DateTime(2026, 6),
         headers: const ['ID Titre', 'Capital initial'],
-        records: const [
+        records: [
           MarketPortfolioRecord(
             portfolioType: MarketPortfolioType.bonds,
             values: {
@@ -295,7 +295,7 @@ void main() {
   group('Market prudential capital', () {
     test('applies zero specific risk and maturity general risk to UEMOA bonds',
         () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.bonds,
         values: {
           'ID Titre': 'TPCI-2032',
@@ -312,7 +312,7 @@ void main() {
         },
       );
 
-      final result = calculateMarketPrudentialCapital(records: const [record]);
+      final result = calculateMarketPrudentialCapital(records: [record]);
 
       expect(result.interestRateSpecificRisk, 0);
       expect(
@@ -327,7 +327,7 @@ void main() {
 
     test('converts equity specific and general requirements into market RWA',
         () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.equities,
         values: {
           'ID Instrument': 'EQ-001',
@@ -339,7 +339,7 @@ void main() {
         },
       );
 
-      final result = calculateMarketPrudentialCapital(records: const [record]);
+      final result = calculateMarketPrudentialCapital(records: [record]);
 
       expect(result.equitySpecificRisk, 8000000);
       expect(result.equityGeneralRisk, 8000000);
@@ -349,7 +349,7 @@ void main() {
 
     test('measures non-XOF open currency positions at spot-equivalent value',
         () {
-      const record = MarketPortfolioRecord(
+      final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.equities,
         values: {
           'ID Instrument': 'USD-001',
@@ -361,7 +361,7 @@ void main() {
         },
       );
 
-      final result = calculateMarketPrudentialCapital(records: const [record]);
+      final result = calculateMarketPrudentialCapital(records: [record]);
 
       expect(result.foreignExchangeGlobalNetPosition, 600000);
       expect(result.foreignExchangeRisk, 48000);

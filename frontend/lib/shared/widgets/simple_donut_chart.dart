@@ -22,11 +22,13 @@ class SimpleDonutChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        SizedBox(
-          width: 200,
-          height: 200,
-          child: CustomPaint(
-            painter: _DonutPainter(entries: entries, palette: palette),
+        RepaintBoundary(
+          child: SizedBox(
+            width: 200,
+            height: 200,
+            child: CustomPaint(
+              painter: _DonutPainter(entries: entries, palette: palette),
+            ),
           ),
         ),
         const SizedBox(width: 24),

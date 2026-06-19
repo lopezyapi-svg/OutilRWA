@@ -14,11 +14,13 @@ class MiniTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 68,
-      height: 28,
-      child: CustomPaint(
-        painter: _MiniTrendPainter(values: values, color: color),
+    return RepaintBoundary(
+      child: SizedBox(
+        width: 68,
+        height: 28,
+        child: CustomPaint(
+          painter: _MiniTrendPainter(values: values, color: color),
+        ),
       ),
     );
   }

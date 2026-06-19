@@ -198,19 +198,20 @@ class ExposureRepository:
             params.extend([normalized_category, normalized_category])
         query += " ORDER BY e.id"
 
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             rows = connection.execute(query, params).fetchall()
         return [self._row_to_record(dict(row)) for row in rows]
 
     def get_exposure(self, exposure_id: str) -> dict[str, Any] | None:
-        rows = self.list_exposures(search=exposure_id)
-        for row in rows:
-            if row["id"] == exposure_id:
-                return row
-        return None
+        query = _SELECT_EXPOSURES + " WHERE e.id = ?"
+        with database_manager.read_connection() as connection:
+            row = connection.execute(query, [exposure_id.strip()]).fetchone()
+        if row is None:
+            return None
+        return self._row_to_record(dict(row))
 
     def count_exposures(self) -> int:
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             row = connection.execute("SELECT COUNT(*) AS total FROM expositions").fetchone()
         return int(row["total"]) if row is not None else 0
 
@@ -235,15 +236,12 @@ class ExposureRepository:
                 active_connection.close()
 
     def next_exposure_id(self) -> str:
-        with database_manager.connect() as connection:
-            rows = connection.execute(
-                "SELECT id FROM expositions WHERE id LIKE 'CP%'"
-            ).fetchall()
-        max_index = 0
-        for row in rows:
-            parsed_index = _parse_exposure_index(str(row["id"]))
-            if parsed_index is not None and parsed_index > max_index:
-                max_index = parsed_index
+        with database_manager.read_connection() as connection:
+            row = connection.execute(
+                "SELECT MAX(CAST(SUBSTR(id, 3) AS INTEGER)) AS max_index "
+                "FROM expositions WHERE id GLOB 'CP[0-9]*'"
+            ).fetchone()
+        max_index = int(row["max_index"]) if row and row["max_index"] is not None else 0
         return _format_exposure_id(max_index + 1)
 
     def upsert_exposure(self, record: dict[str, Any], *, connection=None) -> dict[str, Any]:

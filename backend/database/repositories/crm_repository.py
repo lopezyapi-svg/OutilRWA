@@ -244,7 +244,7 @@ class CrmRepository:
             params.append(guarantee_type.lower())
         query += " ORDER BY e.id"
 
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             rows = connection.execute(query, params).fetchall()
 
         items: list[dict[str, Any]] = []

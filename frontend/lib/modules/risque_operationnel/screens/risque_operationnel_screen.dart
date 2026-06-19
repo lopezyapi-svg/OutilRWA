@@ -42,6 +42,8 @@ const _kSuccess = AppTheme.success;
 const _kWarning = AppTheme.warning;
 const _kDanger = AppTheme.danger;
 const _kMuted = AppTheme.muted;
+const _kViolet = Color(0xFF7C3AED);
+const _kCyan = Color(0xFF06B6D4);
 
 const _lignesMetier = [
   "Financement d'entreprise",
@@ -3736,11 +3738,7 @@ class _RegistreViewState extends State<_RegistreView> {
               'α = 15 %  (coefficient BCEAO/UMOA, Art. 89)',
           )),
           const SizedBox(width: 6),
-<<<<<<< HEAD
-          Expanded(child: _sumCard('RWA opérationnel', AppFormatters.currency(cApr), _kCyan,
-=======
           Expanded(child: _sumCard('APR opérationnel', AppFormatters.currency(cApr), AppColors.marketNeutral,
->>>>>>> 45ce36e (Modifications Pascal : 16/06/2026/16:36)
             tooltip:
               'Actifs Pondérés par le Risque opérationnel\n'
               'Rôle : base de calcul du ratio de solvabilité.\n'
@@ -4650,31 +4648,10 @@ class _RoPieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = items.fold(0, (s, e) => s + e.valeur);
+    final total = items.fold(0.0, (s, e) => s + e.valeur);
     if (total == 0) return const SizedBox();
-<<<<<<< HEAD
-    final palette = [_kDanger, _kWarning, _kBlue, _kSuccess, _kViolet, _kCyan, const Color(0xFFF97316), const Color(0xFF84CC16)];
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final sorted = items.asMap().entries.toList()
-      ..sort((a, b) => b.value.valeur.compareTo(a.value.valeur));
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: sorted.map((entry) {
-          final c = palette[entry.key % palette.length];
-          final pct = total > 0 ? entry.value.valeur / total : 0.0;
-          final pctStr = (pct * 100).toStringAsFixed(1);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 11),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-=======
     final palette = [_kBlue, _kSuccess, _kWarning, _kDanger, AppColors.prudentialSolvency, AppColors.marketNeutral, const Color(0xFFF97316), const Color(0xFF84CC16)];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         SizedBox(
@@ -4691,69 +4668,74 @@ class _RoPieChart extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: items.asMap().entries.map((entry) {
               final c = palette[entry.key % palette.length];
-              final pct = total > 0 ? (entry.value.valeur / total * 100).toStringAsFixed(1) : '0';
+              final pctVal = total > 0 ? entry.value.valeur / total : 0.0;
+              final pctStr = (pctVal * 100).toStringAsFixed(1);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
->>>>>>> 45ce36e (Modifications Pascal : 16/06/2026/16:36)
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 9, height: 9,
-                      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-                    ),
-                    const SizedBox(width: 7),
-                    Expanded(
-                      child: Text(
-                        entry.value.label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: isDark ? AppTheme.darkText : AppTheme.text,
+                    Row(
+                      children: [
+                        Container(
+                          width: 9, height: 9,
+                          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            entry.value.label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? AppTheme.darkText : AppTheme.text,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$pctStr %',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '$pctStr %',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Stack(
+                        children: [
+                          Container(
+                            height: 9,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: isDark ? c.withValues(alpha: 0.14) : c.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          FractionallySizedBox(
+                            widthFactor: pctVal.clamp(0.0, 1.0),
+                            child: Container(
+                              height: 9,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [c.withValues(alpha: 0.75), c],
+                                ),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Stack(
-                    children: [
-                      Container(
-                        height: 9,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: isDark ? c.withValues(alpha: 0.14) : c.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      FractionallySizedBox(
-                        widthFactor: pct.clamp(0.0, 1.0),
-                        child: Container(
-                          height: 9,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [c.withValues(alpha: 0.75), c],
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -4860,6 +4842,32 @@ TableCell _cell(String text, {bool bold = false, bool right = false, Color? colo
     ),
   ),
 );
+
+class _PiePainter extends CustomPainter {
+  final List<RoRepartitionItem> items;
+  final double total;
+  final List<Color> palette;
+  const _PiePainter({required this.items, required this.total, required this.palette});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (total <= 0 || items.isEmpty) return;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.shortestSide / 2;
+    double startAngle = -math.pi / 2;
+    for (var i = 0; i < items.length; i++) {
+      final sweepAngle = (items[i].valeur / total) * 2 * math.pi;
+      final paint = Paint()
+        ..color = palette[i % palette.length]
+        ..style = PaintingStyle.fill;
+      canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, sweepAngle, true, paint);
+      startAngle += sweepAngle;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PiePainter old) => old.items != items;
+}
 
 TableCell _cellFlex(String text) => TableCell(
   verticalAlignment: TableCellVerticalAlignment.middle,

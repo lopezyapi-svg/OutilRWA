@@ -244,6 +244,15 @@ class DatabaseManager:
         )
 
     @contextmanager
+    def read_connection(self) -> Iterator[sqlite3.Connection]:
+        """Fournit une connexion en lecture qui se ferme automatiquement."""
+        connection = self.connect()
+        try:
+            yield connection
+        finally:
+            connection.close()
+
+    @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
         connection = self.connect()
         try:

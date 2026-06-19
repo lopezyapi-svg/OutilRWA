@@ -137,7 +137,7 @@ class ReferentialRepository:
     """Fournit les référentiels depuis SQLite."""
 
     def list_risk_weight_references(self) -> list[RiskWeightReference]:
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             rows = connection.execute(
                 """
                 SELECT id, segment, notation AS rating, ponderation AS risk_weight, approche AS approach
@@ -148,7 +148,7 @@ class ReferentialRepository:
         return [RiskWeightReference(**dict(row)) for row in rows]
 
     def list_ccf_references(self) -> list[CcfReference]:
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             rows = connection.execute(
                 """
                 SELECT id, type_engagement AS engagement_type, ccf
@@ -159,7 +159,7 @@ class ReferentialRepository:
         return [CcfReference(**dict(row)) for row in rows]
 
     def list_rating_references(self) -> list[RatingReference]:
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             rows = connection.execute(
                 """
                 SELECT id, libelle AS label, description, ordre_tri AS sort_order
@@ -284,7 +284,7 @@ class ReferentialRepository:
         return 1.0
 
     def is_empty(self) -> bool:
-        with database_manager.connect() as connection:
+        with database_manager.read_connection() as connection:
             row = connection.execute("SELECT COUNT(*) AS total FROM baremes_ponderation").fetchone()
         return row is None or int(row["total"]) == 0
 
