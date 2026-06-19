@@ -398,9 +398,9 @@ def build_ro_import_template() -> bytes:
     ws2.merge_cells(f"A{note_row}:D{note_row}")
     note = ws2[f"A{note_row}"]
     note.value = (
-        "BIA : K_RO = α × PNBmoy₃   (α = 15 % pour toutes les lignes)  |  "
-        "TSA : K_RO = Σ (β_i × PNB_i)  avec β variable selon la ligne  |  "
-        "APR = K_RO ÷ 8 %  (× 12,5)"
+        "BIA : Capital minimal = α × PNBmoy₃   (α = 15 % pour toutes les lignes)  |  "
+        "TSA : Capital minimal = Σ (β_i × PNB_i)  avec β variable selon la ligne  |  "
+        "APR = Capital minimal ÷ 8 %  (× 12,5)"
     )
     note.font = Font(italic=True, size=9, color="475569")
     note.fill = fill(YELLOW_BG)
@@ -472,8 +472,8 @@ def build_ro_import_template() -> bytes:
         ("statut",              "Optionnel : Ouvert | En cours | Résolu | Clôturé. Défaut = Ouvert."),
         ("Mode d'import",       "Ajout : conserve les incidents existants et insère les nouveaux."),
         ("",                    "Remplacement : supprime TOUS les incidents avant d'insérer — utiliser avec prudence."),
-        ("Calcul BIA (Art. 89)","K_RO = 15 % × Pertes nettes totales  |  APR = K_RO × 12,5"),
-        ("Calcul TSA",          "Pour le TSA : K_RO = Σ (β_i × PNB_ligne_i) — voir onglet Lignes_Métier."),
+        ("Calcul BIA (Art. 89)","Capital minimal = 15 % × Pertes nettes totales  |  APR = Capital minimal × 12,5"),
+        ("Calcul TSA",          "Pour le TSA : Capital minimal = Σ (β_i × PNB_ligne_i) — voir onglet Lignes_Métier."),
         ("Lignes vides",        "Les lignes entièrement vides sont ignorées."),
         ("Doublons",            "Aucune vérification de doublon — vérifier avant import en mode remplacement."),
     ]

@@ -172,13 +172,13 @@ class AppTheme {
           borderRadius: BorderRadius.zero,
           borderSide: BorderSide(color: accentColor, width: 1.2),
         ),
-        focusedErrorBorder: OutlineInputBorder(
+        focusedErrorBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
-          borderSide: const BorderSide(color: danger, width: 1.2),
+          borderSide: BorderSide(color: danger, width: 1.2),
         ),
-        errorBorder: OutlineInputBorder(
+        errorBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.zero,
-          borderSide: const BorderSide(color: danger),
+          borderSide: BorderSide(color: danger),
         ),
       ),
       dialogTheme: const DialogThemeData(

@@ -2,6 +2,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:excel/excel.dart' hide Border, TextSpan;
+import 'package:excel/excel.dart' as xl show Border, BorderStyle;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,8 +44,6 @@ const _kSuccess = AppTheme.success;
 const _kWarning = AppTheme.warning;
 const _kDanger = AppTheme.danger;
 const _kMuted = AppTheme.muted;
-const _kViolet = Color(0xFF7C3AED);
-const _kCyan = Color(0xFF06B6D4);
 
 const _lignesMetier = [
   "Financement d'entreprise",
@@ -108,10 +108,10 @@ const _artExplanations = <String, String>{
   'Art. 89':
       'Calcul des RWA opérationnels — méthode Indicateur de Base (BIA).\n\n'
       'Formule BIA :\n'
-      '  K_RO = α × PNBmoy₃\n'
+      '  Capital minimal = α × PNBmoy₃\n'
       '  α = 15 %   (coefficient réglementaire BCEAO)\n'
       '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
-      '  RWA_opérationnel = K_RO ÷ 8 %   (facteur 12,5)',
+      '  RWA_opérationnel = Capital minimal ÷ 8 %   (facteur 12,5)',
   'Art. 301/307':
       'Exigences minimales en fonds propres (dispositif prudentiel BCEAO).\n\n'
       'Ratios réglementaires :\n'
@@ -146,18 +146,20 @@ String _stripArtRefs(String text) =>
 Widget _artInfo(String artRef) {
   final explanation = _artExplanations[artRef];
   if (explanation == null) return const SizedBox.shrink();
-  return Tooltip(
-    message: '$artRef\n$explanation',
-    preferBelow: false,
-    waitDuration: Duration.zero,
-    showDuration: const Duration(seconds: 8),
-    textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
-    decoration: BoxDecoration(
-      color: const Color(0xFF1E2A3A),
-      borderRadius: BorderRadius.circular(6),
+  return ExcludeSemantics(
+    child: Tooltip(
+      message: '$artRef\n$explanation',
+      preferBelow: false,
+      waitDuration: Duration.zero,
+      showDuration: const Duration(seconds: 8),
+      textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E2A3A),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: const Icon(Icons.info_outline_rounded, size: 14, color: _kBlue),
     ),
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    child: const Icon(Icons.info_outline_rounded, size: 14, color: _kBlue),
   );
 }
 
@@ -175,32 +177,68 @@ class RisqueOperationnelScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (title, subtitle, artRef) = switch (view) {
-      OperationalRiskView.dashboard   => ('Dashboard Opérationnel',    'KPI réglementaires et alertes (Art. 313)',                      'Art. 313'),
-      OperationalRiskView.registre    => ('Registre des pertes RO',     'Registre BCEAO/UMOA — pertes, K_RO et RWA (Art. 89 & 313.b)',  'Art. 89'),
-      OperationalRiskView.incidents   => ('Simulation de crise',        'Stress testing PIEAFP — scénarios de vulnérabilité (Art. 545)', 'Art. 545'),
-      OperationalRiskView.pertes      => ('Pertes opérationnelles',     'Base de pertes historiques — calcul RWA BIA (Art. 89)',         'Art. 89'),
-      OperationalRiskView.kri         => ('KRI',                        'Indicateurs clés de risque — surveillance continue (Art. 313)', 'Art. 313'),
-      OperationalRiskView.cartographie=> ('Cartographie des risques',   'Identification et évaluation — matrice 5×5 (Art. 313)',         'Art. 313'),
-      OperationalRiskView.controles   => ('Contrôles internes',         'Gestion des contrôles périodiques (Art. 314)',                  'Art. 314'),
-      OperationalRiskView.workflow    => ('Workflow incidents',          'Pipeline de traitement des incidents (Art. 313.b)',             'Art. 313.b'),
-      OperationalRiskView.plans       => ('Plans d\'actions',           'Actions correctives et préventives (Art. 313.c)',               'Art. 313.c'),
-      OperationalRiskView.historique  => ('Historique événements',      'Journal de traçabilité (Art. 314) — 7 ans UMOA',               'Art. 314'),
-      OperationalRiskView.reporting   => ('Reporting opérationnel',     'Génération des rapports réglementaires (Art. 313.c)',           'Art. 313.c'),
-    };
-    final content = switch (view) {
-      OperationalRiskView.dashboard => _DashboardView(api: api),
-      OperationalRiskView.registre  => _RegistreView(api: api),
-      OperationalRiskView.incidents => _SimulationCriseView(api: api),
-      OperationalRiskView.pertes => _PertesView(api: api),
-      OperationalRiskView.kri => _KriView(api: api),
-      OperationalRiskView.cartographie => _CartographieView(api: api),
-      OperationalRiskView.controles => _ControlesView(api: api),
-      OperationalRiskView.workflow => _WorkflowView(api: api),
-      OperationalRiskView.plans => _PlansView(api: api),
-      OperationalRiskView.historique => _HistoriqueView(api: api),
-      OperationalRiskView.reporting => _ReportingView(api: api),
-    };
+    // ExcludeSemantics supprime les nœuds AXTree du pont d'accessibilité
+    // Windows qui génère des erreurs 2239 sur les tableaux complexes.
+    return ExcludeSemantics(
+      child: switch (view) {
+        OperationalRiskView.dashboard    => _DashboardView(api: api),
+        OperationalRiskView.registre     => _RegistreView(api: api),
+        OperationalRiskView.incidents    => _SimulationCriseView(api: api),
+        OperationalRiskView.pertes       => _PertesView(api: api),
+        OperationalRiskView.historique   => _HistoriqueView(api: api),
+        OperationalRiskView.reporting    => _ReportingView(api: api),
+        OperationalRiskView.kri          => _RoPageWrapper(
+          title: 'KRI',
+          subtitle: 'Indicateurs clés de risque — surveillance continue (Art. 313)',
+          artRef: 'Art. 313',
+          child: _KriView(api: api),
+        ),
+        OperationalRiskView.cartographie => _RoPageWrapper(
+          title: 'Cartographie des risques',
+          subtitle: 'Identification et évaluation — matrice 5×5 (Art. 313)',
+          artRef: 'Art. 313',
+          child: _CartographieView(api: api),
+        ),
+        OperationalRiskView.controles    => _RoPageWrapper(
+          title: 'Contrôles internes',
+          subtitle: 'Gestion des contrôles périodiques (Art. 314)',
+          artRef: 'Art. 314',
+          child: _ControlesView(api: api),
+        ),
+        OperationalRiskView.workflow     => _RoPageWrapper(
+          title: 'Workflow incidents',
+          subtitle: 'Pipeline de traitement des incidents (Art. 313.b)',
+          artRef: 'Art. 313.b',
+          child: _WorkflowView(api: api),
+        ),
+        OperationalRiskView.plans        => _RoPageWrapper(
+          title: "Plans d'actions",
+          subtitle: 'Actions correctives et préventives (Art. 313.c)',
+          artRef: 'Art. 313.c',
+          child: _PlansView(api: api),
+        ),
+      },
+    );
+  }
+}
+
+// ─── Wrapper de page pour les vues réutilisées en sous-onglet ────────────────
+
+class _RoPageWrapper extends StatelessWidget {
+  const _RoPageWrapper({
+    required this.title,
+    required this.subtitle,
+    required this.artRef,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final String artRef;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
       child: Column(
@@ -209,10 +247,12 @@ class RisqueOperationnelScreen extends StatelessWidget {
           PageHeader(
             title: title,
             subtitle: subtitle,
+            titleFontSize: 26,
+            subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo(artRef),
           ),
-          const SizedBox(height: 16),
-          Expanded(child: content),
+          const SizedBox(height: 14),
+          Expanded(child: child),
         ],
       ),
     );
@@ -332,18 +372,20 @@ Widget _kpiBox(BuildContext context, String label, String value, IconData icon, 
                             ),
                             if (tooltip != null) ...[
                               const SizedBox(width: 4),
-                              Tooltip(
-                                message: tooltip,
-                                preferBelow: false,
-                                waitDuration: Duration.zero,
-                                showDuration: const Duration(seconds: 10),
-                                textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E2A3A),
-                                  borderRadius: BorderRadius.circular(6),
+                              ExcludeSemantics(
+                                child: Tooltip(
+                                  message: tooltip,
+                                  preferBelow: false,
+                                  waitDuration: Duration.zero,
+                                  showDuration: const Duration(seconds: 10),
+                                  textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1E2A3A),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  child: Icon(Icons.info_outline_rounded, size: 13, color: color.withValues(alpha: 0.6)),
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                child: Icon(Icons.info_outline_rounded, size: 13, color: color.withValues(alpha: 0.6)),
                               ),
                             ],
                           ],
@@ -373,6 +415,77 @@ Widget _kpiBox(BuildContext context, String label, String value, IconData icon, 
         ],
       ),
     ),
+  );
+}
+
+Widget _roMetricRow(
+  BuildContext context, {
+  required String title,
+  required String artRef,
+  required List<({String label, String value, Color color, IconData icon})> items,
+}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Row(children: [
+        Text(title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+        const Spacer(),
+        _artInfo(artRef),
+      ]),
+      const SizedBox(height: 8),
+      Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(
+            color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
+              blurRadius: 20, offset: const Offset(0, 6)),
+            BoxShadow(
+              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
+              blurRadius: 6, offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [const Color(0xFF1A2A4A), const Color(0xFF13203A)]
+                      : [const Color(0xFFF8F9FF), const Color(0xFFF0F2FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Row(
+                children: [
+                  for (var i = 0; i < items.length; i++) ...[
+                    if (i > 0)
+                      Container(
+                        width: 1, height: 40,
+                        color: AppTheme.accent.withValues(alpha: 0.25)),
+                    Expanded(
+                      child: _RoDashSummaryItem(
+                        label: items[i].label,
+                        value: items[i].value,
+                        accentColor: items[i].color,
+                        icon: items[i].icon,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
   );
 }
 
@@ -452,7 +565,7 @@ Widget _field(String label, TextEditingController ctrl,
             hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+            border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
           ),
           validator: required ? (v) => (v == null || v.isEmpty) ? 'Champ requis' : null : null,
         ),
@@ -491,7 +604,7 @@ Widget _dateField(
             hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+            border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
             suffixIcon: Container(
               margin: const EdgeInsets.all(6),
               padding: const EdgeInsets.all(6),
@@ -619,7 +732,7 @@ Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onC
             hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+            border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
           ),
           validator: required ? (v) => v == null ? 'Champ requis' : null : null,
         ),
@@ -630,104 +743,6 @@ Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onC
 
 
 // ─── VIEW 1 : DASHBOARD ───────────────────────────────────────────────────────
-
-Widget _bannerStat(String label, String value) => Column(
-  crossAxisAlignment: CrossAxisAlignment.end,
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    Text(label,
-      style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 9.5,
-        fontWeight: FontWeight.w600, letterSpacing: 0.4)),
-    const SizedBox(height: 2),
-    Text(value,
-      style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w800, letterSpacing: -0.3)),
-  ],
-);
-
-Widget _roStatusBanner(BuildContext context, RoDashboardData d) {
-  final isConforme = d.widget1.statutReglementaire == 'Conforme';
-  final alertCount = d.widget3.actionsEnRetard + d.widget3.kriHorsSeuil + d.widget3.controlesNonConformes;
-  final gradStart = isConforme ? const Color(0xFF042B16) : const Color(0xFF3D0A0A);
-  final gradEnd   = isConforme ? const Color(0xFF0D5C30) : const Color(0xFF7A1212);
-  return Container(
-    width: double.infinity,
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: [gradStart, gradEnd],
-      ),
-      borderRadius: BorderRadius.circular(10),
-      boxShadow: [
-        BoxShadow(color: (isConforme ? _kSuccess : _kDanger).withValues(alpha: 0.18),
-          blurRadius: 18, offset: const Offset(0, 4)),
-      ],
-    ),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-    child: Row(
-      children: [
-        Container(
-          width: 46, height: 46,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            isConforme ? Icons.shield_rounded : Icons.warning_rounded,
-            color: Colors.white, size: 24,
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('CONFORMITÉ RÉGLEMENTAIRE · BCEAO / UMOA',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.65),
-                  fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.7)),
-              const SizedBox(height: 2),
-              Text(d.widget1.statutReglementaire,
-                style: const TextStyle(color: Colors.white, fontSize: 20,
-                  fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-            ],
-          ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              _bannerStat('K_RO', AppFormatters.currency(d.widget1.exigenceFondsPropres)),
-              Container(width: 1, height: 28, margin: const EdgeInsets.symmetric(horizontal: 12),
-                color: Colors.white.withValues(alpha: 0.22)),
-              _bannerStat('RWA', AppFormatters.currency(d.widget1.aprRisqueOp)),
-            ]),
-            if (alertCount > 0) ...[
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _kWarning.withValues(alpha: 0.22),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: _kWarning.withValues(alpha: 0.50)),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.notifications_active_outlined, color: Colors.white, size: 12),
-                  const SizedBox(width: 5),
-                  Text('$alertCount alerte${alertCount > 1 ? 's' : ''}',
-                    style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700)),
-                ]),
-              ),
-            ],
-          ],
-        ),
-      ],
-    ),
-  );
-}
 
 class _DashboardView extends StatefulWidget {
   const _DashboardView({required this.api});
@@ -747,90 +762,78 @@ class _DashboardViewState extends State<_DashboardView> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<RoDashboardData>(
-      future: _future,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) return _loadingBox();
-        if (snap.hasError) return _errorBox(snap.error!);
-        final d = snap.data!;
-        return SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Banner statut réglementaire
-              _roStatusBanner(context, d),
-              const SizedBox(height: 14),
-              // Widget 1 — Situation réglementaire
-              SectionCard(
-                title: 'Situation réglementaire',
-                child: Row(
+    return Padding(
+      padding: const EdgeInsets.all(AppTheme.pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PageHeader(
+            title: 'Dashboard Opérationnel',
+            subtitle: 'KPI réglementaires et alertes (Art. 313)',
+            titleFontSize: 26,
+            subtitleFontSize: 12.5,
+            subtitleSuffix: _artInfo('Art. 313'),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: FutureBuilder<RoDashboardData>(
+              future: _future,
+              builder: (context, snap) {
+                if (snap.connectionState != ConnectionState.done) return _loadingBox();
+                if (snap.hasError) return _errorBox(snap.error!);
+                final d = snap.data!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: _kpiBox(context, 'Exigence fonds propres (K)', AppFormatters.currency(d.widget1.exigenceFondsPropres), Icons.account_balance_outlined, _kBlue,
-                      tooltip: 'Capital réglementaire minimum (Art. 89)\nFormule : K_RO = 15 % × Perte nette totale\nα = 15 % (coefficient BCEAO/UMOA)',
-                    )),
-                    const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'APR risque opérationnel', AppFormatters.currency(d.widget1.aprRisqueOp), Icons.bar_chart_outlined, AppColors.prudentialSolvency,
-                      tooltip: 'Actifs Pondérés par le Risque opérationnel (Art. 89)\nFormule : APR = K_RO × 12,5\n12,5 = 1 ÷ 8 % (facteur de conversion prudentiel)',
-                    )),
-                    const SizedBox(width: 10),
+                    _RoDashSummaryRow(data: d),
+                    const SizedBox(height: 12),
                     Expanded(
-                      child: _kpiBox(context, 'Statut réglementaire', d.widget1.statutReglementaire,
-                          d.widget1.statutReglementaire == 'Conforme' ? Icons.check_circle_outline : Icons.warning_amber_outlined,
-                          d.widget1.statutReglementaire == 'Conforme' ? _kSuccess : _kDanger,
-                          tooltip: 'Conformité réglementaire (Art. 313)\nConforme si ratio Tier 1 ≥ 5 % et ratio global ≥ 8 %\nRWA total = RWA_crédit + RWA_marché + RWA_opérationnel'),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
               // Widget 2 — Incidents
-              SectionCard(
-                title: 'Synthèse des incidents',
-                trailing: _artInfo('Art. 313.b'),
-                child: Row(
-                  children: [
-                    Expanded(child: _kpiBox(context, 'Incidents (mois)', '${d.widget2.totalIncidentsMois}', Icons.report_outlined, _kWarning,
-                      tooltip: 'Nombre d\'incidents déclarés ce mois (Art. 313.b)\nFormule : COUNT(incidents) WHERE mois = mois_courant\nTout incident significatif doit être déclaré ≤ J+5',
-                    )),
-                    const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'Pertes nettes (mois)', AppFormatters.currency(d.widget2.pertesNettesMois), Icons.trending_down_outlined, _kDanger,
-                      tooltip: 'Pertes nettes du mois en cours (Art. 313.b)\nFormule : Σ (perte_brute − perte_récupérée)\npour les incidents du mois courant',
-                    )),
-                    const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'Non clôturés', '${d.widget2.incidentsNonClos}', Icons.pending_outlined, AppColors.marketNeutral,
-                      tooltip: 'Incidents encore ouverts ou en cours (Art. 313.b)\nFormule : COUNT(incidents) WHERE statut IN (Ouvert, En cours)\nCes incidents nécessitent un suivi actif',
-                    )),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _kpiBox(
-                        context,
-                        'Évolution / N-1',
-                        d.widget2.evolutionPertesPct != null ? '${d.widget2.evolutionPertesPct! >= 0 ? '+' : ''}${d.widget2.evolutionPertesPct!.toStringAsFixed(1)} %' : 'N/A',
-                        Icons.compare_arrows_outlined,
-                        d.widget2.evolutionPertesPct != null && d.widget2.evolutionPertesPct! > 0 ? _kDanger : _kSuccess,
-                        tooltip: 'Évolution des pertes vs même mois N-1\nFormule : ((Pertes_mois − Pertes_mois_N1) ÷ |Pertes_mois_N1|) × 100\n+ = dégradation   − = amélioration',
-                      ),
-                    ),
-                  ],
-                ),
+              _roMetricRow(context,
+                title: 'Suivi des incidents',
+                artRef: 'Art. 313.b',
+                items: [
+                  (
+                    label: 'Non clôturés',
+                    value: '${d.widget2.incidentsNonClos}',
+                    color: AppColors.marketNeutral,
+                    icon: Icons.pending_outlined,
+                  ),
+                  (
+                    label: 'Évolution / N-1',
+                    value: d.widget2.evolutionPertesPct != null
+                        ? '${d.widget2.evolutionPertesPct! >= 0 ? '+' : ''}${d.widget2.evolutionPertesPct!.toStringAsFixed(1)} %'
+                        : 'N/A',
+                    color: d.widget2.evolutionPertesPct != null && d.widget2.evolutionPertesPct! > 0
+                        ? _kDanger
+                        : _kSuccess,
+                    icon: Icons.compare_arrows_outlined,
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               // Widget 3 — Alertes
-              SectionCard(
+              _roMetricRow(context,
                 title: 'Alertes et actions',
-                trailing: _artInfo('Art. 313.c'),
-                child: Row(
-                  children: [
-                    Expanded(child: _kpiBox(context, 'Actions en retard', '${d.widget3.actionsEnRetard}', Icons.alarm_outlined, d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
-                      tooltip: 'Plans d\'actions dont la date d\'échéance est dépassée et le statut ≠ «Terminé».\nFormule : COUNT(plans) WHERE date_echeance < aujourd\'hui AND statut ≠ \'Terminé\'.\nIndicateur de pilotage du suivi correctif. (Art. 313.c)')),
-                    const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'Contrôles non conformes', '${d.widget3.controlesNonConformes}', Icons.rule_outlined, d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
-                      tooltip: 'Contrôles internes dont le résultat est évalué «Non-conforme» lors de la dernière exécution.\nFormule : COUNT(controles) WHERE resultat = \'Non-conforme\'.\nMesure la qualité du dispositif de contrôle. (Art. 314)')),
-                    const SizedBox(width: 10),
-                    Expanded(child: _kpiBox(context, 'KRI hors seuil', '${d.widget3.kriHorsSeuil}', Icons.speed_outlined, d.widget3.kriHorsSeuil > 0 ? _kDanger : _kSuccess,
-                      tooltip: 'Indicateurs Clés de Risque (KRI) dont le statut est «alerte» ou «critique».\nFormule : COUNT(kri) WHERE statut IN (\'alerte\', \'critique\').\nSignale les expositions dépassant les limites tolérées. (Art. 89 / Art. 313)')),
-                  ],
-                ),
+                artRef: 'Art. 313.c',
+                items: [
+                  (
+                    label: 'Actions en retard',
+                    value: '${d.widget3.actionsEnRetard}',
+                    color: d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
+                    icon: Icons.alarm_outlined,
+                  ),
+                  (
+                    label: 'Contrôles non conformes',
+                    value: '${d.widget3.controlesNonConformes}',
+                    color: d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
+                    icon: Icons.rule_outlined,
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               // Widget 4 — Charts
@@ -870,10 +873,221 @@ class _DashboardViewState extends State<_DashboardView> {
                   ),
                 ],
               ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Dashboard — barre de KPI épinglée ───────────────────────────────────────
+
+class _RoDashSummaryItem extends StatefulWidget {
+  const _RoDashSummaryItem({
+    required this.label,
+    required this.value,
+    required this.accentColor,
+    required this.icon,
+  });
+  final String label, value;
+  final Color accentColor;
+  final IconData icon;
+  @override
+  State<_RoDashSummaryItem> createState() => _RoDashSummaryItemState();
+}
+
+class _RoDashSummaryItemState extends State<_RoDashSummaryItem> {
+  bool _hovered = false;
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit:  (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.fromLTRB(8, _hovered ? 9 : 12, 8, _hovered ? 15 : 12),
+        decoration: BoxDecoration(
+          color: _hovered
+              ? widget.accentColor.withValues(alpha: 0.10)
+              : widget.accentColor.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(widget.icon, size: 16, color: widget.accentColor.withValues(alpha: 0.7)),
+            const SizedBox(height: 4),
+            Text(
+              widget.value,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: widget.accentColor,
+                letterSpacing: -0.3,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              widget.label,
+              style: const TextStyle(fontSize: 10, color: Color(0xFF1E3A5F), letterSpacing: 0.2),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoDashSummaryRow extends StatelessWidget {
+  const _RoDashSummaryRow({required this.data});
+  final RoDashboardData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final statutColor = data.widget1.statutReglementaire == 'Conforme' ? _kSuccess : _kDanger;
+    final statutIcon  = data.widget1.statutReglementaire == 'Conforme'
+        ? Icons.check_circle_outline
+        : Icons.warning_amber_outlined;
+
+    final items = <({String label, String value, Color color, IconData icon})>[
+      (
+        label: 'K_RO (Art. 89)',
+        value: AppFormatters.currency(data.widget1.exigenceFondsPropres),
+        color: _kBlue,
+        icon: Icons.account_balance_outlined,
+      ),
+      (
+        label: 'APR opérationnel',
+        value: AppFormatters.currency(data.widget1.aprRisqueOp),
+        color: AppColors.prudentialSolvency,
+        icon: Icons.bar_chart_outlined,
+      ),
+      (
+        label: 'Statut réglementaire',
+        value: data.widget1.statutReglementaire,
+        color: statutColor,
+        icon: statutIcon,
+      ),
+      (
+        label: 'Incidents (mois)',
+        value: '${data.widget2.totalIncidentsMois}',
+        color: _kWarning,
+        icon: Icons.report_outlined,
+      ),
+      (
+        label: 'Pertes nettes (mois)',
+        value: AppFormatters.currency(data.widget2.pertesNettesMois),
+        color: _kDanger,
+        icon: Icons.trending_down_outlined,
+      ),
+      (
+        label: 'KRI hors seuil',
+        value: '${data.widget3.kriHorsSeuil}',
+        color: data.widget3.kriHorsSeuil > 0 ? _kDanger : _kSuccess,
+        icon: Icons.speed_outlined,
+      ),
+    ];
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(
+              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
-        );
-      },
+          child: Column(
+            children: [
+              Container(height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [const Color(0xFF1A2A4A), const Color(0xFF13203A)]
+                        : [const Color(0xFFF8F9FF), const Color(0xFFF0F2FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    for (var i = 0; i < items.length; i++) ...[
+                      if (i > 0)
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: AppTheme.accent.withValues(alpha: 0.25),
+                        ),
+                      Expanded(
+                        child: _RoDashSummaryItem(
+                          label: items[i].label,
+                          value: items[i].value,
+                          accentColor: items[i].color,
+                          icon: items[i].icon,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Positioned(
+          top: 6,
+          left: 4,
+          child: Tooltip(
+            message: 'Dashboard Opérationnel — Art. 313 & 89 UMOA\n\n'
+                'K_RO = 15 % × Pertes nettes (BIA — Art. 89)\n'
+                'APR  = K_RO × 12,5 (facteur prudentiel)\n'
+                'Statut : Conforme si Tier 1 ≥ 5 % et ratio global ≥ 8 %',
+            preferBelow: false,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))],
+            ),
+            textStyle: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
+            padding: const EdgeInsets.all(14),
+            margin: const EdgeInsets.only(left: 40, right: 40),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppTheme.accent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(Icons.info_outline, size: 12, color: AppTheme.accent),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -969,19 +1183,33 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return FutureBuilder<List<RoIncident>>(
-      future: _future,
-      builder: (ctx, snap) {
-        if (snap.connectionState != ConnectionState.done) return _loadingBox();
-        if (snap.hasError) return _errorBox(snap.error!);
-        final items      = snap.data!;
-        final pertesHisto = items.fold(0.0, (s, i) => s + i.perteNette);
+    return Padding(
+      padding: const EdgeInsets.all(AppTheme.pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PageHeader(
+            title: 'Simulation de crise',
+            subtitle: 'Stress testing PIEAFP — scénarios de vulnérabilité (Art. 545)',
+            titleFontSize: 26,
+            subtitleFontSize: 12.5,
+            subtitleSuffix: _artInfo('Art. 545'),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: FutureBuilder<List<RoIncident>>(
+              future: _future,
+              builder: (ctx, snap) {
+                if (snap.connectionState != ConnectionState.done) return _loadingBox();
+                if (snap.hasError) return _errorBox(snap.error!);
+                final items      = snap.data!;
+                final pertesHisto = items.fold(0.0, (s, i) => s + i.perteNette);
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Bandeau réglementaire ─────────────────────────────────────────
-            Container(
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Bandeau réglementaire ─────────────────────────────────────────
+                    Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFF1565C0).withValues(alpha: 0.07),
@@ -1111,9 +1339,13 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                   ),
                 ),
               ),
-          ],
-        );
-      },
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1128,7 +1360,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
         decoration: InputDecoration(
           labelText: label,
           isDense: true,
-          border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+          border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
           labelStyle: const TextStyle(fontSize: 11),
           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         ),
@@ -1255,8 +1487,8 @@ class _PertesView extends StatefulWidget {
   State<_PertesView> createState() => _PertesViewState();
 }
 
-class _PertesViewState extends State<_PertesView> with TickerProviderStateMixin {
-  late final TabController _tab;
+class _PertesViewState extends State<_PertesView> {
+  int _selectedTab = 0;
 
   static const _tabDefs = [
     (Icons.monetization_on_outlined,       'Pertes'),
@@ -1267,74 +1499,90 @@ class _PertesViewState extends State<_PertesView> with TickerProviderStateMixin 
     (Icons.format_list_bulleted_rounded,   "Plans d'actions"),
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: _tabDefs.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tab.dispose();
-    super.dispose();
+  Widget _buildCurrentTab() {
+    switch (_selectedTab) {
+      case 0: return _PertesContent(api: widget.api);
+      case 1: return _KriView(api: widget.api);
+      case 2: return _CartographieView(api: widget.api);
+      case 3: return _ControlesView(api: widget.api);
+      case 4: return _WorkflowView(api: widget.api);
+      case 5: return _PlansView(api: widget.api);
+      default: return const SizedBox.shrink();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Column(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0D1829) : const Color(0xFFF0F4FB),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isDark ? const Color(0xFF1E2E48) : const Color(0xFFD8E4F5),
+    final borderColor = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
+    return Padding(
+      padding: const EdgeInsets.all(AppTheme.pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PageHeader(
+            title: 'Pertes opérationnelles',
+            subtitle: 'Base de pertes historiques — calcul RWA BIA (Art. 89)',
+            titleFontSize: 26,
+            subtitleFontSize: 12.5,
+            subtitleSuffix: _artInfo('Art. 89'),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    border: Border(bottom: BorderSide(color: borderColor)),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: List.generate(_tabDefs.length, (i) {
+                        final isSelected = _selectedTab == i;
+                        final fgColor = isSelected
+                            ? AppColors.accent
+                            : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF234A84));
+                        return InkWell(
+                          onTap: () => setState(() => _selectedTab = i),
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            decoration: BoxDecoration(
+                              border: Border(bottom: BorderSide(
+                                color: isSelected ? AppColors.accent : Colors.transparent,
+                                width: 2,
+                              )),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(_tabDefs[i].$1, size: 16, color: fgColor),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _tabDefs[i].$2,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                    color: fgColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(child: _buildCurrentTab()),
+              ],
             ),
           ),
-          padding: const EdgeInsets.all(5),
-          child: TabBar(
-            controller: _tab,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            indicator: BoxDecoration(
-              color: _kBlue,
-              borderRadius: BorderRadius.circular(7),
-              boxShadow: [BoxShadow(color: _kBlue.withValues(alpha: 0.30), blurRadius: 8, offset: const Offset(0, 2))],
-            ),
-            indicatorSize: TabBarIndicatorSize.tab,
-            dividerColor: Colors.transparent,
-            labelColor: Colors.white,
-            unselectedLabelColor: isDark ? AppTheme.darkMuted : _kMuted,
-            labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-            unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-            labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-            overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-            tabs: _tabDefs.map((t) => Tab(
-              height: 34,
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(t.$1, size: 14),
-                const SizedBox(width: 6),
-                Text(t.$2),
-              ]),
-            )).toList(),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: TabBarView(
-            controller: _tab,
-            children: [
-              _PertesContent(api: widget.api),
-              _KriView(api: widget.api),
-              _CartographieView(api: widget.api),
-              _ControlesView(api: widget.api),
-              _WorkflowView(api: widget.api),
-              _PlansView(api: widget.api),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1394,7 +1642,7 @@ class _PertesContentState extends State<_PertesContent> {
                     tooltip: 'Somme des pertes avant déduction des montants récupérés.\nFormule : Σ perte_brute sur tous les incidents de la période.\nReprésenthe l\'exposition totale avant atténuation. (Art. 313.b)')),
                   const SizedBox(width: 10),
                   Expanded(child: _kpiBox(ctx, 'Perte nette totale', AppFormatters.currency(totalNette), Icons.trending_down, _kDanger,
-                    tooltip: 'Somme des pertes réellement supportées après récupérations.\nFormule : Σ (perte_brute − perte_récupérée).\nC\'est la base de calcul du K_RO selon l\'approche BIA. (Art. 313.b / Art. 89)')),
+                    tooltip: 'Somme des pertes réellement supportées après récupérations.\nFormule : Σ (perte_brute − perte_récupérée).\nC\'est la base de calcul du Capital minimal selon l\'approche BIA. (Art. 313.b / Art. 89)')),
                   const SizedBox(width: 10),
                   Expanded(child: _kpiBox(ctx, 'Taux de récupération', '${tauxRecup.toStringAsFixed(1)} %', Icons.savings_outlined, _kSuccess,
                     tooltip: 'Part des pertes brutes récupérée via assurances, provisions ou recours.\nFormule : (Σ perte_récupérée / Σ perte_brute) × 100.\nMesure l\'efficacité des mécanismes d\'atténuation.')),
@@ -1450,6 +1698,51 @@ class _PertesContentState extends State<_PertesContent> {
 
 // ─── VIEW 4 : KRI ─────────────────────────────────────────────────────────────
 
+const _kriNumSources = <int, (String, IconData)>{
+  1: ('Service IT — logs système', Icons.computer_rounded),
+  2: ('Service IT — monitoring', Icons.monitor_heart_rounded),
+  3: ('Service IT / Sécurité informatique', Icons.security_rounded),
+  4: ('Audit interne', Icons.fact_check_rounded),
+  5: ('Responsable risque opérationnel', Icons.manage_accounts_rounded),
+  6: ('Service RH', Icons.people_rounded),
+  7: ('Responsable risque opérationnel', Icons.manage_accounts_rounded),
+  8: ('Responsable risque opérationnel', Icons.manage_accounts_rounded),
+};
+
+const _kriNumDescriptions = <int, String>{
+  1: 'Erreurs de saisie sur les opérations (virements, comptes) par jour ouvrable.',
+  2: 'Disponibilité du core banking en pourcentage sur la période.',
+  3: 'Tentatives de connexion échouées ou accès à des modules sans droits par semaine.',
+  4: 'Contrôles planifiés dont l\'échéance est dépassée sans réalisation (tolérance zéro).',
+  5: 'Incidents au statut «Ouvert» ou «En cours» depuis plus de 30 jours (critique : 1).',
+  6: 'Employés ayant quitté la banque sur le trimestre (% des effectifs totaux).',
+  7: 'Délai moyen en jours entre la détection d\'un incident et sa déclaration (Art. 313.b ≤ 5 j).',
+  8: 'Plans d\'actions dont l\'échéance est dépassée avec avancement < 100 % (tolérance zéro).',
+};
+
+int _extractKriNum(String nom) {
+  final m = RegExp(r'(\d+)').firstMatch(nom);
+  return m != null ? int.tryParse(m.group(1)!) ?? 0 : 0;
+}
+
+Widget _thresholdInfoChip(String label, double seuil, String unite, String sens, Color color) {
+  final symbol = sens == 'superieur' ? '>' : '<';
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: color.withValues(alpha: 0.25)),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+      const SizedBox(width: 4),
+      Text('$label: $symbol $seuil $unite',
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+    ]),
+  );
+}
+
 class _KriView extends StatefulWidget {
   const _KriView({required this.api});
   final RwaApiService api;
@@ -1468,8 +1761,11 @@ class _KriViewState extends State<_KriView> {
 
   void _reload() => setState(() { _future = widget.api.fetchRoKri(); });
 
-  Future<void> _addValeur(List<RoKriView> kris) async {
-    String? kriId = kris.first.definition.id;
+  Future<void> _addValeur(List<RoKriView> kris, {String? preselectedId}) async {
+    if (kris.isEmpty) return;
+    String? kriId = preselectedId ?? kris.first.definition.id;
+    String? periode = 'Mensuel';
+    String? source;
     final dateCtrl = TextEditingController(text: DateTime.now().toIso8601String().substring(0, 10));
     final valCtrl = TextEditingController();
     final commCtrl = TextEditingController();
@@ -1478,90 +1774,187 @@ class _KriViewState extends State<_KriView> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) => AlertDialog(
-          titlePadding: EdgeInsets.zero,
-          title: Container(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
-            decoration: BoxDecoration(
-              color: _kViolet.withValues(alpha: 0.06),
-              border: Border(bottom: BorderSide(color: _kViolet.withValues(alpha: 0.15))),
-            ),
-            child: Row(children: [
-              Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  color: _kViolet.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(9),
-                ),
-                child: const Icon(Icons.speed_rounded, color: _kViolet, size: 18),
+        builder: (ctx, setD) {
+          final selKri = kris.firstWhere((k) => k.definition.id == kriId, orElse: () => kris.first);
+          final d = selKri.definition;
+          final kriNum = _extractKriNum(d.nom);
+          final (srcDefault, srcIcon) = _kriNumSources[kriNum] ?? ('Responsable risque opérationnel', Icons.manage_accounts_rounded);
+          source ??= srcDefault;
+          final desc = _kriNumDescriptions[kriNum] ?? d.formule;
+
+          return AlertDialog(
+            titlePadding: EdgeInsets.zero,
+            title: Container(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+              decoration: BoxDecoration(
+                color: AppColors.prudentialSolvency.withValues(alpha: 0.06),
+                border: Border(bottom: BorderSide(color: AppColors.prudentialSolvency.withValues(alpha: 0.15))),
               ),
-              const SizedBox(width: 12),
-              const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Saisir une valeur KRI',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                Text('Indicateur de risque clé — mesure périodique',
-                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
-              ])),
-            ]),
-          ),
-          content: SizedBox(
-            width: 460,
-            child: Form(
-              key: formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(top: 4),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _formSection('Sélection de l\'indicateur', icon: Icons.speed_rounded, color: _kViolet),
-                    _dropdown('Indicateur KRI', kriId, kris.map((k) => k.definition.id).toList(),
-                      (v) => setD(() => kriId = v), required: true, icon: Icons.analytics_rounded,
-                      hint: 'Choisir l\'indicateur à mesurer'),
-                    _formSection('Mesure', icon: Icons.straighten_rounded, color: _kBlue),
-                    _formRow(
-                      _dateField(ctx, 'Date de mesure', dateCtrl, required: true),
-                      _field('Valeur mesurée', valCtrl, keyboardType: TextInputType.number,
-                        required: true, icon: Icons.numbers_rounded, hint: 'Ex: 2.5'),
-                    ),
-                    _field('Commentaire', commCtrl, icon: Icons.notes_rounded,
-                      hint: 'Contexte ou explication de la mesure...'),
-                  ],
+              child: Row(children: [
+                Container(
+                  width: 36, height: 36,
+                  decoration: BoxDecoration(color: AppColors.prudentialSolvency.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
+                  child: const Icon(Icons.speed_rounded, color: AppColors.prudentialSolvency, size: 18),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Saisir une valeur KRI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  Text('Indicateur clé de risque — mesure périodique (Art. 313)',
+                    style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
+                ])),
+              ]),
+            ),
+            content: SizedBox(
+              width: 500,
+              child: Form(
+                key: formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _formSection('Sélection de l\'indicateur', icon: Icons.speed_rounded, color: AppColors.prudentialSolvency),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(children: [
+                              Icon(Icons.analytics_rounded, size: 12, color: _kBlue),
+                              SizedBox(width: 5),
+                              Text('Indicateur KRI *',
+                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: _kMuted)),
+                            ]),
+                            const SizedBox(height: 5),
+                            DropdownButtonFormField<String>(
+                              initialValue: kriId,
+                              isExpanded: true,
+                              icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
+                              items: kris.map((k) => DropdownMenuItem(
+                                value: k.definition.id,
+                                child: Text(k.definition.nom, style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis),
+                              )).toList(),
+                              onChanged: (v) => setD(() { kriId = v; source = null; }),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                              ),
+                              validator: (v) => v == null ? 'Champ requis' : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Fiche info du KRI sélectionné
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.prudentialSolvency.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.prudentialSolvency.withValues(alpha: 0.18)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(desc, style: const TextStyle(fontSize: 11.5, color: _kMuted, height: 1.5)),
+                            const SizedBox(height: 8),
+                            Wrap(spacing: 8, runSpacing: 5, children: [
+                              _thresholdInfoChip('Alerte', d.seuilAlerte, d.unite, d.sens, _kWarning),
+                              _thresholdInfoChip('Critique', d.seuilCritique, d.unite, d.sens, _kDanger),
+                            ]),
+                            const SizedBox(height: 6),
+                            Row(children: [
+                              Icon(srcIcon, size: 11, color: _kMuted),
+                              const SizedBox(width: 5),
+                              Expanded(child: Text('Source habituelle : $srcDefault',
+                                style: const TextStyle(fontSize: 10.5, color: _kMuted))),
+                            ]),
+                          ],
+                        ),
+                      ),
+                      _formSection('Mesure', icon: Icons.straighten_rounded, color: _kBlue),
+                      _formRow(
+                        _dropdown('Période', periode, ['Hebdomadaire', 'Mensuel', 'Trimestriel'],
+                          (v) => setD(() => periode = v), required: true, icon: Icons.calendar_view_month_rounded),
+                        _dateField(ctx, 'Date de mesure', dateCtrl, required: true),
+                      ),
+                      _field('Valeur mesurée', valCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        required: true, icon: Icons.numbers_rounded,
+                        hint: 'Saisir la valeur observée (ex: 3, 98.5, 2.0)'),
+                      _formSection('Contexte et source', icon: Icons.info_outline_rounded, color: _kMuted),
+                      _dropdown('Source de la donnée', source, [
+                        'Service IT — logs système',
+                        'Service IT — monitoring',
+                        'Service IT / Sécurité informatique',
+                        'Audit interne',
+                        'Service RH',
+                        'Responsable risque opérationnel',
+                        'Superviseur / Chef d\'équipe',
+                      ], (v) => setD(() => source = v), icon: Icons.people_rounded,
+                        hint: 'Qui a fourni cette valeur ?'),
+                      _field('Commentaire / contexte', commCtrl, multiline: true,
+                        icon: Icons.notes_rounded,
+                        hint: 'Contexte, cause identifiée ou action déclenchée...'),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-          actions: [
-            OutlinedButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler'),
-            ),
-            const SizedBox(width: 8),
-            FilledButton.icon(
-              icon: const Icon(Icons.save_rounded, size: 16),
-              style: FilledButton.styleFrom(backgroundColor: _kViolet),
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
-                try {
-                  await widget.api.addRoKriValeur({
-                    'kri_id': kriId,
-                    'date_mesure': dateCtrl.text.trim(),
-                    'valeur': double.tryParse(valCtrl.text) ?? 0,
-                    'commentaire': commCtrl.text.trim(),
-                  });
-                  if (ctx.mounted) Navigator.pop(ctx, true);
-                } catch (e) {
-                  if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
-                }
-              },
-              label: const Text('Enregistrer'),
-            ),
-          ],
-        ),
+            actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            actions: [
+              OutlinedButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                icon: const Icon(Icons.save_rounded, size: 16),
+                style: FilledButton.styleFrom(backgroundColor: AppColors.prudentialSolvency),
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+                  final commentaire = [
+                    if (source != null && source!.isNotEmpty) 'Source: $source',
+                    if (commCtrl.text.trim().isNotEmpty) commCtrl.text.trim(),
+                  ].join(' | ');
+                  try {
+                    await widget.api.addRoKriValeur({
+                      'kri_id': kriId,
+                      'date_mesure': dateCtrl.text.trim(),
+                      'valeur': double.tryParse(valCtrl.text.trim().replaceAll(',', '.')) ?? 0,
+                      'commentaire': commentaire,
+                      'periode': periode,
+                    });
+                    if (ctx.mounted) Navigator.pop(ctx, true);
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
+                    }
+                  }
+                },
+                label: const Text('Enregistrer'),
+              ),
+            ],
+          );
+        },
       ),
     );
     if (ok == true) _reload();
+  }
+
+  Future<void> _showHistorique(RoKriView kri, List<RoKriView> allKris) async {
+    await showDialog(
+      context: context,
+      builder: (ctx) => _KriHistoriqueDialog(
+        kri: kri,
+        kriNum: _extractKriNum(kri.definition.nom),
+        onSaisir: () {
+          Navigator.pop(ctx);
+          _addValeur(allKris, preselectedId: kri.definition.id);
+        },
+      ),
+    );
   }
 
   @override
@@ -1572,73 +1965,748 @@ class _KriViewState extends State<_KriView> {
         if (snap.connectionState != ConnectionState.done) return _loadingBox();
         if (snap.hasError) return _errorBox(snap.error!);
         final data = snap.data!;
+        final kris = data.kriList;
+        final normal   = kris.where((k) => k.statut == 'normal').length;
+        final alerte   = kris.where((k) => k.statut == 'alerte').length;
+        final critique = kris.where((k) => k.statut == 'critique').length;
+        final nonRens  = kris.where((k) => k.statut == 'non_renseigne').length;
+
         return Column(
           children: [
-            Row(
-              children: [
-                _badge('${data.kriHorsSeuil} KRI hors seuil', data.kriHorsSeuil > 0 ? _kDanger : _kSuccess),
-                const Spacer(),
-                FilledButton.icon(
-                  onPressed: () => _addValeur(data.kriList),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Saisir valeur'),
-                ),
-              ],
-            ),
+            // ── Bandeau conformité ────────────────────────────────────────────
+            _KriBanner(total: kris.length, normal: normal, alerte: alerte,
+              critique: critique, nonRens: nonRens),
             const SizedBox(height: 12),
+            // ── Barre d'actions ───────────────────────────────────────────────
+            Row(children: [
+              if (data.kriHorsSeuil > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _kDanger.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: _kDanger.withValues(alpha: 0.30)),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.notifications_active_rounded, color: _kDanger, size: 14),
+                    const SizedBox(width: 6),
+                    Text('${data.kriHorsSeuil} KRI hors seuil — action immédiate requise',
+                      style: const TextStyle(color: _kDanger, fontSize: 11.5, fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+              const Spacer(),
+              OutlinedButton.icon(
+                onPressed: _reload,
+                icon: const Icon(Icons.refresh_rounded, size: 16),
+                label: const Text('Actualiser'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.prudentialSolvency),
+                onPressed: kris.isEmpty ? null : () => _addValeur(kris),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Saisir une valeur'),
+              ),
+            ]),
+            const SizedBox(height: 12),
+            // ── Grille de cartes KRI ──────────────────────────────────────────
             Expanded(
-              child: Card(
-                margin: EdgeInsets.zero,
-                child: SingleChildScrollView(
-                  child: Table(
-                    columnWidths: const {
-                      0: FlexColumnWidth(2),
-                      1: FixedColumnWidth(70),
-                      2: FixedColumnWidth(90),
-                      3: FixedColumnWidth(80),
-                      4: FixedColumnWidth(80),
-                      5: FixedColumnWidth(100),
-                      6: FixedColumnWidth(100),
-                    },
-                    children: [
-                      _tableHeader(['KRI', 'Unité', 'Seuil alerte', 'Fréq.', 'Dernière val.', 'Dernière date', 'Statut']),
-                      ...data.kriList.map((k) {
-                        final d = k.definition;
-                        return TableRow(
-                          decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
-                          children: [
-                            _cell(d.nom, bold: true),
-                            _cell(d.unite),
-                            _cell(d.sens == 'superieur' ? '> ${d.seuilAlerte}' : '< ${d.seuilAlerte}'),
-                            _cell(d.frequence),
-                            _cell(k.derniereValeur != null ? '${k.derniereValeur!.toStringAsFixed(1)} ${d.unite}' : 'N/A'),
-                            _cell(k.derniereDate ?? 'N/A'),
-                            TableCell(
-                              verticalAlignment: TableCellVerticalAlignment.middle,
-                              child: Padding(
-                                padding: const EdgeInsets.all(8),
-                                child: Row(
-                                  children: [
-                                    Container(width: 10, height: 10, decoration: BoxDecoration(color: _kriStatutColor(k.statut), shape: BoxShape.circle)),
-                                    const SizedBox(width: 6),
-                                    Text(_kriStatutLabel(k.statut), style: TextStyle(color: _kriStatutColor(k.statut), fontWeight: FontWeight.w600, fontSize: 12)),
-                                  ],
-                                ),
+              child: kris.isEmpty
+                  ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.speed_outlined, size: 52, color: _kMuted.withValues(alpha: 0.3)),
+                      const SizedBox(height: 12),
+                      const Text('Aucun KRI configuré', style: TextStyle(color: _kMuted, fontSize: 13)),
+                    ]))
+                  : SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          for (int i = 0; i < kris.length; i += 2)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: _KriCard(
+                                    kri: kris[i],
+                                    kriNum: _extractKriNum(kris[i].definition.nom),
+                                    onSaisir: () => _addValeur(kris, preselectedId: kris[i].definition.id),
+                                    onHistorique: () => _showHistorique(kris[i], kris),
+                                  )),
+                                  if (i + 1 < kris.length) ...[
+                                    const SizedBox(width: 10),
+                                    Expanded(child: _KriCard(
+                                      kri: kris[i + 1],
+                                      kriNum: _extractKriNum(kris[i + 1].definition.nom),
+                                      onSaisir: () => _addValeur(kris, preselectedId: kris[i + 1].definition.id),
+                                      onHistorique: () => _showHistorique(kris[i + 1], kris),
+                                    )),
+                                  ] else
+                                    const Expanded(child: SizedBox()),
+                                ],
                               ),
                             ),
-                          ],
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ),
+                        ],
+                      ),
+                    ),
             ),
           ],
         );
       },
     );
   }
+}
+
+// ─── KRI Compliance Banner ────────────────────────────────────────────────────
+
+class _KriBanner extends StatelessWidget {
+  const _KriBanner({required this.total, required this.normal, required this.alerte,
+    required this.critique, required this.nonRens});
+  final int total, normal, alerte, critique, nonRens;
+
+  @override
+  Widget build(BuildContext context) {
+    final allOk = critique == 0 && alerte == 0;
+
+    Widget statCol(String label, String value, Color color) => Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.55),
+          fontSize: 8.5, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+        const SizedBox(height: 2),
+        Text(value, style: TextStyle(
+          color: color == _kMuted ? Colors.white.withValues(alpha: 0.45) : color,
+          fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+      ],
+    );
+
+    Widget sep() => Container(width: 1, height: 32, margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: Colors.white.withValues(alpha: 0.18));
+
+    final headline = critique > 0
+        ? '$critique KRI CRITIQUE${critique > 1 ? 'S' : ''} — ACTION IMMÉDIATE REQUISE'
+        : alerte > 0
+            ? '$alerte KRI EN ALERTE — SURVEILLANCE RENFORCÉE'
+            : total == 0 ? 'AUCUN KRI CONFIGURÉ'
+            : nonRens == total ? 'SAISIR LES PREMIÈRES VALEURS POUR ACTIVER LA SURVEILLANCE'
+            : 'TOUS LES KRI DANS LES SEUILS';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.centerLeft, end: Alignment.centerRight,
+          colors: allOk
+              ? [const Color(0xFF042B16), const Color(0xFF0D5C30)]
+              : critique > 0
+                  ? [const Color(0xFF3D0A0A), const Color(0xFF7A1212)]
+                  : [const Color(0xFF2D1A00), const Color(0xFF5C3600)],
+        ),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [BoxShadow(
+          color: (allOk ? _kSuccess : critique > 0 ? _kDanger : _kWarning).withValues(alpha: 0.20),
+          blurRadius: 16, offset: const Offset(0, 4))],
+      ),
+      child: Row(children: [
+        Container(
+          width: 44, height: 44, alignment: Alignment.center,
+          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10)),
+          child: Icon(allOk ? Icons.shield_rounded : Icons.speed_rounded, color: Colors.white, size: 22),
+        ),
+        const SizedBox(width: 14),
+        Expanded(child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('INDICATEURS CLÉS DE RISQUE · ART. 313 BCEAO/UMOA',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.7)),
+            const SizedBox(height: 2),
+            Text(headline,
+              style: const TextStyle(color: Colors.white, fontSize: 14,
+                fontWeight: FontWeight.w900, letterSpacing: -0.3),
+              overflow: TextOverflow.ellipsis),
+          ],
+        )),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          statCol('NORMAL', '$normal', _kSuccess),
+          sep(),
+          statCol('ALERTE', '$alerte', _kWarning),
+          sep(),
+          statCol('CRITIQUE', '$critique', _kDanger),
+          if (nonRens > 0) ...[sep(), statCol('N/R', '$nonRens', _kMuted)],
+        ]),
+      ]),
+    );
+  }
+}
+
+// ─── KRI Card ─────────────────────────────────────────────────────────────────
+
+class _KriCard extends StatelessWidget {
+  const _KriCard({required this.kri, required this.kriNum,
+    required this.onSaisir, required this.onHistorique});
+  final RoKriView kri;
+  final int kriNum;
+  final VoidCallback onSaisir;
+  final VoidCallback onHistorique;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final d = kri.definition;
+    final sc = _kriStatutColor(kri.statut);
+    final sl = _kriStatutLabel(kri.statut);
+    final (srcLabel, srcIcon) = _kriNumSources[kriNum] ?? ('Non spécifié', Icons.help_outline_rounded);
+    final description = _kriNumDescriptions[kriNum] ?? d.formule;
+    final isCrit = kri.statut == 'critique';
+    final isAlt  = kri.statut == 'alerte';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isCrit ? _kDanger.withValues(alpha: 0.40)
+              : isAlt ? _kWarning.withValues(alpha: 0.30)
+              : isDark ? AppTheme.darkBorder : AppTheme.border,
+          width: isCrit ? 1.5 : 1.0,
+        ),
+        boxShadow: isCrit
+            ? [BoxShadow(color: _kDanger.withValues(alpha: 0.12), blurRadius: 12, offset: const Offset(0, 3))]
+            : isAlt
+                ? [BoxShadow(color: _kWarning.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 3))]
+                : isDark ? null
+                    : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Container(width: 4, color: sc),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // En-tête
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.prudentialSolvency.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text('KRI ${kriNum.toString().padLeft(2, '0')}',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
+                          color: AppColors.prudentialSolvency, letterSpacing: 0.5)),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(d.nom,
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700,
+                        color: isDark ? AppTheme.darkText : AppTheme.text),
+                      overflow: TextOverflow.ellipsis)),
+                    _badge(sl, sc),
+                  ]),
+                  const SizedBox(height: 8),
+                  // Description
+                  Text(description,
+                    style: TextStyle(fontSize: 11, color: isDark ? AppTheme.darkMuted : _kMuted,
+                      height: 1.45, fontStyle: FontStyle.italic),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 12),
+                  // Valeur actuelle
+                  Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    kri.derniereValeur != null
+                        ? Text(
+                            kri.derniereValeur! % 1 == 0
+                                ? kri.derniereValeur!.toInt().toString()
+                                : kri.derniereValeur!.toStringAsFixed(1),
+                            style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900,
+                              color: sc, height: 1.0, letterSpacing: -1.0))
+                        : Text('—', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900,
+                            color: _kMuted.withValues(alpha: 0.35), height: 1.0)),
+                    const SizedBox(width: 5),
+                    Padding(padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(d.unite,
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                          color: isDark ? AppTheme.darkMuted : _kMuted))),
+                    const Spacer(),
+                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      if (kri.derniereDate != null)
+                        Text(kri.derniereDate!, style: const TextStyle(fontSize: 10, color: _kMuted)),
+                      Text(d.frequence, style: const TextStyle(fontSize: 10, color: _kMuted)),
+                    ]),
+                  ]),
+                  const SizedBox(height: 10),
+                  // Jauge visuelle
+                  if (kri.derniereValeur != null)
+                    _KriGauge(kri: kri)
+                  else
+                    Container(
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: _kMuted.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: _kMuted.withValues(alpha: 0.12)),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text('Aucune valeur saisie',
+                        style: TextStyle(fontSize: 9.5, color: _kMuted)),
+                    ),
+                  const SizedBox(height: 8),
+                  // Seuils
+                  Wrap(spacing: 6, runSpacing: 4, children: [
+                    _thresholdInfoChip('Alerte', d.seuilAlerte, d.unite, d.sens, _kWarning),
+                    _thresholdInfoChip('Critique', d.seuilCritique, d.unite, d.sens, _kDanger),
+                  ]),
+                  const SizedBox(height: 8),
+                  // Source
+                  Row(children: [
+                    Icon(srcIcon, size: 11, color: _kMuted),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text('Source: $srcLabel',
+                      style: const TextStyle(fontSize: 10, color: _kMuted),
+                      overflow: TextOverflow.ellipsis)),
+                  ]),
+                  const SizedBox(height: 10),
+                  // Boutons
+                  Row(children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: onHistorique,
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        icon: const Icon(Icons.history_rounded, size: 13),
+                        label: const Text('Historique', style: TextStyle(fontSize: 11)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: onSaisir,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.prudentialSolvency,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                        icon: const Icon(Icons.add_rounded, size: 13),
+                        label: const Text('Saisir', style: TextStyle(fontSize: 11)),
+                      ),
+                    ),
+                  ]),
+                  // Bannière d'alerte contextuelle
+                  if (isCrit) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _kDanger.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: _kDanger.withValues(alpha: 0.25)),
+                      ),
+                      child: const Row(children: [
+                        Icon(Icons.warning_rounded, color: _kDanger, size: 12),
+                        SizedBox(width: 6),
+                        Expanded(child: Text('Action immédiate — déclencher un plan d\'action',
+                          style: TextStyle(fontSize: 10, color: _kDanger, fontWeight: FontWeight.w600))),
+                      ]),
+                    ),
+                  ] else if (isAlt) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _kWarning.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: _kWarning.withValues(alpha: 0.25)),
+                      ),
+                      child: const Row(children: [
+                        Icon(Icons.info_rounded, color: _kWarning, size: 12),
+                        SizedBox(width: 6),
+                        Expanded(child: Text('Investiguer la cause et renforcer la surveillance',
+                          style: TextStyle(fontSize: 10, color: _kWarning, fontWeight: FontWeight.w600))),
+                      ]),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─── KRI Gauge ────────────────────────────────────────────────────────────────
+
+class _KriGauge extends StatelessWidget {
+  const _KriGauge({required this.kri});
+  final RoKriView kri;
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 28,
+    child: CustomPaint(painter: _KriGaugePainter(kri: kri), size: const Size(double.infinity, 28)),
+  );
+}
+
+class _KriGaugePainter extends CustomPainter {
+  const _KriGaugePainter({required this.kri});
+  final RoKriView kri;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final d   = kri.definition;
+    final val = kri.derniereValeur;
+    if (val == null) return;
+
+    final sup = d.sens == 'superieur';
+    final w = size.width;
+    const barH = 8.0;
+    const barTop = 12.0;
+
+    double maxV, minV;
+    if (sup) {
+      maxV = math.max(val, d.seuilCritique) * 1.4;
+      minV = 0.0;
+    } else {
+      minV = math.min(val, d.seuilCritique) * 0.85;
+      maxV = 100.0;
+    }
+    final range = maxV - minV;
+    if (range <= 0) return;
+
+    double px(double v) => ((v - minV) / range * w).clamp(0.0, w);
+
+    final pA = px(d.seuilAlerte);
+    final pC = px(d.seuilCritique);
+    final pV = px(val);
+
+    final pGreen  = Paint()..color = _kSuccess.withValues(alpha: 0.85)..style = PaintingStyle.fill;
+    final pOrange = Paint()..color = _kWarning.withValues(alpha: 0.85)..style = PaintingStyle.fill;
+    final pRed    = Paint()..color = _kDanger.withValues(alpha: 0.85)..style = PaintingStyle.fill;
+
+    canvas.save();
+    canvas.clipRRect(RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, barTop, w, barH), const Radius.circular(4)));
+
+    if (sup) {
+      canvas.drawRect(Rect.fromLTWH(0, barTop, pA, barH), pGreen);
+      if (pC > pA) canvas.drawRect(Rect.fromLTWH(pA, barTop, pC - pA, barH), pOrange);
+      canvas.drawRect(Rect.fromLTWH(pC, barTop, w - pC, barH), pRed);
+    } else {
+      canvas.drawRect(Rect.fromLTWH(0, barTop, pC, barH), pRed);
+      if (pA > pC) canvas.drawRect(Rect.fromLTWH(pC, barTop, pA - pC, barH), pOrange);
+      canvas.drawRect(Rect.fromLTWH(pA, barTop, w - pA, barH), pGreen);
+    }
+    canvas.restore();
+
+    // Séparateurs de seuil
+    final divP = Paint()..color = Colors.white.withValues(alpha: 0.65)
+      ..strokeWidth = 1.5..style = PaintingStyle.stroke;
+    canvas.drawLine(Offset(pA, barTop), Offset(pA, barTop + barH), divP);
+    if ((pC - pA).abs() > 2) canvas.drawLine(Offset(pC, barTop), Offset(pC, barTop + barH), divP);
+
+    // Indicateur valeur (triangle)
+    final ic = _kriStatutColor(kri.statut);
+    canvas.drawPath(
+      Path()..moveTo(pV, barTop - 2)..lineTo(pV - 5, barTop - 9)..lineTo(pV + 5, barTop - 9)..close(),
+      Paint()..color = ic..style = PaintingStyle.fill);
+
+    // Label valeur
+    final valStr = val % 1 == 0 ? val.toInt().toString() : val.toStringAsFixed(1);
+    final tp = TextPainter(
+      text: TextSpan(text: valStr,
+        style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: ic)),
+      textDirection: TextDirection.ltr)..layout();
+    tp.paint(canvas, Offset((pV - tp.width / 2).clamp(0.0, w - tp.width), 0));
+  }
+
+  @override
+  bool shouldRepaint(_KriGaugePainter old) => true;
+}
+
+// ─── Historique Dialog ────────────────────────────────────────────────────────
+
+class _KriHistoriqueDialog extends StatelessWidget {
+  const _KriHistoriqueDialog({required this.kri, required this.kriNum, required this.onSaisir});
+  final RoKriView kri;
+  final int kriNum;
+  final VoidCallback onSaisir;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = kri.definition;
+    final color = _kriStatutColor(kri.statut);
+    final (srcLabel, srcIcon) = _kriNumSources[kriNum] ?? ('Non spécifié', Icons.help_outline_rounded);
+    final hist = List<RoKriValeur>.from(kri.historique)
+      ..sort((a, b) => b.dateMesure.compareTo(a.dateMesure));
+
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640, maxHeight: 640),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 14),
+            decoration: BoxDecoration(
+              color: AppColors.prudentialSolvency.withValues(alpha: 0.06),
+              border: Border(bottom: BorderSide(color: AppColors.prudentialSolvency.withValues(alpha: 0.15))),
+            ),
+            child: Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: AppColors.prudentialSolvency.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6)),
+                child: Text('KRI ${kriNum.toString().padLeft(2, '0')}',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.prudentialSolvency)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(d.nom, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                Text('${d.unite} · ${d.frequence}',
+                  style: const TextStyle(fontSize: 10.5, color: _kMuted)),
+              ])),
+              _badge(_kriStatutLabel(kri.statut), color),
+              const SizedBox(width: 8),
+              IconButton(icon: const Icon(Icons.close_rounded, size: 18),
+                onPressed: () => Navigator.pop(context)),
+            ]),
+          ),
+          // Body
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Tiles info
+                Row(children: [
+                  Expanded(child: _infoTile('Seuil alerte',
+                    '${d.sens == 'superieur' ? '>' : '<'} ${d.seuilAlerte} ${d.unite}', _kWarning)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _infoTile('Seuil critique',
+                    '${d.sens == 'superieur' ? '>' : '<'} ${d.seuilCritique} ${d.unite}', _kDanger)),
+                  const SizedBox(width: 10),
+                  Expanded(child: _infoTile('Dernière valeur',
+                    kri.derniereValeur != null
+                        ? '${kri.derniereValeur! % 1 == 0 ? kri.derniereValeur!.toInt() : kri.derniereValeur!.toStringAsFixed(1)} ${d.unite}'
+                        : 'N/A',
+                    color)),
+                ]),
+                const SizedBox(height: 12),
+                Text(_kriNumDescriptions[kriNum] ?? d.formule,
+                  style: const TextStyle(fontSize: 11.5, color: _kMuted, height: 1.5)),
+                const SizedBox(height: 14),
+                // Sparkline
+                if (kri.historique.length >= 2) ...[
+                  Row(children: [
+                    const Text('Évolution des mesures',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                    const Spacer(),
+                    Text('${kri.historique.length} mesure(s)',
+                      style: const TextStyle(fontSize: 11, color: _kMuted)),
+                  ]),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 100,
+                    child: CustomPaint(
+                      painter: _KriSparklinePainter(
+                        values: kri.historique.map((v) => v.valeur).toList(),
+                        seuilAlerte: d.seuilAlerte,
+                        seuilCritique: d.seuilCritique,
+                        sens: d.sens,
+                      ),
+                      size: const Size(double.infinity, 100),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                // Tableau
+                const Text('Historique des mesures',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                const SizedBox(height: 8),
+                hist.isEmpty
+                    ? Container(
+                        padding: const EdgeInsets.all(24),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _kMuted.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _kMuted.withValues(alpha: 0.12)),
+                        ),
+                        child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.history_rounded, size: 36, color: _kMuted.withValues(alpha: 0.3)),
+                          const SizedBox(height: 10),
+                          const Text('Aucune mesure enregistrée',
+                            style: TextStyle(color: _kMuted, fontSize: 12)),
+                          const SizedBox(height: 4),
+                          const Text('Cliquez «Saisir une valeur» pour commencer le suivi',
+                            style: TextStyle(color: _kMuted, fontSize: 10.5)),
+                        ]),
+                      )
+                    : Table(
+                        border: TableBorder.all(color: const Color(0x15000000),
+                          borderRadius: BorderRadius.circular(6)),
+                        columnWidths: const {
+                          0: FixedColumnWidth(110),
+                          1: FixedColumnWidth(110),
+                          2: FixedColumnWidth(90),
+                          3: FlexColumnWidth(),
+                        },
+                        children: [
+                          _tableHeader(['Date', 'Valeur', 'Statut', 'Commentaire']),
+                          ...hist.map((v) {
+                            String hs;
+                            if (d.sens == 'superieur') {
+                              hs = v.valeur >= d.seuilCritique ? 'critique'
+                                  : v.valeur >= d.seuilAlerte ? 'alerte' : 'normal';
+                            } else {
+                              hs = v.valeur <= d.seuilCritique ? 'critique'
+                                  : v.valeur <= d.seuilAlerte ? 'alerte' : 'normal';
+                            }
+                            final hc = _kriStatutColor(hs);
+                            return TableRow(
+                              decoration: const BoxDecoration(
+                                border: Border(bottom: BorderSide(color: Color(0x11000000)))),
+                              children: [
+                                _cell(v.dateMesure),
+                                TableCell(
+                                  verticalAlignment: TableCellVerticalAlignment.middle,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    child: Text(
+                                      '${v.valeur % 1 == 0 ? v.valeur.toInt() : v.valeur.toStringAsFixed(1)} ${d.unite}',
+                                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: hc)),
+                                  ),
+                                ),
+                                TableCell(
+                                  verticalAlignment: TableCellVerticalAlignment.middle,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    child: _badge(_kriStatutLabel(hs), hc),
+                                  ),
+                                ),
+                                _cellFlex(v.commentaire.isEmpty ? '—' : v.commentaire),
+                              ],
+                            );
+                          }),
+                        ],
+                      ),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Icon(srcIcon, size: 12, color: _kMuted),
+                  const SizedBox(width: 6),
+                  Text('Source de la donnée : $srcLabel',
+                    style: const TextStyle(fontSize: 11, color: _kMuted)),
+                ]),
+              ]),
+            ),
+          ),
+          // Footer
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: _kMuted.withValues(alpha: 0.15)))),
+            child: Row(children: [
+              const Spacer(),
+              OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('Fermer')),
+              const SizedBox(width: 8),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.prudentialSolvency),
+                onPressed: onSaisir,
+                icon: const Icon(Icons.add_rounded, size: 16),
+                label: const Text('Saisir une valeur'),
+              ),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _infoTile(String label, String value, Color color) => Container(
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.07),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: color.withValues(alpha: 0.20)),
+    ),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(label, style: const TextStyle(fontSize: 10, color: _kMuted, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 4),
+      Text(value, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: color),
+        overflow: TextOverflow.ellipsis),
+    ]),
+  );
+}
+
+// ─── KRI Sparkline ────────────────────────────────────────────────────────────
+
+class _KriSparklinePainter extends CustomPainter {
+  const _KriSparklinePainter({required this.values, required this.seuilAlerte,
+    required this.seuilCritique, required this.sens});
+  final List<double> values;
+  final double seuilAlerte, seuilCritique;
+  final String sens;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.length < 2) return;
+    double lo = values.reduce(math.min);
+    double hi = values.reduce(math.max);
+    lo = math.min(lo, math.min(seuilAlerte, seuilCritique));
+    hi = math.max(hi, math.max(seuilAlerte, seuilCritique));
+    final pad = math.max((hi - lo) * 0.15, 0.5);
+    lo -= pad; hi += pad;
+    final range = hi - lo;
+    if (range <= 0) return;
+
+    final w = size.width;
+    final h = size.height - 4;
+    double toX(int i) => i / (values.length - 1) * w;
+    double toY(double v) => h - ((v - lo) / range * h) + 2;
+
+    // Lignes de seuil
+    canvas.drawLine(Offset(0, toY(seuilAlerte)), Offset(w, toY(seuilAlerte)),
+      Paint()..color = _kWarning.withValues(alpha: 0.55)..strokeWidth = 1..style = PaintingStyle.stroke);
+    canvas.drawLine(Offset(0, toY(seuilCritique)), Offset(w, toY(seuilCritique)),
+      Paint()..color = _kDanger.withValues(alpha: 0.55)..strokeWidth = 1..style = PaintingStyle.stroke);
+
+    // Ligne
+    final linePath = Path()..moveTo(toX(0), toY(values[0]));
+    for (int i = 1; i < values.length; i++) { linePath.lineTo(toX(i), toY(values[i])); }
+    canvas.drawPath(linePath, Paint()
+      ..color = _kBlue..strokeWidth = 2..style = PaintingStyle.stroke
+      ..strokeJoin = StrokeJoin.round..strokeCap = StrokeCap.round);
+
+    // Remplissage
+    final fillPath = Path.from(linePath)
+      ..lineTo(w, h + 2)..lineTo(0, h + 2)..close();
+    canvas.drawPath(fillPath, Paint()
+      ..color = _kBlue.withValues(alpha: 0.08)..style = PaintingStyle.fill);
+
+    // Points colorés par statut
+    for (int i = 0; i < values.length; i++) {
+      Color dc;
+      if (sens == 'superieur') {
+        dc = values[i] >= seuilCritique ? _kDanger
+            : values[i] >= seuilAlerte ? _kWarning : _kSuccess;
+      } else {
+        dc = values[i] <= seuilCritique ? _kDanger
+            : values[i] <= seuilAlerte ? _kWarning : _kSuccess;
+      }
+      final cx = toX(i); final cy = toY(values[i]);
+      canvas.drawCircle(Offset(cx, cy), 3.5, Paint()..color = Colors.white..style = PaintingStyle.fill);
+      canvas.drawCircle(Offset(cx, cy), 3.5,
+        Paint()..color = dc..style = PaintingStyle.stroke..strokeWidth = 2);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_KriSparklinePainter old) => true;
 }
 
 // ─── VIEW 5 : CARTOGRAPHIE ────────────────────────────────────────────────────
@@ -1776,70 +2844,277 @@ class _CartographieViewState extends State<_CartographieView> {
         if (snap.connectionState != ConnectionState.done) return _loadingBox();
         if (snap.hasError) return _errorBox(snap.error!);
         final items = snap.data!;
+
+        final faible   = items.where((r) => r.niveauBrut <= 4).length;
+        final eleve    = items.where((r) => r.niveauBrut > 9 && r.niveauBrut <= 16).length;
+        final critique = items.where((r) => r.niveauBrut > 16).length;
+
         return Column(
           children: [
-            Row(
-              children: [
-                const Text('Matrice 5×5 — positionnement des risques identifiés', style: TextStyle(fontWeight: FontWeight.w600)),
-                const Spacer(),
-                FilledButton.icon(onPressed: () => _showForm(), icon: const Icon(Icons.add, size: 18), label: const Text('Nouveau risque')),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Matrice heatmap
-                _RoRiskMatrix(risques: items),
-                const SizedBox(width: 16),
-                // Liste des risques
-                Expanded(
-                  child: items.isEmpty
-                      ? const Center(child: Text('Aucun risque enregistré.', style: TextStyle(color: _kMuted)))
-                      : Card(
-                          margin: EdgeInsets.zero,
-                          child: SingleChildScrollView(
-                            child: Table(
-                              columnWidths: const {0: FlexColumnWidth(2), 1: FixedColumnWidth(80), 2: FixedColumnWidth(70), 3: FixedColumnWidth(80), 4: FixedColumnWidth(80)},
-                              children: [
-                                _tableHeader(['Risque', 'Catégorie', 'Niveau brut', 'Niveau résiduel', 'Actions']),
-                                ...items.map((r) => TableRow(
-                                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
-                                  children: [
-                                    _cell(r.nom, bold: true),
-                                    _cell(r.categorie),
-                                    TableCell(
-                                      verticalAlignment: TableCellVerticalAlignment.middle,
-                                      child: Padding(padding: const EdgeInsets.all(8), child: _badge(r.niveauLabel, _niveauColor(r.niveauLabel))),
-                                    ),
-                                    _cell(r.niveauResiduel.toStringAsFixed(1)),
-                                    TableCell(
-                                      verticalAlignment: TableCellVerticalAlignment.middle,
-                                      child: Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          IconButton(icon: const Icon(Icons.edit_outlined, size: 16), onPressed: () => _showForm(edit: r)),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete_outline, size: 16, color: _kDanger),
-                                            onPressed: () => _confirm(context, 'Supprimer ce risque ?', () async { await widget.api.deleteRoRisque(r.id); _reload(); }),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                )),
-                              ],
+            // ── KPI + action ──────────────────────────────────────────────
+            Row(children: [
+              Expanded(child: _kpiBox(ctx, 'Risques cartographiés', '${items.length}',
+                Icons.map_rounded, _kBlue,
+                tooltip: 'Nombre total de risques positionnés sur la matrice 5×5 (Art. 313)')),
+              const SizedBox(width: 10),
+              Expanded(child: _kpiBox(ctx, 'Niveau faible', '$faible',
+                Icons.check_circle_outline_rounded, _kSuccess,
+                tooltip: 'Score P×I ≤ 4 — risque acceptable, surveillance standard')),
+              const SizedBox(width: 10),
+              Expanded(child: _kpiBox(ctx, 'Niveau élevé', '$eleve',
+                Icons.report_outlined, const Color(0xFFF97316),
+                tooltip: 'Score P×I 10–16 — plan d\'action recommandé')),
+              const SizedBox(width: 10),
+              Expanded(child: _kpiBox(ctx, 'Niveau critique', '$critique',
+                Icons.warning_amber_rounded, _kDanger,
+                tooltip: 'Score P×I > 16 — action immédiate et plan obligatoire (Art. 313)')),
+              const SizedBox(width: 14),
+              FilledButton.icon(
+                onPressed: () => _showForm(),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Nouveau risque'),
+              ),
+            ]),
+            const SizedBox(height: 14),
+            // ── Layout principal ──────────────────────────────────────────
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Colonne gauche : matrice
+                  SizedBox(
+                    width: 330,
+                    child: SectionCard(
+                      title: 'Matrice d\'exposition 5×5',
+                      child: SingleChildScrollView(
+                        child: _RoRiskMatrix(risques: items),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  // Colonne droite : liste
+                  Expanded(
+                    child: items.isEmpty
+                        ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.map_outlined, size: 52, color: _kMuted.withValues(alpha: 0.3)),
+                            const SizedBox(height: 12),
+                            const Text('Aucun risque enregistré.', style: TextStyle(color: _kMuted, fontSize: 13)),
+                            const SizedBox(height: 8),
+                            OutlinedButton.icon(
+                              onPressed: () => _showForm(),
+                              icon: const Icon(Icons.add_rounded, size: 16),
+                              label: const Text('Ajouter le premier risque'),
                             ),
+                          ]))
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                Text('${items.length} risque${items.length > 1 ? 's' : ''} cartographié${items.length > 1 ? 's' : ''}',
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                                const Spacer(),
+                                if (critique > 0)
+                                  _badge('$critique critique${critique > 1 ? 's' : ''}', _kDanger),
+                              ]),
+                              const SizedBox(height: 10),
+                              Expanded(
+                                child: ListView.separated(
+                                  itemCount: items.length,
+                                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                  itemBuilder: (_, idx) {
+                                    final r = items[idx];
+                                    return _RisqueListItem(
+                                      risque: r,
+                                      onEdit: () => _showForm(edit: r),
+                                      onDelete: () => _confirm(ctx,
+                                        'Supprimer "${r.nom}" ?',
+                                        () async { await widget.api.deleteRoRisque(r.id); _reload(); }),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ],
         );
       },
     );
   }
+}
+
+// ─── Risque List Item ─────────────────────────────────────────────────────────
+
+class _RisqueListItem extends StatelessWidget {
+  const _RisqueListItem({required this.risque, required this.onEdit, required this.onDelete});
+  final RoRisque risque;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final r = risque;
+    final lc = _niveauColor(r.niveauLabel);
+    final score = r.probabilite * r.impact;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: r.niveauLabel == 'Critique' ? _kDanger.withValues(alpha: 0.35)
+              : r.niveauLabel == 'Élevé' ? const Color(0xFFF97316).withValues(alpha: 0.28)
+              : isDark ? AppTheme.darkBorder : AppTheme.border,
+          width: r.niveauLabel == 'Critique' ? 1.5 : 1.0,
+        ),
+        boxShadow: r.niveauLabel == 'Critique'
+            ? [BoxShadow(color: _kDanger.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 2))]
+            : isDark ? null
+                : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          // Strip couleur
+          Container(width: 4, color: lc),
+          // Score circle
+          Container(
+            width: 60,
+            alignment: Alignment.center,
+            color: lc.withValues(alpha: isDark ? 0.10 : 0.06),
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              Container(
+                width: 38, height: 38,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: lc.withValues(alpha: isDark ? 0.22 : 0.13),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: lc.withValues(alpha: 0.40), width: 1.5),
+                ),
+                child: Text('$score',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: lc, height: 1.0)),
+              ),
+              const SizedBox(height: 3),
+              Text('P×I', style: TextStyle(fontSize: 8, color: lc.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w700)),
+            ]),
+          ),
+          // Contenu
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(children: [
+                    Expanded(child: Text(r.nom,
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                        color: isDark ? AppTheme.darkText : AppTheme.text),
+                      maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(width: 8),
+                    _badge(r.niveauLabel, lc),
+                  ]),
+                  const SizedBox(height: 6),
+                  Wrap(spacing: 6, runSpacing: 4, children: [
+                    _risqueChip(r.categorie, Icons.category_rounded, _kBlue),
+                    _risqueChip(r.ligneMetier, Icons.business_rounded, AppColors.prudentialSolvency),
+                  ]),
+                  const SizedBox(height: 7),
+                  Row(children: [
+                    _metricTile('P', '${r.probabilite}', _kWarning),
+                    Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: Text('×', style: TextStyle(fontSize: 12,
+                        color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 0.7)))),
+                    _metricTile('I', '${r.impact}', const Color(0xFFF97316)),
+                    Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: Text('=', style: TextStyle(fontSize: 12,
+                        color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 0.7)))),
+                    _metricTile('Score', '$score', lc),
+                    const SizedBox(width: 14),
+                    Icon(Icons.arrow_forward_ios_rounded, size: 9, color: _kMuted.withValues(alpha: 0.4)),
+                    const SizedBox(width: 6),
+                    const Text('Résiduel ', style: TextStyle(fontSize: 10, color: _kMuted)),
+                    Text(r.niveauResiduel.toStringAsFixed(1),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+                        color: isDark ? AppTheme.darkText : AppTheme.text)),
+                    if (r.controleExistant.isNotEmpty) ...[
+                      const SizedBox(width: 10),
+                      const Icon(Icons.shield_outlined, size: 11, color: _kSuccess),
+                      const SizedBox(width: 3),
+                      Text('Ctrl ${r.efficaciteControle}/5',
+                        style: const TextStyle(fontSize: 10, color: _kMuted)),
+                    ],
+                  ]),
+                ],
+              ),
+            ),
+          ),
+          // Actions
+          Container(
+            width: 58,
+            alignment: Alignment.center,
+            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              _iconBtn(Icons.edit_outlined, _kBlue, onEdit),
+              const SizedBox(height: 6),
+              _iconBtn(Icons.delete_outline_rounded, _kDanger, onDelete),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _risqueChip(String label, IconData icon, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(4),
+      border: Border.all(color: color.withValues(alpha: 0.20)),
+    ),
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 10, color: color),
+      const SizedBox(width: 3),
+      Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+        overflow: TextOverflow.ellipsis),
+    ]),
+  );
+
+  Widget _metricTile(String lbl, String val, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.09),
+      borderRadius: BorderRadius.circular(3),
+    ),
+    child: RichText(
+      text: TextSpan(children: [
+        TextSpan(text: '$lbl:', style: TextStyle(fontSize: 9, color: color.withValues(alpha: 0.65),
+          fontWeight: FontWeight.w500)),
+        TextSpan(text: val, style: TextStyle(fontSize: 11.5, color: color, fontWeight: FontWeight.w800)),
+      ]),
+    ),
+  );
+
+  Widget _iconBtn(IconData icon, Color color, VoidCallback onTap) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(7),
+      child: Container(
+        width: 32, height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(7),
+        ),
+        child: Icon(icon, size: 15, color: color),
+      ),
+    ),
+  );
 }
 
 // ─── VIEW 6 : CONTROLES ───────────────────────────────────────────────────────
@@ -1983,6 +3258,7 @@ class _ControlesViewState extends State<_ControlesView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return FutureBuilder<List<RoControle>>(
       future: _future,
       builder: (ctx, snap) {
@@ -2004,8 +3280,13 @@ class _ControlesViewState extends State<_ControlesView> {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: Card(
-                margin: EdgeInsets.zero,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF13233E) : Colors.white,
+                  border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                clipBehavior: Clip.antiAlias,
                 child: items.isEmpty
                     ? const Center(child: Text('Aucun contrôle enregistré.', style: TextStyle(color: _kMuted)))
                     : SingleChildScrollView(
@@ -2194,8 +3475,8 @@ class _PlansViewState extends State<_PlansView> {
   Color _sourceColor(String s) => switch (s) {
     'Incident'     => _kDanger,
     'Contrôle'     => _kWarning,
-    'KRI'          => _kViolet,
-    'Audit'        => _kCyan,
+    'KRI'          => AppColors.prudentialSolvency,
+    'Audit'        => AppColors.marketNeutral,
     'Cartographie' => _kBlue,
     _              => _kMuted,
   };
@@ -2260,17 +3541,17 @@ class _PlansViewState extends State<_PlansView> {
             title: Container(
               padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
               decoration: BoxDecoration(
-                color: _kCyan.withValues(alpha: 0.06),
-                border: Border(bottom: BorderSide(color: _kCyan.withValues(alpha: 0.15))),
+                color: AppColors.marketNeutral.withValues(alpha: 0.06),
+                border: Border(bottom: BorderSide(color: AppColors.marketNeutral.withValues(alpha: 0.15))),
               ),
               child: Row(children: [
                 Container(
                   width: 36, height: 36,
                   decoration: BoxDecoration(
-                    color: _kCyan.withValues(alpha: 0.12),
+                    color: AppColors.marketNeutral.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const Icon(Icons.task_alt_rounded, color: _kCyan, size: 18),
+                  child: const Icon(Icons.task_alt_rounded, color: AppColors.marketNeutral, size: 18),
                 ),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2291,7 +3572,7 @@ class _PlansViewState extends State<_PlansView> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _formSection('Identification du plan', icon: Icons.label_rounded, color: _kCyan),
+                      _formSection('Identification du plan', icon: Icons.label_rounded, color: AppColors.marketNeutral),
                       _field('Titre du plan d\'action', titreCtrl, required: true,
                         icon: Icons.title_rounded, hint: 'Ex: Renforcer le contrôle des accès'),
                       _formRow(
@@ -2335,11 +3616,11 @@ class _PlansViewState extends State<_PlansView> {
                               TextFormField(
                                 controller: auditCtrl,
                                 style: const TextStyle(fontSize: 13.5),
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   isDense: true,
                                   hintText: 'AUD-2024-Q1',
-                                  hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                  hintStyle: TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                                 ),
                               )
@@ -2363,11 +3644,11 @@ class _PlansViewState extends State<_PlansView> {
                                 initialValue: sourceRef,
                                 isExpanded: true,
                                 icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   isDense: true,
                                   hintText: 'Sélectionner…',
-                                  hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                  hintStyle: TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.zero),
                                 ),
                                 items: opts.map((o) => DropdownMenuItem(
@@ -2410,7 +3691,7 @@ class _PlansViewState extends State<_PlansView> {
               const SizedBox(width: 8),
               FilledButton.icon(
                 icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded, size: 16),
-                style: FilledButton.styleFrom(backgroundColor: _kCyan),
+                style: FilledButton.styleFrom(backgroundColor: AppColors.marketNeutral),
                 onPressed: () async {
                   if (!formKey.currentState!.validate()) return;
                   final ref = source == 'Audit' ? auditCtrl.text.trim() : (sourceRef ?? '');
@@ -2445,6 +3726,7 @@ class _PlansViewState extends State<_PlansView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return FutureBuilder<List<RoPlan>>(
       future: _future,
       builder: (ctx, snap) {
@@ -2466,8 +3748,13 @@ class _PlansViewState extends State<_PlansView> {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: Card(
-                margin: EdgeInsets.zero,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF13233E) : Colors.white,
+                  border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                clipBehavior: Clip.antiAlias,
                 child: items.isEmpty
                     ? const Center(child: Text('Aucun plan d\'action enregistré.', style: TextStyle(color: _kMuted)))
                     : SingleChildScrollView(
@@ -2618,18 +3905,33 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<RoHistorique>>(
-      future: _future,
-      builder: (ctx, snap) {
-        if (snap.connectionState != ConnectionState.done) return _loadingBox();
-        if (snap.hasError) return _errorBox(snap.error!);
-        final items = snap.data!;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.lock_outline, size: 14, color: _kMuted),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.all(AppTheme.pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PageHeader(
+            title: 'Historique événements',
+            subtitle: 'Journal de traçabilité (Art. 314) — 7 ans UMOA',
+            titleFontSize: 26,
+            subtitleFontSize: 12.5,
+            subtitleSuffix: _artInfo('Art. 314'),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: FutureBuilder<List<RoHistorique>>(
+              future: _future,
+              builder: (ctx, snap) {
+                if (snap.connectionState != ConnectionState.done) return _loadingBox();
+                if (snap.hasError) return _errorBox(snap.error!);
+                final items = snap.data!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.lock_outline, size: 14, color: _kMuted),
                 const SizedBox(width: 6),
                 const Text('Journal non modifiable — conservation 7 ans (UMOA)', style: TextStyle(fontSize: 12, color: _kMuted)),
                 const Spacer(),
@@ -2638,8 +3940,13 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: Card(
-                margin: EdgeInsets.zero,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF13233E) : Colors.white,
+                  border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                clipBehavior: Clip.antiAlias,
                 child: items.isEmpty
                     ? const Center(child: Text('Aucun événement enregistré.', style: TextStyle(color: _kMuted)))
                     : SingleChildScrollView(
@@ -2666,9 +3973,13 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                       ),
               ),
             ),
-          ],
-        );
-      },
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3058,12 +4369,26 @@ class _ReportingViewState extends State<_ReportingView> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return Padding(
+      padding: const EdgeInsets.all(AppTheme.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionCard(
-            title: 'Paramètres du rapport',
+          PageHeader(
+            title: 'Reporting opérationnel',
+            subtitle: 'Génération des rapports réglementaires (Art. 313.c)',
+            titleFontSize: 26,
+            subtitleFontSize: 12.5,
+            subtitleSuffix: _artInfo('Art. 313.c'),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SectionCard(
+                    title: 'Paramètres du rapport',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -3236,6 +4561,10 @@ class _ReportingViewState extends State<_ReportingView> {
               ],
             ],
           ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -3262,7 +4591,7 @@ class _ReportingViewState extends State<_ReportingView> {
               hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+              border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
               suffixIcon: Container(
                 margin: const EdgeInsets.all(6),
                 padding: const EdgeInsets.all(6),
@@ -3308,10 +4637,27 @@ class _RegistreViewState extends State<_RegistreView> {
   final _searchCtrl = TextEditingController();
   String _search = '';
 
+  void _onVBody()  => _syncV(_vBodyCtrl);
+  void _onVFixed() => _syncV(_vFixedCtrl);
+  void _onVTrail() => _syncV(_vTrailCtrl);
+  void _syncV(ScrollController src) {
+    if (_isSyncV || !src.hasClients) return;
+    _isSyncV = true;
+    for (final c in [_vBodyCtrl, _vFixedCtrl, _vTrailCtrl]) {
+      if (c == src || !c.hasClients) continue;
+      final t = src.offset.clamp(c.position.minScrollExtent, c.position.maxScrollExtent);
+      if ((c.offset - t).abs() > 0.5) c.jumpTo(t);
+    }
+    _isSyncV = false;
+  }
+
   @override
   void initState() {
     super.initState();
     _searchCtrl.addListener(() => setState(() => _search = _searchCtrl.text.toLowerCase()));
+    _vBodyCtrl.addListener(_onVBody);
+    _vFixedCtrl.addListener(_onVFixed);
+    _vTrailCtrl.addListener(_onVTrail);
     _reload();
   }
 
@@ -3319,6 +4665,12 @@ class _RegistreViewState extends State<_RegistreView> {
   void dispose() {
     _searchCtrl.dispose();
     _hCtrl.dispose();
+    _vBodyCtrl.removeListener(_onVBody);
+    _vFixedCtrl.removeListener(_onVFixed);
+    _vTrailCtrl.removeListener(_onVTrail);
+    _vBodyCtrl.dispose();
+    _vFixedCtrl.dispose();
+    _vTrailCtrl.dispose();
     super.dispose();
   }
 
@@ -3476,26 +4828,37 @@ class _RegistreViewState extends State<_RegistreView> {
     return true;
   }).toList();
 
-  final _hCtrl = ScrollController();
+  final _hCtrl       = ScrollController();
+  final _vBodyCtrl   = ScrollController();
+  final _vFixedCtrl  = ScrollController();
+  final _vTrailCtrl  = ScrollController();
+  bool  _isSyncV     = false;
+
+  static const _rowH = 48.0;
 
   static const _colLabels = [
     'Référence', 'Date', 'Ligne de métier', "Type d'événement",
     'Description', 'Cause racine', 'Perte brute (FCFA)', 'Récupéré (FCFA)',
-    'Perte nette (FCFA)', 'K_RO 15 %', 'RWA (×12,5)', 'Statut', 'Actions',
+    'Perte nette (FCFA)', 'Capital minimal 15 %', 'RWA (×12,5)', 'Statut', 'Actions',
   ];
 
-  static const _colW = [120.0, 95.0, 170.0, 130.0, 220.0, 170.0, 120.0, 120.0, 120.0, 100.0, 120.0, 90.0, 80.0];
+  static const _colW = [140.0, 110.0, 190.0, 160.0, 260.0, 190.0, 155.0, 150.0, 155.0, 160.0, 145.0, 105.0, 80.0];
 
   // Visibilité des colonnes
   final List<bool> _visibleCols = List.filled(13, true);
   final _colMenuCtrl = MenuController();
 
-  List<(String, double)> get _visibleColDefs => [
-    for (int i = 0; i < _colLabels.length; i++)
+  // Sélection de ligne
+  String? _selectedId;
+
+  int    get _visibleCount => _visibleCols.where((v) => v).length;
+
+  // Colonnes défilantes (exclut col 0 figée à gauche et col 12 figée à droite)
+  List<(String, double)> get _scrollableColDefs => [
+    for (int i = 1; i <= 11; i++)
       if (_visibleCols[i]) (_colLabels[i], _colW[i]),
   ];
-  double get _visibleMinW => _visibleColDefs.fold(0.0, (s, c) => s + c.$2);
-  int    get _visibleCount => _visibleCols.where((v) => v).length;
+  double get _scrollableMinW => _scrollableColDefs.fold(0.0, (s, c) => s + c.$2);
 
   void _resetFilters() => setState(() {
     _filterStatut = null;
@@ -3504,6 +4867,651 @@ class _RegistreViewState extends State<_RegistreView> {
     _searchCtrl.clear();
     _search = '';
   });
+
+  // Demande le format puis génère le fichier
+  Future<void> _exportData() async {
+    final items = _apply(_cachedItems);
+    if (items.isEmpty) return;
+
+    // ── Dialogue de choix du format ──────────────────────────────────────
+    final format = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final th      = Theme.of(ctx);
+        final isDlgDk = th.brightness == Brightness.dark;
+        final bg      = th.cardTheme.color ?? (isDlgDk ? const Color(0xFF1B2C4A) : Colors.white);
+        final soft    = isDlgDk ? const Color(0xFF14233D) : const Color(0xFFF8FAFE);
+        final border  = th.dividerColor;
+        final txt     = th.textTheme.bodyLarge?.color ?? (isDlgDk ? Colors.white : Colors.black87);
+        final muted   = isDlgDk ? const Color(0xFF8BA3C7) : const Color(0xFF94A3B8);
+        final accent  = th.colorScheme.primary;
+
+        Widget optionRow({
+          required IconData icon,
+          required Color color,
+          required String label,
+          required String badge,
+          required String description,
+          required String value,
+        }) {
+          return InkWell(
+            onTap: () => Navigator.pop(ctx, value),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              decoration: BoxDecoration(
+                color: soft,
+                border: Border.all(color: border),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: color, size: 22),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Text(label,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: txt)),
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(badge,
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: color,
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                        ]),
+                        const SizedBox(height: 2),
+                        Text(description,
+                            style: TextStyle(fontSize: 11.5, color: muted)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: muted, size: 20),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Dialog(
+          backgroundColor: bg,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: SizedBox(
+            width: 460,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── En-tête ──
+                  Row(children: [
+                    Icon(Icons.file_download_outlined, color: accent, size: 22),
+                    const SizedBox(width: 10),
+                    Text('Exporter le registre',
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: txt)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('xlsx / pdf',
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: accent,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.close, size: 18, color: muted),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Sélectionnez le format du fichier à générer.',
+                    style: TextStyle(fontSize: 12, color: muted),
+                  ),
+                  const SizedBox(height: 18),
+                  // ── Options ──
+                  optionRow(
+                    icon: Icons.table_chart_outlined,
+                    color: const Color(0xFF1E88E5),
+                    label: 'Excel',
+                    badge: '.xlsx',
+                    description:
+                        'Tableur éditable — formules, filtres et tri',
+                    value: 'excel',
+                  ),
+                  const SizedBox(height: 10),
+                  optionRow(
+                    icon: Icons.picture_as_pdf_outlined,
+                    color: const Color(0xFFE53935),
+                    label: 'PDF',
+                    badge: '.pdf',
+                    description:
+                        'Document mis en page, prêt à imprimer ou partager',
+                    value: 'pdf',
+                  ),
+                  const SizedBox(height: 16),
+                  // ── Annuler ──
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(foregroundColor: muted),
+                      child: const Text('Annuler'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (!mounted || format == null) return;
+
+    final now = DateTime.now();
+    final ts  = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+
+    if (format == 'excel') {
+      await _saveExcel(items, ts);
+    } else {
+      await _savePdf(items, ts);
+    }
+  }
+
+  Future<void> _saveExcel(List<RoIncident> items, String ts) async {
+    final workbook     = Excel.createExcel();
+    const sheetName    = 'Registre RO';
+    final defaultSheet = workbook.getDefaultSheet();
+    if (defaultSheet != null && defaultSheet != sheetName) {
+      workbook.rename(defaultSheet, sheetName);
+    }
+    final sheet = workbook[sheetName];
+
+    // ── Palette ────────────────────────────────────────────────────────────
+    final cBlueDark  = ExcelColor.fromHexString('FF1D4ED8');
+    final cBlueLight = ExcelColor.fromHexString('FFDBEAFE');
+    final cGrey      = ExcelColor.fromHexString('FFF1F5F9');
+    final cWhite     = ExcelColor.fromHexString('FFFFFFFF');
+    final cRowAlt    = ExcelColor.fromHexString('FFF8FAFC');
+    final cGreenDark = ExcelColor.fromHexString('FF15803D');
+    final cGreenLt   = ExcelColor.fromHexString('FFDCFCE7');
+    final cMuted     = ExcelColor.fromHexString('FF475569');
+    final cBorder    = ExcelColor.fromHexString('FFCBD5E1');
+
+    final thin = xl.Border(borderStyle: xl.BorderStyle.Thin, borderColorHex: cBorder);
+
+    CellStyle baseStyle({
+      ExcelColor? bg,
+      ExcelColor? fg,
+      bool bold = false,
+      int size = 10,
+      HorizontalAlign hAlign = HorizontalAlign.Left,
+      VerticalAlign   vAlign = VerticalAlign.Center,
+      TextWrapping? wrap,
+    }) =>
+        CellStyle(
+          backgroundColorHex: bg ?? ExcelColor.none,
+          fontColorHex: fg ?? ExcelColor.black,
+          bold: bold,
+          fontSize: size,
+          horizontalAlign: hAlign,
+          verticalAlign: vAlign,
+          textWrapping: wrap,
+          leftBorder: thin, rightBorder: thin,
+          topBorder: thin,  bottomBorder: thin,
+        );
+
+    // ── Ligne 1 : Titre (fusionné A1:L1) ──────────────────────────────────
+    const lastCol = 11;
+    sheet.merge(
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
+      CellIndex.indexByColumnRow(columnIndex: lastCol, rowIndex: 0),
+    );
+    sheet.updateCell(
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
+      TextCellValue('Registre des Pertes Opérationnelles — Risque Opérationnel BCEAO'),
+      cellStyle: baseStyle(
+        bg: cBlueDark, fg: cWhite, bold: true, size: 13,
+        hAlign: HorizontalAlign.Center,
+      ),
+    );
+    sheet.setMergedCellStyle(
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
+      baseStyle(
+        bg: cBlueDark, fg: cWhite, bold: true, size: 13,
+        hAlign: HorizontalAlign.Center,
+      ),
+    );
+    sheet.setRowHeight(0, 36);
+
+    // ── Ligne 2 : En-têtes de colonnes ────────────────────────────────────
+    const colDefs = [
+      ('Référence',                  true,  14.0),
+      ('Date',                       true,  12.0),
+      ('Ligne de métier',            true,  22.0),
+      ("Type d'événement",           true,  18.0),
+      ('Description',                true,  36.0),
+      ('Cause racine',               false, 20.0),
+      ('Perte brute (FCFA)',         true,  18.0),
+      ('Récupéré (FCFA)',            false, 18.0),
+      ('Perte nette (FCFA)',         true,  18.0),
+      ('Capital 15 % (FCFA)',        true,  18.0),
+      ('APR ×12,5 (FCFA)',           true,  18.0),
+      ('Statut',                     false, 14.0),
+    ];
+
+    for (int c = 0; c < colDefs.length; c++) {
+      final (label, required, width) = colDefs[c];
+      sheet.updateCell(
+        CellIndex.indexByColumnRow(columnIndex: c, rowIndex: 1),
+        TextCellValue('${required ? "★ " : "○ "}$label'),
+        cellStyle: baseStyle(
+          bg: required ? cBlueLight : cGrey,
+          fg: required ? cBlueDark  : cMuted,
+          bold: true,
+          hAlign: HorizontalAlign.Center,
+          wrap: TextWrapping.WrapText,
+        ),
+      );
+      sheet.setColumnWidth(c, width);
+    }
+    sheet.setRowHeight(1, 34);
+
+    // ── Ligne 3 : Totaux (ligne verte) ────────────────────────────────────
+    double totalBrut = 0, totalRec = 0, totalNette = 0, totalKro = 0, totalApr = 0;
+    for (final i in items) {
+      totalBrut  += i.perteBrute;
+      totalRec   += i.perteRecuperee;
+      totalNette += i.perteNette;
+      totalKro   += i.perteNette * 0.15;
+      totalApr   += i.perteNette * 0.15 * 12.5;
+    }
+    const totRow = 2;
+    final totLabels = <int, String>{0: 'TOTAL (${items.length} incidents)'};
+    final totVals = <int, int>{
+      6: totalBrut.round(), 7: totalRec.round(), 8: totalNette.round(),
+      9: totalKro.round(),  10: totalApr.round(),
+    };
+    for (int c = 0; c <= lastCol; c++) {
+      final val = totVals[c] != null
+          ? IntCellValue(totVals[c]!)
+          : TextCellValue(totLabels[c] ?? '');
+      sheet.updateCell(
+        CellIndex.indexByColumnRow(columnIndex: c, rowIndex: totRow),
+        val,
+        cellStyle: baseStyle(
+          bg: cGreenLt, fg: cGreenDark, bold: true,
+          hAlign: (totVals.containsKey(c)) ? HorizontalAlign.Right : HorizontalAlign.Left,
+        ),
+      );
+    }
+    sheet.setRowHeight(totRow, 22);
+
+    // ── Lignes de données (à partir de la ligne 4) ────────────────────────
+    for (int r = 0; r < items.length; r++) {
+      final i   = items[r];
+      final kro = i.perteNette * 0.15;
+      final apr = kro * 12.5;
+      final bg  = r.isEven ? cWhite : cRowAlt;
+      final rowIdx = r + 3;
+
+      final textVals = <int, String>{
+        0: i.reference, 1: i.dateOccurrence, 2: i.ligneMetier,
+        3: i.typeEvenement, 4: i.description, 5: i.causeRacine, 11: i.statut,
+      };
+      final numVals = <int, int>{
+        6: i.perteBrute.round(), 7: i.perteRecuperee.round(),
+        8: i.perteNette.round(), 9: kro.round(), 10: apr.round(),
+      };
+
+      for (int c = 0; c <= lastCol; c++) {
+        final isNum = numVals.containsKey(c);
+        sheet.updateCell(
+          CellIndex.indexByColumnRow(columnIndex: c, rowIndex: rowIdx),
+          isNum ? IntCellValue(numVals[c]!) : TextCellValue(textVals[c] ?? ''),
+          cellStyle: baseStyle(
+            bg: bg,
+            hAlign: isNum ? HorizontalAlign.Right : HorizontalAlign.Left,
+            wrap: (c == 4) ? TextWrapping.WrapText : null,
+          ),
+        );
+      }
+      sheet.setRowHeight(rowIdx, 20);
+    }
+
+    // ── Sauvegarde ────────────────────────────────────────────────────────
+    final rawBytes = workbook.save();
+    if (rawBytes == null) return;
+
+    final location = await getSaveLocation(
+      suggestedName: 'registre_ro_$ts.xlsx',
+      acceptedTypeGroups: const [XTypeGroup(label: 'Excel', extensions: ['xlsx'])],
+    );
+    if (!mounted || location == null) return;
+
+    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes), requiredExtension: '.xlsx');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Export Excel réussi'),
+        backgroundColor: Color(0xFF14A44D),
+      ));
+    }
+  }
+
+  Future<void> _savePdf(List<RoIncident> items, String ts) async {
+    // ── Polices (IBM Plex Sans — supporte tout le Latin étendu) ─────────
+    final fontNormal = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/IBMPlexSans-Regular.ttf'));
+    final fontBold = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/IBMPlexSans-Bold.ttf'));
+    final fontItalic = pw.Font.ttf(
+      await rootBundle.load('assets/fonts/IBMPlexSans-Italic.ttf'));
+
+    // ── Palette (identique au reporting opérationnel) ────────────────────
+    const headerBg  = PdfColor.fromInt(0xFF0F2544);  // navy foncé
+    const accentBg  = PdfColor.fromInt(0xFF2563EB);  // bleu accent
+    const greenBg   = PdfColor.fromInt(0xFF15803D);  // vert total
+    const borderCol = PdfColor.fromInt(0xFFE5E7EB);
+    const mutedCol  = PdfColor.fromInt(0xFF6B7280);
+
+    final now     = DateTime.now();
+    final dateStr = '${now.day.toString().padLeft(2,'0')}/'
+                    '${now.month.toString().padLeft(2,'0')}/'
+                    '${now.year}';
+
+    const mutedStyle  = pw.TextStyle(fontSize: 8, color: mutedCol);
+    const bodyStyle   = pw.TextStyle(fontSize: 7.5);
+    final headerStyle = pw.TextStyle(
+      fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white);
+
+    // ── Calculs agrégés ──────────────────────────────────────────────────
+    final totalBrut  = items.fold(0.0, (s, i) => s + i.perteBrute);
+    final totalRec   = items.fold(0.0, (s, i) => s + i.perteRecuperee);
+    final totalNette = items.fold(0.0, (s, i) => s + i.perteNette);
+    final totalKro   = totalNette * 0.15;
+    final totalApr   = totalKro  * 12.5;
+    final nbSignif   = items.where((i) => i.significatif).length;
+
+    String fmt(double v) {
+      if (v >= 1e9)  return '${(v / 1e9).toStringAsFixed(1)} Md';
+      if (v >= 1e6)  return '${(v / 1e6).toStringAsFixed(1)} M';
+      if (v >= 1e3)  return '${(v / 1e3).toStringAsFixed(0)} K';
+      return v.toStringAsFixed(0);
+    }
+
+    // ── Helpers de widgets ───────────────────────────────────────────────
+    pw.Widget sectionBanner(String text) => pw.Container(
+      width: double.infinity,
+      margin: const pw.EdgeInsets.only(bottom: 6),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: pw.BoxDecoration(
+        color: headerBg,
+        borderRadius: pw.BorderRadius.circular(3),
+      ),
+      child: pw.Text(text,
+        style: pw.TextStyle(
+          fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+    );
+
+    pw.Widget kpiCard(String label, String value, {PdfColor? valueColor}) =>
+      pw.Expanded(
+        child: pw.Container(
+          margin: const pw.EdgeInsets.only(right: 6, bottom: 6),
+          padding: const pw.EdgeInsets.all(8),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: borderCol),
+            borderRadius: pw.BorderRadius.circular(4),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(label, style: mutedStyle),
+              pw.SizedBox(height: 3),
+              pw.Text(value,
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                  color: valueColor ?? headerBg,
+                )),
+            ],
+          ),
+        ),
+      );
+
+    pw.Widget kpiRow(List<(String, String, PdfColor?)> kpis) => pw.Row(
+      children: kpis.map((k) => kpiCard(k.$1, k.$2, valueColor: k.$3)).toList(),
+    );
+
+    // Ligne de total sous le tableau
+    pw.Widget totalRow(List<String> totals) => pw.Container(
+      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFDCFCE7)),
+      child: pw.Row(
+        children: totals.asMap().entries.map((e) => pw.Expanded(
+          child: pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+            child: pw.Text(e.value,
+              style: pw.TextStyle(
+                fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: greenBg)),
+          ),
+        )).toList(),
+      ),
+    );
+
+    // ── Données du tableau ───────────────────────────────────────────────
+    const tableHeaders = [
+      'Réf.', 'Date', 'Ligne de métier', "Type d'évén.",
+      'Perte brute', 'Récupéré', 'Perte nette', 'K_RO (15 %)', 'APR ×12,5', 'Statut',
+    ];
+
+    final tableRows = items.map((i) {
+      final kro = i.perteNette * 0.15;
+      final apr = kro * 12.5;
+      return [
+        i.reference,
+        i.dateOccurrence,
+        i.ligneMetier.length > 18 ? '${i.ligneMetier.substring(0,16)}…' : i.ligneMetier,
+        i.typeEvenement,
+        fmt(i.perteBrute),
+        fmt(i.perteRecuperee),
+        fmt(i.perteNette),
+        fmt(kro),
+        fmt(apr),
+        i.statut,
+      ];
+    }).toList();
+
+    // ── Construction du document ─────────────────────────────────────────
+    final doc = pw.Document(
+      theme: pw.ThemeData.withFont(
+        base:   fontNormal,
+        bold:   fontBold,
+        italic: fontItalic,
+      ),
+    );
+    doc.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4.landscape,
+      margin: const pw.EdgeInsets.fromLTRB(24, 24, 24, 30),
+
+      // En-tête de chaque page
+      header: (_) => pw.Container(
+        padding: const pw.EdgeInsets.only(bottom: 5),
+        decoration: const pw.BoxDecoration(
+          border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('Registre des Pertes — Risque Opérationnel BCEAO',
+              style: mutedStyle),
+            pw.Text('Export du $dateStr', style: mutedStyle),
+          ],
+        ),
+      ),
+
+      // Pied de page
+      footer: (ctx) => pw.Container(
+        padding: const pw.EdgeInsets.only(top: 5),
+        decoration: const pw.BoxDecoration(
+          border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300))),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('Confidentiel — Usage interne', style: mutedStyle),
+            pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}',
+              style: mutedStyle),
+          ],
+        ),
+      ),
+
+      build: (_) => [
+
+        // ── Bloc couverture ─────────────────────────────────────────────
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.all(18),
+          decoration: pw.BoxDecoration(
+            color: headerBg,
+            borderRadius: pw.BorderRadius.circular(6),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text('REGISTRE DES PERTES OPÉRATIONNELLES',
+                style: pw.TextStyle(
+                  fontSize: 16, fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white)),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'Art. 313, 314, 545, 546 — UMOA/BCEAO  ·  Généré le $dateStr',
+                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey300)),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: 14),
+
+        // ── 1. Synthèse ─────────────────────────────────────────────────
+        sectionBanner('1. SYNTHÈSE'),
+        kpiRow([
+          ('Incidents totaux',    '${items.length}',        null),
+          ('Incidents significatifs', '$nbSignif',          null),
+          ('Pertes brutes',       '${fmt(totalBrut)} FCFA', null),
+          ('Pertes récupérées',   '${fmt(totalRec)} FCFA',  null),
+          ('Pertes nettes',       '${fmt(totalNette)} FCFA', null),
+        ]),
+        kpiRow([
+          ('K_RO — Capital minimal (15 %)', '${fmt(totalKro)} FCFA', accentBg),
+          ('APR — Risque opérationnel',     '${fmt(totalApr)} FCFA', accentBg),
+          ('Taux de récupération',
+            totalBrut > 0 ? '${(totalRec / totalBrut * 100).toStringAsFixed(1)} %' : '0 %',
+            null),
+        ]),
+        pw.SizedBox(height: 12),
+
+        // ── 2. Registre détaillé ─────────────────────────────────────────
+        sectionBanner('2. REGISTRE DÉTAILLÉ  (${items.length} incident${items.length > 1 ? "s" : ""})'),
+        if (items.isEmpty)
+          pw.Text('Aucun incident dans le registre.', style: mutedStyle)
+        else ...[
+          pw.TableHelper.fromTextArray(
+            headers: tableHeaders,
+            data: tableRows,
+            headerStyle: headerStyle,
+            headerDecoration: const pw.BoxDecoration(color: accentBg),
+            cellStyle: bodyStyle,
+            border: pw.TableBorder.all(color: borderCol, width: 0.4),
+            cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            columnWidths: const {
+              0: pw.FixedColumnWidth(42),
+              1: pw.FixedColumnWidth(52),
+              2: pw.FixedColumnWidth(80),
+              3: pw.FixedColumnWidth(60),
+              4: pw.FixedColumnWidth(56),
+              5: pw.FixedColumnWidth(52),
+              6: pw.FixedColumnWidth(56),
+              7: pw.FixedColumnWidth(56),
+              8: pw.FixedColumnWidth(56),
+              9: pw.FixedColumnWidth(44),
+            },
+            oddRowDecoration: const pw.BoxDecoration(
+              color: PdfColor.fromInt(0xFFF8FAFC)),
+          ),
+          // Ligne totaux
+          totalRow([
+            'TOTAL', '', '', '',
+            fmt(totalBrut), fmt(totalRec), fmt(totalNette),
+            fmt(totalKro), fmt(totalApr), '',
+          ]),
+        ],
+        pw.SizedBox(height: 16),
+
+        // ── Pied ────────────────────────────────────────────────────────
+        pw.Divider(color: PdfColors.grey300),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          'Document généré le $dateStr — Outil RWA — Confidentiel',
+          style: mutedStyle,
+          textAlign: pw.TextAlign.center,
+        ),
+      ],
+    ));
+
+    final pdfBytes = await doc.save();
+    final location = await getSaveLocation(
+      suggestedName: 'registre_ro_$ts.pdf',
+      acceptedTypeGroups: const [XTypeGroup(label: 'PDF', extensions: ['pdf'])],
+    );
+    if (!mounted || location == null) return;
+
+    await saveBytesAtLocation(location, pdfBytes, requiredExtension: '.pdf');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Export PDF réussi'),
+        backgroundColor: Color(0xFF14A44D),
+      ));
+    }
+  }
+
+  // Recadre le scroll horizontal dans ses limites après un changement de colonnes visibles
+  void _clampHScroll() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_hCtrl.hasClients) {
+        final max = _hCtrl.position.maxScrollExtent;
+        if (_hCtrl.offset > max) _hCtrl.jumpTo(max);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3516,19 +5524,23 @@ class _RegistreViewState extends State<_RegistreView> {
     final cKro   = cNette * 0.15;
     final cApr   = cKro * 12.5;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Boutons Import / Exporter ────────────────────────────────────
-        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-          _topBtn('Import',   Icons.file_upload_outlined,   const Color(0xFF1E88E5), _openImport, isDark),
-          const SizedBox(width: 8),
-          _topBtn('Exporter', Icons.file_download_outlined, const Color(0xFF14A44D),
-            _cachedItems.isEmpty ? null : () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Export Excel — à implémenter'))),
-            isDark),
-        ]),
-        const SizedBox(height: 8),
+    return Padding(
+      padding: const EdgeInsets.all(AppTheme.pagePadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          PageHeader(
+            title: 'Registre des pertes RO',
+            subtitle: 'Registre BCEAO/UMOA — pertes, Capital minimal et RWA (Art. 89 & 313.b)',
+            titleFontSize: 26,
+            subtitleFontSize: 12.5,
+            subtitleSuffix: _artInfo('Art. 89'),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
         // ── Panneau de contrôles ─────────────────────────────────────────
         Container(
           width: double.infinity,
@@ -3548,11 +5560,11 @@ class _RegistreViewState extends State<_RegistreView> {
                 constraints: const BoxConstraints(minHeight: 32, maxHeight: 32),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                 floatingLabelBehavior: FloatingLabelBehavior.never,
-                border: OutlineInputBorder(borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide(color: isDark ? const Color(0xFF22304B) : const Color(0xFFDCE5F1))),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.zero,
-                  borderSide: BorderSide(color: isDark ? const Color(0xFF22304B) : const Color(0xFFDCE5F1))),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.zero,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(5),
+                  borderSide: BorderSide(color: isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6))),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(5),
+                  borderSide: BorderSide(color: isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(5),
                   borderSide: const BorderSide(color: AppTheme.accent, width: 1.2)),
               ),
             ),
@@ -3570,7 +5582,7 @@ class _RegistreViewState extends State<_RegistreView> {
                   children: [
                     Text('Recherche',
                       style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFF9CB2D4) : const Color(0xFF6B7280))),
+                        color: isDark ? const Color(0xFFB8C8E8) : const Color(0xFF2563EB))),
                     const SizedBox(height: 3),
                     TextField(
                       controller: _searchCtrl,
@@ -3585,13 +5597,21 @@ class _RegistreViewState extends State<_RegistreView> {
                 ),
               ),
               const SizedBox(width: 6),
-              SizedBox(width: 32, height: 32,
-                child: Tooltip(message: 'Réinitialiser',
+              SizedBox(width: 34, height: 34,
+                child: Tooltip(message: 'Réinitialiser les filtres',
                   child: OutlinedButton(
                     onPressed: _resetFilters,
-                    style: OutlinedButton.styleFrom(padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
-                    child: Icon(Icons.restart_alt_rounded, size: 15, color: isDark ? Colors.white54 : AppTheme.text),
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      foregroundColor: AppTheme.warning,
+                      backgroundColor: isDark ? const Color(0xFF13243F) : Colors.white,
+                      surfaceTintColor: Colors.transparent,
+                      elevation: 1,
+                      shadowColor: isDark ? const Color(0x22040A16) : const Color(0x10F59E0B),
+                      side: BorderSide(color: isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                    ),
+                    child: const Icon(Icons.restart_alt_rounded, size: 15, color: AppTheme.warning),
                   ),
                 ),
               ),
@@ -3622,12 +5642,15 @@ class _RegistreViewState extends State<_RegistreView> {
                           color: isDark ? Colors.white70 : const Color(0xFF374151))),
                       const Spacer(),
                       GestureDetector(
-                        onTap: () => setState(() {
-                          final allOn = _visibleCols.every((v) => v);
-                          for (int k = 0; k < _visibleCols.length; k++) {
-                            _visibleCols[k] = !allOn;
-                          }
-                        }),
+                        onTap: () {
+                          setState(() {
+                            final allOn = _visibleCols.every((v) => v);
+                            for (int k = 0; k < _visibleCols.length; k++) {
+                              _visibleCols[k] = !allOn;
+                            }
+                          });
+                          _clampHScroll();
+                        },
                         child: Text(
                           _visibleCols.every((v) => v) ? 'Aucune' : 'Toutes',
                           style: const TextStyle(fontSize: 11, color: AppTheme.accent,
@@ -3641,7 +5664,10 @@ class _RegistreViewState extends State<_RegistreView> {
                     CheckboxMenuButton(
                       value: _visibleCols[ci],
                       onChanged: (v) {
-                        if (v != null) setState(() => _visibleCols[ci] = v);
+                        if (v != null) {
+                          setState(() => _visibleCols[ci] = v);
+                          _clampHScroll();
+                        }
                       },
                       child: Text(_colLabels[ci],
                         style: TextStyle(fontSize: 12,
@@ -3649,31 +5675,42 @@ class _RegistreViewState extends State<_RegistreView> {
                     ),
                 ],
                 child: SizedBox(
-                  height: 32,
+                  height: 34,
                   child: OutlinedButton.icon(
                     onPressed: () => _colMenuCtrl.isOpen
                         ? _colMenuCtrl.close()
                         : _colMenuCtrl.open(),
-                    icon: Icon(Icons.view_column_outlined, size: 14,
+                    icon: Icon(Icons.visibility_outlined, size: 14,
                       color: _visibleCount < _colLabels.length
                           ? AppTheme.accent
-                          : (isDark ? Colors.white70 : const Color(0xFF374151))),
+                          : (isDark ? const Color(0xFFDCEBFF) : const Color(0xFF374151))),
                     label: Text('Colonnes ($_visibleCount)',
                       style: TextStyle(fontSize: 11,
                         color: _visibleCount < _colLabels.length
                             ? AppTheme.accent
-                            : (isDark ? Colors.white70 : const Color(0xFF374151)))),
+                            : (isDark ? const Color(0xFFDCEBFF) : const Color(0xFF374151)))),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
+                      foregroundColor: isDark ? const Color(0xFFDCEBFF) : const Color(0xFF374151),
+                      backgroundColor: isDark ? const Color(0xFF13243F) : Colors.white,
+                      surfaceTintColor: Colors.transparent,
+                      elevation: 1,
+                      shadowColor: isDark ? const Color(0x22040A16) : const Color(0x102563EB),
                       side: BorderSide(
                         color: _visibleCount < _colLabels.length
                             ? AppTheme.accent
-                            : (isDark ? const Color(0xFF22304B) : const Color(0xFFDCE5F1))),
+                            : (isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6))),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
                     ),
                   ),
                 ),
               ),
+              const SizedBox(width: 10),
+              _topBtn('Import',   Icons.file_upload_outlined,   const Color(0xFF1E88E5), _openImport, isDark),
+              const SizedBox(width: 6),
+              _topBtn('Exporter', Icons.file_download_outlined, const Color(0xFF14A44D),
+                _cachedItems.isEmpty ? null : _exportData,
+                isDark),
               const SizedBox(width: 10),
               SizedBox(height: 32,
                 child: FilledButton.icon(
@@ -3705,16 +5742,19 @@ class _RegistreViewState extends State<_RegistreView> {
         ),
         const SizedBox(height: 6),
         // ── Footer KPI ────────────────────────────────────────────────────
-        IntrinsicHeight(child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          SizedBox(width: 110, child: _sumCard('Pertes', '${cached.length}', AppTheme.accent,
-            tooltip:
-              'Nombre de pertes\n'
-              'Rôle : comptage total des incidents\n'
-              'enregistrés dans la base.\n'
-              'Formule : COUNT(incidents)',
-          )),
+        Row(children: [
+          SizedBox(
+            width: 130,
+            child: _kpiBox(context, 'Pertes', '${cached.length}', Icons.list_alt_outlined, AppTheme.accent,
+              tooltip:
+                'Nombre de pertes\n'
+                'Rôle : comptage total des incidents\n'
+                'enregistrés dans la base.\n'
+                'Formule : COUNT(incidents)',
+            ),
+          ),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('Perte brute', AppFormatters.currency(cBrute), _kDanger,
+          Expanded(child: _kpiBox(context, 'Perte brute', AppFormatters.currency(cBrute), Icons.trending_down_outlined, _kDanger,
             tooltip:
               'Perte brute totale\n'
               'Rôle : montant total avant toute récupération.\n'
@@ -3722,7 +5762,7 @@ class _RegistreViewState extends State<_RegistreView> {
               '(somme de toutes les pertes brutes)',
           )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('Perte nette', AppFormatters.currency(cNette), _kDanger,
+          Expanded(child: _kpiBox(context, 'Perte nette', AppFormatters.currency(cNette), Icons.account_balance_outlined, _kDanger,
             tooltip:
               'Perte nette totale (Art. 313.b)\n'
               'Rôle : montant réel supporté après récupérations.\n'
@@ -3730,23 +5770,27 @@ class _RegistreViewState extends State<_RegistreView> {
               'Récupérations = assurance + provisions + reversements',
           )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('K_RO 15 % (Art. 89)', AppFormatters.currency(cKro), AppColors.prudentialSolvency,
+          Expanded(child: _kpiBox(context, 'K_RO 15 % (Art. 89)', AppFormatters.currency(cKro), Icons.shield_outlined, AppColors.prudentialSolvency,
             tooltip:
               'Exigence de fonds propres — Risque Opérationnel\n'
               'Rôle : capital réglementaire minimum à détenir.\n'
-              'Formule BIA : K_RO = α × Perte nette totale\n'
+              'Formule BIA : Capital minimal = α × Perte nette totale\n'
               'α = 15 %  (coefficient BCEAO/UMOA, Art. 89)',
           )),
           const SizedBox(width: 6),
-          Expanded(child: _sumCard('APR opérationnel', AppFormatters.currency(cApr), AppColors.marketNeutral,
+          Expanded(child: _kpiBox(context, 'APR opérationnel', AppFormatters.currency(cApr), Icons.bar_chart_outlined, AppColors.marketNeutral,
             tooltip:
               'Actifs Pondérés par le Risque opérationnel\n'
               'Rôle : base de calcul du ratio de solvabilité.\n'
-              'Formule : RWA = K_RO ÷ 8 % = K_RO × 12,5\n'
+              'Formule : RWA = Capital minimal ÷ 8 % = Capital minimal × 12,5\n'
               '12,5 = facteur de conversion prudentiel (Art. 89)',
           )),
-        ])),
-      ],
+        ]),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -3771,59 +5815,67 @@ class _RegistreViewState extends State<_RegistreView> {
   );
 
   Widget _fDropLabeled(String label, String? value, List<String> opts, ValueChanged<String?> onChange, double width, bool isDark) {
+    final borderColor = isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6);
+    final fillColor   = isDark ? const Color(0xFF13243F) : Colors.white;
+    final labelColor  = isDark ? const Color(0xFFB8C8E8) : const Color(0xFF2563EB);
     return SizedBox(
       width: width,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      height: 34,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Text(label,
-            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600,
-              color: isDark ? const Color(0xFF9CB2D4) : const Color(0xFF6B7280))),
-          const SizedBox(height: 3),
-          _fDrop(label, value, opts, onChange, width, isDark),
-        ],
-      ),
-    );
-  }
-
-  Widget _fDrop(String label, String? value, List<String> opts, ValueChanged<String?> onChange, double width, bool isDark) {
-    return SizedBox(
-      width: width,
-      height: 32,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF14233D) : Colors.white,
-          border: Border.all(color: isDark ? const Color(0xFF22304B) : const Color(0xFFDCE5F1)),
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String?>(
-              value: value,
-              isExpanded: true,
-              isDense: true,
-              hint: Text(label,
-                style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : const Color(0xFF6B7280)),
-                overflow: TextOverflow.ellipsis,
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: fillColor,
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(color: borderColor),
+                boxShadow: isDark ? null : [
+                  const BoxShadow(color: Color(0x0A2563EB), blurRadius: 10, offset: Offset(0, 4)),
+                ],
               ),
-              style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black87),
-              icon: Icon(Icons.keyboard_arrow_down_rounded, size: 16,
-                color: isDark ? Colors.white38 : Colors.black38),
-              dropdownColor: isDark ? const Color(0xFF14233D) : Colors.white,
-              borderRadius: BorderRadius.circular(5),
-              items: [
-                const DropdownMenuItem<String?>(value: null, child: Text('Tous', style: TextStyle(fontSize: 12))),
-                ...opts.map((s) => DropdownMenuItem<String?>(
-                  value: s,
-                  child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
-                )),
-              ],
-              onChanged: onChange,
             ),
           ),
-        ),
+          Positioned(
+            left: 8, top: -5,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              color: fillColor,
+              child: Text(label,
+                style: TextStyle(fontSize: 8.2, fontWeight: FontWeight.w600, color: labelColor, height: 1),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String?>(
+                  value: value,
+                  isExpanded: true,
+                  isDense: true,
+                  hint: Text('Tous',
+                    style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : const Color(0xFF9AA8BA)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black87),
+                  icon: Icon(Icons.keyboard_arrow_down_rounded, size: 16,
+                    color: isDark ? Colors.white38 : Colors.black38),
+                  dropdownColor: isDark ? const Color(0xFF14233D) : Colors.white,
+                  borderRadius: BorderRadius.circular(5),
+                  items: [
+                    const DropdownMenuItem<String?>(value: null, child: Text('Tous', style: TextStyle(fontSize: 12))),
+                    ...opts.map((s) => DropdownMenuItem<String?>(
+                      value: s,
+                      child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+                    )),
+                  ],
+                  onChanged: onChange,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -3852,45 +5904,96 @@ class _RegistreViewState extends State<_RegistreView> {
     }
 
     return LayoutBuilder(builder: (_, bc) {
-      final visW = _visibleMinW;
-      final minW = math.max(visW, bc.maxWidth.isFinite ? bc.maxWidth : visW);
-      final rowDecoration = BoxDecoration(
-        border: Border(bottom: BorderSide(color: isDark ? const Color(0x14FFFFFF) : const Color(0x11000000))),
+      final fixedVisible = _visibleCols[0];
+      final fixedW       = fixedVisible ? _colW[0] : 0.0;
+      final trailVisible = _visibleCols[12];
+      final trailW       = trailVisible ? _colW[12] : 0.0;
+      final scrollColW   = _scrollableMinW;
+      final availW       = (bc.maxWidth.isFinite ? bc.maxWidth : scrollColW) - fixedW - trailW;
+      final scrollMinW   = math.max(scrollColW, availW > 0 ? availW : scrollColW);
+
+      const headerStyle  = TextStyle(color: Color(0xFFF5F8FF), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.18, height: 1);
+      const headerGrad   = BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF2A518A), Color(0xFF23477A)]),
+        border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF))),
       );
-      final rows = items.map((i) {
-        final kro = i.perteNette * 0.15;
-        final apr = kro * 12.5;
-        final allCells = <Widget>[
-          _rc(i.reference,                              120, bold: true),                                                               // 0
-          _rc(i.dateOccurrence,                          95),                                                                          // 1
-          _rcf(i.ligneMetier,                           170),                                                                          // 2
-          _rcf(i.typeEvenement,                         130),                                                                          // 3
-          _rcf(i.description,                           220),                                                                          // 4
-          _rcf(i.causeRacine,                           170),                                                                          // 5
-          _rc(AppFormatters.currency(i.perteBrute),     120, right: true),                                                             // 6
-          _rc(AppFormatters.currency(i.perteRecuperee), 120, right: true, color: i.perteRecuperee > 0 ? _kSuccess : _kMuted),          // 7
-          _rc(AppFormatters.currency(i.perteNette),     120, right: true, color: i.perteNette > 0 ? _kDanger : null),                  // 8
-          _rc(AppFormatters.currency(kro),              100, right: true, color: AppColors.prudentialSolvency),                                            // 9
-          _rc(AppFormatters.currency(apr),              120, right: true, color: AppColors.marketNeutral),                                              // 10
-          SizedBox(width: 90, child: Padding(padding: const EdgeInsets.all(8), child: _badge(i.statut, _statutColor(i.statut)))),      // 11
-          SizedBox(
-            width: 80,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 32, height: 32,
-                  child: IconButton(
+
+      // ── Données ligne par ligne ──────────────────────────────────────────
+      final fixedCells      = <Widget>[];
+      final scrollableCells = <Widget>[];
+      final trailCells      = <Widget>[];
+
+      for (var (rowIdx, i) in items.indexed) {
+        final kro        = i.perteNette * 0.15;
+        final apr        = kro * 12.5;
+        final isSelected = _selectedId == i.id;
+
+        final rowBg = isSelected
+            ? (isDark ? const Color(0xFF243B63) : const Color(0xFFDCEBFF))
+            : (rowIdx.isEven
+                ? (isDark ? const Color(0xFF111D33) : Colors.white)
+                : (isDark ? const Color(0xFF16243C) : const Color(0xFFF7FAFF)));
+        final rowBorderColor = isSelected
+            ? (isDark ? const Color(0xFF5B7DB0) : const Color(0xFF8AB8FF))
+            : (isDark ? const Color(0x14FFFFFF) : const Color(0x11000000));
+        final rowDeco = BoxDecoration(
+          border: Border(bottom: BorderSide(color: rowBorderColor, width: isSelected ? 1.2 : 0.7)),
+        );
+        final hoverColor = isSelected
+            ? Colors.transparent
+            : AppTheme.accent.withValues(alpha: isDark ? 0.10 : 0.05);
+        void onTap() => setState(() => _selectedId = isSelected ? null : i.id);
+
+        // Col 0 — colonne figée
+        fixedCells.add(SizedBox(
+          height: _rowH,
+          child: Material(
+            color: rowBg,
+            child: InkWell(
+              onTap: onTap,
+              hoverColor: hoverColor,
+              child: Container(
+                decoration: rowDeco,
+                alignment: Alignment.centerLeft,
+                child: _rc(i.reference, _colW[0], bold: true),
+              ),
+            ),
+          ),
+        ));
+
+        // Cols 1-11 — zone défilante
+        final scrollCols = <Widget>[
+          if (_visibleCols[1])  _rc(i.dateOccurrence,                    _colW[1]),
+          if (_visibleCols[2])  _rcf(i.ligneMetier,                      _colW[2]),
+          if (_visibleCols[3])  _rcf(i.typeEvenement,                    _colW[3]),
+          if (_visibleCols[4])  _rcf(i.description,                      _colW[4]),
+          if (_visibleCols[5])  _rcf(i.causeRacine,                      _colW[5]),
+          if (_visibleCols[6])  _rc(AppFormatters.currency(i.perteBrute),     _colW[6],  right: true),
+          if (_visibleCols[7])  _rc(AppFormatters.currency(i.perteRecuperee), _colW[7],  right: true, color: i.perteRecuperee > 0 ? _kSuccess : _kMuted),
+          if (_visibleCols[8])  _rc(AppFormatters.currency(i.perteNette),     _colW[8],  right: true, color: i.perteNette > 0 ? _kDanger : null),
+          if (_visibleCols[9])  _rc(AppFormatters.currency(kro),              _colW[9],  right: true, color: AppColors.prudentialSolvency),
+          if (_visibleCols[10]) _rc(AppFormatters.currency(apr),              _colW[10], right: true, color: AppColors.marketNeutral),
+          if (_visibleCols[11]) SizedBox(width: _colW[11], child: Padding(padding: const EdgeInsets.all(8), child: _badge(i.statut, _statutColor(i.statut)))),
+        ];
+
+        // Col 12 — colonne Actions figée à droite
+        trailCells.add(SizedBox(
+          height: _rowH,
+          child: Material(
+            color: rowBg,
+            child: InkWell(
+              onTap: onTap,
+              hoverColor: hoverColor,
+              child: Container(
+                decoration: rowDeco,
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  SizedBox(width: 32, height: 32, child: IconButton(
                     padding: EdgeInsets.zero,
-                    icon: Icon(Icons.edit_outlined, size: 15,
-                      color: isDark ? Colors.white54 : _kMuted),
+                    icon: Icon(Icons.edit_outlined, size: 15, color: isDark ? Colors.white54 : _kMuted),
                     tooltip: 'Modifier',
                     onPressed: () => _showEditForm(i),
-                  ),
-                ),
-                SizedBox(
-                  width: 32, height: 32,
-                  child: IconButton(
+                  )),
+                  SizedBox(width: 32, height: 32, child: IconButton(
                     padding: EdgeInsets.zero,
                     icon: const Icon(Icons.delete_outline, size: 15, color: _kDanger),
                     tooltip: 'Supprimer',
@@ -3898,20 +6001,28 @@ class _RegistreViewState extends State<_RegistreView> {
                       await widget.api.deleteRoIncident(i.id);
                       _reload();
                     }),
-                  ),
-                ),
-              ],
+                  )),
+                ]),
+              ),
             ),
-          ),  // 12
-        ];
-        return Container(
-          decoration: rowDecoration,
-          child: Row(children: [
-            for (int ci = 0; ci < allCells.length; ci++)
-              if (_visibleCols[ci]) allCells[ci],
-          ]),
-        );
-      }).toList();
+          ),
+        ));
+
+        scrollableCells.add(SizedBox(
+          height: _rowH,
+          child: Material(
+            color: rowBg,
+            child: InkWell(
+              onTap: onTap,
+              hoverColor: hoverColor,
+              child: Container(
+                decoration: rowDeco,
+                child: Row(children: scrollCols),
+              ),
+            ),
+          ),
+        ));
+      }
 
       return Container(
         decoration: BoxDecoration(
@@ -3920,68 +6031,134 @@ class _RegistreViewState extends State<_RegistreView> {
           borderRadius: BorderRadius.circular(5),
         ),
         clipBehavior: Clip.antiAlias,
-        // Column ici reçoit une hauteur bornée depuis Expanded(FutureBuilder) parent
         child: Column(
           children: [
-            // ── En-tête sticky : Transform.translate piloté par _hCtrl (pas de 2e ScrollPosition) ──
+            // ── En-tête ──────────────────────────────────────────────────────
             SizedBox(
               height: 40,
-              child: ClipRect(
-                child: AnimatedBuilder(
-                  animation: _hCtrl,
-                  builder: (_, child) => Transform.translate(
-                    offset: Offset(-(_hCtrl.hasClients ? _hCtrl.offset : 0.0), 0),
-                    child: child,
+              child: Row(children: [
+                // Cellule d'en-tête de la colonne figée
+                if (fixedVisible) Container(
+                  width: fixedW,
+                  height: 40,
+                  decoration: headerGrad.copyWith(
+                    border: const Border(
+                      bottom: BorderSide(color: Color(0x1AFFFFFF)),
+                      right:  BorderSide(color: Color(0x33FFFFFF)),
+                    ),
                   ),
-                  child: OverflowBox(
-                    alignment: Alignment.centerLeft,
-                    minWidth: 0,
-                    maxWidth: double.infinity,
-                    child: SizedBox(
-                      width: minW,
-                      child: Container(
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft, end: Alignment.bottomRight,
-                            colors: [Color(0xFF2A518A), Color(0xFF23477A)],
-                          ),
-                          border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF))),
-                        ),
-                        child: Row(
-                          children: _visibleColDefs.map((c) => SizedBox(
-                            width: c.$2,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(c.$1,
-                                style: const TextStyle(color: Color(0xFFF5F8FF), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.18, height: 1),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(_colLabels[0], style: headerStyle, overflow: TextOverflow.ellipsis),
+                    ),
+                  ),
+                ),
+                // En-têtes défilants (cols 1-11)
+                Expanded(
+                  child: ClipRect(
+                    child: AnimatedBuilder(
+                      animation: _hCtrl,
+                      builder: (_, child) => Transform.translate(
+                        offset: Offset(-(_hCtrl.hasClients ? _hCtrl.offset : 0.0), 0),
+                        child: child,
+                      ),
+                      child: OverflowBox(
+                        alignment: Alignment.centerLeft,
+                        minWidth: 0,
+                        maxWidth: double.infinity,
+                        child: SizedBox(
+                          width: scrollMinW,
+                          child: Container(
+                            height: 40,
+                            decoration: headerGrad,
+                            child: Row(
+                              children: _scrollableColDefs.map((c) => SizedBox(
+                                width: c.$2,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  child: Text(c.$1, style: headerStyle, overflow: TextOverflow.ellipsis),
+                                ),
+                              )).toList(),
                             ),
-                          )).toList(),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ),
-            // ── Corps : Expanded ici est dans une Column à hauteur bornée ──
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  controller: _hCtrl,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minWidth: minW),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: rows,
+                // En-tête Actions figé à droite
+                if (trailVisible) Container(
+                  width: trailW,
+                  height: 40,
+                  decoration: headerGrad.copyWith(
+                    border: const Border(
+                      bottom: BorderSide(color: Color(0x1AFFFFFF)),
+                      left:   BorderSide(color: Color(0x33FFFFFF)),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(_colLabels[12], style: headerStyle, overflow: TextOverflow.ellipsis),
                     ),
                   ),
                 ),
-              ),
+              ]),
+            ),
+            // ── Corps ────────────────────────────────────────────────────────
+            Expanded(
+              child: Row(children: [
+                // Colonne Référence figée à gauche
+                if (fixedVisible) Container(
+                  width: fixedW,
+                  decoration: BoxDecoration(
+                    border: Border(right: BorderSide(color: isDark ? const Color(0xFF304764) : const Color(0xFFD6E0EF))),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.06), blurRadius: 10, offset: const Offset(3, 0))],
+                  ),
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                    child: SingleChildScrollView(
+                      controller: _vFixedCtrl,
+                      child: Column(children: fixedCells),
+                    ),
+                  ),
+                ),
+                // Zone défilante (cols 1-11)
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: _vBodyCtrl,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      controller: _hCtrl,
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minWidth: scrollMinW),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: scrollableCells,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Colonne Actions figée à droite
+                if (trailVisible) Container(
+                  width: trailW,
+                  decoration: BoxDecoration(
+                    border: Border(left: BorderSide(color: isDark ? const Color(0xFF304764) : const Color(0xFFD6E0EF))),
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.06), blurRadius: 10, offset: const Offset(-3, 0))],
+                  ),
+                  child: ScrollConfiguration(
+                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                    child: SingleChildScrollView(
+                      controller: _vTrailCtrl,
+                      child: Column(children: trailCells),
+                    ),
+                  ),
+                ),
+              ]),
             ),
           ],
         ),
@@ -4009,73 +6186,6 @@ class _RegistreViewState extends State<_RegistreView> {
     ),
   );
 
-  Widget _sumCard(String label, String value, Color color, {String? tooltip}) => Container(
-    clipBehavior: Clip.antiAlias,
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [color.withValues(alpha: 0.11), color.withValues(alpha: 0.05)],
-      ),
-      borderRadius: BorderRadius.circular(9),
-      border: Border.all(color: color.withValues(alpha: 0.22)),
-    ),
-    child: IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(width: 3, color: color),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(11, 10, 12, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(label.toUpperCase(),
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: color, fontSize: 9.5, fontWeight: FontWeight.w700,
-                            letterSpacing: 0.7, height: 1.2),
-                        ),
-                      ),
-                      if (tooltip != null) ...[
-                        const SizedBox(width: 4),
-                        Tooltip(
-                          message: tooltip,
-                          preferBelow: false,
-                          waitDuration: Duration.zero,
-                          showDuration: const Duration(seconds: 10),
-                          textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E2A3A),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Icon(Icons.info_outline_rounded, size: 12, color: color.withValues(alpha: 0.70)),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft,
-                    child: Text(value, maxLines: 1,
-                      style: TextStyle(color: color, fontSize: 15.5, fontWeight: FontWeight.w800,
-                        height: 1, letterSpacing: -0.3),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
 }
 
 
@@ -4392,7 +6502,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                     children: [
                       Expanded(child: _biaKpi('Perte brute', AppFormatters.currency(brut))),
                       Expanded(child: _biaKpi('Perte nette', AppFormatters.currency(nette))),
-                      Expanded(child: _biaKpi('K_RO (15 %)', AppFormatters.currency(kBia))),
+                      Expanded(child: _biaKpi('Capital minimal (15 %)', AppFormatters.currency(kBia))),
                       Expanded(child: _biaKpi('RWA estimé', AppFormatters.currency(apr))),
                     ],
                   ),
@@ -4563,71 +6673,182 @@ class _RoRiskMatrix extends StatelessWidget {
   const _RoRiskMatrix({required this.risques});
   final List<RoRisque> risques;
 
+  static Color _zoneColor(int p, int i) {
+    final s = p * i;
+    if (s <= 4) return _kSuccess;
+    if (s <= 9) return _kWarning;
+    if (s <= 16) return const Color(0xFFF97316);
+    return _kDanger;
+  }
+
+  static String _zoneLabel(int p, int i) {
+    final s = p * i;
+    if (s <= 4) return 'Faible';
+    if (s <= 9) return 'Moyen';
+    if (s <= 16) return 'Élevé';
+    return 'Critique';
+  }
+
+  List<String> _namesAt(int p, int i) =>
+      risques.where((r) => r.probabilite == p && r.impact == i).map((r) => r.nom).toList();
+
   @override
   Widget build(BuildContext context) {
-    const size = 5;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    Color cellColor(int p, int i) {
-      final score = p * i;
-      if (score <= 4) return _kSuccess;
-      if (score <= 9) return _kWarning;
-      if (score <= 16) return const Color(0xFFF97316);
-      return _kDanger;
-    }
-    int countAt(int p, int i) => risques.where((r) => r.probabilite == p && r.impact == i).length;
+    const cellSz = 42.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Labels haut
+        // ── Axes + grille ─────────────────────────────────────────────────
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(width: 48),
-            ...List.generate(size, (i) => SizedBox(
-              width: 44,
-              child: Text('I=${i + 1}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _kMuted)),
-            )),
-          ],
-        ),
-        const SizedBox(height: 2),
-        ...List.generate(size, (pi) {
-          final p = size - pi;
-          return Row(
-            children: [
-              SizedBox(
-                width: 48,
-                child: Text('P=$p', textAlign: TextAlign.right, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _kMuted)),
-              ),
-              ...List.generate(size, (ii) {
-                final impact = ii + 1;
-                final cnt = countAt(p, impact);
-                final c = cellColor(p, impact);
-                return Container(
-                  width: 44,
-                  height: 44,
-                  margin: const EdgeInsets.all(1),
-                  decoration: BoxDecoration(
-                    color: c.withValues(alpha: isDark ? 0.35 : 0.25),
-                    border: Border.all(color: c.withValues(alpha: 0.6)),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: cnt > 0 ? Center(child: Text('$cnt', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: c))) : null,
+            // Colonne gauche : label vertical + numéros P
+            Column(children: [
+              // Espace pour aligner avec le label "IMPACT →" + chiffres
+              const SizedBox(height: 34),
+              // Numéros P (5 → 1, top → bottom)
+              ...List.generate(5, (pi) {
+                final p = 5 - pi;
+                return SizedBox(
+                  height: cellSz + 3,
+                  child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                    if (pi == 2)
+                      const RotatedBox(quarterTurns: -1,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 4),
+                          child: Text('PROBABILITÉ ↑',
+                            style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700,
+                              color: _kMuted, letterSpacing: 0.7)),
+                        ))
+                    else
+                      const SizedBox(width: 60),
+                    Text('$p',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kMuted)),
+                  ]),
                 );
               }),
-            ],
-          );
-        }),
-        const SizedBox(height: 6),
-        // Légende
-        Wrap(
-          spacing: 12,
-          children: [
-            _legendItem('Faible (≤4)', _kSuccess),
-            _legendItem('Moyen (5–9)', _kWarning),
-            _legendItem('Élevé (10–16)', const Color(0xFFF97316)),
-            _legendItem('Critique (>16)', _kDanger),
+            ]),
+            const SizedBox(width: 6),
+            // Colonne droite : axe Impact (haut) + grille
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Axe Impact
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('IMPACT →',
+                    style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700,
+                      color: _kMuted, letterSpacing: 0.8)),
+                  const SizedBox(height: 4),
+                  Row(children: List.generate(5, (i) => SizedBox(
+                    width: cellSz + 3,
+                    child: Text('${i + 1}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kMuted)),
+                  ))),
+                ]),
+                const SizedBox(height: 4),
+                // Grille 5×5
+                ...List.generate(5, (pi) {
+                  final p = 5 - pi;
+                  return Row(
+                    children: List.generate(5, (ii) {
+                      final impact = ii + 1;
+                      final names = _namesAt(p, impact);
+                      final cnt   = names.length;
+                      final c     = _zoneColor(p, impact);
+                      final zl    = _zoneLabel(p, impact);
+                      final score = p * impact;
+
+                      return ExcludeSemantics(
+                        child: Tooltip(
+                        key: ValueKey('matrix_${p}_$impact'),
+                        message: cnt == 0
+                            ? 'P=$p × I=$impact = $score ($zl)\nAucun risque positionné ici'
+                            : 'P=$p × I=$impact = $score ($zl)\n${names.join('\n')}',
+                        waitDuration: const Duration(milliseconds: 300),
+                        showDuration: const Duration(seconds: 6),
+                        textStyle: const TextStyle(fontSize: 11, color: Colors.white, height: 1.55),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E2A3A),
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        child: Container(
+                          width: cellSz,
+                          height: cellSz,
+                          margin: const EdgeInsets.all(1.5),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                c.withValues(alpha: isDark ? 0.38 : 0.20),
+                                c.withValues(alpha: isDark ? 0.20 : 0.09),
+                              ],
+                            ),
+                            border: Border.all(
+                              color: cnt > 0 ? c.withValues(alpha: 0.75) : c.withValues(alpha: 0.30),
+                              width: cnt > 0 ? 1.5 : 0.8,
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: cnt > 0
+                                ? [BoxShadow(color: c.withValues(alpha: 0.18), blurRadius: 5)]
+                                : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: cnt > 0
+                              ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                  Text('$cnt',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: cnt > 9 ? 13 : 17,
+                                      color: c, height: 1.0)),
+                                  Text('risque${cnt > 1 ? 's' : ''}',
+                                    style: TextStyle(fontSize: 7,
+                                      color: c.withValues(alpha: 0.72),
+                                      fontWeight: FontWeight.w700, letterSpacing: -0.2)),
+                                ])
+                              : Text('$score',
+                                  style: TextStyle(fontSize: 10,
+                                    color: c.withValues(alpha: isDark ? 0.40 : 0.25),
+                                    fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                      );
+                    }),
+                  );
+                }),
+              ],
+            ),
           ],
         ),
+        const SizedBox(height: 14),
+        // ── Légende ───────────────────────────────────────────────────────
+        Wrap(spacing: 10, runSpacing: 6, children: [
+          _legendItem('Faible ≤4', _kSuccess),
+          _legendItem('Moyen 5–9', _kWarning),
+          _legendItem('Élevé 10–16', const Color(0xFFF97316)),
+          _legendItem('Critique >16', _kDanger),
+        ]),
+        if (risques.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: _kBlue.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: _kBlue.withValues(alpha: 0.15)),
+            ),
+            child: const Row(children: [
+              Icon(Icons.touch_app_rounded, size: 11, color: _kBlue),
+              SizedBox(width: 5),
+              Text('Survolez une cellule pour voir les risques',
+                style: TextStyle(fontSize: 10, color: _kMuted)),
+            ]),
+          ),
+        ],
       ],
     );
   }
@@ -4635,9 +6856,16 @@ class _RoRiskMatrix extends StatelessWidget {
   Widget _legendItem(String label, Color c) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Container(width: 10, height: 10, decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
-      const SizedBox(width: 4),
-      Text(label, style: const TextStyle(fontSize: 10, color: _kMuted)),
+      Container(
+        width: 12, height: 12,
+        decoration: BoxDecoration(
+          color: c.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(color: c.withValues(alpha: 0.55)),
+        ),
+      ),
+      const SizedBox(width: 5),
+      Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: _kMuted)),
     ],
   );
 }
@@ -4648,94 +6876,86 @@ class _RoPieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = items.fold(0.0, (s, e) => s + e.valeur);
+    final total = items.fold(0, (s, e) => s + e.valeur);
     if (total == 0) return const SizedBox();
     final palette = [_kBlue, _kSuccess, _kWarning, _kDanger, AppColors.prudentialSolvency, AppColors.marketNeutral, const Color(0xFFF97316), const Color(0xFF84CC16)];
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      children: [
-        SizedBox(
-          width: 100,
-          height: 100,
-          child: CustomPaint(
-            painter: _PiePainter(items: items, total: total, palette: palette),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: items.asMap().entries.map((entry) {
-              final c = palette[entry.key % palette.length];
-              final pctVal = total > 0 ? entry.value.valeur / total : 0.0;
-              final pctStr = (pctVal * 100).toStringAsFixed(1);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+
+    final sorted = items.asMap().entries.toList()
+      ..sort((a, b) => b.value.valeur.compareTo(a.value.valeur));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: sorted.map((entry) {
+          final c = palette[entry.key % palette.length];
+          final pct = total > 0 ? entry.value.valeur / total : 0.0;
+          final pctStr = (pct * 100).toStringAsFixed(1);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 11),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 9, height: 9,
-                          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            entry.value.label,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: isDark ? AppTheme.darkText : AppTheme.text,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$pctStr %',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c),
-                        ),
-                      ],
+                    Container(
+                      width: 9, height: 9,
+                      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
                     ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Stack(
-                        children: [
-                          Container(
-                            height: 9,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: isDark ? c.withValues(alpha: 0.14) : c.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                          FractionallySizedBox(
-                            widthFactor: pctVal.clamp(0.0, 1.0),
-                            child: Container(
-                              height: 9,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [c.withValues(alpha: 0.75), c],
-                                ),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                          ),
-                        ],
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: Text(
+                        entry.value.label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? AppTheme.darkText : AppTheme.text,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$pctStr %',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c),
                     ),
                   ],
                 ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 9,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: isDark ? c.withValues(alpha: 0.14) : c.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      FractionallySizedBox(
+                        widthFactor: pct.clamp(0.0, 1.0),
+                        child: Container(
+                          height: 9,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [c.withValues(alpha: 0.75), c],
+                            ),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }
@@ -4810,16 +7030,19 @@ class _RoLineChartPainter extends CustomPainter {
 TableRow _tableHeader(List<String> headers) {
   return TableRow(
     decoration: const BoxDecoration(
-      color: Color(0xFFF4F7FD),
-      border: Border(bottom: BorderSide(color: Color(0xFFDDE5F5), width: 1.5)),
+      gradient: LinearGradient(
+        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [Color(0xFF2A518A), Color(0xFF23477A)],
+      ),
+      border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF))),
     ),
     children: headers.map((h) => TableCell(
       verticalAlignment: TableCellVerticalAlignment.middle,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-        child: Text(h.toUpperCase(),
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 9.5,
-            color: _kMuted, letterSpacing: 0.5)),
+        child: Text(h,
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 10,
+            color: Color(0xFFF5F8FF), letterSpacing: 0.18)),
       ),
     )).toList(),
   );
@@ -4842,32 +7065,6 @@ TableCell _cell(String text, {bool bold = false, bool right = false, Color? colo
     ),
   ),
 );
-
-class _PiePainter extends CustomPainter {
-  final List<RoRepartitionItem> items;
-  final double total;
-  final List<Color> palette;
-  const _PiePainter({required this.items, required this.total, required this.palette});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (total <= 0 || items.isEmpty) return;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.shortestSide / 2;
-    double startAngle = -math.pi / 2;
-    for (var i = 0; i < items.length; i++) {
-      final sweepAngle = (items[i].valeur / total) * 2 * math.pi;
-      final paint = Paint()
-        ..color = palette[i % palette.length]
-        ..style = PaintingStyle.fill;
-      canvas.drawArc(Rect.fromCircle(center: center, radius: radius), startAngle, sweepAngle, true, paint);
-      startAngle += sweepAngle;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _PiePainter old) => old.items != items;
-}
 
 TableCell _cellFlex(String text) => TableCell(
   verticalAlignment: TableCellVerticalAlignment.middle,

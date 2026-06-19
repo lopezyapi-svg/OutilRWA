@@ -26,7 +26,7 @@ class IcapScreen extends StatefulWidget {
 
 class _IcapScreenState extends State<IcapScreen> {
   String _selectedScenario = 'base';
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {

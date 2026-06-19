@@ -923,8 +923,13 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
           ),
         ),
         const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+        Container(
+          decoration: BoxDecoration(
+            color: _isDark ? const Color(0xFF13233E) : Colors.white,
+            border: Border.all(color: _isDark ? const Color(0xFF304764) : AppTheme.border),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          clipBehavior: Clip.antiAlias,
           child: Table(
             columnWidths: const {
               0: FixedColumnWidth(100),
@@ -954,16 +959,24 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
   }
 
   TableRow _tHeader(List<String> cols) => TableRow(
-    decoration: BoxDecoration(color: _accent.withValues(alpha: 0.1)),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF2A518A), Color(0xFF23477A)],
+      ),
+      border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF))),
+    ),
     children: cols
         .map((c) => Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
               child: Text(
                 c,
-                style: TextStyle(
-                  fontSize: 11,
+                style: const TextStyle(
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: _text,
+                  color: Color(0xFFF5F8FF),
+                  letterSpacing: 0.18,
                 ),
               ),
             ))
@@ -1053,7 +1066,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
                   hintText: hint,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                  border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
                 ),
                 validator: required
                     ? (v) => (v == null || v.trim().isEmpty) ? 'Champ requis' : null
@@ -1071,7 +1084,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
                   labelText: label,
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                  border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
                 ),
                 items: items
                     .map((e) => DropdownMenuItem(
@@ -1312,14 +1325,14 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
               const SizedBox(width: 20),
               _biaKpi('Perte nette totale', _fmtCurrency(totalNette)),
               const SizedBox(width: 20),
-              _biaKpi('K_RO (15 %)', _fmtCurrency(kBia)),
+              _biaKpi('Capital minimal (15 %)', _fmtCurrency(kBia)),
               const SizedBox(width: 20),
               _biaKpi('APR estimé (×12,5)', _fmtCurrency(apr)),
             ],
           ),
           const SizedBox(height: 4),
           Text(
-            'K_RO = 15 % × Pertes nettes   |   APR = K_RO ÷ 8 % = K_RO × 12,5',
+            'Capital minimal = 15 % × Pertes nettes   |   APR = Capital minimal ÷ 8 % = Capital minimal × 12,5',
             style: TextStyle(fontSize: 10, color: _muted, fontStyle: FontStyle.italic),
           ),
         ],

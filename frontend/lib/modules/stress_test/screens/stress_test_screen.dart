@@ -1,5 +1,4 @@
 // Ecran du module stress test.
-import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -198,9 +197,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
   }
 
   Widget _buildImpactOverviewSection(_StressScenario scenario, bool isDark) {
-    final baseCapital = 58000000000.0;
-    final baseRwa = 420000000000.0;
-    final baseRatio = baseCapital / baseRwa;
+    const baseCapital = 58000000000.0;
+    const baseRwa = 420000000000.0;
+    const baseRatio = baseCapital / baseRwa;
 
     final stressedRwa = baseRwa * (1 + scenario.rwaImpact);
     final stressedRatio = baseCapital / stressedRwa;
@@ -414,9 +413,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
   }
 
   Widget _buildCapitalAdequacySection(_StressScenario scenario, bool isDark) {
-    final baseCapital = 58000000000.0;
-    final baseRwa = 420000000000.0;
-    final baseRatio = baseCapital / baseRwa;
+    const baseCapital = 58000000000.0;
+    const baseRwa = 420000000000.0;
+    const baseRatio = baseCapital / baseRwa;
     final stressedRwa = baseRwa * (1 + scenario.rwaImpact);
     final stressedRatio = baseCapital / stressedRwa;
 
@@ -534,8 +533,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
         .map((id) => _getScenarioData(id))
         .toList();
 
-    final baseCapital = 58000000000.0;
-    final baseRwa = 420000000000.0;
+    const baseCapital = 58000000000.0;
+    const baseRwa = 420000000000.0;
 
     return SectionCard(
       title: 'Comparaison des scénarios',
@@ -649,7 +648,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
   }
 
   List<_CategoryImpact> _getCategoryImpacts(_StressScenario scenario) {
-    final baseRwa = 420000000000.0;
+    const baseRwa = 420000000000.0;
     final categories = {
       'Administrations centrales': 0.15,
       'Banques': 0.12,
