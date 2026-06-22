@@ -2850,9 +2850,13 @@ class _KriCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(d.nom,
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: textColor),
-                  overflow: TextOverflow.ellipsis),
+                child: Tooltip(
+                  message: d.nom,
+                  preferBelow: true,
+                  child: Text(d.nom,
+                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: textColor),
+                    overflow: TextOverflow.ellipsis),
+                ),
               ),
               const SizedBox(width: 8),
               _badge(sl, sc),
@@ -4605,10 +4609,14 @@ class _PlanCard extends StatelessWidget {
                             color: AppColors.marketNeutral)),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(p.titre,
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : Colors.black87),
-                        overflow: TextOverflow.ellipsis)),
+                      Expanded(child: Tooltip(
+                        message: p.titre,
+                        preferBelow: true,
+                        child: Text(p.titre,
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : Colors.black87),
+                          overflow: TextOverflow.ellipsis),
+                      )),
                       const SizedBox(width: 8),
                       // Type action
                       Container(
@@ -4662,9 +4670,13 @@ class _PlanCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (p.description.isNotEmpty)
-                            Text(p.description,
-                              style: const TextStyle(fontSize: 11, color: _kMuted, height: 1.4),
-                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                            Tooltip(
+                              message: p.description,
+                              preferBelow: true,
+                              child: Text(p.description,
+                                style: const TextStyle(fontSize: 11, color: _kMuted, height: 1.4),
+                                maxLines: 2, overflow: TextOverflow.ellipsis),
+                            ),
                           if (p.sourceRef.isNotEmpty) ...[
                             const SizedBox(height: 3),
                             Row(children: [
