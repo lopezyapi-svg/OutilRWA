@@ -312,111 +312,6 @@ Widget _badge(String label, Color color) => FittedBox(
       ),
     );
 
-Widget _kpiBox(BuildContext context, String label, String value, IconData icon, Color color, {String? tooltip}) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  // Border uniforme obligatoire pour combiner borderRadius + couleurs distinctes
-  // => strip gauche coloré en interne via un Container(width:4)
-  return Container(
-    decoration: BoxDecoration(
-      color: isDark ? AppTheme.darkCard : Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.border),
-      boxShadow: isDark ? null : [
-        BoxShadow(color: color.withValues(alpha: 0.09), blurRadius: 14, offset: const Offset(0, 3)),
-      ],
-    ),
-    clipBehavior: Clip.antiAlias,
-    child: IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(width: 4, color: color),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              child: Row(
-                children: [
-                  Container(
-                    width: 42, height: 42,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          color.withValues(alpha: isDark ? 0.25 : 0.16),
-                          color.withValues(alpha: isDark ? 0.10 : 0.06),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: Icon(icon, color: color, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(label,
-                                style: TextStyle(
-                                  color: isDark ? AppTheme.darkMuted : _kMuted,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 0.1,
-                                ),
-                              ),
-                            ),
-                            if (tooltip != null) ...[
-                              const SizedBox(width: 4),
-                              ExcludeSemantics(
-                                child: Tooltip(
-                                  message: tooltip,
-                                  preferBelow: false,
-                                  waitDuration: Duration.zero,
-                                  showDuration: const Duration(seconds: 10),
-                                  textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1E2A3A),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  child: Icon(Icons.info_outline_rounded, size: 13, color: color.withValues(alpha: 0.6)),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 5),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(value,
-                            maxLines: 1,
-                            style: TextStyle(
-                              color: isDark ? AppTheme.darkText : AppTheme.text,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                              height: 1.1,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
 
 Widget _roMetricRow(
   BuildContext context, {
@@ -5841,51 +5736,57 @@ class _RegistreViewState extends State<_RegistreView> {
           ),
         ),
         const SizedBox(height: 6),
-        // ── Footer KPI ────────────────────────────────────────────────────
-        Row(children: [
-          SizedBox(
-            width: 130,
-            child: _kpiBox(context, 'Pertes', '${cached.length}', Icons.list_alt_outlined, AppTheme.accent,
-              tooltip:
-                'Nombre de pertes\n'
-                'Rôle : comptage total des incidents\n'
-                'enregistrés dans la base.\n'
-                'Formule : COUNT(incidents)',
+        // ── Footer KPI (style Dashboard Opérationnel) ────────────────────
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(2),
+            border: Border.all(
+              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+              BoxShadow(
+                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
-          Expanded(child: _kpiBox(context, 'Perte brute', AppFormatters.currency(cBrute), Icons.trending_down_outlined, _kDanger,
-            tooltip:
-              'Perte brute totale\n'
-              'Rôle : montant total avant toute récupération.\n'
-              'Formule : Σ perte_brute\n'
-              '(somme de toutes les pertes brutes)',
-          )),
-          const SizedBox(width: 6),
-          Expanded(child: _kpiBox(context, 'Perte nette', AppFormatters.currency(cNette), Icons.account_balance_outlined, _kDanger,
-            tooltip:
-              'Perte nette totale (Art. 313.b)\n'
-              'Rôle : montant réel supporté après récupérations.\n'
-              'Formule : Σ (perte_brute − perte_récupérée)\n'
-              'Récupérations = assurance + provisions + reversements',
-          )),
-          const SizedBox(width: 6),
-          Expanded(child: _kpiBox(context, 'Capital minimum (Art. 89)', AppFormatters.currency(cKro), Icons.shield_outlined, AppColors.prudentialSolvency,
-            tooltip:
-              'Exigence de fonds propres — Risque Opérationnel\n'
-              'Rôle : capital réglementaire minimum à détenir.\n'
-              'Formule BIA : Capital minimal = α × Perte nette totale\n'
-              'α = 15 %  (coefficient BCEAO/UMOA, Art. 89)',
-          )),
-          const SizedBox(width: 6),
-          Expanded(child: _kpiBox(context, 'RWA opérationnel', AppFormatters.currency(cApr), Icons.bar_chart_outlined, AppColors.marketNeutral,
-            tooltip:
-              'Actifs Pondérés par le Risque opérationnel\n'
-              'Rôle : base de calcul du ratio de solvabilité.\n'
-              'Formule : RWA = Capital minimal ÷ 8 % = Capital minimal × 12,5\n'
-              '12,5 = facteur de conversion prudentiel (Art. 89)',
-          )),
-        ]),
+          child: Column(
+            children: [
+              Container(height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [const Color(0xFF1A2A4A), const Color(0xFF13203A)]
+                        : [const Color(0xFFF8F9FF), const Color(0xFFF0F2FF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(child: _RoDashSummaryItem(label: 'Pertes', value: '${cached.length}', accentColor: AppTheme.accent, icon: Icons.list_alt_outlined)),
+                    Container(width: 1, height: 40, color: AppTheme.accent.withValues(alpha: 0.25)),
+                    Expanded(child: _RoDashSummaryItem(label: 'Perte brute', value: AppFormatters.currency(cBrute), accentColor: _kDanger, icon: Icons.trending_down_outlined)),
+                    Container(width: 1, height: 40, color: AppTheme.accent.withValues(alpha: 0.25)),
+                    Expanded(child: _RoDashSummaryItem(label: 'Perte nette', value: AppFormatters.currency(cNette), accentColor: _kDanger, icon: Icons.account_balance_outlined)),
+                    Container(width: 1, height: 40, color: AppTheme.accent.withValues(alpha: 0.25)),
+                    Expanded(child: _RoDashSummaryItem(label: 'Capital minimum (Art. 89)', value: AppFormatters.currency(cKro), accentColor: AppColors.prudentialSolvency, icon: Icons.shield_outlined)),
+                    Container(width: 1, height: 40, color: AppTheme.accent.withValues(alpha: 0.25)),
+                    Expanded(child: _RoDashSummaryItem(label: 'RWA opérationnel', value: AppFormatters.currency(cApr), accentColor: AppColors.marketNeutral, icon: Icons.bar_chart_outlined)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
               ],
             ),
           ),

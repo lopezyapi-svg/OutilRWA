@@ -120,15 +120,15 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
           ),
           const SizedBox(height: 16),
           // Titre fixe
-          Padding(
+          const Padding(
             padding:
-                const EdgeInsets.symmetric(horizontal: AppTheme.pagePadding),
+                EdgeInsets.symmetric(horizontal: AppTheme.pagePadding),
             child: Text(
               'Titres exposés au risque de change',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFF1A237E),
+                color: Color(0xFF1A237E),
               ),
             ),
           ),
@@ -617,7 +617,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
     }
 
     const rowH = 40.0;
-    final headerTextLight = const TextStyle(
+    const headerTextLight = TextStyle(
         fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white);
     final cellText = TextStyle(fontSize: 11, color: _fxTextFor(context));
 
@@ -846,7 +846,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                           children: [
                             leftFooter('Position Longue',
                                 _fxSuccess.withValues(alpha: 0.06)),
-                            Divider(height: 0, thickness: 1, color: _fxBorder),
+                            const Divider(height: 0, thickness: 1, color: _fxBorder),
                             leftFooter('Position Courte',
                                 _fxDanger.withValues(alpha: 0.06)),
                           ],
@@ -864,7 +864,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                               children: [
                                 middleFooter(sumLongNominalXof, sumLongRwa,
                                     _fxSuccess.withValues(alpha: 0.06)),
-                                Divider(
+                                const Divider(
                                     height: 0, thickness: 1, color: _fxBorder),
                                 middleFooter(sumShortNominalXof, sumShortRwa,
                                     _fxDanger.withValues(alpha: 0.06)),
@@ -880,7 +880,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                           children: [
                             rightFooter(sumLongGain,
                                 _fxSuccess.withValues(alpha: 0.06)),
-                            Divider(height: 0, thickness: 1, color: _fxBorder),
+                            const Divider(height: 0, thickness: 1, color: _fxBorder),
                             rightFooter(sumShortGain,
                                 _fxDanger.withValues(alpha: 0.06)),
                           ],

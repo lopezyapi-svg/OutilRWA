@@ -1,5 +1,6 @@
 /// Référentiel des devises et taux de conversion
 /// Utilisé pour convertir les positions en devise de référence (XOF)
+library;
 
 /// Représente une devise avec son taux de change
 class CurrencyRate {

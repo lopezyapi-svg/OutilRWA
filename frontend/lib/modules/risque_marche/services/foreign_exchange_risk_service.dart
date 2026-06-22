@@ -1,5 +1,6 @@
 /// Service de calcul du risque de change conforme BCEAO
 /// Approche standard: Position nette globale × 8%
+library;
 
 import 'dart:math' as math;
 
@@ -72,7 +73,7 @@ ForeignExchangeRiskResult calculateForeignExchangeRisk(
   }
 
   // Position nette globale = MAX(longues, courtes)
-  final globalNetPosition = math.max(totalLong, totalShort) as double;
+  final globalNetPosition = math.max(totalLong, totalShort);
 
   // Exigence de fonds propres = Position_Nette_Globale × 8%
   final capitalRequirement = globalNetPosition * 0.08;
@@ -122,10 +123,10 @@ PositionAnalysis analyzePositions(List<ForeignExchangePosition> positions) {
 
     if (pos.netPosition > 0) {
       longCount++;
-      largestLong = math.max(largestLong, positionInXof) as double;
+      largestLong = math.max(largestLong, positionInXof);
     } else if (pos.netPosition < 0) {
       shortCount++;
-      largestShort = math.max(largestShort, positionInXof.abs()) as double;
+      largestShort = math.max(largestShort, positionInXof.abs());
     } else {
       neutralCount++;
     }
@@ -133,7 +134,7 @@ PositionAnalysis analyzePositions(List<ForeignExchangePosition> positions) {
 
   final averageSize = positions.isNotEmpty ? totalAbsolute / positions.length : 0.0;
   final concentrationRatio = largestLong > 0 || largestShort > 0
-      ? (math.max(largestLong, largestShort) as double) / (totalAbsolute > 0 ? totalAbsolute : 1)
+      ? (math.max(largestLong, largestShort)) / (totalAbsolute > 0 ? totalAbsolute : 1)
       : 0.0;
 
   return PositionAnalysis(

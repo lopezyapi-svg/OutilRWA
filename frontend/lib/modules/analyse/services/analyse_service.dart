@@ -1,74 +1,49 @@
-// Service d'analyse des données RWA.
+// Service d'analyse des donnees RWA et des regles prudentielles.
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/utils/currency_conversion.dart';
+import '../../crm/models/crm_models.dart';
 import '../../dashboard/models/dashboard_models.dart';
+import '../../expositions/models/exposition_models.dart';
 import '../models/analyse_models.dart';
 
-/// Service qui génère les analyses et recommandations.
 class AnalyseService {
   const AnalyseService(this.api);
 
   final RwaApiService api;
 
-  /// Récupère et calcule toutes les données d'analyse.
   Future<AnalyseData> fetchAnalyseData() async {
     final dashboard = await api.fetchDashboard();
     final exposures = await api.fetchExpositionsModule();
     final crm = await api.fetchCrmModule();
+    final regulatoryReport = _runRegulatoryEngine(
+      dashboard: dashboard,
+      exposures: exposures,
+      crm: crm,
+    );
 
-    // Calcul de la qualité du portefeuille
     final qualityScore = _calculatePortfolioQuality(
       dashboard.ratingDistribution,
       exposures.exposures.length,
     );
-
-    // Calcul du niveau de concentration
     final concentrationLevel = _calculateConcentration(
-      dashboard.categoryDistribution,
+      dashboard.rwaCategoryDistribution,
       dashboard.countryDistribution,
     );
-
-    // Ratio de couverture CRM
-    final crmCoverage = crm.summary.totalExpositions > 0
-        ? (crm.summary.totalExpositions -
-                (crm.summary.totalRwaBefore - crm.summary.totalRwaAfter)) /
-            crm.summary.totalExpositions
-        : 0.0;
-
-    // Potentiel de réduction RWA
-    final reductionPotential = _calculateRwaReductionPotential(
-      exposures.exposures,
-      crm.summary,
-    );
-
-    // Distribution par secteur (catégories)
-    final sectorDistribution = dashboard.categoryDistribution;
-    final sectorInsights = _generateSectorInsights(sectorDistribution);
-
-    // Distribution par notation
+    final crmCoverage = crm.summary.averageCoverage;
+    final reductionPotential = _calculateRwaReductionPotential(crm.summary);
+    final sectorDistribution = dashboard.rwaCategoryDistribution;
     final ratingDistribution = dashboard.ratingDistribution;
-    final ratingInsights = _generateRatingInsights(ratingDistribution);
-
-    // Top concentration
-    final topConcentration = _findTopConcentration(sectorDistribution);
-
-    // Exposition aux notations spéculatives
-    final lowRatedExposure = _calculateLowRatedExposure(ratingDistribution);
-
-    // Notation moyenne pondérée
-    final weightedAvgRating = _calculateWeightedAverageRating(
-      ratingDistribution,
-    );
-
-    // Évolution RWA (simulée à partir des projections)
     final rwaEvolution = _generateRwaEvolution(dashboard.rwaProjection);
-
-    // Variation RWA
     final rwaVariation = rwaEvolution.length >= 2
-        ? (rwaEvolution.last.value - rwaEvolution.first.value) /
-            rwaEvolution.first.value
+        ? _safeRatio(
+            rwaEvolution.last.value - rwaEvolution.first.value,
+            rwaEvolution.first.value,
+          )
         : 0.0;
-
-    // Capital actuel
     final capitalMetric = dashboard.metrics.firstWhere(
       (m) => m.key == 'capital',
       orElse: () => const DashboardMetric(
@@ -79,49 +54,359 @@ class AnalyseService {
         trend: [],
       ),
     );
-
-    // Alertes prudentielles
-    final prudentialAlerts = _generatePrudentialAlerts(
-      dashboard,
-      concentrationLevel,
-      lowRatedExposure,
-    );
-
-    // Top expositions à risque
+    final lowRatedExposure = _calculateLowRatedExposure(ratingDistribution);
     final topRiskExposures = _identifyTopRiskExposures(
       dashboard.portfolioOverview,
     );
 
-    // Recommandations
-    final recommendations = _generateRecommendations(
-      concentrationLevel,
-      lowRatedExposure,
-      crmCoverage,
-      reductionPotential,
-      topRiskExposures,
-    );
-
     return AnalyseData(
+      regulatoryReport: regulatoryReport,
       portfolioQualityScore: qualityScore,
       qualityTrend: 'stable',
       concentrationLevel: concentrationLevel,
-      concentrationTrend: 'up',
+      concentrationTrend: concentrationLevel > 0.30 ? 'up' : 'stable',
       crmCoverageRatio: crmCoverage,
-      crmTrend: 'up',
+      crmTrend: crmCoverage >= 0.50 ? 'up' : 'stable',
       rwaReductionPotential: reductionPotential,
       sectorDistribution: sectorDistribution,
-      sectorInsights: sectorInsights,
+      sectorInsights: _generateSectorInsights(sectorDistribution),
       ratingDistribution: ratingDistribution,
-      ratingInsights: ratingInsights,
-      topConcentration: topConcentration,
+      ratingInsights: _generateRatingInsights(ratingDistribution),
+      topConcentration: _findTopConcentration(sectorDistribution),
       lowRatedExposure: lowRatedExposure,
-      weightedAverageRating: weightedAvgRating,
+      weightedAverageRating: _calculateWeightedAverageRating(
+        ratingDistribution,
+      ),
       rwaEvolution: rwaEvolution,
       rwaVariation: rwaVariation,
       currentCapital: capitalMetric.value,
-      prudentialAlerts: prudentialAlerts,
+      prudentialAlerts: _generatePrudentialAlerts(
+        dashboard,
+        regulatoryReport,
+        concentrationLevel,
+        lowRatedExposure,
+      ),
       topRiskExposures: topRiskExposures,
-      recommendations: recommendations,
+      recommendations: _generateRecommendations(
+        concentrationLevel,
+        lowRatedExposure,
+        crmCoverage,
+        reductionPotential,
+        topRiskExposures,
+        regulatoryReport,
+      ),
+    );
+  }
+
+  RegulatoryAnalysisReport _runRegulatoryEngine({
+    required DashboardSnapshot dashboard,
+    required ExposureModuleData exposures,
+    required CrmModuleData crm,
+  }) {
+    const zone = RegulatoryZone.uemoa;
+    final thresholds = _thresholdsFor(zone);
+    final now = DateTime.now();
+    final creditRwa = _totalRwa(dashboard);
+    final marketRwa = _estimateMarketRwa(creditRwa);
+    final operationalRwa = _estimateOperationalRwa(creditRwa, crm.summary);
+    final allRwa = creditRwa + marketRwa + operationalRwa;
+    final requiredCapital = allRwa * thresholds.fpeTarget;
+    final economicCapital = allRwa * (thresholds.fpeTarget + 0.015);
+    final reportedCapital = _metricValue(dashboard, 'capital');
+    final reportedSolvency = _metricValue(
+      dashboard,
+      'solvabilite',
+      fallback: 0.108,
+    );
+    final fpe = math.max(reportedCapital * 1.32, allRwa * reportedSolvency);
+    final tier1 = fpe * 0.91;
+    final cet1 = fpe * 0.84;
+    final cet1Ratio = _safeRatio(cet1, allRwa);
+    final tier1Ratio = _safeRatio(tier1, allRwa);
+    final fpeRatio = _safeRatio(fpe, allRwa);
+    final conservation = _conservationRequirement(cet1Ratio, thresholds);
+    final stressMacro = fpeRatio - 0.022;
+    final stressIdiosyncratic = fpeRatio - 0.038;
+    final stressCombined = fpeRatio - 0.052;
+    final largestExposure = _largestExposure(dashboard.portfolioOverview);
+    final largeRiskRatio = _safeRatio(largestExposure?.rwa ?? 0, tier1);
+    final largeRisks = dashboard.portfolioOverview
+        .where((item) => _safeRatio(item.rwa, tier1) >= 0.10)
+        .toList(growable: false);
+    final topSector = _topDistribution(dashboard.rwaCategoryDistribution);
+    final operationalShare = _safeRatio(operationalRwa, allRwa);
+    final capitalGap = fpe - requiredCapital;
+    final irrbbRatio = _estimateIrrbbShockRatio(dashboard);
+
+    final diagnostics = <RegulatoryDiagnostic>[
+      _ratioDiagnostic(
+        ruleReference: 'Art. 91 / 103 (UEMOA)',
+        label: 'CET1',
+        currentRatio: cet1Ratio,
+        threshold: thresholds.cet1Target,
+      ),
+      _ratioDiagnostic(
+        ruleReference: 'Art. 91 / 103 (UEMOA)',
+        label: 'Tier 1',
+        currentRatio: tier1Ratio,
+        threshold: thresholds.tier1Target,
+      ),
+      _ratioDiagnostic(
+        ruleReference: 'Art. 103 (UEMOA)',
+        label: 'solvabilite FPE',
+        currentRatio: fpeRatio,
+        threshold: thresholds.fpeTarget,
+      ),
+      RegulatoryDiagnostic(
+        ruleReference: 'Tableau 1 Art. 96 (UEMOA)',
+        threshold: conservation.minimumRetention,
+        currentValue: conservation.distributableRatio,
+        gap: conservation.distributableRatio - conservation.minimumRetention,
+        message:
+            'Votre ratio CET1 est de ${_pct(cet1Ratio)}. Vous etes dans la tranche ${conservation.bandLabel}; conservation minimale: ${_pct(conservation.minimumRetention)} des benefices distribuables.',
+        severity: conservation.minimumRetention >= 1
+            ? 'CRITICAL'
+            : conservation.minimumRetention >= 0.8
+                ? 'HIGH'
+                : 'MEDIUM',
+      ),
+      _ratioDiagnostic(
+        ruleReference: 'Art. 544-545 (UEMOA)',
+        label: 'solvabilite post-stress macro',
+        currentRatio: stressMacro,
+        threshold: thresholds.fpeMinimum,
+      ),
+      _ratioDiagnostic(
+        ruleReference: 'Art. 544-545 (UEMOA)',
+        label: 'solvabilite post-stress idiosyncratique',
+        currentRatio: stressIdiosyncratic,
+        threshold: thresholds.fpeMinimum,
+      ),
+      _ratioDiagnostic(
+        ruleReference: 'Art. 544-545 (UEMOA)',
+        label: 'solvabilite post-stress combine',
+        currentRatio: stressCombined,
+        threshold: thresholds.fpeMinimum,
+      ),
+      _ratioDiagnostic(
+        ruleReference: 'Art. 451 (UEMOA)',
+        label: largestExposure?.counterparty ?? 'plus grande exposition',
+        currentRatio: largeRiskRatio,
+        threshold: thresholds.largeRiskLimit,
+        higherIsBad: true,
+      ),
+      RegulatoryDiagnostic(
+        ruleReference: 'Art. 538 (UEMOA)',
+        threshold: 0.15,
+        currentValue: irrbbRatio,
+        gap: 0.15 - irrbbRatio,
+        message:
+            'Un choc de taux de +200 bps entrainerait une baisse estimee de valeur economique egale a ${_pct(irrbbRatio)} du Tier 1.',
+        severity: irrbbRatio > 0.15 ? 'HIGH' : 'LOW',
+      ),
+    ];
+
+    final rootCauses = <String>[
+      if (topSector != null)
+        'Hausse et concentration des RWA de credit sur ${topSector.label} (${_pct(topSector.percentage)} du RWA credit).',
+      'Le risque de credit represente ${_pct(_safeRatio(creditRwa, allRwa))} des RWA totaux estimes.',
+      if (operationalShare > 0.08)
+        'Le risque operationnel pese ${_pct(operationalShare)}, au-dessus du repere de gestion de 8%.',
+      if (dashboard.rwaProjection.length >= 2)
+        'La projection RWA montre une variation de ${_pct(_safeRatio(dashboard.rwaProjection.last.value - dashboard.rwaProjection.first.value, dashboard.rwaProjection.first.value))}.',
+      if (largeRisks.isNotEmpty)
+        '${largeRisks.length} contrepartie(s) depassent le seuil de grand risque de 10% du Tier 1.',
+    ];
+
+    final actions = <RegulatoryAction>[
+      if (capitalGap < 0)
+        RegulatoryAction(
+          action:
+              'Augmenter les FPE de ${formatCurrencyCompact(capitalGap.abs())} ou reduire les RWA de ${formatCurrencyCompact(capitalGap.abs() / thresholds.fpeTarget)}.',
+          deadline: DateTime(now.year, now.month + 6, now.day),
+          priority: 1,
+        )
+      else
+        RegulatoryAction(
+          action:
+              'Preserver la marge de capital de ${formatCurrencyCompact(capitalGap)} avant toute distribution exceptionnelle.',
+          deadline: DateTime(now.year, now.month + 3, now.day),
+          priority: 2,
+        ),
+      RegulatoryAction(
+        action:
+            'Limiter la croissance du secteur ${topSector?.label ?? 'dominant'} et revoir les limites internes de concentration.',
+        deadline: DateTime(now.year, now.month + 12, now.day),
+        priority: largeRisks.isEmpty ? 3 : 1,
+      ),
+      RegulatoryAction(
+        action:
+            'Conserver ${_pct(conservation.minimumRetention)} des benefices distribuables; distribution maximale estimee: ${_pct(1 - conservation.minimumRetention)}.',
+        deadline: DateTime(now.year, now.month + 1, now.day),
+        priority: conservation.minimumRetention >= 0.8 ? 1 : 2,
+      ),
+      RegulatoryAction(
+        action:
+            'Tester un plan de resistance: macro ${_pct(stressMacro)}, idiosyncratique ${_pct(stressIdiosyncratic)}, combine ${_pct(stressCombined)}.',
+        deadline: DateTime(now.year, now.month + 2, now.day),
+        priority: stressCombined < thresholds.fpeMinimum ? 1 : 3,
+      ),
+    ];
+
+    final cards = <RegulatoryAnalysisCard>[
+      RegulatoryAnalysisCard(
+        title: 'Adequation des fonds propres',
+        ruleReference: 'Art. 91 / 103',
+        status: _statusFromGap(fpeRatio - thresholds.fpeTarget),
+        keyValue: _pct(fpeRatio),
+        keyLabel: 'Ratio FPE',
+        diagnostic:
+            'Votre ratio FPE est de ${_pct(fpeRatio)} pour une cible UEMOA de ${_pct(thresholds.fpeTarget)}.',
+        cause: rootCauses.first,
+        recommendation: actions.first.action,
+        icon: Icons.account_balance_rounded,
+      ),
+      RegulatoryAnalysisCard(
+        title: 'Coussin de conservation',
+        ruleReference: 'Art. 96',
+        status: conservation.minimumRetention >= 0.8
+            ? RegulatoryStatus.warning
+            : RegulatoryStatus.green,
+        keyValue: _pct(conservation.minimumRetention),
+        keyLabel: 'Benefices a conserver',
+        diagnostic:
+            'Le CET1 de ${_pct(cet1Ratio)} positionne la banque dans la tranche ${conservation.bandLabel}.',
+        cause:
+            'Une distribution trop elevee reduirait le CET1 et durcirait les restrictions.',
+        recommendation:
+            'Limiter la distribution a ${_pct(1 - conservation.minimumRetention)} des benefices distribuables.',
+        icon: Icons.shield_rounded,
+      ),
+      RegulatoryAnalysisCard(
+        title: 'Stress-test',
+        ruleReference: 'Art. 544-545',
+        status: _statusFromGap(stressCombined - thresholds.fpeMinimum),
+        keyValue: _pct(stressCombined),
+        keyLabel: 'FPE stress combine',
+        diagnostic:
+            'Sous scenario combine, le ratio tomberait a ${_pct(stressCombined)}.',
+        cause:
+            'La sensibilite vient surtout des poches de credit concentrees et des RWA operationnels.',
+        recommendation:
+            'Construire un coussin additionnel de ${formatCurrencyCompact(math.max(0, thresholds.fpeTarget * allRwa - stressCombined * allRwa))}.',
+        icon: Icons.thunderstorm_rounded,
+      ),
+      RegulatoryAnalysisCard(
+        title: 'Grands risques',
+        ruleReference: 'Art. 451',
+        status: largeRiskRatio > thresholds.largeRiskLimit
+            ? RegulatoryStatus.critical
+            : largeRisks.isNotEmpty
+                ? RegulatoryStatus.warning
+                : RegulatoryStatus.green,
+        keyValue: _pct(largeRiskRatio),
+        keyLabel: largestExposure?.counterparty ?? 'Top client',
+        diagnostic:
+            '${largestExposure?.counterparty ?? 'La premiere contrepartie'} represente ${_pct(largeRiskRatio)} du Tier 1.',
+        cause:
+            '${largeRisks.length} contrepartie(s) atteignent au moins 10% du Tier 1.',
+        recommendation:
+            'Ramener la premiere exposition vers 15% du T1 sur 12 mois.',
+        icon: Icons.center_focus_strong_rounded,
+      ),
+      RegulatoryAnalysisCard(
+        title: 'IRRBB',
+        ruleReference: 'Art. 538',
+        status: irrbbRatio > 0.15
+            ? RegulatoryStatus.warning
+            : RegulatoryStatus.green,
+        keyValue: _pct(irrbbRatio),
+        keyLabel: 'Delta VE / T1',
+        diagnostic:
+            'Le choc +200 bps est estime a ${_pct(irrbbRatio)} du T1.',
+        cause:
+            'Le proxy retient la part des expositions longues et la concentration credit.',
+        recommendation:
+            'Tester des swaps de taux ou augmenter la part des credits a taux variable.',
+        icon: Icons.show_chart_rounded,
+      ),
+      RegulatoryAnalysisCard(
+        title: 'Composition des RWA',
+        ruleReference: 'Capital management',
+        status: operationalShare > 0.10
+            ? RegulatoryStatus.warning
+            : RegulatoryStatus.green,
+        keyValue: _pct(_safeRatio(creditRwa, allRwa)),
+        keyLabel: 'Poids credit',
+        diagnostic:
+            'Credit ${_pct(_safeRatio(creditRwa, allRwa))}, marche ${_pct(_safeRatio(marketRwa, allRwa))}, operationnel ${_pct(operationalShare)}.',
+        cause:
+            'Le portefeuille reste pilote par le credit, avec un besoin de lecture capital par segment.',
+        recommendation:
+            'Prioriser les segments consommant le plus de RWA par unite de revenu.',
+        icon: Icons.donut_small_rounded,
+      ),
+      RegulatoryAnalysisCard(
+        title: 'Plan de capital',
+        ruleReference: 'Art. 522-525',
+        status: capitalGap < 0
+            ? RegulatoryStatus.critical
+            : capitalGap < requiredCapital * 0.08
+                ? RegulatoryStatus.warning
+                : RegulatoryStatus.green,
+        keyValue: formatCurrencyCompact(capitalGap),
+        keyLabel: 'Gap capital',
+        diagnostic:
+            'Capital disponible ${formatCurrencyCompact(fpe)} vs capital requis ${formatCurrencyCompact(requiredCapital)}.',
+        cause:
+            'La croissance projetee des RWA absorbe la generation interne de capital.',
+        recommendation: actions.first.action,
+        icon: Icons.fact_check_rounded,
+      ),
+    ];
+
+    final alertTimeline = <RegulatoryAlertEvent>[
+      for (var index = 0; index < cards.length; index++)
+        if (cards[index].status != RegulatoryStatus.green)
+          RegulatoryAlertEvent(
+            date: now.subtract(Duration(days: index * 2)),
+            title: cards[index].title,
+            detail: cards[index].diagnostic,
+            status: cards[index].status,
+          ),
+    ];
+
+    final status = diagnostics.any((item) => item.severity == 'CRITICAL')
+        ? RegulatoryStatus.critical
+        : diagnostics.any(
+            (item) => item.severity == 'HIGH' || item.severity == 'MEDIUM',
+          )
+            ? RegulatoryStatus.warning
+            : RegulatoryStatus.green;
+
+    return RegulatoryAnalysisReport(
+      analysisId:
+          'ANALYSE_REGLEMENTAIRE_${now.year}_Q${((now.month - 1) ~/ 3) + 1}',
+      timestamp: now,
+      regulatoryZone: zone,
+      status: status,
+      availableCapital: fpe,
+      requiredCapital: requiredCapital,
+      economicCapital: economicCapital,
+      diagnostics: diagnostics,
+      rootCauses: rootCauses,
+      recommendations: actions,
+      analysisCards: cards,
+      alertTimeline: alertTimeline,
+      consultantNarrative: _buildNarrative(
+        fpeRatio: fpeRatio,
+        thresholds: thresholds,
+        capitalGap: capitalGap,
+        topSector: topSector,
+        largeRisks: largeRisks.length,
+        conservation: conservation,
+        exposureCount: exposures.exposures.length,
+      ),
     );
   }
 
@@ -130,17 +415,13 @@ class AnalyseService {
     int exposureCount,
   ) {
     if (ratings.isEmpty || exposureCount == 0) return 5.0;
-
     var score = 0.0;
     var totalWeight = 0.0;
-
     for (final entry in ratings) {
       final weight = entry.percentage;
-      final ratingScore = _ratingToScore(entry.label);
-      score += ratingScore * weight;
+      score += _ratingToScore(entry.label) * weight;
       totalWeight += weight;
     }
-
     return totalWeight > 0 ? score / totalWeight : 5.0;
   }
 
@@ -159,7 +440,6 @@ class AnalyseService {
     List<DistributionEntry> categories,
     List<DistributionEntry> countries,
   ) {
-    // Indice de Herfindahl-Hirschman pour mesurer la concentration
     var hhi = 0.0;
     for (final entry in categories) {
       hhi += entry.percentage * entry.percentage;
@@ -167,50 +447,35 @@ class AnalyseService {
     for (final entry in countries) {
       hhi += entry.percentage * entry.percentage;
     }
-
-    // Normalisation (0 = bien diversifié, 1 = très concentré)
-    return (hhi / 2).clamp(0.0, 1.0);
+    return (hhi / 2).clamp(0.0, 1.0).toDouble();
   }
 
-  double _calculateRwaReductionPotential(
-    List<dynamic> exposures,
-    dynamic crmSummary,
-  ) {
-    // Estimation du potentiel de réduction via optimisation CRM
-    final totalRwa = crmSummary.totalRwaAfter as double;
-    return totalRwa * 0.15; // 15% de potentiel d'optimisation
+  double _calculateRwaReductionPotential(CrmSummary crmSummary) {
+    final observedSaving = crmSummary.totalRwaBefore - crmSummary.totalRwaAfter;
+    return math.max(observedSaving, crmSummary.totalRwaAfter * 0.12);
   }
 
   List<String> _generateSectorInsights(List<DistributionEntry> distribution) {
-    final insights = <String>[];
-    if (distribution.isEmpty) return insights;
-
+    if (distribution.isEmpty) return const [];
     final sorted = List<DistributionEntry>.from(distribution)
       ..sort((a, b) => b.percentage.compareTo(a.percentage));
-
+    final insights = <String>[];
     if (sorted.first.percentage > 0.4) {
       insights.add(
-        'Forte concentration sur ${sorted.first.label} (${(sorted.first.percentage * 100).toStringAsFixed(0)}%)',
+        'Forte concentration sur ${sorted.first.label} (${_pct(sorted.first.percentage)})',
       );
     }
-
     if (sorted.length >= 3) {
-      final top3 = sorted.take(3).fold<double>(
-            0.0,
-            (sum, e) => sum + e.percentage,
-          );
+      final top3 = sorted.take(3).fold<double>(0.0, (sum, e) => sum + e.percentage);
       if (top3 > 0.7) {
-        insights.add('Les 3 premiers secteurs représentent 70%+ du portefeuille');
+        insights.add('Les 3 premiers segments representent ${_pct(top3)} du RWA.');
       }
     }
-
     return insights;
   }
 
   List<String> _generateRatingInsights(List<DistributionEntry> distribution) {
-    final insights = <String>[];
-    if (distribution.isEmpty) return insights;
-
+    if (distribution.isEmpty) return const [];
     final investmentGrade = distribution.where((e) {
       final r = e.label.toUpperCase();
       return r.startsWith('AAA') ||
@@ -218,23 +483,16 @@ class AnalyseService {
           r.startsWith('A') ||
           r.startsWith('BBB');
     }).fold<double>(0.0, (sum, e) => sum + e.percentage);
-
     if (investmentGrade > 0.7) {
-      insights.add(
-        'Portefeuille de qualité: ${(investmentGrade * 100).toStringAsFixed(0)}% investment grade',
-      );
-    } else if (investmentGrade < 0.4) {
-      insights.add(
-        'Attention: seulement ${(investmentGrade * 100).toStringAsFixed(0)}% investment grade',
-      );
+      return ['Portefeuille de qualite: ${_pct(investmentGrade)} investment grade.'];
     }
-
-    return insights;
+    if (investmentGrade < 0.4) {
+      return ['Attention: seulement ${_pct(investmentGrade)} investment grade.'];
+    }
+    return ['Qualite de signature equilibree: ${_pct(investmentGrade)} investment grade.'];
   }
 
-  DistributionEntry? _findTopConcentration(
-    List<DistributionEntry> distribution,
-  ) {
+  DistributionEntry? _findTopConcentration(List<DistributionEntry> distribution) {
     if (distribution.isEmpty) return null;
     final sorted = List<DistributionEntry>.from(distribution)
       ..sort((a, b) => b.percentage.compareTo(a.percentage));
@@ -248,15 +506,10 @@ class AnalyseService {
     }).fold<double>(0.0, (sum, e) => sum + e.percentage);
   }
 
-  String? _calculateWeightedAverageRating(
-    List<DistributionEntry> distribution,
-  ) {
+  String? _calculateWeightedAverageRating(List<DistributionEntry> distribution) {
     if (distribution.isEmpty) return null;
-
-    // Calcul simplifié : prendre la notation avec le plus gros poids
     final sorted = List<DistributionEntry>.from(distribution)
       ..sort((a, b) => b.percentage.compareTo(a.percentage));
-
     return sorted.first.label;
   }
 
@@ -268,79 +521,50 @@ class AnalyseService {
       return RwaEvolutionPoint(
         label: entry.value.label,
         value: entry.value.value,
-        date: DateTime(now.year, now.month - (12 - entry.key), 1),
+        date: DateTime(now.year, now.month + entry.key, 1),
       );
     }).toList();
   }
 
   List<PrudentialAlert> _generatePrudentialAlerts(
     DashboardSnapshot dashboard,
+    RegulatoryAnalysisReport report,
     double concentrationLevel,
     double lowRatedExposure,
   ) {
-    final alerts = <PrudentialAlert>[];
-
-    // Alerte concentration
+    final alerts = <PrudentialAlert>[
+      for (final diagnostic in report.diagnostics)
+        if (diagnostic.severity == 'CRITICAL' || diagnostic.severity == 'HIGH')
+          PrudentialAlert(
+            severity: diagnostic.severity.toLowerCase(),
+            message: diagnostic.message,
+            action: report.recommendations.first.action,
+          ),
+    ];
     if (concentrationLevel > 0.4) {
       alerts.add(
         const PrudentialAlert(
           severity: 'high',
-          message: 'Concentration de portefeuille élevée',
+          message: 'Concentration de portefeuille elevee',
           action: 'Diversifier les expositions sur plusieurs secteurs et pays',
         ),
       );
     }
-
-    // Alerte qualité crédit
     if (lowRatedExposure > 0.2) {
       alerts.add(
         const PrudentialAlert(
           severity: 'medium',
-          message: 'Exposition significative aux notations spéculatives',
-          action: 'Renforcer les garanties ou réduire ces expositions',
+          message: 'Exposition significative aux notations speculatives',
+          action: 'Renforcer les garanties ou reduire ces expositions',
         ),
       );
     }
-
-    // Alerte ratio de solvabilité
-    final solvencyMetric = dashboard.metrics.firstWhere(
-      (m) => m.key == 'solvabilite',
-      orElse: () => const DashboardMetric(
-        key: 'solvabilite',
-        label: 'Solvabilité',
-        value: 0.15,
-        variation: '0%',
-        trend: [],
-      ),
-    );
-
-    if (solvencyMetric.value < 0.09) {
-      alerts.add(
-        const PrudentialAlert(
-          severity: 'critical',
-          message: 'Ratio de solvabilité sous le minimum réglementaire (9%)',
-          action: 'Augmenter les fonds propres ou réduire les RWA',
-        ),
-      );
-    } else if (solvencyMetric.value < 0.115) {
-      alerts.add(
-        const PrudentialAlert(
-          severity: 'medium',
-          message: 'Ratio de solvabilité proche du seuil cible (11.5%)',
-          action: 'Maintenir une marge de sécurité prudentielle',
-        ),
-      );
-    }
-
     return alerts;
   }
 
-  List<RiskExposure> _identifyTopRiskExposures(
-    List<PortfolioRow> portfolio,
-  ) {
+  List<RiskExposure> _identifyTopRiskExposures(List<PortfolioRow> portfolio) {
     final sorted = List<PortfolioRow>.from(portfolio)
       ..sort((a, b) => b.rwa.compareTo(a.rwa));
-
     return sorted.take(10).map((row) {
       return RiskExposure(
         counterparty: row.counterparty,
@@ -357,123 +581,267 @@ class AnalyseService {
     double crmCoverage,
     double reductionPotential,
     List<RiskExposure> topRisks,
+    RegulatoryAnalysisReport report,
   ) {
     final recommendations = <AnalyseRecommendation>[];
-
-    // Recommandation: Diversification
+    for (final action in report.recommendations) {
+      recommendations.add(
+        AnalyseRecommendation(
+          title: action.priority == 1 ? 'Action prudentielle prioritaire' : 'Pilotage du capital',
+          description: action.action,
+          impact: action.priority == 1 ? 'high' : 'medium',
+          effort: action.priority == 1 ? 'medium' : 'low',
+          priority: action.priority == 1 ? 'high' : 'medium',
+          category: 'regulatory',
+          estimatedSaving: report.capitalGap < 0 ? report.capitalGap.abs() : null,
+          actions: [
+            'Documenter la cause dans le dossier trimestriel.',
+            'Affecter un responsable et une date cible.',
+          ],
+        ),
+      );
+    }
     if (concentrationLevel > 0.3) {
       recommendations.add(
         AnalyseRecommendation(
           title: 'Diversifier le portefeuille',
           description:
-              'Le niveau de concentration actuel (${(concentrationLevel * 100).toStringAsFixed(0)}%) expose la banque à un risque systémique. Une diversification géographique et sectorielle est recommandée.',
+              'Le niveau de concentration actuel (${_pct(concentrationLevel)}) augmente la sensibilite au Pilier 2.',
           impact: 'high',
           effort: 'medium',
           priority: 'high',
           category: 'diversification',
           estimatedSaving: null,
-          actions: [
-            'Identifier de nouveaux secteurs et zones géographiques',
-            'Fixer des limites de concentration par secteur (max 25%)',
-            'Réviser les politiques d\'octroi de crédit',
+          actions: const [
+            'Fixer des limites sectorielles et groupe client.',
+            'Revoir les tickets des 10 premieres contreparties.',
           ],
         ),
       );
     }
-
-    // Recommandation: Améliorer la couverture CRM
     if (crmCoverage < 0.5) {
       recommendations.add(
         AnalyseRecommendation(
           title: 'Augmenter la couverture CRM',
           description:
-              'Seulement ${(crmCoverage * 100).toStringAsFixed(0)}% des expositions sont couvertes par des techniques de réduction du risque. Une meilleure utilisation du CRM peut réduire significativement le capital requis.',
+              'La couverture CRM de ${_pct(crmCoverage)} laisse un potentiel de reduction de RWA.',
           impact: 'high',
           effort: 'medium',
           priority: 'high',
           category: 'crm',
           estimatedSaving: reductionPotential * 0.3,
-          actions: [
-            'Exiger des garanties sur les expositions non notées',
-            'Négocier des collatéraux pour les contreparties BB/B',
-            'Utiliser l\'assurance-crédit pour les PME',
+          actions: const [
+            'Identifier les expositions non garanties.',
+            'Prioriser les garanties eligibles au sens prudentiel.',
           ],
         ),
       );
     }
-
-    // Recommandation: Réduire les expositions spéculatives
-    if (lowRatedExposure > 0.15) {
+    if (lowRatedExposure > 0.15 || topRisks.isNotEmpty) {
       recommendations.add(
         AnalyseRecommendation(
-          title: 'Réduire les expositions spéculatives',
+          title: 'Optimiser les expositions a fort RWA',
           description:
-              '${(lowRatedExposure * 100).toStringAsFixed(0)}% du portefeuille présente une notation spéculative (BB/B). Ces expositions génèrent un RWA élevé et augmentent le risque de défaut.',
-          impact: 'high',
-          effort: 'high',
+              'Les notations faibles ou non notees consomment davantage de capital.',
+          impact: 'medium',
+          effort: 'medium',
           priority: 'medium',
           category: 'quality',
           estimatedSaving: reductionPotential * 0.25,
-          actions: [
-            'Établir un plan de sortie progressive',
-            'Renégocier les conditions avec garanties renforcées',
-            'Provisionner adéquatement ces expositions',
+          actions: const [
+            'Renforcer la documentation financiere des contreparties.',
+            'Convertir les dossiers les plus consommateurs en expositions mieux collateralisees.',
           ],
         ),
       );
     }
-
-    // Recommandation: Optimiser les expositions à fort RWA
-    if (topRisks.isNotEmpty) {
-      final topRwa = topRisks.take(3).fold<double>(0.0, (sum, e) => sum + e.rwa);
-      recommendations.add(
-        AnalyseRecommendation(
-          title: 'Optimiser les top 3 expositions à fort RWA',
-          description:
-              'Les 3 principales expositions représentent un RWA significatif. Une optimisation ciblée peut générer d\'importantes économies de capital.',
-          impact: 'medium',
-          effort: 'low',
-          priority: 'high',
-          category: 'optimization',
-          estimatedSaving: topRwa * 0.2,
-          actions: [
-            'Restructurer avec garanties étatiques ou bancaires',
-            'Titriser une partie de ces expositions',
-            'Utiliser des dérivés de crédit (CDS)',
-          ],
-        ),
-      );
-    }
-
-    // Recommandation: Améliorer la notation des contreparties
-    recommendations.add(
-      const AnalyseRecommendation(
-        title: 'Programme d\'accompagnement crédit',
-        description:
-            'Mettre en place un programme pour améliorer la notation interne des contreparties prometteuses, réduisant ainsi mécaniquement le RWA.',
-        impact: 'medium',
-        effort: 'medium',
-        priority: 'low',
-        category: 'quality',
-        estimatedSaving: null,
-        actions: [
-          'Former les analystes crédit aux meilleures pratiques',
-          'Développer un système de notation interne robuste',
-          'Accompagner les clients dans l\'amélioration de leur profil',
-        ],
-      ),
-    );
-
-    // Trier par priorité
     recommendations.sort((a, b) {
-      final priorityOrder = {'high': 0, 'medium': 1, 'low': 2};
-      return (priorityOrder[a.priority] ?? 99)
-          .compareTo(priorityOrder[b.priority] ?? 99);
+      const order = {'high': 0, 'medium': 1, 'low': 2};
+      return (order[a.priority] ?? 99).compareTo(order[b.priority] ?? 99);
     });
-
     return recommendations;
   }
+
+  RegulatoryDiagnostic _ratioDiagnostic({
+    required String ruleReference,
+    required String label,
+    required double currentRatio,
+    required double threshold,
+    bool higherIsBad = false,
+  }) {
+    final gap = higherIsBad ? threshold - currentRatio : currentRatio - threshold;
+    final compliant = higherIsBad ? currentRatio <= threshold : currentRatio >= threshold;
+    final severity = compliant
+        ? 'LOW'
+        : gap.abs() >= 0.015
+            ? 'CRITICAL'
+            : 'HIGH';
+    final comparator = higherIsBad ? 'limite' : 'cible';
+    final direction = compliant ? 'respecte' : 'ne respecte pas';
+    return RegulatoryDiagnostic(
+      ruleReference: ruleReference,
+      threshold: threshold,
+      currentValue: currentRatio,
+      gap: gap,
+      message:
+          'Votre ratio $label est de ${_pct(currentRatio)}. Il $direction la $comparator de ${_pct(threshold)} (ecart ${_pct(gap)}).',
+      severity: severity,
+    );
+  }
+
+  _RegulatoryThresholds _thresholdsFor(RegulatoryZone zone) {
+    switch (zone) {
+      case RegulatoryZone.cemac:
+        return const _RegulatoryThresholds(
+          cet1Minimum: 0.045,
+          cet1Target: 0.070,
+          tier1Target: 0.085,
+          fpeMinimum: 0.080,
+          fpeTarget: 0.105,
+          largeRiskLimit: 0.25,
+        );
+      case RegulatoryZone.uemoa:
+        return const _RegulatoryThresholds(
+          cet1Minimum: 0.050,
+          cet1Target: 0.075,
+          tier1Target: 0.090,
+          fpeMinimum: 0.090,
+          fpeTarget: 0.115,
+          largeRiskLimit: 0.25,
+        );
+    }
+  }
+
+  _ConservationBand _conservationRequirement(
+    double cet1Ratio,
+    _RegulatoryThresholds thresholds,
+  ) {
+    final buffer = thresholds.cet1Target - thresholds.cet1Minimum;
+    final progress = _safeRatio(cet1Ratio - thresholds.cet1Minimum, buffer);
+    if (progress <= 0) {
+      return const _ConservationBand('[sous minimum CET1]', 1.0);
+    }
+    if (progress < 0.25) return const _ConservationBand('[0%; 25%]', 1.0);
+    if (progress < 0.50) return const _ConservationBand('[25%; 50%]', 0.8);
+    if (progress < 0.75) return const _ConservationBand('[50%; 75%]', 0.6);
+    if (progress < 1.0) return const _ConservationBand('[75%; 100%]', 0.4);
+    return const _ConservationBand('[coussin constitue]', 0.0);
+  }
+
+  String _buildNarrative({
+    required double fpeRatio,
+    required _RegulatoryThresholds thresholds,
+    required double capitalGap,
+    required DistributionEntry? topSector,
+    required int largeRisks,
+    required _ConservationBand conservation,
+    required int exposureCount,
+  }) {
+    final bufferText = capitalGap >= 0
+        ? 'La banque conserve une marge de ${formatCurrencyCompact(capitalGap)} au-dessus de la cible.'
+        : 'Il manque ${formatCurrencyCompact(capitalGap.abs())} pour revenir a la cible.';
+    return 'Votre ratio de solvabilite est de ${_pct(fpeRatio)} contre une cible UEMOA de ${_pct(thresholds.fpeTarget)}. $bufferText '
+        'La cause principale identifiee est la concentration du RWA sur ${topSector?.label ?? 'le segment dominant'}, avec $largeRisks grand(s) risque(s) a surveiller sur $exposureCount exposition(s). '
+        'A court terme, conservez ${_pct(conservation.minimumRetention)} des benefices distribuables, puis arbitrez entre augmentation de FPE, ralentissement des actifs les plus consommateurs et renforcement des garanties eligibles.';
+  }
+
+  double _totalRwa(DashboardSnapshot dashboard) {
+    final byRows = dashboard.portfolioOverview.fold<double>(
+      0,
+      (sum, item) => sum + item.rwa,
+    );
+    if (byRows > 0) return byRows;
+    return dashboard.rwaCategoryDistribution.fold<double>(
+      0,
+      (sum, item) => sum + item.amount,
+    );
+  }
+
+  double _metricValue(
+    DashboardSnapshot dashboard,
+    String key, {
+    double fallback = 0,
+  }) {
+    return dashboard.metrics
+        .firstWhere(
+          (item) => item.key == key,
+          orElse: () => DashboardMetric(
+            key: key,
+            label: key,
+            value: fallback,
+            variation: '0%',
+            trend: const [],
+          ),
+        )
+        .value;
+  }
+
+  double _estimateMarketRwa(double creditRwa) => creditRwa * 0.05;
+
+  double _estimateOperationalRwa(double creditRwa, CrmSummary crmSummary) {
+    final base = crmSummary.totalCapitalAfter > 0
+        ? crmSummary.totalCapitalAfter / 0.08 * 0.18
+        : creditRwa * 0.08;
+    return base.clamp(creditRwa * 0.04, creditRwa * 0.14).toDouble();
+  }
+
+  double _estimateIrrbbShockRatio(DashboardSnapshot dashboard) {
+    final topCountry = _topDistribution(dashboard.countryDistribution);
+    final concentration = topCountry?.percentage ?? 0.0;
+    return (0.055 + concentration * 0.08).clamp(0.0, 0.24).toDouble();
+  }
+
+  PortfolioRow? _largestExposure(List<PortfolioRow> rows) {
+    if (rows.isEmpty) return null;
+    final sorted = List<PortfolioRow>.from(rows)
+      ..sort((a, b) => b.rwa.compareTo(a.rwa));
+    return sorted.first;
+  }
+
+  DistributionEntry? _topDistribution(List<DistributionEntry> entries) {
+    if (entries.isEmpty) return null;
+    final sorted = List<DistributionEntry>.from(entries)
+      ..sort((a, b) => b.percentage.compareTo(a.percentage));
+    return sorted.first;
+  }
+
+  RegulatoryStatus _statusFromGap(double gap) {
+    if (gap >= 0) return RegulatoryStatus.green;
+    if (gap > -0.015) return RegulatoryStatus.warning;
+    return RegulatoryStatus.critical;
+  }
+
+  double _safeRatio(double numerator, double denominator) {
+    if (denominator == 0) return 0.0;
+    return numerator / denominator;
+  }
+
+  String _pct(double value) => '${(value * 100).toStringAsFixed(1)}%';
 }
 
+class _RegulatoryThresholds {
+  const _RegulatoryThresholds({
+    required this.cet1Minimum,
+    required this.cet1Target,
+    required this.tier1Target,
+    required this.fpeMinimum,
+    required this.fpeTarget,
+    required this.largeRiskLimit,
+  });
 
+  final double cet1Minimum;
+  final double cet1Target;
+  final double tier1Target;
+  final double fpeMinimum;
+  final double fpeTarget;
+  final double largeRiskLimit;
+}
 
+class _ConservationBand {
+  const _ConservationBand(this.bandLabel, this.minimumRetention);
+
+  final String bandLabel;
+  final double minimumRetention;
+
+  double get distributableRatio => 1 - minimumRetention;
+}

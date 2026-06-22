@@ -12,13 +12,27 @@ import '../../../shared/widgets/section_card.dart';
 
 /// Ecran d'evaluation interne du capital (ICAAP).
 /// Conforme aux exigences Bâle III et dispositif prudentiel BCEAO/UMOA.
+enum IcapView {
+  dashboard,
+  capitalEconomique,
+  capitalReglementaire,
+  appetenceRisque,
+  buffersPrudentiels,
+  projectionCapital,
+  analyseSolvabilite,
+  plansCapital,
+  reporting,
+}
+
 class IcapScreen extends StatefulWidget {
   const IcapScreen({
     super.key,
     required this.api,
+    this.view = IcapView.dashboard,
   });
 
   final RwaApiService api;
+  final IcapView view;
 
   @override
   State<IcapScreen> createState() => _IcapScreenState();
@@ -31,6 +45,7 @@ class _IcapScreenState extends State<IcapScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final content = _contentFor(widget.view, isDark);
 
     return SingleChildScrollView(
       padding: AppSpacing.pageInsets,
@@ -38,22 +53,113 @@ class _IcapScreenState extends State<IcapScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           PageHeader(
-            title: 'ICAAP',
-            subtitle:
-                'Evaluation interne de l\'adéquation du capital et des besoins de solvabilité',
+            title: content.title,
+            subtitle: content.subtitle,
             trailing: _buildScenarioSelector(isDark),
           ),
           AppSpacing.gapLg,
-          _buildCapitalOverviewSection(isDark),
-          AppSpacing.gapMd,
-          _buildPrudentialRequirementsSection(isDark),
-          AppSpacing.gapMd,
-          _buildRegulatoryRatiosSection(isDark),
-          AppSpacing.gapMd,
-          _buildStressSimulationSection(isDark),
+          ...content.sections,
         ],
       ),
     );
+  }
+
+  _IcapViewContent _contentFor(IcapView view, bool isDark) {
+    List<Widget> spaced(List<Widget> sections) {
+      return [
+        for (var index = 0; index < sections.length; index++) ...[
+          if (index > 0) AppSpacing.gapMd,
+          sections[index],
+        ],
+      ];
+    }
+
+    return switch (view) {
+      IcapView.dashboard => _IcapViewContent(
+          title: 'Dashboard ICAAP',
+          subtitle:
+              'Evaluation interne de l\'adequation du capital et synthese des besoins de solvabilite',
+          sections: spaced([
+            _buildCapitalOverviewSection(isDark),
+            _buildPrudentialRequirementsSection(isDark),
+            _buildRegulatoryRatiosSection(isDark),
+            _buildStressSimulationSection(isDark),
+          ]),
+        ),
+      IcapView.capitalEconomique => _IcapViewContent(
+          title: 'Capital economique',
+          subtitle:
+              'Mesure interne des besoins de capital par type de risque et scenario',
+          sections: spaced([
+            _buildCapitalOverviewSection(isDark),
+            _buildEconomicCapitalSection(isDark),
+            _buildStressSimulationSection(isDark),
+          ]),
+        ),
+      IcapView.capitalReglementaire => _IcapViewContent(
+          title: 'Capital reglementaire',
+          subtitle:
+              'Exigences prudentielles, ratios reglementaires et conformite solvabilite',
+          sections: spaced([
+            _buildPrudentialRequirementsSection(isDark),
+            _buildRegulatoryRatiosSection(isDark),
+          ]),
+        ),
+      IcapView.appetenceRisque => _IcapViewContent(
+          title: 'Appetence au risque',
+          subtitle:
+              'Seuils ICAAP, limites internes et suivi des marges de securite',
+          sections: spaced([
+            _buildRiskAppetiteSection(isDark),
+            _buildRegulatoryRatiosSection(isDark),
+          ]),
+        ),
+      IcapView.buffersPrudentiels => _IcapViewContent(
+          title: 'Buffers prudentiels',
+          subtitle:
+              'Coussins de conservation, contracycliques et marge de capital excedentaire',
+          sections: spaced([
+            _buildBufferSection(isDark),
+            _buildPrudentialRequirementsSection(isDark),
+          ]),
+        ),
+      IcapView.projectionCapital => _IcapViewContent(
+          title: 'Projection capital',
+          subtitle:
+              'Projection du capital disponible et des besoins futurs sous stress',
+          sections: spaced([
+            _buildProjectionSection(isDark),
+            _buildStressSimulationSection(isDark),
+          ]),
+        ),
+      IcapView.analyseSolvabilite => _IcapViewContent(
+          title: 'Analyse solvabilite',
+          subtitle:
+              'Diagnostic des ratios de solvabilite et identification des zones d\'attention',
+          sections: spaced([
+            _buildRegulatoryRatiosSection(isDark),
+            _buildSolvencyAnalysisSection(isDark),
+          ]),
+        ),
+      IcapView.plansCapital => _IcapViewContent(
+          title: 'Plans de capital',
+          subtitle:
+              'Actions de pilotage et leviers de renforcement des fonds propres',
+          sections: spaced([
+            _buildCapitalPlanSection(isDark),
+            _buildProjectionSection(isDark),
+          ]),
+        ),
+      IcapView.reporting => _IcapViewContent(
+          title: 'Reporting ICAAP',
+          subtitle:
+              'Synthese de gouvernance, indicateurs cles et pistes de restitution',
+          sections: spaced([
+            _buildReportingSection(isDark),
+            _buildCapitalOverviewSection(isDark),
+          ]),
+        ),
+    };
   }
 
   Widget _buildScenarioSelector(bool isDark) {
@@ -828,6 +934,293 @@ class _IcapScreenState extends State<IcapScreen> {
     );
   }
 
+  Widget _buildEconomicCapitalSection(bool isDark) {
+    final data = _getCapitalData();
+    return _buildIcapStatusSection(
+      title: 'Allocation du capital economique',
+      isDark: isDark,
+      items: [
+        _IcapStatusItem(
+          label: 'Risque de credit',
+          value: AppFormatters.currency(data.requirements.creditRiskCapital),
+          detail: 'Pilier dominant du profil ICAAP',
+          icon: Icons.credit_card_rounded,
+          color: AppColors.counterpartyBlue,
+        ),
+        _IcapStatusItem(
+          label: 'Risque de marche',
+          value: AppFormatters.currency(data.requirements.marketRiskCapital),
+          detail: 'Exposition aux variations de taux et prix',
+          icon: Icons.show_chart_rounded,
+          color: AppColors.marketNeutral,
+        ),
+        _IcapStatusItem(
+          label: 'Risque operationnel',
+          value: AppFormatters.currency(data.requirements.operationalRiskCapital),
+          detail: 'Pertes internes, incidents et controles',
+          icon: Icons.shield_outlined,
+          color: AppColors.operationalMedium,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRiskAppetiteSection(bool isDark) {
+    return _buildIcapStatusSection(
+      title: 'Limites et appetence ICAAP',
+      isDark: isDark,
+      items: const [
+        _IcapStatusItem(
+          label: 'CET1 cible interne',
+          value: '12,0 %',
+          detail: 'Seuil de pilotage au-dessus du minimum prudentiel',
+          icon: Icons.verified_rounded,
+          color: AppColors.success,
+        ),
+        _IcapStatusItem(
+          label: 'Alerte solvabilite',
+          value: '10,5 %',
+          detail: 'Declenchement comite capital et revue du plan',
+          icon: Icons.notifications_rounded,
+          color: AppColors.warning,
+        ),
+        _IcapStatusItem(
+          label: 'Limite stress severe',
+          value: '8,0 %',
+          detail: 'Plan de remediation requis sous scenario adverse',
+          icon: Icons.warning_rounded,
+          color: AppColors.danger,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBufferSection(bool isDark) {
+    return _buildIcapStatusSection(
+      title: 'Synthese des buffers prudentiels',
+      isDark: isDark,
+      items: const [
+        _IcapStatusItem(
+          label: 'Conservation',
+          value: '2,5 %',
+          detail: 'Coussin permanent en CET1',
+          icon: Icons.savings_rounded,
+          color: AppColors.prudentialBuffer,
+        ),
+        _IcapStatusItem(
+          label: 'Contracyclique',
+          value: '1,5 %',
+          detail: 'Hypothese activee dans le scenario courant',
+          icon: Icons.autorenew_rounded,
+          color: AppColors.warning,
+        ),
+        _IcapStatusItem(
+          label: 'Marge disponible',
+          value: '6,1 pts',
+          detail: 'Ecart estime entre ratio total et cible interne',
+          icon: Icons.trending_up_rounded,
+          color: AppColors.success,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProjectionSection(bool isDark) {
+    return _buildIcapStatusSection(
+      title: 'Projection a 3 ans',
+      isDark: isDark,
+      items: const [
+        _IcapStatusItem(
+          label: 'Capital disponible N+1',
+          value: '+8,4 %',
+          detail: 'Croissance organique des fonds propres',
+          icon: Icons.open_in_new_rounded,
+          color: AppColors.success,
+        ),
+        _IcapStatusItem(
+          label: 'RWA projetes N+1',
+          value: '+6,7 %',
+          detail: 'Effet volume et mix portefeuille',
+          icon: Icons.functions_rounded,
+          color: AppColors.accent,
+        ),
+        _IcapStatusItem(
+          label: 'Marge post-stress',
+          value: '2,8 pts',
+          detail: 'Coussin residuel apres choc severe',
+          icon: Icons.speed_rounded,
+          color: AppColors.warning,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSolvencyAnalysisSection(bool isDark) {
+    return _buildIcapStatusSection(
+      title: 'Lecture solvabilite',
+      isDark: isDark,
+      items: const [
+        _IcapStatusItem(
+          label: 'Position actuelle',
+          value: 'Conforme',
+          detail: 'Ratios au-dessus des seuils internes',
+          icon: Icons.check_circle_rounded,
+          color: AppColors.success,
+        ),
+        _IcapStatusItem(
+          label: 'Sensibilite RWA',
+          value: 'Moyenne',
+          detail: 'Surveillance recommandee sur credit et marche',
+          icon: Icons.analytics_rounded,
+          color: AppColors.warning,
+        ),
+        _IcapStatusItem(
+          label: 'Priorite',
+          value: 'Capital Tier 1',
+          detail: 'Renforcer la qualite des fonds propres',
+          icon: Icons.account_balance_rounded,
+          color: AppColors.prudentialCapital,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCapitalPlanSection(bool isDark) {
+    return _buildIcapStatusSection(
+      title: 'Plan d\'actions capital',
+      isDark: isDark,
+      items: const [
+        _IcapStatusItem(
+          label: 'Resultats retenus',
+          value: '45 %',
+          detail: 'Affectation cible pour renforcer CET1',
+          icon: Icons.inventory_2_rounded,
+          color: AppColors.success,
+        ),
+        _IcapStatusItem(
+          label: 'Optimisation RWA',
+          value: 'Priorite 1',
+          detail: 'Revue des garanties et ponderations',
+          icon: Icons.tune_rounded,
+          color: AppColors.accent,
+        ),
+        _IcapStatusItem(
+          label: 'Plan contingent',
+          value: 'Pret',
+          detail: 'Leviers activables en scenario severe',
+          icon: Icons.assignment_turned_in_rounded,
+          color: AppColors.warning,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReportingSection(bool isDark) {
+    return _buildIcapStatusSection(
+      title: 'Dossier de reporting ICAAP',
+      isDark: isDark,
+      items: const [
+        _IcapStatusItem(
+          label: 'Comite capital',
+          value: 'Mensuel',
+          detail: 'Suivi des ratios, limites et plans',
+          icon: Icons.groups_2_rounded,
+          color: AppColors.accent,
+        ),
+        _IcapStatusItem(
+          label: 'Dossier superviseur',
+          value: 'Annuel',
+          detail: 'Synthese ICAAP et stress tests',
+          icon: Icons.summarize_rounded,
+          color: AppColors.prudentialCapital,
+        ),
+        _IcapStatusItem(
+          label: 'Alertes internes',
+          value: 'Temps reel',
+          detail: 'Notifications sur depassement des seuils',
+          icon: Icons.notifications_rounded,
+          color: AppColors.warning,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIcapStatusSection({
+    required String title,
+    required bool isDark,
+    required List<_IcapStatusItem> items,
+  }) {
+    return SectionCard(
+      title: title,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var index = 0; index < items.length; index++) ...[
+            if (index > 0) AppSpacing.hGapMd,
+            Expanded(child: _buildIcapStatusCard(items[index], isDark)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIcapStatusCard(_IcapStatusItem item, bool isDark) {
+    return Container(
+      padding: AppSpacing.cardInsets,
+      decoration: BoxDecoration(
+        color: item.color.withValues(alpha: isDark ? 0.10 : 0.06),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(
+          color: item.color.withValues(alpha: isDark ? 0.32 : 0.24),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: item.color.withValues(alpha: isDark ? 0.22 : 0.14),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Icon(item.icon, color: item.color, size: 18),
+              ),
+              const Spacer(),
+              Text(
+                item.value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: item.color,
+                ),
+              ),
+            ],
+          ),
+          AppSpacing.vGapMd,
+          Text(
+            item.label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: isDark ? AppTheme.darkText : AppTheme.text,
+            ),
+          ),
+          AppSpacing.vGapXs,
+          Text(
+            item.detail,
+            style: TextStyle(
+              fontSize: 11,
+              height: 1.35,
+              color: isDark ? AppTheme.darkMuted : AppTheme.muted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   _CapitalData _getCapitalData() {
     return _CapitalData(
       cet1Capital: 287.5e9,
@@ -886,6 +1279,34 @@ class _IcapScreenState extends State<IcapScreen> {
       ),
     ];
   }
+}
+
+class _IcapViewContent {
+  const _IcapViewContent({
+    required this.title,
+    required this.subtitle,
+    required this.sections,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<Widget> sections;
+}
+
+class _IcapStatusItem {
+  const _IcapStatusItem({
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String detail;
+  final IconData icon;
+  final Color color;
 }
 
 class _CapitalData {

@@ -1,5 +1,6 @@
 /// Repository pour la gestion des positions de change
 /// Abstraction pour permettre stockage en BD, SharedPreferences, ou en mémoire
+library;
 
 import 'dart:async';
 
@@ -71,21 +72,21 @@ class InMemoryForeignExchangeRepository implements ForeignExchangeRepository {
   /// Ajoute des données de démonstration
   void loadDemoData() {
     final demoPositions = [
-      ForeignExchangePosition(
+      const ForeignExchangePosition(
         currency: 'USD',
         assets: 500000000,
         liabilities: 200000000,
         forwardPurchases: 50000000,
         forwardSales: 0,
       ),
-      ForeignExchangePosition(
+      const ForeignExchangePosition(
         currency: 'EUR',
         assets: 300000000,
         liabilities: 400000000,
         forwardPurchases: 0,
         forwardSales: 100000000,
       ),
-      ForeignExchangePosition(
+      const ForeignExchangePosition(
         currency: 'XOF',
         assets: 150000000,
         liabilities: 80000000,

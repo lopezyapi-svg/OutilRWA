@@ -1,5 +1,6 @@
 /// Service d'agrégation des KPI risque de marché
 /// Combine Taux, Change, Actions pour calculer RWA Marché Total et contributions
+library;
 
 import '../services/foreign_exchange_risk_service.dart';
 import '../services/market_data_import_store.dart';

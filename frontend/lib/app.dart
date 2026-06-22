@@ -22,6 +22,7 @@ import 'modules/expositions/screens/expositions_screen.dart';
 import 'modules/garanties/screens/garanties_screen.dart';
 import 'modules/hors_bilan/screens/hors_bilan_screen.dart';
 import 'modules/icap/screens/icap_screen.dart';
+import 'modules/icap/screens/icap_uemoa_cemac_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/reporting_credit/screens/reporting_credit_screen.dart';
 import 'modules/risque_credit_shared/models/credit_risk_models.dart';
@@ -368,6 +369,39 @@ class _RwaAppState extends State<RwaApp> {
       AppModule.analyse => AnalyseScreen(api: _api),
       AppModule.stressTest => StressTestScreen(api: _api),
       AppModule.icap => IcapScreen(api: _api),
+      AppModule.icapCapitalEconomique => IcapScreen(
+          api: _api,
+          view: IcapView.capitalEconomique,
+        ),
+      AppModule.icapCapitalReglementaire => IcapScreen(
+          api: _api,
+          view: IcapView.capitalReglementaire,
+        ),
+      AppModule.icapAppetenceRisque => IcapScreen(
+          api: _api,
+          view: IcapView.appetenceRisque,
+        ),
+      AppModule.icapBuffersPrudentiels => IcapScreen(
+          api: _api,
+          view: IcapView.buffersPrudentiels,
+        ),
+      AppModule.icapProjectionCapital => IcapScreen(
+          api: _api,
+          view: IcapView.projectionCapital,
+        ),
+      AppModule.icapAnalyseSolvabilite => IcapScreen(
+          api: _api,
+          view: IcapView.analyseSolvabilite,
+        ),
+      AppModule.icapPlansCapital => IcapScreen(
+          api: _api,
+          view: IcapView.plansCapital,
+        ),
+      AppModule.icapReportingIcaap => IcapScreen(
+          api: _api,
+          view: IcapView.reporting,
+        ),
+      AppModule.icapUemoaCemac => const IcapUemoaCemacScreen(),
       AppModule.capitalPlaning => CapitalPlaningScreen(api: _api),
       AppModule.referentiels => _screenFor(AppModule.vueEnsemble),
       AppModule.rapports => RapportsScreen(api: _api),

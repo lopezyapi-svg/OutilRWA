@@ -31,6 +31,15 @@ enum AppModule {
   analyse,
   stressTest,
   icap,
+  icapCapitalEconomique,
+  icapCapitalReglementaire,
+  icapAppetenceRisque,
+  icapBuffersPrudentiels,
+  icapProjectionCapital,
+  icapAnalyseSolvabilite,
+  icapPlansCapital,
+  icapReportingIcaap,
+  icapUemoaCemac,
   capitalPlaning,
   referentiels,
   rapports,
@@ -93,7 +102,17 @@ extension AppModuleLabel on AppModule {
       case AppModule.stressTest:
         return 'Stress Test';
       case AppModule.icap:
+      case AppModule.icapCapitalEconomique:
+      case AppModule.icapCapitalReglementaire:
+      case AppModule.icapAppetenceRisque:
+      case AppModule.icapBuffersPrudentiels:
+      case AppModule.icapProjectionCapital:
+      case AppModule.icapAnalyseSolvabilite:
+      case AppModule.icapPlansCapital:
+      case AppModule.icapReportingIcaap:
         return 'ICAAP';
+      case AppModule.icapUemoaCemac:
+        return 'Spécificités UEMOA / CEMAC';
       case AppModule.capitalPlaning:
         return 'Capital Planning';
       case AppModule.referentiels:
@@ -134,7 +153,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.risqueMarcheIndicateurs:
         return 'Synthèse des indicateurs clés du portefeuille de marché.';
       case AppModule.risqueMarcheCourbeTaux:
-        return 'Courbes de taux UEMOA et CEMAC utilisées pour l’actualisation.';
+        return "Courbes de taux UEMOA et CEMAC utilisées pour l'actualisation.";
       case AppModule.risqueMarcheCalculPrudentiel:
         return 'Calcul réglementaire et simulation des exigences en fonds propres.';
       case AppModule.risqueMarcheAmortissementCrd:
@@ -158,7 +177,17 @@ extension AppModuleLabel on AppModule {
       case AppModule.stressTest:
         return 'Simulation de chocs et scénarios adverses sur le portefeuille et le capital.';
       case AppModule.icap:
-        return 'Evaluation interne de l’adéquation du capital et des besoins de solvabilité.';
+      case AppModule.icapCapitalEconomique:
+      case AppModule.icapCapitalReglementaire:
+      case AppModule.icapAppetenceRisque:
+      case AppModule.icapBuffersPrudentiels:
+      case AppModule.icapProjectionCapital:
+      case AppModule.icapAnalyseSolvabilite:
+      case AppModule.icapPlansCapital:
+      case AppModule.icapReportingIcaap:
+        return "Evaluation interne de l'adéquation du capital et des besoins de solvabilité.";
+      case AppModule.icapUemoaCemac:
+        return 'Comparaison des specificites reglementaires BCEAO (UEMOA) et COBAC (CEMAC).';
       case AppModule.capitalPlaning:
         return 'Projection du capital, des besoins prudentiels et des marges de manoeuvre.';
       case AppModule.referentiels:
@@ -223,7 +252,17 @@ extension AppModuleLabel on AppModule {
       case AppModule.stressTest:
         return Icons.speed_rounded;
       case AppModule.icap:
+      case AppModule.icapCapitalEconomique:
+      case AppModule.icapCapitalReglementaire:
+      case AppModule.icapAppetenceRisque:
+      case AppModule.icapBuffersPrudentiels:
+      case AppModule.icapProjectionCapital:
+      case AppModule.icapAnalyseSolvabilite:
+      case AppModule.icapPlansCapital:
+      case AppModule.icapReportingIcaap:
         return Icons.account_balance_rounded;
+      case AppModule.icapUemoaCemac:
+        return Icons.compare_arrows_rounded;
       case AppModule.capitalPlaning:
         return Icons.open_in_new_rounded;
       case AppModule.referentiels:
