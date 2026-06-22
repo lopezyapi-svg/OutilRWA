@@ -1,7 +1,7 @@
 """Routes FastAPI du module Risque Opérationnel."""
 
 from fastapi import APIRouter, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response
 
 from .models import (
     ControleCreate,
@@ -62,11 +62,11 @@ def delete_incident(id_: str) -> None:
 
 
 @router.get("/incidents/import/template")
-def download_import_template() -> StreamingResponse:
+def download_import_template() -> Response:
     """Télécharge le modèle Excel d'import des pertes opérationnelles."""
     template_bytes = services.build_ro_import_template()
-    return StreamingResponse(
-        iter([template_bytes]),
+    return Response(
+        content=template_bytes,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=modele_import_pertes_op.xlsx"},
     )

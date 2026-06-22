@@ -71,6 +71,7 @@ const _typesControle = ['Permanent', 'Périodique', 'Ponctuel', 'Sur pièces', '
 const _frequences = ['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'];
 const _typesAction = ['Corrective', 'Préventive', 'Améliorative'];
 const _sourcesAction = ['Incident', 'Contrôle', 'KRI', 'Audit', 'Cartographie'];
+const _manualKriIds = ['kri-01', 'kri-02', 'kri-03', 'kri-07'];
 const _priorites = ['Haute', 'Moyenne', 'Basse'];
 const _statutsPlan = ['A faire', 'En cours', 'Terminé', 'Abandonné'];
 
@@ -2354,6 +2355,210 @@ class _KriViewState extends State<_KriView> {
     }
   }
 
+  double? _parseNumber(String text) {
+    if (text.trim().isEmpty) return null;
+    final normalized = text.trim().replaceAll(',', '.');
+    return double.tryParse(normalized);
+  }
+
+  double? _computeManualKriValue(String kriId, double valueA, double valueB) {
+    if (valueB == 0) return null;
+    return switch (kriId) {
+      'kri-01' => valueA / valueB * 100,
+      'kri-02' => valueA / valueB * 100,
+      'kri-03' => valueA / valueB,
+      'kri-07' => valueA / valueB * 100,
+      _ => null,
+    };
+  }
+
+  String _manualKriField1Label(String kriId) => switch (kriId) {
+    'kri-01' => 'Départs volontaires',
+    'kri-02' => 'Jours d’absence',
+    'kri-03' => 'Total heures de formation',
+    'kri-07' => 'Notes ≥ 4',
+    _ => 'Valeur 1',
+  };
+
+  String _manualKriField2Label(String kriId) => switch (kriId) {
+    'kri-01' => 'Effectif moyen',
+    'kri-02' => 'Jours travaillés théoriques',
+    'kri-03' => 'Effectif total',
+    'kri-07' => 'Total réponses',
+    _ => 'Valeur 2',
+  };
+
+  String _manualKriResultUnit(String kriId) => switch (kriId) {
+    'kri-03' => 'Heures / employé',
+    _ => '%',
+  };
+
+  String _manualKriExplanation(String kriId) => switch (kriId) {
+    'kri-01' => 'Turnover = départs volontaires / effectif moyen × 100',
+    'kri-02' => 'Taux d’absence = jours d’absence / jours travaillés théoriques × 100',
+    'kri-03' => 'Heures formation par employé = total heures formation / effectif total',
+    'kri-07' => 'Taux de satisfaction = notes ≥ 4 / total réponses × 100',
+    _ => '',
+  };
+
+  Future<void> _showKriEntryDialog(List<RoKriView> availableKris) async {
+    if (availableKris.isEmpty) return;
+
+    final formKey = GlobalKey<FormState>();
+    String selectedKriId = availableKris.first.definition.id;
+    final dateCtrl = TextEditingController(text: DateTime.now().toIso8601String().substring(0, 10));
+    final commentaireCtrl = TextEditingController();
+    final fieldAController = TextEditingController();
+    final fieldBController = TextEditingController();
+    double? computedValue;
+
+    void updateComputed() {
+      final a = _parseNumber(fieldAController.text);
+      final b = _parseNumber(fieldBController.text);
+      if (a != null && b != null) {
+        computedValue = _computeManualKriValue(selectedKriId, a, b);
+      } else {
+        computedValue = null;
+      }
+    }
+
+    await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setState2) {
+          final selectedName = availableKris
+              .firstWhere((k) => k.definition.id == selectedKriId)
+              .definition
+              .nom;
+          final unit = _manualKriResultUnit(selectedKriId);
+          return AlertDialog(
+            title: const Text('Saisie des données KRI'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedKriId,
+                    decoration: const InputDecoration(labelText: 'Indicateur', isDense: true),
+                    items: availableKris.map((k) => DropdownMenuItem(
+                      value: k.definition.id,
+                      child: Text('${k.definition.id} — ${k.definition.nom}'),
+                    )).toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      selectedKriId = value;
+                      fieldAController.clear();
+                      fieldBController.clear();
+                      computedValue = null;
+                      setState2(() {});
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(_manualKriExplanation(selectedKriId), style: const TextStyle(fontSize: 12, color: _kMuted)),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: fieldAController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: _manualKriField1Label(selectedKriId), isDense: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Champ requis' : null,
+                    onChanged: (_) {
+                      updateComputed();
+                      setState2(() {});
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: fieldBController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(labelText: _manualKriField2Label(selectedKriId), isDense: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Champ requis';
+                      if (_parseNumber(v) == 0) return 'Ne peut pas être zéro';
+                      return null;
+                    },
+                    onChanged: (_) {
+                      updateComputed();
+                      setState2(() {});
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: dateCtrl,
+                    readOnly: true,
+                    decoration: InputDecoration(labelText: 'Date de mesure', isDense: true, suffixIcon: const Icon(Icons.calendar_month_outlined, size: 18)),
+                    onTap: () async {
+                      final current = DateTime.tryParse(dateCtrl.text) ?? DateTime.now();
+                      final picked = await showDatePicker(
+                        context: ctx2,
+                        initialDate: current,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                        helpText: 'Sélectionner une date de mesure',
+                      );
+                      if (picked != null) dateCtrl.text = picked.toIso8601String().substring(0, 10);
+                      setState2(() {});
+                    },
+                    validator: (v) => (v == null || v.isEmpty) ? 'Champ requis' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: commentaireCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Commentaire (optionnel)', isDense: true),
+                  ),
+                  const SizedBox(height: 14),
+                  if (computedValue != null)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(color: _kBlue.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+                      child: Row(children: [
+                        Expanded(child: Text('Valeur calculée pour $selectedName', style: const TextStyle(fontSize: 12, color: _kMuted))),
+                        Text(
+                          '${computedValue!.toStringAsFixed(selectedKriId == 'kri-03' ? 1 : 1)} $unit',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                        ),
+                      ]),
+                    ),
+                ]),
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(ctx2).pop(false), child: const Text('Annuler')),
+              FilledButton(
+                onPressed: () async {
+                  if (!formKey.currentState!.validate()) return;
+                  if (computedValue == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de calculer la valeur KRI.')));
+                    return;
+                  }
+                  try {
+                    await widget.api.addRoKriValeur({
+                      'kri_id': selectedKriId,
+                      'date_mesure': dateCtrl.text,
+                      'valeur': computedValue,
+                      'commentaire': commentaireCtrl.text,
+                    });
+                    Navigator.of(ctx2).pop(true);
+                  } catch (_) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors de l’enregistrement.')));
+                  }
+                },
+                child: const Text('Enregistrer'),
+              ),
+            ],
+          );
+        },
+      ),
+    ).then((saved) {
+      if (saved == true) {
+        _reload();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Valeur KRI enregistrée.')));
+      }
+    });
+  }
+
   void _detectBreaches(RoKriModuleData data) {
     for (final kri in data.kriList) {
       final prev = _prevStatuts[kri.definition.id];
@@ -2518,6 +2723,22 @@ class _KriViewState extends State<_KriView> {
                               textStyle: const TextStyle(fontSize: 12),
                             ),
                             label: const Text('Calculer maintenant'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _showKriEntryDialog(
+                              data.kriList.where((k) => _manualKriIds.contains(k.definition.id)).toList()),
+                            icon: const Icon(Icons.edit_calendar_outlined, size: 15, color: _kBlue),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _kBlue,
+                              side: BorderSide(color: _kBlue.withValues(alpha: 0.4)),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              textStyle: const TextStyle(fontSize: 12),
+                            ),
+                            label: const Text('Saisir données KRI'),
                           ),
                         ),
 

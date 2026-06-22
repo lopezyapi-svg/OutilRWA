@@ -198,7 +198,6 @@ def build_ro_import_template() -> bytes:
         Alignment, Border, Font, PatternFill, Side
     )
     from openpyxl.utils import get_column_letter
-    from openpyxl.worksheet.datavalidation import DataValidation
 
     wb = Workbook()
 
@@ -273,61 +272,6 @@ def build_ro_import_template() -> bytes:
 
     ws.row_dimensions[3].height = 18
 
-    # Validations dropdown
-    lignes_str = '","'.join(_LIGNES_METIER)
-    dv_ligne = DataValidation(
-        type="list",
-        formula1=f'"{lignes_str}"',
-        allow_blank=True,
-        showDropDown=False,
-        showErrorMessage=True,
-        errorTitle="Valeur invalide",
-        error="Choisir dans la liste des lignes de métier",
-    )
-    ws.add_data_validation(dv_ligne)
-    dv_ligne.add("C4:C1048576")
-
-    types_str = '","'.join(_TYPES_EVENEMENT)
-    dv_type = DataValidation(
-        type="list",
-        formula1=f'"{types_str}"',
-        allow_blank=True,
-        showErrorMessage=True,
-        errorTitle="Valeur invalide",
-        error="Choisir dans la liste des types",
-    )
-    ws.add_data_validation(dv_type)
-    dv_type.add("D4:D1048576")
-
-    causes_str = '","'.join(_CAUSES_RACINE)
-    dv_cause = DataValidation(
-        type="list",
-        formula1=f'"{causes_str}"',
-        allow_blank=True,
-    )
-    ws.add_data_validation(dv_cause)
-    dv_cause.add("E4:E1048576")
-
-    statuts_str = '","'.join(_STATUTS_INCIDENT)
-    dv_statut = DataValidation(
-        type="list",
-        formula1=f'"{statuts_str}"',
-        allow_blank=True,
-    )
-    ws.add_data_validation(dv_statut)
-    dv_statut.add("H4:H1048576")
-
-    # Validation numérique pour les pertes
-    dv_num = DataValidation(type="decimal", operator="greaterThanOrEqual", formula1="0", allow_blank=True)
-    ws.add_data_validation(dv_num)
-    dv_num.add("F4:G1048576")
-
-    # Validation format date
-    dv_date = DataValidation(type="date", allow_blank=False, showErrorMessage=True,
-                              errorTitle="Date invalide", error="Format attendu : AAAA-MM-JJ")
-    ws.add_data_validation(dv_date)
-    dv_date.add("A4:A1048576")
-
     # Lignes d'exemple (une par type d'événement)
     exemples = [
         ("2025-01-15", "Erreur de saisie virement client — doublon déclenché",            "Banque de détail",   "Processus", "Erreur humaine",       450000, 0,       "Résolu"),
@@ -350,137 +294,34 @@ def build_ro_import_template() -> bytes:
             c.alignment = left(wrap=(ci == 2))
             c.font = Font(size=10)
 
-    # ── Feuille 2 : Lignes de métier + coefficients ────────────────────────
-    ws2 = wb.create_sheet("Lignes_Métier")
-    ws2.column_dimensions["A"].width = 30
-    ws2.column_dimensions["B"].width = 10
-    ws2.column_dimensions["C"].width = 10
-    ws2.column_dimensions["D"].width = 42
+    # ── Feuille 2 : Instructions ────────────────────────────────────────────
+    ws2 = wb.create_sheet("Instructions")
+    ws2.column_dimensions["A"].width = 22
+    ws2.column_dimensions["B"].width = 58
 
-    ws2.merge_cells("A1:D1")
-    ws2["A1"].value = "Lignes de métier — Coefficients BIA & TSA (Bâle II / BCEAO)"
-    ws2["A1"].font = Font(bold=True, size=12, color="FFFFFF")
+    ws2.merge_cells("A1:B1")
+    ws2["A1"].value = "Instructions — Import des pertes opérationnelles"
+    ws2["A1"].font = Font(bold=True, size=13, color="FFFFFF")
     ws2["A1"].fill = fill(BLUE_DARK)
     ws2["A1"].alignment = center()
-
-    for col, label in zip("ABCD", ["Ligne de métier", "β BIA", "β TSA", "Description Bâle II"]):
-        c = ws2.cell(row=2, column="ABCD".index(col) + 1, value=label)
-        c.font = Font(bold=True, size=10, color=BLUE_DARK)
-        c.fill = fill(BLUE_LIGHT)
-        c.border = thin_b
-        c.alignment = center(wrap=True)
-    ws2.row_dimensions[2].height = 22
-
-    lignes_ref = [
-        ("Financement d'entreprise",   "15 %", "18 %", "Corporate Finance — émissions, M&A, conseil financier"),
-        ("Activités de marché",        "15 %", "18 %", "Trading & Sales — marché des capitaux, change, trésorerie"),
-        ("Banque de détail",           "15 %", "12 %", "Retail Banking — crédits particuliers, épargne, monétique"),
-        ("Banque commerciale",         "15 %", "15 %", "Commercial Banking — PME, crédits pro, garanties"),
-        ("Paiements et règlements",    "15 %", "18 %", "Payment & Settlement — virements, compensation, règlement-livraison"),
-        ("Fonctions d'agent",          "15 %", "15 %", "Agency Services — conservation titres, administration de fonds"),
-        ("Gestion d'actifs",           "15 %", "12 %", "Asset Management — gestion collective, mandats"),
-        ("Courtage de détail",         "15 %", "12 %", "Retail Brokerage — ordres de bourse clientèle particuliers"),
-    ]
-
-    for ri, (ligne, b_bia, b_tsa, desc) in enumerate(lignes_ref, start=3):
-        row_fill = fill("FFFFFF") if ri % 2 == 0 else fill(GREY_HEADER)
-        for ci, val in enumerate([ligne, b_bia, b_tsa, desc], start=1):
-            c = ws2.cell(row=ri, column=ci, value=val)
-            c.border = thin_b
-            c.fill = row_fill
-            c.alignment = left()
-            c.font = Font(size=10)
-
-    ws2.freeze_panes = "A3"
-
-    # Formule BIA / TSA
-    note_row = len(lignes_ref) + 4
-    ws2.merge_cells(f"A{note_row}:D{note_row}")
-    note = ws2[f"A{note_row}"]
-    note.value = (
-        "BIA : Capital minimal = α × PNBmoy₃   (α = 15 % pour toutes les lignes)  |  "
-        "TSA : Capital minimal = Σ (β_i × PNB_i)  avec β variable selon la ligne  |  "
-        "APR = Capital minimal ÷ 8 %  (× 12,5)"
-    )
-    note.font = Font(italic=True, size=9, color="475569")
-    note.fill = fill(YELLOW_BG)
-    note.alignment = left(wrap=True)
-    ws2.row_dimensions[note_row].height = 30
-
-    # ── Feuille 3 : Types d'événements ─────────────────────────────────────
-    ws3 = wb.create_sheet("Types_Événement")
-    ws3.column_dimensions["A"].width = 14
-    ws3.column_dimensions["B"].width = 30
-    ws3.column_dimensions["C"].width = 16
-    ws3.column_dimensions["D"].width = 44
-
-    ws3.merge_cells("A1:D1")
-    ws3["A1"].value = "Types d'événements — Correspondance Bâle II (7 catégories)"
-    ws3["A1"].font = Font(bold=True, size=12, color="FFFFFF")
-    ws3["A1"].fill = fill(BLUE_DARK)
-    ws3["A1"].alignment = center()
-
-    for ci, label in enumerate(["Type (outil)", "Catégorie Bâle II (L1)", "Code Bâle", "Exemples typiques"], start=1):
-        c = ws3.cell(row=2, column=ci, value=label)
-        c.font = Font(bold=True, size=10, color=BLUE_DARK)
-        c.fill = fill(BLUE_LIGHT)
-        c.border = thin_b
-        c.alignment = center(wrap=True)
-    ws3.row_dimensions[2].height = 22
-
-    types_ref = [
-        ("Interne",   "Fraude interne (ET1)",                      "ET1", "Détournements, falsification documents, abus de biens"),
-        ("Externe",   "Fraude externe (ET2) / Dommages actifs (ET5)","ET2/ET5","Vol, cambriolage, phishing, vandalisme, catastrophe"),
-        ("Personnel", "Pratiques sociales (ET3)",                   "ET3", "Accidents travail, discrimination, harcèlement"),
-        ("Juridique", "Clients, produits (ET4)",                    "ET4", "Contentieux clients, conseil défaillant, blanchi-ment"),
-        ("Système",   "Perturbations systèmes (ET6)",               "ET6", "Pannes core banking, cyber-incidents, interruptions IT"),
-        ("Processus", "Exécution, livraison (ET7)",                 "ET7", "Erreurs de traitement, erreurs de saisie, réconciliation"),
-    ]
-
-    for ri, (typ, cat, code, exemples) in enumerate(types_ref, start=3):
-        row_fill = fill("FFFFFF") if ri % 2 == 0 else fill(GREY_HEADER)
-        for ci, val in enumerate([typ, cat, code, exemples], start=1):
-            c = ws3.cell(row=ri, column=ci, value=val)
-            c.border = thin_b
-            c.fill = row_fill
-            c.alignment = left(wrap=True)
-            c.font = Font(size=10)
-        ws3.row_dimensions[ri].height = 22
-
-    ws3.freeze_panes = "A3"
-
-    # ── Feuille 4 : Instructions ────────────────────────────────────────────
-    ws4 = wb.create_sheet("Instructions")
-    ws4.column_dimensions["A"].width = 22
-    ws4.column_dimensions["B"].width = 58
-
-    ws4.merge_cells("A1:B1")
-    ws4["A1"].value = "Instructions — Import des pertes opérationnelles"
-    ws4["A1"].font = Font(bold=True, size=13, color="FFFFFF")
-    ws4["A1"].fill = fill(BLUE_DARK)
-    ws4["A1"].alignment = center()
 
     instructions = [
         ("Feuille de saisie",   "Saisir vos incidents dans la feuille « Incidents » à partir de la ligne 4."),
         ("Ligne 2",             "★ = colonne OBLIGATOIRE   ○ = colonne optionnelle (peut rester vide)"),
         ("date_occurrence",     "Format ISO AAAA-MM-JJ (ex : 2025-06-15) ou JJ/MM/AAAA (ex : 15/06/2025)."),
-        ("ligne_metier",        "Valeur exacte parmi les 8 options — menu déroulant disponible."),
+        ("ligne_metier",        "Valeur exacte parmi les 8 options."),
         ("type_evenement",      "Valeur exacte parmi 6 options (Interne, Externe, Processus, Système, Personnel, Juridique)."),
         ("cause_racine",        "Optionnel : Erreur humaine | Défaillance système | Processus inadéquat | Fraude interne | Fraude externe | Événement externe | Non définie."),
         ("perte_brute",         "Montant total de la perte avant récupération, en FCFA (nombre entier ou décimal)."),
         ("perte_recuperee",     "Montant récupéré (assurance, provisions) — 0 si rien. Perte nette = brute − récupérée."),
         ("statut",              "Optionnel : Ouvert | En cours | Résolu | Clôturé. Défaut = Ouvert."),
-        ("Mode d'import",       "Ajout : conserve les incidents existants et insère les nouveaux."),
-        ("",                    "Remplacement : supprime TOUS les incidents avant d'insérer — utiliser avec prudence."),
-        ("Calcul BIA (Art. 89)","Capital minimal = 15 % × Pertes nettes totales  |  APR = Capital minimal × 12,5"),
-        ("Calcul TSA",          "Pour le TSA : Capital minimal = Σ (β_i × PNB_ligne_i) — voir onglet Lignes_Métier."),
         ("Lignes vides",        "Les lignes entièrement vides sont ignorées."),
         ("Doublons",            "Aucune vérification de doublon — vérifier avant import en mode remplacement."),
     ]
 
     for ri, (label, text) in enumerate(instructions, start=2):
-        c_label = ws4.cell(row=ri, column=1, value=label)
-        c_text  = ws4.cell(row=ri, column=2, value=text)
+        c_label = ws2.cell(row=ri, column=1, value=label)
+        c_text  = ws2.cell(row=ri, column=2, value=text)
         row_fill = fill(BLUE_LIGHT) if label and label != "" else fill("FFFFFF")
         c_label.font = Font(bold=bool(label), size=10, color=BLUE_DARK if label else "000000")
         c_label.fill = row_fill
@@ -490,12 +331,10 @@ def build_ro_import_template() -> bytes:
         c_text.fill = fill("FFFFFF")
         c_text.border = thin_b
         c_text.alignment = left(wrap=True)
-        ws4.row_dimensions[ri].height = 20
+        ws2.row_dimensions[ri].height = 20
 
-    # Onglets de référence : tab protégé visuellement via couleur (no password,
-    # évite les structures XML qui posent problème aux parseurs tiers)
-    for ws_ref in (ws2, ws3, ws4):
-        ws_ref.sheet_view.tabSelected = False
+    # Onglet de référence : pas de validation externe ni de feuilles supplémentaires
+    ws2.sheet_view.tabSelected = False
 
     # ── Export en bytes ────────────────────────────────────────────────────
     buf = BytesIO()
