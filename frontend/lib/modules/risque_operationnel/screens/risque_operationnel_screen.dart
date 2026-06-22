@@ -291,6 +291,14 @@ String _kriStatutLabel(String s) => switch (s) {
       _ => 'N/A',
     };
 
+String _kriExplication(String kriId) => switch (kriId) {
+      'kri-01' => 'Nécessite les données RH : nombre de départs volontaires et effectif moyen de la période.',
+      'kri-02' => "Nécessite les données RH : jours d'absence et jours travaillés théoriques du personnel.",
+      'kri-03' => 'Nécessite le registre de formation : heures de formation par collaborateur sur la période.',
+      'kri-07' => "Nécessite les résultats d'enquête de satisfaction client (notes et nombre de répondants).",
+      _ => 'Données source non disponibles dans le système pour ce calcul automatique.',
+    };
+
 Widget _badge(String label, Color color) => FittedBox(
       fit: BoxFit.scaleDown,
       alignment: Alignment.centerLeft,
@@ -2870,59 +2878,26 @@ class _KriCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Valeur + tendance
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        kri.derniereValeur != null
-                            ? Text(
-                                kri.derniereValeur! % 1 == 0
-                                    ? kri.derniereValeur!.toInt().toString()
-                                    : kri.derniereValeur!.toStringAsFixed(1),
-                                style: TextStyle(
-                                  fontSize: 34, fontWeight: FontWeight.w900,
-                                  color: textColor, height: 1.0, letterSpacing: -1.5))
-                            : Text('—', style: TextStyle(
-                                fontSize: 34, fontWeight: FontWeight.w900,
-                                color: mutedColor.withValues(alpha: 0.28), height: 1.0)),
-                        const SizedBox(width: 4),
-                        Text(d.unite,
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                            color: mutedColor)),
-                      ],
+                if (kri.statut == 'non_renseigne') ...[
+                  // Message explicatif : données source indisponibles
+                  Container(
+                    padding: const EdgeInsets.all(11),
+                    decoration: BoxDecoration(
+                      color: mutedColor.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(color: mutedColor.withValues(alpha: 0.18)),
                     ),
-                    if (trendStr != null) ...[
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Icon(Icons.info_outline_rounded, size: 14, color: mutedColor),
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: (trendUp! ? _kSuccess : _kDanger).withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(
-                            trendUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                            size: 11, color: trendUp ? _kSuccess : _kDanger),
-                          const SizedBox(width: 3),
-                          Text(trendStr,
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                              color: trendUp ? _kSuccess : _kDanger)),
-                        ]),
-                      ),
-                    ],
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // Jauge
-                if (kri.derniereValeur != null)
-                  _KriGauge(kri: kri)
-                else
+                      Expanded(child: Text(
+                        _kriExplication(d.id),
+                        style: TextStyle(fontSize: 10.5, color: mutedColor, height: 1.5),
+                      )),
+                    ]),
+                  ),
+                  const SizedBox(height: 10),
+                  // Barre vide
                   Container(
                     height: 6,
                     decoration: BoxDecoration(
@@ -2930,6 +2905,52 @@ class _KriCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
+                ] else ...[
+                  // Valeur + tendance
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            kri.derniereValeur! % 1 == 0
+                                ? kri.derniereValeur!.toInt().toString()
+                                : kri.derniereValeur!.toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 34, fontWeight: FontWeight.w900,
+                              color: textColor, height: 1.0, letterSpacing: -1.5)),
+                          const SizedBox(width: 4),
+                          Text(d.unite,
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                              color: mutedColor)),
+                        ],
+                      ),
+                      if (trendStr != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: (trendUp! ? _kSuccess : _kDanger).withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(
+                              trendUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                              size: 11, color: trendUp ? _kSuccess : _kDanger),
+                            const SizedBox(width: 3),
+                            Text(trendStr,
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                                color: trendUp ? _kSuccess : _kDanger)),
+                          ]),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _KriGauge(kri: kri),
+                ],
 
                 const SizedBox(height: 8),
 
