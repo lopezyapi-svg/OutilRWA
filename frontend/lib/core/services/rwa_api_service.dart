@@ -562,6 +562,11 @@ class RwaApiService {
     return RoKriValeur.fromJson(json);
   }
 
+  Future<RoKriModuleData> autoCalculKri() async {
+    final json = await _client.post('/risque-operationnel/kri/auto-calcul', {}) as Map<String, dynamic>;
+    return RoKriModuleData.fromJson(json);
+  }
+
   Future<List<RoRisque>> fetchRoRisques() async {
     final json = await _client.get('/risque-operationnel/risques') as List<dynamic>;
     return json.map((e) => RoRisque.fromJson(e as Map<String, dynamic>)).toList();

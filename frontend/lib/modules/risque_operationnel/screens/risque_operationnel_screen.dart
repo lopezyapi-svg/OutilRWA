@@ -1796,6 +1796,57 @@ class _PertesContentState extends State<_PertesContent> {
   }
 }
 
+// ─── Point pulsant surveillance auto ─────────────────────────────────────────
+
+class _AutoPulseDot extends StatefulWidget {
+  const _AutoPulseDot({required this.active});
+  final bool active;
+
+  @override
+  State<_AutoPulseDot> createState() => _AutoPulseDotState();
+}
+
+class _AutoPulseDotState extends State<_AutoPulseDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double>   _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+      ..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) => Container(
+        width: 8, height: 8,
+        decoration: BoxDecoration(
+          color: widget.active
+            ? _kWarning.withValues(alpha: _anim.value)
+            : _kSuccess.withValues(alpha: _anim.value),
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(
+            color: widget.active ? _kWarning.withValues(alpha: 0.4) : _kSuccess.withValues(alpha: 0.4),
+            blurRadius: 4, spreadRadius: 1,
+          )],
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Top 5 incidents ─────────────────────────────────────────────────────────
 
 class _PertesTop5Card extends StatelessWidget {
@@ -2294,13 +2345,64 @@ class _KriViewState extends State<_KriView> {
   late Future<RoKriModuleData> _future;
   String? _filterStatus;
 
+  // ── Surveillance automatique ──────────────────────────────────────────────
+  Timer?      _autoTimer;
+  DateTime?   _lastAutoRefresh;
+  bool        _autoRunning = false;
+  // Statuts enregistrés lors du dernier cycle pour détecter les franchissements
+  final Map<String, String> _prevStatuts = {};
+
   @override
   void initState() {
     super.initState();
     _reload();
+    // Lance un premier calcul auto dès l'ouverture, puis toutes les 30 s
+    _triggerAutoCalc();
+    _autoTimer = Timer.periodic(const Duration(seconds: 30), (_) => _triggerAutoCalc());
+  }
+
+  @override
+  void dispose() {
+    _autoTimer?.cancel();
+    super.dispose();
   }
 
   void _reload() => setState(() { _future = widget.api.fetchRoKri(); });
+
+  Future<void> _triggerAutoCalc() async {
+    if (!mounted) return;
+    setState(() => _autoRunning = true);
+    try {
+      final data = await widget.api.autoCalculKri();
+      if (!mounted) return;
+      _detectBreaches(data);
+      setState(() {
+        _future = Future.value(data);
+        _lastAutoRefresh = DateTime.now();
+        _autoRunning = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _autoRunning = false);
+    }
+  }
+
+  void _detectBreaches(RoKriModuleData data) {
+    for (final kri in data.kriList) {
+      final prev = _prevStatuts[kri.definition.id];
+      final curr = kri.statut;
+      if (prev != null && prev != curr &&
+          (curr == 'alerte' || curr == 'critique')) {
+        final label = curr == 'critique' ? '🔴 CRITIQUE' : '🟡 ALERTE';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('$label — ${kri.definition.nom} a franchi un seuil'),
+          backgroundColor: curr == 'critique' ? _kDanger : _kWarning,
+          duration: const Duration(seconds: 6),
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+      _prevStatuts[kri.definition.id] = curr;
+    }
+  }
 
   Future<void> _addValeur(List<RoKriView> kris, {String? preselectedId}) async {
     if (kris.isEmpty) return;
@@ -2584,21 +2686,58 @@ class _KriViewState extends State<_KriView> {
                         ],
 
                         const SizedBox(height: 16),
-                        // Actions
-                        _kriPanelSection('Actions', Icons.bolt_rounded, _kBlue),
+                        // ── Surveillance automatique ──────────────────────
+                        _kriPanelSection('Surveillance', Icons.radar_rounded, _kSuccess),
                         const SizedBox(height: 8),
+                        // Indicateur live
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                          decoration: BoxDecoration(
+                            color: _kSuccess.withValues(alpha: 0.07),
+                            borderRadius: BorderRadius.circular(7),
+                            border: Border.all(color: _kSuccess.withValues(alpha: 0.25)),
+                          ),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Row(children: [
+                              _AutoPulseDot(active: _autoRunning),
+                              const SizedBox(width: 7),
+                              const Expanded(child: Text('Calcul automatique',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kSuccess))),
+                            ]),
+                            const SizedBox(height: 4),
+                            Text(
+                              _autoRunning
+                                ? 'Calcul en cours…'
+                                : _lastAutoRefresh == null
+                                  ? 'En attente…'
+                                  : 'Mis à jour à ${_lastAutoRefresh!.hour.toString().padLeft(2,'0')}:${_lastAutoRefresh!.minute.toString().padLeft(2,'0')}:${_lastAutoRefresh!.second.toString().padLeft(2,'0')}',
+                              style: const TextStyle(fontSize: 10, color: _kMuted),
+                            ),
+                            const SizedBox(height: 3),
+                            const Text('Rafraîchi toutes les 30 s',
+                              style: TextStyle(fontSize: 9.5, color: _kMuted)),
+                          ]),
+                        ),
+                        const SizedBox(height: 8),
+                        // Bouton calcul immédiat
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: _reload,
-                            icon: const Icon(Icons.refresh_rounded, size: 15),
+                            onPressed: _autoRunning ? null : _triggerAutoCalc,
+                            icon: const Icon(Icons.bolt_rounded, size: 15, color: _kSuccess),
                             style: OutlinedButton.styleFrom(
+                              foregroundColor: _kSuccess,
+                              side: BorderSide(color: _kSuccess.withValues(alpha: 0.4)),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               textStyle: const TextStyle(fontSize: 12),
                             ),
-                            label: const Text('Actualiser'),
+                            label: const Text('Calculer maintenant'),
                           ),
                         ),
+
+                        const SizedBox(height: 16),
+                        // Actions manuelles
+                        _kriPanelSection('Actions', Icons.bolt_rounded, _kBlue),
                         const SizedBox(height: 8),
                         SizedBox(
                           width: double.infinity,
@@ -3191,8 +3330,24 @@ class _KriCard extends StatelessWidget {
                       ],
                     ),
                     const Spacer(),
-                    // Méta (date + fréquence)
+                    // Méta (date + fréquence + badge AUTO)
                     Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+                      if (kri.historique.isNotEmpty &&
+                          kri.historique.first.commentaire.startsWith('auto'))
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _kSuccess.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(3),
+                            border: Border.all(color: _kSuccess.withValues(alpha: 0.35)),
+                          ),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.radar_rounded, size: 8, color: _kSuccess),
+                            SizedBox(width: 3),
+                            Text('AUTO',
+                              style: TextStyle(fontSize: 8.5, color: _kSuccess, fontWeight: FontWeight.w800)),
+                          ]),
+                        ),
                       if (kri.derniereDate != null)
                         Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(Icons.calendar_today_outlined, size: 9, color: mutedColor),
