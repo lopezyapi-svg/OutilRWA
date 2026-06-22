@@ -948,14 +948,8 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
   final _assurCtrl = TextEditingController();
 
   double _seuilValue = 8.0;
+  bool   _simulated  = false;
 
-  bool _simulated = false;
-
-  // (code, label, choc_losses_multiplier, accent_color)
-  // S1 Optimiste : pertes ×0.90  (-10 %)
-  // S2 Neutre    : pertes ×1.00  ( 0 %)
-  // S3 Pessimiste: pertes ×1.20  (+20 %)
-  // S4 Crise     : pertes ×1.35  (+35 %)
   static const _sc = [
     ('S1', 'Optimiste',    0.90, Color(0xFF43A047)),
     ('S2', 'Neutre',       1.00, Color(0xFF1E88E5)),
@@ -1017,9 +1011,33 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
   double? _d(TextEditingController c) =>
       double.tryParse(c.text.trim().replaceAll(' ', '').replaceAll(',', '.'));
 
+  _CriseScResult _compute((String, String, double, Color) sc, double pertesHisto) {
+    final (code, label, factor, color) = sc;
+    final fp    = _d(_fpCtrl)    ?? 0;
+    final apr   = _d(_aprCtrl)   ?? 0;
+    final prov  = _d(_provCtrl)  ?? 0;
+    final assur = _d(_assurCtrl) ?? 0;
+    final seuil = _seuilValue / 100;
+    final pertesSimulees = pertesHisto * factor;
+    final impactNet      = pertesSimulees - prov - assur;
+    final fpApresChoc    = fp - (impactNet > 0 ? impactNet : 0);
+    final resilience     = fp - pertesSimulees;
+    final aprStresses    = apr > 0 ? apr * factor : 0.0;
+    final ratio          = aprStresses > 0 ? fpApresChoc / aprStresses : 0.0;
+    final pass           = resilience >= 0 && (apr == 0 || ratio >= seuil);
+    return _CriseScResult(
+      code: code, label: label, factor: factor, color: color,
+      pertesSimulees: pertesSimulees, impactNet: impactNet,
+      fpApresChoc: fpApresChoc, resilience: resilience,
+      aprStresses: aprStresses, ratio: ratio, seuil: seuil, pass: pass,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final panelBg = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final panelBorder = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
 
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
@@ -1040,143 +1058,133 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
               builder: (ctx, snap) {
                 if (snap.connectionState != ConnectionState.done) return _loadingBox();
                 if (snap.hasError) return _errorBox(snap.error!);
-                final items      = snap.data!;
+                final items       = snap.data!;
                 final pertesHisto = items.fold(0.0, (s, i) => s + i.perteNette);
+                final results     = _sc.map((s) => _compute(s, pertesHisto)).toList();
 
-                return Column(
+                return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Bandeau réglementaire ─────────────────────────────────────────
+                    // ── Panneau gauche : paramètres ───────────────────────────
                     Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1565C0).withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(7),
-                border: Border.all(color: const Color(0xFF1565C0).withValues(alpha: 0.18)),
-              ),
-              child: Row(children: [
-                const Icon(Icons.science_rounded, color: Color(0xFF1565C0), size: 18),
-                const SizedBox(width: 10),
-                Expanded(child: Text(
-                  'Art. 545 UMOA — Évaluation de la vulnérabilité à des événements exceptionnels mais plausibles (PIEAFP).\n'
-                  'Base historique : ${items.length} incident(s) | Pertes nettes : ${AppFormatters.currency(pertesHisto)}',
-                  style: const TextStyle(fontSize: 11, color: _kMuted),
-                )),
-                _artInfo('Art. 545'),
-              ]),
-            ),
-            const SizedBox(height: 14),
-
-            // ── Paramètres ────────────────────────────────────────────────────
-            Card(
-              margin: EdgeInsets.zero,
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Paramètres de la simulation',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 10,
-                      children: [
-                        _simField('Fonds propres disponibles (FCFA)', _fpCtrl),
-                        _simField('RWA de référence (FCFA)',           _aprCtrl),
-                        _simField('Provisions constituées (FCFA)',     _provCtrl),
-                        _simField('Couverture assurance (FCFA)',       _assurCtrl),
-                        SizedBox(
-                          width: 260,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(children: [
-                                const Text('Seuil ratio résistance',
-                                  style: TextStyle(fontSize: 11, color: _kMuted)),
-                                const Spacer(),
-                                Text('${_seuilValue.toStringAsFixed(1)} %',
-                                  style: const TextStyle(fontSize: 12,
-                                    fontWeight: FontWeight.w700, color: Color(0xFF1565C0))),
-                              ]),
-                              SliderTheme(
-                                data: SliderTheme.of(context).copyWith(
-                                  trackHeight: 4,
-                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                      width: 284,
+                      decoration: BoxDecoration(
+                        color: panelBg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: panelBorder),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // En-tête panneau
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1565C0).withValues(alpha: 0.07),
+                              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                              border: Border(bottom: BorderSide(color: panelBorder)),
+                            ),
+                            child: Row(children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1565C0).withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(7),
                                 ),
-                                child: Slider(
-                                  value: _seuilValue,
-                                  min: 4.0,
-                                  max: 25.0,
-                                  divisions: 210,
-                                  activeColor: const Color(0xFF1565C0),
-                                  onChanged: (v) => setState(() { _seuilValue = v; _simulated = true; }),
-                                ),
+                                child: const Icon(Icons.tune_rounded, size: 15, color: Color(0xFF1565C0)),
                               ),
-                              const Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              const SizedBox(width: 10),
+                              const Expanded(child: Text('Paramètres',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                              _badge('Art. 545', const Color(0xFF1565C0)),
+                            ]),
+                          ),
+                          // Champs
+                          Expanded(
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('4 %', style: TextStyle(fontSize: 10, color: _kMuted)),
-                                  Text('Régl. BCEAO : 8 %', style: TextStyle(fontSize: 10, color: _kMuted)),
-                                  Text('25 %', style: TextStyle(fontSize: 10, color: _kMuted)),
+                                  _pSection('Base historique', Icons.history_rounded, _kBlue),
+                                  const SizedBox(height: 8),
+                                  _pInfoRow('Incidents', '${items.length}', Icons.warning_amber_rounded, _kWarning),
+                                  const SizedBox(height: 4),
+                                  _pInfoRow('Pertes nettes', AppFormatters.currency(pertesHisto), Icons.trending_down_rounded, _kDanger),
+                                  const SizedBox(height: 16),
+                                  _pSection('Capital & RWA', Icons.account_balance_rounded, const Color(0xFF1565C0)),
+                                  const SizedBox(height: 8),
+                                  _pField('Fonds propres (FCFA)', Icons.savings_rounded, _fpCtrl),
+                                  const SizedBox(height: 8),
+                                  _pField('RWA de référence (FCFA)', Icons.bar_chart_rounded, _aprCtrl),
+                                  const SizedBox(height: 16),
+                                  _pSection('Atténuants', Icons.shield_rounded, _kSuccess),
+                                  const SizedBox(height: 8),
+                                  _pField('Provisions (FCFA)', Icons.savings_outlined, _provCtrl),
+                                  const SizedBox(height: 8),
+                                  _pField('Assurance (FCFA)', Icons.health_and_safety_outlined, _assurCtrl),
+                                  const SizedBox(height: 16),
+                                  _pSection('Seuil de résistance', Icons.speed_rounded, _kWarning),
+                                  const SizedBox(height: 8),
+                                  Row(children: [
+                                    const Text('Ratio cible', style: TextStyle(fontSize: 11, color: _kMuted)),
+                                    const Spacer(),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1565C0).withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text('${_seuilValue.toStringAsFixed(1)} %',
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF1565C0))),
+                                    ),
+                                  ]),
+                                  SliderTheme(
+                                    data: SliderTheme.of(context).copyWith(
+                                      trackHeight: 4,
+                                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+                                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                                    ),
+                                    child: Slider(
+                                      value: _seuilValue,
+                                      min: 4.0, max: 25.0, divisions: 210,
+                                      activeColor: const Color(0xFF1565C0),
+                                      onChanged: (v) => setState(() { _seuilValue = v; _simulated = true; }),
+                                    ),
+                                  ),
+                                  const Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('4 %',          style: TextStyle(fontSize: 10, color: _kMuted)),
+                                      Text('BCEAO : 8 %',  style: TextStyle(fontSize: 10, color: _kMuted)),
+                                      Text('25 %',         style: TextStyle(fontSize: 10, color: _kMuted)),
+                                    ],
+                                  ),
                                 ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
 
-            // ── Résultats ─────────────────────────────────────────────────────
-            if (_simulated) ...[
-              const Text('Résultats — 4 scénarios BCEAO',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-              const SizedBox(height: 8),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Expanded(child: _scCard(_sc[0], pertesHisto, isDark)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _scCard(_sc[1], pertesHisto, isDark)),
-                      ]),
-                      const SizedBox(height: 12),
-                      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Expanded(child: _scCard(_sc[2], pertesHisto, isDark)),
-                        const SizedBox(width: 12),
-                        Expanded(child: _scCard(_sc[3], pertesHisto, isDark)),
-                      ]),
-                    ],
-                  ),
-                ),
-              ),
-            ] else
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.science_outlined, size: 52,
-                        color: _kMuted.withValues(alpha: 0.35)),
-                      const SizedBox(height: 12),
-                      const Text('Saisissez au moins un paramètre pour lancer la simulation',
-                        style: TextStyle(color: _kMuted, fontSize: 13)),
-                      const SizedBox(height: 4),
-                      const Text('Les résultats s\'affichent automatiquement — tous les champs ne sont pas obligatoires',
-                        style: TextStyle(color: _kMuted, fontSize: 11)),
-                    ],
-                  ),
-                ),
-              ),
+                    const SizedBox(width: 14),
+
+                    // ── Panneau droit : résultats ─────────────────────────────
+                    Expanded(
+                      child: _simulated
+                        ? _CriseResultsPanel(results: results, seuil: _seuilValue, isDark: isDark)
+                        : Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.science_outlined, size: 64, color: _kMuted.withValues(alpha: 0.3)),
+                            const SizedBox(height: 16),
+                            const Text('Saisissez au moins un paramètre\npour lancer la simulation',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: _kMuted, fontSize: 14, height: 1.5)),
+                            const SizedBox(height: 6),
+                            const Text('Les résultats s\'affichent automatiquement',
+                              style: TextStyle(color: _kMuted, fontSize: 11)),
+                          ])),
+                    ),
                   ],
                 );
               },
@@ -1187,133 +1195,402 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
     );
   }
 
-  Widget _simField(String label, TextEditingController ctrl, {double width = 240}) =>
-    SizedBox(
-      width: width,
-      child: TextFormField(
-        controller: ctrl,
-        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
-        style: const TextStyle(fontSize: 12),
-        decoration: InputDecoration(
-          labelText: label,
-          isDense: true,
-          border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
-          labelStyle: const TextStyle(fontSize: 11),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+  Widget _pSection(String title, IconData icon, Color color) => Row(children: [
+    Icon(icon, size: 12, color: color),
+    const SizedBox(width: 6),
+    Text(title.toUpperCase(),
+      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.5)),
+  ]);
+
+  Widget _pInfoRow(String label, String value, IconData icon, Color color) => Row(children: [
+    Icon(icon, size: 13, color: color.withValues(alpha: 0.75)),
+    const SizedBox(width: 6),
+    Text(label, style: const TextStyle(fontSize: 11, color: _kMuted)),
+    const Spacer(),
+    Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+  ]);
+
+  Widget _pField(String label, IconData icon, TextEditingController ctrl) => TextFormField(
+    controller: ctrl,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
+    style: const TextStyle(fontSize: 12),
+    decoration: InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, size: 15, color: _kMuted),
+      isDense: true,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+      labelStyle: const TextStyle(fontSize: 11),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+    ),
+    onChanged: (_) => setState(() {}),
+  );
+}
+
+// ─── Simulation de Crise — data model ─────────────────────────────────────────
+
+class _CriseScResult {
+  const _CriseScResult({
+    required this.code, required this.label, required this.factor, required this.color,
+    required this.pertesSimulees, required this.impactNet, required this.fpApresChoc,
+    required this.resilience, required this.aprStresses, required this.ratio,
+    required this.seuil, required this.pass,
+  });
+  final String code;
+  final String label;
+  final double factor;
+  final Color  color;
+  final double pertesSimulees;
+  final double impactNet;
+  final double fpApresChoc;
+  final double resilience;
+  final double aprStresses;
+  final double ratio;
+  final double seuil;
+  final bool   pass;
+
+  String get factorLabel => factor == 1.0 ? 'Base ±0 %'
+      : factor < 1.0 ? '−${((1 - factor) * 100).round()} % pertes'
+                      : '+${((factor - 1) * 100).round()} % pertes';
+}
+
+// ─── Panneau résultats ────────────────────────────────────────────────────────
+
+class _CriseResultsPanel extends StatelessWidget {
+  const _CriseResultsPanel({required this.results, required this.seuil, required this.isDark});
+  final List<_CriseScResult> results;
+  final double seuil;
+  final bool   isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final passCount = results.where((r) => r.pass).length;
+    final allPass   = passCount == results.length;
+    final nonePass  = passCount == 0;
+    final statusColor = allPass ? _kSuccess : nonePass ? _kDanger : _kWarning;
+    final statusIcon  = allPass ? Icons.verified_rounded
+        : nonePass ? Icons.dangerous_rounded : Icons.warning_amber_rounded;
+    final statusText  = allPass
+        ? 'Profil résilient — tous les scénarios sont couverts'
+        : nonePass
+            ? 'Profil vulnérable — aucun scénario n\'est couvert'
+            : '$passCount / ${results.length} scénarios couverts — exposition partielle';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Bannière statut global ────────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: statusColor.withValues(alpha: 0.25)),
+          ),
+          child: Row(children: [
+            Icon(statusIcon, color: statusColor, size: 20),
+            const SizedBox(width: 10),
+            Expanded(child: Text(statusText,
+              style: TextStyle(fontSize: 12, color: statusColor, fontWeight: FontWeight.w600))),
+            const SizedBox(width: 10),
+            Row(children: List.generate(results.length, (i) => Container(
+              margin: const EdgeInsets.only(left: 4),
+              width: 11, height: 11,
+              decoration: BoxDecoration(
+                color: i < passCount ? _kSuccess : _kDanger,
+                shape: BoxShape.circle,
+              ),
+            ))),
+          ]),
         ),
-        onChanged: (_) => setState(() {}),
-      ),
+        const SizedBox(height: 12),
+
+        // ── 4 cartes scénarios ────────────────────────────────────────────
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: results.asMap().entries.map((e) => Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: e.key < results.length - 1 ? 10 : 0),
+                child: _CriseScenarioCard(result: e.value, isDark: isDark),
+              ),
+            )).toList(),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // ── Tableau comparatif ────────────────────────────────────────────
+        _CriseComparisonTable(results: results, seuil: seuil, isDark: isDark),
+      ],
     );
+  }
+}
 
-  Widget _scCard(
-    (String, String, double, Color) sc,
-    double pertesHisto,
-    bool isDark,
-  ) {
-    final (code, label, factor, color) = sc;
-    final fp    = _d(_fpCtrl)    ?? 0;
-    final apr   = _d(_aprCtrl)   ?? 0;
-    final prov  = _d(_provCtrl)  ?? 0;
-    final assur = _d(_assurCtrl) ?? 0;
-    final seuil = _seuilValue / 100;
+// ─── Carte scénario ───────────────────────────────────────────────────────────
 
-    // Formules BCEAO Art. 545
-    final pertesSimulees = pertesHisto * factor;
-    final impactNet      = pertesSimulees - prov - assur;
-    final fpApresChoc    = fp - (impactNet > 0 ? impactNet : 0);
-    final resilience     = fp - pertesSimulees;
-    final aprStresses    = apr > 0 ? apr * factor : 0.0;
-    final ratio          = aprStresses > 0 ? fpApresChoc / aprStresses : 0.0;
-    final pass           = resilience >= 0 && (apr == 0 || ratio >= seuil);
+class _CriseScenarioCard extends StatelessWidget {
+  const _CriseScenarioCard({required this.result, required this.isDark});
+  final _CriseScResult result;
+  final bool isDark;
 
-    final pctLabel = factor == 1.0 ? '0%' : factor < 1.0
-        ? '−${((1 - factor) * 100).round()}% pertes'
-        : '+${((factor - 1) * 100).round()}% pertes';
+  @override
+  Widget build(BuildContext context) {
+    final r        = result;
+    final cardBg   = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final border   = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+    final ratioOk  = r.aprStresses > 0 ? r.ratio >= r.seuil : true;
+    final ratioStr = r.aprStresses > 0 ? '${(r.ratio * 100).toStringAsFixed(1)} %' : '—';
+    final ratioProgress = r.aprStresses > 0
+        ? (r.ratio / (r.seuil * 1.5)).clamp(0.0, 1.0)
+        : 1.0;
 
     return Container(
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+        boxShadow: [BoxShadow(
+          color: r.color.withValues(alpha: 0.08),
+          blurRadius: 8, offset: const Offset(0, 2),
+        )],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // En-tête scénario
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.13),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text('$code — $label  ($pctLabel)',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          // En-tête coloré
+          Container(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            decoration: BoxDecoration(
+              color: r.color.withValues(alpha: isDark ? 0.18 : 0.07),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+              border: Border(bottom: BorderSide(color: r.color.withValues(alpha: 0.2))),
             ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: (pass ? const Color(0xFF43A047) : _kDanger).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(4),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(color: r.color, borderRadius: BorderRadius.circular(4)),
+                  child: Text(r.code,
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+                ),
+                const SizedBox(width: 7),
+                Expanded(child: Text(r.label,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: r.color))),
+              ]),
+              const SizedBox(height: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: r.color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(r.factorLabel,
+                  style: TextStyle(fontSize: 9.5, color: r.color, fontWeight: FontWeight.w600)),
               ),
-              child: Text(pass ? '✓ RÉSILIENT' : '✗ VULNÉRABLE',
+            ]),
+          ),
+
+          // Verdict
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            child: Row(children: [
+              Icon(
+                r.pass ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                color: r.pass ? _kSuccess : _kDanger,
+                size: 17,
+              ),
+              const SizedBox(width: 6),
+              Text(r.pass ? 'RÉSILIENT' : 'VULNÉRABLE',
                 style: TextStyle(
-                  fontSize: 9, fontWeight: FontWeight.w800,
-                  color: pass ? const Color(0xFF43A047) : _kDanger)),
+                  fontSize: 11, fontWeight: FontWeight.w800,
+                  color: r.pass ? _kSuccess : _kDanger,
+                  letterSpacing: 0.4,
+                )),
+            ]),
+          ),
+
+          // Ratio gauge
+          if (r.aprStresses > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  const Text('Ratio résistance', style: TextStyle(fontSize: 9, color: _kMuted)),
+                  const Spacer(),
+                  Text(ratioStr,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                      color: ratioOk ? _kSuccess : _kDanger)),
+                  Text(' / ${(r.seuil * 100).toStringAsFixed(1)} %',
+                    style: const TextStyle(fontSize: 9, color: _kMuted)),
+                ]),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: ratioProgress,
+                    minHeight: 5,
+                    backgroundColor: isDark ? const Color(0xFF1E3455) : const Color(0xFFE8F0FE),
+                    color: ratioOk ? _kSuccess : _kDanger,
+                  ),
+                ),
+              ]),
             ),
-          ]),
-          const SizedBox(height: 12),
-          // KPI row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _mini('Pertes simulées',
-                AppFormatters.currency(pertesSimulees),
-                factor > 1.0 ? _kDanger : const Color(0xFF43A047))),
-              const SizedBox(width: 8),
-              Expanded(child: _mini('Impact net',
-                AppFormatters.currency(impactNet),
-                impactNet > 0 ? _kDanger : const Color(0xFF43A047))),
-              const SizedBox(width: 8),
-              Expanded(child: _mini('Résilience FP',
-                AppFormatters.currency(resilience),
-                resilience >= 0 ? const Color(0xFF43A047) : _kDanger)),
-              if (apr > 0) ...[
-                const SizedBox(width: 8),
-                Expanded(child: _mini('Ratio résistance',
-                  '${(ratio * 100).toStringAsFixed(1)}%',
-                  ratio >= seuil ? const Color(0xFF43A047) : _kDanger,
-                  sub: 'seuil ${_seuilValue.toStringAsFixed(1)}%')),
-              ],
-            ],
+
+          const SizedBox(height: 10),
+          const Divider(height: 1, thickness: 0.5),
+
+          // KPIs
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _kpiRow('Pertes simulées', AppFormatters.currency(r.pertesSimulees),
+                    r.factor > 1.0 ? _kDanger : r.factor < 1.0 ? _kSuccess : _kBlue),
+                  _kpiRow('Impact net', AppFormatters.currency(r.impactNet),
+                    r.impactNet > 0 ? _kDanger : _kSuccess),
+                  _kpiRow('FP après choc', AppFormatters.currency(r.fpApresChoc),
+                    r.fpApresChoc >= 0 ? _kSuccess : _kDanger),
+                  _kpiRow('Résilience nette', AppFormatters.currency(r.resilience),
+                    r.resilience >= 0 ? _kSuccess : _kDanger),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _mini(String label, String value, Color color, {String? sub}) =>
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 9, color: _kMuted, height: 1.4)),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(value,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800,
-              color: color, height: 1.2)),
-        ),
-        if (sub != null)
-          Text(sub, style: TextStyle(fontSize: 9,
-            color: _kMuted.withValues(alpha: 0.7), height: 1.3)),
-      ],
+  Widget _kpiRow(String label, String value, Color color) => Row(children: [
+    Expanded(child: Text(label, style: const TextStyle(fontSize: 9.5, color: _kMuted))),
+    Text(value, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: color)),
+  ]);
+}
+
+// ─── Tableau comparatif ───────────────────────────────────────────────────────
+
+class _CriseComparisonTable extends StatelessWidget {
+  const _CriseComparisonTable({required this.results, required this.seuil, required this.isDark});
+  final List<_CriseScResult> results;
+  final double seuil;
+  final bool   isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final hdrBg  = isDark ? const Color(0xFF0D1826) : const Color(0xFFF0F4FA);
+    final border = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+
+    const cols = [
+      ('Scénario',         1),
+      ('Choc',             1),
+      ('Pertes simulées',  2),
+      ('Impact net',       2),
+      ('FP après choc',    2),
+      ('Résilience',       2),
+      ('Ratio',            1),
+      ('Statut',           1),
+    ];
+
+    Widget hCell(String text) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Text(text, style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: _kMuted)),
     );
+
+    Widget dCell(String text, Color color) => Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+      child: Text(text,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+        overflow: TextOverflow.ellipsis),
+    );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: border),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        // En-têtes
+        Container(
+          decoration: BoxDecoration(
+            color: hdrBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+            border: Border(bottom: BorderSide(color: border)),
+          ),
+          child: Row(children: cols.map((c) =>
+            Expanded(flex: c.$2, child: hCell(c.$1))).toList()),
+        ),
+        // Lignes
+        ...results.map((r) {
+          final ratioStr = r.aprStresses > 0
+              ? '${(r.ratio * 100).toStringAsFixed(1)} %' : '—';
+          final ratioColor = r.aprStresses > 0
+              ? (r.ratio >= seuil ? _kSuccess : _kDanger) : _kMuted;
+
+          return Container(
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: border.withValues(alpha: 0.5))),
+            ),
+            child: Row(children: [
+              // Scénario
+              Expanded(child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                child: Row(children: [
+                  Container(width: 8, height: 8,
+                    decoration: BoxDecoration(color: r.color, shape: BoxShape.circle)),
+                  const SizedBox(width: 5),
+                  Expanded(child: Text('${r.code} ${r.label}',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis)),
+                ]),
+              )),
+              // Choc
+              Expanded(child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: r.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(r.factorLabel,
+                    style: TextStyle(fontSize: 9, color: r.color, fontWeight: FontWeight.w600),
+                    overflow: TextOverflow.ellipsis),
+                ),
+              )),
+              Expanded(flex: 2, child: dCell(AppFormatters.currency(r.pertesSimulees),
+                r.factor > 1 ? _kDanger : _kSuccess)),
+              Expanded(flex: 2, child: dCell(AppFormatters.currency(r.impactNet),
+                r.impactNet > 0 ? _kDanger : _kSuccess)),
+              Expanded(flex: 2, child: dCell(AppFormatters.currency(r.fpApresChoc),
+                r.fpApresChoc >= 0 ? _kSuccess : _kDanger)),
+              Expanded(flex: 2, child: dCell(AppFormatters.currency(r.resilience),
+                r.resilience >= 0 ? _kSuccess : _kDanger)),
+              Expanded(child: dCell(ratioStr, ratioColor)),
+              // Statut badge
+              Expanded(child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: (r.pass ? _kSuccess : _kDanger).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(r.pass ? '✓ OK' : '✗ KO',
+                    style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800,
+                      color: r.pass ? _kSuccess : _kDanger),
+                    textAlign: TextAlign.center),
+                ),
+              )),
+            ]),
+          );
+        }),
+      ]),
+    );
+  }
 }
 
 // ─── VIEW 3 : PERTES (conteneur avec onglets) ─────────────────────────────────
@@ -1465,9 +1742,14 @@ class _PertesContentState extends State<_PertesContent> {
         final top5 = sortedTop5.take(5).toList();
 
         final byLigne = <String, double>{};
+        final byLigneCount = <String, int>{};
+        final byType  = <String, double>{};
         for (final i in items) {
-          byLigne[i.ligneMetier] = (byLigne[i.ligneMetier] ?? 0) + i.perteNette;
+          byLigne[i.ligneMetier]  = (byLigne[i.ligneMetier]  ?? 0) + i.perteNette;
+          byLigneCount[i.ligneMetier] = (byLigneCount[i.ligneMetier] ?? 0) + 1;
+          byType[i.typeEvenement] = (byType[i.typeEvenement] ?? 0) + i.perteNette;
         }
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return SingleChildScrollView(
           child: Column(
@@ -1480,36 +1762,28 @@ class _PertesContentState extends State<_PertesContent> {
                 significatifs: significatifs,
                 moyenne: moyenne,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 14),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ── Top 5 ─────────────────────────────────────────────────
                   Expanded(
-                    child: SectionCard(
-                      title: 'Top 5 incidents par perte nette',
-                      child: items.isEmpty
-                          ? const Padding(padding: EdgeInsets.all(16), child: Text('Aucun incident.', style: TextStyle(color: _kMuted)))
-                          : Table(
-                              columnWidths: const {0: FixedColumnWidth(120), 1: FlexColumnWidth(), 2: FixedColumnWidth(110)},
-                              children: [
-                                _tableHeader(['Référence', 'Description', 'Perte nette']),
-                                ...top5.map((i) => TableRow(
-                                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
-                                  children: [_cell(i.reference, bold: true), _cellFlex(i.description), _cell(AppFormatters.currency(i.perteNette), right: true, color: _kDanger)],
-                                )),
-                              ],
-                            ),
+                    flex: 5,
+                    child: _PertesTop5Card(
+                      top5: top5,
+                      totalNette: totalNette,
+                      isDark: isDark,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 14),
+                  // ── Lignes de métier ──────────────────────────────────────
                   Expanded(
-                    child: SectionCard(
-                      title: 'Pertes par ligne de métier',
-                      child: byLigne.isEmpty
-                          ? const Padding(padding: EdgeInsets.all(16), child: Text('Aucune donnée.', style: TextStyle(color: _kMuted)))
-                          : _RoPieChart(
-                              items: byLigne.entries.map((e) => RoRepartitionItem(label: e.key, valeur: e.value.round())).toList(),
-                            ),
+                    flex: 5,
+                    child: _PertesLigneCard(
+                      byLigne: byLigne,
+                      byLigneCount: byLigneCount,
+                      totalNette: totalNette,
+                      isDark: isDark,
                     ),
                   ),
                 ],
@@ -1518,6 +1792,303 @@ class _PertesContentState extends State<_PertesContent> {
           ),
         );
       },
+    );
+  }
+}
+
+// ─── Top 5 incidents ─────────────────────────────────────────────────────────
+
+class _PertesTop5Card extends StatelessWidget {
+  const _PertesTop5Card({required this.top5, required this.totalNette, required this.isDark});
+  final List<RoIncident> top5;
+  final double totalNette;
+  final bool isDark;
+
+  static const _rankColors = [
+    Color(0xFFFFB300), // or
+    Color(0xFF90A4AE), // argent
+    Color(0xFFBF8C5A), // bronze
+    Color(0xFF5C6BC0),
+    Color(0xFF42A5F5),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final bg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final border = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+    final maxPerte = top5.isNotEmpty ? top5.first.perteNette : 1.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // En-tête
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: border)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+            ),
+            child: Row(children: [
+              Container(width: 3, height: 16, decoration: BoxDecoration(
+                color: _kDanger, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('Top 5 — Incidents par perte nette',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+              if (top5.isEmpty)
+                const Text('Aucun incident', style: TextStyle(fontSize: 11, color: _kMuted))
+              else
+                _badge('${top5.length} incidents', _kDanger),
+            ]),
+          ),
+          // Corps
+          if (top5.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: Text('Aucun incident enregistré.', style: TextStyle(color: _kMuted))),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: top5.asMap().entries.map((e) {
+                  final rank = e.key;
+                  final i    = e.value;
+                  final rc   = _rankColors[rank];
+                  final prog = maxPerte > 0 ? (i.perteNette / maxPerte).clamp(0.0, 1.0) : 0.0;
+                  final pct  = totalNette > 0 ? (i.perteNette / totalNette * 100) : 0.0;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          // Rang
+                          Container(
+                            width: 26, height: 26,
+                            decoration: BoxDecoration(
+                              color: rc.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: rc.withValues(alpha: 0.35)),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text('${rank + 1}',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: rc)),
+                          ),
+                          const SizedBox(width: 10),
+                          // Référence + description
+                          Expanded(child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                Text(i.reference,
+                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+                                    color: isDark ? Colors.white : Colors.black87)),
+                                const SizedBox(width: 6),
+                                Flexible(child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: _kWarning.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  child: Text(i.typeEvenement,
+                                    style: const TextStyle(fontSize: 9, color: _kWarning, fontWeight: FontWeight.w600),
+                                    overflow: TextOverflow.ellipsis),
+                                )),
+                              ]),
+                              const SizedBox(height: 2),
+                              Text(i.description,
+                                style: const TextStyle(fontSize: 10.5, color: _kMuted),
+                                maxLines: 1, overflow: TextOverflow.ellipsis),
+                            ],
+                          )),
+                          const SizedBox(width: 10),
+                          // Montant + %
+                          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                            Text(AppFormatters.currency(i.perteNette),
+                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: _kDanger)),
+                            Text('${pct.toStringAsFixed(1)} % du total',
+                              style: const TextStyle(fontSize: 9.5, color: _kMuted)),
+                          ]),
+                        ]),
+                        const SizedBox(height: 6),
+                        // Barre de progression relative
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Stack(children: [
+                            Container(height: 5, color: isDark
+                                ? rc.withValues(alpha: 0.12) : rc.withValues(alpha: 0.08)),
+                            FractionallySizedBox(
+                              widthFactor: prog,
+                              child: Container(
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(colors: [rc.withValues(alpha: 0.7), rc]),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ]),
+                        ),
+                        if (rank < top5.length - 1)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Divider(height: 1, thickness: 0.5,
+                              color: border.withValues(alpha: 0.5)),
+                          ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Pertes par ligne de métier ───────────────────────────────────────────────
+
+class _PertesLigneCard extends StatelessWidget {
+  const _PertesLigneCard({
+    required this.byLigne, required this.byLigneCount,
+    required this.totalNette, required this.isDark,
+  });
+  final Map<String, double> byLigne;
+  final Map<String, int>    byLigneCount;
+  final double totalNette;
+  final bool   isDark;
+
+  static const _palette = [
+    Color(0xFF00BCD4), Color(0xFF4CAF50), Color(0xFF673AB7),
+    Color(0xFFFF9800), Color(0xFF9C27B0), Color(0xFFE91E63),
+    Color(0xFFF97316), Color(0xFF84CC16),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final bg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final border = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+
+    final sorted = byLigne.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // En-tête
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: border)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+            ),
+            child: Row(children: [
+              Container(width: 3, height: 16, decoration: BoxDecoration(
+                color: _kBlue, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('Pertes par ligne de métier',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+              Text(AppFormatters.currency(totalNette),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kDanger)),
+            ]),
+          ),
+          // Corps
+          if (sorted.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(child: Text('Aucune donnée.', style: TextStyle(color: _kMuted))),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: sorted.asMap().entries.map((e) {
+                  final idx   = e.key;
+                  final ligne = e.value.key;
+                  final montant = e.value.value;
+                  final count = byLigneCount[ligne] ?? 0;
+                  final pct   = totalNette > 0 ? (montant / totalNette) : 0.0;
+                  final c     = _palette[idx % _palette.length];
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Container(width: 9, height: 9,
+                            decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(ligne,
+                            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w500,
+                              color: isDark ? Colors.white : Colors.black87),
+                            overflow: TextOverflow.ellipsis)),
+                          const SizedBox(width: 8),
+                          // Nb incidents
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: c.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text('$count incident${count > 1 ? 's' : ''}',
+                              style: TextStyle(fontSize: 9, color: c, fontWeight: FontWeight.w600)),
+                          ),
+                          const SizedBox(width: 8),
+                          // Montant
+                          Text(AppFormatters.currency(montant),
+                            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: c)),
+                          const SizedBox(width: 8),
+                          // %
+                          SizedBox(
+                            width: 42,
+                            child: Text('${(pct * 100).toStringAsFixed(1)} %',
+                              textAlign: TextAlign.right,
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c)),
+                          ),
+                        ]),
+                        const SizedBox(height: 5),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: Stack(children: [
+                            Container(height: 10,
+                              color: isDark ? c.withValues(alpha: 0.12) : c.withValues(alpha: 0.09)),
+                            FractionallySizedBox(
+                              widthFactor: pct.clamp(0.0, 1.0),
+                              child: Container(
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(colors: [c.withValues(alpha: 0.75), c]),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                              ),
+                            ),
+                          ]),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -1721,6 +2292,7 @@ class _KriView extends StatefulWidget {
 
 class _KriViewState extends State<_KriView> {
   late Future<RoKriModuleData> _future;
+  String? _filterStatus;
 
   @override
   void initState() {
@@ -1914,100 +2486,307 @@ class _KriViewState extends State<_KriView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark      = Theme.of(context).brightness == Brightness.dark;
+    final panelBg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final panelBorder = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+
     return FutureBuilder<RoKriModuleData>(
       future: _future,
       builder: (ctx, snap) {
         if (snap.connectionState != ConnectionState.done) return _loadingBox();
         if (snap.hasError) return _errorBox(snap.error!);
-        final data = snap.data!;
-        final kris = data.kriList;
+        final data     = snap.data!;
+        final kris     = data.kriList;
         final normal   = kris.where((k) => k.statut == 'normal').length;
         final alerte   = kris.where((k) => k.statut == 'alerte').length;
         final critique = kris.where((k) => k.statut == 'critique').length;
         final nonRens  = kris.where((k) => k.statut == 'non_renseigne').length;
+        final filtered = _filterStatus == null
+            ? kris
+            : kris.where((k) => k.statut == _filterStatus).toList();
 
-        return Column(
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Bandeau conformité ────────────────────────────────────────────
-            _KriBanner(total: kris.length, normal: normal, alerte: alerte,
-              critique: critique, nonRens: nonRens),
-            const SizedBox(height: 12),
-            // ── Barre d'actions ───────────────────────────────────────────────
-            Row(children: [
-              if (data.kriHorsSeuil > 0)
+            // ── Panneau gauche : vue d'ensemble + filtres ─────────────────
+            Container(
+              width: 230,
+              decoration: BoxDecoration(
+                color: panelBg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: panelBorder),
+              ),
+              child: Column(children: [
+                // En-tête
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                   decoration: BoxDecoration(
-                    color: _kDanger.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: _kDanger.withValues(alpha: 0.30)),
+                    color: AppColors.prudentialSolvency.withValues(alpha: 0.07),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    border: Border(bottom: BorderSide(color: panelBorder)),
                   ),
                   child: Row(children: [
-                    const Icon(Icons.notifications_active_rounded, color: _kDanger, size: 14),
-                    const SizedBox(width: 6),
-                    Text('${data.kriHorsSeuil} KRI hors seuil — action immédiate requise',
-                      style: const TextStyle(color: _kDanger, fontSize: 11.5, fontWeight: FontWeight.w700)),
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: AppColors.prudentialSolvency.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: const Icon(Icons.speed_rounded, size: 15, color: AppColors.prudentialSolvency),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(child: Text('Vue d\'ensemble',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                    _badge('Art. 313', AppColors.prudentialSolvency),
                   ]),
                 ),
-              const Spacer(),
-              OutlinedButton.icon(
-                onPressed: _reload,
-                icon: const Icon(Icons.refresh_rounded, size: 16),
-                label: const Text('Actualiser'),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.prudentialSolvency),
-                onPressed: kris.isEmpty ? null : () => _addValeur(kris),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Saisir une valeur'),
-              ),
-            ]),
-            const SizedBox(height: 12),
-            // ── Grille de cartes KRI + historique en bas ─────────────────────
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: kris.isEmpty
-                        ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.speed_outlined, size: 52, color: _kMuted.withValues(alpha: 0.3)),
-                            const SizedBox(height: 12),
-                            const Text('Aucun KRI configuré', style: TextStyle(color: _kMuted, fontSize: 13)),
-                          ]))
-                        : SingleChildScrollView(
-                            child: Column(
-                              children: [
-                                for (int i = 0; i < kris.length; i += 2)
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(child: _KriCard(kri: kris[i],
-                                          kriNum: _extractKriNum(kris[i].definition.nom))),
-                                        if (i + 1 < kris.length) ...[
-                                          const SizedBox(width: 10),
-                                          Expanded(child: _KriCard(kri: kris[i + 1],
-                                            kriNum: _extractKriNum(kris[i + 1].definition.nom))),
-                                        ] else
-                                          const Expanded(child: SizedBox()),
-                                      ],
-                                    ),
-                                  ),
-                              ],
+                // Contenu scrollable
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 4 stat tiles 2×2
+                        Row(children: [
+                          Expanded(child: _kriStatTile('Total', '${kris.length}', _kBlue, Icons.speed_rounded)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _kriStatTile('Normal', '$normal', _kSuccess, Icons.check_circle_rounded)),
+                        ]),
+                        const SizedBox(height: 8),
+                        Row(children: [
+                          Expanded(child: _kriStatTile('Alerte', '$alerte', _kWarning, Icons.warning_amber_rounded)),
+                          const SizedBox(width: 8),
+                          Expanded(child: _kriStatTile('Critique', '$critique', _kDanger, Icons.dangerous_rounded)),
+                        ]),
+
+                        const SizedBox(height: 16),
+                        // Distribution
+                        _kriPanelSection('Distribution', Icons.bar_chart_rounded, AppColors.prudentialSolvency),
+                        const SizedBox(height: 8),
+                        if (kris.isNotEmpty) _kriDistBar(normal, alerte, critique, nonRens, kris.length)
+                        else const Text('Aucun KRI', style: TextStyle(fontSize: 11, color: _kMuted)),
+
+                        const SizedBox(height: 16),
+                        // Filtre par statut
+                        _kriPanelSection('Filtrer', Icons.filter_list_rounded, _kMuted),
+                        const SizedBox(height: 8),
+                        _filterChip('Tous', null, '${kris.length}', _kBlue),
+                        const SizedBox(height: 5),
+                        _filterChip('Normal', 'normal', '$normal', _kSuccess),
+                        const SizedBox(height: 5),
+                        _filterChip('En alerte', 'alerte', '$alerte', _kWarning),
+                        const SizedBox(height: 5),
+                        _filterChip('Critique', 'critique', '$critique', _kDanger),
+                        if (nonRens > 0) ...[
+                          const SizedBox(height: 5),
+                          _filterChip('Non renseigné', 'non_renseigne', '$nonRens', _kMuted),
+                        ],
+
+                        const SizedBox(height: 16),
+                        // Actions
+                        _kriPanelSection('Actions', Icons.bolt_rounded, _kBlue),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _reload,
+                            icon: const Icon(Icons.refresh_rounded, size: 15),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              textStyle: const TextStyle(fontSize: 12),
                             ),
+                            label: const Text('Actualiser'),
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.prudentialSolvency,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              textStyle: const TextStyle(fontSize: 12),
+                            ),
+                            onPressed: kris.isEmpty ? null : () => _addValeur(kris),
+                            icon: const Icon(Icons.add_rounded, size: 16),
+                            label: const Text('Saisir une valeur'),
+                          ),
+                        ),
+                        if (data.kriHorsSeuil > 0) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: _kDanger.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: _kDanger.withValues(alpha: 0.25)),
+                            ),
+                            child: Row(children: [
+                              const Icon(Icons.notifications_active_rounded, color: _kDanger, size: 13),
+                              const SizedBox(width: 6),
+                              Expanded(child: Text(
+                                '${data.kriHorsSeuil} KRI hors seuil',
+                                style: const TextStyle(color: _kDanger, fontSize: 10.5, fontWeight: FontWeight.w700))),
+                            ]),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  _KriHistoriquePanel(kris: kris),
-                ],
+                ),
+              ]),
+            ),
+
+            const SizedBox(width: 14),
+
+            // ── Panneau droit : bannière + grille KRI + historique ─────────
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _KriBanner(total: kris.length, normal: normal, alerte: alerte,
+                      critique: critique, nonRens: nonRens),
+                    const SizedBox(height: 12),
+                    if (filtered.isEmpty)
+                      SizedBox(
+                        height: 160,
+                        child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.speed_outlined, size: 52, color: _kMuted.withValues(alpha: 0.3)),
+                          const SizedBox(height: 12),
+                          Text(
+                            kris.isEmpty ? 'Aucun KRI configuré' : 'Aucun KRI dans ce statut',
+                            style: const TextStyle(color: _kMuted, fontSize: 13)),
+                        ])),
+                      )
+                    else
+                      Column(
+                        children: [
+                          for (int i = 0; i < filtered.length; i += 3)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (int j = i; j < math.min(i + 3, filtered.length); j++) ...[
+                                    if (j > i) const SizedBox(width: 10),
+                                    Expanded(child: _KriCard(
+                                      kri: filtered[j],
+                                      kriNum: _extractKriNum(filtered[j].definition.nom),
+                                      onAddValeur: () => _addValeur(kris,
+                                        preselectedId: filtered[j].definition.id),
+                                    )),
+                                  ],
+                                  for (int j = filtered.length; j < i + 3 && filtered.length > i + 1; j++) ...[
+                                    const SizedBox(width: 10),
+                                    const Expanded(child: SizedBox()),
+                                  ],
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 10),
+                    _KriHistoriquePanel(kris: kris),
+                  ],
+                ),
               ),
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _kriPanelSection(String title, IconData icon, Color color) => Row(children: [
+    Icon(icon, size: 12, color: color),
+    const SizedBox(width: 6),
+    Text(title.toUpperCase(),
+      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.5)),
+  ]);
+
+  Widget _kriStatTile(String label, String value, Color color, IconData icon) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.07),
+      borderRadius: BorderRadius.circular(7),
+      border: Border.all(color: color.withValues(alpha: 0.2)),
+    ),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      Icon(icon, size: 12, color: color),
+      const SizedBox(height: 4),
+      Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color, height: 1.1)),
+      Text(label, style: const TextStyle(fontSize: 9.5, color: _kMuted)),
+    ]),
+  );
+
+  Widget _kriDistBar(int normal, int alerte, int critique, int nonRens, int total) {
+    final parts = <(int, Color)>[
+      (normal,   _kSuccess),
+      (alerte,   _kWarning),
+      (critique, _kDanger),
+      (nonRens,  _kMuted),
+    ].where((e) => e.$1 > 0).toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Row(
+          children: parts.map((e) => Expanded(
+            flex: e.$1,
+            child: Container(height: 8, color: e.$2),
+          )).toList(),
+        ),
+      ),
+      const SizedBox(height: 6),
+      Wrap(spacing: 8, runSpacing: 4, children: [
+        if (normal   > 0) _distLegend('Normal ${(normal/total*100).round()}%',   _kSuccess),
+        if (alerte   > 0) _distLegend('Alerte ${(alerte/total*100).round()}%',   _kWarning),
+        if (critique > 0) _distLegend('Critique ${(critique/total*100).round()}%', _kDanger),
+        if (nonRens  > 0) _distLegend('N/R ${(nonRens/total*100).round()}%',     _kMuted),
+      ]),
+    ]);
+  }
+
+  Widget _distLegend(String label, Color color) => Row(mainAxisSize: MainAxisSize.min, children: [
+    Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+    const SizedBox(width: 4),
+    Text(label, style: const TextStyle(fontSize: 9.5, color: _kMuted)),
+  ]);
+
+  Widget _filterChip(String label, String? status, String count, Color color) {
+    final isSelected = _filterStatus == status;
+    return InkWell(
+      onTap: () => setState(() => _filterStatus = isSelected ? null : status),
+      borderRadius: BorderRadius.circular(6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected ? color.withValues(alpha: 0.4) : color.withValues(alpha: 0.15)),
+        ),
+        child: Row(children: [
+          Container(width: 7, height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 7),
+          Expanded(child: Text(label,
+            style: TextStyle(fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              color: isSelected ? color : _kMuted))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(count,
+              style: TextStyle(fontSize: 9.5, color: color, fontWeight: FontWeight.w700)),
+          ),
+        ]),
+      ),
     );
   }
 }
@@ -2258,9 +3037,10 @@ class _KriBanner extends StatelessWidget {
 // ─── KRI Card ─────────────────────────────────────────────────────────────────
 
 class _KriCard extends StatelessWidget {
-  const _KriCard({required this.kri, required this.kriNum});
+  const _KriCard({required this.kri, required this.kriNum, this.onAddValeur});
   final RoKriView kri;
   final int kriNum;
+  final VoidCallback? onAddValeur;
 
   @override
   Widget build(BuildContext context) {
@@ -2477,6 +3257,24 @@ class _KriCard extends StatelessWidget {
                     style: TextStyle(fontSize: 9.5, color: mutedColor),
                     overflow: TextOverflow.ellipsis)),
                 ]),
+
+                if (onAddValeur != null) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: onAddValeur,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.prudentialSolvency,
+                        side: BorderSide(color: AppColors.prudentialSolvency.withValues(alpha: 0.4)),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        textStyle: const TextStyle(fontSize: 11),
+                      ),
+                      icon: const Icon(Icons.add_rounded, size: 14),
+                      label: const Text('Saisir une valeur'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -3891,11 +4689,386 @@ class _HistoriqueView extends StatefulWidget {
 
 class _HistoriqueViewState extends State<_HistoriqueView> {
   late Future<List<RoHistorique>> _future;
+  final _dateDebutCtrl = TextEditingController();
+  final _dateFinCtrl   = TextEditingController();
+  bool _exporting = false;
 
   @override
   void initState() {
     super.initState();
     _future = widget.api.fetchRoHistorique();
+  }
+
+  @override
+  void dispose() {
+    _dateDebutCtrl.dispose();
+    _dateFinCtrl.dispose();
+    super.dispose();
+  }
+
+  List<RoHistorique> _applyFilters(List<RoHistorique> all) {
+    final debut = DateTime.tryParse(_dateDebutCtrl.text);
+    final fin   = DateTime.tryParse(_dateFinCtrl.text);
+    return all.where((h) {
+      final d = DateTime.tryParse(h.dateEvenement);
+      if (d == null) return true;
+      if (debut != null && d.isBefore(debut)) return false;
+      if (fin   != null && d.isAfter(fin.add(const Duration(days: 1)))) return false;
+      return true;
+    }).toList();
+  }
+
+  Future<void> _pickDate(TextEditingController ctrl) async {
+    DateTime? current;
+    try { if (ctrl.text.isNotEmpty) current = DateTime.parse(ctrl.text); } catch (_) {}
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      helpText: 'Sélectionner une date',
+    );
+    if (picked != null && mounted) {
+      setState(() => ctrl.text = picked.toIso8601String().substring(0, 10));
+    }
+  }
+
+  String get _periodeLabel {
+    final d = _dateDebutCtrl.text;
+    final f = _dateFinCtrl.text;
+    if (d.isNotEmpty && f.isNotEmpty) return ' [$d → $f]';
+    if (d.isNotEmpty) return ' [depuis $d]';
+    if (f.isNotEmpty) return ' [jusqu\'au $f]';
+    return '';
+  }
+
+  Future<void> _exportData(List<RoHistorique> items) async {
+    if (items.isEmpty || _exporting) return;
+
+    final format = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        final th      = Theme.of(ctx);
+        final isDlgDk = th.brightness == Brightness.dark;
+        final bg      = th.cardTheme.color ?? (isDlgDk ? const Color(0xFF1B2C4A) : Colors.white);
+        final soft    = isDlgDk ? const Color(0xFF14233D) : const Color(0xFFF8FAFE);
+        final border  = th.dividerColor;
+        final txt     = th.textTheme.bodyLarge?.color ?? (isDlgDk ? Colors.white : Colors.black87);
+        final muted   = isDlgDk ? const Color(0xFF8BA3C7) : const Color(0xFF94A3B8);
+        final accent  = th.colorScheme.primary;
+
+        Widget optionRow({
+          required IconData icon,
+          required Color color,
+          required String label,
+          required String badge,
+          required String description,
+          required String value,
+        }) => InkWell(
+          onTap: () => Navigator.pop(ctx, value),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: soft,
+              border: Border.all(color: border),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: txt)),
+                  const SizedBox(width: 7),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(badge, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+                  ),
+                ]),
+                const SizedBox(height: 2),
+                Text(description, style: TextStyle(fontSize: 11.5, color: muted)),
+              ])),
+              Icon(Icons.chevron_right_rounded, color: muted, size: 20),
+            ]),
+          ),
+        );
+
+        return Dialog(
+          backgroundColor: bg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: SizedBox(
+            width: 460,
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Icon(Icons.file_download_outlined, color: accent, size: 22),
+                    const SizedBox(width: 10),
+                    Text('Exporter l\'historique',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: txt)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('xlsx / pdf',
+                          style: TextStyle(fontSize: 10, color: accent, fontWeight: FontWeight.w600)),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.close, size: 18, color: muted),
+                      onPressed: () => Navigator.pop(ctx),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ]),
+                  const SizedBox(height: 6),
+                  Text('Sélectionnez le format du fichier à générer.',
+                      style: TextStyle(fontSize: 12, color: muted)),
+                  const SizedBox(height: 18),
+                  optionRow(
+                    icon: Icons.table_chart_outlined,
+                    color: const Color(0xFF1E88E5),
+                    label: 'Excel',
+                    badge: '.xlsx',
+                    description: 'Tableur éditable — formules, filtres et tri',
+                    value: 'excel',
+                  ),
+                  const SizedBox(height: 10),
+                  optionRow(
+                    icon: Icons.picture_as_pdf_outlined,
+                    color: const Color(0xFFE53935),
+                    label: 'PDF',
+                    badge: '.pdf',
+                    description: 'Document mis en page, prêt à imprimer ou partager',
+                    value: 'pdf',
+                  ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(foregroundColor: muted),
+                      child: const Text('Annuler'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (!mounted || format == null) return;
+
+    setState(() => _exporting = true);
+    try {
+      final now = DateTime.now();
+      final ts  = '${now.year}${now.month.toString().padLeft(2,'0')}${now.day.toString().padLeft(2,'0')}';
+      if (format == 'excel') {
+        await _saveExcel(items, ts);
+      } else {
+        await _savePdf(items, ts);
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Future<void> _saveExcel(List<RoHistorique> items, String ts) async {
+    final workbook     = Excel.createExcel();
+    const sheetName    = 'Historique';
+    final defaultSheet = workbook.getDefaultSheet();
+    if (defaultSheet != null && defaultSheet != sheetName) workbook.rename(defaultSheet, sheetName);
+    final sheet = workbook[sheetName];
+
+    final cBlueDark = ExcelColor.fromHexString('FF1D4ED8');
+    final cWhite    = ExcelColor.fromHexString('FFFFFFFF');
+    final cBorder   = ExcelColor.fromHexString('FFCBD5E1');
+    final cGrey     = ExcelColor.fromHexString('FFF1F5F9');
+    final cRowAlt   = ExcelColor.fromHexString('FFF8FAFC');
+    final thin = xl.Border(borderStyle: xl.BorderStyle.Thin, borderColorHex: cBorder);
+
+    CellStyle base({ExcelColor? bg, ExcelColor? fg, bool bold = false, int size = 10,
+      HorizontalAlign hAlign = HorizontalAlign.Left}) =>
+        CellStyle(
+          backgroundColorHex: bg ?? ExcelColor.none,
+          fontColorHex: fg ?? ExcelColor.black,
+          bold: bold, fontSize: size,
+          horizontalAlign: hAlign,
+          verticalAlign: VerticalAlign.Center,
+          leftBorder: thin, rightBorder: thin, topBorder: thin, bottomBorder: thin,
+        );
+
+    const lastCol = 5;
+    sheet.merge(
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
+      CellIndex.indexByColumnRow(columnIndex: lastCol, rowIndex: 0),
+    );
+    sheet.updateCell(
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
+      TextCellValue('Historique Événements — Risque Opérationnel$_periodeLabel'),
+      cellStyle: base(bg: cBlueDark, fg: cWhite, bold: true, size: 13, hAlign: HorizontalAlign.Center),
+    );
+    sheet.setMergedCellStyle(
+      CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
+      base(bg: cBlueDark, fg: cWhite, bold: true, size: 13, hAlign: HorizontalAlign.Center),
+    );
+    sheet.setRowHeight(0, 36);
+
+    const headers = ['Date', 'Menu', 'Action', 'Utilisateur', 'Élément', 'Détail'];
+    for (var c = 0; c < headers.length; c++) {
+      sheet.updateCell(
+        CellIndex.indexByColumnRow(columnIndex: c, rowIndex: 1),
+        TextCellValue(headers[c]),
+        cellStyle: base(bg: cGrey, bold: true, size: 10, hAlign: HorizontalAlign.Center),
+      );
+    }
+    sheet.setRowHeight(1, 22);
+    const colWidths = [22.0, 18.0, 14.0, 16.0, 20.0, 40.0];
+    for (var c = 0; c < colWidths.length; c++) {
+      sheet.setColumnWidth(c, colWidths[c]);
+    }
+
+    for (var i = 0; i < items.length; i++) {
+      final h      = items[i];
+      final row    = i + 2;
+      final altBg  = i.isEven ? cWhite : cRowAlt;
+      final detail = h.nouvelleValeur.isNotEmpty ? h.nouvelleValeur : h.commentaire;
+      final cells  = [h.dateEvenement.replaceAll('T', ' '), h.menu, h.typeAction, h.utilisateur, h.element, detail];
+      for (var c = 0; c < cells.length; c++) {
+        sheet.updateCell(
+          CellIndex.indexByColumnRow(columnIndex: c, rowIndex: row),
+          TextCellValue(cells[c]),
+          cellStyle: base(bg: altBg),
+        );
+      }
+      sheet.setRowHeight(row, 18);
+    }
+
+    final rawBytes = workbook.save();
+    if (rawBytes == null) return;
+    final location = await getSaveLocation(
+      suggestedName: 'historique_ro_$ts.xlsx',
+      acceptedTypeGroups: const [XTypeGroup(label: 'Excel', extensions: ['xlsx'])],
+    );
+    if (!mounted || location == null) return;
+    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes), requiredExtension: '.xlsx');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export Excel réussi'), backgroundColor: _kSuccess),
+      );
+    }
+  }
+
+  Future<void> _savePdf(List<RoHistorique> items, String ts) async {
+    final fontNormal = pw.Font.ttf(await rootBundle.load('assets/fonts/IBMPlexSans-Regular.ttf'));
+    final fontBold   = pw.Font.ttf(await rootBundle.load('assets/fonts/IBMPlexSans-Bold.ttf'));
+
+    const headerBg  = PdfColor.fromInt(0xFF0F2544);
+    const borderCol = PdfColor.fromInt(0xFFE5E7EB);
+    const mutedCol  = PdfColor.fromInt(0xFF6B7280);
+
+    final now     = DateTime.now();
+    final dateStr = '${now.day.toString().padLeft(2,'0')}/${now.month.toString().padLeft(2,'0')}/${now.year}';
+
+    final headerStyle = pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white, font: fontBold);
+    final bodyStyle   = pw.TextStyle(fontSize: 7.5, font: fontNormal);
+    final mutedStyle  = pw.TextStyle(fontSize: 8, color: mutedCol, font: fontNormal);
+
+    final doc = pw.Document();
+    doc.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4.landscape,
+      margin: const pw.EdgeInsets.all(24),
+      theme: pw.ThemeData.withFont(base: fontNormal, bold: fontBold),
+      header: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: const pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.all(pw.Radius.circular(4))),
+          child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Text('Historique Événements — Risque Opérationnel',
+              style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.white, font: fontBold)),
+            pw.Text(dateStr, style: pw.TextStyle(fontSize: 9, color: const PdfColor.fromInt(0xFFB0C4D8), font: fontNormal)),
+          ]),
+        ),
+        if (_periodeLabel.isNotEmpty)
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(top: 4, left: 2),
+            child: pw.Text('Période filtrée :$_periodeLabel', style: mutedStyle),
+          ),
+        pw.SizedBox(height: 10),
+      ]),
+      build: (ctx) => [
+        pw.TableHelper.fromTextArray(
+          headers: ['Date', 'Menu', 'Action', 'Utilisateur', 'Élément', 'Détail'],
+          data: items.map((h) => [
+            h.dateEvenement.replaceAll('T', ' '),
+            h.menu,
+            h.typeAction,
+            h.utilisateur,
+            h.element,
+            h.nouvelleValeur.isNotEmpty ? h.nouvelleValeur : h.commentaire,
+          ]).toList(),
+          headerStyle: headerStyle,
+          cellStyle: bodyStyle,
+          headerDecoration: const pw.BoxDecoration(color: headerBg),
+          oddRowDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          border: pw.TableBorder.all(color: borderCol, width: 0.5),
+          columnWidths: const {
+            0: pw.FixedColumnWidth(72),
+            1: pw.FixedColumnWidth(60),
+            2: pw.FixedColumnWidth(48),
+            3: pw.FixedColumnWidth(60),
+            4: pw.FixedColumnWidth(80),
+            5: pw.FlexColumnWidth(),
+          },
+          cellAlignments: const {
+            0: pw.Alignment.centerLeft,
+            1: pw.Alignment.centerLeft,
+            2: pw.Alignment.center,
+            3: pw.Alignment.centerLeft,
+            4: pw.Alignment.centerLeft,
+            5: pw.Alignment.centerLeft,
+          },
+        ),
+        pw.SizedBox(height: 12),
+        pw.Divider(color: PdfColors.grey300),
+        pw.SizedBox(height: 4),
+        pw.Text('Document généré le $dateStr — Outil RWA — ${items.length} entrée(s)',
+          style: mutedStyle, textAlign: pw.TextAlign.center),
+      ],
+    ));
+
+    final pdfBytes = await doc.save();
+    final location = await getSaveLocation(
+      suggestedName: 'historique_ro_$ts.pdf',
+      acceptedTypeGroups: const [XTypeGroup(label: 'PDF', extensions: ['pdf'])],
+    );
+    if (!mounted || location == null) return;
+    await saveBytesAtLocation(location, pdfBytes, requiredExtension: '.pdf');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Export PDF réussi'), backgroundColor: _kSuccess),
+      );
+    }
   }
 
   @override
@@ -3920,60 +5093,129 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
               builder: (ctx, snap) {
                 if (snap.connectionState != ConnectionState.done) return _loadingBox();
                 if (snap.hasError) return _errorBox(snap.error!);
-                final items = snap.data!;
+                final allItems      = snap.data!;
+                final filteredItems = _applyFilters(allItems);
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ── Barre filtres + export ──────────────────────────────
                     Row(
                       children: [
                         const Icon(Icons.lock_outline, size: 14, color: _kMuted),
-                const SizedBox(width: 6),
-                const Text('Journal non modifiable — conservation 7 ans (UMOA)', style: TextStyle(fontSize: 12, color: _kMuted)),
-                const Spacer(),
-                _badge('${items.length} entrées', _kBlue),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF13233E) : Colors.white,
-                  border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: items.isEmpty
-                    ? const Center(child: Text('Aucun événement enregistré.', style: TextStyle(color: _kMuted)))
-                    : SingleChildScrollView(
-                        child: Table(
-                          columnWidths: const {0: FixedColumnWidth(150), 1: FixedColumnWidth(90), 2: FixedColumnWidth(90), 3: FixedColumnWidth(80), 4: FixedColumnWidth(120), 5: FlexColumnWidth()},
-                          children: [
-                            _tableHeader(['Date', 'Menu', 'Action', 'Utilisateur', 'Élément', 'Détail']),
-                            ...items.map((h) => TableRow(
-                              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
-                              children: [
-                                _cell(h.dateEvenement.replaceAll('T', ' ')),
-                                _cell(h.menu),
-                                TableCell(
-                                  verticalAlignment: TableCellVerticalAlignment.middle,
-                                  child: Padding(padding: const EdgeInsets.all(8), child: _badge(h.typeAction, _actionColor(h.typeAction))),
+                        const SizedBox(width: 6),
+                        const Text('Journal non modifiable — conservation 7 ans (UMOA)',
+                            style: TextStyle(fontSize: 12, color: _kMuted)),
+                        const Spacer(),
+                        // Date début
+                        _histDateField('Date début', _dateDebutCtrl, isDark, () => _pickDate(_dateDebutCtrl)),
+                        const SizedBox(width: 6),
+                        // Date fin
+                        _histDateField('Date fin', _dateFinCtrl, isDark, () => _pickDate(_dateFinCtrl)),
+                        const SizedBox(width: 6),
+                        // Reset
+                        if (_dateDebutCtrl.text.isNotEmpty || _dateFinCtrl.text.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Tooltip(
+                              message: 'Réinitialiser les filtres',
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(4),
+                                onTap: () => setState(() {
+                                  _dateDebutCtrl.clear();
+                                  _dateFinCtrl.clear();
+                                }),
+                                child: const Padding(
+                                  padding: EdgeInsets.all(4),
+                                  child: Icon(Icons.clear, size: 16, color: _kMuted),
                                 ),
-                                _cell(h.utilisateur),
-                                _cell(h.element),
-                                _cellFlex(h.nouvelleValeur.isNotEmpty ? h.nouvelleValeur : h.commentaire),
-                              ],
-                            )),
-                          ],
+                              ),
+                            ),
+                          ),
+                        // Bouton exporter
+                        SizedBox(
+                          height: 30,
+                          child: FilledButton.icon(
+                            onPressed: (filteredItems.isEmpty || _exporting) ? null : () => _exportData(filteredItems),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: (filteredItems.isNotEmpty && !_exporting) ? _kSuccess : (isDark ? const Color(0xFF1B2B47) : const Color(0xFFE8EEF8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                            ),
+                            icon: _exporting
+                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.file_download_outlined, size: 15),
+                            label: const Text('Exporter', style: TextStyle(fontSize: 12)),
+                          ),
                         ),
+                        const SizedBox(width: 10),
+                        _badge('${filteredItems.length} / ${allItems.length} entrées', _kBlue),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF13233E) : Colors.white,
+                          border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: filteredItems.isEmpty
+                            ? Center(child: Text(
+                                allItems.isEmpty ? 'Aucun événement enregistré.' : 'Aucun résultat pour ces dates.',
+                                style: const TextStyle(color: _kMuted),
+                              ))
+                            : SingleChildScrollView(
+                                child: Table(
+                                  columnWidths: const {0: FixedColumnWidth(150), 1: FixedColumnWidth(90), 2: FixedColumnWidth(90), 3: FixedColumnWidth(80), 4: FixedColumnWidth(120), 5: FlexColumnWidth()},
+                                  children: [
+                                    _tableHeader(['Date', 'Menu', 'Action', 'Utilisateur', 'Élément', 'Détail']),
+                                    ...filteredItems.map((h) => TableRow(
+                                      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
+                                      children: [
+                                        _cell(h.dateEvenement.replaceAll('T', ' ')),
+                                        _cell(h.menu),
+                                        TableCell(
+                                          verticalAlignment: TableCellVerticalAlignment.middle,
+                                          child: Padding(padding: const EdgeInsets.all(8), child: _badge(h.typeAction, _actionColor(h.typeAction))),
+                                        ),
+                                        _cell(h.utilisateur),
+                                        _cell(h.element),
+                                        _cellFlex(h.nouvelleValeur.isNotEmpty ? h.nouvelleValeur : h.commentaire),
+                                      ],
+                                    )),
+                                  ],
+                                ),
+                              ),
                       ),
-              ),
-            ),
+                    ),
                   ],
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _histDateField(String label, TextEditingController ctrl, bool isDark, VoidCallback onTap) {
+    return SizedBox(
+      width: 130,
+      height: 32,
+      child: TextField(
+        controller: ctrl,
+        readOnly: true,
+        onTap: onTap,
+        style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black87),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(fontSize: 11, color: _kMuted),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
+          suffixIcon: const Icon(Icons.calendar_today_outlined, size: 14, color: _kMuted),
+        ),
       ),
     );
   }
