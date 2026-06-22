@@ -2316,24 +2316,6 @@ int _extractKriNum(String nom) {
   return m != null ? int.tryParse(m.group(1)!) ?? 0 : 0;
 }
 
-Widget _thresholdInfoChip(String label, double seuil, String unite, String sens, Color color) {
-  final symbol = sens == 'superieur' ? '>' : '<';
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: color.withValues(alpha: 0.25)),
-    ),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-      const SizedBox(width: 4),
-      Text('$label: $symbol $seuil $unite',
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
-    ]),
-  );
-}
-
 class _KriView extends StatefulWidget {
   const _KriView({required this.api});
   final RwaApiService api;
@@ -2402,188 +2384,6 @@ class _KriViewState extends State<_KriView> {
       }
       _prevStatuts[kri.definition.id] = curr;
     }
-  }
-
-  Future<void> _addValeur(List<RoKriView> kris, {String? preselectedId}) async {
-    if (kris.isEmpty) return;
-    String? kriId = preselectedId ?? kris.first.definition.id;
-    String? periode = 'Mensuel';
-    String? source;
-    final dateCtrl = TextEditingController(text: DateTime.now().toIso8601String().substring(0, 10));
-    final valCtrl = TextEditingController();
-    final commCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setD) {
-          final selKri = kris.firstWhere((k) => k.definition.id == kriId, orElse: () => kris.first);
-          final d = selKri.definition;
-          final kriNum = _extractKriNum(d.nom);
-          final (srcDefault, srcIcon) = _kriNumSources[kriNum] ?? ('Responsable risque opérationnel', Icons.manage_accounts_rounded);
-          source ??= srcDefault;
-          final desc = _kriNumDescriptions[kriNum] ?? d.formule;
-
-          return AlertDialog(
-            titlePadding: EdgeInsets.zero,
-            title: Container(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
-              decoration: BoxDecoration(
-                color: AppColors.prudentialSolvency.withValues(alpha: 0.06),
-                border: Border(bottom: BorderSide(color: AppColors.prudentialSolvency.withValues(alpha: 0.15))),
-              ),
-              child: Row(children: [
-                Container(
-                  width: 36, height: 36,
-                  decoration: BoxDecoration(color: AppColors.prudentialSolvency.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(9)),
-                  child: const Icon(Icons.speed_rounded, color: AppColors.prudentialSolvency, size: 18),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Saisir une valeur KRI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                  Text('Indicateur clé de risque — mesure périodique (Art. 313)',
-                    style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
-                ])),
-              ]),
-            ),
-            content: SizedBox(
-              width: 500,
-              child: Form(
-                key: formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _formSection('Sélection de l\'indicateur', icon: Icons.speed_rounded, color: AppColors.prudentialSolvency),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Row(children: [
-                              Icon(Icons.analytics_rounded, size: 12, color: _kBlue),
-                              SizedBox(width: 5),
-                              Text('Indicateur KRI *',
-                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: _kMuted)),
-                            ]),
-                            const SizedBox(height: 5),
-                            DropdownButtonFormField<String>(
-                              initialValue: kriId,
-                              isExpanded: true,
-                              icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
-                              items: kris.map((k) => DropdownMenuItem(
-                                value: k.definition.id,
-                                child: Text(k.definition.nom, style: const TextStyle(fontSize: 13),
-                                  overflow: TextOverflow.ellipsis),
-                              )).toList(),
-                              onChanged: (v) => setD(() { kriId = v; source = null; }),
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.zero),
-                              ),
-                              validator: (v) => v == null ? 'Champ requis' : null,
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Fiche info du KRI sélectionné
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 14),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.prudentialSolvency.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.prudentialSolvency.withValues(alpha: 0.18)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(desc, style: const TextStyle(fontSize: 11.5, color: _kMuted, height: 1.5)),
-                            const SizedBox(height: 8),
-                            Wrap(spacing: 8, runSpacing: 5, children: [
-                              _thresholdInfoChip('Alerte', d.seuilAlerte, d.unite, d.sens, _kWarning),
-                              _thresholdInfoChip('Critique', d.seuilCritique, d.unite, d.sens, _kDanger),
-                            ]),
-                            const SizedBox(height: 6),
-                            Row(children: [
-                              Icon(srcIcon, size: 11, color: _kMuted),
-                              const SizedBox(width: 5),
-                              Expanded(child: Text('Source habituelle : $srcDefault',
-                                style: const TextStyle(fontSize: 10.5, color: _kMuted))),
-                            ]),
-                          ],
-                        ),
-                      ),
-                      _formSection('Mesure', icon: Icons.straighten_rounded, color: _kBlue),
-                      _formRow(
-                        _dropdown('Période', periode, ['Hebdomadaire', 'Mensuel', 'Trimestriel'],
-                          (v) => setD(() => periode = v), required: true, icon: Icons.calendar_view_month_rounded),
-                        _dateField(ctx, 'Date de mesure', dateCtrl, required: true),
-                      ),
-                      _field('Valeur mesurée', valCtrl,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        required: true, icon: Icons.numbers_rounded,
-                        hint: 'Saisir la valeur observée (ex: 3, 98.5, 2.0)'),
-                      _formSection('Contexte et source', icon: Icons.info_outline_rounded, color: _kMuted),
-                      _dropdown('Source de la donnée', source, [
-                        'Service IT — logs système',
-                        'Service IT — monitoring',
-                        'Service IT / Sécurité informatique',
-                        'Audit interne',
-                        'Service RH',
-                        'Responsable risque opérationnel',
-                        'Superviseur / Chef d\'équipe',
-                      ], (v) => setD(() => source = v), icon: Icons.people_rounded,
-                        hint: 'Qui a fourni cette valeur ?'),
-                      _field('Commentaire / contexte', commCtrl, multiline: true,
-                        icon: Icons.notes_rounded,
-                        hint: 'Contexte, cause identifiée ou action déclenchée...'),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-            actions: [
-              OutlinedButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                icon: const Icon(Icons.save_rounded, size: 16),
-                style: FilledButton.styleFrom(backgroundColor: AppColors.prudentialSolvency),
-                onPressed: () async {
-                  if (!formKey.currentState!.validate()) return;
-                  final commentaire = [
-                    if (source != null && source!.isNotEmpty) 'Source: $source',
-                    if (commCtrl.text.trim().isNotEmpty) commCtrl.text.trim(),
-                  ].join(' | ');
-                  try {
-                    await widget.api.addRoKriValeur({
-                      'kri_id': kriId,
-                      'date_mesure': dateCtrl.text.trim(),
-                      'valeur': double.tryParse(valCtrl.text.trim().replaceAll(',', '.')) ?? 0,
-                      'commentaire': commentaire,
-                      'periode': periode,
-                    });
-                    if (ctx.mounted) Navigator.pop(ctx, true);
-                  } catch (e) {
-                    if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
-                    }
-                  }
-                },
-                label: const Text('Enregistrer'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-    if (ok == true) _reload();
   }
 
   @override
@@ -2735,23 +2535,6 @@ class _KriViewState extends State<_KriView> {
                           ),
                         ),
 
-                        const SizedBox(height: 16),
-                        // Actions manuelles
-                        _kriPanelSection('Actions', Icons.bolt_rounded, _kBlue),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.prudentialSolvency,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              textStyle: const TextStyle(fontSize: 12),
-                            ),
-                            onPressed: kris.isEmpty ? null : () => _addValeur(kris),
-                            icon: const Icon(Icons.add_rounded, size: 16),
-                            label: const Text('Saisir une valeur'),
-                          ),
-                        ),
                         if (data.kriHorsSeuil > 0) ...[
                           const SizedBox(height: 10),
                           Container(
@@ -2813,8 +2596,6 @@ class _KriViewState extends State<_KriView> {
                                     Expanded(child: _KriCard(
                                       kri: filtered[j],
                                       kriNum: _extractKriNum(filtered[j].definition.nom),
-                                      onAddValeur: () => _addValeur(kris,
-                                        preselectedId: filtered[j].definition.id),
                                     )),
                                   ],
                                   for (int j = filtered.length; j < i + 3 && filtered.length > i + 1; j++) ...[
@@ -3176,10 +2957,9 @@ class _KriBanner extends StatelessWidget {
 // ─── KRI Card ─────────────────────────────────────────────────────────────────
 
 class _KriCard extends StatelessWidget {
-  const _KriCard({required this.kri, required this.kriNum, this.onAddValeur});
+  const _KriCard({required this.kri, required this.kriNum});
   final RoKriView kri;
   final int kriNum;
-  final VoidCallback? onAddValeur;
 
   @override
   Widget build(BuildContext context) {
@@ -3413,23 +3193,6 @@ class _KriCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis)),
                 ]),
 
-                if (onAddValeur != null) ...[
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: onAddValeur,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.prudentialSolvency,
-                        side: BorderSide(color: AppColors.prudentialSolvency.withValues(alpha: 0.4)),
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        textStyle: const TextStyle(fontSize: 11),
-                      ),
-                      icon: const Icon(Icons.add_rounded, size: 14),
-                      label: const Text('Saisir une valeur'),
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
