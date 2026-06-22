@@ -2573,7 +2573,7 @@ class _KriViewState extends State<_KriView> {
                                     if (j > i) const SizedBox(width: 10),
                                     Expanded(child: _KriCard(
                                       kri: filtered[j],
-                                      kriNum: _extractKriNum(filtered[j].definition.nom),
+                                      kriNum: _extractKriNum(filtered[j].definition.id),
                                     )),
                                   ],
                                   for (int j = filtered.length; j < i + 3 && filtered.length > i + 1; j++) ...[
