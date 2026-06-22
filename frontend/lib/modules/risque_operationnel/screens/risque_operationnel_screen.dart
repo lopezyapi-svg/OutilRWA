@@ -4185,150 +4185,285 @@ class _PlansViewState extends State<_PlansView> {
     if (ok == true) _reload();
   }
 
+  String? _filterStatut;
+  String? _filterPriorite;
+
+  Color _prioriteColor(String p) => switch (p) {
+    'Haute'   => _kDanger,
+    'Moyenne' => _kWarning,
+    _         => _kMuted,
+  };
+
+  Color _planStatutColor(String s) => switch (s) {
+    'Terminé'   => _kSuccess,
+    'En cours'  => _kBlue,
+    'A faire'   => _kMuted,
+    'Abandonné' => const Color(0xFF9E9E9E),
+    _           => _kMuted,
+  };
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final panelBg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final panelBorder = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+
     return FutureBuilder<List<RoPlan>>(
       future: _future,
       builder: (ctx, snap) {
         if (snap.connectionState != ConnectionState.done) return _loadingBox();
         if (snap.hasError) return _errorBox(snap.error!);
-        final items = snap.data!;
-        final retard = items.where((p) => p.enRetard).length;
-        final txReal = items.isNotEmpty ? items.fold(0.0, (s, e) => s + e.avancement) / items.length : 0.0;
-        return Column(
+        final all     = snap.data!;
+        final actifs  = all.where((p) => p.statut != 'Terminé' && p.statut != 'Abandonné').toList();
+        final enCours = all.where((p) => p.statut == 'En cours').length;
+        final termines = all.where((p) => p.statut == 'Terminé').length;
+        final retard  = all.where((p) => p.enRetard).length;
+        final txReal  = all.isNotEmpty
+            ? all.fold(0.0, (s, e) => s + e.avancement) / all.length : 0.0;
+
+        // Plans en violation potentielle du délai 90j UEMOA (Art. 313.b)
+        final now = DateTime.now();
+        final violations90j = actifs.where((p) {
+          if (p.creeLe.isEmpty) return false;
+          final cree = DateTime.tryParse(p.creeLe);
+          if (cree == null) return false;
+          return now.difference(cree).inDays > 90;
+        }).toList();
+
+        // Filtrage
+        var filtered = all.where((p) {
+          if (_filterStatut != null && p.statut != _filterStatut) return false;
+          if (_filterPriorite != null && p.priorite != _filterPriorite) return false;
+          return true;
+        }).toList();
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                _badge('$retard action(s) en retard', retard > 0 ? _kDanger : _kSuccess),
-                const SizedBox(width: 10),
-                _badge('Réalisation : ${txReal.toStringAsFixed(0)} %', txReal >= 80 ? _kSuccess : _kWarning),
-                const Spacer(),
-                FilledButton.icon(onPressed: () => _showForm(), icon: const Icon(Icons.add, size: 18), label: const Text('Nouveau plan')),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF13233E) : Colors.white,
-                  border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
-                  borderRadius: BorderRadius.circular(5),
+            // ── Panneau gauche ──────────────────────────────────────────
+            Container(
+              width: 230,
+              decoration: BoxDecoration(
+                color: panelBg,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: panelBorder),
+              ),
+              child: Column(children: [
+                // En-tête
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: AppColors.marketNeutral.withValues(alpha: 0.07),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    border: Border(bottom: BorderSide(color: panelBorder)),
+                  ),
+                  child: Row(children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: AppColors.marketNeutral.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: const Icon(Icons.task_alt_rounded, size: 15, color: AppColors.marketNeutral),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(child: Text('Plans d\'action',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                    _badge('Art. 313.c', AppColors.marketNeutral),
+                  ]),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: items.isEmpty
-                    ? const Center(child: Text('Aucun plan d\'action enregistré.', style: TextStyle(color: _kMuted)))
-                    : SingleChildScrollView(
-                        child: Table(
-                          columnWidths: const {0: FixedColumnWidth(110), 1: FlexColumnWidth(2), 2: FixedColumnWidth(130), 3: FixedColumnWidth(80), 4: FixedColumnWidth(90), 5: FixedColumnWidth(100), 6: FixedColumnWidth(80), 7: FixedColumnWidth(90)},
-                          children: [
-                            _tableHeader(['Référence', 'Titre', 'Origine', 'Priorité', 'Responsable', 'Avancement', 'Statut', 'Actions']),
-                            ...items.map((p) => TableRow(
-                              decoration: BoxDecoration(
-                                border: const Border(bottom: BorderSide(color: Color(0x11000000))),
-                                color: p.enRetard ? _kDanger.withValues(alpha: 0.04) : null,
-                              ),
-                              children: [
-                                // Référence + date échéance
-                                TableCell(
-                                  verticalAlignment: TableCellVerticalAlignment.middle,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(p.reference, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: p.enRetard ? _kDanger : null)),
-                                        if (p.dateEcheance.isNotEmpty) ...[
-                                          const SizedBox(height: 2),
-                                          Text(p.dateEcheance,
-                                            style: TextStyle(fontSize: 10, color: p.enRetard ? _kDanger : _kMuted,
-                                              fontWeight: p.enRetard ? FontWeight.w600 : FontWeight.normal)),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                _cellFlex(p.titre),
-                                // Colonne Origine — source + référence source
-                                TableCell(
-                                  verticalAlignment: TableCellVerticalAlignment.middle,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerLeft,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                                            decoration: BoxDecoration(
-                                              color: _sourceColor(p.source).withValues(alpha: 0.10),
-                                              borderRadius: BorderRadius.circular(20),
-                                              border: Border.all(color: _sourceColor(p.source).withValues(alpha: 0.30)),
-                                            ),
-                                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                              Container(width: 5, height: 5,
-                                                decoration: BoxDecoration(color: _sourceColor(p.source), shape: BoxShape.circle)),
-                                              const SizedBox(width: 4),
-                                              Text(p.source, style: TextStyle(color: _sourceColor(p.source),
-                                                fontSize: 10, fontWeight: FontWeight.w600)),
-                                            ]),
-                                          ),
-                                        ),
-                                        if (p.sourceRef.isNotEmpty) ...[
-                                          const SizedBox(height: 3),
-                                          Text(p.sourceRef,
-                                            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: _kMuted),
-                                            maxLines: 1, overflow: TextOverflow.ellipsis),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: Padding(padding: const EdgeInsets.all(8), child: _badge(p.priorite, p.priorite == 'Haute' ? _kDanger : p.priorite == 'Moyenne' ? _kWarning : _kMuted))),
-                                _cell(p.responsable.isEmpty ? '—' : p.responsable),
-                                TableCell(
-                                  verticalAlignment: TableCellVerticalAlignment.middle,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        LinearProgressIndicator(
-                                          value: p.avancement / 100,
-                                          backgroundColor: AppTheme.border,
-                                          color: p.avancement >= 100 ? _kSuccess : _kBlue,
-                                          minHeight: 5,
-                                          borderRadius: BorderRadius.circular(3),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text('${p.avancement} %', style: const TextStyle(fontSize: 10, color: _kMuted)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                TableCell(verticalAlignment: TableCellVerticalAlignment.middle, child: Padding(padding: const EdgeInsets.all(8), child: _badge(p.statut, _planStatutColor(p.statut)))),
-                                TableCell(
-                                  verticalAlignment: TableCellVerticalAlignment.middle,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      IconButton(icon: const Icon(Icons.edit_outlined, size: 16), onPressed: () => _showForm(edit: p)),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline, size: 16, color: _kDanger),
-                                        onPressed: () => _confirm(context, 'Supprimer ce plan ?', () async { await widget.api.deleteRoPlan(p.id); _reload(); }),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )),
-                          ],
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      // KPI tiles
+                      Row(children: [
+                        Expanded(child: _planStatTile('Total',     '${all.length}',   _kBlue,    Icons.task_alt_rounded)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _planStatTile('En cours',  '$enCours',         _kWarning, Icons.hourglass_top_rounded)),
+                      ]),
+                      const SizedBox(height: 8),
+                      Row(children: [
+                        Expanded(child: _planStatTile('Terminés',  '$termines',        _kSuccess, Icons.check_circle_rounded)),
+                        const SizedBox(width: 8),
+                        Expanded(child: _planStatTile('En retard', '$retard',          _kDanger,  Icons.warning_amber_rounded)),
+                      ]),
+
+                      const SizedBox(height: 14),
+
+                      // Taux global BCEAO
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: (txReal >= 80 ? _kSuccess : _kWarning).withValues(alpha: 0.07),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: (txReal >= 80 ? _kSuccess : _kWarning).withValues(alpha: 0.25)),
+                        ),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(children: [
+                            Icon(Icons.analytics_rounded, size: 12,
+                              color: txReal >= 80 ? _kSuccess : _kWarning),
+                            const SizedBox(width: 5),
+                            const Text('Taux global BCEAO',
+                              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600)),
+                          ]),
+                          const SizedBox(height: 6),
+                          Text('${txReal.toStringAsFixed(0)} %',
+                            style: TextStyle(
+                              fontSize: 28, fontWeight: FontWeight.w900,
+                              color: txReal >= 80 ? _kSuccess : _kWarning,
+                              height: 1.0)),
+                          const SizedBox(height: 4),
+                          LinearProgressIndicator(
+                            value: txReal / 100,
+                            backgroundColor: (txReal >= 80 ? _kSuccess : _kWarning).withValues(alpha: 0.15),
+                            color: txReal >= 80 ? _kSuccess : _kWarning,
+                            minHeight: 4,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(txReal >= 80 ? 'Conforme UEMOA' : 'Sous le seuil (80 %)',
+                            style: TextStyle(
+                              fontSize: 9.5, fontWeight: FontWeight.w600,
+                              color: txReal >= 80 ? _kSuccess : _kWarning)),
+                        ]),
+                      ),
+
+                      // Alerte 90j UEMOA
+                      if (violations90j.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: _kDanger.withValues(alpha: 0.07),
+                            borderRadius: BorderRadius.circular(7),
+                            border: Border.all(color: _kDanger.withValues(alpha: 0.3)),
+                          ),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            const Row(children: [
+                              Icon(Icons.gavel_rounded, size: 12, color: _kDanger),
+                              SizedBox(width: 5),
+                              Text('Délai 90j dépassé',
+                                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: _kDanger)),
+                            ]),
+                            const SizedBox(height: 4),
+                            Text('${violations90j.length} plan(s) non clôturé(s) après 90 jours (Art. 313.b)',
+                              style: const TextStyle(fontSize: 9.5, color: _kDanger, height: 1.4)),
+                          ]),
+                        ),
+                      ],
+
+                      const SizedBox(height: 16),
+
+                      // Filtres statut
+                      _planPanelSection('Statut', Icons.filter_list_rounded),
+                      const SizedBox(height: 7),
+                      _planFilterChip('Tous', null, null, _kBlue, '${all.length}',
+                        _filterStatut == null && _filterPriorite == null,
+                        () => setState(() { _filterStatut = null; _filterPriorite = null; })),
+                      const SizedBox(height: 4),
+                      for (final s in _statutsPlan) ...[
+                        _planFilterChip(s, s, null, _planStatutColor(s),
+                          '${all.where((p) => p.statut == s).length}',
+                          _filterStatut == s,
+                          () => setState(() { _filterStatut = s; _filterPriorite = null; })),
+                        const SizedBox(height: 4),
+                      ],
+
+                      const SizedBox(height: 12),
+
+                      // Filtres priorité
+                      _planPanelSection('Priorité', Icons.priority_high_rounded),
+                      const SizedBox(height: 7),
+                      for (final pr in _priorites) ...[
+                        _planFilterChip(pr, null, pr, _prioriteColor(pr),
+                          '${all.where((p) => p.priorite == pr).length}',
+                          _filterPriorite == pr,
+                          () => setState(() { _filterPriorite = pr; _filterStatut = null; })),
+                        const SizedBox(height: 4),
+                      ],
+
+                      const SizedBox(height: 14),
+
+                      // Bouton nouveau plan
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.marketNeutral,
+                            padding: const EdgeInsets.symmetric(vertical: 9),
+                            textStyle: const TextStyle(fontSize: 12),
+                          ),
+                          onPressed: () => _showForm(),
+                          icon: const Icon(Icons.add_rounded, size: 16),
+                          label: const Text('Nouveau plan'),
                         ),
                       ),
+                    ]),
+                  ),
+                ),
+              ]),
+            ),
+
+            const SizedBox(width: 14),
+
+            // ── Panneau droit : liste des plans ────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Alerte UEMOA globale
+                    if (violations90j.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _kDanger.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _kDanger.withValues(alpha: 0.3)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.gavel_rounded, color: _kDanger, size: 16),
+                          const SizedBox(width: 10),
+                          Expanded(child: Text(
+                            '${violations90j.length} plan(s) dépassent le délai réglementaire de 90 jours sans clôture '
+                            '(Art. 313.b UEMOA). Une escalade à la Direction est requise.',
+                            style: const TextStyle(fontSize: 11.5, color: _kDanger, fontWeight: FontWeight.w500))),
+                        ]),
+                      ),
+
+                    if (filtered.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(32),
+                        alignment: Alignment.center,
+                        child: const Text('Aucun plan correspondant au filtre.',
+                          style: TextStyle(color: _kMuted, fontSize: 13)),
+                      )
+                    else
+                      ...filtered.map((p) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _PlanCard(
+                          plan: p,
+                          sourceColor: _sourceColor(p.source),
+                          prioriteColor: _prioriteColor(p.priorite),
+                          statutColor: _planStatutColor(p.statut),
+                          isDark: isDark,
+                          age90j: () {
+                            if (p.creeLe.isEmpty) return false;
+                            final cree = DateTime.tryParse(p.creeLe);
+                            if (cree == null) return false;
+                            return DateTime.now().difference(cree).inDays > 90 &&
+                                p.statut != 'Terminé' && p.statut != 'Abandonné';
+                          }(),
+                          onEdit: () => _showForm(edit: p),
+                          onDelete: () => _confirm(context, 'Supprimer ce plan d\'action ?',
+                            () async { await widget.api.deleteRoPlan(p.id); _reload(); }),
+                        ),
+                      )),
+                  ],
+                ),
               ),
             ),
           ],
@@ -4337,13 +4472,312 @@ class _PlansViewState extends State<_PlansView> {
     );
   }
 
-  Color _planStatutColor(String s) => switch (s) {
-    'Terminé' => _kSuccess,
-    'En cours' => _kBlue,
-    'A faire' => _kMuted,
-    'Abandonné' => _kDanger,
-    _ => _kMuted,
-  };
+  Widget _planStatTile(String label, String val, Color c, IconData icon) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: c.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(7),
+        border: Border.all(color: c.withValues(alpha: 0.2)),
+      ),
+      child: Row(children: [
+        Icon(icon, size: 13, color: c),
+        const SizedBox(width: 6),
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(val, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: c, height: 1.0)),
+          Text(label, style: TextStyle(fontSize: 9, color: isDark ? AppTheme.darkMuted : _kMuted)),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _planPanelSection(String label, IconData icon) => Row(children: [
+    Icon(icon, size: 12, color: _kMuted),
+    const SizedBox(width: 6),
+    Text(label, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: _kMuted, letterSpacing: 0.5)),
+  ]);
+
+  Widget _planFilterChip(String label, String? filtStatut, String? filtPrio,
+      Color c, String count, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? c.withValues(alpha: 0.12) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: active ? c.withValues(alpha: 0.4) : c.withValues(alpha: 0.15)),
+        ),
+        child: Row(children: [
+          Container(width: 7, height: 7,
+            decoration: BoxDecoration(color: active ? c : c.withValues(alpha: 0.4), shape: BoxShape.circle)),
+          const SizedBox(width: 8),
+          Expanded(child: Text(label,
+            style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              color: active ? c : _kMuted))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: c.withValues(alpha: active ? 0.15 : 0.07),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(count, style: TextStyle(fontSize: 9.5, color: active ? c : _kMuted, fontWeight: FontWeight.w700)),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─── Plan Card ────────────────────────────────────────────────────────────────
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.plan,
+    required this.sourceColor,
+    required this.prioriteColor,
+    required this.statutColor,
+    required this.isDark,
+    required this.age90j,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final RoPlan plan;
+  final Color  sourceColor;
+  final Color  prioriteColor;
+  final Color  statutColor;
+  final bool   isDark;
+  final bool   age90j;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final border = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+    final p = plan;
+    final prog = p.avancement / 100.0;
+    final progressColor = p.avancement >= 100
+        ? _kSuccess
+        : p.enRetard ? _kDanger : _kBlue;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: age90j ? _kDanger.withValues(alpha: 0.5)
+               : p.enRetard ? _kDanger.withValues(alpha: 0.3)
+               : border),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Bande priorité gauche
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: prioriteColor,
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(10)),
+              ),
+            ),
+
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Ligne 1 : référence + titre + badges
+                    Row(children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.marketNeutral.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(p.reference,
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
+                            color: AppColors.marketNeutral)),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(p.titre,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : Colors.black87),
+                        overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: 8),
+                      // Type action
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5C6BC0).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(p.typeAction,
+                          style: const TextStyle(fontSize: 9.5, color: Color(0xFF5C6BC0),
+                            fontWeight: FontWeight.w600)),
+                      ),
+                      const SizedBox(width: 6),
+                      // Source badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: sourceColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: sourceColor.withValues(alpha: 0.25)),
+                        ),
+                        child: Text(p.source,
+                          style: TextStyle(fontSize: 9.5, color: sourceColor,
+                            fontWeight: FontWeight.w600)),
+                      ),
+                      if (age90j) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _kDanger.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: _kDanger.withValues(alpha: 0.35)),
+                          ),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.gavel_rounded, size: 9, color: _kDanger),
+                            SizedBox(width: 3),
+                            Text('+90j UEMOA', style: TextStyle(fontSize: 9, color: _kDanger,
+                              fontWeight: FontWeight.w800)),
+                          ]),
+                        ),
+                      ],
+                    ]),
+
+                    const SizedBox(height: 8),
+
+                    // Ligne 2 : description + responsable + dates
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      // Description + source ref
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (p.description.isNotEmpty)
+                            Text(p.description,
+                              style: const TextStyle(fontSize: 11, color: _kMuted, height: 1.4),
+                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                          if (p.sourceRef.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Row(children: [
+                              const Icon(Icons.link_rounded, size: 10, color: _kMuted),
+                              const SizedBox(width: 4),
+                              Text(p.sourceRef,
+                                style: const TextStyle(fontSize: 10, color: _kMuted,
+                                  fontWeight: FontWeight.w500)),
+                            ]),
+                          ],
+                        ],
+                      )),
+
+                      const SizedBox(width: 16),
+
+                      // Responsable + dates
+                      Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                        if (p.responsable.isNotEmpty)
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.person_rounded, size: 11, color: _kMuted),
+                            const SizedBox(width: 4),
+                            Text(p.responsable,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+                          ]),
+                        if (p.dateDebut.isNotEmpty || p.dateEcheance.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.calendar_today_outlined, size: 10, color: _kMuted),
+                            const SizedBox(width: 4),
+                            Text(
+                              [if (p.dateDebut.isNotEmpty) p.dateDebut,
+                               if (p.dateEcheance.isNotEmpty) p.dateEcheance].join(' → '),
+                              style: TextStyle(fontSize: 10, color: p.enRetard ? _kDanger : _kMuted,
+                                fontWeight: p.enRetard ? FontWeight.w700 : FontWeight.normal)),
+                          ]),
+                        ],
+                        if (p.enRetard) ...[
+                          const SizedBox(height: 2),
+                          const Text('En retard', style: TextStyle(fontSize: 9.5, color: _kDanger,
+                            fontWeight: FontWeight.w700)),
+                        ] else if (p.joursRestants > 0 && p.statut != 'Terminé') ...[
+                          const SizedBox(height: 2),
+                          Text('J−${p.joursRestants}',
+                            style: TextStyle(fontSize: 9.5,
+                              color: p.joursRestants <= 7 ? _kWarning : _kMuted,
+                              fontWeight: p.joursRestants <= 7 ? FontWeight.w700 : FontWeight.normal)),
+                        ],
+                      ]),
+                    ]),
+
+                    const SizedBox(height: 10),
+
+                    // Ligne 3 : barre avancement + statut + actions
+                    Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                      // Avancement
+                      Expanded(child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Text('${p.avancement} %',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800,
+                                color: progressColor)),
+                            const SizedBox(width: 8),
+                            Expanded(child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: prog.clamp(0.0, 1.0),
+                                backgroundColor: progressColor.withValues(alpha: 0.12),
+                                color: progressColor,
+                                minHeight: 7,
+                              ),
+                            )),
+                          ]),
+                        ],
+                      )),
+
+                      const SizedBox(width: 12),
+
+                      // Statut badge
+                      _badge(p.statut, statutColor),
+
+                      const SizedBox(width: 8),
+
+                      // Priorité badge
+                      _badge(p.priorite, prioriteColor),
+
+                      const SizedBox(width: 8),
+
+                      // Actions
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 16),
+                        tooltip: 'Modifier',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        onPressed: onEdit,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 16, color: _kDanger),
+                        tooltip: 'Supprimer',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        onPressed: onDelete,
+                      ),
+                    ]),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ─── VIEW 9 : HISTORIQUE ──────────────────────────────────────────────────────
