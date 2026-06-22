@@ -2289,28 +2289,6 @@ class _PertesSummaryBar extends StatelessWidget {
 
 // ─── VIEW 4 : KRI ─────────────────────────────────────────────────────────────
 
-const _kriNumSources = <int, (String, IconData)>{
-  1: ('Service IT — logs système', Icons.computer_rounded),
-  2: ('Service IT — monitoring', Icons.monitor_heart_rounded),
-  3: ('Service IT / Sécurité informatique', Icons.security_rounded),
-  4: ('Audit interne', Icons.fact_check_rounded),
-  5: ('Responsable risque opérationnel', Icons.manage_accounts_rounded),
-  6: ('Service RH', Icons.people_rounded),
-  7: ('Responsable risque opérationnel', Icons.manage_accounts_rounded),
-  8: ('Responsable risque opérationnel', Icons.manage_accounts_rounded),
-};
-
-const _kriNumDescriptions = <int, String>{
-  1: 'Erreurs de saisie sur les opérations (virements, comptes) par jour ouvrable.',
-  2: 'Disponibilité du core banking en pourcentage sur la période.',
-  3: 'Tentatives de connexion échouées ou accès à des modules sans droits par semaine.',
-  4: 'Contrôles planifiés dont l\'échéance est dépassée sans réalisation (tolérance zéro).',
-  5: 'Incidents au statut «Ouvert» ou «En cours» depuis plus de 30 jours (critique : 1).',
-  6: 'Employés ayant quitté la banque sur le trimestre (% des effectifs totaux).',
-  7: 'Délai moyen en jours entre la détection d\'un incident et sa déclaration (Art. 313.b ≤ 5 j).',
-  8: 'Plans d\'actions dont l\'échéance est dépassée avec avancement < 100 % (tolérance zéro).',
-};
-
 int _extractKriNum(String nom) {
   final m = RegExp(r'(\d+)').firstMatch(nom);
   return m != null ? int.tryParse(m.group(1)!) ?? 0 : 0;
@@ -2807,8 +2785,6 @@ class _KriCard extends StatelessWidget {
     final d = kri.definition;
     final sc = _kriStatutColor(kri.statut);
     final sl = _kriStatutLabel(kri.statut);
-    final (srcLabel, srcIcon) = _kriNumSources[kriNum] ?? ('Non spécifié', Icons.help_outline_rounded);
-    final description = _kriNumDescriptions[kriNum] ?? d.formule;
     final textColor  = isDark ? AppTheme.darkText : AppTheme.text;
     final mutedColor = isDark ? AppTheme.darkMuted : _kMuted;
     final borderColor = isDark ? AppTheme.darkBorder : AppTheme.border;
@@ -2890,99 +2866,50 @@ class _KriCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Description
-                Text(description,
-                  style: TextStyle(fontSize: 11, color: mutedColor,
-                    height: 1.4, fontStyle: FontStyle.italic),
-                  maxLines: 2, overflow: TextOverflow.ellipsis),
-
-                const SizedBox(height: 14),
-
-                // Valeur + tendance + méta
+                // Valeur + tendance
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    // Valeur + unité
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            kri.derniereValeur != null
-                                ? Text(
-                                    kri.derniereValeur! % 1 == 0
-                                        ? kri.derniereValeur!.toInt().toString()
-                                        : kri.derniereValeur!.toStringAsFixed(1),
-                                    style: TextStyle(
-                                      fontSize: 34, fontWeight: FontWeight.w900,
-                                      color: textColor, height: 1.0, letterSpacing: -1.5))
-                                : Text('—', style: TextStyle(
-                                    fontSize: 34, fontWeight: FontWeight.w900,
-                                    color: mutedColor.withValues(alpha: 0.28), height: 1.0)),
-                            const SizedBox(width: 4),
-                            Text(d.unite,
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                                color: mutedColor)),
-                          ],
-                        ),
-                        if (trendStr != null) ...[
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: (trendUp! ? _kSuccess : _kDanger).withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              Icon(
-                                trendUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                                size: 11, color: trendUp ? _kSuccess : _kDanger),
-                              const SizedBox(width: 3),
-                              Text(trendStr,
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                                  color: trendUp ? _kSuccess : _kDanger)),
-                            ]),
-                          ),
-                        ],
+                        kri.derniereValeur != null
+                            ? Text(
+                                kri.derniereValeur! % 1 == 0
+                                    ? kri.derniereValeur!.toInt().toString()
+                                    : kri.derniereValeur!.toStringAsFixed(1),
+                                style: TextStyle(
+                                  fontSize: 34, fontWeight: FontWeight.w900,
+                                  color: textColor, height: 1.0, letterSpacing: -1.5))
+                            : Text('—', style: TextStyle(
+                                fontSize: 34, fontWeight: FontWeight.w900,
+                                color: mutedColor.withValues(alpha: 0.28), height: 1.0)),
+                        const SizedBox(width: 4),
+                        Text(d.unite,
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                            color: mutedColor)),
                       ],
                     ),
-                    const Spacer(),
-                    // Méta (date + fréquence + badge AUTO)
-                    Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-                      if (kri.historique.isNotEmpty &&
-                          kri.historique.first.commentaire.startsWith('auto'))
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: _kSuccess.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(3),
-                            border: Border.all(color: _kSuccess.withValues(alpha: 0.35)),
-                          ),
-                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.radar_rounded, size: 8, color: _kSuccess),
-                            SizedBox(width: 3),
-                            Text('AUTO',
-                              style: TextStyle(fontSize: 8.5, color: _kSuccess, fontWeight: FontWeight.w800)),
-                          ]),
+                    if (trendStr != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: (trendUp! ? _kSuccess : _kDanger).withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(5),
                         ),
-                      if (kri.derniereDate != null)
-                        Row(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.calendar_today_outlined, size: 9, color: mutedColor),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(
+                            trendUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                            size: 11, color: trendUp ? _kSuccess : _kDanger),
                           const SizedBox(width: 3),
-                          Text(kri.derniereDate!,
-                            style: TextStyle(fontSize: 9.5, color: mutedColor)),
+                          Text(trendStr,
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                              color: trendUp ? _kSuccess : _kDanger)),
                         ]),
-                      const SizedBox(height: 3),
-                      Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.repeat_rounded, size: 9, color: mutedColor),
-                        const SizedBox(width: 3),
-                        Text(d.frequence,
-                          style: TextStyle(fontSize: 9.5, color: mutedColor)),
-                      ]),
-                    ]),
+                      ),
+                    ],
                   ],
                 ),
 
@@ -2993,44 +2920,27 @@ class _KriCard extends StatelessWidget {
                   _KriGauge(kri: kri)
                 else
                   Container(
-                    height: 20,
+                    height: 6,
                     decoration: BoxDecoration(
-                      color: mutedColor.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(4),
+                      color: mutedColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(3),
                     ),
-                    alignment: Alignment.center,
-                    child: Text('Aucune valeur saisie',
-                      style: TextStyle(fontSize: 9.5, color: mutedColor)),
                   ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
 
-                // Seuils — ligne compacte avec séparateur
+                // Seuils compacts
                 Row(children: [
-                  Icon(sens ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                    size: 10, color: mutedColor),
-                  const SizedBox(width: 3),
                   Text(
-                    'Alerte ${sens ? '>' : '<'} ${d.seuilAlerte} ${d.unite}',
-                    style: TextStyle(fontSize: 10, color: mutedColor)),
+                    '${sens ? '▲' : '▼'} ${d.seuilAlerte}',
+                    style: const TextStyle(fontSize: 10, color: _kWarning, fontWeight: FontWeight.w600)),
                   Container(
                     width: 1, height: 9,
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    color: mutedColor.withValues(alpha: 0.25)),
+                    margin: const EdgeInsets.symmetric(horizontal: 7),
+                    color: mutedColor.withValues(alpha: 0.2)),
                   Text(
-                    'Critique ${sens ? '>' : '<'} ${d.seuilCritique} ${d.unite}',
-                    style: TextStyle(fontSize: 10, color: mutedColor)),
-                ]),
-
-                const SizedBox(height: 6),
-
-                // Source
-                Row(children: [
-                  Icon(srcIcon, size: 10, color: mutedColor),
-                  const SizedBox(width: 4),
-                  Expanded(child: Text('Source : $srcLabel',
-                    style: TextStyle(fontSize: 9.5, color: mutedColor),
-                    overflow: TextOverflow.ellipsis)),
+                    '${sens ? '▲' : '▼'} ${d.seuilCritique} ${d.unite}',
+                    style: const TextStyle(fontSize: 10, color: _kDanger, fontWeight: FontWeight.w600)),
                 ]),
 
               ],
