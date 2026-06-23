@@ -668,15 +668,11 @@ class _FxShockChartState extends State<_FxShockChart> {
 
   @override
   Widget build(BuildContext context) {
-    final usd = _usdExposure();
-    final hasFx = (usd.long + usd.short) > 0.01;
+    final floatingNet = _floatingNet();
+    final hasFx = floatingNet.abs() > 0.01;
     final showCurve = hasFx || _example;
     // Position nette (pour la courbe) ; en démo on simule une position longue.
-    final effectiveNet = hasFx ? (usd.long - usd.short) : _exampleNet;
-    // Montants longs / courts (pour l'interprétation à deux colonnes) ; en démo
-    // on simule les DEUX positions, chacune de 1 Md XOF.
-    final effLong = hasFx ? usd.long : _exampleNet;
-    final effShort = hasFx ? usd.short : _exampleNet;
+    final effectiveNet = hasFx ? floatingNet : _exampleNet;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -724,7 +720,7 @@ class _FxShockChartState extends State<_FxShockChart> {
                       size: 15, color: _fxPrimary),
                   const SizedBox(width: 7),
                   Expanded(
-                    child: _interpretationWidget(context, effLong, effShort),
+                    child: _interpretationWidget(context, effectiveNet),
                   ),
                 ],
               ),
