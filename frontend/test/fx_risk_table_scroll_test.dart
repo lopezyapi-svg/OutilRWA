@@ -20,6 +20,13 @@ void main() {
   testWidgets(
       'la colonne figée défile avec le corps et la liste reste virtualisée',
       (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     SharedPreferences.setMockInitialValues({});
 
     // 60 titres avec un émetteur unique chacun : largement de quoi déborder du
@@ -67,11 +74,13 @@ void main() {
       activeType: MarketPortfolioType.bonds,
     );
 
-    await MarketDataImportStore.instance.initialized.timeout(
-      const Duration(seconds: 2),
-      onTimeout: () {},
-    );
-
+    // Volontairement, on N'ATTEND PAS `MarketDataImportStore.initialized` : ce
+    // future dépend d'une lecture fichier réelle (dart:io) qui n'est jamais
+    // pompée sous `flutter_test`, et son `.timeout` ne se déclenche pas non plus
+    // pendant un `await` nu (horloge simulée) — l'attendre figeait tout le test.
+    // L'écran rend désormais directement les données présentes dans le snapshot
+    // (cf. FxRiskAnalysisScreen.initState), donc le tableau est disponible dès
+    // le premier pump sans dépendre de la restauration persistée.
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(body: FxRiskAnalysisScreen()),

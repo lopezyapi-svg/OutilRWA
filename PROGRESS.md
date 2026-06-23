@@ -1,16 +1,16 @@
 # Progression de la Professionnalisation de l'Outil RWA
 
-Date: 2026-06-12
+Date: 2026-06-19
 
 ## ✅ Tâches Complétées
 
 ### 1. Design System Standardisé (Tâche #2)
-- ✅ `AppTheme.radius` modifié de 2 à **5**
+- ✅ `AppTheme.radius` standardisé à **2** pour un rendu moderne et aiguisé
 - ✅ `AppTheme.pagePadding` modifié de 2 à **16**
 - ✅ `AppTheme.pageGap` modifié de 2 à **12**
 - ✅ Création de `app_colors.dart` avec palette centralisée (30+ couleurs thématiques)
 - ✅ Création de `app_spacing.dart` avec système d'espacement standardisé
-- ✅ Remplacement de `BorderRadius.zero` par `BorderRadius.circular(5)` dans:
+- ✅ Remplacement des rayons de courbure hardcodés par `AppTheme.radius` (2) dans:
   - welcome_screen.dart (7 occurrences)
   - dashboard_charts_section.dart (1 occurrence)
   - concentration_screen.dart (2 occurrences)
@@ -30,6 +30,20 @@ Date: 2026-06-12
 - ✅ Identification: 3 modules complets, 13 partiels, 2 vides
 - ✅ Recensement de 30+ couleurs hardcodées
 - ✅ Documentation des calculs existants et manquants
+
+### 4. Modernisation des Tableaux et Simplification UI (Risque de Marché)
+- ✅ Modernisation complète de `_TauxTable` :
+  - Encapsulation dans des cartes avec bordure fine et rayon de courbure (6px).
+  - En-têtes stylisés en majuscules (uppercase) avec arrière-plan Accent (`alpha: 0.05`) et espacement élargi.
+  - Alternance de couleurs (zebra striping) pour une meilleure lisibilité.
+  - Alignements professionnels (texte à gauche, chiffres et pourcentages à droite).
+  - Gestion automatique des largeurs de colonnes personnalisables (`columnWidths`).
+  - Badges capsules colorés (pill badges) pour les taux de contribution en pourcentage.
+  - Mise en valeur des colonnes clés (RWA et Exigence) en semi-gras et bleu primaire.
+- ✅ Simplification des onglets RWA et Exigence FP Marché :
+  - Suppression des sections d'audit, de composition et de répartition secondaires obsolètes qui surchargeaient l'UI.
+- ✅ Nettoyage de l'onglet Indicateurs Clés :
+  - Retrait de l'en-tête redondant et de la ligne de division pour un affichage direct et épuré.
 
 ## 🔄 Tâches En Cours (Agents en arrière-plan)
 
@@ -56,7 +70,7 @@ Agent actif: Enrichissement de calculations.py
 ## 📋 Tâches Restantes
 
 ### 4. Professionnalisation UI (Tâche #6 - En cours)
-- [ ] Améliorer les tableaux (tri, filtres, pagination)
+- [x] Améliorer les tableaux (tri, filtres, pagination - Modernisation déjà entamée sur le Risque de Marché)
 - [ ] Enrichir les graphiques (tooltips, légendes, animations)
 - [ ] Améliorer les formulaires (validation, feedback)
 - [ ] Messages d'erreur contextuels
@@ -72,22 +86,23 @@ Agent actif: Enrichissement de calculations.py
 
 ## 📊 Statistiques
 
-- **Fichiers modifiés**: 18
+- **Fichiers modifiés**: 19
 - **Fichiers créés**: 11 nouveaux (design system + module Analyse)
-- **Lignes de code ajoutées**: ~2000+
+- **Lignes de code ajoutées**: ~2100+
 - **BorderRadius.zero éliminés**: 10/10 (100%)
 - **Modules complets**: 4/20 (Dashboard, Concentration, Welcome, Analyse)
 - **Design system**: ✅ Unifié (AppTheme, AppColors, AppSpacing)
 
 ## 🎯 Objectifs Atteints
 
-1. ✅ Border-radius standardisé à 5
+1. ✅ Border-radius global standardisé et forcé à **2** sur tous les composants (tableaux, cartes, en-têtes, popups, sidebar et boutons)
 2. ✅ Palette de couleurs centralisée
 3. ✅ Système d'espacement cohérent
 4. ✅ Module Analyse professionnel et complet
 5. 🔄 Remplacement des couleurs hardcodées (en cours)
 6. 🔄 Modules ICAP, Capital Planning, Stress Test (en cours)
 7. 🔄 Enrichissement des calculs backend (en cours)
+8. ✅ Modernisation des tableaux financiers, nettoyage UI et harmonisation à radius=2 (Risque de Marché)
 
 ## 🚀 Prochaines Étapes
 

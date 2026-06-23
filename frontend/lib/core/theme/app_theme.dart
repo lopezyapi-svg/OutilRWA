@@ -14,7 +14,7 @@ class AppTheme {
     'General Sans',
     'Nunito Sans',
   ];
-  static const double radius = 14;
+  static const double radius = 2;
   static const double spacing = 12;
   static const double pagePadding = 18;
   static const double pageGap = 14;

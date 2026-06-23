@@ -715,6 +715,7 @@ Future<_MenuEntry?> _showNestedMenuForEntry(
   );
 
   if (selection == null) return null;
+  if (!context.mounted) return null;
   if (selection.hasChildren) {
     return _showNestedMenuForEntry(context, selection, currentModule, selectedSettingsSectionId, popupOffset: popupOffset);
   }
@@ -749,6 +750,7 @@ class _CompactNavGroup extends StatelessWidget {
           popupOffset: const Offset(48, -4),
         );
         if (selection == null) return;
+        if (!context.mounted) return;
         final settingsSectionId = selection.settingsSectionId;
         if (settingsSectionId != null && onSelectSettingsSection != null) {
           final anchorRect = _anchorRectFrom(context);
@@ -1081,6 +1083,7 @@ class _ExpandedNavGroup extends StatelessWidget {
       context, entry, selectedModule, selectedSettingsSectionId,
     );
     if (selection == null) return;
+    if (!context.mounted) return;
     final settingsSectionId = selection.settingsSectionId;
     if (settingsSectionId != null && onSelectSettingsSection != null) {
       final anchorRect = _anchorRectFrom(context);
@@ -1276,7 +1279,7 @@ class _ExpandedNavTile extends StatelessWidget {
               offset: const Offset(0, 1),
             ),
           ];
-    const tileRadius = 5.0;
+    const tileRadius = AppTheme.radius;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),

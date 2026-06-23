@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:excel/excel.dart' hide Border, TextSpan;
 import 'package:file_selector/file_selector.dart';
@@ -26221,35 +26220,6 @@ class _CalculPrudentielWorkspaceState
     }
   }
 
-  String _labelForTab(_CalculPrudentielTab tab) {
-    switch (tab) {
-      case _CalculPrudentielTab.taux:
-        return 'Risque de Taux';
-      case _CalculPrudentielTab.change:
-        return 'Risque de Change';
-      case _CalculPrudentielTab.actions:
-        return 'Risque Actions';
-      case _CalculPrudentielTab.exigenceFP:
-        return 'Exigence FP Marché';
-      case _CalculPrudentielTab.rwa:
-        return 'RWA Marché';
-    }
-  }
-
-  IconData _iconForTab(_CalculPrudentielTab tab) {
-    switch (tab) {
-      case _CalculPrudentielTab.taux:
-        return Icons.trending_up_rounded;
-      case _CalculPrudentielTab.change:
-        return Icons.currency_exchange_rounded;
-      case _CalculPrudentielTab.actions:
-        return Icons.show_chart_rounded;
-      case _CalculPrudentielTab.exigenceFP:
-        return Icons.account_balance_rounded;
-      case _CalculPrudentielTab.rwa:
-        return Icons.functions_rounded;
-    }
-  }
 }
 
 class _CalculPrudentielTabBar extends StatelessWidget {
@@ -28393,10 +28363,6 @@ class _ActionRiskScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = _marketTextFor(context);
-    final muted = _marketMutedFor(context);
-    final border = _marketBorderFor(context);
-    final surface = _marketSurfaceFor(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding, AppTheme.pageGap,
@@ -28633,10 +28599,6 @@ class _ExigenceFPScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = _marketTextFor(context);
-    final muted = _marketMutedFor(context);
-    final border = _marketBorderFor(context);
-    final surface = _marketSurfaceFor(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding, AppTheme.pageGap,
@@ -28893,10 +28855,6 @@ class _RwaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = _marketTextFor(context);
-    final muted = _marketMutedFor(context);
-    final border = _marketBorderFor(context);
-    final surface = _marketSurfaceFor(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding, AppTheme.pageGap,

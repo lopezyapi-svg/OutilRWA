@@ -366,5 +366,90 @@ void main() {
       expect(result.foreignExchangeGlobalNetPosition, 600000);
       expect(result.foreignExchangeRisk, 48000);
     });
+
+    test('excludes banking-book (HTM) bonds from interest rate risk (Art. 321)',
+        () {
+      Map<String, Object?> bond(String intent) => {
+            'ID Titre': 'TPCI-2032',
+            'Pays émetteur': 'Côte d\'Ivoire',
+            'Type d\'instrument': 'Obligation du trésor',
+            'Code type d\'instrument': 'OT',
+            'Emetteur': 'Trésor public',
+            'Devise': 'XOF',
+            'Capital initial': 1000000000,
+            'Profil d\'amortissement': 'In fine',
+            'Fréquence de paiement des intérêts': 'Annuelle',
+            'Maturité résiduelle (mois)': 72,
+            'Coupon (%)': 0.05,
+            'Intention comptable': intent,
+          };
+
+      final htm = calculateMarketPrudentialCapital(records: [
+        MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.bonds, values: bond('HTM')),
+      ]);
+      expect(htm.interestRateGeneralRisk, 0);
+
+      final trading = calculateMarketPrudentialCapital(records: [
+        MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.bonds, values: bond('Trading')),
+      ]);
+      expect(
+        trading.interestRateGeneralRisk,
+        moreOrLessEquals(32500000, epsilon: 0.01),
+      );
+    });
+
+    test('applies the 4% specific equity rate when liquid and diversified '
+        '(Art. 399)', () {
+      final record = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.equities,
+        values: {
+          'ID Instrument': 'EQ-001',
+          'Émetteur / Société': 'Société cotée',
+          'Devise': 'XOF',
+          'Quantité': 1000,
+          'Cours actuel': 100000,
+          'Valeur de marché': 100000000,
+        },
+      );
+
+      final result = calculateMarketPrudentialCapital(
+        records: [record],
+        equityPortfolioLiquidAndDiversified: true,
+      );
+
+      expect(result.equitySpecificRisk, 4000000); // 4% × 100M (Art. 399)
+      expect(result.equityGeneralRisk, 8000000); // général reste à 8%
+    });
+
+    test('nets equity positions per issuer (specific) and per market (general)',
+        () {
+      final long = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.equities,
+        values: {
+          'Émetteur / Société': 'Émetteur A',
+          'Devise': 'XOF',
+          'Valeur de marché': 100000000,
+        },
+      );
+      final short = MarketPortfolioRecord(
+        portfolioType: MarketPortfolioType.equities,
+        values: {
+          'Émetteur / Société': 'Émetteur B',
+          'Devise': 'XOF',
+          'Sens': 'Vente',
+          'Valeur de marché': 100000000,
+        },
+      );
+
+      final result =
+          calculateMarketPrudentialCapital(records: [long, short]);
+
+      // Spécifique : Σ|net par émetteur| = 200M → 16M (Art. 399)
+      expect(result.equitySpecificRisk, 16000000);
+      // Général : net du marché XOF = +100M − 100M = 0 → 0 (Art. 401)
+      expect(result.equityGeneralRisk, 0);
+    });
   });
 }

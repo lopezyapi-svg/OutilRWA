@@ -2123,7 +2123,7 @@ class _ShellBrand extends StatelessWidget {
             color: isDark
                 ? const Color(0xFF14233D)
                 : Colors.white.withValues(alpha: 0.78),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             boxShadow: [
               BoxShadow(
                 color: isDark
@@ -2248,7 +2248,7 @@ class _SidebarToggleButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
             color: const Color(0xFF102A55),
-            borderRadius: BorderRadius.circular(5),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: const Color(0xFF2F5D9F)),
             boxShadow: const [
               BoxShadow(
@@ -2806,7 +2806,7 @@ class _NotificationsPanel extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF0F1B31) : Colors.white,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
             color: isDark ? const Color(0xFF22304B) : AppTheme.border,
           ),
@@ -2830,7 +2830,7 @@ class _NotificationsPanel extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: AppTheme.accent.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: const Icon(
                     CupertinoIcons.bell_fill,
@@ -2928,7 +2928,7 @@ class _NotificationCountPill extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
       child: Text(
@@ -2993,12 +2993,12 @@ class _NotificationTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Container(
           padding: const EdgeInsets.fromLTRB(9, 8, 9, 8),
           decoration: BoxDecoration(
             color: tileColor,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: borderColor),
           ),
           child: Row(
@@ -3010,7 +3010,7 @@ class _NotificationTile extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: isRead ? 0.08 : 0.16),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Icon(
                   isRead

@@ -481,7 +481,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                     gradient: const LinearGradient(
                       colors: [Color(0xFF2F6EEA), Color(0xFF12A7B4)],
                     ),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: const Icon(
                     CupertinoIcons.cloud_upload_fill,
@@ -984,7 +984,7 @@ class _FileVerificationPanel extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: headerSurface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: colors.border),
         ),
         child: Column(
@@ -1156,7 +1156,7 @@ class _VerificationMetricCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: colors.border),
       ),
       child: Row(
@@ -1169,7 +1169,7 @@ class _VerificationMetricCard extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(7),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Icon(icon, size: 14, color: color),
           ),
@@ -1242,7 +1242,7 @@ class _VerificationItemChip extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

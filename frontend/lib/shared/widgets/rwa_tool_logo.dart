@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
 import 'desktop_asset_image.dart';
 
 /// Widget qui affiche le logo principal de l'outil.
@@ -16,7 +17,7 @@ class RwaToolLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: DesktopAssetImage(
         _assetPath,
         width: size,

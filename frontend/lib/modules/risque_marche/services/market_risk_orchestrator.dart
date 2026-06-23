@@ -252,7 +252,7 @@ class MarketRiskOrchestrator {
 
   UemoaLimitCheck checkUemoaCompliance({
     required double actualCapital,
-    double minimumRatio = 0.08,
+    double minimumRatio = 0.085, // Seuil de solvabilité minimum UMOA
   }) {
     final prudentialResult = calculateMarketPrudentialCapital(
       records: _lastAllRecords,

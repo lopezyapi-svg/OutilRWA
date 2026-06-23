@@ -2438,7 +2438,7 @@ class _KriViewState extends State<_KriView> {
                 key: formKey,
                 child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
                   DropdownButtonFormField<String>(
-                    value: selectedKriId,
+                    initialValue: selectedKriId,
                     decoration: const InputDecoration(labelText: 'Indicateur', isDense: true),
                     items: availableKris.map((k) => DropdownMenuItem(
                       value: k.definition.id,
@@ -2487,7 +2487,7 @@ class _KriViewState extends State<_KriView> {
                   TextFormField(
                     controller: dateCtrl,
                     readOnly: true,
-                    decoration: InputDecoration(labelText: 'Date de mesure', isDense: true, suffixIcon: const Icon(Icons.calendar_month_outlined, size: 18)),
+                    decoration: const InputDecoration(labelText: 'Date de mesure', isDense: true, suffixIcon: Icon(Icons.calendar_month_outlined, size: 18)),
                     onTap: () async {
                       final current = DateTime.tryParse(dateCtrl.text) ?? DateTime.now();
                       final picked = await showDatePicker(
@@ -2540,8 +2540,10 @@ class _KriViewState extends State<_KriView> {
                       'valeur': computedValue,
                       'commentaire': commentaireCtrl.text,
                     });
+                    if (!ctx2.mounted) return;
                     Navigator.of(ctx2).pop(true);
                   } catch (_) {
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors de l’enregistrement.')));
                   }
                 },
@@ -2554,6 +2556,7 @@ class _KriViewState extends State<_KriView> {
     ).then((saved) {
       if (saved == true) {
         _reload();
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Valeur KRI enregistrée.')));
       }
     });

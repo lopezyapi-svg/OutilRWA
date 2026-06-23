@@ -203,7 +203,14 @@ class FxSecurityAnalysisService {
     return securities;
   }
 
-  /// Détermine si un titre est exposé au risque de change
+  /// Détermine si un titre est exposé au risque de change.
+  ///
+  /// Seuls les titres libellés en devise ÉTRANGÈRE sont exposés : la devise de
+  /// référence de l'outil (XOF — ainsi que XAF/FCFA repliés sur XOF par
+  /// [normalizeCurrencyCode]) ne porte par définition AUCUN risque de change.
+  /// C'est pourquoi un portefeuille 100 % XOF affiche partout 0.
+  /// Convention alignée sur le calcul prudentiel global de l'outil
+  /// (`_marketForeignExchangeGlobalNetPosition`), qui exclut lui aussi le XOF.
   bool _isExposedToFxRisk(MarketPortfolioRecord record) {
     final currency = normalizeCurrencyCode(record.currency);
     return currency.isNotEmpty;
@@ -246,26 +253,34 @@ class FxSecurityAnalysisService {
     return record.quantity;
   }
 
-  /// Récupère le taux de change initial
-  double _getInitialExchangeRate(
-    MarketPortfolioRecord record,
-    String currency,
-    Map<String, double>? exchangeRates,
-  ) {
-    if (exchangeRates != null && exchangeRates.containsKey(currency)) {
-      return exchangeRates[currency] ?? 0;
-    }
-    final currencyInfo = _currencyRegistry.getRate(currency);
-    return currencyInfo?.rateToXof ?? 1.0;
-  }
-
-  /// Récupère le taux de change actuel
+  /// Taux de change COURANT (spot), en XOF pour 1 unité de devise.
+  /// On privilégie la carte de taux fournie (saisie utilisateur dans l'écran),
+  /// puis le registre des devises de l'outil.
   double _getCurrentExchangeRate(
     MarketPortfolioRecord record,
     String currency,
     Map<String, double>? exchangeRates,
   ) {
-    return _getInitialExchangeRate(record, currency, exchangeRates);
+    if (currency == 'XOF') return 1.0;
+    final provided = exchangeRates?[currency];
+    if (provided != null && provided > 0) return provided;
+    return _currencyRegistry.getRate(currency)?.rateToXof ?? 1.0;
+  }
+
+  /// Taux de change à l'ACQUISITION, en XOF pour 1 unité de devise.
+  /// On utilise le taux historique du titre s'il est fourni à l'import
+  /// ([MarketPortfolioRecord.acquisitionExchangeRate]) ; sinon on retombe sur le
+  /// taux courant — la variation est alors nulle, ce qui est honnête en
+  /// l'absence de donnée historique.
+  double _getInitialExchangeRate(
+    MarketPortfolioRecord record,
+    String currency,
+    Map<String, double>? exchangeRates,
+  ) {
+    if (currency == 'XOF') return 1.0;
+    final booked = record.acquisitionExchangeRate;
+    if (booked > 0) return booked;
+    return _getCurrentExchangeRate(record, currency, exchangeRates);
   }
 
   /// Agrège les données par devise

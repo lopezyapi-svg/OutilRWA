@@ -166,13 +166,24 @@ class MarketPrudentialCapitalResult {
 MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
   required Iterable<MarketPortfolioRecord> records,
   Iterable<MarketCommodityPosition> commodityPositions = const [],
+  // Art. 399 : risque spécifique actions ramené à 4 % (au lieu de 8 %) lorsque
+  // le portefeuille est jugé liquide et bien diversifié (approbation Commission
+  // Bancaire requise). Désactivé par défaut.
+  bool equityPortfolioLiquidAndDiversified = false,
 }) {
   final marketRecords = records.toList(growable: false);
+  // Risques de taux et actions : périmètre limité au portefeuille de
+  // négociation (Art. 320-321). Le risque de change porte sur l'ensemble de
+  // l'établissement (Art. 406) et reste calculé sur tous les enregistrements.
   final bondRecords = marketRecords
-      .where((record) => record.portfolioType == MarketPortfolioType.bonds)
+      .where((record) =>
+          record.portfolioType == MarketPortfolioType.bonds &&
+          record.isTradingBook)
       .toList(growable: false);
   final equityRecords = marketRecords
-      .where((record) => record.portfolioType == MarketPortfolioType.equities)
+      .where((record) =>
+          record.portfolioType == MarketPortfolioType.equities &&
+          record.isTradingBook)
       .toList(growable: false);
   final interestSpecific = _marketInterestRateSpecificRisk(bondRecords);
   final interestGeneral = _marketInterestRateGeneralRisk(bondRecords);
@@ -180,14 +191,17 @@ MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
     0,
     (sum, record) => sum + _marketPrudentialBondPositionValue(record).abs(),
   );
-  final equityPosition = _marketEquityPositionMeasure(equityRecords);
+  final equityPosition = _marketEquityRiskMeasure(equityRecords);
   final commodityMeasure = _marketCommodityPositionMeasure(commodityPositions);
+  final equitySpecificRate = equityPortfolioLiquidAndDiversified ? 0.04 : 0.08;
 
   return MarketPrudentialCapitalResult(
     interestRateSpecificRisk: interestSpecific,
     interestRateGeneralRisk: interestGeneral,
-    equitySpecificRisk: equityPosition.grossPosition * 0.08,
-    equityGeneralRisk: equityPosition.netPosition.abs() * 0.08,
+    // Risque spécifique : (8% ou 4%) × Σ|net par émetteur| (Art. 398-399)
+    equitySpecificRisk: equityPosition.specificRiskBase * equitySpecificRate,
+    // Risque général : 8% × Σ|net par marché national/régional| (Art. 400-401)
+    equityGeneralRisk: equityPosition.generalRiskBase * 0.08,
     foreignExchangeRisk: _marketForeignExchangeRisk(marketRecords),
     commodityDirectionalRisk: commodityMeasure.netPosition.abs() * 0.15,
     commodityBasisRisk: commodityMeasure.grossPosition * 0.03,
@@ -346,6 +360,23 @@ class _MarketPositionMeasure {
   final double netPosition;
 }
 
+/// Mesure des positions actions pour l'exigence prudentielle (Art. 398-401).
+/// - [specificRiskBase] : Σ |position nette par émetteur| (risque spécifique, Art. 399)
+/// - [generalRiskBase]  : Σ |position nette par marché national/régional| (risque général, Art. 401)
+class _MarketEquityRiskMeasure {
+  const _MarketEquityRiskMeasure({
+    required this.grossPosition,
+    required this.netPosition,
+    required this.specificRiskBase,
+    required this.generalRiskBase,
+  });
+
+  final double grossPosition;
+  final double netPosition;
+  final double specificRiskBase;
+  final double generalRiskBase;
+}
+
 class _MarketGeneralRiskBucket {
   const _MarketGeneralRiskBucket({
     required this.index,
@@ -456,18 +487,44 @@ double _marketMatchMaturityZones(
   return matched * factor;
 }
 
-_MarketPositionMeasure _marketEquityPositionMeasure(
+_MarketEquityRiskMeasure _marketEquityRiskMeasure(
   List<MarketPortfolioRecord> records,
 ) {
+  final netByIssuer = <String, double>{};
+  final netByMarket = <String, double>{};
   var gross = 0.0;
   var net = 0.0;
   for (final record in records) {
     final signed = _marketPrudentialEquityPositionValue(record) *
         _marketRecordPositionSign(record);
+    if (signed == 0 || !signed.isFinite) continue;
     gross += signed.abs();
     net += signed;
+
+    // Risque spécifique : compensation des positions par émetteur (Art. 399).
+    netByIssuer.update(record.issuerAnalysisKey, (value) => value + signed,
+        ifAbsent: () => signed);
+
+    // Risque général : position nette par marché national/régional (Art. 401).
+    // À défaut de pays/marché renseigné, la devise sert de proxy de marché.
+    final marketKey = record.marketCountryIso3.isNotEmpty
+        ? record.marketCountryIso3
+        : normalizeCurrencyCode(record.currency);
+    netByMarket.update(marketKey, (value) => value + signed,
+        ifAbsent: () => signed);
   }
-  return _MarketPositionMeasure(grossPosition: gross, netPosition: net);
+
+  final specificBase =
+      netByIssuer.values.fold<double>(0, (sum, value) => sum + value.abs());
+  final generalBase =
+      netByMarket.values.fold<double>(0, (sum, value) => sum + value.abs());
+
+  return _MarketEquityRiskMeasure(
+    grossPosition: gross,
+    netPosition: net,
+    specificRiskBase: specificBase,
+    generalRiskBase: generalBase,
+  );
 }
 
 _MarketPositionMeasure _marketCommodityPositionMeasure(
@@ -620,10 +677,12 @@ double _getSpecificRiskWeight(
              0.0160;                                      // > 24 mois = 1.6%
 
     case _MarketSpecificCategory.otherDebt:
-      // Tableau 16: Autres émetteurs
+      // Autres émetteurs (ni souverains, ni éligibles) : traités comme les
+      // entreprises de qualité inférieure selon l'approche standard crédit
+      // (Art. 357, Titre IV). Pondération conservatrice de 8 %.
       return switch (quality) {
         _MarketCreditQuality.aaaToAa => 0.0000,           // AAA à A- = 0%
-        _MarketCreditQuality.aToBbb => 0.0800,            // A+ à BBB- = ? (à confirmer)
+        _MarketCreditQuality.aToBbb => 0.0800,            // A+ à BBB- = 8% (Art. 357)
         _MarketCreditQuality.bbToB => 0.0800,             // BB+ à BB- = 8%
         _MarketCreditQuality.belowB => 0.1200,            // Sous BB- = 12%
         _MarketCreditQuality.unrated => 0.0800,           // Sans notation = 8%
@@ -709,12 +768,21 @@ double marketSpecificDebtRiskWeight(MarketPortfolioRecord record) {
   return _getSpecificRiskWeight(category, quality, residualYears);
 }
 
-double _marketSpecificMaturityRiskWeight(MarketPortfolioRecord record) {
-  final years = _bondRecordResidualYears(record);
-  if (years < 0.5) return 0.0025;
-  if (years <= 2) return 0.01;
-  return 0.016;
+String marketSpecificDebtRiskCategoryLabel(MarketPortfolioRecord record) {
+  final quality = _marketCreditQuality(record.rating);
+  final category = _identifySpecificCategory(record, quality);
+  switch (category) {
+    case _MarketSpecificCategory.uemoaSovereignXof:
+      return 'Souverain UEMOA';
+    case _MarketSpecificCategory.sovereignDebt:
+      return 'Autre Souverain';
+    case _MarketSpecificCategory.eligibleDebt:
+      return 'Émetteur Éligible';
+    case _MarketSpecificCategory.otherDebt:
+      return 'Autre Émetteur';
+  }
 }
+
 
 _MarketGeneralRiskBucket _marketGeneralRiskBucket(
   MarketPortfolioRecord record,
@@ -812,11 +880,6 @@ bool _marketIsEligibleDebt(
       text.contains('banque mondiale') ||
       text.contains('multilaterale') ||
       text.contains('organisme public');
-}
-
-bool _marketIsOtherDebtEightPercent(String rating) {
-  final normalized = _foldMarketText(rating).toUpperCase();
-  return normalized == 'BB+' || normalized == 'BB' || normalized == 'BB-';
 }
 
 bool _marketIsUemoaCountry(String iso3) {
@@ -1054,11 +1117,38 @@ class MarketPortfolioRecord {
   String get issuerCountryIso3 => _marketCountryIso3(issuerCountry);
   String get issuerAnalysisKey => _marketIssuerAnalysisKey(this);
   String get issuerAnalysisLabel => _marketIssuerAnalysisLabel(this);
+
+  /// Code ISO3 du marché national/régional du titre (Art. 400-401).
+  /// Lit « Pays émetteur » (obligations) ou « Pays / marché » (actions).
+  String get marketCountryIso3 => _marketCountryIso3(
+        _textAny(const ['Pays émetteur', 'Pays / marché'], fallback: '').trim());
+
+  /// Intention comptable déclarée (Trading/HFT/FVTPL, HTM, AFS/FVOCI…).
+  String get accountingIntent => _text('Intention comptable', fallback: '');
+
+  /// Position relevant du portefeuille de négociation (Art. 316(b), 321).
+  /// HTM/AFS relèvent du portefeuille bancaire ; intention inconnue = incluse
+  /// par prudence (la charge taux/actions s'applique alors).
+  bool get isTradingBook => _marketIsTradingBookIntent(accountingIntent);
   String get titleId => _text('ID Titre', fallback: '').trim();
   String get instrumentType =>
       _text('Type d\'instrument', fallback: 'Instrument');
   String get zone => _text('Zone', fallback: 'Non renseignée');
   String get currency => _text('Devise', fallback: 'XOF');
+
+  /// Taux de change à l'acquisition (1 unité de devise = X XOF), lu à l'import
+  /// s'il est fourni. Sert à calculer la variation de change et le gain/perte
+  /// latent par rapport au taux courant (spot). Retourne 0 si la colonne est
+  /// absente : l'analyse retombe alors sur le taux courant (variation nulle).
+  double get acquisitionExchangeRate => _numberAny(const [
+        'Taux d\'acquisition',
+        'Taux acquisition',
+        'Taux historique',
+        'Taux de change acquisition',
+        'Cours d\'acquisition',
+        'Taux d\'achat',
+        'Cours d\'achat',
+      ]);
   String get rating => _text('La pire notation externe', fallback: '');
   String get instrumentCode =>
       _text('Code type d\'instrument', fallback: '').trim();
@@ -2065,6 +2155,32 @@ DateTime _bondAddMonths(DateTime date, int months) {
   final month = targetMonthIndex % 12 + 1;
   final day = math.min(date.day, DateTime(year, month + 1, 0).day);
   return DateTime(year, month, day);
+}
+
+/// Détermine si une intention comptable relève du portefeuille de négociation
+/// (Art. 316(b), 321). HTM/AFS = portefeuille bancaire. Intention inconnue ou
+/// non reconnue = incluse par prudence (la charge taux/actions s'applique).
+bool _marketIsTradingBookIntent(String intent) {
+  final normalized = _foldMarketText(intent);
+  if (normalized.isEmpty) return true;
+  if (normalized.contains('trading') ||
+      normalized.contains('hft') ||
+      normalized.contains('fvtpl') ||
+      normalized.contains('negociation') ||
+      normalized.contains('transaction')) {
+    return true;
+  }
+  if (normalized.contains('htm') ||
+      normalized.contains('afs') ||
+      normalized.contains('fvoci') ||
+      normalized.contains('amorti') ||
+      normalized.contains('jusqu') ||
+      normalized.contains('disponible') ||
+      normalized.contains('detenu') ||
+      normalized.contains('bancaire')) {
+    return false;
+  }
+  return true;
 }
 
 String _foldMarketText(String value) {

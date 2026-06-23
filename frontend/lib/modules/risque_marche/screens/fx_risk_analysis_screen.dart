@@ -10,6 +10,7 @@ import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/fx_security_analysis.dart';
+import '../services/fx_rate_service.dart';
 import '../services/fx_security_analysis_service.dart';
 import '../services/market_data_import_store.dart';
 
@@ -41,9 +42,11 @@ class FxRiskAnalysisScreen extends StatefulWidget {
   const FxRiskAnalysisScreen({
     super.key,
     this.initialData,
+    this.rateService,
   });
 
   final FxRiskAnalysisResult? initialData;
+  final FxRateService? rateService;
 
   @override
   State<FxRiskAnalysisScreen> createState() => _FxRiskAnalysisScreenState();
