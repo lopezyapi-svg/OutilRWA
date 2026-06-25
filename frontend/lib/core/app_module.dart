@@ -29,16 +29,15 @@ enum AppModule {
   risqueOperationnelReporting,
   analyse,
   stressTest,
-  icap,
-  icapCapitalEconomique,
-  icapCapitalReglementaire,
-  icapAppetenceRisque,
-  icapBuffersPrudentiels,
-  icapProjectionCapital,
-  icapAnalyseSolvabilite,
-  icapPlansCapital,
-  icapReportingIcaap,
-  icapUemoaCemac,
+  icaap,
+  icaapGouvernance,
+  icaapAdeqCapital,
+  icaapRisquesP2,
+  icaapPlanification,
+  icaapStressTests,
+  icaapChecklist,
+  icaapRapport,
+  icaapUemoaCemac,
   capitalPlaning,
   referentiels,
   rapports,
@@ -98,17 +97,23 @@ extension AppModuleLabel on AppModule {
         return 'Analyse';
       case AppModule.stressTest:
         return 'Stress Test';
-      case AppModule.icap:
-      case AppModule.icapCapitalEconomique:
-      case AppModule.icapCapitalReglementaire:
-      case AppModule.icapAppetenceRisque:
-      case AppModule.icapBuffersPrudentiels:
-      case AppModule.icapProjectionCapital:
-      case AppModule.icapAnalyseSolvabilite:
-      case AppModule.icapPlansCapital:
-      case AppModule.icapReportingIcaap:
-        return 'ICAAP';
-      case AppModule.icapUemoaCemac:
+      case AppModule.icaap:
+        return 'Vue d\'ensemble ICAAP';
+      case AppModule.icaapGouvernance:
+        return 'Gouvernance & Contrôle Interne';
+      case AppModule.icaapAdeqCapital:
+        return 'Adéquation des Fonds Propres';
+      case AppModule.icaapRisquesP2:
+        return 'Risques Pilier 2';
+      case AppModule.icaapPlanification:
+        return 'Planification du Capital';
+      case AppModule.icaapStressTests:
+        return 'Simulations de Crise';
+      case AppModule.icaapChecklist:
+        return 'Checklist Conformité PIEAFP';
+      case AppModule.icaapRapport:
+        return 'Rapport PIEAFP';
+      case AppModule.icaapUemoaCemac:
         return 'Spécificités UEMOA / CEMAC';
       case AppModule.capitalPlaning:
         return 'Capital Planning';
@@ -171,18 +176,24 @@ extension AppModuleLabel on AppModule {
         return 'Conseils et recommandations basés sur les expositions et les risques.';
       case AppModule.stressTest:
         return 'Simulation de chocs et scénarios adverses sur le portefeuille et le capital.';
-      case AppModule.icap:
-      case AppModule.icapCapitalEconomique:
-      case AppModule.icapCapitalReglementaire:
-      case AppModule.icapAppetenceRisque:
-      case AppModule.icapBuffersPrudentiels:
-      case AppModule.icapProjectionCapital:
-      case AppModule.icapAnalyseSolvabilite:
-      case AppModule.icapPlansCapital:
-      case AppModule.icapReportingIcaap:
-        return "Evaluation interne de l'adéquation du capital et des besoins de solvabilité.";
-      case AppModule.icapUemoaCemac:
-        return 'Comparaison des specificites reglementaires BCEAO (UEMOA) et COBAC (CEMAC).';
+      case AppModule.icaap:
+        return 'Pilotage global de l\'adéquation des fonds propres internes (Art. 505-549 UEMOA).';
+      case AppModule.icaapGouvernance:
+        return 'Obligations de l\'organe délibérant, exécutif et dispositif de contrôle interne (Art. 518-520).';
+      case AppModule.icaapAdeqCapital:
+        return 'Calcul du capital réglementaire (P1), capital économique (P2) et cible interne (Art. 521).';
+      case AppModule.icaapRisquesP2:
+        return 'Évaluation exhaustive des risques non couverts par le Pilier 1 : concentration, IRRBB, résiduel… (Art. 526-543).';
+      case AppModule.icaapPlanification:
+        return 'Vision prospective 3-5 ans des besoins en fonds propres intégrée au plan stratégique (Art. 522-525).';
+      case AppModule.icaapStressTests:
+        return 'Stress-tests rigoureux et prospectifs intégrés à la planification des fonds propres (Art. 544-545).';
+      case AppModule.icaapChecklist:
+        return 'Suivi des 11 exigences de conformité PIEAFP selon le dispositif UEMOA (Art. 517-549).';
+      case AppModule.icaapRapport:
+        return 'Génération, approbation et transmission du rapport PIEAFP à la Commission Bancaire (Art. 548-549).';
+      case AppModule.icaapUemoaCemac:
+        return 'Comparaison des spécificités réglementaires BCEAO (UEMOA) et COBAC (CEMAC).';
       case AppModule.capitalPlaning:
         return 'Projection du capital, des besoins prudentiels et des marges de manoeuvre.';
       case AppModule.referentiels:
@@ -244,17 +255,23 @@ extension AppModuleLabel on AppModule {
         return Icons.analytics_rounded;
       case AppModule.stressTest:
         return Icons.speed_rounded;
-      case AppModule.icap:
-      case AppModule.icapCapitalEconomique:
-      case AppModule.icapCapitalReglementaire:
-      case AppModule.icapAppetenceRisque:
-      case AppModule.icapBuffersPrudentiels:
-      case AppModule.icapProjectionCapital:
-      case AppModule.icapAnalyseSolvabilite:
-      case AppModule.icapPlansCapital:
-      case AppModule.icapReportingIcaap:
-        return Icons.account_balance_rounded;
-      case AppModule.icapUemoaCemac:
+      case AppModule.icaap:
+        return Icons.dashboard_outlined;
+      case AppModule.icaapGouvernance:
+        return Icons.account_balance_outlined;
+      case AppModule.icaapAdeqCapital:
+        return Icons.layers_outlined;
+      case AppModule.icaapRisquesP2:
+        return Icons.analytics_outlined;
+      case AppModule.icaapPlanification:
+        return Icons.trending_up_rounded;
+      case AppModule.icaapStressTests:
+        return Icons.bolt_rounded;
+      case AppModule.icaapChecklist:
+        return Icons.checklist_rounded;
+      case AppModule.icaapRapport:
+        return Icons.summarize_outlined;
+      case AppModule.icaapUemoaCemac:
         return Icons.compare_arrows_rounded;
       case AppModule.capitalPlaning:
         return Icons.open_in_new_rounded;

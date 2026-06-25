@@ -284,40 +284,36 @@ class _RwaAppState extends State<RwaApp> {
         ),
       AppModule.analyse => AnalyseScreen(api: _api),
       AppModule.stressTest => StressTestScreen(api: _api),
-      AppModule.icap => IcapScreen(api: _api),
-      AppModule.icapCapitalEconomique => IcapScreen(
+      AppModule.icaap => IcapScreen(api: _api),
+      AppModule.icaapGouvernance => IcapScreen(
           api: _api,
-          view: IcapView.capitalEconomique,
+          view: IcapView.gouvernance,
         ),
-      AppModule.icapCapitalReglementaire => IcapScreen(
+      AppModule.icaapAdeqCapital => IcapScreen(
           api: _api,
-          view: IcapView.capitalReglementaire,
+          view: IcapView.adeqCapital,
         ),
-      AppModule.icapAppetenceRisque => IcapScreen(
+      AppModule.icaapRisquesP2 => IcapScreen(
           api: _api,
-          view: IcapView.appetenceRisque,
+          view: IcapView.risquesP2,
         ),
-      AppModule.icapBuffersPrudentiels => IcapScreen(
+      AppModule.icaapPlanification => IcapScreen(
           api: _api,
-          view: IcapView.buffersPrudentiels,
+          view: IcapView.planification,
         ),
-      AppModule.icapProjectionCapital => IcapScreen(
+      AppModule.icaapStressTests => IcapScreen(
           api: _api,
-          view: IcapView.projectionCapital,
+          view: IcapView.stressTests,
         ),
-      AppModule.icapAnalyseSolvabilite => IcapScreen(
+      AppModule.icaapChecklist => IcapScreen(
           api: _api,
-          view: IcapView.analyseSolvabilite,
+          view: IcapView.checklist,
         ),
-      AppModule.icapPlansCapital => IcapScreen(
+      AppModule.icaapRapport => IcapScreen(
           api: _api,
-          view: IcapView.plansCapital,
+          view: IcapView.rapport,
         ),
-      AppModule.icapReportingIcaap => IcapScreen(
-          api: _api,
-          view: IcapView.reporting,
-        ),
-      AppModule.icapUemoaCemac => const IcapUemoaCemacScreen(),
+      AppModule.icaapUemoaCemac => const IcapUemoaCemacScreen(),
       AppModule.capitalPlaning => CapitalPlaningScreen(api: _api),
       AppModule.referentiels => _screenFor(AppModule.vueEnsemble),
       AppModule.rapports => RapportsScreen(api: _api),

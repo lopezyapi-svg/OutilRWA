@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:excel/excel.dart' hide Border, TextSpan;
 import 'package:file_selector/file_selector.dart';
@@ -20399,48 +20398,20 @@ class _PersistentVarContentStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        for (var index = 0; index < children.length; index++)
-          _PersistentVarContentLayer(
-            active: index == activeIndex,
-            child: children[index],
+    return AnimatedSwitcher(
+      duration: _varMethodTransitionDuration,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SizeTransition(
+            sizeFactor: animation,
+            child: child,
           ),
-      ],
-    );
-  }
-}
-
-class _PersistentVarContentLayer extends StatelessWidget {
-  const _PersistentVarContentLayer({
-    required this.active,
-    required this.child,
-  });
-
-  final bool active;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      ignoring: !active,
-      child: ExcludeSemantics(
-        excluding: !active,
-        child: AnimatedOpacity(
-          opacity: active ? 1 : 0,
-          duration: _varMethodTransitionDuration,
-          curve: _varMethodTransitionCurve,
-          child: AnimatedSlide(
-            offset: active ? Offset.zero : const Offset(0, 0.008),
-            duration: _varMethodTransitionDuration,
-            curve: _varMethodTransitionCurve,
-            child: TickerMode(
-              enabled: active,
-              child: child,
-            ),
-          ),
-        ),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey<int>(activeIndex),
+        child: children[activeIndex],
       ),
     );
   }

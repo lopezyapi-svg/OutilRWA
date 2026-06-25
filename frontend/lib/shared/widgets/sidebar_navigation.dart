@@ -340,54 +340,49 @@ const List<_MenuEntry> _stressChildren = [
 
 const List<_MenuEntry> _icaapChildren = [
   _MenuEntry.leaf(
-    module: AppModule.icap,
+    module: AppModule.icaap,
     icon: Icons.dashboard_outlined,
-    label: 'Dashboard ICAAP',
+    label: 'Vue d\'ensemble ICAAP',
   ),
   _MenuEntry.leaf(
-    module: AppModule.icapCapitalEconomique,
-    icon: Icons.bar_chart_rounded,
-    label: 'Capital economique',
+    module: AppModule.icaapGouvernance,
+    icon: Icons.account_balance_outlined,
+    label: 'Gouvernance & Contrôle',
   ),
   _MenuEntry.leaf(
-    module: AppModule.icapCapitalReglementaire,
+    module: AppModule.icaapAdeqCapital,
     icon: Icons.layers_outlined,
-    label: 'Capital reglementaire',
+    label: 'Adéquation des fonds propres',
   ),
   _MenuEntry.leaf(
-    module: AppModule.icapAppetenceRisque,
-    icon: Icons.favorite_border_rounded,
-    label: 'Appetence au risque',
+    module: AppModule.icaapRisquesP2,
+    icon: Icons.analytics_outlined,
+    label: 'Risques Pilier 2',
   ),
   _MenuEntry.leaf(
-    module: AppModule.icapBuffersPrudentiels,
-    icon: Icons.shield_outlined,
-    label: 'Buffers prudentiels',
+    module: AppModule.icaapPlanification,
+    icon: Icons.trending_up_rounded,
+    label: 'Planification du capital',
   ),
   _MenuEntry.leaf(
-    module: AppModule.icapProjectionCapital,
-    icon: Icons.open_in_new_rounded,
-    label: 'Projection capital',
+    module: AppModule.icaapStressTests,
+    icon: Icons.bolt_rounded,
+    label: 'Simulations de crise',
   ),
   _MenuEntry.leaf(
-    module: AppModule.icapAnalyseSolvabilite,
-    icon: Icons.speed_rounded,
-    label: 'Analyse solvabilite',
+    module: AppModule.icaapChecklist,
+    icon: Icons.checklist_rounded,
+    label: 'Checklist conformité',
   ),
   _MenuEntry.leaf(
-    module: AppModule.icapPlansCapital,
-    icon: Icons.format_list_bulleted_rounded,
-    label: 'Plans de capital',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapReportingIcaap,
+    module: AppModule.icaapRapport,
     icon: Icons.summarize_outlined,
-    label: 'Reporting ICAAP',
+    label: 'Rapport PIEAFP',
   ),
   _MenuEntry.leaf(
-    module: AppModule.icapUemoaCemac,
+    module: AppModule.icaapUemoaCemac,
     icon: Icons.compare_arrows_rounded,
-    label: 'Specificites UEMOA/CEMAC',
+    label: 'Spécificités UEMOA/CEMAC',
   ),
 ];
 
@@ -529,8 +524,8 @@ const List<_MenuEntry> _sidebarItems = [
     children: _stressChildren,
   ),
   _MenuEntry.group(
-    icon: Icons.business_center_outlined,
-    label: 'ICAAP',
+    icon: Icons.account_balance_rounded,
+    label: 'ICAAP – PIEAFP',
     children: _icaapChildren,
   ),
   _MenuEntry.group(
