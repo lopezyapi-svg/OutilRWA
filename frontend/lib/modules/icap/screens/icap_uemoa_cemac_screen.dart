@@ -70,8 +70,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
         Expanded(
           child: _buildZoneBadge(
             label: 'CEMAC',
-            subLabel:
-                'Commission Bancaire de l\'Afrique Centrale (COBAC)',
+            subLabel: 'Commission Bancaire de l\'Afrique Centrale (COBAC)',
             color: _cemac,
             isDark: isDark,
             icon: CupertinoIcons.globe,
@@ -89,7 +88,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
     required IconData icon,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: isDark ? 0.12 : 0.07),
         borderRadius: BorderRadius.circular(5),
@@ -297,22 +296,38 @@ class IcapUemoaCemacScreen extends StatelessWidget {
     final rows = [
       const _CompRow('CET1 minimum', 'Art. 91(a)', '5,0 %', '4,5 %', false),
       const _CompRow('Tier 1 minimum', 'Art. 91(b)', '6,0 %', '6,0 %', true),
-      const _CompRow('Ratio FPE minimum (solvabilité)', 'Art. 91(c)', '9,0 %', '8,0 %', false),
-      const _CompRow('Coussin de conservation (CET1)', 'Art. 92-97', '2,5 %', '2,5 %', true),
-      const _CompRow('Coussin contracyclique', 'Art. 98-100', '0 – 2,5 %', '0 – 2,5 %', true),
-      const _CompRow('Ratio cible (avec coussins)', 'Art. 103', '11,5 % (FPE)', '10,5 % (FPE)', false),
-      const _CompRow('Ratio de levier minimum', 'Art. 468-469', '≥ 3 % (T1 / Exposition)', 'Non défini', false),
-      const _CompRow('Division des risques', 'Art. 451', '≤ 25 % des FP T1', '≤ 25 % des FP T1', true),
-      const _CompRow('Risque opérationnel – approches', 'Art. 299-315', 'BIA (α=15 %) + Standard (β)', 'BIA uniquement', false),
-      const _CompRow('Exemption souverain (FCFA)', 'Art. 117', '0 % (États UEMOA)', '0 % (États CEMAC)', true),
-      const _CompRow('Obligations sécurisées', 'Art. 462', '20 % sous conditions', 'Non spécifié', false),
-      const _CompRow('Prêts immobiliers résidentiels', 'Art. 142-145', '35 % (LTV ≤ 90 %, CSD ≤ 40 %)', 'Référentiel COBAC', false),
-      const _CompRow('Prêts immobiliers commerciaux', 'Art. 146-149', '75 % (LTV ≤ 90 %)', 'Référentiel COBAC', false),
-      const _CompRow('Prêts aux dirigeants', 'Art. 490', '≤ 20 % des FPE', '≤ 20 % des FPE', true),
-      const _CompRow('Dispositions transitoires', 'Tableau 22', 'Calendrier 2018-2022', 'En vigueur dès 2017', false),
-      const _CompRow('Coussin systémique (D-SIB)', 'Art. 101-102', 'Surcharge pour D-SIB', 'Non spécifié', false),
-      const _CompRow('Ratio de liquidité court terme (RLCT)', 'Art. 582', '≥ 100 % (ALHQ / Sorties)', 'LCR (≥ 100 %)', true),
-      const _CompRow('Ratio de liquidité long terme (RLLT)', 'Art. 583', '≥ 100 % (NSFR)', 'NSFR (≥ 100 %)', true),
+      const _CompRow('Ratio FPE minimum (solvabilité)', 'Art. 91(c)', '9,0 %',
+          '8,0 %', false),
+      const _CompRow('Coussin de conservation (CET1)', 'Art. 92-97', '2,5 %',
+          '2,5 %', true),
+      const _CompRow('Coussin contracyclique', 'Art. 98-100', '0 – 2,5 %',
+          '0 – 2,5 %', true),
+      const _CompRow('Ratio cible (avec coussins)', 'Art. 103', '11,5 % (FPE)',
+          '10,5 % (FPE)', false),
+      const _CompRow('Ratio de levier minimum', 'Art. 468-469',
+          '≥ 3 % (T1 / Exposition)', 'Non défini', false),
+      const _CompRow('Division des risques', 'Art. 451', '≤ 25 % des FP T1',
+          '≤ 25 % des FP T1', true),
+      const _CompRow('Risque opérationnel – approches', 'Art. 299-315',
+          'BIA (α=15 %) + Standard (β)', 'BIA uniquement', false),
+      const _CompRow('Exemption souverain (FCFA)', 'Art. 117',
+          '0 % (États UEMOA)', '0 % (États CEMAC)', true),
+      const _CompRow('Obligations sécurisées', 'Art. 462',
+          '20 % sous conditions', 'Non spécifié', false),
+      const _CompRow('Prêts immobiliers résidentiels', 'Art. 142-145',
+          '35 % (LTV ≤ 90 %, CSD ≤ 40 %)', 'Référentiel COBAC', false),
+      const _CompRow('Prêts immobiliers commerciaux', 'Art. 146-149',
+          '75 % (LTV ≤ 90 %)', 'Référentiel COBAC', false),
+      const _CompRow('Prêts aux dirigeants', 'Art. 490', '≤ 20 % des FPE',
+          '≤ 20 % des FPE', true),
+      const _CompRow('Dispositions transitoires', 'Tableau 22',
+          'Calendrier 2018-2022', 'En vigueur dès 2017', false),
+      const _CompRow('Coussin systémique (D-SIB)', 'Art. 101-102',
+          'Surcharge pour D-SIB', 'Non spécifié', false),
+      const _CompRow('Ratio de liquidité court terme (RLCT)', 'Art. 582',
+          '≥ 100 % (ALHQ / Sorties)', 'LCR (≥ 100 %)', true),
+      const _CompRow('Ratio de liquidité long terme (RLLT)', 'Art. 583',
+          '≥ 100 % (NSFR)', 'NSFR (≥ 100 %)', true),
     ];
 
     return SectionCard(
@@ -336,7 +351,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
 
   Widget _buildTableHeader(bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.04)
@@ -364,7 +379,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
             flex: 3,
             child: _buildHeaderZone('CEMAC (COBAC)', _cemac),
           ),
-          const SizedBox(width: 32),
+          const SizedBox(width: 6),
         ],
       ),
     );
@@ -392,12 +407,11 @@ class IcapUemoaCemacScreen extends StatelessWidget {
   }
 
   Widget _buildTableRow(_CompRow row, bool isDark) {
-    final isAbsent =
-        row.cemac == 'Non défini' || row.cemac == 'Non spécifié';
+    final isAbsent = row.cemac == 'Non défini' || row.cemac == 'Non spécifié';
     final cemacColor = isAbsent ? AppColors.danger : _cemac;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.02)
@@ -483,14 +497,14 @@ class IcapUemoaCemacScreen extends StatelessWidget {
           label: 'Identique dans les deux zones',
           isDark: isDark,
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 4),
         _buildLegendItem(
           icon: Icons.compare_arrows_rounded,
           color: AppColors.warning,
           label: 'Différence entre UEMOA et CEMAC',
           isDark: isDark,
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 4),
         _buildLegendItem(
           icon: Icons.cancel_rounded,
           color: AppColors.danger,
@@ -578,7 +592,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
     required bool isDark,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.02) : Colors.white,
         borderRadius: BorderRadius.circular(5),
@@ -610,7 +624,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Row(
             children: [
               Expanded(
@@ -622,7 +636,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
                   isDark: isDark,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 4),
               Expanded(
                 child: _buildRatioBar(
                   zone: 'CEMAC',
@@ -709,8 +723,8 @@ class IcapUemoaCemacScreen extends StatelessWidget {
                 ),
                 Container(
                   height: 8,
-                  width: constraints.maxWidth *
-                      (min / maxScale).clamp(0.0, 1.0),
+                  width:
+                      constraints.maxWidth * (min / maxScale).clamp(0.0, 1.0),
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(4),
@@ -747,7 +761,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
 
   Widget _buildLeverageRow(bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark
             ? AppColors.warning.withValues(alpha: 0.06)
@@ -804,8 +818,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCompChip(
-      String zone, String value, Color color, bool isDark) {
+  Widget _buildCompChip(String zone, String value, Color color, bool isDark) {
     return Column(
       children: [
         Text(
@@ -893,7 +906,8 @@ class IcapUemoaCemacScreen extends StatelessWidget {
           _buildApproachItem(
             name: 'Approche standard (SA)',
             ref: 'Art. 305-314',
-            formula: 'K = (Σ max(Σ PBᵢ × βᵢ, 0)) / 3\n8 lignes de métier • β ∈ {12 %, 15 %, 18 %}',
+            formula:
+                'K = (Σ max(Σ PBᵢ × βᵢ, 0)) / 3\n8 lignes de métier • β ∈ {12 %, 15 %, 18 %}',
             available: true,
             isDark: isDark,
           ),
@@ -1026,7 +1040,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.02)
@@ -1066,7 +1080,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
             children: betas.map((b) {
               return Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
                 decoration: BoxDecoration(
                   color: _uemoa.withValues(alpha: isDark ? 0.12 : 0.08),
                   borderRadius: BorderRadius.circular(4),
@@ -1115,46 +1129,44 @@ class IcapUemoaCemacScreen extends StatelessWidget {
         icon: Icons.account_balance_rounded,
         desc:
             'Exigence minimale de 3 % (T1 / Exposition totale bilan + hors-bilan). '
-                'Indicateur complémentaire limitant l\'effet de levier excessif. '
-                'Absent du dispositif COBAC actuel.',
+            'Indicateur complémentaire limitant l\'effet de levier excessif. '
+            'Absent du dispositif COBAC actuel.',
       ),
       (
         title: 'Obligations sécurisées (Art. 462)',
         icon: Icons.security_rounded,
         desc:
             'Pondération à 20 % sous conditions strictes (qualité des actifs, isolation '
-                'juridique, ratio de couverture). Non spécifié dans le référentiel COBAC.',
+            'juridique, ratio de couverture). Non spécifié dans le référentiel COBAC.',
       ),
       (
         title: 'Critères LTV pour l\'immobilier (Art. 142-149)',
         icon: Icons.home_work_rounded,
-        desc:
-            'Pondération résidentielle 35 % si LTV ≤ 90 % et CSD ≤ 40 %. '
-                'Pondération commerciale 75 % si LTV ≤ 90 %. '
-                'Critères LTV explicites et chiffrés absents en CEMAC.',
+        desc: 'Pondération résidentielle 35 % si LTV ≤ 90 % et CSD ≤ 40 %. '
+            'Pondération commerciale 75 % si LTV ≤ 90 %. '
+            'Critères LTV explicites et chiffrés absents en CEMAC.',
       ),
       (
         title: 'Approche standard risque opérationnel (Art. 305-314)',
         icon: Icons.settings_applications_rounded,
-        desc:
-            '8 lignes de métier avec des β spécifiques (12 % à 18 %) '
-                'sous conditions d\'agrément BCEAO. Approche non disponible en CEMAC.',
+        desc: '8 lignes de métier avec des β spécifiques (12 % à 18 %) '
+            'sous conditions d\'agrément BCEAO. Approche non disponible en CEMAC.',
       ),
       (
         title: 'Calendrier transitoire 2018-2022 (Tableau 22)',
         icon: Icons.schedule_rounded,
         desc:
             'Montée en charge progressive : CET1 de 5 % (min) à 7,5 % (cible), '
-                'T1 de 6 % à 8,5 %, FPE de 9 % à 11,5 %. '
-                'CEMAC: entrée en vigueur directe en 2017.',
+            'T1 de 6 % à 8,5 %, FPE de 9 % à 11,5 %. '
+            'CEMAC: entrée en vigueur directe en 2017.',
       ),
       (
         title: 'Coussin systémique D-SIB (Art. 101-102)',
         icon: Icons.shield_rounded,
         desc:
             'Surcharge en fonds propres supplémentaires pour les établissements '
-                'd\'importance systémique intérieure, fixée par la BCEAO. '
-                'Non spécifié explicitement en CEMAC.',
+            'd\'importance systémique intérieure, fixée par la BCEAO. '
+            'Non spécifié explicitement en CEMAC.',
       ),
     ];
 
@@ -1184,7 +1196,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
     required bool isDark,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _uemoa.withValues(alpha: isDark ? 0.06 : 0.04),
         borderRadius: BorderRadius.circular(5),
@@ -1203,7 +1215,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
             ),
             child: Icon(icon, color: _uemoa, size: 16),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1260,42 +1272,42 @@ class IcapUemoaCemacScreen extends StatelessWidget {
         ref: 'Art. 92-97',
         detail:
             'Composé intégralement de CET1. Restrictions de distributions progressives '
-                'si le ratio CET1 descend sous la cible (Tableau 1).',
+            'si le ratio CET1 descend sous la cible (Tableau 1).',
       ),
       (
         theme: 'Division des risques',
         ref: 'Art. 451',
         detail:
             'Exposition maximale à une contrepartie ≤ 25 % des fonds propres T1. '
-                'Déclaration semestrielle des grandes expositions.',
+            'Déclaration semestrielle des grandes expositions.',
       ),
       (
         theme: 'Exemption souveraine (monnaie locale)',
         ref: 'Art. 117',
         detail:
             'Créances sur États membres libellées et refinancées en FCFA : pondération 0 %. '
-                'Valable dans les deux zones monétaires.',
+            'Valable dans les deux zones monétaires.',
       ),
       (
         theme: 'Prêts aux dirigeants et administrateurs',
         ref: 'Art. 490',
         detail:
             'Encours des prêts aux dirigeants, administrateurs et actionnaires significatifs '
-                '≤ 20 % des fonds propres éligibles.',
+            '≤ 20 % des fonds propres éligibles.',
       ),
       (
         theme: 'Coussin contracyclique (0 – 2,5 %)',
         ref: 'Art. 98-100',
         detail:
             'Coussin variable activé par l\'autorité de supervision selon la phase du cycle '
-                'économique (BCEAO ou COBAC).',
+            'économique (BCEAO ou COBAC).',
       ),
       (
         theme: 'OEEC reconnus',
         ref: 'Tableau 10',
         detail:
             'Agences de notation reconnues : Standard & Poor\'s, Moody\'s, Fitch et DBRS '
-                'pour les évaluations de crédit externes.',
+            'pour les évaluations de crédit externes.',
       ),
     ];
 
@@ -1335,7 +1347,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
   Widget _buildCommonItem(
       String theme, String ref, String detail, bool isDark) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: AppColors.success.withValues(alpha: isDark ? 0.06 : 0.04),
         borderRadius: BorderRadius.circular(5),

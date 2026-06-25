@@ -76,9 +76,9 @@ Future<void> _showMarketDataImportSuccessDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
-        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-        contentPadding: const EdgeInsets.fromLTRB(24, 16, 24, 6),
-        actionsPadding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+        titlePadding: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+        contentPadding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
+        actionsPadding: const EdgeInsets.fromLTRB(6, 8, 6, 5),
         title: Row(
           children: [
             Container(
@@ -94,7 +94,7 @@ Future<void> _showMarketDataImportSuccessDialog(
                 size: 22,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 3),
             const Expanded(
               child: Text(
                 'Importation réussie',
@@ -365,7 +365,7 @@ class _MarketDataImportDialogState extends State<_MarketDataImportDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 26, vertical: 22),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1180, maxHeight: 860),
@@ -471,7 +471,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 18, 14),
+            padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
             child: Row(
               children: [
                 Container(
@@ -489,7 +489,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     'Importation de données',
@@ -517,7 +517,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
           Divider(height: 1, color: colors.border),
           Flexible(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+              padding: const EdgeInsets.fromLTRB(5, 5, 5, 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -525,7 +525,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                     value: scope,
                     onChanged: onScopeChanged,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 4),
                   _ImportSectionCard(
                     icon: CupertinoIcons.doc_text,
                     title: 'Zone d’import',
@@ -542,7 +542,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                     ),
                   ),
                   if (inspections.isEmpty) ...[
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 4),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
@@ -565,7 +565,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 3),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 180),
                       switchInCurve: Curves.easeOutCubic,
@@ -587,7 +587,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                             ),
                     ),
                   ] else ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 4),
                     _FileVerificationPanel(
                       inspections: inspections,
                       fileSize: selectedFileSize ?? 0,
@@ -599,7 +599,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
           ),
           Divider(height: 1, color: colors.border),
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
+            padding: const EdgeInsets.fromLTRB(5, 3, 5, 4),
             child: Row(
               children: [
                 TextButton(
@@ -614,7 +614,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                     onChanged: onModeChanged,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 FilledButton.icon(
                   onPressed: canValidate ? onRunImport : null,
                   icon: isImporting
@@ -696,7 +696,7 @@ class _ImportDropZone extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppTheme.radius),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             decoration: BoxDecoration(
               color: isDragging
                   ? AppTheme.accent.withValues(alpha: 0.045)
@@ -749,7 +749,7 @@ class _ImportDropZone extends StatelessWidget {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 3),
                       Wrap(
                         spacing: 7,
                         runSpacing: 7,
@@ -808,11 +808,11 @@ class _ImportDropZone extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           fileIcon,
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 4),
                           textBlock,
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 3),
                       button,
                     ],
                   );
@@ -821,9 +821,9 @@ class _ImportDropZone extends StatelessWidget {
                 return Row(
                   children: [
                     fileIcon,
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 4),
                     textBlock,
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 4),
                     button,
                   ],
                 );
@@ -851,7 +851,7 @@ class _ExpectedWorkbookPanel extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: colors.softSurface,
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -882,7 +882,7 @@ class _ExpectedWorkbookPanel extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Wrap(
             spacing: 7,
             runSpacing: 7,
@@ -900,7 +900,7 @@ class _ExpectedWorkbookPanel extends StatelessWidget {
               ],
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           for (final type in types) ...[
             if (types.length > 1) ...[
               Text(
@@ -921,7 +921,7 @@ class _ExpectedWorkbookPanel extends StatelessWidget {
                   _ExpectedChip(label: header),
               ],
             ),
-            if (type != types.last) const SizedBox(height: 14),
+            if (type != types.last) const SizedBox(height: 4),
           ],
         ],
       ),
@@ -981,7 +981,7 @@ class _FileVerificationPanel extends StatelessWidget {
       title: 'Vérification du fichier',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           color: headerSurface,
           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1020,7 +1020,7 @@ class _FileVerificationPanel extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 3),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -1041,7 +1041,7 @@ class _FileVerificationPanel extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 3),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -1073,7 +1073,7 @@ class _FileVerificationPanel extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 4),
             Wrap(
               spacing: 7,
               runSpacing: 7,
@@ -1107,7 +1107,7 @@ class _FileVerificationPanel extends StatelessWidget {
               ],
             ),
             if (errors.isNotEmpty) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 3),
               TextButton.icon(
                 onPressed: () => _showVerificationErrors(context, errors),
                 icon: const Icon(
@@ -1358,7 +1358,7 @@ class _SecondaryDropTarget extends StatelessWidget {
                     size: 28,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 3),
                 Text(
                   isDragging
                       ? 'Relâchez pour charger le fichier'
@@ -1403,7 +1403,7 @@ class _ImportSectionCard extends StatelessWidget {
     final colors = _ImportColors.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1426,7 +1426,7 @@ class _ImportSectionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           child,
         ],
       ),
@@ -1577,7 +1577,7 @@ class _ExpectedActionButton extends StatelessWidget {
           foregroundColor: colors.actionText,
           disabledBackgroundColor: colors.actionSurface,
           disabledForegroundColor: colors.muted,
-          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
           textStyle: const TextStyle(
             fontSize: 11.2,
             fontWeight: FontWeight.w500,
@@ -1704,7 +1704,7 @@ class _ImportModeMenuItem extends StatelessWidget {
           ),
           child: Icon(icon, size: 13, color: color),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 3),
         Flexible(
           child: Text(
             label,

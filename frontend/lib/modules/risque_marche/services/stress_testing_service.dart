@@ -64,10 +64,12 @@ StressTestingResult calculateStressScenarios({
     'base_ratio': baseCapitalRatio,
   });
 
-  final bondRecords =
-      allRecords.where((r) => r.portfolioType == MarketPortfolioType.bonds).toList();
-  final equityRecords =
-      allRecords.where((r) => r.portfolioType == MarketPortfolioType.equities).toList();
+  final bondRecords = allRecords
+      .where((r) => r.portfolioType == MarketPortfolioType.bonds)
+      .toList();
+  final equityRecords = allRecords
+      .where((r) => r.portfolioType == MarketPortfolioType.equities)
+      .toList();
 
   final portfolioValue = _totalPortfolioValue(allRecords);
   final baseCapital = baseCapitalRequirement;
@@ -169,7 +171,8 @@ const _allScenarios = <_ScenarioTemplate>[
   _ScenarioTemplate(
     id: 'RATE_UP_200',
     name: 'Hausse des taux de 200bps',
-    description: 'Choc parallèle haussier de 200 points de base sur la courbe des taux',
+    description:
+        'Choc parallèle haussier de 200 points de base sur la courbe des taux',
     category: 'Taux',
     formula: 'ΔP = -D_mod × 2% × P_oblig + ½ × C × (2%)² × P_oblig',
     shocks: {'rate_shock_bps': 200, 'type': 'parallel_up'},
@@ -185,15 +188,18 @@ const _allScenarios = <_ScenarioTemplate>[
   _ScenarioTemplate(
     id: 'RATE_FLATTENING',
     name: 'Aplatissement de la courbe',
-    description: 'Hausse des taux courts (+100bps) et baisse des taux longs (-50bps)',
+    description:
+        'Hausse des taux courts (+100bps) et baisse des taux longs (-50bps)',
     category: 'Taux',
-    formula: 'Impact = Σ(ΔP_court + ΔP_long) avec chocs différenciés par maturité',
+    formula:
+        'Impact = Σ(ΔP_court + ΔP_long) avec chocs différenciés par maturité',
     shocks: {'short_rate_bps': 100, 'long_rate_bps': -50, 'type': 'flattening'},
   ),
   _ScenarioTemplate(
     id: 'FX_SHOCK_10',
     name: 'Dépréciation XOF de 10%',
-    description: 'Dépréciation de 10% du franc CFA face à toutes les devises étrangères',
+    description:
+        'Dépréciation de 10% du franc CFA face à toutes les devises étrangères',
     category: 'Change',
     formula: 'Impact = Position_nette_devises × 10%',
     shocks: {'fx_shock_percent': 10, 'type': 'xof_depreciation'},
@@ -217,7 +223,8 @@ const _allScenarios = <_ScenarioTemplate>[
   _ScenarioTemplate(
     id: 'SYSTEMIC_2008',
     name: 'Crise systémique (2008)',
-    description: 'Combinaison: taux +100bps, actions -30%, change -5%, spread +200bps',
+    description:
+        'Combinaison: taux +100bps, actions -30%, change -5%, spread +200bps',
     category: 'Systémique',
     formula: 'Impact total = somme de tous les chocs simultanés',
     shocks: {
@@ -396,8 +403,9 @@ double _bondModifiedDuration(MarketPortfolioRecord record) {
   final nominal = record.nominalUnit > 0 ? record.nominalUnit : 1;
   final redemption = nominal;
   final periods = math.max(1, (years * frequency).ceil());
-  final annualYield =
-      record.yieldToMaturity > 0 ? _rateFraction(record.yieldToMaturity) : _rateFraction(record.coupon);
+  final annualYield = record.yieldToMaturity > 0
+      ? _rateFraction(record.yieldToMaturity)
+      : _rateFraction(record.coupon);
   if (annualYield <= 0) return 0;
   final periodicBase = 1 + annualYield / frequency;
   final couponCF = _rateFraction(record.coupon) * nominal / frequency;

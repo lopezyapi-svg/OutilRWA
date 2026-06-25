@@ -100,7 +100,8 @@ VarEngineResult calculateHistoricalVar({
     'formule_es': 'ES_α = -E[R | R ≤ -VaR_α] × P',
   });
 
-  var hasData = input.historicalReturns.length >= 20 && input.portfolioValue > 0;
+  var hasData =
+      input.historicalReturns.length >= 20 && input.portfolioValue > 0;
   final results = <VarResult>[];
 
   for (final conf in confidences) {
@@ -123,11 +124,11 @@ VarEngineResult calculateHistoricalVar({
         continue;
       }
 
-      final allReturns = List<double>.from(input.historicalReturns)
-        ..sort();
+      final allReturns = List<double>.from(input.historicalReturns)..sort();
       final varIndex = ((1 - conf) * allReturns.length).ceil() - 1;
       final boundedIndex = varIndex.clamp(0, allReturns.length - 1);
-      final historicalVar = -allReturns[boundedIndex] * input.portfolioValue * timeScale;
+      final historicalVar =
+          -allReturns[boundedIndex] * input.portfolioValue * timeScale;
 
       varSteps.add({
         'etape': 'Tri des rendements',
@@ -136,9 +137,8 @@ VarEngineResult calculateHistoricalVar({
         'rendement_seuil': allReturns[boundedIndex],
       });
 
-      final esReturns = allReturns
-          .where((r) => r <= allReturns[boundedIndex])
-          .toList();
+      final esReturns =
+          allReturns.where((r) => r <= allReturns[boundedIndex]).toList();
       var es = 0.0;
       if (esReturns.isNotEmpty) {
         es = -(esReturns.reduce((a, b) => a + b) / esReturns.length) *
@@ -149,7 +149,9 @@ VarEngineResult calculateHistoricalVar({
       varSteps.add({
         'etape': 'Expected Shortfall',
         'nb_observations': esReturns.length,
-        'moyenne_extreme': esReturns.isEmpty ? 0 : esReturns.reduce((a, b) => a + b) / esReturns.length,
+        'moyenne_extreme': esReturns.isEmpty
+            ? 0
+            : esReturns.reduce((a, b) => a + b) / esReturns.length,
         'formule_es': 'ES($conf) = -moyenne(R ≤ -VaR) × P × √T',
       });
 
@@ -177,8 +179,9 @@ VarEngineResult calculateHistoricalVar({
           'percentile_index': boundedIndex,
           'threshold_return': allReturns[boundedIndex],
           'es_observations': esReturns.length,
-          'es_mean_return':
-              esReturns.isEmpty ? 0 : esReturns.reduce((a, b) => a + b) / esReturns.length,
+          'es_mean_return': esReturns.isEmpty
+              ? 0
+              : esReturns.reduce((a, b) => a + b) / esReturns.length,
           'time_scale': timeScale,
           'z_score': z,
           'formule_var': 'VaR_{hist}(α) = -percentile(R, 1-α) × P × √T',
@@ -220,9 +223,10 @@ VarEngineResult calculateParametricVar({
       final z = _normalQuantile(conf);
       final timeScale = math.sqrt(math.max(1, horizon));
       final dailyVol = _normalizedVol(input.annualVolatility) / math.sqrt(252);
-      final sensMultiple =
-          math.max(1.0, input.modifiedDuration > 0 ? input.modifiedDuration : 1.0);
-      final lossStdDev = dailyVol * sensMultiple * input.portfolioValue * timeScale;
+      final sensMultiple = math.max(
+          1.0, input.modifiedDuration > 0 ? input.modifiedDuration : 1.0);
+      final lossStdDev =
+          dailyVol * sensMultiple * input.portfolioValue * timeScale;
 
       if (!hasData) {
         results.add(VarResult(
@@ -291,15 +295,15 @@ VarEngineResult calculateMonteCarloVar({
   final journal = <Map<String, dynamic>>[];
   journal.add({
     'etape': 'Initialisation',
-    'description':
-        'VaR Monte-Carlo - ${input.numSimulations} simulations',
+    'description': 'VaR Monte-Carlo - ${input.numSimulations} simulations',
     'timestamp': DateTime.now().toIso8601String(),
     'formule':
         'Simulation de GBM: S_t = S_0 × exp((μ - σ²/2) × Δt + σ × √Δt × ε)',
   });
 
-  final hasData =
-      input.portfolioValue > 0 && input.annualVolatility > 0 && input.numSimulations > 0;
+  final hasData = input.portfolioValue > 0 &&
+      input.annualVolatility > 0 &&
+      input.numSimulations > 0;
   final rng = math.Random(42);
   final results = <VarResult>[];
 
@@ -332,12 +336,13 @@ VarEngineResult calculateMonteCarloVar({
           totalReturn += drift + vol * math.sqrt(dt) * eps;
         }
         return totalReturn / riskFactors;
-      })..sort();
+      })
+        ..sort();
 
       final varIndex = ((1 - conf) * scenarios.length).ceil() - 1;
       final boundedIndex = varIndex.clamp(0, scenarios.length - 1);
-      final scenarioLosses = scenarios.map((r) => -r * input.portfolioValue).toList()
-        ..sort();
+      final scenarioLosses =
+          scenarios.map((r) => -r * input.portfolioValue).toList()..sort();
       final mcVar = math.max(0.0, scenarioLosses[boundedIndex]);
 
       final esScenarios = scenarioLosses
@@ -449,24 +454,39 @@ VarComparisonResult compareVarMethods({
   };
 
   return VarComparisonResult(
-    historical: histVar ?? VarResult(
-      engine: VarEngine.historical, confidence: confidence,
-      horizonDays: horizonDays, varValue: 0, expectedShortfall: 0,
-      portfolioValue: monteCarloInput.portfolioValue, details: {},
-      calculationJournal: [],
-    ),
-    parametric: paramVar ?? VarResult(
-      engine: VarEngine.parametric, confidence: confidence,
-      horizonDays: horizonDays, varValue: 0, expectedShortfall: 0,
-      portfolioValue: parametricInput.portfolioValue, details: {},
-      calculationJournal: [],
-    ),
-    monteCarlo: mcVar ?? VarResult(
-      engine: VarEngine.monteCarlo, confidence: confidence,
-      horizonDays: horizonDays, varValue: 0, expectedShortfall: 0,
-      portfolioValue: monteCarloInput.portfolioValue, details: {},
-      calculationJournal: [],
-    ),
+    historical: histVar ??
+        VarResult(
+          engine: VarEngine.historical,
+          confidence: confidence,
+          horizonDays: horizonDays,
+          varValue: 0,
+          expectedShortfall: 0,
+          portfolioValue: monteCarloInput.portfolioValue,
+          details: {},
+          calculationJournal: [],
+        ),
+    parametric: paramVar ??
+        VarResult(
+          engine: VarEngine.parametric,
+          confidence: confidence,
+          horizonDays: horizonDays,
+          varValue: 0,
+          expectedShortfall: 0,
+          portfolioValue: parametricInput.portfolioValue,
+          details: {},
+          calculationJournal: [],
+        ),
+    monteCarlo: mcVar ??
+        VarResult(
+          engine: VarEngine.monteCarlo,
+          confidence: confidence,
+          horizonDays: horizonDays,
+          varValue: 0,
+          expectedShortfall: 0,
+          portfolioValue: monteCarloInput.portfolioValue,
+          details: {},
+          calculationJournal: [],
+        ),
     comparison: comparison,
     calculationJournal: [
       ...histResult.calculationJournal,

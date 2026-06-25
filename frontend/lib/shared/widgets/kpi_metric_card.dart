@@ -39,9 +39,8 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surface = isDark
-        ? Colors.white.withValues(alpha: 0.04)
-        : AppTheme.card;
+    final surface =
+        isDark ? Colors.white.withValues(alpha: 0.04) : AppTheme.card;
     final borderColor = widget.color.withValues(
       alpha: _hovered ? (isDark ? 0.40 : 0.45) : (isDark ? 0.18 : 0.0),
     );
@@ -68,10 +67,12 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
     }
 
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = true);
+      }),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = false);
+      }),
       child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
@@ -80,7 +81,7 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
           curve: Curves.easeOutCubic,
           height: widget.height,
           transform: Matrix4.translationValues(0, _hovered ? -2 : 0, 0),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          padding: const EdgeInsets.fromLTRB(3, 8, 3, 8),
           decoration: BoxDecoration(
             color: surface,
             borderRadius: BorderRadius.circular(widget.borderRadius),
@@ -89,7 +90,8 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
               BoxShadow(
                 color: isDark
                     ? Colors.black.withValues(alpha: 0.18)
-                    : const Color(0xFF4318FF).withValues(alpha: _hovered ? 0.10 : 0.05),
+                    : const Color(0xFF4318FF)
+                        .withValues(alpha: _hovered ? 0.10 : 0.05),
                 blurRadius: _hovered ? 18 : 10,
                 offset: const Offset(0, 4),
               ),
@@ -108,7 +110,8 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: widget.color.withValues(alpha: isDark ? 0.18 : 0.10),
-                    borderRadius: BorderRadius.circular(widget.borderRadius * 0.7),
+                    borderRadius:
+                        BorderRadius.circular(widget.borderRadius * 0.7),
                   ),
                   child: Icon(
                     widget.icon,
@@ -117,7 +120,7 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 3),
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -295,8 +298,8 @@ class _IndicatorTooltip extends StatelessWidget {
         minWidth: 260,
         maxWidth: 340,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+      margin: const EdgeInsets.all(3),
       preferBelow: false,
       verticalOffset: 15,
       waitDuration: const Duration(milliseconds: 220),

@@ -290,7 +290,7 @@ class _EngineHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _EnginePanel(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -301,7 +301,7 @@ class _EngineHeader extends StatelessWidget {
                 color: AppColors.concentrationPrimary,
                 size: 40,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -373,7 +373,7 @@ class _EngineSideBar extends StatelessWidget {
       child: Align(
         alignment: Alignment.topRight,
         child: Padding(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(3),
           child: _EngineSidebarToggleButton(
             expanded: expanded,
             onPressed: onToggle,
@@ -482,7 +482,7 @@ class _EngineSplitPanelIconPainter extends CustomPainter {
 class _EnginePanel extends StatelessWidget {
   const _EnginePanel({
     required this.child,
-    this.padding = const EdgeInsets.all(14),
+    this.padding = const EdgeInsets.all(4),
   });
 
   final Widget child;
@@ -547,7 +547,7 @@ class _EngineStatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(_radius),
@@ -572,7 +572,7 @@ class _EngineEmptyState extends StatelessWidget {
     return Center(
       child: Container(
         width: 460,
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(_radius),
@@ -582,8 +582,10 @@ class _EngineEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const _EngineIconBox(
-                icon: CupertinoIcons.function, color: AppColors.concentrationPrimary, size: 44),
-            const SizedBox(height: 12),
+                icon: CupertinoIcons.function,
+                color: AppColors.concentrationPrimary,
+                size: 44),
+            const SizedBox(height: 3),
             Text(
               'Aucune exposition chargée',
               textAlign: TextAlign.center,

@@ -124,7 +124,7 @@ class AnalyseRecommendationCard extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 3),
                     Expanded(
                       child: Text(
                         action,
@@ -147,7 +147,7 @@ class AnalyseRecommendationCard extends StatelessWidget {
 
   Widget _buildBadge(String label, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 5.0),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(5),

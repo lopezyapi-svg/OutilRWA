@@ -55,7 +55,14 @@ const _lignesMetier = [
   "Gestion d'actifs",
   'Courtage de détail',
 ];
-const _typesEvenement = ['Interne', 'Externe', 'Processus', 'Système', 'Personnel', 'Juridique'];
+const _typesEvenement = [
+  'Interne',
+  'Externe',
+  'Processus',
+  'Système',
+  'Personnel',
+  'Juridique'
+];
 const _statutsIncident = ['Ouvert', 'En cours', 'Résolu', 'Clôturé'];
 const _causesRacine = [
   'Erreur humaine',
@@ -66,8 +73,20 @@ const _causesRacine = [
   'Événement externe',
   'Non définie',
 ];
-const _categoriesRisque = ['Processus', 'Personnel', 'Système', 'Externe', 'Juridique'];
-const _typesControle = ['Permanent', 'Périodique', 'Ponctuel', 'Sur pièces', 'Sur place'];
+const _categoriesRisque = [
+  'Processus',
+  'Personnel',
+  'Système',
+  'Externe',
+  'Juridique'
+];
+const _typesControle = [
+  'Permanent',
+  'Périodique',
+  'Ponctuel',
+  'Sur pièces',
+  'Sur place'
+];
 const _frequences = ['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'];
 const _typesAction = ['Corrective', 'Préventive', 'Améliorative'];
 const _sourcesAction = ['Incident', 'Contrôle', 'KRI', 'Audit', 'Cartographie'];
@@ -80,27 +99,26 @@ const _statutsPlan = ['A faire', 'En cours', 'Terminé', 'Abandonné'];
 const _artExplanations = <String, String>{
   'Art. 313':
       'Gestion du risque opérationnel — dispositif d\'identification, de mesure,\n'
-      'de surveillance et de contrôle obligatoire (Instruction UMOA).\n\n'
-      'Mesure du risque (matrice 5×5) :\n'
-      '  Score = Impact × Probabilité   (échelle 1 – 5)\n'
-      '  Zone rouge : Score ≥ 15   |   Zone orange : 8 – 14\n'
-      '  Piliers : Identification → Mesure → Surveillance → Contrôle',
+          'de surveillance et de contrôle obligatoire (Instruction UMOA).\n\n'
+          'Mesure du risque (matrice 5×5) :\n'
+          '  Score = Impact × Probabilité   (échelle 1 – 5)\n'
+          '  Zone rouge : Score ≥ 15   |   Zone orange : 8 – 14\n'
+          '  Piliers : Identification → Mesure → Surveillance → Contrôle',
   'Art. 313.b':
       'Déclaration des incidents opérationnels — tout incident significatif\n'
-      'doit être documenté (cause racine, pertes) avec suivi formel imposé.\n\n'
-      'Calcul de la perte nette :\n'
-      '  Perte nette = Perte brute − Récupérations\n'
-      '  Récupérations : assurance + provisions + reversements\n'
-      '  Délai de déclaration : ≤ J+5 ouvrés après détection',
+          'doit être documenté (cause racine, pertes) avec suivi formel imposé.\n\n'
+          'Calcul de la perte nette :\n'
+          '  Perte nette = Perte brute − Récupérations\n'
+          '  Récupérations : assurance + provisions + reversements\n'
+          '  Délai de déclaration : ≤ J+5 ouvrés après détection',
   'Art. 313.c':
       'Plans d\'actions correctives et préventives — documentés, assignés\n'
-      'à un responsable avec échéance et taux d\'avancement obligatoires.\n\n'
-      'Indicateurs de suivi :\n'
-      '  Avancement (%) = (Actions terminées / Actions totales) × 100\n'
-      '  Taux global = Σ avancement_i / n   (n = nb plans actifs)\n'
-      '  Retard = Date_échéance − Date_aujourd\'hui  < 0 → en retard',
-  'Art. 314':
-      'Contrôle interne — dispositif permanent et périodique obligatoire.\n'
+          'à un responsable avec échéance et taux d\'avancement obligatoires.\n\n'
+          'Indicateurs de suivi :\n'
+          '  Avancement (%) = (Actions terminées / Actions totales) × 100\n'
+          '  Taux global = Σ avancement_i / n   (n = nb plans actifs)\n'
+          '  Retard = Date_échéance − Date_aujourd\'hui  < 0 → en retard',
+  'Art. 314': 'Contrôle interne — dispositif permanent et périodique obligatoire.\n'
       'Conservation des documents : ≥ 7 ans (exigence UMOA).\n\n'
       'Efficacité du contrôle :\n'
       '  Taux de conformité = (Contrôles conformes / Contrôles réalisés) × 100\n'
@@ -108,20 +126,19 @@ const _artExplanations = <String, String>{
       '  Fréquences : permanent (quotidien/hebdo) | périodique (mensuel/annuel)',
   'Art. 89':
       'Calcul des RWA opérationnels — méthode Indicateur de Base (BIA).\n\n'
-      'Formule BIA :\n'
-      '  Capital minimal = α × PNBmoy₃\n'
-      '  α = 15 %   (coefficient réglementaire BCEAO)\n'
-      '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
-      '  RWA_opérationnel = Capital minimal ÷ 8 %   (facteur 12,5)',
+          'Formule BIA :\n'
+          '  Capital minimal = α × PNBmoy₃\n'
+          '  α = 15 %   (coefficient réglementaire BCEAO)\n'
+          '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
+          '  RWA_opérationnel = Capital minimal ÷ 8 %   (facteur 12,5)',
   'Art. 301/307':
       'Exigences minimales en fonds propres (dispositif prudentiel BCEAO).\n\n'
-      'Ratios réglementaires :\n'
-      '  Ratio Tier 1 = Fonds propres de base / RWA total  ≥ 5 %\n'
-      '  Ratio global = Fonds propres totaux / RWA total   ≥ 8 %\n'
-      '  RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
-      '  Coussin de conservation : + 2,5 % des RWA (si applicable)',
-  'Art. 545':
-      'Stress testing — simulations de scénarios de crise pour évaluer\n'
+          'Ratios réglementaires :\n'
+          '  Ratio Tier 1 = Fonds propres de base / RWA total  ≥ 5 %\n'
+          '  Ratio global = Fonds propres totaux / RWA total   ≥ 8 %\n'
+          '  RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
+          '  Coussin de conservation : + 2,5 % des RWA (si applicable)',
+  'Art. 545': 'Stress testing — simulations de scénarios de crise pour évaluer\n'
       'la résilience du dispositif de gestion des risques.\n\n'
       'Scénarios types et formule d\'impact :\n'
       '  S1 : Optimiste  |  S2 : Neutre  |  S3 : Pessimiste  |  S4 : Crise\n'
@@ -130,16 +147,18 @@ const _artExplanations = <String, String>{
       '  Ratio de résistance = FP après choc / RWA stressés  ≥ seuil',
   'Art. 546':
       'Rapport annuel sur le dispositif de gestion des risques opérationnels,\n'
-      'transmis à la Commission Bancaire de l\'UMOA.\n\n'
-      'Indicateurs clés à reporter :\n'
-      '  • RWA opérationnel = K_BIA × 12,5   (avec K_BIA = 15 % × PNBmoy₃)\n'
-      '  • Pertes totales nettes = Σ (Perte brute − Récupérations)\n'
-      '  • Taux couverture plans = Actions terminées / Total plans × 100\n'
-      '  • Résultats stress tests : ΔFP sous S3 et S4',
+          'transmis à la Commission Bancaire de l\'UMOA.\n\n'
+          'Indicateurs clés à reporter :\n'
+          '  • RWA opérationnel = K_BIA × 12,5   (avec K_BIA = 15 % × PNBmoy₃)\n'
+          '  • Pertes totales nettes = Σ (Perte brute − Récupérations)\n'
+          '  • Taux couverture plans = Actions terminées / Total plans × 100\n'
+          '  • Résultats stress tests : ΔFP sous S3 et S4',
 };
 
-List<String> _extractArtRefs(String text) =>
-    RegExp(r'Art\.\s*\d+[\w\./]*').allMatches(text).map((m) => m.group(0)!).toList();
+List<String> _extractArtRefs(String text) => RegExp(r'Art\.\s*\d+[\w\./]*')
+    .allMatches(text)
+    .map((m) => m.group(0)!)
+    .toList();
 
 String _stripArtRefs(String text) =>
     text.replaceAll(RegExp(r'\s*\(Art\..*?\)'), '').trim();
@@ -153,12 +172,13 @@ Widget _artInfo(String artRef) {
       preferBelow: false,
       waitDuration: Duration.zero,
       showDuration: const Duration(seconds: 8),
-      textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
+      textStyle:
+          const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
       decoration: BoxDecoration(
         color: const Color(0xFF1E2A3A),
         borderRadius: BorderRadius.circular(6),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
       child: const Icon(Icons.info_outline_rounded, size: 14, color: _kBlue),
     ),
   );
@@ -182,42 +202,43 @@ class RisqueOperationnelScreen extends StatelessWidget {
     // Windows qui génère des erreurs 2239 sur les tableaux complexes.
     return ExcludeSemantics(
       child: switch (view) {
-        OperationalRiskView.dashboard    => _DashboardView(api: api),
-        OperationalRiskView.registre     => _RegistreView(api: api),
-        OperationalRiskView.incidents    => _SimulationCriseView(api: api),
-        OperationalRiskView.pertes       => _PertesView(api: api),
-        OperationalRiskView.historique   => _HistoriqueView(api: api),
-        OperationalRiskView.reporting    => _ReportingView(api: api),
-        OperationalRiskView.kri          => _RoPageWrapper(
-          title: 'KRI',
-          subtitle: 'Indicateurs clés de risque — surveillance continue (Art. 313)',
-          artRef: 'Art. 313',
-          child: _KriView(api: api),
-        ),
+        OperationalRiskView.dashboard => _DashboardView(api: api),
+        OperationalRiskView.registre => _RegistreView(api: api),
+        OperationalRiskView.incidents => _SimulationCriseView(api: api),
+        OperationalRiskView.pertes => _PertesView(api: api),
+        OperationalRiskView.historique => _HistoriqueView(api: api),
+        OperationalRiskView.reporting => _ReportingView(api: api),
+        OperationalRiskView.kri => _RoPageWrapper(
+            title: 'KRI',
+            subtitle:
+                'Indicateurs clés de risque — surveillance continue (Art. 313)',
+            artRef: 'Art. 313',
+            child: _KriView(api: api),
+          ),
         OperationalRiskView.cartographie => _RoPageWrapper(
-          title: 'Cartographie des risques',
-          subtitle: 'Identification et évaluation — matrice 5×5 (Art. 313)',
-          artRef: 'Art. 313',
-          child: _CartographieView(api: api),
-        ),
-        OperationalRiskView.controles    => _RoPageWrapper(
-          title: 'Contrôles internes',
-          subtitle: 'Gestion des contrôles périodiques (Art. 314)',
-          artRef: 'Art. 314',
-          child: _ControlesView(api: api),
-        ),
-        OperationalRiskView.workflow     => _RoPageWrapper(
-          title: 'Workflow incidents',
-          subtitle: 'Pipeline de traitement des incidents (Art. 313.b)',
-          artRef: 'Art. 313.b',
-          child: _WorkflowView(api: api),
-        ),
-        OperationalRiskView.plans        => _RoPageWrapper(
-          title: "Plans d'actions",
-          subtitle: 'Actions correctives et préventives (Art. 313.c)',
-          artRef: 'Art. 313.c',
-          child: _PlansView(api: api),
-        ),
+            title: 'Cartographie des risques',
+            subtitle: 'Identification et évaluation — matrice 5×5 (Art. 313)',
+            artRef: 'Art. 313',
+            child: _CartographieView(api: api),
+          ),
+        OperationalRiskView.controles => _RoPageWrapper(
+            title: 'Contrôles internes',
+            subtitle: 'Gestion des contrôles périodiques (Art. 314)',
+            artRef: 'Art. 314',
+            child: _ControlesView(api: api),
+          ),
+        OperationalRiskView.workflow => _RoPageWrapper(
+            title: 'Workflow incidents',
+            subtitle: 'Pipeline de traitement des incidents (Art. 313.b)',
+            artRef: 'Art. 313.b',
+            child: _WorkflowView(api: api),
+          ),
+        OperationalRiskView.plans => _RoPageWrapper(
+            title: "Plans d'actions",
+            subtitle: 'Actions correctives et préventives (Art. 313.c)',
+            artRef: 'Art. 313.c',
+            child: _PlansView(api: api),
+          ),
       },
     );
   }
@@ -252,7 +273,7 @@ class _RoPageWrapper extends StatelessWidget {
             subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo(artRef),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           Expanded(child: child),
         ],
       ),
@@ -293,11 +314,16 @@ String _kriStatutLabel(String s) => switch (s) {
     };
 
 String _kriExplication(String kriId) => switch (kriId) {
-      'kri-01' => 'Nécessite les données RH : nombre de départs volontaires et effectif moyen de la période.',
-      'kri-02' => "Nécessite les données RH : jours d'absence et jours travaillés théoriques du personnel.",
-      'kri-03' => 'Nécessite le registre de formation : heures de formation par collaborateur sur la période.',
-      'kri-07' => "Nécessite les résultats d'enquête de satisfaction client (notes et nombre de répondants).",
-      _ => 'Données source non disponibles dans le système pour ce calcul automatique.',
+      'kri-01' =>
+        'Nécessite les données RH : nombre de départs volontaires et effectif moyen de la période.',
+      'kri-02' =>
+        "Nécessite les données RH : jours d'absence et jours travaillés théoriques du personnel.",
+      'kri-03' =>
+        'Nécessite le registre de formation : heures de formation par collaborateur sur la période.',
+      'kri-07' =>
+        "Nécessite les résultats d'enquête de satisfaction client (notes et nombre de répondants).",
+      _ =>
+        'Données source non disponibles dans le système pour ce calcul automatique.',
     };
 
 Widget _badge(String label, Color color) => FittedBox(
@@ -313,20 +339,29 @@ Widget _badge(String label, Color color) => FittedBox(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(width: 5, height: 5, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            Container(
+                width: 5,
+                height: 5,
+                decoration:
+                    BoxDecoration(color: color, shape: BoxShape.circle)),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.1)),
+            Text(label,
+                style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.1)),
           ],
         ),
       ),
     );
 
-
 Widget _roMetricRow(
   BuildContext context, {
   required String title,
   required String artRef,
-  required List<({String label, String value, Color color, IconData icon})> items,
+  required List<({String label, String value, Color color, IconData icon})>
+      items,
 }) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return Column(
@@ -335,7 +370,10 @@ Widget _roMetricRow(
     children: [
       Row(children: [
         Text(title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600)),
         const Spacer(),
         _artInfo(artRef),
       ]),
@@ -344,14 +382,19 @@ Widget _roMetricRow(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(2),
           border: Border.all(
-            color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25)),
+              color: const Color(0xFF1E3A5F)
+                  .withValues(alpha: isDark ? 0.5 : 0.25)),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
-              blurRadius: 20, offset: const Offset(0, 6)),
+                color: const Color(0xFF1E3A5F)
+                    .withValues(alpha: isDark ? 0.3 : 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 6)),
             BoxShadow(
-              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
-              blurRadius: 6, offset: const Offset(0, 2)),
+                color: const Color(0xFF1E3A5F)
+                    .withValues(alpha: isDark ? 0.15 : 0.03),
+                blurRadius: 6,
+                offset: const Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -372,8 +415,9 @@ Widget _roMetricRow(
                   for (var i = 0; i < items.length; i++) ...[
                     if (i > 0)
                       Container(
-                        width: 1, height: 40,
-                        color: AppTheme.accent.withValues(alpha: 0.25)),
+                          width: 1,
+                          height: 40,
+                          color: AppTheme.accent.withValues(alpha: 0.25)),
                     Expanded(
                       child: _RoDashSummaryItem(
                         label: items[i].label,
@@ -393,15 +437,20 @@ Widget _roMetricRow(
   );
 }
 
-Future<void> _confirm(BuildContext ctx, String msg, Future<void> Function() action) async {
+Future<void> _confirm(
+    BuildContext ctx, String msg, Future<void> Function() action) async {
   final ok = await showDialog<bool>(
     context: ctx,
     builder: (dialogCtx) => AlertDialog(
       title: const Text('Confirmation'),
       content: Text(msg),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: const Text('Annuler')),
-        FilledButton(onPressed: () => Navigator.pop(dialogCtx, true), child: const Text('Confirmer')),
+        TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text('Annuler')),
+        FilledButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: const Text('Confirmer')),
       ],
     ),
   );
@@ -412,7 +461,7 @@ Widget _loadingBox() => const Center(child: CircularProgressIndicator());
 
 Widget _errorBox(Object e) => Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(6),
         child: Text('Erreur : $e', style: const TextStyle(color: _kDanger)),
       ),
     );
@@ -420,39 +469,63 @@ Widget _errorBox(Object e) => Center(
 // ─── Form helpers ─────────────────────────────────────────────────────────────
 
 // Titre de section dans un formulaire
-Widget _formSection(String title, {IconData? icon, Color color = _kBlue}) => Padding(
-  padding: const EdgeInsets.only(top: 8, bottom: 12),
-  child: Row(
-    children: [
-      Container(width: 3, height: 15,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
-      const SizedBox(width: 8),
-      if (icon != null) ...[Icon(icon, size: 12, color: color), const SizedBox(width: 5)],
-      Text(title,
-        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
-          color: color, letterSpacing: 0.3)),
-    ],
-  ),
-);
+Widget _formSection(String title, {IconData? icon, Color color = _kBlue}) =>
+    Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 3),
+      child: Row(
+        children: [
+          Container(
+              width: 3,
+              height: 15,
+              decoration: BoxDecoration(
+                  color: color, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(width: 8),
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 5)
+          ],
+          Text(title,
+              style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                  letterSpacing: 0.3)),
+        ],
+      ),
+    );
 
 // Deux champs côte à côte
 Widget _formRow(Widget left, Widget right) => Row(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [Expanded(child: left), const SizedBox(width: 12), Expanded(child: right)],
-);
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 3),
+        Expanded(child: right)
+      ],
+    );
 
 Widget _field(String label, TextEditingController ctrl,
-    {bool multiline = false, TextInputType? keyboardType, String? hint, bool required = false, IconData? icon}) {
+    {bool multiline = false,
+    TextInputType? keyboardType,
+    String? hint,
+    bool required = false,
+    IconData? icon}) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.only(bottom: 4),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          if (icon != null) ...[Icon(icon, size: 12, color: _kBlue), const SizedBox(width: 5)],
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: _kBlue),
+            const SizedBox(width: 5)
+          ],
           Text(required ? '$label *' : label,
-            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
-              color: _kMuted, letterSpacing: 0.1)),
+              style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: _kMuted,
+                  letterSpacing: 0.1)),
         ]),
         const SizedBox(height: 5),
         TextFormField(
@@ -460,18 +533,23 @@ Widget _field(String label, TextEditingController ctrl,
           maxLines: multiline ? 3 : 1,
           keyboardType: keyboardType,
           inputFormatters: (keyboardType == TextInputType.number ||
-                  keyboardType == const TextInputType.numberWithOptions(decimal: true))
+                  keyboardType ==
+                      const TextInputType.numberWithOptions(decimal: true))
               ? [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))]
               : null,
           style: const TextStyle(fontSize: 13.5),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+            hintStyle:
+                const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
             border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
           ),
-          validator: required ? (v) => (v == null || v.isEmpty) ? 'Champ requis' : null : null,
+          validator: required
+              ? (v) => (v == null || v.isEmpty) ? 'Champ requis' : null
+              : null,
         ),
       ],
     ),
@@ -487,7 +565,7 @@ Widget _dateField(
   VoidCallback? onPicked,
 }) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.only(bottom: 4),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -495,8 +573,11 @@ Widget _dateField(
           const Icon(Icons.calendar_month_outlined, size: 12, color: _kBlue),
           const SizedBox(width: 5),
           Text(required ? '$label *' : label,
-            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
-              color: _kMuted, letterSpacing: 0.1)),
+              style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: _kMuted,
+                  letterSpacing: 0.1)),
         ]),
         const SizedBox(height: 5),
         TextFormField(
@@ -505,9 +586,11 @@ Widget _dateField(
           style: const TextStyle(fontSize: 13.5),
           decoration: InputDecoration(
             hintText: 'jj/mm/aaaa',
-            hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+            hintStyle:
+                const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
             border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
             suffixIcon: Container(
               margin: const EdgeInsets.all(6),
@@ -516,10 +599,13 @@ Widget _dateField(
                 color: _kBlue.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: const Icon(Icons.calendar_month_outlined, size: 14, color: _kBlue),
+              child: const Icon(Icons.calendar_month_outlined,
+                  size: 14, color: _kBlue),
             ),
           ),
-          validator: required ? (v) => (v == null || v.isEmpty) ? 'Champ requis' : null : null,
+          validator: required
+              ? (v) => (v == null || v.isEmpty) ? 'Champ requis' : null
+              : null,
           onTap: () async {
             final min = firstDate ?? DateTime(2000);
             DateTime? current;
@@ -547,9 +633,15 @@ Widget _dateField(
 }
 
 Widget _sliderInt(String label, int value, void Function(int) onChanged) {
-  final color = value >= 100 ? _kSuccess : value >= 50 ? _kBlue : value > 0 ? _kWarning : _kMuted;
+  final color = value >= 100
+      ? _kSuccess
+      : value >= 50
+          ? _kBlue
+          : value > 0
+              ? _kWarning
+              : _kMuted;
   return Padding(
-    padding: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.only(bottom: 4),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -559,18 +651,23 @@ Widget _sliderInt(String label, int value, void Function(int) onChanged) {
             Row(children: [
               const Icon(Icons.bar_chart_rounded, size: 12, color: _kBlue),
               const SizedBox(width: 5),
-              Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
-                color: _kMuted, letterSpacing: 0.1)),
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: _kMuted,
+                      letterSpacing: 0.1)),
             ]),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3.0),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: color.withValues(alpha: 0.35)),
               ),
               child: Text('$value %',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color)),
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w800, color: color)),
             ),
           ],
         ),
@@ -587,7 +684,9 @@ Widget _sliderInt(String label, int value, void Function(int) onChanged) {
           ),
           child: Slider(
             value: value.toDouble(),
-            min: 0, max: 100, divisions: 20,
+            min: 0,
+            max: 100,
+            divisions: 20,
             label: '$value %',
             onChanged: (v) => onChanged(v.round()),
           ),
@@ -607,35 +706,47 @@ Widget _sliderInt(String label, int value, void Function(int) onChanged) {
   );
 }
 
-Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onChanged,
+Widget _dropdown<T>(
+    String label, T? value, List<T> items, void Function(T?) onChanged,
     {bool required = false, IconData? icon, String? hint}) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.only(bottom: 4),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          if (icon != null) ...[Icon(icon, size: 12, color: _kBlue), const SizedBox(width: 5)],
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: _kBlue),
+            const SizedBox(width: 5)
+          ],
           Text(required ? '$label *' : label,
-            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
-              color: _kMuted, letterSpacing: 0.1)),
+              style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: _kMuted,
+                  letterSpacing: 0.1)),
         ]),
         const SizedBox(height: 5),
         DropdownButtonFormField<T>(
           initialValue: value,
           isExpanded: true,
           icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
-          items: items.map((e) => DropdownMenuItem(
-            value: e,
-            child: Text(e.toString(), style: const TextStyle(fontSize: 13.5),
-              overflow: TextOverflow.ellipsis),
-          )).toList(),
+          items: items
+              .map((e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(e.toString(),
+                        style: const TextStyle(fontSize: 13.5),
+                        overflow: TextOverflow.ellipsis),
+                  ))
+              .toList(),
           onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+            hintStyle:
+                const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
             border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
           ),
           validator: required ? (v) => v == null ? 'Champ requis' : null : null,
@@ -644,7 +755,6 @@ Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onC
     ),
   );
 }
-
 
 // ─── VIEW 1 : DASHBOARD ───────────────────────────────────────────────────────
 
@@ -678,46 +788,52 @@ class _DashboardViewState extends State<_DashboardView> {
             subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo('Art. 313'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           Expanded(
             child: FutureBuilder<RoDashboardData>(
               future: _future,
               builder: (context, snap) {
-                if (snap.connectionState != ConnectionState.done) return _loadingBox();
+                if (snap.connectionState != ConnectionState.done)
+                  return _loadingBox();
                 if (snap.hasError) return _errorBox(snap.error!);
                 final d = snap.data!;
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _RoDashSummaryRow(data: d),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 3),
                     Expanded(
                       child: SingleChildScrollView(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-              // Suivi des incidents — mini-dashboard
-              _IncidentsDashSection(data: d),
-              const SizedBox(height: 12),
-              // Widget 3 — Alertes
-              _roMetricRow(context,
-                title: 'Alertes et actions',
-                artRef: 'Art. 313.c',
-                items: [
-                  (
-                    label: 'Actions en retard',
-                    value: '${d.widget3.actionsEnRetard}',
-                    color: d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
-                    icon: Icons.alarm_outlined,
-                  ),
-                  (
-                    label: 'Contrôles non conformes',
-                    value: '${d.widget3.controlesNonConformes}',
-                    color: d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
-                    icon: Icons.rule_outlined,
-                  ),
-                ],
-              ),
+                            // Suivi des incidents — mini-dashboard
+                            _IncidentsDashSection(data: d),
+                            const SizedBox(height: 3),
+                            // Widget 3 — Alertes
+                            _roMetricRow(
+                              context,
+                              title: 'Alertes et actions',
+                              artRef: 'Art. 313.c',
+                              items: [
+                                (
+                                  label: 'Actions en retard',
+                                  value: '${d.widget3.actionsEnRetard}',
+                                  color: d.widget3.actionsEnRetard > 0
+                                      ? _kDanger
+                                      : _kSuccess,
+                                  icon: Icons.alarm_outlined,
+                                ),
+                                (
+                                  label: 'Contrôles non conformes',
+                                  value: '${d.widget3.controlesNonConformes}',
+                                  color: d.widget3.controlesNonConformes > 0
+                                      ? _kWarning
+                                      : _kSuccess,
+                                  icon: Icons.rule_outlined,
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -754,13 +870,16 @@ class _RoDashSummaryItemState extends State<_RoDashSummaryItem> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = true);
+      }),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = false);
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.fromLTRB(8, _hovered ? 9 : 12, 8, _hovered ? 15 : 12),
+        padding:
+            EdgeInsets.fromLTRB(8, _hovered ? 9 : 12, 8, _hovered ? 15 : 12),
         decoration: BoxDecoration(
           color: _hovered
               ? widget.accentColor.withValues(alpha: 0.10)
@@ -770,7 +889,8 @@ class _RoDashSummaryItemState extends State<_RoDashSummaryItem> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(widget.icon, size: 16, color: widget.accentColor.withValues(alpha: 0.7)),
+            Icon(widget.icon,
+                size: 16, color: widget.accentColor.withValues(alpha: 0.7)),
             const SizedBox(height: 4),
             Text(
               widget.value,
@@ -786,7 +906,8 @@ class _RoDashSummaryItemState extends State<_RoDashSummaryItem> {
             const SizedBox(height: 2),
             Text(
               widget.label,
-              style: const TextStyle(fontSize: 10, color: Color(0xFF1E3A5F), letterSpacing: 0.2),
+              style: const TextStyle(
+                  fontSize: 10, color: Color(0xFF1E3A5F), letterSpacing: 0.2),
               textAlign: TextAlign.center,
             ),
           ],
@@ -803,8 +924,9 @@ class _RoDashSummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final statutColor = data.widget1.statutReglementaire == 'Conforme' ? _kSuccess : _kDanger;
-    final statutIcon  = data.widget1.statutReglementaire == 'Conforme'
+    final statutColor =
+        data.widget1.statutReglementaire == 'Conforme' ? _kSuccess : _kDanger;
+    final statutIcon = data.widget1.statutReglementaire == 'Conforme'
         ? Icons.check_circle_outline
         : Icons.warning_amber_outlined;
 
@@ -855,16 +977,19 @@ class _RoDashSummaryRow extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(2),
             border: Border.all(
-              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25),
+              color: const Color(0xFF1E3A5F)
+                  .withValues(alpha: isDark ? 0.5 : 0.25),
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
+                color: const Color(0xFF1E3A5F)
+                    .withValues(alpha: isDark ? 0.3 : 0.06),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
+                color: const Color(0xFF1E3A5F)
+                    .withValues(alpha: isDark ? 0.15 : 0.03),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -872,7 +997,8 @@ class _RoDashSummaryRow extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Container(height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
+              Container(
+                  height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -919,18 +1045,25 @@ class _RoDashSummaryRow extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(6),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))],
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4))
+              ],
             ),
-            textStyle: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
-            padding: const EdgeInsets.all(14),
-            margin: const EdgeInsets.only(left: 40, right: 40),
+            textStyle:
+                const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
+            padding: const EdgeInsets.all(4),
+            margin: const EdgeInsets.only(left: 6, right: 6),
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: AppTheme.accent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.info_outline, size: 12, color: AppTheme.accent),
+              child: const Icon(Icons.info_outline,
+                  size: 12, color: AppTheme.accent),
             ),
           ),
         ),
@@ -951,18 +1084,18 @@ class _SimulationCriseView extends StatefulWidget {
 class _SimulationCriseViewState extends State<_SimulationCriseView> {
   late Future<List<RoIncident>> _future;
 
-  final _fpCtrl    = TextEditingController();
-  final _aprCtrl   = TextEditingController();
-  final _provCtrl  = TextEditingController();
+  final _fpCtrl = TextEditingController();
+  final _aprCtrl = TextEditingController();
+  final _provCtrl = TextEditingController();
   final _assurCtrl = TextEditingController();
 
   double _seuilValue = 8.0;
-  bool   _simulated  = false;
+  bool _simulated = false;
 
   static const _sc = [
-    ('S1', 'Optimiste',    0.90, Color(0xFF43A047)),
-    ('S2', 'Neutre',       1.00, Color(0xFF1E88E5)),
-    ('S3', 'Pessimiste',   1.20, Color(0xFFFB8C00)),
+    ('S1', 'Optimiste', 0.90, Color(0xFF43A047)),
+    ('S2', 'Neutre', 1.00, Color(0xFF1E88E5)),
+    ('S3', 'Pessimiste', 1.20, Color(0xFFFB8C00)),
     ('S4', 'Crise sévère', 1.35, Color(0xFFE53935)),
   ];
 
@@ -987,18 +1120,22 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
     // Pré-remplir fonds propres et RWA depuis le dashboard
     widget.api.fetchDashboard().then((DashboardSnapshot snap) {
       if (!mounted) return;
-      final capitalMetricVal = snap.metrics
-          .where((m) => m.key == 'capital').firstOrNull?.value ?? 0.0;
-      final rwaMetricVal = snap.metrics
-          .where((m) => m.key == 'rwa').firstOrNull?.value ?? 0.0;
-      final totalCapital = snap.portfolioOverview.fold(0.0, (s, r) => s + r.capital);
-      final totalRwa     = snap.portfolioOverview.fold(0.0, (s, r) => s + r.rwa);
+      final capitalMetricVal =
+          snap.metrics.where((m) => m.key == 'capital').firstOrNull?.value ??
+              0.0;
+      final rwaMetricVal =
+          snap.metrics.where((m) => m.key == 'rwa').firstOrNull?.value ?? 0.0;
+      final totalCapital =
+          snap.portfolioOverview.fold(0.0, (s, r) => s + r.capital);
+      final totalRwa = snap.portfolioOverview.fold(0.0, (s, r) => s + r.rwa);
       final capitalValue = totalCapital > 0 ? totalCapital : capitalMetricVal;
-      final rwaValue     = totalRwa     > 0 ? totalRwa     : rwaMetricVal;
+      final rwaValue = totalRwa > 0 ? totalRwa : rwaMetricVal;
       final fp = capitalValue * 1.35;
       setState(() {
-        if (fp > 0 && _fpCtrl.text.isEmpty)  _fpCtrl.text  = fp.round().toString();
-        if (rwaValue > 0 && _aprCtrl.text.isEmpty) _aprCtrl.text = rwaValue.round().toString();
+        if (fp > 0 && _fpCtrl.text.isEmpty)
+          _fpCtrl.text = fp.round().toString();
+        if (rwaValue > 0 && _aprCtrl.text.isEmpty)
+          _aprCtrl.text = rwaValue.round().toString();
       });
     }).catchError((_) {});
   }
@@ -1020,33 +1157,43 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
   double? _d(TextEditingController c) =>
       double.tryParse(c.text.trim().replaceAll(' ', '').replaceAll(',', '.'));
 
-  _CriseScResult _compute((String, String, double, Color) sc, double pertesHisto) {
+  _CriseScResult _compute(
+      (String, String, double, Color) sc, double pertesHisto) {
     final (code, label, factor, color) = sc;
-    final fp    = _d(_fpCtrl)    ?? 0;
-    final apr   = _d(_aprCtrl)   ?? 0;
-    final prov  = _d(_provCtrl)  ?? 0;
+    final fp = _d(_fpCtrl) ?? 0;
+    final apr = _d(_aprCtrl) ?? 0;
+    final prov = _d(_provCtrl) ?? 0;
     final assur = _d(_assurCtrl) ?? 0;
     final seuil = _seuilValue / 100;
     final pertesSimulees = pertesHisto * factor;
-    final impactNet      = pertesSimulees - prov - assur;
-    final fpApresChoc    = fp - (impactNet > 0 ? impactNet : 0);
-    final resilience     = fp - pertesSimulees;
-    final aprStresses    = apr > 0 ? apr * factor : 0.0;
-    final ratio          = aprStresses > 0 ? fpApresChoc / aprStresses : 0.0;
-    final pass           = resilience >= 0 && (apr == 0 || ratio >= seuil);
+    final impactNet = pertesSimulees - prov - assur;
+    final fpApresChoc = fp - (impactNet > 0 ? impactNet : 0);
+    final resilience = fp - pertesSimulees;
+    final aprStresses = apr > 0 ? apr * factor : 0.0;
+    final ratio = aprStresses > 0 ? fpApresChoc / aprStresses : 0.0;
+    final pass = resilience >= 0 && (apr == 0 || ratio >= seuil);
     return _CriseScResult(
-      code: code, label: label, factor: factor, color: color,
-      pertesSimulees: pertesSimulees, impactNet: impactNet,
-      fpApresChoc: fpApresChoc, resilience: resilience,
-      aprStresses: aprStresses, ratio: ratio, seuil: seuil, pass: pass,
+      code: code,
+      label: label,
+      factor: factor,
+      color: color,
+      pertesSimulees: pertesSimulees,
+      impactNet: impactNet,
+      fpApresChoc: fpApresChoc,
+      resilience: resilience,
+      aprStresses: aprStresses,
+      ratio: ratio,
+      seuil: seuil,
+      pass: pass,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final panelBg = isDark ? const Color(0xFF0E1E33) : Colors.white;
-    final panelBorder = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+    final panelBorder =
+        isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
 
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
@@ -1055,21 +1202,24 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
         children: [
           PageHeader(
             title: 'Simulation de crise',
-            subtitle: 'Stress testing PIEAFP — scénarios de vulnérabilité (Art. 545)',
+            subtitle:
+                'Stress testing PIEAFP — scénarios de vulnérabilité (Art. 545)',
             titleFontSize: 26,
             subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo('Art. 545'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           Expanded(
             child: FutureBuilder<List<RoIncident>>(
               future: _future,
               builder: (ctx, snap) {
-                if (snap.connectionState != ConnectionState.done) return _loadingBox();
+                if (snap.connectionState != ConnectionState.done)
+                  return _loadingBox();
                 if (snap.hasError) return _errorBox(snap.error!);
-                final items       = snap.data!;
+                final items = snap.data!;
                 final pertesHisto = items.fold(0.0, (s, i) => s + i.perteNette);
-                final results     = _sc.map((s) => _compute(s, pertesHisto)).toList();
+                final results =
+                    _sc.map((s) => _compute(s, pertesHisto)).toList();
 
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1087,86 +1237,135 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                         children: [
                           // En-tête panneau
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 3),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1565C0).withValues(alpha: 0.07),
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-                              border: Border(bottom: BorderSide(color: panelBorder)),
+                              color: const Color(0xFF1565C0)
+                                  .withValues(alpha: 0.07),
+                              borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(10)),
+                              border: Border(
+                                  bottom: BorderSide(color: panelBorder)),
                             ),
                             child: Row(children: [
                               Container(
                                 padding: const EdgeInsets.all(7),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1565C0).withValues(alpha: 0.12),
+                                  color: const Color(0xFF1565C0)
+                                      .withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(7),
                                 ),
-                                child: const Icon(Icons.tune_rounded, size: 15, color: Color(0xFF1565C0)),
+                                child: const Icon(Icons.tune_rounded,
+                                    size: 15, color: Color(0xFF1565C0)),
                               ),
-                              const SizedBox(width: 10),
-                              const Expanded(child: Text('Paramètres',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                              const SizedBox(width: 3),
+                              const Expanded(
+                                  child: Text('Paramètres',
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700))),
                               _badge('Art. 545', const Color(0xFF1565C0)),
                             ]),
                           ),
                           // Champs
                           Expanded(
                             child: SingleChildScrollView(
-                              padding: const EdgeInsets.all(14),
+                              padding: const EdgeInsets.all(4),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  _pSection('Base historique', Icons.history_rounded, _kBlue),
+                                  _pSection('Base historique',
+                                      Icons.history_rounded, _kBlue),
                                   const SizedBox(height: 8),
-                                  _pInfoRow('Incidents', '${items.length}', Icons.warning_amber_rounded, _kWarning),
+                                  _pInfoRow('Incidents', '${items.length}',
+                                      Icons.warning_amber_rounded, _kWarning),
                                   const SizedBox(height: 4),
-                                  _pInfoRow('Pertes nettes', AppFormatters.currency(pertesHisto), Icons.trending_down_rounded, _kDanger),
-                                  const SizedBox(height: 16),
-                                  _pSection('Capital & RWA', Icons.account_balance_rounded, const Color(0xFF1565C0)),
+                                  _pInfoRow(
+                                      'Pertes nettes',
+                                      AppFormatters.currency(pertesHisto),
+                                      Icons.trending_down_rounded,
+                                      _kDanger),
+                                  const SizedBox(height: 4),
+                                  _pSection(
+                                      'Capital & RWA',
+                                      Icons.account_balance_rounded,
+                                      const Color(0xFF1565C0)),
                                   const SizedBox(height: 8),
-                                  _pField('Fonds propres (FCFA)', Icons.savings_rounded, _fpCtrl),
+                                  _pField('Fonds propres (FCFA)',
+                                      Icons.savings_rounded, _fpCtrl),
                                   const SizedBox(height: 8),
-                                  _pField('RWA de référence (FCFA)', Icons.bar_chart_rounded, _aprCtrl),
-                                  const SizedBox(height: 16),
-                                  _pSection('Atténuants', Icons.shield_rounded, _kSuccess),
+                                  _pField('RWA de référence (FCFA)',
+                                      Icons.bar_chart_rounded, _aprCtrl),
+                                  const SizedBox(height: 4),
+                                  _pSection('Atténuants', Icons.shield_rounded,
+                                      _kSuccess),
                                   const SizedBox(height: 8),
-                                  _pField('Provisions (FCFA)', Icons.savings_outlined, _provCtrl),
+                                  _pField('Provisions (FCFA)',
+                                      Icons.savings_outlined, _provCtrl),
                                   const SizedBox(height: 8),
-                                  _pField('Assurance (FCFA)', Icons.health_and_safety_outlined, _assurCtrl),
-                                  const SizedBox(height: 16),
-                                  _pSection('Seuil de résistance', Icons.speed_rounded, _kWarning),
+                                  _pField(
+                                      'Assurance (FCFA)',
+                                      Icons.health_and_safety_outlined,
+                                      _assurCtrl),
+                                  const SizedBox(height: 4),
+                                  _pSection('Seuil de résistance',
+                                      Icons.speed_rounded, _kWarning),
                                   const SizedBox(height: 8),
                                   Row(children: [
-                                    const Text('Ratio cible', style: TextStyle(fontSize: 11, color: _kMuted)),
+                                    const Text('Ratio cible',
+                                        style: TextStyle(
+                                            fontSize: 11, color: _kMuted)),
                                     const Spacer(),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF1565C0).withValues(alpha: 0.1),
+                                        color: const Color(0xFF1565C0)
+                                            .withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
-                                      child: Text('${_seuilValue.toStringAsFixed(1)} %',
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF1565C0))),
+                                      child: Text(
+                                          '${_seuilValue.toStringAsFixed(1)} %',
+                                          style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w800,
+                                              color: Color(0xFF1565C0))),
                                     ),
                                   ]),
                                   SliderTheme(
                                     data: SliderTheme.of(context).copyWith(
                                       trackHeight: 4,
-                                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-                                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                                      thumbShape: const RoundSliderThumbShape(
+                                          enabledThumbRadius: 7),
+                                      overlayShape:
+                                          const RoundSliderOverlayShape(
+                                              overlayRadius: 14),
                                     ),
                                     child: Slider(
                                       value: _seuilValue,
-                                      min: 4.0, max: 25.0, divisions: 210,
+                                      min: 4.0,
+                                      max: 25.0,
+                                      divisions: 210,
                                       activeColor: const Color(0xFF1565C0),
-                                      onChanged: (v) => setState(() { _seuilValue = v; _simulated = true; }),
+                                      onChanged: (v) => setState(() {
+                                        _seuilValue = v;
+                                        _simulated = true;
+                                      }),
                                     ),
                                   ),
                                   const Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('4 %',          style: TextStyle(fontSize: 10, color: _kMuted)),
-                                      Text('BCEAO : 8 %',  style: TextStyle(fontSize: 10, color: _kMuted)),
-                                      Text('25 %',         style: TextStyle(fontSize: 10, color: _kMuted)),
+                                      Text('4 %',
+                                          style: TextStyle(
+                                              fontSize: 10, color: _kMuted)),
+                                      Text('BCEAO : 8 %',
+                                          style: TextStyle(
+                                              fontSize: 10, color: _kMuted)),
+                                      Text('25 %',
+                                          style: TextStyle(
+                                              fontSize: 10, color: _kMuted)),
                                     ],
                                   ),
                                 ],
@@ -1177,22 +1376,36 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                       ),
                     ),
 
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 4),
 
                     // ── Panneau droit : résultats ─────────────────────────────
                     Expanded(
                       child: _simulated
-                        ? _CriseResultsPanel(results: results, seuil: _seuilValue, isDark: isDark)
-                        : Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.science_outlined, size: 64, color: _kMuted.withValues(alpha: 0.3)),
-                            const SizedBox(height: 16),
-                            const Text('Saisissez au moins un paramètre\npour lancer la simulation',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: _kMuted, fontSize: 14, height: 1.5)),
-                            const SizedBox(height: 6),
-                            const Text('Les résultats s\'affichent automatiquement',
-                              style: TextStyle(color: _kMuted, fontSize: 11)),
-                          ])),
+                          ? _CriseResultsPanel(
+                              results: results,
+                              seuil: _seuilValue,
+                              isDark: isDark)
+                          : Center(
+                              child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                  Icon(Icons.science_outlined,
+                                      size: 64,
+                                      color: _kMuted.withValues(alpha: 0.3)),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                      'Saisissez au moins un paramètre\npour lancer la simulation',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                          color: _kMuted,
+                                          fontSize: 14,
+                                          height: 1.5)),
+                                  const SizedBox(height: 6),
+                                  const Text(
+                                      'Les résultats s\'affichent automatiquement',
+                                      style: TextStyle(
+                                          color: _kMuted, fontSize: 11)),
+                                ])),
                     ),
                   ],
                 );
@@ -1205,50 +1418,69 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
   }
 
   Widget _pSection(String title, IconData icon, Color color) => Row(children: [
-    Icon(icon, size: 12, color: color),
-    const SizedBox(width: 6),
-    Text(title.toUpperCase(),
-      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.5)),
-  ]);
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 6),
+        Text(title.toUpperCase(),
+            style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                color: color,
+                letterSpacing: 0.5)),
+      ]);
 
-  Widget _pInfoRow(String label, String value, IconData icon, Color color) => Row(children: [
-    Icon(icon, size: 13, color: color.withValues(alpha: 0.75)),
-    const SizedBox(width: 6),
-    Text(label, style: const TextStyle(fontSize: 11, color: _kMuted)),
-    const Spacer(),
-    Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
-  ]);
+  Widget _pInfoRow(String label, String value, IconData icon, Color color) =>
+      Row(children: [
+        Icon(icon, size: 13, color: color.withValues(alpha: 0.75)),
+        const SizedBox(width: 6),
+        Text(label, style: const TextStyle(fontSize: 11, color: _kMuted)),
+        const Spacer(),
+        Text(value,
+            style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+      ]);
 
-  Widget _pField(String label, IconData icon, TextEditingController ctrl) => TextFormField(
-    controller: ctrl,
-    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
-    style: const TextStyle(fontSize: 12),
-    decoration: InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, size: 15, color: _kMuted),
-      isDense: true,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-      labelStyle: const TextStyle(fontSize: 11),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-    ),
-    onChanged: (_) => setState(() {}),
-  );
+  Widget _pField(String label, IconData icon, TextEditingController ctrl) =>
+      TextFormField(
+        controller: ctrl,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))
+        ],
+        style: const TextStyle(fontSize: 12),
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, size: 15, color: _kMuted),
+          isDense: true,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+          labelStyle: const TextStyle(fontSize: 11),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
+        ),
+        onChanged: (_) => setState(() {}),
+      );
 }
 
 // ─── Simulation de Crise — data model ─────────────────────────────────────────
 
 class _CriseScResult {
   const _CriseScResult({
-    required this.code, required this.label, required this.factor, required this.color,
-    required this.pertesSimulees, required this.impactNet, required this.fpApresChoc,
-    required this.resilience, required this.aprStresses, required this.ratio,
-    required this.seuil, required this.pass,
+    required this.code,
+    required this.label,
+    required this.factor,
+    required this.color,
+    required this.pertesSimulees,
+    required this.impactNet,
+    required this.fpApresChoc,
+    required this.resilience,
+    required this.aprStresses,
+    required this.ratio,
+    required this.seuil,
+    required this.pass,
   });
   final String code;
   final String label;
   final double factor;
-  final Color  color;
+  final Color color;
   final double pertesSimulees;
   final double impactNet;
   final double fpApresChoc;
@@ -1256,30 +1488,40 @@ class _CriseScResult {
   final double aprStresses;
   final double ratio;
   final double seuil;
-  final bool   pass;
+  final bool pass;
 
-  String get factorLabel => factor == 1.0 ? 'Base ±0 %'
-      : factor < 1.0 ? '−${((1 - factor) * 100).round()} % pertes'
-                      : '+${((factor - 1) * 100).round()} % pertes';
+  String get factorLabel => factor == 1.0
+      ? 'Base ±0 %'
+      : factor < 1.0
+          ? '−${((1 - factor) * 100).round()} % pertes'
+          : '+${((factor - 1) * 100).round()} % pertes';
 }
 
 // ─── Panneau résultats ────────────────────────────────────────────────────────
 
 class _CriseResultsPanel extends StatelessWidget {
-  const _CriseResultsPanel({required this.results, required this.seuil, required this.isDark});
+  const _CriseResultsPanel(
+      {required this.results, required this.seuil, required this.isDark});
   final List<_CriseScResult> results;
   final double seuil;
-  final bool   isDark;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
     final passCount = results.where((r) => r.pass).length;
-    final allPass   = passCount == results.length;
-    final nonePass  = passCount == 0;
-    final statusColor = allPass ? _kSuccess : nonePass ? _kDanger : _kWarning;
-    final statusIcon  = allPass ? Icons.verified_rounded
-        : nonePass ? Icons.dangerous_rounded : Icons.warning_amber_rounded;
-    final statusText  = allPass
+    final allPass = passCount == results.length;
+    final nonePass = passCount == 0;
+    final statusColor = allPass
+        ? _kSuccess
+        : nonePass
+            ? _kDanger
+            : _kWarning;
+    final statusIcon = allPass
+        ? Icons.verified_rounded
+        : nonePass
+            ? Icons.dangerous_rounded
+            : Icons.warning_amber_rounded;
+    final statusText = allPass
         ? 'Profil résilient — tous les scénarios sont couverts'
         : nonePass
             ? 'Profil vulnérable — aucun scénario n\'est couvert'
@@ -1290,7 +1532,7 @@ class _CriseResultsPanel extends StatelessWidget {
       children: [
         // ── Bannière statut global ────────────────────────────────────────
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
           decoration: BoxDecoration(
             color: statusColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
@@ -1298,35 +1540,49 @@ class _CriseResultsPanel extends StatelessWidget {
           ),
           child: Row(children: [
             Icon(statusIcon, color: statusColor, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(statusText,
-              style: TextStyle(fontSize: 12, color: statusColor, fontWeight: FontWeight.w600))),
-            const SizedBox(width: 10),
-            Row(children: List.generate(results.length, (i) => Container(
-              margin: const EdgeInsets.only(left: 4),
-              width: 11, height: 11,
-              decoration: BoxDecoration(
-                color: i < passCount ? _kSuccess : _kDanger,
-                shape: BoxShape.circle,
-              ),
-            ))),
+            const SizedBox(width: 3),
+            Expanded(
+                child: Text(statusText,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: statusColor,
+                        fontWeight: FontWeight.w600))),
+            const SizedBox(width: 3),
+            Row(
+                children: List.generate(
+                    results.length,
+                    (i) => Container(
+                          margin: const EdgeInsets.only(left: 4),
+                          width: 11,
+                          height: 11,
+                          decoration: BoxDecoration(
+                            color: i < passCount ? _kSuccess : _kDanger,
+                            shape: BoxShape.circle,
+                          ),
+                        ))),
           ]),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 3),
 
         // ── 4 cartes scénarios ────────────────────────────────────────────
         Expanded(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: results.asMap().entries.map((e) => Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(right: e.key < results.length - 1 ? 10 : 0),
-                child: _CriseScenarioCard(result: e.value, isDark: isDark),
-              ),
-            )).toList(),
+            children: results
+                .asMap()
+                .entries
+                .map((e) => Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                            right: e.key < results.length - 1 ? 10 : 0),
+                        child:
+                            _CriseScenarioCard(result: e.value, isDark: isDark),
+                      ),
+                    ))
+                .toList(),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 3),
 
         // ── Tableau comparatif ────────────────────────────────────────────
         _CriseComparisonTable(results: results, seuil: seuil, isDark: isDark),
@@ -1344,47 +1600,62 @@ class _CriseScenarioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final r        = result;
-    final cardBg   = isDark ? const Color(0xFF0E1E33) : Colors.white;
-    final border   = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
-    final ratioOk  = r.aprStresses > 0 ? r.ratio >= r.seuil : true;
-    final ratioStr = r.aprStresses > 0 ? '${(r.ratio * 100).toStringAsFixed(1)} %' : '—';
-    final ratioProgress = r.aprStresses > 0
-        ? (r.ratio / (r.seuil * 1.5)).clamp(0.0, 1.0)
-        : 1.0;
+    final r = result;
+    final cardBg = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final border = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+    final ratioOk = r.aprStresses > 0 ? r.ratio >= r.seuil : true;
+    final ratioStr =
+        r.aprStresses > 0 ? '${(r.ratio * 100).toStringAsFixed(1)} %' : '—';
+    final ratioProgress =
+        r.aprStresses > 0 ? (r.ratio / (r.seuil * 1.5)).clamp(0.0, 1.0) : 1.0;
 
     return Container(
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: border),
-        boxShadow: [BoxShadow(
-          color: r.color.withValues(alpha: 0.08),
-          blurRadius: 8, offset: const Offset(0, 2),
-        )],
+        boxShadow: [
+          BoxShadow(
+            color: r.color.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          )
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // En-tête coloré
           Container(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
             decoration: BoxDecoration(
               color: r.color.withValues(alpha: isDark ? 0.18 : 0.07),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
-              border: Border(bottom: BorderSide(color: r.color.withValues(alpha: 0.2))),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(10)),
+              border: Border(
+                  bottom: BorderSide(color: r.color.withValues(alpha: 0.2))),
             ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(color: r.color, borderRadius: BorderRadius.circular(4)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                      color: r.color, borderRadius: BorderRadius.circular(4)),
                   child: Text(r.code,
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white)),
                 ),
                 const SizedBox(width: 7),
-                Expanded(child: Text(r.label,
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: r.color))),
+                Expanded(
+                    child: Text(r.label,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: r.color))),
               ]),
               const SizedBox(height: 5),
               Container(
@@ -1394,14 +1665,17 @@ class _CriseScenarioCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(3),
                 ),
                 child: Text(r.factorLabel,
-                  style: TextStyle(fontSize: 9.5, color: r.color, fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        fontSize: 9.5,
+                        color: r.color,
+                        fontWeight: FontWeight.w600)),
               ),
             ]),
           ),
 
           // Verdict
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            padding: const EdgeInsets.fromLTRB(3, 3, 3, 6),
             child: Row(children: [
               Icon(
                 r.pass ? Icons.check_circle_rounded : Icons.cancel_rounded,
@@ -1410,11 +1684,12 @@ class _CriseScenarioCard extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(r.pass ? 'RÉSILIENT' : 'VULNÉRABLE',
-                style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w800,
-                  color: r.pass ? _kSuccess : _kDanger,
-                  letterSpacing: 0.4,
-                )),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: r.pass ? _kSuccess : _kDanger,
+                    letterSpacing: 0.4,
+                  )),
             ]),
           ),
 
@@ -1422,47 +1697,64 @@ class _CriseScenarioCard extends StatelessWidget {
           if (r.aprStresses > 0)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  const Text('Ratio résistance', style: TextStyle(fontSize: 9, color: _kMuted)),
-                  const Spacer(),
-                  Text(ratioStr,
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                      color: ratioOk ? _kSuccess : _kDanger)),
-                  Text(' / ${(r.seuil * 100).toStringAsFixed(1)} %',
-                    style: const TextStyle(fontSize: 9, color: _kMuted)),
-                ]),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
-                  child: LinearProgressIndicator(
-                    value: ratioProgress,
-                    minHeight: 5,
-                    backgroundColor: isDark ? const Color(0xFF1E3455) : const Color(0xFFE8F0FE),
-                    color: ratioOk ? _kSuccess : _kDanger,
-                  ),
-                ),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      const Text('Ratio résistance',
+                          style: TextStyle(fontSize: 9, color: _kMuted)),
+                      const Spacer(),
+                      Text(ratioStr,
+                          style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: ratioOk ? _kSuccess : _kDanger)),
+                      Text(' / ${(r.seuil * 100).toStringAsFixed(1)} %',
+                          style: const TextStyle(fontSize: 9, color: _kMuted)),
+                    ]),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: ratioProgress,
+                        minHeight: 5,
+                        backgroundColor: isDark
+                            ? const Color(0xFF1E3455)
+                            : const Color(0xFFE8F0FE),
+                        color: ratioOk ? _kSuccess : _kDanger,
+                      ),
+                    ),
+                  ]),
             ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           const Divider(height: 1, thickness: 0.5),
 
           // KPIs
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+              padding: const EdgeInsets.fromLTRB(3, 8, 3, 8),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _kpiRow('Pertes simulées', AppFormatters.currency(r.pertesSimulees),
-                    r.factor > 1.0 ? _kDanger : r.factor < 1.0 ? _kSuccess : _kBlue),
+                  _kpiRow(
+                      'Pertes simulées',
+                      AppFormatters.currency(r.pertesSimulees),
+                      r.factor > 1.0
+                          ? _kDanger
+                          : r.factor < 1.0
+                              ? _kSuccess
+                              : _kBlue),
                   _kpiRow('Impact net', AppFormatters.currency(r.impactNet),
-                    r.impactNet > 0 ? _kDanger : _kSuccess),
-                  _kpiRow('FP après choc', AppFormatters.currency(r.fpApresChoc),
-                    r.fpApresChoc >= 0 ? _kSuccess : _kDanger),
-                  _kpiRow('Résilience nette', AppFormatters.currency(r.resilience),
-                    r.resilience >= 0 ? _kSuccess : _kDanger),
+                      r.impactNet > 0 ? _kDanger : _kSuccess),
+                  _kpiRow(
+                      'FP après choc',
+                      AppFormatters.currency(r.fpApresChoc),
+                      r.fpApresChoc >= 0 ? _kSuccess : _kDanger),
+                  _kpiRow(
+                      'Résilience nette',
+                      AppFormatters.currency(r.resilience),
+                      r.resilience >= 0 ? _kSuccess : _kDanger),
                 ],
               ),
             ),
@@ -1473,47 +1765,55 @@ class _CriseScenarioCard extends StatelessWidget {
   }
 
   Widget _kpiRow(String label, String value, Color color) => Row(children: [
-    Expanded(child: Text(label, style: const TextStyle(fontSize: 9.5, color: _kMuted))),
-    Text(value, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: color)),
-  ]);
+        Expanded(
+            child: Text(label,
+                style: const TextStyle(fontSize: 9.5, color: _kMuted))),
+        Text(value,
+            style: TextStyle(
+                fontSize: 10.5, fontWeight: FontWeight.w700, color: color)),
+      ]);
 }
 
 // ─── Tableau comparatif ───────────────────────────────────────────────────────
 
 class _CriseComparisonTable extends StatelessWidget {
-  const _CriseComparisonTable({required this.results, required this.seuil, required this.isDark});
+  const _CriseComparisonTable(
+      {required this.results, required this.seuil, required this.isDark});
   final List<_CriseScResult> results;
   final double seuil;
-  final bool   isDark;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    final bg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
-    final hdrBg  = isDark ? const Color(0xFF0D1826) : const Color(0xFFF0F4FA);
+    final bg = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final hdrBg = isDark ? const Color(0xFF0D1826) : const Color(0xFFF0F4FA);
     final border = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
 
     const cols = [
-      ('Scénario',         1),
-      ('Choc',             1),
-      ('Pertes simulées',  2),
-      ('Impact net',       2),
-      ('FP après choc',    2),
-      ('Résilience',       2),
-      ('Ratio',            1),
-      ('Statut',           1),
+      ('Scénario', 1),
+      ('Choc', 1),
+      ('Pertes simulées', 2),
+      ('Impact net', 2),
+      ('FP après choc', 2),
+      ('Résilience', 2),
+      ('Ratio', 1),
+      ('Statut', 1),
     ];
 
     Widget hCell(String text) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Text(text, style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: _kMuted)),
-    );
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Text(text,
+              style: const TextStyle(
+                  fontSize: 9.5, fontWeight: FontWeight.w700, color: _kMuted)),
+        );
 
     Widget dCell(String text, Color color) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-      child: Text(text,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
-        overflow: TextOverflow.ellipsis),
-    );
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          child: Text(text,
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w600, color: color),
+              overflow: TextOverflow.ellipsis),
+        );
 
     return Container(
       decoration: BoxDecoration(
@@ -1529,69 +1829,98 @@ class _CriseComparisonTable extends StatelessWidget {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
             border: Border(bottom: BorderSide(color: border)),
           ),
-          child: Row(children: cols.map((c) =>
-            Expanded(flex: c.$2, child: hCell(c.$1))).toList()),
+          child: Row(
+              children: cols
+                  .map((c) => Expanded(flex: c.$2, child: hCell(c.$1)))
+                  .toList()),
         ),
         // Lignes
         ...results.map((r) {
           final ratioStr = r.aprStresses > 0
-              ? '${(r.ratio * 100).toStringAsFixed(1)} %' : '—';
+              ? '${(r.ratio * 100).toStringAsFixed(1)} %'
+              : '—';
           final ratioColor = r.aprStresses > 0
-              ? (r.ratio >= seuil ? _kSuccess : _kDanger) : _kMuted;
+              ? (r.ratio >= seuil ? _kSuccess : _kDanger)
+              : _kMuted;
 
           return Container(
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: border.withValues(alpha: 0.5))),
+              border: Border(
+                  bottom: BorderSide(color: border.withValues(alpha: 0.5))),
             ),
             child: Row(children: [
               // Scénario
-              Expanded(child: Padding(
+              Expanded(
+                  child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                 child: Row(children: [
-                  Container(width: 8, height: 8,
-                    decoration: BoxDecoration(color: r.color, shape: BoxShape.circle)),
+                  Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                          color: r.color, shape: BoxShape.circle)),
                   const SizedBox(width: 5),
-                  Expanded(child: Text('${r.code} ${r.label}',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                    overflow: TextOverflow.ellipsis)),
+                  Expanded(
+                      child: Text('${r.code} ${r.label}',
+                          style: const TextStyle(
+                              fontSize: 10, fontWeight: FontWeight.w600),
+                          overflow: TextOverflow.ellipsis)),
                 ]),
               )),
               // Choc
-              Expanded(child: Padding(
+              Expanded(
+                  child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
                     color: r.color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: Text(r.factorLabel,
-                    style: TextStyle(fontSize: 9, color: r.color, fontWeight: FontWeight.w600),
-                    overflow: TextOverflow.ellipsis),
+                      style: TextStyle(
+                          fontSize: 9,
+                          color: r.color,
+                          fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis),
                 ),
               )),
-              Expanded(flex: 2, child: dCell(AppFormatters.currency(r.pertesSimulees),
-                r.factor > 1 ? _kDanger : _kSuccess)),
-              Expanded(flex: 2, child: dCell(AppFormatters.currency(r.impactNet),
-                r.impactNet > 0 ? _kDanger : _kSuccess)),
-              Expanded(flex: 2, child: dCell(AppFormatters.currency(r.fpApresChoc),
-                r.fpApresChoc >= 0 ? _kSuccess : _kDanger)),
-              Expanded(flex: 2, child: dCell(AppFormatters.currency(r.resilience),
-                r.resilience >= 0 ? _kSuccess : _kDanger)),
+              Expanded(
+                  flex: 2,
+                  child: dCell(AppFormatters.currency(r.pertesSimulees),
+                      r.factor > 1 ? _kDanger : _kSuccess)),
+              Expanded(
+                  flex: 2,
+                  child: dCell(AppFormatters.currency(r.impactNet),
+                      r.impactNet > 0 ? _kDanger : _kSuccess)),
+              Expanded(
+                  flex: 2,
+                  child: dCell(AppFormatters.currency(r.fpApresChoc),
+                      r.fpApresChoc >= 0 ? _kSuccess : _kDanger)),
+              Expanded(
+                  flex: 2,
+                  child: dCell(AppFormatters.currency(r.resilience),
+                      r.resilience >= 0 ? _kSuccess : _kDanger)),
               Expanded(child: dCell(ratioStr, ratioColor)),
               // Statut badge
-              Expanded(child: Padding(
+              Expanded(
+                  child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
                   decoration: BoxDecoration(
-                    color: (r.pass ? _kSuccess : _kDanger).withValues(alpha: 0.1),
+                    color:
+                        (r.pass ? _kSuccess : _kDanger).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: Text(r.pass ? '✓ OK' : '✗ KO',
-                    style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800,
-                      color: r.pass ? _kSuccess : _kDanger),
-                    textAlign: TextAlign.center),
+                      style: TextStyle(
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          color: r.pass ? _kSuccess : _kDanger),
+                      textAlign: TextAlign.center),
                 ),
               )),
             ]),
@@ -1615,30 +1944,38 @@ class _PertesViewState extends State<_PertesView> {
   int _selectedTab = 0;
 
   static const _tabDefs = [
-    (Icons.monetization_on_outlined,       'Pertes'),
-    (Icons.speed_rounded,                  'KRI'),
-    (Icons.map_outlined,                   'Cartographie'),
-    (Icons.verified_user_outlined,         'Contrôles internes'),
-    (Icons.account_tree_outlined,          'Workflow'),
-    (Icons.format_list_bulleted_rounded,   "Plans d'actions"),
+    (Icons.monetization_on_outlined, 'Pertes'),
+    (Icons.speed_rounded, 'KRI'),
+    (Icons.map_outlined, 'Cartographie'),
+    (Icons.verified_user_outlined, 'Contrôles internes'),
+    (Icons.account_tree_outlined, 'Workflow'),
+    (Icons.format_list_bulleted_rounded, "Plans d'actions"),
   ];
 
   Widget _buildCurrentTab() {
     switch (_selectedTab) {
-      case 0: return _PertesContent(api: widget.api);
-      case 1: return _KriView(api: widget.api);
-      case 2: return _CartographieView(api: widget.api);
-      case 3: return _ControlesView(api: widget.api);
-      case 4: return _WorkflowView(api: widget.api);
-      case 5: return _PlansView(api: widget.api);
-      default: return const SizedBox.shrink();
+      case 0:
+        return _PertesContent(api: widget.api);
+      case 1:
+        return _KriView(api: widget.api);
+      case 2:
+        return _CartographieView(api: widget.api);
+      case 3:
+        return _ControlesView(api: widget.api);
+      case 4:
+        return _WorkflowView(api: widget.api);
+      case 5:
+        return _PlansView(api: widget.api);
+      default:
+        return const SizedBox.shrink();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
+    final borderColor =
+        isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
       child: Column(
@@ -1651,7 +1988,7 @@ class _PertesViewState extends State<_PertesView> {
             subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo('Art. 89'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           Expanded(
             child: Column(
               children: [
@@ -1667,15 +2004,22 @@ class _PertesViewState extends State<_PertesView> {
                         final isSelected = _selectedTab == i;
                         final fgColor = isSelected
                             ? AppColors.accent
-                            : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF234A84));
+                            : (isDark
+                                ? const Color(0xFF9FB0CE)
+                                : const Color(0xFF234A84));
                         return InkWell(
                           onTap: () => setState(() => _selectedTab = i),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(6)),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 3),
                             decoration: BoxDecoration(
-                              border: Border(bottom: BorderSide(
-                                color: isSelected ? AppColors.accent : Colors.transparent,
+                              border: Border(
+                                  bottom: BorderSide(
+                                color: isSelected
+                                    ? AppColors.accent
+                                    : Colors.transparent,
                                 width: 2,
                               )),
                             ),
@@ -1688,7 +2032,9 @@ class _PertesViewState extends State<_PertesView> {
                                   _tabDefs[i].$2,
                                   style: TextStyle(
                                     fontSize: 13,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
                                     color: fgColor,
                                   ),
                                 ),
@@ -1700,7 +2046,7 @@ class _PertesViewState extends State<_PertesView> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 3),
                 Expanded(child: _buildCurrentTab()),
               ],
             ),
@@ -1730,7 +2076,9 @@ class _PertesContentState extends State<_PertesContent> {
   }
 
   void _reload() {
-    setState(() { _future = widget.api.fetchRoIncidents(); });
+    setState(() {
+      _future = widget.api.fetchRoIncidents();
+    });
   }
 
   @override
@@ -1744,19 +2092,22 @@ class _PertesContentState extends State<_PertesContent> {
         final totalBrute = items.fold(0.0, (s, e) => s + e.perteBrute);
         final totalNette = items.fold(0.0, (s, e) => s + e.perteNette);
         final totalRecup = items.fold(0.0, (s, e) => s + e.perteRecuperee);
-        final tauxRecup = totalBrute > 0 ? (totalRecup / totalBrute) * 100 : 0.0;
+        final tauxRecup =
+            totalBrute > 0 ? (totalRecup / totalBrute) * 100 : 0.0;
         final moyenne = items.isNotEmpty ? totalNette / items.length : 0.0;
         final significatifs = items.where((e) => e.significatif).length;
-        final sortedTop5 = [...items]..sort((a, b) => b.perteNette.compareTo(a.perteNette));
+        final sortedTop5 = [...items]
+          ..sort((a, b) => b.perteNette.compareTo(a.perteNette));
         final top5 = sortedTop5.take(5).toList();
 
         final byLigne = <String, double>{};
         final byLigneCount = <String, int>{};
-        final byType  = <String, double>{};
+        final byType = <String, double>{};
         for (final i in items) {
-          byLigne[i.ligneMetier]  = (byLigne[i.ligneMetier]  ?? 0) + i.perteNette;
+          byLigne[i.ligneMetier] = (byLigne[i.ligneMetier] ?? 0) + i.perteNette;
           byLigneCount[i.ligneMetier] = (byLigneCount[i.ligneMetier] ?? 0) + 1;
-          byType[i.typeEvenement] = (byType[i.typeEvenement] ?? 0) + i.perteNette;
+          byType[i.typeEvenement] =
+              (byType[i.typeEvenement] ?? 0) + i.perteNette;
         }
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1771,7 +2122,7 @@ class _PertesContentState extends State<_PertesContent> {
                 significatifs: significatifs,
                 moyenne: moyenne,
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 4),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1784,7 +2135,7 @@ class _PertesContentState extends State<_PertesContent> {
                       isDark: isDark,
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 4),
                   // ── Lignes de métier ──────────────────────────────────────
                   Expanded(
                     flex: 5,
@@ -1818,15 +2169,16 @@ class _AutoPulseDot extends StatefulWidget {
 class _AutoPulseDotState extends State<_AutoPulseDot>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  late Animation<double>   _anim;
+  late Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 900))
       ..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _anim = Tween<double>(begin: 0.4, end: 1.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -1840,16 +2192,22 @@ class _AutoPulseDotState extends State<_AutoPulseDot>
     return AnimatedBuilder(
       animation: _anim,
       builder: (_, __) => Container(
-        width: 8, height: 8,
+        width: 8,
+        height: 8,
         decoration: BoxDecoration(
           color: widget.active
-            ? _kWarning.withValues(alpha: _anim.value)
-            : _kSuccess.withValues(alpha: _anim.value),
+              ? _kWarning.withValues(alpha: _anim.value)
+              : _kSuccess.withValues(alpha: _anim.value),
           shape: BoxShape.circle,
-          boxShadow: [BoxShadow(
-            color: widget.active ? _kWarning.withValues(alpha: 0.4) : _kSuccess.withValues(alpha: 0.4),
-            blurRadius: 4, spreadRadius: 1,
-          )],
+          boxShadow: [
+            BoxShadow(
+              color: widget.active
+                  ? _kWarning.withValues(alpha: 0.4)
+                  : _kSuccess.withValues(alpha: 0.4),
+              blurRadius: 4,
+              spreadRadius: 1,
+            )
+          ],
         ),
       ),
     );
@@ -1859,7 +2217,8 @@ class _AutoPulseDotState extends State<_AutoPulseDot>
 // ─── Top 5 incidents ─────────────────────────────────────────────────────────
 
 class _PertesTop5Card extends StatelessWidget {
-  const _PertesTop5Card({required this.top5, required this.totalNette, required this.isDark});
+  const _PertesTop5Card(
+      {required this.top5, required this.totalNette, required this.isDark});
   final List<RoIncident> top5;
   final double totalNette;
   final bool isDark;
@@ -1874,7 +2233,7 @@ class _PertesTop5Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final bg = isDark ? const Color(0xFF0E1E33) : Colors.white;
     final border = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
     final maxPerte = top5.isNotEmpty ? top5.first.perteNette : 1.0;
 
@@ -1890,19 +2249,26 @@ class _PertesTop5Card extends StatelessWidget {
         children: [
           // En-tête
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: border)),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(10)),
             ),
             child: Row(children: [
-              Container(width: 3, height: 16, decoration: BoxDecoration(
-                color: _kDanger, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 10),
-              const Expanded(child: Text('Top 5 — Incidents par perte nette',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+              Container(
+                  width: 3,
+                  height: 16,
+                  decoration: BoxDecoration(
+                      color: _kDanger, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 3),
+              const Expanded(
+                  child: Text('Top 5 — Incidents par perte nette',
+                      style: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700))),
               if (top5.isEmpty)
-                const Text('Aucun incident', style: TextStyle(fontSize: 11, color: _kMuted))
+                const Text('Aucun incident',
+                    style: TextStyle(fontSize: 11, color: _kMuted))
               else
                 _badge('${top5.length} incidents', _kDanger),
             ]),
@@ -1910,87 +2276,121 @@ class _PertesTop5Card extends StatelessWidget {
           // Corps
           if (top5.isEmpty)
             const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: Text('Aucun incident enregistré.', style: TextStyle(color: _kMuted))),
+              padding: EdgeInsets.all(6),
+              child: Center(
+                  child: Text('Aucun incident enregistré.',
+                      style: TextStyle(color: _kMuted))),
             )
           else
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(3),
               child: Column(
                 children: top5.asMap().entries.map((e) {
                   final rank = e.key;
-                  final i    = e.value;
-                  final rc   = _rankColors[rank];
-                  final prog = maxPerte > 0 ? (i.perteNette / maxPerte).clamp(0.0, 1.0) : 0.0;
-                  final pct  = totalNette > 0 ? (i.perteNette / totalNette * 100) : 0.0;
+                  final i = e.value;
+                  final rc = _rankColors[rank];
+                  final prog = maxPerte > 0
+                      ? (i.perteNette / maxPerte).clamp(0.0, 1.0)
+                      : 0.0;
+                  final pct =
+                      totalNette > 0 ? (i.perteNette / totalNette * 100) : 0.0;
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(bottom: 3),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          // Rang
-                          Container(
-                            width: 26, height: 26,
-                            decoration: BoxDecoration(
-                              color: rc.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: rc.withValues(alpha: 0.35)),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text('${rank + 1}',
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: rc)),
-                          ),
-                          const SizedBox(width: 10),
-                          // Référence + description
-                          Expanded(child: Column(
+                        Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(children: [
-                                Text(i.reference,
-                                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : Colors.black87)),
-                                const SizedBox(width: 6),
-                                Flexible(child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: _kWarning.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(3),
-                                  ),
-                                  child: Text(i.typeEvenement,
-                                    style: const TextStyle(fontSize: 9, color: _kWarning, fontWeight: FontWeight.w600),
-                                    overflow: TextOverflow.ellipsis),
-                                )),
-                              ]),
-                              const SizedBox(height: 2),
-                              Text(i.description,
-                                style: const TextStyle(fontSize: 10.5, color: _kMuted),
-                                maxLines: 1, overflow: TextOverflow.ellipsis),
-                            ],
-                          )),
-                          const SizedBox(width: 10),
-                          // Montant + %
-                          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                            Text(AppFormatters.currency(i.perteNette),
-                              style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: _kDanger)),
-                            Text('${pct.toStringAsFixed(1)} % du total',
-                              style: const TextStyle(fontSize: 9.5, color: _kMuted)),
-                          ]),
-                        ]),
+                              // Rang
+                              Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: rc.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: rc.withValues(alpha: 0.35)),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text('${rank + 1}',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w900,
+                                        color: rc)),
+                              ),
+                              const SizedBox(width: 3),
+                              // Référence + description
+                              Expanded(
+                                  child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: [
+                                    Text(i.reference,
+                                        style: TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark
+                                                ? Colors.white
+                                                : Colors.black87)),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                        child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 5, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: _kWarning.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(3),
+                                      ),
+                                      child: Text(i.typeEvenement,
+                                          style: const TextStyle(
+                                              fontSize: 9,
+                                              color: _kWarning,
+                                              fontWeight: FontWeight.w600),
+                                          overflow: TextOverflow.ellipsis),
+                                    )),
+                                  ]),
+                                  const SizedBox(height: 2),
+                                  Text(i.description,
+                                      style: const TextStyle(
+                                          fontSize: 10.5, color: _kMuted),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis),
+                                ],
+                              )),
+                              const SizedBox(width: 3),
+                              // Montant + %
+                              Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(AppFormatters.currency(i.perteNette),
+                                        style: const TextStyle(
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w800,
+                                            color: _kDanger)),
+                                    Text('${pct.toStringAsFixed(1)} % du total',
+                                        style: const TextStyle(
+                                            fontSize: 9.5, color: _kMuted)),
+                                  ]),
+                            ]),
                         const SizedBox(height: 6),
                         // Barre de progression relative
                         ClipRRect(
                           borderRadius: BorderRadius.circular(4),
                           child: Stack(children: [
-                            Container(height: 5, color: isDark
-                                ? rc.withValues(alpha: 0.12) : rc.withValues(alpha: 0.08)),
+                            Container(
+                                height: 5,
+                                color: isDark
+                                    ? rc.withValues(alpha: 0.12)
+                                    : rc.withValues(alpha: 0.08)),
                             FractionallySizedBox(
                               widthFactor: prog,
                               child: Container(
                                 height: 5,
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(colors: [rc.withValues(alpha: 0.7), rc]),
+                                  gradient: LinearGradient(
+                                      colors: [rc.withValues(alpha: 0.7), rc]),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
@@ -1999,9 +2399,11 @@ class _PertesTop5Card extends StatelessWidget {
                         ),
                         if (rank < top5.length - 1)
                           Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Divider(height: 1, thickness: 0.5,
-                              color: border.withValues(alpha: 0.5)),
+                            padding: const EdgeInsets.only(top: 3),
+                            child: Divider(
+                                height: 1,
+                                thickness: 0.5,
+                                color: border.withValues(alpha: 0.5)),
                           ),
                       ],
                     ),
@@ -2019,23 +2421,30 @@ class _PertesTop5Card extends StatelessWidget {
 
 class _PertesLigneCard extends StatelessWidget {
   const _PertesLigneCard({
-    required this.byLigne, required this.byLigneCount,
-    required this.totalNette, required this.isDark,
+    required this.byLigne,
+    required this.byLigneCount,
+    required this.totalNette,
+    required this.isDark,
   });
   final Map<String, double> byLigne;
-  final Map<String, int>    byLigneCount;
+  final Map<String, int> byLigneCount;
   final double totalNette;
-  final bool   isDark;
+  final bool isDark;
 
   static const _palette = [
-    Color(0xFF00BCD4), Color(0xFF4CAF50), Color(0xFF673AB7),
-    Color(0xFFFF9800), Color(0xFF9C27B0), Color(0xFFE91E63),
-    Color(0xFFF97316), Color(0xFF84CC16),
+    Color(0xFF00BCD4),
+    Color(0xFF4CAF50),
+    Color(0xFF673AB7),
+    Color(0xFFFF9800),
+    Color(0xFF9C27B0),
+    Color(0xFFE91E63),
+    Color(0xFFF97316),
+    Color(0xFF84CC16),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final bg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final bg = isDark ? const Color(0xFF0E1E33) : Colors.white;
     final border = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
 
     final sorted = byLigne.entries.toList()
@@ -2053,88 +2462,122 @@ class _PertesLigneCard extends StatelessWidget {
         children: [
           // En-tête
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: border)),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(10)),
             ),
             child: Row(children: [
-              Container(width: 3, height: 16, decoration: BoxDecoration(
-                color: _kBlue, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 10),
-              const Expanded(child: Text('Pertes par ligne de métier',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+              Container(
+                  width: 3,
+                  height: 16,
+                  decoration: BoxDecoration(
+                      color: _kBlue, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 3),
+              const Expanded(
+                  child: Text('Pertes par ligne de métier',
+                      style: TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w700))),
               Text(AppFormatters.currency(totalNette),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kDanger)),
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: _kDanger)),
             ]),
           ),
           // Corps
           if (sorted.isEmpty)
             const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: Text('Aucune donnée.', style: TextStyle(color: _kMuted))),
+              padding: EdgeInsets.all(6),
+              child: Center(
+                  child:
+                      Text('Aucune donnée.', style: TextStyle(color: _kMuted))),
             )
           else
             Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(4),
               child: Column(
                 children: sorted.asMap().entries.map((e) {
-                  final idx   = e.key;
+                  final idx = e.key;
                   final ligne = e.value.key;
                   final montant = e.value.value;
                   final count = byLigneCount[ligne] ?? 0;
-                  final pct   = totalNette > 0 ? (montant / totalNette) : 0.0;
-                  final c     = _palette[idx % _palette.length];
+                  final pct = totalNette > 0 ? (montant / totalNette) : 0.0;
+                  final c = _palette[idx % _palette.length];
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: 3),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(children: [
-                          Container(width: 9, height: 9,
-                            decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+                          Container(
+                              width: 9,
+                              height: 9,
+                              decoration: BoxDecoration(
+                                  color: c, shape: BoxShape.circle)),
                           const SizedBox(width: 8),
-                          Expanded(child: Text(ligne,
-                            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w500,
-                              color: isDark ? Colors.white : Colors.black87),
-                            overflow: TextOverflow.ellipsis)),
+                          Expanded(
+                              child: Text(ligne,
+                                  style: TextStyle(
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark
+                                          ? Colors.white
+                                          : Colors.black87),
+                                  overflow: TextOverflow.ellipsis)),
                           const SizedBox(width: 8),
                           // Nb incidents
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
                               color: c.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(3),
                             ),
-                            child: Text('$count incident${count > 1 ? 's' : ''}',
-                              style: TextStyle(fontSize: 9, color: c, fontWeight: FontWeight.w600)),
+                            child: Text(
+                                '$count incident${count > 1 ? 's' : ''}',
+                                style: TextStyle(
+                                    fontSize: 9,
+                                    color: c,
+                                    fontWeight: FontWeight.w600)),
                           ),
                           const SizedBox(width: 8),
                           // Montant
                           Text(AppFormatters.currency(montant),
-                            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: c)),
+                              style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: c)),
                           const SizedBox(width: 8),
                           // %
                           SizedBox(
                             width: 42,
                             child: Text('${(pct * 100).toStringAsFixed(1)} %',
-                              textAlign: TextAlign.right,
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c)),
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: c)),
                           ),
                         ]),
                         const SizedBox(height: 5),
                         ClipRRect(
                           borderRadius: BorderRadius.circular(5),
                           child: Stack(children: [
-                            Container(height: 10,
-                              color: isDark ? c.withValues(alpha: 0.12) : c.withValues(alpha: 0.09)),
+                            Container(
+                                height: 10,
+                                color: isDark
+                                    ? c.withValues(alpha: 0.12)
+                                    : c.withValues(alpha: 0.09)),
                             FractionallySizedBox(
                               widthFactor: pct.clamp(0.0, 1.0),
                               child: Container(
                                 height: 10,
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(colors: [c.withValues(alpha: 0.75), c]),
+                                  gradient: LinearGradient(
+                                      colors: [c.withValues(alpha: 0.75), c]),
                                   borderRadius: BorderRadius.circular(5),
                                 ),
                               ),
@@ -2210,16 +2653,19 @@ class _PertesSummaryBar extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(2),
             border: Border.all(
-              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25),
+              color: const Color(0xFF1E3A5F)
+                  .withValues(alpha: isDark ? 0.5 : 0.25),
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
+                color: const Color(0xFF1E3A5F)
+                    .withValues(alpha: isDark ? 0.3 : 0.06),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
+                color: const Color(0xFF1E3A5F)
+                    .withValues(alpha: isDark ? 0.15 : 0.03),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -2227,7 +2673,8 @@ class _PertesSummaryBar extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Container(height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
+              Container(
+                  height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -2276,18 +2723,25 @@ class _PertesSummaryBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(6),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))],
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4))
+              ],
             ),
-            textStyle: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
-            padding: const EdgeInsets.all(14),
-            margin: const EdgeInsets.only(left: 40, right: 40),
+            textStyle:
+                const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
+            padding: const EdgeInsets.all(4),
+            margin: const EdgeInsets.only(left: 6, right: 6),
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: AppTheme.accent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.info_outline, size: 12, color: AppTheme.accent),
+              child: const Icon(Icons.info_outline,
+                  size: 12, color: AppTheme.accent),
             ),
           ),
         ),
@@ -2315,9 +2769,9 @@ class _KriViewState extends State<_KriView> {
   String? _filterStatus;
 
   // ── Surveillance automatique ──────────────────────────────────────────────
-  Timer?      _autoTimer;
-  DateTime?   _lastAutoRefresh;
-  bool        _autoRunning = false;
+  Timer? _autoTimer;
+  DateTime? _lastAutoRefresh;
+  bool _autoRunning = false;
   // Statuts enregistrés lors du dernier cycle pour détecter les franchissements
   final Map<String, String> _prevStatuts = {};
 
@@ -2327,7 +2781,8 @@ class _KriViewState extends State<_KriView> {
     _reload();
     // Lance un premier calcul auto dès l'ouverture, puis toutes les 30 s
     _triggerAutoCalc();
-    _autoTimer = Timer.periodic(const Duration(seconds: 30), (_) => _triggerAutoCalc());
+    _autoTimer =
+        Timer.periodic(const Duration(seconds: 30), (_) => _triggerAutoCalc());
   }
 
   @override
@@ -2336,7 +2791,9 @@ class _KriViewState extends State<_KriView> {
     super.dispose();
   }
 
-  void _reload() => setState(() { _future = widget.api.fetchRoKri(); });
+  void _reload() => setState(() {
+        _future = widget.api.fetchRoKri();
+      });
 
   Future<void> _triggerAutoCalc() async {
     if (!mounted) return;
@@ -2373,40 +2830,43 @@ class _KriViewState extends State<_KriView> {
   }
 
   String _manualKriField1Label(String kriId) => switch (kriId) {
-    'kri-01' => 'Départs volontaires',
-    'kri-02' => 'Jours d’absence',
-    'kri-03' => 'Total heures de formation',
-    'kri-07' => 'Notes ≥ 4',
-    _ => 'Valeur 1',
-  };
+        'kri-01' => 'Départs volontaires',
+        'kri-02' => 'Jours d’absence',
+        'kri-03' => 'Total heures de formation',
+        'kri-07' => 'Notes ≥ 4',
+        _ => 'Valeur 1',
+      };
 
   String _manualKriField2Label(String kriId) => switch (kriId) {
-    'kri-01' => 'Effectif moyen',
-    'kri-02' => 'Jours travaillés théoriques',
-    'kri-03' => 'Effectif total',
-    'kri-07' => 'Total réponses',
-    _ => 'Valeur 2',
-  };
+        'kri-01' => 'Effectif moyen',
+        'kri-02' => 'Jours travaillés théoriques',
+        'kri-03' => 'Effectif total',
+        'kri-07' => 'Total réponses',
+        _ => 'Valeur 2',
+      };
 
   String _manualKriResultUnit(String kriId) => switch (kriId) {
-    'kri-03' => 'Heures / employé',
-    _ => '%',
-  };
+        'kri-03' => 'Heures / employé',
+        _ => '%',
+      };
 
   String _manualKriExplanation(String kriId) => switch (kriId) {
-    'kri-01' => 'Turnover = départs volontaires / effectif moyen × 100',
-    'kri-02' => 'Taux d’absence = jours d’absence / jours travaillés théoriques × 100',
-    'kri-03' => 'Heures formation par employé = total heures formation / effectif total',
-    'kri-07' => 'Taux de satisfaction = notes ≥ 4 / total réponses × 100',
-    _ => '',
-  };
+        'kri-01' => 'Turnover = départs volontaires / effectif moyen × 100',
+        'kri-02' =>
+          'Taux d’absence = jours d’absence / jours travaillés théoriques × 100',
+        'kri-03' =>
+          'Heures formation par employé = total heures formation / effectif total',
+        'kri-07' => 'Taux de satisfaction = notes ≥ 4 / total réponses × 100',
+        _ => '',
+      };
 
   Future<void> _showKriEntryDialog(List<RoKriView> availableKris) async {
     if (availableKris.isEmpty) return;
 
     final formKey = GlobalKey<FormState>();
     String selectedKriId = availableKris.first.definition.id;
-    final dateCtrl = TextEditingController(text: DateTime.now().toIso8601String().substring(0, 10));
+    final dateCtrl = TextEditingController(
+        text: DateTime.now().toIso8601String().substring(0, 10));
     final commentaireCtrl = TextEditingController();
     final fieldAController = TextEditingController();
     final fieldBController = TextEditingController();
@@ -2436,101 +2896,144 @@ class _KriViewState extends State<_KriView> {
             content: SingleChildScrollView(
               child: Form(
                 key: formKey,
-                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: selectedKriId,
-                    decoration: const InputDecoration(labelText: 'Indicateur', isDense: true),
-                    items: availableKris.map((k) => DropdownMenuItem(
-                      value: k.definition.id,
-                      child: Text('${k.definition.id} — ${k.definition.nom}'),
-                    )).toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      selectedKriId = value;
-                      fieldAController.clear();
-                      fieldBController.clear();
-                      computedValue = null;
-                      setState2(() {});
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Text(_manualKriExplanation(selectedKriId), style: const TextStyle(fontSize: 12, color: _kMuted)),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: fieldAController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: _manualKriField1Label(selectedKriId), isDense: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Champ requis' : null,
-                    onChanged: (_) {
-                      updateComputed();
-                      setState2(() {});
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: fieldBController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: _manualKriField2Label(selectedKriId), isDense: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Champ requis';
-                      if (_parseNumber(v) == 0) return 'Ne peut pas être zéro';
-                      return null;
-                    },
-                    onChanged: (_) {
-                      updateComputed();
-                      setState2(() {});
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: dateCtrl,
-                    readOnly: true,
-                    decoration: const InputDecoration(labelText: 'Date de mesure', isDense: true, suffixIcon: Icon(Icons.calendar_month_outlined, size: 18)),
-                    onTap: () async {
-                      final current = DateTime.tryParse(dateCtrl.text) ?? DateTime.now();
-                      final picked = await showDatePicker(
-                        context: ctx2,
-                        initialDate: current,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                        helpText: 'Sélectionner une date de mesure',
-                      );
-                      if (picked != null) dateCtrl.text = picked.toIso8601String().substring(0, 10);
-                      setState2(() {});
-                    },
-                    validator: (v) => (v == null || v.isEmpty) ? 'Champ requis' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: commentaireCtrl,
-                    maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Commentaire (optionnel)', isDense: true),
-                  ),
-                  const SizedBox(height: 14),
-                  if (computedValue != null)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: _kBlue.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
-                      child: Row(children: [
-                        Expanded(child: Text('Valeur calculée pour $selectedName', style: const TextStyle(fontSize: 12, color: _kMuted))),
-                        Text(
-                          '${computedValue!.toStringAsFixed(selectedKriId == 'kri-03' ? 1 : 1)} $unit',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedKriId,
+                        decoration: const InputDecoration(
+                            labelText: 'Indicateur', isDense: true),
+                        items: availableKris
+                            .map((k) => DropdownMenuItem(
+                                  value: k.definition.id,
+                                  child: Text(
+                                      '${k.definition.id} — ${k.definition.nom}'),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          selectedKriId = value;
+                          fieldAController.clear();
+                          fieldBController.clear();
+                          computedValue = null;
+                          setState2(() {});
+                        },
+                      ),
+                      const SizedBox(height: 3),
+                      Text(_manualKriExplanation(selectedKriId),
+                          style: const TextStyle(fontSize: 12, color: _kMuted)),
+                      const SizedBox(height: 3),
+                      TextFormField(
+                        controller: fieldAController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        decoration: InputDecoration(
+                            labelText: _manualKriField1Label(selectedKriId),
+                            isDense: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))
+                        ],
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'Champ requis'
+                            : null,
+                        onChanged: (_) {
+                          updateComputed();
+                          setState2(() {});
+                        },
+                      ),
+                      const SizedBox(height: 3),
+                      TextFormField(
+                        controller: fieldBController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        decoration: InputDecoration(
+                            labelText: _manualKriField2Label(selectedKriId),
+                            isDense: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))
+                        ],
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty)
+                            return 'Champ requis';
+                          if (_parseNumber(v) == 0)
+                            return 'Ne peut pas être zéro';
+                          return null;
+                        },
+                        onChanged: (_) {
+                          updateComputed();
+                          setState2(() {});
+                        },
+                      ),
+                      const SizedBox(height: 3),
+                      TextFormField(
+                        controller: dateCtrl,
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                            labelText: 'Date de mesure',
+                            isDense: true,
+                            suffixIcon:
+                                Icon(Icons.calendar_month_outlined, size: 18)),
+                        onTap: () async {
+                          final current = DateTime.tryParse(dateCtrl.text) ??
+                              DateTime.now();
+                          final picked = await showDatePicker(
+                            context: ctx2,
+                            initialDate: current,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2100),
+                            helpText: 'Sélectionner une date de mesure',
+                          );
+                          if (picked != null)
+                            dateCtrl.text =
+                                picked.toIso8601String().substring(0, 10);
+                          setState2(() {});
+                        },
+                        validator: (v) =>
+                            (v == null || v.isEmpty) ? 'Champ requis' : null,
+                      ),
+                      const SizedBox(height: 3),
+                      TextFormField(
+                        controller: commentaireCtrl,
+                        maxLines: 2,
+                        decoration: const InputDecoration(
+                            labelText: 'Commentaire (optionnel)',
+                            isDense: true),
+                      ),
+                      const SizedBox(height: 4),
+                      if (computedValue != null)
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                              color: _kBlue.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(8)),
+                          child: Row(children: [
+                            Expanded(
+                                child: Text(
+                                    'Valeur calculée pour $selectedName',
+                                    style: const TextStyle(
+                                        fontSize: 12, color: _kMuted))),
+                            Text(
+                              '${computedValue!.toStringAsFixed(selectedKriId == 'kri-03' ? 1 : 1)} $unit',
+                              style: const TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w700),
+                            ),
+                          ]),
                         ),
-                      ]),
-                    ),
-                ]),
+                    ]),
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(ctx2).pop(false), child: const Text('Annuler')),
+              TextButton(
+                  onPressed: () => Navigator.of(ctx2).pop(false),
+                  child: const Text('Annuler')),
               FilledButton(
                 onPressed: () async {
                   if (!formKey.currentState!.validate()) return;
                   if (computedValue == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de calculer la valeur KRI.')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content:
+                            Text('Impossible de calculer la valeur KRI.')));
                     return;
                   }
                   try {
@@ -2544,7 +3047,8 @@ class _KriViewState extends State<_KriView> {
                     Navigator.of(ctx2).pop(true);
                   } catch (_) {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors de l’enregistrement.')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('Erreur lors de l’enregistrement.')));
                   }
                 },
                 child: const Text('Enregistrer'),
@@ -2557,7 +3061,8 @@ class _KriViewState extends State<_KriView> {
       if (saved == true) {
         _reload();
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Valeur KRI enregistrée.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Valeur KRI enregistrée.')));
       }
     });
   }
@@ -2566,7 +3071,8 @@ class _KriViewState extends State<_KriView> {
     for (final kri in data.kriList) {
       final prev = _prevStatuts[kri.definition.id];
       final curr = kri.statut;
-      if (prev != null && prev != curr &&
+      if (prev != null &&
+          prev != curr &&
           (curr == 'alerte' || curr == 'critique')) {
         final label = curr == 'critique' ? '🔴 CRITIQUE' : '🟡 ALERTE';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -2582,21 +3088,22 @@ class _KriViewState extends State<_KriView> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark      = Theme.of(context).brightness == Brightness.dark;
-    final panelBg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
-    final panelBorder = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final panelBg = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final panelBorder =
+        isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
 
     return FutureBuilder<RoKriModuleData>(
       future: _future,
       builder: (ctx, snap) {
         if (snap.connectionState != ConnectionState.done) return _loadingBox();
         if (snap.hasError) return _errorBox(snap.error!);
-        final data     = snap.data!;
-        final kris     = data.kriList;
-        final normal   = kris.where((k) => k.statut == 'normal').length;
-        final alerte   = kris.where((k) => k.statut == 'alerte').length;
+        final data = snap.data!;
+        final kris = data.kriList;
+        final normal = kris.where((k) => k.statut == 'normal').length;
+        final alerte = kris.where((k) => k.statut == 'alerte').length;
         final critique = kris.where((k) => k.statut == 'critique').length;
-        final nonRens  = kris.where((k) => k.statut == 'non_renseigne').length;
+        final nonRens = kris.where((k) => k.statut == 'non_renseigne').length;
         final filtered = _filterStatus == null
             ? kris
             : kris.where((k) => k.statut == _filterStatus).toList();
@@ -2615,102 +3122,138 @@ class _KriViewState extends State<_KriView> {
               child: Column(children: [
                 // En-tête
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.prudentialSolvency.withValues(alpha: 0.07),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(10)),
                     border: Border(bottom: BorderSide(color: panelBorder)),
                   ),
                   child: Row(children: [
                     Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: AppColors.prudentialSolvency.withValues(alpha: 0.12),
+                        color: AppColors.prudentialSolvency
+                            .withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(7),
                       ),
-                      child: const Icon(Icons.speed_rounded, size: 15, color: AppColors.prudentialSolvency),
+                      child: const Icon(Icons.speed_rounded,
+                          size: 15, color: AppColors.prudentialSolvency),
                     ),
-                    const SizedBox(width: 10),
-                    const Expanded(child: Text('Vue d\'ensemble',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                    const SizedBox(width: 3),
+                    const Expanded(
+                        child: Text('Vue d\'ensemble',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w700))),
                     _badge('Art. 313', AppColors.prudentialSolvency),
                   ]),
                 ),
                 // Contenu scrollable
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(4),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // 4 stat tiles 2×2
                         Row(children: [
-                          Expanded(child: _kriStatTile('Total', '${kris.length}', _kBlue, Icons.speed_rounded)),
+                          Expanded(
+                              child: _kriStatTile('Total', '${kris.length}',
+                                  _kBlue, Icons.speed_rounded)),
                           const SizedBox(width: 8),
-                          Expanded(child: _kriStatTile('Normal', '$normal', _kSuccess, Icons.check_circle_rounded)),
+                          Expanded(
+                              child: _kriStatTile('Normal', '$normal',
+                                  _kSuccess, Icons.check_circle_rounded)),
                         ]),
                         const SizedBox(height: 8),
                         Row(children: [
-                          Expanded(child: _kriStatTile('Alerte', '$alerte', _kWarning, Icons.warning_amber_rounded)),
+                          Expanded(
+                              child: _kriStatTile('Alerte', '$alerte',
+                                  _kWarning, Icons.warning_amber_rounded)),
                           const SizedBox(width: 8),
-                          Expanded(child: _kriStatTile('Critique', '$critique', _kDanger, Icons.dangerous_rounded)),
+                          Expanded(
+                              child: _kriStatTile('Critique', '$critique',
+                                  _kDanger, Icons.dangerous_rounded)),
                         ]),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 4),
                         // Distribution
-                        _kriPanelSection('Distribution', Icons.bar_chart_rounded, AppColors.prudentialSolvency),
+                        _kriPanelSection(
+                            'Distribution',
+                            Icons.bar_chart_rounded,
+                            AppColors.prudentialSolvency),
                         const SizedBox(height: 8),
-                        if (kris.isNotEmpty) _kriDistBar(normal, alerte, critique, nonRens, kris.length)
-                        else const Text('Aucun KRI', style: TextStyle(fontSize: 11, color: _kMuted)),
+                        if (kris.isNotEmpty)
+                          _kriDistBar(
+                              normal, alerte, critique, nonRens, kris.length)
+                        else
+                          const Text('Aucun KRI',
+                              style: TextStyle(fontSize: 11, color: _kMuted)),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 4),
                         // Filtre par statut
-                        _kriPanelSection('Filtrer', Icons.filter_list_rounded, _kMuted),
+                        _kriPanelSection(
+                            'Filtrer', Icons.filter_list_rounded, _kMuted),
                         const SizedBox(height: 8),
                         _filterChip('Tous', null, '${kris.length}', _kBlue),
                         const SizedBox(height: 5),
                         _filterChip('Normal', 'normal', '$normal', _kSuccess),
                         const SizedBox(height: 5),
-                        _filterChip('En alerte', 'alerte', '$alerte', _kWarning),
+                        _filterChip(
+                            'En alerte', 'alerte', '$alerte', _kWarning),
                         const SizedBox(height: 5),
-                        _filterChip('Critique', 'critique', '$critique', _kDanger),
+                        _filterChip(
+                            'Critique', 'critique', '$critique', _kDanger),
                         if (nonRens > 0) ...[
                           const SizedBox(height: 5),
-                          _filterChip('Non renseigné', 'non_renseigne', '$nonRens', _kMuted),
+                          _filterChip('Non renseigné', 'non_renseigne',
+                              '$nonRens', _kMuted),
                         ],
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 4),
                         // ── Surveillance automatique ──────────────────────
-                        _kriPanelSection('Surveillance', Icons.radar_rounded, _kSuccess),
+                        _kriPanelSection(
+                            'Surveillance', Icons.radar_rounded, _kSuccess),
                         const SizedBox(height: 8),
                         // Indicateur live
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 3, vertical: 9.0),
                           decoration: BoxDecoration(
                             color: _kSuccess.withValues(alpha: 0.07),
                             borderRadius: BorderRadius.circular(7),
-                            border: Border.all(color: _kSuccess.withValues(alpha: 0.25)),
+                            border: Border.all(
+                                color: _kSuccess.withValues(alpha: 0.25)),
                           ),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              _AutoPulseDot(active: _autoRunning),
-                              const SizedBox(width: 7),
-                              const Expanded(child: Text('Calcul automatique',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kSuccess))),
-                            ]),
-                            const SizedBox(height: 4),
-                            Text(
-                              _autoRunning
-                                ? 'Calcul en cours…'
-                                : _lastAutoRefresh == null
-                                  ? 'En attente…'
-                                  : 'Mis à jour à ${_lastAutoRefresh!.hour.toString().padLeft(2,'0')}:${_lastAutoRefresh!.minute.toString().padLeft(2,'0')}:${_lastAutoRefresh!.second.toString().padLeft(2,'0')}',
-                              style: const TextStyle(fontSize: 10, color: _kMuted),
-                            ),
-                            const SizedBox(height: 3),
-                            const Text('Rafraîchi toutes les 30 s',
-                              style: TextStyle(fontSize: 9.5, color: _kMuted)),
-                          ]),
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  _AutoPulseDot(active: _autoRunning),
+                                  const SizedBox(width: 7),
+                                  const Expanded(
+                                      child: Text('Calcul automatique',
+                                          style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: _kSuccess))),
+                                ]),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _autoRunning
+                                      ? 'Calcul en cours…'
+                                      : _lastAutoRefresh == null
+                                          ? 'En attente…'
+                                          : 'Mis à jour à ${_lastAutoRefresh!.hour.toString().padLeft(2, '0')}:${_lastAutoRefresh!.minute.toString().padLeft(2, '0')}:${_lastAutoRefresh!.second.toString().padLeft(2, '0')}',
+                                  style: const TextStyle(
+                                      fontSize: 10, color: _kMuted),
+                                ),
+                                const SizedBox(height: 3),
+                                const Text('Rafraîchi toutes les 30 s',
+                                    style: TextStyle(
+                                        fontSize: 9.5, color: _kMuted)),
+                              ]),
                         ),
                         const SizedBox(height: 8),
                         // Bouton calcul immédiat
@@ -2718,10 +3261,12 @@ class _KriViewState extends State<_KriView> {
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             onPressed: _autoRunning ? null : _triggerAutoCalc,
-                            icon: const Icon(Icons.bolt_rounded, size: 15, color: _kSuccess),
+                            icon: const Icon(Icons.bolt_rounded,
+                                size: 15, color: _kSuccess),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: _kSuccess,
-                              side: BorderSide(color: _kSuccess.withValues(alpha: 0.4)),
+                              side: BorderSide(
+                                  color: _kSuccess.withValues(alpha: 0.4)),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               textStyle: const TextStyle(fontSize: 12),
                             ),
@@ -2732,12 +3277,16 @@ class _KriViewState extends State<_KriView> {
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: () => _showKriEntryDialog(
-                              data.kriList.where((k) => _manualKriIds.contains(k.definition.id)).toList()),
-                            icon: const Icon(Icons.edit_calendar_outlined, size: 15, color: _kBlue),
+                            onPressed: () => _showKriEntryDialog(data.kriList
+                                .where((k) =>
+                                    _manualKriIds.contains(k.definition.id))
+                                .toList()),
+                            icon: const Icon(Icons.edit_calendar_outlined,
+                                size: 15, color: _kBlue),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: _kBlue,
-                              side: BorderSide(color: _kBlue.withValues(alpha: 0.4)),
+                              side: BorderSide(
+                                  color: _kBlue.withValues(alpha: 0.4)),
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               textStyle: const TextStyle(fontSize: 12),
                             ),
@@ -2746,20 +3295,27 @@ class _KriViewState extends State<_KriView> {
                         ),
 
                         if (data.kriHorsSeuil > 0) ...[
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 3),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 3, vertical: 8.0),
                             decoration: BoxDecoration(
                               color: _kDanger.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: _kDanger.withValues(alpha: 0.25)),
+                              border: Border.all(
+                                  color: _kDanger.withValues(alpha: 0.25)),
                             ),
                             child: Row(children: [
-                              const Icon(Icons.notifications_active_rounded, color: _kDanger, size: 13),
+                              const Icon(Icons.notifications_active_rounded,
+                                  color: _kDanger, size: 13),
                               const SizedBox(width: 6),
-                              Expanded(child: Text(
-                                '${data.kriHorsSeuil} KRI hors seuil',
-                                style: const TextStyle(color: _kDanger, fontSize: 10.5, fontWeight: FontWeight.w700))),
+                              Expanded(
+                                  child: Text(
+                                      '${data.kriHorsSeuil} KRI hors seuil',
+                                      style: const TextStyle(
+                                          color: _kDanger,
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w700))),
                             ]),
                           ),
                         ],
@@ -2770,7 +3326,7 @@ class _KriViewState extends State<_KriView> {
               ]),
             ),
 
-            const SizedBox(width: 14),
+            const SizedBox(width: 4),
 
             // ── Panneau droit : bannière + grille KRI + historique ─────────
             Expanded(
@@ -2778,38 +3334,56 @@ class _KriViewState extends State<_KriView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _KriBanner(total: kris.length, normal: normal, alerte: alerte,
-                      critique: critique, nonRens: nonRens),
-                    const SizedBox(height: 12),
+                    _KriBanner(
+                        total: kris.length,
+                        normal: normal,
+                        alerte: alerte,
+                        critique: critique,
+                        nonRens: nonRens),
+                    const SizedBox(height: 3),
                     if (filtered.isEmpty)
                       SizedBox(
                         height: 160,
-                        child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.speed_outlined, size: 52, color: _kMuted.withValues(alpha: 0.3)),
-                          const SizedBox(height: 12),
-                          Text(
-                            kris.isEmpty ? 'Aucun KRI configuré' : 'Aucun KRI dans ce statut',
-                            style: const TextStyle(color: _kMuted, fontSize: 13)),
-                        ])),
+                        child: Center(
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                              Icon(Icons.speed_outlined,
+                                  size: 52,
+                                  color: _kMuted.withValues(alpha: 0.3)),
+                              const SizedBox(height: 3),
+                              Text(
+                                  kris.isEmpty
+                                      ? 'Aucun KRI configuré'
+                                      : 'Aucun KRI dans ce statut',
+                                  style: const TextStyle(
+                                      color: _kMuted, fontSize: 13)),
+                            ])),
                       )
                     else
                       Column(
                         children: [
                           for (int i = 0; i < filtered.length; i += 3)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.only(bottom: 3),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  for (int j = i; j < math.min(i + 3, filtered.length); j++) ...[
-                                    if (j > i) const SizedBox(width: 10),
-                                    Expanded(child: _KriCard(
+                                  for (int j = i;
+                                      j < math.min(i + 3, filtered.length);
+                                      j++) ...[
+                                    if (j > i) const SizedBox(width: 3),
+                                    Expanded(
+                                        child: _KriCard(
                                       kri: filtered[j],
-                                      kriNum: _extractKriNum(filtered[j].definition.id),
+                                      kriNum: _extractKriNum(
+                                          filtered[j].definition.id),
                                     )),
                                   ],
-                                  for (int j = filtered.length; j < i + 3 && filtered.length > i + 1; j++) ...[
-                                    const SizedBox(width: 10),
+                                  for (int j = filtered.length;
+                                      j < i + 3 && filtered.length > i + 1;
+                                      j++) ...[
+                                    const SizedBox(width: 3),
                                     const Expanded(child: SizedBox()),
                                   ],
                                 ],
@@ -2827,60 +3401,87 @@ class _KriViewState extends State<_KriView> {
     );
   }
 
-  Widget _kriPanelSection(String title, IconData icon, Color color) => Row(children: [
-    Icon(icon, size: 12, color: color),
-    const SizedBox(width: 6),
-    Text(title.toUpperCase(),
-      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.5)),
-  ]);
+  Widget _kriPanelSection(String title, IconData icon, Color color) =>
+      Row(children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 6),
+        Text(title.toUpperCase(),
+            style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                color: color,
+                letterSpacing: 0.5)),
+      ]);
 
-  Widget _kriStatTile(String label, String value, Color color, IconData icon) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.07),
-      borderRadius: BorderRadius.circular(7),
-      border: Border.all(color: color.withValues(alpha: 0.2)),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 12, color: color),
-      const SizedBox(height: 4),
-      Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: color, height: 1.1)),
-      Text(label, style: const TextStyle(fontSize: 9.5, color: _kMuted)),
-    ]),
-  );
+  Widget _kriStatTile(String label, String value, Color color, IconData icon) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(7),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 12, color: color),
+              const SizedBox(height: 4),
+              Text(value,
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: color,
+                      height: 1.1)),
+              Text(label,
+                  style: const TextStyle(fontSize: 9.5, color: _kMuted)),
+            ]),
+      );
 
-  Widget _kriDistBar(int normal, int alerte, int critique, int nonRens, int total) {
+  Widget _kriDistBar(
+      int normal, int alerte, int critique, int nonRens, int total) {
     final parts = <(int, Color)>[
-      (normal,   _kSuccess),
-      (alerte,   _kWarning),
+      (normal, _kSuccess),
+      (alerte, _kWarning),
       (critique, _kDanger),
-      (nonRens,  _kMuted),
+      (nonRens, _kMuted),
     ].where((e) => e.$1 > 0).toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: Row(
-          children: parts.map((e) => Expanded(
-            flex: e.$1,
-            child: Container(height: 8, color: e.$2),
-          )).toList(),
+          children: parts
+              .map((e) => Expanded(
+                    flex: e.$1,
+                    child: Container(height: 8, color: e.$2),
+                  ))
+              .toList(),
         ),
       ),
       const SizedBox(height: 6),
       Wrap(spacing: 8, runSpacing: 4, children: [
-        if (normal   > 0) _distLegend('Normal ${(normal/total*100).round()}%',   _kSuccess),
-        if (alerte   > 0) _distLegend('Alerte ${(alerte/total*100).round()}%',   _kWarning),
-        if (critique > 0) _distLegend('Critique ${(critique/total*100).round()}%', _kDanger),
-        if (nonRens  > 0) _distLegend('N/R ${(nonRens/total*100).round()}%',     _kMuted),
+        if (normal > 0)
+          _distLegend('Normal ${(normal / total * 100).round()}%', _kSuccess),
+        if (alerte > 0)
+          _distLegend('Alerte ${(alerte / total * 100).round()}%', _kWarning),
+        if (critique > 0)
+          _distLegend(
+              'Critique ${(critique / total * 100).round()}%', _kDanger),
+        if (nonRens > 0)
+          _distLegend('N/R ${(nonRens / total * 100).round()}%', _kMuted),
       ]),
     ]);
   }
 
-  Widget _distLegend(String label, Color color) => Row(mainAxisSize: MainAxisSize.min, children: [
-    Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-    const SizedBox(width: 4),
-    Text(label, style: const TextStyle(fontSize: 9.5, color: _kMuted)),
-  ]);
+  Widget _distLegend(String label, Color color) =>
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 9.5, color: _kMuted)),
+      ]);
 
   Widget _filterChip(String label, String? status, String count, Color color) {
     final isSelected = _filterStatus == status;
@@ -2889,21 +3490,29 @@ class _KriViewState extends State<_KriView> {
       borderRadius: BorderRadius.circular(6),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.12) : Colors.transparent,
+          color:
+              isSelected ? color.withValues(alpha: 0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
-            color: isSelected ? color.withValues(alpha: 0.4) : color.withValues(alpha: 0.15)),
+              color: isSelected
+                  ? color.withValues(alpha: 0.4)
+                  : color.withValues(alpha: 0.15)),
         ),
         child: Row(children: [
-          Container(width: 7, height: 7,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
           const SizedBox(width: 7),
-          Expanded(child: Text(label,
-            style: TextStyle(fontSize: 11,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? color : _kMuted))),
+          Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight:
+                          isSelected ? FontWeight.w700 : FontWeight.w500,
+                      color: isSelected ? color : _kMuted))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             decoration: BoxDecoration(
@@ -2911,7 +3520,8 @@ class _KriViewState extends State<_KriView> {
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(count,
-              style: TextStyle(fontSize: 9.5, color: color, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                    fontSize: 9.5, color: color, fontWeight: FontWeight.w700)),
           ),
         ]),
       ),
@@ -2922,8 +3532,12 @@ class _KriViewState extends State<_KriView> {
 // ─── KRI Compliance Banner ────────────────────────────────────────────────────
 
 class _KriBanner extends StatelessWidget {
-  const _KriBanner({required this.total, required this.normal, required this.alerte,
-    required this.critique, required this.nonRens});
+  const _KriBanner(
+      {required this.total,
+      required this.normal,
+      required this.alerte,
+      required this.critique,
+      required this.nonRens});
   final int total, normal, alerte, critique, nonRens;
 
   @override
@@ -2931,34 +3545,49 @@ class _KriBanner extends StatelessWidget {
     final allOk = critique == 0 && alerte == 0;
 
     Widget statCol(String label, String value, Color color) => Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.55),
-          fontSize: 8.5, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-        const SizedBox(height: 2),
-        Text(value, style: TextStyle(
-          color: color == _kMuted ? Colors.white.withValues(alpha: 0.45) : color,
-          fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-      ],
-    );
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label,
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.55),
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5)),
+            const SizedBox(height: 2),
+            Text(value,
+                style: TextStyle(
+                    color: color == _kMuted
+                        ? Colors.white.withValues(alpha: 0.45)
+                        : color,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5)),
+          ],
+        );
 
-    Widget sep() => Container(width: 1, height: 32, margin: const EdgeInsets.symmetric(horizontal: 10),
-      color: Colors.white.withValues(alpha: 0.18));
+    Widget sep() => Container(
+        width: 1,
+        height: 32,
+        margin: const EdgeInsets.symmetric(horizontal: 10),
+        color: Colors.white.withValues(alpha: 0.18));
 
     final headline = critique > 0
         ? '$critique KRI CRITIQUE${critique > 1 ? 'S' : ''} — ACTION IMMÉDIATE REQUISE'
         : alerte > 0
             ? '$alerte KRI EN ALERTE — SURVEILLANCE RENFORCÉE'
-            : total == 0 ? 'AUCUN KRI CONFIGURÉ'
-            : nonRens == total ? 'SAISIR LES PREMIÈRES VALEURS POUR ACTIVER LA SURVEILLANCE'
-            : 'TOUS LES KRI DANS LES SEUILS';
+            : total == 0
+                ? 'AUCUN KRI CONFIGURÉ'
+                : nonRens == total
+                    ? 'SAISIR LES PREMIÈRES VALEURS POUR ACTIVER LA SURVEILLANCE'
+                    : 'TOUS LES KRI DANS LES SEUILS';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.centerLeft, end: Alignment.centerRight,
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
           colors: allOk
               ? [const Color(0xFF042B16), const Color(0xFF0D5C30)]
               : critique > 0
@@ -2966,29 +3595,49 @@ class _KriBanner extends StatelessWidget {
                   : [const Color(0xFF2D1A00), const Color(0xFF5C3600)],
         ),
         borderRadius: BorderRadius.circular(10),
-        boxShadow: [BoxShadow(
-          color: (allOk ? _kSuccess : critique > 0 ? _kDanger : _kWarning).withValues(alpha: 0.20),
-          blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+              color: (allOk
+                      ? _kSuccess
+                      : critique > 0
+                          ? _kDanger
+                          : _kWarning)
+                  .withValues(alpha: 0.20),
+              blurRadius: 16,
+              offset: const Offset(0, 4))
+        ],
       ),
       child: Row(children: [
         Container(
-          width: 44, height: 44, alignment: Alignment.center,
-          decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10)),
-          child: Icon(allOk ? Icons.shield_rounded : Icons.speed_rounded, color: Colors.white, size: 22),
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10)),
+          child: Icon(allOk ? Icons.shield_rounded : Icons.speed_rounded,
+              color: Colors.white, size: 22),
         ),
-        const SizedBox(width: 14),
-        Expanded(child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
+        const SizedBox(width: 4),
+        Expanded(
+            child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text('INDICATEURS CLÉS DE RISQUE · ART. 313 BCEAO/UMOA',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.65),
-                fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.7)),
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.65),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.7)),
             const SizedBox(height: 2),
             Text(headline,
-              style: const TextStyle(color: Colors.white, fontSize: 14,
-                fontWeight: FontWeight.w900, letterSpacing: -0.3),
-              overflow: TextOverflow.ellipsis),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3),
+                overflow: TextOverflow.ellipsis),
           ],
         )),
         Row(mainAxisSize: MainAxisSize.min, children: [
@@ -3017,21 +3666,22 @@ class _KriCard extends StatelessWidget {
     final d = kri.definition;
     final sc = _kriStatutColor(kri.statut);
     final sl = _kriStatutLabel(kri.statut);
-    final textColor  = isDark ? AppTheme.darkText : AppTheme.text;
+    final textColor = isDark ? AppTheme.darkText : AppTheme.text;
     final mutedColor = isDark ? AppTheme.darkMuted : _kMuted;
     final borderColor = isDark ? AppTheme.darkBorder : AppTheme.border;
 
     // Tendance depuis les deux dernières mesures
     String? trendStr;
-    bool?   trendUp;
+    bool? trendUp;
     if (kri.historique.length >= 2) {
-      final sorted = [...kri.historique]..sort((a, b) => b.dateMesure.compareTo(a.dateMesure));
+      final sorted = [...kri.historique]
+        ..sort((a, b) => b.dateMesure.compareTo(a.dateMesure));
       final last = sorted[0].valeur;
       final prev = sorted[1].valeur;
       if (prev != 0) {
         final pct = ((last - prev) / prev.abs()) * 100;
         trendStr = '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(1)} %';
-        trendUp  = pct >= 0;
+        trendUp = pct >= 0;
       }
     }
 
@@ -3043,13 +3693,15 @@ class _KriCard extends StatelessWidget {
         color: isDark ? AppTheme.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(r),
         border: Border.all(color: borderColor, width: 0.8),
-        boxShadow: isDark ? null : [
-          BoxShadow(
-            color: const Color(0xFF4318FF).withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF4318FF).withValues(alpha: 0.06),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -3061,10 +3713,11 @@ class _KriCard extends StatelessWidget {
 
           // ── En-tête ─────────────────────────────────────────────────
           Container(
-            padding: const EdgeInsets.fromLTRB(14, 9, 8, 9),
+            padding: const EdgeInsets.fromLTRB(4, 9, 8, 9),
             decoration: BoxDecoration(
               color: sc.withValues(alpha: isDark ? 0.06 : 0.04),
-              border: Border(bottom: BorderSide(color: borderColor, width: 0.6)),
+              border:
+                  Border(bottom: BorderSide(color: borderColor, width: 0.6)),
             ),
             child: Row(children: [
               Container(
@@ -3076,8 +3729,10 @@ class _KriCard extends StatelessWidget {
                 child: Text(
                   'KRI ${kriNum.toString().padLeft(2, '0')}',
                   style: const TextStyle(
-                    fontSize: 9.5, fontWeight: FontWeight.w800,
-                    color: AppColors.prudentialSolvency, letterSpacing: 0.6),
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.prudentialSolvency,
+                      letterSpacing: 0.6),
                 ),
               ),
               const SizedBox(width: 8),
@@ -3086,8 +3741,11 @@ class _KriCard extends StatelessWidget {
                   message: d.nom,
                   preferBelow: true,
                   child: Text(d.nom,
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: textColor),
-                    overflow: TextOverflow.ellipsis),
+                      style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: textColor),
+                      overflow: TextOverflow.ellipsis),
                 ),
               ),
               const SizedBox(width: 8),
@@ -3097,7 +3755,7 @@ class _KriCard extends StatelessWidget {
 
           // ── Corps ─────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            padding: const EdgeInsets.fromLTRB(4, 3, 4, 4),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -3105,22 +3763,28 @@ class _KriCard extends StatelessWidget {
                 if (kri.statut == 'non_renseigne') ...[
                   // Message explicatif : données source indisponibles
                   Container(
-                    padding: const EdgeInsets.all(11),
+                    padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
                       color: mutedColor.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(7),
-                      border: Border.all(color: mutedColor.withValues(alpha: 0.18)),
+                      border:
+                          Border.all(color: mutedColor.withValues(alpha: 0.18)),
                     ),
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Icon(Icons.info_outline_rounded, size: 14, color: mutedColor),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(
-                        _kriExplication(d.id),
-                        style: TextStyle(fontSize: 10.5, color: mutedColor, height: 1.5),
-                      )),
-                    ]),
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline_rounded,
+                              size: 14, color: mutedColor),
+                          const SizedBox(width: 8),
+                          Expanded(
+                              child: Text(
+                            _kriExplication(d.id),
+                            style: TextStyle(
+                                fontSize: 10.5, color: mutedColor, height: 1.5),
+                          )),
+                        ]),
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 3),
                   // Barre vide
                   Container(
                     height: 6,
@@ -3139,40 +3803,52 @@ class _KriCard extends StatelessWidget {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            kri.derniereValeur! % 1 == 0
-                                ? kri.derniereValeur!.toInt().toString()
-                                : kri.derniereValeur!.toStringAsFixed(1),
-                            style: TextStyle(
-                              fontSize: 34, fontWeight: FontWeight.w900,
-                              color: textColor, height: 1.0, letterSpacing: -1.5)),
+                              kri.derniereValeur! % 1 == 0
+                                  ? kri.derniereValeur!.toInt().toString()
+                                  : kri.derniereValeur!.toStringAsFixed(1),
+                              style: TextStyle(
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w900,
+                                  color: textColor,
+                                  height: 1.0,
+                                  letterSpacing: -1.5)),
                           const SizedBox(width: 4),
                           Text(d.unite,
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                              color: mutedColor)),
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: mutedColor)),
                         ],
                       ),
                       if (trendStr != null) ...[
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 3),
                           decoration: BoxDecoration(
-                            color: (trendUp! ? _kSuccess : _kDanger).withValues(alpha: 0.10),
+                            color: (trendUp! ? _kSuccess : _kDanger)
+                                .withValues(alpha: 0.10),
                             borderRadius: BorderRadius.circular(5),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(
-                              trendUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                              size: 11, color: trendUp ? _kSuccess : _kDanger),
+                                trendUp
+                                    ? Icons.trending_up_rounded
+                                    : Icons.trending_down_rounded,
+                                size: 11,
+                                color: trendUp ? _kSuccess : _kDanger),
                             const SizedBox(width: 3),
                             Text(trendStr,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                                color: trendUp ? _kSuccess : _kDanger)),
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: trendUp ? _kSuccess : _kDanger)),
                           ]),
                         ),
                       ],
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 3),
                   _KriGauge(kri: kri),
                 ],
 
@@ -3180,18 +3856,22 @@ class _KriCard extends StatelessWidget {
 
                 // Seuils compacts
                 Row(children: [
-                  Text(
-                    '${sens ? '▲' : '▼'} ${d.seuilAlerte}',
-                    style: const TextStyle(fontSize: 10, color: _kWarning, fontWeight: FontWeight.w600)),
+                  Text('${sens ? '▲' : '▼'} ${d.seuilAlerte}',
+                      style: const TextStyle(
+                          fontSize: 10,
+                          color: _kWarning,
+                          fontWeight: FontWeight.w600)),
                   Container(
-                    width: 1, height: 9,
-                    margin: const EdgeInsets.symmetric(horizontal: 7),
-                    color: mutedColor.withValues(alpha: 0.2)),
-                  Text(
-                    '${sens ? '▲' : '▼'} ${d.seuilCritique} ${d.unite}',
-                    style: const TextStyle(fontSize: 10, color: _kDanger, fontWeight: FontWeight.w600)),
+                      width: 1,
+                      height: 9,
+                      margin: const EdgeInsets.symmetric(horizontal: 7),
+                      color: mutedColor.withValues(alpha: 0.2)),
+                  Text('${sens ? '▲' : '▼'} ${d.seuilCritique} ${d.unite}',
+                      style: const TextStyle(
+                          fontSize: 10,
+                          color: _kDanger,
+                          fontWeight: FontWeight.w600)),
                 ]),
-
               ],
             ),
           ),
@@ -3208,9 +3888,11 @@ class _KriGauge extends StatelessWidget {
   final RoKriView kri;
   @override
   Widget build(BuildContext context) => SizedBox(
-    height: 28,
-    child: CustomPaint(painter: _KriGaugePainter(kri: kri), size: const Size(double.infinity, 28)),
-  );
+        height: 28,
+        child: CustomPaint(
+            painter: _KriGaugePainter(kri: kri),
+            size: const Size(double.infinity, 28)),
+      );
 }
 
 class _KriGaugePainter extends CustomPainter {
@@ -3219,7 +3901,7 @@ class _KriGaugePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final d   = kri.definition;
+    final d = kri.definition;
     final val = kri.derniereValeur;
     if (val == null) return;
 
@@ -3245,43 +3927,64 @@ class _KriGaugePainter extends CustomPainter {
     final pC = px(d.seuilCritique);
     final pV = px(val);
 
-    final pGreen  = Paint()..color = _kSuccess.withValues(alpha: 0.85)..style = PaintingStyle.fill;
-    final pOrange = Paint()..color = _kWarning.withValues(alpha: 0.85)..style = PaintingStyle.fill;
-    final pRed    = Paint()..color = _kDanger.withValues(alpha: 0.85)..style = PaintingStyle.fill;
+    final pGreen = Paint()
+      ..color = _kSuccess.withValues(alpha: 0.85)
+      ..style = PaintingStyle.fill;
+    final pOrange = Paint()
+      ..color = _kWarning.withValues(alpha: 0.85)
+      ..style = PaintingStyle.fill;
+    final pRed = Paint()
+      ..color = _kDanger.withValues(alpha: 0.85)
+      ..style = PaintingStyle.fill;
 
     canvas.save();
     canvas.clipRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, barTop, w, barH), const Radius.circular(4)));
+        Rect.fromLTWH(0, barTop, w, barH), const Radius.circular(4)));
 
     if (sup) {
       canvas.drawRect(Rect.fromLTWH(0, barTop, pA, barH), pGreen);
-      if (pC > pA) canvas.drawRect(Rect.fromLTWH(pA, barTop, pC - pA, barH), pOrange);
+      if (pC > pA)
+        canvas.drawRect(Rect.fromLTWH(pA, barTop, pC - pA, barH), pOrange);
       canvas.drawRect(Rect.fromLTWH(pC, barTop, w - pC, barH), pRed);
     } else {
       canvas.drawRect(Rect.fromLTWH(0, barTop, pC, barH), pRed);
-      if (pA > pC) canvas.drawRect(Rect.fromLTWH(pC, barTop, pA - pC, barH), pOrange);
+      if (pA > pC)
+        canvas.drawRect(Rect.fromLTWH(pC, barTop, pA - pC, barH), pOrange);
       canvas.drawRect(Rect.fromLTWH(pA, barTop, w - pA, barH), pGreen);
     }
     canvas.restore();
 
     // Séparateurs de seuil
-    final divP = Paint()..color = Colors.white.withValues(alpha: 0.65)
-      ..strokeWidth = 1.5..style = PaintingStyle.stroke;
+    final divP = Paint()
+      ..color = Colors.white.withValues(alpha: 0.65)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
     canvas.drawLine(Offset(pA, barTop), Offset(pA, barTop + barH), divP);
-    if ((pC - pA).abs() > 2) canvas.drawLine(Offset(pC, barTop), Offset(pC, barTop + barH), divP);
+    if ((pC - pA).abs() > 2)
+      canvas.drawLine(Offset(pC, barTop), Offset(pC, barTop + barH), divP);
 
     // Indicateur valeur (triangle)
     final ic = _kriStatutColor(kri.statut);
     canvas.drawPath(
-      Path()..moveTo(pV, barTop - 2)..lineTo(pV - 5, barTop - 9)..lineTo(pV + 5, barTop - 9)..close(),
-      Paint()..color = ic..style = PaintingStyle.fill);
+        Path()
+          ..moveTo(pV, barTop - 2)
+          ..lineTo(pV - 5, barTop - 9)
+          ..lineTo(pV + 5, barTop - 9)
+          ..close(),
+        Paint()
+          ..color = ic
+          ..style = PaintingStyle.fill);
 
     // Label valeur
-    final valStr = val % 1 == 0 ? val.toInt().toString() : val.toStringAsFixed(1);
+    final valStr =
+        val % 1 == 0 ? val.toInt().toString() : val.toStringAsFixed(1);
     final tp = TextPainter(
-      text: TextSpan(text: valStr,
-        style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: ic)),
-      textDirection: TextDirection.ltr)..layout();
+        text: TextSpan(
+            text: valStr,
+            style:
+                TextStyle(fontSize: 8, fontWeight: FontWeight.w800, color: ic)),
+        textDirection: TextDirection.ltr)
+      ..layout();
     tp.paint(canvas, Offset((pV - tp.width / 2).clamp(0.0, w - tp.width), 0));
   }
 
@@ -3307,11 +4010,14 @@ class _CartographieViewState extends State<_CartographieView> {
     _reload();
   }
 
-  void _reload() => setState(() { _future = widget.api.fetchRoRisques(); });
+  void _reload() => setState(() {
+        _future = widget.api.fetchRoRisques();
+      });
 
   Future<void> _showForm({RoRisque? edit}) async {
     final nomCtrl = TextEditingController(text: edit?.nom ?? '');
-    final controleCtrl = TextEditingController(text: edit?.controleExistant ?? '');
+    final controleCtrl =
+        TextEditingController(text: edit?.controleExistant ?? '');
     String? cat = edit?.categorie ?? _categoriesRisque.first;
     String? ligne = edit?.ligneMetier ?? _lignesMetier.first;
     int proba = edit?.probabilite ?? 1;
@@ -3325,27 +4031,39 @@ class _CartographieViewState extends State<_CartographieView> {
         builder: (ctx, setD) => AlertDialog(
           titlePadding: EdgeInsets.zero,
           title: Container(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            padding: const EdgeInsets.fromLTRB(5, 5, 5, 4),
             decoration: BoxDecoration(
               color: _kBlue.withValues(alpha: 0.06),
-              border: Border(bottom: BorderSide(color: _kBlue.withValues(alpha: 0.15))),
+              border: Border(
+                  bottom: BorderSide(color: _kBlue.withValues(alpha: 0.15))),
             ),
             child: Row(children: [
               Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: _kBlue.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: const Icon(Icons.map_rounded, color: _kBlue, size: 18),
               ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(edit == null ? 'Nouveau risque cartographié' : 'Modifier le risque',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Cartographie des risques opérationnels',
-                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
-              ])),
+              const SizedBox(width: 3),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(
+                        edit == null
+                            ? 'Nouveau risque cartographié'
+                            : 'Modifier le risque',
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+                    const Text('Cartographie des risques opérationnels',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: _kMuted,
+                            fontWeight: FontWeight.w400)),
+                  ])),
             ]),
           ),
           content: SizedBox(
@@ -3358,33 +4076,45 @@ class _CartographieViewState extends State<_CartographieView> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _formSection('Identification du risque', icon: Icons.search_rounded, color: _kBlue),
-                    _field('Nom du risque', nomCtrl, required: true,
-                      icon: Icons.label_rounded, hint: 'Ex: Risque de fraude interne'),
+                    _formSection('Identification du risque',
+                        icon: Icons.search_rounded, color: _kBlue),
+                    _field('Nom du risque', nomCtrl,
+                        required: true,
+                        icon: Icons.label_rounded,
+                        hint: 'Ex: Risque de fraude interne'),
                     _formRow(
-                      _dropdown('Catégorie', cat, _categoriesRisque, (v) => setD(() => cat = v),
-                        required: true, icon: Icons.category_rounded),
-                      _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
-                        required: true, icon: Icons.business_rounded),
+                      _dropdown('Catégorie', cat, _categoriesRisque,
+                          (v) => setD(() => cat = v),
+                          required: true, icon: Icons.category_rounded),
+                      _dropdown('Ligne de métier', ligne, _lignesMetier,
+                          (v) => setD(() => ligne = v),
+                          required: true, icon: Icons.business_rounded),
                     ),
-                    _formSection('Évaluation du risque brut', icon: Icons.bar_chart_rounded, color: _kWarning),
+                    _formSection('Évaluation du risque brut',
+                        icon: Icons.bar_chart_rounded, color: _kWarning),
                     _formRow(
                       _dropdown('Probabilité (1–5)', proba, [1, 2, 3, 4, 5],
-                        (v) => setD(() => proba = v ?? 1), icon: Icons.repeat_rounded),
+                          (v) => setD(() => proba = v ?? 1),
+                          icon: Icons.repeat_rounded),
                       _dropdown('Impact (1–5)', impact, [1, 2, 3, 4, 5],
-                        (v) => setD(() => impact = v ?? 1), icon: Icons.flash_on_rounded),
+                          (v) => setD(() => impact = v ?? 1),
+                          icon: Icons.flash_on_rounded),
                     ),
-                    _formSection('Contrôle interne', icon: Icons.shield_rounded, color: _kSuccess),
-                    _field('Contrôle existant', controleCtrl, icon: Icons.notes_rounded,
-                      hint: 'Décrivez les contrôles en place...', multiline: true),
-                    _dropdown('Efficacité du contrôle (1–5)', eff, [1, 2, 3, 4, 5],
-                      (v) => setD(() => eff = v ?? 3), icon: Icons.tune_rounded),
+                    _formSection('Contrôle interne',
+                        icon: Icons.shield_rounded, color: _kSuccess),
+                    _field('Contrôle existant', controleCtrl,
+                        icon: Icons.notes_rounded,
+                        hint: 'Décrivez les contrôles en place...',
+                        multiline: true),
+                    _dropdown('Efficacité du contrôle (1–5)', eff,
+                        [1, 2, 3, 4, 5], (v) => setD(() => eff = v ?? 3),
+                        icon: Icons.tune_rounded),
                   ],
                 ),
               ),
             ),
           ),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          actionsPadding: const EdgeInsets.fromLTRB(5, 8, 5, 4),
           actions: [
             OutlinedButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -3392,19 +4122,29 @@ class _CartographieViewState extends State<_CartographieView> {
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
-              icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded, size: 16),
+              icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded,
+                  size: 16),
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 final data = {
-                  'nom': nomCtrl.text.trim(), 'categorie': cat, 'ligne_metier': ligne,
-                  'probabilite': proba, 'impact': impact,
-                  'controle_existant': controleCtrl.text.trim(), 'efficacite_controle': eff,
+                  'nom': nomCtrl.text.trim(),
+                  'categorie': cat,
+                  'ligne_metier': ligne,
+                  'probabilite': proba,
+                  'impact': impact,
+                  'controle_existant': controleCtrl.text.trim(),
+                  'efficacite_controle': eff,
                 };
                 try {
-                  edit == null ? await widget.api.createRoRisque(data) : await widget.api.updateRoRisque(edit.id, data);
+                  edit == null
+                      ? await widget.api.createRoRisque(data)
+                      : await widget.api.updateRoRisque(edit.id, data);
                   if (ctx.mounted) Navigator.pop(ctx, true);
                 } catch (e) {
-                  if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
+                  if (ctx.mounted)
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                        content: Text('Erreur: $e'),
+                        backgroundColor: _kDanger));
                 }
               },
               label: Text(edit == null ? 'Créer' : 'Enregistrer'),
@@ -3425,8 +4165,9 @@ class _CartographieViewState extends State<_CartographieView> {
         if (snap.hasError) return _errorBox(snap.error!);
         final items = snap.data!;
 
-        final faible   = items.where((r) => r.niveauBrut <= 4).length;
-        final eleve    = items.where((r) => r.niveauBrut > 9 && r.niveauBrut <= 16).length;
+        final faible = items.where((r) => r.niveauBrut <= 4).length;
+        final eleve =
+            items.where((r) => r.niveauBrut > 9 && r.niveauBrut <= 16).length;
         final critique = items.where((r) => r.niveauBrut > 16).length;
 
         return Column(
@@ -3443,7 +4184,7 @@ class _CartographieViewState extends State<_CartographieView> {
                     critique: critique,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 4),
                 FilledButton.icon(
                   onPressed: () => _showForm(),
                   icon: const Icon(Icons.add_rounded, size: 18),
@@ -3451,7 +4192,7 @@ class _CartographieViewState extends State<_CartographieView> {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 4),
             // ── Layout principal ──────────────────────────────────────────
             Expanded(
               child: Row(
@@ -3467,44 +4208,61 @@ class _CartographieViewState extends State<_CartographieView> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 4),
                   // Colonne droite : liste
                   Expanded(
                     child: items.isEmpty
-                        ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.map_outlined, size: 52, color: _kMuted.withValues(alpha: 0.3)),
-                            const SizedBox(height: 12),
-                            const Text('Aucun risque enregistré.', style: TextStyle(color: _kMuted, fontSize: 13)),
-                            const SizedBox(height: 8),
-                            OutlinedButton.icon(
-                              onPressed: () => _showForm(),
-                              icon: const Icon(Icons.add_rounded, size: 16),
-                              label: const Text('Ajouter le premier risque'),
-                            ),
-                          ]))
+                        ? Center(
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                Icon(Icons.map_outlined,
+                                    size: 52,
+                                    color: _kMuted.withValues(alpha: 0.3)),
+                                const SizedBox(height: 3),
+                                const Text('Aucun risque enregistré.',
+                                    style: TextStyle(
+                                        color: _kMuted, fontSize: 13)),
+                                const SizedBox(height: 8),
+                                OutlinedButton.icon(
+                                  onPressed: () => _showForm(),
+                                  icon: const Icon(Icons.add_rounded, size: 16),
+                                  label:
+                                      const Text('Ajouter le premier risque'),
+                                ),
+                              ]))
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(children: [
-                                Text('${items.length} risque${items.length > 1 ? 's' : ''} cartographié${items.length > 1 ? 's' : ''}',
-                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                                Text(
+                                    '${items.length} risque${items.length > 1 ? 's' : ''} cartographié${items.length > 1 ? 's' : ''}',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13)),
                                 const Spacer(),
                                 if (critique > 0)
-                                  _badge('$critique critique${critique > 1 ? 's' : ''}', _kDanger),
+                                  _badge(
+                                      '$critique critique${critique > 1 ? 's' : ''}',
+                                      _kDanger),
                               ]),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 3),
                               Expanded(
                                 child: ListView.separated(
                                   itemCount: items.length,
-                                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(height: 8),
                                   itemBuilder: (_, idx) {
                                     final r = items[idx];
                                     return _RisqueListItem(
                                       risque: r,
                                       onEdit: () => _showForm(edit: r),
-                                      onDelete: () => _confirm(ctx,
-                                        'Supprimer "${r.nom}" ?',
-                                        () async { await widget.api.deleteRoRisque(r.id); _reload(); }),
+                                      onDelete: () => _confirm(
+                                          ctx, 'Supprimer "${r.nom}" ?',
+                                          () async {
+                                        await widget.api.deleteRoRisque(r.id);
+                                        _reload();
+                                      }),
                                     );
                                   },
                                 ),
@@ -3525,7 +4283,8 @@ class _CartographieViewState extends State<_CartographieView> {
 // ─── Risque List Item ─────────────────────────────────────────────────────────
 
 class _RisqueListItem extends StatelessWidget {
-  const _RisqueListItem({required this.risque, required this.onEdit, required this.onDelete});
+  const _RisqueListItem(
+      {required this.risque, required this.onEdit, required this.onDelete});
   final RoRisque risque;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -3542,15 +4301,30 @@ class _RisqueListItem extends StatelessWidget {
         color: isDark ? AppTheme.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: r.niveauLabel == 'Critique' ? _kDanger.withValues(alpha: 0.35)
-              : r.niveauLabel == 'Élevé' ? const Color(0xFFF97316).withValues(alpha: 0.28)
-              : isDark ? AppTheme.darkBorder : AppTheme.border,
+          color: r.niveauLabel == 'Critique'
+              ? _kDanger.withValues(alpha: 0.35)
+              : r.niveauLabel == 'Élevé'
+                  ? const Color(0xFFF97316).withValues(alpha: 0.28)
+                  : isDark
+                      ? AppTheme.darkBorder
+                      : AppTheme.border,
           width: r.niveauLabel == 'Critique' ? 1.5 : 1.0,
         ),
         boxShadow: r.niveauLabel == 'Critique'
-            ? [BoxShadow(color: _kDanger.withValues(alpha: 0.10), blurRadius: 10, offset: const Offset(0, 2))]
-            : isDark ? null
-                : [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
+            ? [
+                BoxShadow(
+                    color: _kDanger.withValues(alpha: 0.10),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2))
+              ]
+            : isDark
+                ? null
+                : [
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2))
+                  ],
       ),
       clipBehavior: Clip.antiAlias,
       child: IntrinsicHeight(
@@ -3562,68 +4336,97 @@ class _RisqueListItem extends StatelessWidget {
             width: 60,
             alignment: Alignment.center,
             color: lc.withValues(alpha: isDark ? 0.10 : 0.06),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               Container(
-                width: 38, height: 38,
+                width: 38,
+                height: 38,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: lc.withValues(alpha: isDark ? 0.22 : 0.13),
                   shape: BoxShape.circle,
-                  border: Border.all(color: lc.withValues(alpha: 0.40), width: 1.5),
+                  border:
+                      Border.all(color: lc.withValues(alpha: 0.40), width: 1.5),
                 ),
                 child: Text('$score',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: lc, height: 1.0)),
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: lc,
+                        height: 1.0)),
               ),
               const SizedBox(height: 3),
-              Text('P×I', style: TextStyle(fontSize: 8, color: lc.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w700)),
+              Text('P×I',
+                  style: TextStyle(
+                      fontSize: 8,
+                      color: lc.withValues(alpha: 0.7),
+                      fontWeight: FontWeight.w700)),
             ]),
           ),
           // Contenu
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Row(children: [
-                    Expanded(child: Text(r.nom,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                        color: isDark ? AppTheme.darkText : AppTheme.text),
-                      maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    Expanded(
+                        child: Text(r.nom,
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color:
+                                    isDark ? AppTheme.darkText : AppTheme.text),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis)),
                     const SizedBox(width: 8),
                     _badge(r.niveauLabel, lc),
                   ]),
                   const SizedBox(height: 6),
                   Wrap(spacing: 6, runSpacing: 4, children: [
                     _risqueChip(r.categorie, Icons.category_rounded, _kBlue),
-                    _risqueChip(r.ligneMetier, Icons.business_rounded, AppColors.prudentialSolvency),
+                    _risqueChip(r.ligneMetier, Icons.business_rounded,
+                        AppColors.prudentialSolvency),
                   ]),
                   const SizedBox(height: 7),
                   Row(children: [
                     _metricTile('P', '${r.probabilite}', _kWarning),
-                    Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Text('×', style: TextStyle(fontSize: 12,
-                        color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 0.7)))),
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: Text('×',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: (isDark ? AppTheme.darkMuted : _kMuted)
+                                    .withValues(alpha: 0.7)))),
                     _metricTile('I', '${r.impact}', const Color(0xFFF97316)),
-                    Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Text('=', style: TextStyle(fontSize: 12,
-                        color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 0.7)))),
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: Text('=',
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: (isDark ? AppTheme.darkMuted : _kMuted)
+                                    .withValues(alpha: 0.7)))),
                     _metricTile('Score', '$score', lc),
-                    const SizedBox(width: 14),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 9, color: _kMuted.withValues(alpha: 0.4)),
+                    const SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_ios_rounded,
+                        size: 9, color: _kMuted.withValues(alpha: 0.4)),
                     const SizedBox(width: 6),
-                    const Text('Résiduel ', style: TextStyle(fontSize: 10, color: _kMuted)),
+                    const Text('Résiduel ',
+                        style: TextStyle(fontSize: 10, color: _kMuted)),
                     Text(r.niveauResiduel.toStringAsFixed(1),
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
-                        color: isDark ? AppTheme.darkText : AppTheme.text)),
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? AppTheme.darkText : AppTheme.text)),
                     if (r.controleExistant.isNotEmpty) ...[
-                      const SizedBox(width: 10),
-                      const Icon(Icons.shield_outlined, size: 11, color: _kSuccess),
+                      const SizedBox(width: 3),
+                      const Icon(Icons.shield_outlined,
+                          size: 11, color: _kSuccess),
                       const SizedBox(width: 3),
                       Text('Ctrl ${r.efficaciteControle}/5',
-                        style: const TextStyle(fontSize: 10, color: _kMuted)),
+                          style: const TextStyle(fontSize: 10, color: _kMuted)),
                     ],
                   ]),
                 ],
@@ -3634,7 +4437,8 @@ class _RisqueListItem extends StatelessWidget {
           Container(
             width: 58,
             alignment: Alignment.center,
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
               _iconBtn(Icons.edit_outlined, _kBlue, onEdit),
               const SizedBox(height: 6),
               _iconBtn(Icons.delete_outline_rounded, _kDanger, onDelete),
@@ -3646,51 +4450,61 @@ class _RisqueListItem extends StatelessWidget {
   }
 
   Widget _risqueChip(String label, IconData icon, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: color.withValues(alpha: 0.20)),
-    ),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 10, color: color),
-      const SizedBox(width: 3),
-      Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
-        overflow: TextOverflow.ellipsis),
-    ]),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color.withValues(alpha: 0.20)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 3),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w600, color: color),
+              overflow: TextOverflow.ellipsis),
+        ]),
+      );
 
   Widget _metricTile(String lbl, String val, Color color) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.09),
-      borderRadius: BorderRadius.circular(3),
-    ),
-    child: RichText(
-      text: TextSpan(children: [
-        TextSpan(text: '$lbl:', style: TextStyle(fontSize: 9, color: color.withValues(alpha: 0.65),
-          fontWeight: FontWeight.w500)),
-        TextSpan(text: val, style: TextStyle(fontSize: 11.5, color: color, fontWeight: FontWeight.w800)),
-      ]),
-    ),
-  );
-
-  Widget _iconBtn(IconData icon, Color color, VoidCallback onTap) => Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(7),
-      child: Container(
-        width: 32, height: 32,
-        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.09),
-          borderRadius: BorderRadius.circular(7),
+          borderRadius: BorderRadius.circular(3),
         ),
-        child: Icon(icon, size: 15, color: color),
-      ),
-    ),
-  );
+        child: RichText(
+          text: TextSpan(children: [
+            TextSpan(
+                text: '$lbl:',
+                style: TextStyle(
+                    fontSize: 9,
+                    color: color.withValues(alpha: 0.65),
+                    fontWeight: FontWeight.w500)),
+            TextSpan(
+                text: val,
+                style: TextStyle(
+                    fontSize: 11.5, color: color, fontWeight: FontWeight.w800)),
+          ]),
+        ),
+      );
+
+  Widget _iconBtn(IconData icon, Color color, VoidCallback onTap) => Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(7),
+          child: Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.09),
+              borderRadius: BorderRadius.circular(7),
+            ),
+            child: Icon(icon, size: 15, color: color),
+          ),
+        ),
+      );
 }
 
 // ─── Barre KPI Cartographie (style Dashboard) ────────────────────────────────
@@ -3742,16 +4556,19 @@ class _CartographieSummaryBar extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(2),
             border: Border.all(
-              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25),
+              color: const Color(0xFF1E3A5F)
+                  .withValues(alpha: isDark ? 0.5 : 0.25),
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
+                color: const Color(0xFF1E3A5F)
+                    .withValues(alpha: isDark ? 0.3 : 0.06),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
+                color: const Color(0xFF1E3A5F)
+                    .withValues(alpha: isDark ? 0.15 : 0.03),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -3759,7 +4576,8 @@ class _CartographieSummaryBar extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Container(height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
+              Container(
+                  height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -3807,18 +4625,25 @@ class _CartographieSummaryBar extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(6),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))],
+              boxShadow: [
+                BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4))
+              ],
             ),
-            textStyle: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
-            padding: const EdgeInsets.all(14),
-            margin: const EdgeInsets.only(left: 40, right: 40),
+            textStyle:
+                const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
+            padding: const EdgeInsets.all(4),
+            margin: const EdgeInsets.only(left: 6, right: 6),
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: AppTheme.accent.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.info_outline, size: 12, color: AppTheme.accent),
+              child: const Icon(Icons.info_outline,
+                  size: 12, color: AppTheme.accent),
             ),
           ),
         ),
@@ -3845,15 +4670,19 @@ class _ControlesViewState extends State<_ControlesView> {
     _reload();
   }
 
-  void _reload() => setState(() { _future = widget.api.fetchRoControles(); });
+  void _reload() => setState(() {
+        _future = widget.api.fetchRoControles();
+      });
 
   Future<void> _showForm({RoControle? edit}) async {
     final perCtrl = TextEditingController(text: edit?.perimetre ?? '');
     final dateCtrl = TextEditingController(text: edit?.dateDernierTest ?? '');
     final nonConfCtrl = TextEditingController(text: edit?.nonConformites ?? '');
     final validCtrl = TextEditingController(text: edit?.validateur ?? '');
-    final pcCtrl = TextEditingController(text: edit != null ? '${edit.pointsConformes}' : '');
-    final ptcCtrl = TextEditingController(text: edit != null ? '${edit.pointsControles}' : '');
+    final pcCtrl = TextEditingController(
+        text: edit != null ? '${edit.pointsConformes}' : '');
+    final ptcCtrl = TextEditingController(
+        text: edit != null ? '${edit.pointsControles}' : '');
     String? typeC = edit?.typeControle ?? _typesControle.first;
     String? freq = edit?.frequence ?? _frequences.first;
     String? resultat = edit?.resultat ?? 'En cours';
@@ -3865,27 +4694,40 @@ class _ControlesViewState extends State<_ControlesView> {
         builder: (ctx, setD) => AlertDialog(
           titlePadding: EdgeInsets.zero,
           title: Container(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            padding: const EdgeInsets.fromLTRB(5, 5, 5, 4),
             decoration: BoxDecoration(
               color: _kSuccess.withValues(alpha: 0.06),
-              border: Border(bottom: BorderSide(color: _kSuccess.withValues(alpha: 0.15))),
+              border: Border(
+                  bottom: BorderSide(color: _kSuccess.withValues(alpha: 0.15))),
             ),
             child: Row(children: [
               Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: _kSuccess.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(9),
                 ),
-                child: const Icon(Icons.shield_rounded, color: _kSuccess, size: 18),
+                child: const Icon(Icons.shield_rounded,
+                    color: _kSuccess, size: 18),
               ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(edit == null ? 'Nouveau contrôle interne' : 'Modifier le contrôle',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Dispositif de contrôle opérationnel',
-                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
-              ])),
+              const SizedBox(width: 3),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text(
+                        edit == null
+                            ? 'Nouveau contrôle interne'
+                            : 'Modifier le contrôle',
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+                    const Text('Dispositif de contrôle opérationnel',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: _kMuted,
+                            fontWeight: FontWeight.w400)),
+                  ])),
             ]),
           ),
           content: SizedBox(
@@ -3898,40 +4740,61 @@ class _ControlesViewState extends State<_ControlesView> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _formSection('Définition du contrôle', icon: Icons.tune_rounded, color: _kSuccess),
-                    _field('Périmètre contrôlé', perCtrl, required: true,
-                      icon: Icons.domain_rounded, hint: 'Ex: Processus de validation des crédits'),
+                    _formSection('Définition du contrôle',
+                        icon: Icons.tune_rounded, color: _kSuccess),
+                    _field('Périmètre contrôlé', perCtrl,
+                        required: true,
+                        icon: Icons.domain_rounded,
+                        hint: 'Ex: Processus de validation des crédits'),
                     _formRow(
-                      _dropdown('Type de contrôle', typeC, _typesControle, (v) => setD(() => typeC = v),
-                        required: true, icon: Icons.category_rounded),
-                      _dropdown('Fréquence', freq, _frequences, (v) => setD(() => freq = v),
-                        required: true, icon: Icons.schedule_rounded),
+                      _dropdown('Type de contrôle', typeC, _typesControle,
+                          (v) => setD(() => typeC = v),
+                          required: true, icon: Icons.category_rounded),
+                      _dropdown('Fréquence', freq, _frequences,
+                          (v) => setD(() => freq = v),
+                          required: true, icon: Icons.schedule_rounded),
                     ),
-                    _formSection('Résultat du test', icon: Icons.fact_check_rounded, color: _kWarning),
+                    _formSection('Résultat du test',
+                        icon: Icons.fact_check_rounded, color: _kWarning),
                     _formRow(
                       _dateField(ctx, 'Date dernier test', dateCtrl),
-                      _dropdown('Résultat', resultat,
-                        ['Conforme', 'Non-conforme', 'En cours', 'Non applicable'],
-                        (v) => setD(() => resultat = v), icon: Icons.check_circle_rounded),
+                      _dropdown(
+                          'Résultat',
+                          resultat,
+                          [
+                            'Conforme',
+                            'Non-conforme',
+                            'En cours',
+                            'Non applicable'
+                          ],
+                          (v) => setD(() => resultat = v),
+                          icon: Icons.check_circle_rounded),
                     ),
                     _formRow(
-                      _field('Points conformes', pcCtrl, keyboardType: TextInputType.number,
-                        icon: Icons.check_rounded, hint: 'Ex: 18'),
-                      _field('Points contrôlés', ptcCtrl, keyboardType: TextInputType.number,
-                        icon: Icons.list_rounded, hint: 'Ex: 20'),
+                      _field('Points conformes', pcCtrl,
+                          keyboardType: TextInputType.number,
+                          icon: Icons.check_rounded,
+                          hint: 'Ex: 18'),
+                      _field('Points contrôlés', ptcCtrl,
+                          keyboardType: TextInputType.number,
+                          icon: Icons.list_rounded,
+                          hint: 'Ex: 20'),
                     ),
-                    _field('Non-conformités détectées', nonConfCtrl, multiline: true,
-                      icon: Icons.warning_amber_rounded,
-                      hint: 'Décrivez les écarts observés...'),
-                    _formSection('Validation', icon: Icons.verified_rounded, color: _kBlue),
-                    _field('Validateur', validCtrl, icon: Icons.person_rounded,
-                      hint: 'Nom du responsable de la validation'),
+                    _field('Non-conformités détectées', nonConfCtrl,
+                        multiline: true,
+                        icon: Icons.warning_amber_rounded,
+                        hint: 'Décrivez les écarts observés...'),
+                    _formSection('Validation',
+                        icon: Icons.verified_rounded, color: _kBlue),
+                    _field('Validateur', validCtrl,
+                        icon: Icons.person_rounded,
+                        hint: 'Nom du responsable de la validation'),
                   ],
                 ),
               ),
             ),
           ),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          actionsPadding: const EdgeInsets.fromLTRB(5, 8, 5, 4),
           actions: [
             OutlinedButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -3939,22 +4802,32 @@ class _ControlesViewState extends State<_ControlesView> {
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
-              icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded, size: 16),
+              icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded,
+                  size: 16),
               style: FilledButton.styleFrom(backgroundColor: _kSuccess),
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
                 final data = {
-                  'perimetre': perCtrl.text.trim(), 'type_controle': typeC, 'frequence': freq,
-                  'date_dernier_test': dateCtrl.text.trim(), 'resultat': resultat,
+                  'perimetre': perCtrl.text.trim(),
+                  'type_controle': typeC,
+                  'frequence': freq,
+                  'date_dernier_test': dateCtrl.text.trim(),
+                  'resultat': resultat,
                   'points_conformes': int.tryParse(pcCtrl.text) ?? 0,
                   'points_controles': int.tryParse(ptcCtrl.text) ?? 0,
-                  'non_conformites': nonConfCtrl.text.trim(), 'validateur': validCtrl.text.trim(),
+                  'non_conformites': nonConfCtrl.text.trim(),
+                  'validateur': validCtrl.text.trim(),
                 };
                 try {
-                  edit == null ? await widget.api.createRoControle(data) : await widget.api.updateRoControle(edit.id, data);
+                  edit == null
+                      ? await widget.api.createRoControle(data)
+                      : await widget.api.updateRoControle(edit.id, data);
                   if (ctx.mounted) Navigator.pop(ctx, true);
                 } catch (e) {
-                  if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
+                  if (ctx.mounted)
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                        content: Text('Erreur: $e'),
+                        backgroundColor: _kDanger));
                 }
               },
               label: Text(edit == null ? 'Créer' : 'Enregistrer'),
@@ -3976,61 +4849,120 @@ class _ControlesViewState extends State<_ControlesView> {
         if (snap.hasError) return _errorBox(snap.error!);
         final items = snap.data!;
         final nonConf = items.where((c) => c.resultat == 'Non-conforme').length;
-        final tauxMoyen = items.isNotEmpty ? items.fold(0.0, (s, e) => s + e.tauxConformite) / items.length : 0.0;
+        final tauxMoyen = items.isNotEmpty
+            ? items.fold(0.0, (s, e) => s + e.tauxConformite) / items.length
+            : 0.0;
         return Column(
           children: [
             Row(
               children: [
-                _badge('$nonConf contrôle(s) non conforme(s)', nonConf > 0 ? _kDanger : _kSuccess),
-                const SizedBox(width: 10),
-                _badge('Taux moyen : ${tauxMoyen.toStringAsFixed(1)} %', tauxMoyen >= 80 ? _kSuccess : _kWarning),
+                _badge('$nonConf contrôle(s) non conforme(s)',
+                    nonConf > 0 ? _kDanger : _kSuccess),
+                const SizedBox(width: 3),
+                _badge('Taux moyen : ${tauxMoyen.toStringAsFixed(1)} %',
+                    tauxMoyen >= 80 ? _kSuccess : _kWarning),
                 const Spacer(),
-                FilledButton.icon(onPressed: () => _showForm(), icon: const Icon(Icons.add, size: 18), label: const Text('Nouveau contrôle')),
+                FilledButton.icon(
+                    onPressed: () => _showForm(),
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Nouveau contrôle')),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 3),
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF13233E) : Colors.white,
-                  border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
+                  border: Border.all(
+                      color:
+                          isDark ? const Color(0xFF304764) : AppTheme.border),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: items.isEmpty
-                    ? const Center(child: Text('Aucun contrôle enregistré.', style: TextStyle(color: _kMuted)))
+                    ? const Center(
+                        child: Text('Aucun contrôle enregistré.',
+                            style: TextStyle(color: _kMuted)))
                     : SingleChildScrollView(
                         child: Table(
-                          columnWidths: const {0: FixedColumnWidth(110), 1: FlexColumnWidth(2), 2: FixedColumnWidth(100), 3: FixedColumnWidth(90), 4: FixedColumnWidth(100), 5: FixedColumnWidth(90), 6: FixedColumnWidth(90)},
+                          columnWidths: const {
+                            0: FixedColumnWidth(110),
+                            1: FlexColumnWidth(2),
+                            2: FixedColumnWidth(100),
+                            3: FixedColumnWidth(90),
+                            4: FixedColumnWidth(100),
+                            5: FixedColumnWidth(90),
+                            6: FixedColumnWidth(90)
+                          },
                           children: [
-                            _tableHeader(['Référence', 'Périmètre', 'Type', 'Fréquence', 'Taux conf.', 'Résultat', 'Actions']),
+                            _tableHeader([
+                              'Référence',
+                              'Périmètre',
+                              'Type',
+                              'Fréquence',
+                              'Taux conf.',
+                              'Résultat',
+                              'Actions'
+                            ]),
                             ...items.map((c) => TableRow(
-                              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
-                              children: [
-                                _cell(c.reference, bold: true),
-                                _cellFlex(c.perimetre),
-                                _cell(c.typeControle),
-                                _cell(c.frequence),
-                                _cell('${c.tauxConformite.toStringAsFixed(1)} %', color: c.tauxConformite >= 80 ? _kSuccess : _kDanger),
-                                TableCell(
-                                  verticalAlignment: TableCellVerticalAlignment.middle,
-                                  child: Padding(padding: const EdgeInsets.all(8), child: _badge(c.resultat, c.resultat == 'Conforme' ? _kSuccess : c.resultat == 'Non-conforme' ? _kDanger : _kWarning)),
-                                ),
-                                TableCell(
-                                  verticalAlignment: TableCellVerticalAlignment.middle,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      IconButton(icon: const Icon(Icons.edit_outlined, size: 16), onPressed: () => _showForm(edit: c)),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete_outline, size: 16, color: _kDanger),
-                                        onPressed: () => _confirm(context, 'Supprimer ce contrôle ?', () async { await widget.api.deleteRoControle(c.id); _reload(); }),
+                                  decoration: const BoxDecoration(
+                                      border: Border(
+                                          bottom: BorderSide(
+                                              color: Color(0x11000000)))),
+                                  children: [
+                                    _cell(c.reference, bold: true),
+                                    _cellFlex(c.perimetre),
+                                    _cell(c.typeControle),
+                                    _cell(c.frequence),
+                                    _cell(
+                                        '${c.tauxConformite.toStringAsFixed(1)} %',
+                                        color: c.tauxConformite >= 80
+                                            ? _kSuccess
+                                            : _kDanger),
+                                    TableCell(
+                                      verticalAlignment:
+                                          TableCellVerticalAlignment.middle,
+                                      child: Padding(
+                                          padding: const EdgeInsets.all(8),
+                                          child: _badge(
+                                              c.resultat,
+                                              c.resultat == 'Conforme'
+                                                  ? _kSuccess
+                                                  : c.resultat == 'Non-conforme'
+                                                      ? _kDanger
+                                                      : _kWarning)),
+                                    ),
+                                    TableCell(
+                                      verticalAlignment:
+                                          TableCellVerticalAlignment.middle,
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          IconButton(
+                                              icon: const Icon(
+                                                  Icons.edit_outlined,
+                                                  size: 16),
+                                              onPressed: () =>
+                                                  _showForm(edit: c)),
+                                          IconButton(
+                                            icon: const Icon(
+                                                Icons.delete_outline,
+                                                size: 16,
+                                                color: _kDanger),
+                                            onPressed: () => _confirm(context,
+                                                'Supprimer ce contrôle ?',
+                                                () async {
+                                              await widget.api
+                                                  .deleteRoControle(c.id);
+                                              _reload();
+                                            }),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )),
+                                    ),
+                                  ],
+                                )),
                           ],
                         ),
                       ),
@@ -4061,14 +4993,18 @@ class _WorkflowViewState extends State<_WorkflowView> {
     _reload();
   }
 
-  void _reload() => setState(() { _future = widget.api.fetchRoIncidents(); });
+  void _reload() => setState(() {
+        _future = widget.api.fetchRoIncidents();
+      });
 
   Future<void> _updateStatut(RoIncident inc, String newStatut) async {
     try {
       await widget.api.updateRoIncident(inc.id, {'statut': newStatut});
       _reload();
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
     }
   }
 
@@ -4094,53 +5030,112 @@ class _WorkflowViewState extends State<_WorkflowView> {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         color: _statutColor(s).withValues(alpha: 0.15),
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radius)),
-                        border: Border.all(color: _statutColor(s).withValues(alpha: 0.4)),
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(AppTheme.radius)),
+                        border: Border.all(
+                            color: _statutColor(s).withValues(alpha: 0.4)),
                       ),
                       child: Column(
                         children: [
-                          Text(s, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w700, color: _statutColor(s))),
-                          Text('${col.length}', textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: _statutColor(s))),
+                          Text(s,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: _statutColor(s))),
+                          Text('${col.length}',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                  fontSize: 11, color: _statutColor(s))),
                         ],
                       ),
                     ),
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: _statutColor(s).withValues(alpha: 0.25)),
-                          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppTheme.radius)),
+                          border: Border.all(
+                              color: _statutColor(s).withValues(alpha: 0.25)),
+                          borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(AppTheme.radius)),
                         ),
                         child: ListView(
                           padding: const EdgeInsets.all(6),
-                          children: col.map((inc) => Card(
-                            margin: const EdgeInsets.only(bottom: 6),
-                            child: Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(inc.reference, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _kBlue)),
-                                  const SizedBox(height: 4),
-                                  Text(inc.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
-                                  const SizedBox(height: 6),
-                                  Text(AppFormatters.currency(inc.perteNette), style: const TextStyle(fontSize: 11, color: _kDanger, fontWeight: FontWeight.w600)),
-                                  const SizedBox(height: 6),
-                                  // Boutons avancement
-                                  Wrap(
-                                    spacing: 4,
-                                    children: _nextStatuts(s).map((ns) => GestureDetector(
-                                      onTap: () => _updateStatut(inc, ns),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(color: _statutColor(ns).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3), border: Border.all(color: _statutColor(ns).withValues(alpha: 0.4))),
-                                        child: Text('→ $ns', style: TextStyle(fontSize: 10, color: _statutColor(ns), fontWeight: FontWeight.w600)),
+                          children: col
+                              .map((inc) => Card(
+                                    margin: const EdgeInsets.only(bottom: 6),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(3),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(inc.reference,
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 12,
+                                                  color: _kBlue)),
+                                          const SizedBox(height: 4),
+                                          Text(inc.description,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  fontSize: 12)),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                              AppFormatters.currency(
+                                                  inc.perteNette),
+                                              style: const TextStyle(
+                                                  fontSize: 11,
+                                                  color: _kDanger,
+                                                  fontWeight: FontWeight.w600)),
+                                          const SizedBox(height: 6),
+                                          // Boutons avancement
+                                          Wrap(
+                                            spacing: 4,
+                                            children: _nextStatuts(s)
+                                                .map((ns) => GestureDetector(
+                                                      onTap: () =>
+                                                          _updateStatut(
+                                                              inc, ns),
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 6,
+                                                                vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                            color: _statutColor(
+                                                                    ns)
+                                                                .withValues(
+                                                                    alpha:
+                                                                        0.15),
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        3),
+                                                            border: Border.all(
+                                                                color: _statutColor(
+                                                                        ns)
+                                                                    .withValues(
+                                                                        alpha:
+                                                                            0.4))),
+                                                        child: Text('→ $ns',
+                                                            style: TextStyle(
+                                                                fontSize: 10,
+                                                                color:
+                                                                    _statutColor(
+                                                                        ns),
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600)),
+                                                      ),
+                                                    ))
+                                                .toList(),
+                                          ),
+                                        ],
                                       ),
-                                    )).toList(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )).toList(),
+                                    ),
+                                  ))
+                              .toList(),
                         ),
                       ),
                     ),
@@ -4155,11 +5150,11 @@ class _WorkflowViewState extends State<_WorkflowView> {
   }
 
   List<String> _nextStatuts(String current) => switch (current) {
-    'Ouvert' => ['En cours'],
-    'En cours' => ['Résolu'],
-    'Résolu' => ['Clôturé', 'En cours'],
-    _ => [],
-  };
+        'Ouvert' => ['En cours'],
+        'En cours' => ['Résolu'],
+        'Résolu' => ['Clôturé', 'En cours'],
+        _ => [],
+      };
 }
 
 // ─── VIEW 8 : PLANS D'ACTIONS ─────────────────────────────────────────────────
@@ -4180,16 +5175,18 @@ class _PlansViewState extends State<_PlansView> {
     _reload();
   }
 
-  void _reload() => setState(() { _future = widget.api.fetchRoPlans(); });
+  void _reload() => setState(() {
+        _future = widget.api.fetchRoPlans();
+      });
 
   Color _sourceColor(String s) => switch (s) {
-    'Incident'     => _kDanger,
-    'Contrôle'     => _kWarning,
-    'KRI'          => AppColors.prudentialSolvency,
-    'Audit'        => AppColors.marketNeutral,
-    'Cartographie' => _kBlue,
-    _              => _kMuted,
-  };
+        'Incident' => _kDanger,
+        'Contrôle' => _kWarning,
+        'KRI' => AppColors.prudentialSolvency,
+        'Audit' => AppColors.marketNeutral,
+        'Cartographie' => _kBlue,
+        _ => _kMuted,
+      };
 
   Future<void> _showForm({RoPlan? edit}) async {
     // Charger toutes les sources en parallèle avant d'ouvrir le dialog
@@ -4199,40 +5196,48 @@ class _PlansViewState extends State<_PlansView> {
       widget.api.fetchRoControles(),
       widget.api.fetchRoRisques(),
     ]);
-    final incidents  = results[0] as List<RoIncident>;
-    final kriData    = results[1] as RoKriModuleData;
-    final controles  = results[2] as List<RoControle>;
-    final risques    = results[3] as List<RoRisque>;
+    final incidents = results[0] as List<RoIncident>;
+    final kriData = results[1] as RoKriModuleData;
+    final controles = results[2] as List<RoControle>;
+    final risques = results[3] as List<RoRisque>;
 
     // Construit pour chaque type de source la liste (valeur_stockée, libellé_affiché)
     List<(String, String)> optionsFor(String src) => switch (src) {
-      'Incident'     => incidents.map((i) {
-          final desc = i.description.length > 40 ? '${i.description.substring(0, 40)}…' : i.description;
-          return (i.reference, '${i.reference}  ·  $desc');
-        }).toList(),
-      'KRI'          => kriData.kriList.map((k) => (k.definition.nom, k.definition.nom)).toList(),
-      'Contrôle'     => controles.map((c) {
-          final peri = c.perimetre.length > 40 ? '${c.perimetre.substring(0, 40)}…' : c.perimetre;
-          return (c.reference, '${c.reference}  ·  $peri');
-        }).toList(),
-      'Cartographie' => risques.map((r) => (r.nom, r.nom)).toList(),
-      _              => <(String, String)>[],
-    };
+          'Incident' => incidents.map((i) {
+              final desc = i.description.length > 40
+                  ? '${i.description.substring(0, 40)}…'
+                  : i.description;
+              return (i.reference, '${i.reference}  ·  $desc');
+            }).toList(),
+          'KRI' => kriData.kriList
+              .map((k) => (k.definition.nom, k.definition.nom))
+              .toList(),
+          'Contrôle' => controles.map((c) {
+              final peri = c.perimetre.length > 40
+                  ? '${c.perimetre.substring(0, 40)}…'
+                  : c.perimetre;
+              return (c.reference, '${c.reference}  ·  $peri');
+            }).toList(),
+          'Cartographie' => risques.map((r) => (r.nom, r.nom)).toList(),
+          _ => <(String, String)>[],
+        };
 
     final titreCtrl = TextEditingController(text: edit?.titre ?? '');
-    final descCtrl  = TextEditingController(text: edit?.description ?? '');
-    final respCtrl  = TextEditingController(text: edit?.responsable ?? '');
+    final descCtrl = TextEditingController(text: edit?.description ?? '');
+    final respCtrl = TextEditingController(text: edit?.responsable ?? '');
     final debutCtrl = TextEditingController(text: edit?.dateDebut ?? '');
-    final echeCtrl  = TextEditingController(text: edit?.dateEcheance ?? '');
+    final echeCtrl = TextEditingController(text: edit?.dateEcheance ?? '');
     final auditCtrl = TextEditingController(text: edit?.sourceRef ?? '');
-    int avancement  = edit?.avancement ?? 0;
-    String? type    = edit?.typeAction ?? _typesAction.first;
-    String? source  = edit?.source ?? _sourcesAction.first;
-    String? sourceRef = edit?.sourceRef.isNotEmpty == true ? edit!.sourceRef : null;
-    String? prio    = edit?.priorite ?? _priorites[1];
-    String? statut  = edit?.statut ?? _statutsPlan.first;
+    int avancement = edit?.avancement ?? 0;
+    String? type = edit?.typeAction ?? _typesAction.first;
+    String? source = edit?.source ?? _sourcesAction.first;
+    String? sourceRef =
+        edit?.sourceRef.isNotEmpty == true ? edit!.sourceRef : null;
+    String? prio = edit?.priorite ?? _priorites[1];
+    String? statut = edit?.statut ?? _statutsPlan.first;
     DateTime? debutDate = edit?.dateDebut != null && edit!.dateDebut.isNotEmpty
-        ? DateTime.tryParse(edit.dateDebut) : null;
+        ? DateTime.tryParse(edit.dateDebut)
+        : null;
     final formKey = GlobalKey<FormState>();
     if (!mounted) return;
 
@@ -4249,27 +5254,42 @@ class _PlansViewState extends State<_PlansView> {
           return AlertDialog(
             titlePadding: EdgeInsets.zero,
             title: Container(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+              padding: const EdgeInsets.fromLTRB(5, 5, 5, 4),
               decoration: BoxDecoration(
                 color: AppColors.marketNeutral.withValues(alpha: 0.06),
-                border: Border(bottom: BorderSide(color: AppColors.marketNeutral.withValues(alpha: 0.15))),
+                border: Border(
+                    bottom: BorderSide(
+                        color:
+                            AppColors.marketNeutral.withValues(alpha: 0.15))),
               ),
               child: Row(children: [
                 Container(
-                  width: 36, height: 36,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: AppColors.marketNeutral.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(9),
                   ),
-                  child: const Icon(Icons.task_alt_rounded, color: AppColors.marketNeutral, size: 18),
+                  child: const Icon(Icons.task_alt_rounded,
+                      color: AppColors.marketNeutral, size: 18),
                 ),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(edit == null ? 'Nouveau plan d\'action' : 'Modifier le plan',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                  const Text('Suivi et traçabilité des actions correctives',
-                    style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
-                ])),
+                const SizedBox(width: 3),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(
+                          edit == null
+                              ? 'Nouveau plan d\'action'
+                              : 'Modifier le plan',
+                          style: const TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w700)),
+                      const Text('Suivi et traçabilité des actions correctives',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: _kMuted,
+                              fontWeight: FontWeight.w400)),
+                    ])),
               ]),
             ),
             content: SizedBox(
@@ -4282,43 +5302,67 @@ class _PlansViewState extends State<_PlansView> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _formSection('Identification du plan', icon: Icons.label_rounded, color: AppColors.marketNeutral),
-                      _field('Titre du plan d\'action', titreCtrl, required: true,
-                        icon: Icons.title_rounded, hint: 'Ex: Renforcer le contrôle des accès'),
+                      _formSection('Identification du plan',
+                          icon: Icons.label_rounded,
+                          color: AppColors.marketNeutral),
+                      _field('Titre du plan d\'action', titreCtrl,
+                          required: true,
+                          icon: Icons.title_rounded,
+                          hint: 'Ex: Renforcer le contrôle des accès'),
                       _formRow(
                         _dropdown('Type d\'action', type, _typesAction,
-                          (v) => setD(() => type = v), required: true, icon: Icons.category_rounded),
+                            (v) => setD(() => type = v),
+                            required: true, icon: Icons.category_rounded),
                         _dropdown('Priorité', prio, _priorites,
-                          (v) => setD(() => prio = v), required: true, icon: Icons.priority_high_rounded),
+                            (v) => setD(() => prio = v),
+                            required: true, icon: Icons.priority_high_rounded),
                       ),
-                      _field('Description', descCtrl, multiline: true, icon: Icons.notes_rounded,
-                        hint: 'Décrivez les actions à mener et les objectifs attendus...'),
+                      _field('Description', descCtrl,
+                          multiline: true,
+                          icon: Icons.notes_rounded,
+                          hint:
+                              'Décrivez les actions à mener et les objectifs attendus...'),
 
-                      _formSection('Origine du plan', icon: Icons.link_rounded, color: srcColor),
-                      _dropdown('Source déclencheuse', source, _sourcesAction,
-                        (v) => setD(() { source = v; sourceRef = null; }),
-                        required: true, icon: Icons.account_tree_rounded),
+                      _formSection('Origine du plan',
+                          icon: Icons.link_rounded, color: srcColor),
+                      _dropdown(
+                          'Source déclencheuse',
+                          source,
+                          _sourcesAction,
+                          (v) => setD(() {
+                                source = v;
+                                sourceRef = null;
+                              }),
+                          required: true,
+                          icon: Icons.account_tree_rounded),
 
                       // Sélecteur dynamique selon la source
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.only(bottom: 4),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(children: [
-                              Container(width: 7, height: 7,
-                                margin: const EdgeInsets.only(right: 6),
-                                decoration: BoxDecoration(color: srcColor, shape: BoxShape.circle)),
+                              Container(
+                                  width: 7,
+                                  height: 7,
+                                  margin: const EdgeInsets.only(right: 6),
+                                  decoration: BoxDecoration(
+                                      color: srcColor, shape: BoxShape.circle)),
                               Text(
                                 switch (source) {
-                                  'Incident'     => 'Incident déclencheur *',
-                                  'Contrôle'     => 'Contrôle non conforme *',
-                                  'KRI'          => 'KRI hors seuil *',
-                                  'Audit'        => 'Référence du rapport d\'audit',
-                                  'Cartographie' => 'Risque identifié en cartographie',
-                                  _              => 'Élément source',
+                                  'Incident' => 'Incident déclencheur *',
+                                  'Contrôle' => 'Contrôle non conforme *',
+                                  'KRI' => 'KRI hors seuil *',
+                                  'Audit' => 'Référence du rapport d\'audit',
+                                  'Cartographie' =>
+                                    'Risque identifié en cartographie',
+                                  _ => 'Élément source',
                                 },
-                                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: srcColor),
+                                style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: srcColor),
                               ),
                             ]),
                             const SizedBox(height: 5),
@@ -4329,70 +5373,92 @@ class _PlansViewState extends State<_PlansView> {
                                 decoration: const InputDecoration(
                                   isDense: true,
                                   hintText: 'AUD-2024-Q1',
-                                  hintStyle: TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                                  hintStyle: TextStyle(
+                                      fontSize: 12.5, color: Color(0xFFB0BAD0)),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 4, vertical: 3),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.zero),
                                 ),
                               )
                             else if (opts.isEmpty)
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 4, vertical: 3),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(color: AppTheme.border),
                                   color: const Color(0xFFFBFCFF),
                                 ),
                                 child: const Row(children: [
-                                  Icon(Icons.info_outline, size: 14, color: _kMuted),
+                                  Icon(Icons.info_outline,
+                                      size: 14, color: _kMuted),
                                   SizedBox(width: 8),
                                   Text('Aucun enregistrement disponible',
-                                    style: TextStyle(fontSize: 12.5, color: _kMuted)),
+                                      style: TextStyle(
+                                          fontSize: 12.5, color: _kMuted)),
                                 ]),
                               )
                             else
                               DropdownButtonFormField<String>(
                                 initialValue: sourceRef,
                                 isExpanded: true,
-                                icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
+                                icon: const Icon(Icons.expand_more_rounded,
+                                    size: 18, color: _kMuted),
                                 decoration: const InputDecoration(
                                   isDense: true,
                                   hintText: 'Sélectionner…',
-                                  hintStyle: TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+                                  hintStyle: TextStyle(
+                                      fontSize: 12.5, color: Color(0xFFB0BAD0)),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 4, vertical: 3),
+                                  border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.zero),
                                 ),
-                                items: opts.map((o) => DropdownMenuItem(
-                                  value: o.$1,
-                                  child: Text(o.$2, overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 13.5)),
-                                )).toList(),
+                                items: opts
+                                    .map((o) => DropdownMenuItem(
+                                          value: o.$1,
+                                          child: Text(o.$2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                  fontSize: 13.5)),
+                                        ))
+                                    .toList(),
                                 onChanged: (v) => setD(() => sourceRef = v),
                               ),
                           ],
                         ),
                       ),
 
-                      _formSection('Planification', icon: Icons.calendar_month_rounded, color: _kWarning),
-                      _field('Responsable', respCtrl, icon: Icons.person_rounded,
-                        hint: 'Nom du responsable de l\'action'),
+                      _formSection('Planification',
+                          icon: Icons.calendar_month_rounded, color: _kWarning),
+                      _field('Responsable', respCtrl,
+                          icon: Icons.person_rounded,
+                          hint: 'Nom du responsable de l\'action'),
                       _formRow(
-                        _dateField(ctx, 'Date de début', debutCtrl, onPicked: () {
-                          setD(() { debutDate = DateTime.tryParse(debutCtrl.text); });
+                        _dateField(ctx, 'Date de début', debutCtrl,
+                            onPicked: () {
+                          setD(() {
+                            debutDate = DateTime.tryParse(debutCtrl.text);
+                          });
                         }),
-                        _dateField(ctx, 'Date d\'échéance', echeCtrl, firstDate: debutDate),
+                        _dateField(ctx, 'Date d\'échéance', echeCtrl,
+                            firstDate: debutDate),
                       ),
                       _formRow(
                         _dropdown('Statut', statut, _statutsPlan,
-                          (v) => setD(() => statut = v), required: true, icon: Icons.flag_rounded),
+                            (v) => setD(() => statut = v),
+                            required: true, icon: Icons.flag_rounded),
                         const SizedBox(), // spacer
                       ),
-                      _sliderInt('Avancement (%)', avancement, (v) => setD(() => avancement = v)),
+                      _sliderInt('Avancement (%)', avancement,
+                          (v) => setD(() => avancement = v)),
                     ],
                   ),
                 ),
               ),
             ),
-            actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            actionsPadding: const EdgeInsets.fromLTRB(5, 8, 5, 4),
             actions: [
               OutlinedButton(
                 onPressed: () => Navigator.pop(ctx, false),
@@ -4400,17 +5466,28 @@ class _PlansViewState extends State<_PlansView> {
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
-                icon: Icon(edit == null ? Icons.add_rounded : Icons.save_rounded, size: 16),
-                style: FilledButton.styleFrom(backgroundColor: AppColors.marketNeutral),
+                icon: Icon(
+                    edit == null ? Icons.add_rounded : Icons.save_rounded,
+                    size: 16),
+                style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.marketNeutral),
                 onPressed: () async {
                   if (!formKey.currentState!.validate()) return;
-                  final ref = source == 'Audit' ? auditCtrl.text.trim() : (sourceRef ?? '');
+                  final ref = source == 'Audit'
+                      ? auditCtrl.text.trim()
+                      : (sourceRef ?? '');
                   final data = {
-                    'titre': titreCtrl.text.trim(), 'description': descCtrl.text.trim(),
-                    'type_action': type, 'source': source, 'source_ref': ref,
+                    'titre': titreCtrl.text.trim(),
+                    'description': descCtrl.text.trim(),
+                    'type_action': type,
+                    'source': source,
+                    'source_ref': ref,
                     'responsable': respCtrl.text.trim(),
-                    'date_debut': debutCtrl.text.trim(), 'date_echeance': echeCtrl.text.trim(),
-                    'priorite': prio, 'statut': statut, 'avancement': avancement,
+                    'date_debut': debutCtrl.text.trim(),
+                    'date_echeance': echeCtrl.text.trim(),
+                    'priorite': prio,
+                    'statut': statut,
+                    'avancement': avancement,
                   };
                   try {
                     edit == null
@@ -4419,8 +5496,9 @@ class _PlansViewState extends State<_PlansView> {
                     if (ctx.mounted) Navigator.pop(ctx, true);
                   } catch (e) {
                     if (ctx.mounted) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text('Erreur: $e'), backgroundColor: _kDanger));
+                      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                          content: Text('Erreur: $e'),
+                          backgroundColor: _kDanger));
                     }
                   }
                 },
@@ -4438,37 +5516,41 @@ class _PlansViewState extends State<_PlansView> {
   String? _filterPriorite;
 
   Color _prioriteColor(String p) => switch (p) {
-    'Haute'   => _kDanger,
-    'Moyenne' => _kWarning,
-    _         => _kMuted,
-  };
+        'Haute' => _kDanger,
+        'Moyenne' => _kWarning,
+        _ => _kMuted,
+      };
 
   Color _planStatutColor(String s) => switch (s) {
-    'Terminé'   => _kSuccess,
-    'En cours'  => _kBlue,
-    'A faire'   => _kMuted,
-    'Abandonné' => const Color(0xFF9E9E9E),
-    _           => _kMuted,
-  };
+        'Terminé' => _kSuccess,
+        'En cours' => _kBlue,
+        'A faire' => _kMuted,
+        'Abandonné' => const Color(0xFF9E9E9E),
+        _ => _kMuted,
+      };
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final panelBg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
-    final panelBorder = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
+    final panelBg = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final panelBorder =
+        isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
 
     return FutureBuilder<List<RoPlan>>(
       future: _future,
       builder: (ctx, snap) {
         if (snap.connectionState != ConnectionState.done) return _loadingBox();
         if (snap.hasError) return _errorBox(snap.error!);
-        final all     = snap.data!;
-        final actifs  = all.where((p) => p.statut != 'Terminé' && p.statut != 'Abandonné').toList();
+        final all = snap.data!;
+        final actifs = all
+            .where((p) => p.statut != 'Terminé' && p.statut != 'Abandonné')
+            .toList();
         final enCours = all.where((p) => p.statut == 'En cours').length;
         final termines = all.where((p) => p.statut == 'Terminé').length;
-        final retard  = all.where((p) => p.enRetard).length;
-        final txReal  = all.isNotEmpty
-            ? all.fold(0.0, (s, e) => s + e.avancement) / all.length : 0.0;
+        final retard = all.where((p) => p.enRetard).length;
+        final txReal = all.isNotEmpty
+            ? all.fold(0.0, (s, e) => s + e.avancement) / all.length
+            : 0.0;
 
         // Plans en violation potentielle du délai 90j UEMOA (Art. 313.b)
         final now = DateTime.now();
@@ -4482,7 +5564,8 @@ class _PlansViewState extends State<_PlansView> {
         // Filtrage
         var filtered = all.where((p) {
           if (_filterStatut != null && p.statut != _filterStatut) return false;
-          if (_filterPriorite != null && p.priorite != _filterPriorite) return false;
+          if (_filterPriorite != null && p.priorite != _filterPriorite)
+            return false;
           return true;
         }).toList();
 
@@ -4500,10 +5583,12 @@ class _PlansViewState extends State<_PlansView> {
               child: Column(children: [
                 // En-tête
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.marketNeutral.withValues(alpha: 0.07),
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(10)),
                     border: Border(bottom: BorderSide(color: panelBorder)),
                   ),
                   child: Row(children: [
@@ -4513,149 +5598,219 @@ class _PlansViewState extends State<_PlansView> {
                         color: AppColors.marketNeutral.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(7),
                       ),
-                      child: const Icon(Icons.task_alt_rounded, size: 15, color: AppColors.marketNeutral),
+                      child: const Icon(Icons.task_alt_rounded,
+                          size: 15, color: AppColors.marketNeutral),
                     ),
-                    const SizedBox(width: 10),
-                    const Expanded(child: Text('Plans d\'action',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
+                    const SizedBox(width: 3),
+                    const Expanded(
+                        child: Text('Plans d\'action',
+                            style: TextStyle(
+                                fontSize: 13, fontWeight: FontWeight.w700))),
                     _badge('Art. 313.c', AppColors.marketNeutral),
                   ]),
                 ),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      // KPI tiles
-                      Row(children: [
-                        Expanded(child: _planStatTile('Total',     '${all.length}',   _kBlue,    Icons.task_alt_rounded)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _planStatTile('En cours',  '$enCours',         _kWarning, Icons.hourglass_top_rounded)),
-                      ]),
-                      const SizedBox(height: 8),
-                      Row(children: [
-                        Expanded(child: _planStatTile('Terminés',  '$termines',        _kSuccess, Icons.check_circle_rounded)),
-                        const SizedBox(width: 8),
-                        Expanded(child: _planStatTile('En retard', '$retard',          _kDanger,  Icons.warning_amber_rounded)),
-                      ]),
-
-                      const SizedBox(height: 14),
-
-                      // Taux global BCEAO
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: (txReal >= 80 ? _kSuccess : _kWarning).withValues(alpha: 0.07),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: (txReal >= 80 ? _kSuccess : _kWarning).withValues(alpha: 0.25)),
-                        ),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    padding: const EdgeInsets.all(4),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // KPI tiles
                           Row(children: [
-                            Icon(Icons.analytics_rounded, size: 12,
-                              color: txReal >= 80 ? _kSuccess : _kWarning),
-                            const SizedBox(width: 5),
-                            const Text('Taux global BCEAO',
-                              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600)),
+                            Expanded(
+                                child: _planStatTile('Total', '${all.length}',
+                                    _kBlue, Icons.task_alt_rounded)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: _planStatTile('En cours', '$enCours',
+                                    _kWarning, Icons.hourglass_top_rounded)),
                           ]),
-                          const SizedBox(height: 6),
-                          Text('${txReal.toStringAsFixed(0)} %',
-                            style: TextStyle(
-                              fontSize: 28, fontWeight: FontWeight.w900,
-                              color: txReal >= 80 ? _kSuccess : _kWarning,
-                              height: 1.0)),
-                          const SizedBox(height: 4),
-                          LinearProgressIndicator(
-                            value: txReal / 100,
-                            backgroundColor: (txReal >= 80 ? _kSuccess : _kWarning).withValues(alpha: 0.15),
-                            color: txReal >= 80 ? _kSuccess : _kWarning,
-                            minHeight: 4,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(txReal >= 80 ? 'Conforme UEMOA' : 'Sous le seuil (80 %)',
-                            style: TextStyle(
-                              fontSize: 9.5, fontWeight: FontWeight.w600,
-                              color: txReal >= 80 ? _kSuccess : _kWarning)),
-                        ]),
-                      ),
+                          const SizedBox(height: 8),
+                          Row(children: [
+                            Expanded(
+                                child: _planStatTile('Terminés', '$termines',
+                                    _kSuccess, Icons.check_circle_rounded)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                                child: _planStatTile('En retard', '$retard',
+                                    _kDanger, Icons.warning_amber_rounded)),
+                          ]),
 
-                      // Alerte 90j UEMOA
-                      if (violations90j.isNotEmpty) ...[
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: _kDanger.withValues(alpha: 0.07),
-                            borderRadius: BorderRadius.circular(7),
-                            border: Border.all(color: _kDanger.withValues(alpha: 0.3)),
+                          const SizedBox(height: 4),
+
+                          // Taux global BCEAO
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: (txReal >= 80 ? _kSuccess : _kWarning)
+                                  .withValues(alpha: 0.07),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: (txReal >= 80 ? _kSuccess : _kWarning)
+                                      .withValues(alpha: 0.25)),
+                            ),
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: [
+                                    Icon(Icons.analytics_rounded,
+                                        size: 12,
+                                        color: txReal >= 80
+                                            ? _kSuccess
+                                            : _kWarning),
+                                    const SizedBox(width: 5),
+                                    const Text('Taux global BCEAO',
+                                        style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600)),
+                                  ]),
+                                  const SizedBox(height: 6),
+                                  Text('${txReal.toStringAsFixed(0)} %',
+                                      style: TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w900,
+                                          color: txReal >= 80
+                                              ? _kSuccess
+                                              : _kWarning,
+                                          height: 1.0)),
+                                  const SizedBox(height: 4),
+                                  LinearProgressIndicator(
+                                    value: txReal / 100,
+                                    backgroundColor:
+                                        (txReal >= 80 ? _kSuccess : _kWarning)
+                                            .withValues(alpha: 0.15),
+                                    color: txReal >= 80 ? _kSuccess : _kWarning,
+                                    minHeight: 4,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                      txReal >= 80
+                                          ? 'Conforme UEMOA'
+                                          : 'Sous le seuil (80 %)',
+                                      style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: txReal >= 80
+                                              ? _kSuccess
+                                              : _kWarning)),
+                                ]),
                           ),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            const Row(children: [
-                              Icon(Icons.gavel_rounded, size: 12, color: _kDanger),
-                              SizedBox(width: 5),
-                              Text('Délai 90j dépassé',
-                                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: _kDanger)),
-                            ]),
+
+                          // Alerte 90j UEMOA
+                          if (violations90j.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 3, vertical: 8.0),
+                              decoration: BoxDecoration(
+                                color: _kDanger.withValues(alpha: 0.07),
+                                borderRadius: BorderRadius.circular(7),
+                                border: Border.all(
+                                    color: _kDanger.withValues(alpha: 0.3)),
+                              ),
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Row(children: [
+                                      Icon(Icons.gavel_rounded,
+                                          size: 12, color: _kDanger),
+                                      SizedBox(width: 5),
+                                      Text('Délai 90j dépassé',
+                                          style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: _kDanger)),
+                                    ]),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                        '${violations90j.length} plan(s) non clôturé(s) après 90 jours (Art. 313.b)',
+                                        style: const TextStyle(
+                                            fontSize: 9.5,
+                                            color: _kDanger,
+                                            height: 1.4)),
+                                  ]),
+                            ),
+                          ],
+
+                          const SizedBox(height: 4),
+
+                          // Filtres statut
+                          _planPanelSection(
+                              'Statut', Icons.filter_list_rounded),
+                          const SizedBox(height: 7),
+                          _planFilterChip(
+                              'Tous',
+                              null,
+                              null,
+                              _kBlue,
+                              '${all.length}',
+                              _filterStatut == null && _filterPriorite == null,
+                              () => setState(() {
+                                    _filterStatut = null;
+                                    _filterPriorite = null;
+                                  })),
+                          const SizedBox(height: 4),
+                          for (final s in _statutsPlan) ...[
+                            _planFilterChip(
+                                s,
+                                s,
+                                null,
+                                _planStatutColor(s),
+                                '${all.where((p) => p.statut == s).length}',
+                                _filterStatut == s,
+                                () => setState(() {
+                                      _filterStatut = s;
+                                      _filterPriorite = null;
+                                    })),
                             const SizedBox(height: 4),
-                            Text('${violations90j.length} plan(s) non clôturé(s) après 90 jours (Art. 313.b)',
-                              style: const TextStyle(fontSize: 9.5, color: _kDanger, height: 1.4)),
-                          ]),
-                        ),
-                      ],
+                          ],
 
-                      const SizedBox(height: 16),
+                          const SizedBox(height: 3),
 
-                      // Filtres statut
-                      _planPanelSection('Statut', Icons.filter_list_rounded),
-                      const SizedBox(height: 7),
-                      _planFilterChip('Tous', null, null, _kBlue, '${all.length}',
-                        _filterStatut == null && _filterPriorite == null,
-                        () => setState(() { _filterStatut = null; _filterPriorite = null; })),
-                      const SizedBox(height: 4),
-                      for (final s in _statutsPlan) ...[
-                        _planFilterChip(s, s, null, _planStatutColor(s),
-                          '${all.where((p) => p.statut == s).length}',
-                          _filterStatut == s,
-                          () => setState(() { _filterStatut = s; _filterPriorite = null; })),
-                        const SizedBox(height: 4),
-                      ],
+                          // Filtres priorité
+                          _planPanelSection(
+                              'Priorité', Icons.priority_high_rounded),
+                          const SizedBox(height: 7),
+                          for (final pr in _priorites) ...[
+                            _planFilterChip(
+                                pr,
+                                null,
+                                pr,
+                                _prioriteColor(pr),
+                                '${all.where((p) => p.priorite == pr).length}',
+                                _filterPriorite == pr,
+                                () => setState(() {
+                                      _filterPriorite = pr;
+                                      _filterStatut = null;
+                                    })),
+                            const SizedBox(height: 4),
+                          ],
 
-                      const SizedBox(height: 12),
+                          const SizedBox(height: 4),
 
-                      // Filtres priorité
-                      _planPanelSection('Priorité', Icons.priority_high_rounded),
-                      const SizedBox(height: 7),
-                      for (final pr in _priorites) ...[
-                        _planFilterChip(pr, null, pr, _prioriteColor(pr),
-                          '${all.where((p) => p.priorite == pr).length}',
-                          _filterPriorite == pr,
-                          () => setState(() { _filterPriorite = pr; _filterStatut = null; })),
-                        const SizedBox(height: 4),
-                      ],
-
-                      const SizedBox(height: 14),
-
-                      // Bouton nouveau plan
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.marketNeutral,
-                            padding: const EdgeInsets.symmetric(vertical: 9),
-                            textStyle: const TextStyle(fontSize: 12),
+                          // Bouton nouveau plan
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.marketNeutral,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 9),
+                                textStyle: const TextStyle(fontSize: 12),
+                              ),
+                              onPressed: () => _showForm(),
+                              icon: const Icon(Icons.add_rounded, size: 16),
+                              label: const Text('Nouveau plan'),
+                            ),
                           ),
-                          onPressed: () => _showForm(),
-                          icon: const Icon(Icons.add_rounded, size: 16),
-                          label: const Text('Nouveau plan'),
-                        ),
-                      ),
-                    ]),
+                        ]),
                   ),
                 ),
               ]),
             ),
 
-            const SizedBox(width: 14),
+            const SizedBox(width: 4),
 
             // ── Panneau droit : liste des plans ────────────────────────
             Expanded(
@@ -4666,51 +5821,64 @@ class _PlansViewState extends State<_PlansView> {
                     // Alerte UEMOA globale
                     if (violations90j.isNotEmpty)
                       Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        margin: const EdgeInsets.only(bottom: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 3),
                         decoration: BoxDecoration(
                           color: _kDanger.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: _kDanger.withValues(alpha: 0.3)),
+                          border: Border.all(
+                              color: _kDanger.withValues(alpha: 0.3)),
                         ),
                         child: Row(children: [
-                          const Icon(Icons.gavel_rounded, color: _kDanger, size: 16),
-                          const SizedBox(width: 10),
-                          Expanded(child: Text(
-                            '${violations90j.length} plan(s) dépassent le délai réglementaire de 90 jours sans clôture '
-                            '(Art. 313.b UEMOA). Une escalade à la Direction est requise.',
-                            style: const TextStyle(fontSize: 11.5, color: _kDanger, fontWeight: FontWeight.w500))),
+                          const Icon(Icons.gavel_rounded,
+                              color: _kDanger, size: 16),
+                          const SizedBox(width: 3),
+                          Expanded(
+                              child: Text(
+                                  '${violations90j.length} plan(s) dépassent le délai réglementaire de 90 jours sans clôture '
+                                  '(Art. 313.b UEMOA). Une escalade à la Direction est requise.',
+                                  style: const TextStyle(
+                                      fontSize: 11.5,
+                                      color: _kDanger,
+                                      fontWeight: FontWeight.w500))),
                         ]),
                       ),
 
                     if (filtered.isEmpty)
                       Container(
-                        padding: const EdgeInsets.all(32),
+                        padding: const EdgeInsets.all(6),
                         alignment: Alignment.center,
                         child: const Text('Aucun plan correspondant au filtre.',
-                          style: TextStyle(color: _kMuted, fontSize: 13)),
+                            style: TextStyle(color: _kMuted, fontSize: 13)),
                       )
                     else
                       ...filtered.map((p) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: _PlanCard(
-                          plan: p,
-                          sourceColor: _sourceColor(p.source),
-                          prioriteColor: _prioriteColor(p.priorite),
-                          statutColor: _planStatutColor(p.statut),
-                          isDark: isDark,
-                          age90j: () {
-                            if (p.creeLe.isEmpty) return false;
-                            final cree = DateTime.tryParse(p.creeLe);
-                            if (cree == null) return false;
-                            return DateTime.now().difference(cree).inDays > 90 &&
-                                p.statut != 'Terminé' && p.statut != 'Abandonné';
-                          }(),
-                          onEdit: () => _showForm(edit: p),
-                          onDelete: () => _confirm(context, 'Supprimer ce plan d\'action ?',
-                            () async { await widget.api.deleteRoPlan(p.id); _reload(); }),
-                        ),
-                      )),
+                            padding: const EdgeInsets.only(bottom: 3),
+                            child: _PlanCard(
+                              plan: p,
+                              sourceColor: _sourceColor(p.source),
+                              prioriteColor: _prioriteColor(p.priorite),
+                              statutColor: _planStatutColor(p.statut),
+                              isDark: isDark,
+                              age90j: () {
+                                if (p.creeLe.isEmpty) return false;
+                                final cree = DateTime.tryParse(p.creeLe);
+                                if (cree == null) return false;
+                                return DateTime.now().difference(cree).inDays >
+                                        90 &&
+                                    p.statut != 'Terminé' &&
+                                    p.statut != 'Abandonné';
+                              }(),
+                              onEdit: () => _showForm(edit: p),
+                              onDelete: () => _confirm(
+                                  context, 'Supprimer ce plan d\'action ?',
+                                  () async {
+                                await widget.api.deleteRoPlan(p.id);
+                                _reload();
+                              }),
+                            ),
+                          )),
                   ],
                 ),
               ),
@@ -4724,7 +5892,7 @@ class _PlansViewState extends State<_PlansView> {
   Widget _planStatTile(String label, String val, Color c, IconData icon) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
       decoration: BoxDecoration(
         color: c.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(7),
@@ -4734,18 +5902,30 @@ class _PlansViewState extends State<_PlansView> {
         Icon(icon, size: 13, color: c),
         const SizedBox(width: 6),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(val, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: c, height: 1.0)),
-          Text(label, style: TextStyle(fontSize: 9, color: isDark ? AppTheme.darkMuted : _kMuted)),
+          Text(val,
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: c,
+                  height: 1.0)),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 9, color: isDark ? AppTheme.darkMuted : _kMuted)),
         ]),
       ]),
     );
   }
 
   Widget _planPanelSection(String label, IconData icon) => Row(children: [
-    Icon(icon, size: 12, color: _kMuted),
-    const SizedBox(width: 6),
-    Text(label, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: _kMuted, letterSpacing: 0.5)),
-  ]);
+        Icon(icon, size: 12, color: _kMuted),
+        const SizedBox(width: 6),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: _kMuted,
+                letterSpacing: 0.5)),
+      ]);
 
   Widget _planFilterChip(String label, String? filtStatut, String? filtPrio,
       Color c, String count, bool active, VoidCallback onTap) {
@@ -4753,26 +5933,40 @@ class _PlansViewState extends State<_PlansView> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
         decoration: BoxDecoration(
           color: active ? c.withValues(alpha: 0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: active ? c.withValues(alpha: 0.4) : c.withValues(alpha: 0.15)),
+          border: Border.all(
+              color: active
+                  ? c.withValues(alpha: 0.4)
+                  : c.withValues(alpha: 0.15)),
         ),
         child: Row(children: [
-          Container(width: 7, height: 7,
-            decoration: BoxDecoration(color: active ? c : c.withValues(alpha: 0.4), shape: BoxShape.circle)),
+          Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                  color: active ? c : c.withValues(alpha: 0.4),
+                  shape: BoxShape.circle)),
           const SizedBox(width: 8),
-          Expanded(child: Text(label,
-            style: TextStyle(fontSize: 11, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-              color: active ? c : _kMuted))),
+          Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      color: active ? c : _kMuted))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             decoration: BoxDecoration(
               color: c.withValues(alpha: active ? 0.15 : 0.07),
               borderRadius: BorderRadius.circular(3),
             ),
-            child: Text(count, style: TextStyle(fontSize: 9.5, color: active ? c : _kMuted, fontWeight: FontWeight.w700)),
+            child: Text(count,
+                style: TextStyle(
+                    fontSize: 9.5,
+                    color: active ? c : _kMuted,
+                    fontWeight: FontWeight.w700)),
           ),
         ]),
       ),
@@ -4795,32 +5989,36 @@ class _PlanCard extends StatelessWidget {
   });
 
   final RoPlan plan;
-  final Color  sourceColor;
-  final Color  prioriteColor;
-  final Color  statutColor;
-  final bool   isDark;
-  final bool   age90j;
+  final Color sourceColor;
+  final Color prioriteColor;
+  final Color statutColor;
+  final bool isDark;
+  final bool age90j;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
-    final bg     = isDark ? const Color(0xFF0E1E33) : Colors.white;
+    final bg = isDark ? const Color(0xFF0E1E33) : Colors.white;
     final border = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
     final p = plan;
     final prog = p.avancement / 100.0;
     final progressColor = p.avancement >= 100
         ? _kSuccess
-        : p.enRetard ? _kDanger : _kBlue;
+        : p.enRetard
+            ? _kDanger
+            : _kBlue;
 
     return Container(
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: age90j ? _kDanger.withValues(alpha: 0.5)
-               : p.enRetard ? _kDanger.withValues(alpha: 0.3)
-               : border),
+            color: age90j
+                ? _kDanger.withValues(alpha: 0.5)
+                : p.enRetard
+                    ? _kDanger.withValues(alpha: 0.3)
+                    : border),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -4831,77 +6029,99 @@ class _PlanCard extends StatelessWidget {
               width: 4,
               decoration: BoxDecoration(
                 color: prioriteColor,
-                borderRadius: const BorderRadius.horizontal(left: Radius.circular(10)),
+                borderRadius:
+                    const BorderRadius.horizontal(left: Radius.circular(10)),
               ),
             ),
 
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Ligne 1 : référence + titre + badges
                     Row(children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppColors.marketNeutral.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(p.reference,
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
-                            color: AppColors.marketNeutral)),
+                            style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.marketNeutral)),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(child: Tooltip(
+                      Expanded(
+                          child: Tooltip(
                         message: p.titre,
                         preferBelow: true,
                         child: Text(p.titre,
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                            color: isDark ? Colors.white : Colors.black87),
-                          overflow: TextOverflow.ellipsis),
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : Colors.black87),
+                            overflow: TextOverflow.ellipsis),
                       )),
                       const SizedBox(width: 8),
                       // Type action
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFF5C6BC0).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(p.typeAction,
-                          style: const TextStyle(fontSize: 9.5, color: Color(0xFF5C6BC0),
-                            fontWeight: FontWeight.w600)),
+                            style: const TextStyle(
+                                fontSize: 9.5,
+                                color: Color(0xFF5C6BC0),
+                                fontWeight: FontWeight.w600)),
                       ),
                       const SizedBox(width: 6),
                       // Source badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: sourceColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: sourceColor.withValues(alpha: 0.25)),
+                          border: Border.all(
+                              color: sourceColor.withValues(alpha: 0.25)),
                         ),
                         child: Text(p.source,
-                          style: TextStyle(fontSize: 9.5, color: sourceColor,
-                            fontWeight: FontWeight.w600)),
+                            style: TextStyle(
+                                fontSize: 9.5,
+                                color: sourceColor,
+                                fontWeight: FontWeight.w600)),
                       ),
                       if (age90j) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: _kDanger.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: _kDanger.withValues(alpha: 0.35)),
+                            border: Border.all(
+                                color: _kDanger.withValues(alpha: 0.35)),
                           ),
-                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.gavel_rounded, size: 9, color: _kDanger),
-                            SizedBox(width: 3),
-                            Text('+90j UEMOA', style: TextStyle(fontSize: 9, color: _kDanger,
-                              fontWeight: FontWeight.w800)),
-                          ]),
+                          child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.gavel_rounded,
+                                    size: 9, color: _kDanger),
+                                SizedBox(width: 3),
+                                Text('+90j UEMOA',
+                                    style: TextStyle(
+                                        fontSize: 9,
+                                        color: _kDanger,
+                                        fontWeight: FontWeight.w800)),
+                              ]),
                         ),
                       ],
                     ]),
@@ -4909,123 +6129,175 @@ class _PlanCard extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     // Ligne 2 : description + responsable + dates
-                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      // Description + source ref
-                      Expanded(child: Column(
+                    Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (p.description.isNotEmpty)
-                            Tooltip(
-                              message: p.description,
-                              preferBelow: true,
-                              child: Text(p.description,
-                                style: const TextStyle(fontSize: 11, color: _kMuted, height: 1.4),
-                                maxLines: 2, overflow: TextOverflow.ellipsis),
-                            ),
-                          if (p.sourceRef.isNotEmpty) ...[
-                            const SizedBox(height: 3),
-                            Row(children: [
-                              const Icon(Icons.link_rounded, size: 10, color: _kMuted),
-                              const SizedBox(width: 4),
-                              Text(p.sourceRef,
-                                style: const TextStyle(fontSize: 10, color: _kMuted,
-                                  fontWeight: FontWeight.w500)),
-                            ]),
-                          ],
-                        ],
-                      )),
+                          // Description + source ref
+                          Expanded(
+                              child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (p.description.isNotEmpty)
+                                Tooltip(
+                                  message: p.description,
+                                  preferBelow: true,
+                                  child: Text(p.description,
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          color: _kMuted,
+                                          height: 1.4),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis),
+                                ),
+                              if (p.sourceRef.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Row(children: [
+                                  const Icon(Icons.link_rounded,
+                                      size: 10, color: _kMuted),
+                                  const SizedBox(width: 4),
+                                  Text(p.sourceRef,
+                                      style: const TextStyle(
+                                          fontSize: 10,
+                                          color: _kMuted,
+                                          fontWeight: FontWeight.w500)),
+                                ]),
+                              ],
+                            ],
+                          )),
 
-                      const SizedBox(width: 16),
+                          const SizedBox(width: 4),
 
-                      // Responsable + dates
-                      Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        if (p.responsable.isNotEmpty)
-                          Row(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(Icons.person_rounded, size: 11, color: _kMuted),
-                            const SizedBox(width: 4),
-                            Text(p.responsable,
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                          ]),
-                        if (p.dateDebut.isNotEmpty || p.dateEcheance.isNotEmpty) ...[
-                          const SizedBox(height: 3),
-                          Row(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(Icons.calendar_today_outlined, size: 10, color: _kMuted),
-                            const SizedBox(width: 4),
-                            Text(
-                              [if (p.dateDebut.isNotEmpty) p.dateDebut,
-                               if (p.dateEcheance.isNotEmpty) p.dateEcheance].join(' → '),
-                              style: TextStyle(fontSize: 10, color: p.enRetard ? _kDanger : _kMuted,
-                                fontWeight: p.enRetard ? FontWeight.w700 : FontWeight.normal)),
-                          ]),
-                        ],
-                        if (p.enRetard) ...[
-                          const SizedBox(height: 2),
-                          const Text('En retard', style: TextStyle(fontSize: 9.5, color: _kDanger,
-                            fontWeight: FontWeight.w700)),
-                        ] else if (p.joursRestants > 0 && p.statut != 'Terminé') ...[
-                          const SizedBox(height: 2),
-                          Text('J−${p.joursRestants}',
-                            style: TextStyle(fontSize: 9.5,
-                              color: p.joursRestants <= 7 ? _kWarning : _kMuted,
-                              fontWeight: p.joursRestants <= 7 ? FontWeight.w700 : FontWeight.normal)),
-                        ],
-                      ]),
-                    ]),
+                          // Responsable + dates
+                          Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                if (p.responsable.isNotEmpty)
+                                  Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.person_rounded,
+                                            size: 11, color: _kMuted),
+                                        const SizedBox(width: 4),
+                                        Text(p.responsable,
+                                            style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600)),
+                                      ]),
+                                if (p.dateDebut.isNotEmpty ||
+                                    p.dateEcheance.isNotEmpty) ...[
+                                  const SizedBox(height: 3),
+                                  Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                            Icons.calendar_today_outlined,
+                                            size: 10,
+                                            color: _kMuted),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                            [
+                                              if (p.dateDebut.isNotEmpty)
+                                                p.dateDebut,
+                                              if (p.dateEcheance.isNotEmpty)
+                                                p.dateEcheance
+                                            ].join(' → '),
+                                            style: TextStyle(
+                                                fontSize: 10,
+                                                color: p.enRetard
+                                                    ? _kDanger
+                                                    : _kMuted,
+                                                fontWeight: p.enRetard
+                                                    ? FontWeight.w700
+                                                    : FontWeight.normal)),
+                                      ]),
+                                ],
+                                if (p.enRetard) ...[
+                                  const SizedBox(height: 2),
+                                  const Text('En retard',
+                                      style: TextStyle(
+                                          fontSize: 9.5,
+                                          color: _kDanger,
+                                          fontWeight: FontWeight.w700)),
+                                ] else if (p.joursRestants > 0 &&
+                                    p.statut != 'Terminé') ...[
+                                  const SizedBox(height: 2),
+                                  Text('J−${p.joursRestants}',
+                                      style: TextStyle(
+                                          fontSize: 9.5,
+                                          color: p.joursRestants <= 7
+                                              ? _kWarning
+                                              : _kMuted,
+                                          fontWeight: p.joursRestants <= 7
+                                              ? FontWeight.w700
+                                              : FontWeight.normal)),
+                                ],
+                              ]),
+                        ]),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 3),
 
                     // Ligne 3 : barre avancement + statut + actions
-                    Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-                      // Avancement
-                      Expanded(child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Row(children: [
-                            Text('${p.avancement} %',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800,
-                                color: progressColor)),
-                            const SizedBox(width: 8),
-                            Expanded(child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: prog.clamp(0.0, 1.0),
-                                backgroundColor: progressColor.withValues(alpha: 0.12),
-                                color: progressColor,
-                                minHeight: 7,
-                              ),
-                            )),
-                          ]),
-                        ],
-                      )),
+                          // Avancement
+                          Expanded(
+                              child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [
+                                Text('${p.avancement} %',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: progressColor)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                    child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: prog.clamp(0.0, 1.0),
+                                    backgroundColor:
+                                        progressColor.withValues(alpha: 0.12),
+                                    color: progressColor,
+                                    minHeight: 7,
+                                  ),
+                                )),
+                              ]),
+                            ],
+                          )),
 
-                      const SizedBox(width: 12),
+                          const SizedBox(width: 3),
 
-                      // Statut badge
-                      _badge(p.statut, statutColor),
+                          // Statut badge
+                          _badge(p.statut, statutColor),
 
-                      const SizedBox(width: 8),
+                          const SizedBox(width: 8),
 
-                      // Priorité badge
-                      _badge(p.priorite, prioriteColor),
+                          // Priorité badge
+                          _badge(p.priorite, prioriteColor),
 
-                      const SizedBox(width: 8),
+                          const SizedBox(width: 8),
 
-                      // Actions
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 16),
-                        tooltip: 'Modifier',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                        onPressed: onEdit,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 16, color: _kDanger),
-                        tooltip: 'Supprimer',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                        onPressed: onDelete,
-                      ),
-                    ]),
+                          // Actions
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 16),
+                            tooltip: 'Modifier',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
+                            onPressed: onEdit,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline,
+                                size: 16, color: _kDanger),
+                            tooltip: 'Supprimer',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
+                            onPressed: onDelete,
+                          ),
+                        ]),
                   ],
                 ),
               ),
@@ -5049,7 +6321,7 @@ class _HistoriqueView extends StatefulWidget {
 class _HistoriqueViewState extends State<_HistoriqueView> {
   late Future<List<RoHistorique>> _future;
   final _dateDebutCtrl = TextEditingController();
-  final _dateFinCtrl   = TextEditingController();
+  final _dateFinCtrl = TextEditingController();
   bool _exporting = false;
 
   @override
@@ -5067,19 +6339,22 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
 
   List<RoHistorique> _applyFilters(List<RoHistorique> all) {
     final debut = DateTime.tryParse(_dateDebutCtrl.text);
-    final fin   = DateTime.tryParse(_dateFinCtrl.text);
+    final fin = DateTime.tryParse(_dateFinCtrl.text);
     return all.where((h) {
       final d = DateTime.tryParse(h.dateEvenement);
       if (d == null) return true;
       if (debut != null && d.isBefore(debut)) return false;
-      if (fin   != null && d.isAfter(fin.add(const Duration(days: 1)))) return false;
+      if (fin != null && d.isAfter(fin.add(const Duration(days: 1))))
+        return false;
       return true;
     }).toList();
   }
 
   Future<void> _pickDate(TextEditingController ctrl) async {
     DateTime? current;
-    try { if (ctrl.text.isNotEmpty) current = DateTime.parse(ctrl.text); } catch (_) {}
+    try {
+      if (ctrl.text.isNotEmpty) current = DateTime.parse(ctrl.text);
+    } catch (_) {}
     final picked = await showDatePicker(
       context: context,
       initialDate: current ?? DateTime.now(),
@@ -5107,14 +6382,18 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
     final format = await showDialog<String>(
       context: context,
       builder: (ctx) {
-        final th      = Theme.of(ctx);
+        final th = Theme.of(ctx);
         final isDlgDk = th.brightness == Brightness.dark;
-        final bg      = th.cardTheme.color ?? (isDlgDk ? const Color(0xFF1B2C4A) : Colors.white);
-        final soft    = isDlgDk ? const Color(0xFF14233D) : const Color(0xFFF8FAFE);
-        final border  = th.dividerColor;
-        final txt     = th.textTheme.bodyLarge?.color ?? (isDlgDk ? Colors.white : Colors.black87);
-        final muted   = isDlgDk ? const Color(0xFF8BA3C7) : const Color(0xFF94A3B8);
-        final accent  = th.colorScheme.primary;
+        final bg = th.cardTheme.color ??
+            (isDlgDk ? const Color(0xFF1B2C4A) : Colors.white);
+        final soft =
+            isDlgDk ? const Color(0xFF14233D) : const Color(0xFFF8FAFE);
+        final border = th.dividerColor;
+        final txt = th.textTheme.bodyLarge?.color ??
+            (isDlgDk ? Colors.white : Colors.black87);
+        final muted =
+            isDlgDk ? const Color(0xFF8BA3C7) : const Color(0xFF94A3B8);
+        final accent = th.colorScheme.primary;
 
         Widget optionRow({
           required IconData icon,
@@ -5123,72 +6402,94 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
           required String badge,
           required String description,
           required String value,
-        }) => InkWell(
-          onTap: () => Navigator.pop(ctx, value),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            decoration: BoxDecoration(
-              color: soft,
-              border: Border.all(color: border),
+        }) =>
+            InkWell(
+              onTap: () => Navigator.pop(ctx, value),
               borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(children: [
-              Container(
-                padding: const EdgeInsets.all(10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: soft,
+                  border: Border.all(color: border),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: color, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: txt)),
-                  const SizedBox(width: 7),
+                child: Row(children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(badge, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+                    child: Icon(icon, color: color, size: 22),
                   ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                        Row(children: [
+                          Text(label,
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: txt)),
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(badge,
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: color,
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                        ]),
+                        const SizedBox(height: 2),
+                        Text(description,
+                            style: TextStyle(fontSize: 11.5, color: muted)),
+                      ])),
+                  Icon(Icons.chevron_right_rounded, color: muted, size: 20),
                 ]),
-                const SizedBox(height: 2),
-                Text(description, style: TextStyle(fontSize: 11.5, color: muted)),
-              ])),
-              Icon(Icons.chevron_right_rounded, color: muted, size: 20),
-            ]),
-          ),
-        );
+              ),
+            );
 
         return Dialog(
           backgroundColor: bg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: SizedBox(
             width: 460,
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(6),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
                     Icon(Icons.file_download_outlined, color: accent, size: 22),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 3),
                     Text('Exporter l\'historique',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: txt)),
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: txt)),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: accent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text('xlsx / pdf',
-                          style: TextStyle(fontSize: 10, color: accent, fontWeight: FontWeight.w600)),
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: accent,
+                              fontWeight: FontWeight.w600)),
                     ),
                     const Spacer(),
                     IconButton(
@@ -5201,7 +6502,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                   const SizedBox(height: 6),
                   Text('Sélectionnez le format du fichier à générer.',
                       style: TextStyle(fontSize: 12, color: muted)),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 5),
                   optionRow(
                     icon: Icons.table_chart_outlined,
                     color: const Color(0xFF1E88E5),
@@ -5210,16 +6511,17 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                     description: 'Tableur éditable — formules, filtres et tri',
                     value: 'excel',
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 3),
                   optionRow(
                     icon: Icons.picture_as_pdf_outlined,
                     color: const Color(0xFFE53935),
                     label: 'PDF',
                     badge: '.pdf',
-                    description: 'Document mis en page, prêt à imprimer ou partager',
+                    description:
+                        'Document mis en page, prêt à imprimer ou partager',
                     value: 'pdf',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -5240,7 +6542,8 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
     setState(() => _exporting = true);
     try {
       final now = DateTime.now();
-      final ts  = '${now.year}${now.month.toString().padLeft(2,'0')}${now.day.toString().padLeft(2,'0')}';
+      final ts =
+          '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
       if (format == 'excel') {
         await _saveExcel(items, ts);
       } else {
@@ -5252,28 +6555,38 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
   }
 
   Future<void> _saveExcel(List<RoHistorique> items, String ts) async {
-    final workbook     = Excel.createExcel();
-    const sheetName    = 'Historique';
+    final workbook = Excel.createExcel();
+    const sheetName = 'Historique';
     final defaultSheet = workbook.getDefaultSheet();
-    if (defaultSheet != null && defaultSheet != sheetName) workbook.rename(defaultSheet, sheetName);
+    if (defaultSheet != null && defaultSheet != sheetName)
+      workbook.rename(defaultSheet, sheetName);
     final sheet = workbook[sheetName];
 
     final cBlueDark = ExcelColor.fromHexString('FF1D4ED8');
-    final cWhite    = ExcelColor.fromHexString('FFFFFFFF');
-    final cBorder   = ExcelColor.fromHexString('FFCBD5E1');
-    final cGrey     = ExcelColor.fromHexString('FFF1F5F9');
-    final cRowAlt   = ExcelColor.fromHexString('FFF8FAFC');
-    final thin = xl.Border(borderStyle: xl.BorderStyle.Thin, borderColorHex: cBorder);
+    final cWhite = ExcelColor.fromHexString('FFFFFFFF');
+    final cBorder = ExcelColor.fromHexString('FFCBD5E1');
+    final cGrey = ExcelColor.fromHexString('FFF1F5F9');
+    final cRowAlt = ExcelColor.fromHexString('FFF8FAFC');
+    final thin =
+        xl.Border(borderStyle: xl.BorderStyle.Thin, borderColorHex: cBorder);
 
-    CellStyle base({ExcelColor? bg, ExcelColor? fg, bool bold = false, int size = 10,
-      HorizontalAlign hAlign = HorizontalAlign.Left}) =>
+    CellStyle base(
+            {ExcelColor? bg,
+            ExcelColor? fg,
+            bool bold = false,
+            int size = 10,
+            HorizontalAlign hAlign = HorizontalAlign.Left}) =>
         CellStyle(
           backgroundColorHex: bg ?? ExcelColor.none,
           fontColorHex: fg ?? ExcelColor.black,
-          bold: bold, fontSize: size,
+          bold: bold,
+          fontSize: size,
           horizontalAlign: hAlign,
           verticalAlign: VerticalAlign.Center,
-          leftBorder: thin, rightBorder: thin, topBorder: thin, bottomBorder: thin,
+          leftBorder: thin,
+          rightBorder: thin,
+          topBorder: thin,
+          bottomBorder: thin,
         );
 
     const lastCol = 5;
@@ -5283,21 +6596,40 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
     );
     sheet.updateCell(
       CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
-      TextCellValue('Historique Événements — Risque Opérationnel$_periodeLabel'),
-      cellStyle: base(bg: cBlueDark, fg: cWhite, bold: true, size: 13, hAlign: HorizontalAlign.Center),
+      TextCellValue(
+          'Historique Événements — Risque Opérationnel$_periodeLabel'),
+      cellStyle: base(
+          bg: cBlueDark,
+          fg: cWhite,
+          bold: true,
+          size: 13,
+          hAlign: HorizontalAlign.Center),
     );
     sheet.setMergedCellStyle(
       CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
-      base(bg: cBlueDark, fg: cWhite, bold: true, size: 13, hAlign: HorizontalAlign.Center),
+      base(
+          bg: cBlueDark,
+          fg: cWhite,
+          bold: true,
+          size: 13,
+          hAlign: HorizontalAlign.Center),
     );
     sheet.setRowHeight(0, 36);
 
-    const headers = ['Date', 'Menu', 'Action', 'Utilisateur', 'Élément', 'Détail'];
+    const headers = [
+      'Date',
+      'Menu',
+      'Action',
+      'Utilisateur',
+      'Élément',
+      'Détail'
+    ];
     for (var c = 0; c < headers.length; c++) {
       sheet.updateCell(
         CellIndex.indexByColumnRow(columnIndex: c, rowIndex: 1),
         TextCellValue(headers[c]),
-        cellStyle: base(bg: cGrey, bold: true, size: 10, hAlign: HorizontalAlign.Center),
+        cellStyle: base(
+            bg: cGrey, bold: true, size: 10, hAlign: HorizontalAlign.Center),
       );
     }
     sheet.setRowHeight(1, 22);
@@ -5307,11 +6639,19 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
     }
 
     for (var i = 0; i < items.length; i++) {
-      final h      = items[i];
-      final row    = i + 2;
-      final altBg  = i.isEven ? cWhite : cRowAlt;
-      final detail = h.nouvelleValeur.isNotEmpty ? h.nouvelleValeur : h.commentaire;
-      final cells  = [h.dateEvenement.replaceAll('T', ' '), h.menu, h.typeAction, h.utilisateur, h.element, detail];
+      final h = items[i];
+      final row = i + 2;
+      final altBg = i.isEven ? cWhite : cRowAlt;
+      final detail =
+          h.nouvelleValeur.isNotEmpty ? h.nouvelleValeur : h.commentaire;
+      final cells = [
+        h.dateEvenement.replaceAll('T', ' '),
+        h.menu,
+        h.typeAction,
+        h.utilisateur,
+        h.element,
+        detail
+      ];
       for (var c = 0; c < cells.length; c++) {
         sheet.updateCell(
           CellIndex.indexByColumnRow(columnIndex: c, rowIndex: row),
@@ -5326,70 +6666,108 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
     if (rawBytes == null) return;
     final location = await getSaveLocation(
       suggestedName: 'historique_ro_$ts.xlsx',
-      acceptedTypeGroups: const [XTypeGroup(label: 'Excel', extensions: ['xlsx'])],
+      acceptedTypeGroups: const [
+        XTypeGroup(label: 'Excel', extensions: ['xlsx'])
+      ],
     );
     if (!mounted || location == null) return;
-    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes), requiredExtension: '.xlsx');
+    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes),
+        requiredExtension: '.xlsx');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export Excel réussi'), backgroundColor: _kSuccess),
+        const SnackBar(
+            content: Text('Export Excel réussi'), backgroundColor: _kSuccess),
       );
     }
   }
 
   Future<void> _savePdf(List<RoHistorique> items, String ts) async {
-    final fontNormal = pw.Font.ttf(await rootBundle.load('assets/fonts/IBMPlexSans-Regular.ttf'));
-    final fontBold   = pw.Font.ttf(await rootBundle.load('assets/fonts/IBMPlexSans-Bold.ttf'));
+    final fontNormal = pw.Font.ttf(
+        await rootBundle.load('assets/fonts/IBMPlexSans-Regular.ttf'));
+    final fontBold =
+        pw.Font.ttf(await rootBundle.load('assets/fonts/IBMPlexSans-Bold.ttf'));
 
-    const headerBg  = PdfColor.fromInt(0xFF0F2544);
+    const headerBg = PdfColor.fromInt(0xFF0F2544);
     const borderCol = PdfColor.fromInt(0xFFE5E7EB);
-    const mutedCol  = PdfColor.fromInt(0xFF6B7280);
+    const mutedCol = PdfColor.fromInt(0xFF6B7280);
 
-    final now     = DateTime.now();
-    final dateStr = '${now.day.toString().padLeft(2,'0')}/${now.month.toString().padLeft(2,'0')}/${now.year}';
+    final now = DateTime.now();
+    final dateStr =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
 
-    final headerStyle = pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white, font: fontBold);
-    final bodyStyle   = pw.TextStyle(fontSize: 7.5, font: fontNormal);
-    final mutedStyle  = pw.TextStyle(fontSize: 8, color: mutedCol, font: fontNormal);
+    final headerStyle = pw.TextStyle(
+        fontSize: 8,
+        fontWeight: pw.FontWeight.bold,
+        color: PdfColors.white,
+        font: fontBold);
+    final bodyStyle = pw.TextStyle(fontSize: 7.5, font: fontNormal);
+    final mutedStyle =
+        pw.TextStyle(fontSize: 8, color: mutedCol, font: fontNormal);
 
     final doc = pw.Document();
     doc.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4.landscape,
-      margin: const pw.EdgeInsets.all(24),
+      margin: const pw.EdgeInsets.all(6),
       theme: pw.ThemeData.withFont(base: fontNormal, bold: fontBold),
-      header: (_) => pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+      header: (_) =>
+          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
         pw.Container(
           width: double.infinity,
-          padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: const pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.all(pw.Radius.circular(4))),
-          child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-            pw.Text('Historique Événements — Risque Opérationnel',
-              style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.white, font: fontBold)),
-            pw.Text(dateStr, style: pw.TextStyle(fontSize: 9, color: const PdfColor.fromInt(0xFFB0C4D8), font: fontNormal)),
-          ]),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+          decoration: const pw.BoxDecoration(
+              color: headerBg,
+              borderRadius: pw.BorderRadius.all(pw.Radius.circular(4))),
+          child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Historique Événements — Risque Opérationnel',
+                    style: pw.TextStyle(
+                        fontSize: 13,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white,
+                        font: fontBold)),
+                pw.Text(dateStr,
+                    style: pw.TextStyle(
+                        fontSize: 9,
+                        color: const PdfColor.fromInt(0xFFB0C4D8),
+                        font: fontNormal)),
+              ]),
         ),
         if (_periodeLabel.isNotEmpty)
           pw.Padding(
             padding: const pw.EdgeInsets.only(top: 4, left: 2),
-            child: pw.Text('Période filtrée :$_periodeLabel', style: mutedStyle),
+            child:
+                pw.Text('Période filtrée :$_periodeLabel', style: mutedStyle),
           ),
-        pw.SizedBox(height: 10),
+        pw.SizedBox(height: 3),
       ]),
       build: (ctx) => [
         pw.TableHelper.fromTextArray(
-          headers: ['Date', 'Menu', 'Action', 'Utilisateur', 'Élément', 'Détail'],
-          data: items.map((h) => [
-            h.dateEvenement.replaceAll('T', ' '),
-            h.menu,
-            h.typeAction,
-            h.utilisateur,
-            h.element,
-            h.nouvelleValeur.isNotEmpty ? h.nouvelleValeur : h.commentaire,
-          ]).toList(),
+          headers: [
+            'Date',
+            'Menu',
+            'Action',
+            'Utilisateur',
+            'Élément',
+            'Détail'
+          ],
+          data: items
+              .map((h) => [
+                    h.dateEvenement.replaceAll('T', ' '),
+                    h.menu,
+                    h.typeAction,
+                    h.utilisateur,
+                    h.element,
+                    h.nouvelleValeur.isNotEmpty
+                        ? h.nouvelleValeur
+                        : h.commentaire,
+                  ])
+              .toList(),
           headerStyle: headerStyle,
           cellStyle: bodyStyle,
           headerDecoration: const pw.BoxDecoration(color: headerBg),
-          oddRowDecoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
+          oddRowDecoration:
+              const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
           border: pw.TableBorder.all(color: borderCol, width: 0.5),
           columnWidths: const {
             0: pw.FixedColumnWidth(72),
@@ -5408,24 +6786,29 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
             5: pw.Alignment.centerLeft,
           },
         ),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 3),
         pw.Divider(color: PdfColors.grey300),
         pw.SizedBox(height: 4),
-        pw.Text('Document généré le $dateStr — Outil RWA — ${items.length} entrée(s)',
-          style: mutedStyle, textAlign: pw.TextAlign.center),
+        pw.Text(
+            'Document généré le $dateStr — Outil RWA — ${items.length} entrée(s)',
+            style: mutedStyle,
+            textAlign: pw.TextAlign.center),
       ],
     ));
 
     final pdfBytes = await doc.save();
     final location = await getSaveLocation(
       suggestedName: 'historique_ro_$ts.pdf',
-      acceptedTypeGroups: const [XTypeGroup(label: 'PDF', extensions: ['pdf'])],
+      acceptedTypeGroups: const [
+        XTypeGroup(label: 'PDF', extensions: ['pdf'])
+      ],
     );
     if (!mounted || location == null) return;
     await saveBytesAtLocation(location, pdfBytes, requiredExtension: '.pdf');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export PDF réussi'), backgroundColor: _kSuccess),
+        const SnackBar(
+            content: Text('Export PDF réussi'), backgroundColor: _kSuccess),
       );
     }
   }
@@ -5445,14 +6828,15 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
             subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo('Art. 314'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           Expanded(
             child: FutureBuilder<List<RoHistorique>>(
               future: _future,
               builder: (ctx, snap) {
-                if (snap.connectionState != ConnectionState.done) return _loadingBox();
+                if (snap.connectionState != ConnectionState.done)
+                  return _loadingBox();
                 if (snap.hasError) return _errorBox(snap.error!);
-                final allItems      = snap.data!;
+                final allItems = snap.data!;
                 final filteredItems = _applyFilters(allItems);
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -5460,19 +6844,24 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                     // ── Barre filtres + export ──────────────────────────────
                     Row(
                       children: [
-                        const Icon(Icons.lock_outline, size: 14, color: _kMuted),
+                        const Icon(Icons.lock_outline,
+                            size: 14, color: _kMuted),
                         const SizedBox(width: 6),
-                        const Text('Journal non modifiable — conservation 7 ans (UMOA)',
+                        const Text(
+                            'Journal non modifiable — conservation 7 ans (UMOA)',
                             style: TextStyle(fontSize: 12, color: _kMuted)),
                         const Spacer(),
                         // Date début
-                        _histDateField('Date début', _dateDebutCtrl, isDark, () => _pickDate(_dateDebutCtrl)),
+                        _histDateField('Date début', _dateDebutCtrl, isDark,
+                            () => _pickDate(_dateDebutCtrl)),
                         const SizedBox(width: 6),
                         // Date fin
-                        _histDateField('Date fin', _dateFinCtrl, isDark, () => _pickDate(_dateFinCtrl)),
+                        _histDateField('Date fin', _dateFinCtrl, isDark,
+                            () => _pickDate(_dateFinCtrl)),
                         const SizedBox(width: 6),
                         // Reset
-                        if (_dateDebutCtrl.text.isNotEmpty || _dateFinCtrl.text.isNotEmpty)
+                        if (_dateDebutCtrl.text.isNotEmpty ||
+                            _dateFinCtrl.text.isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(right: 6),
                             child: Tooltip(
@@ -5485,7 +6874,8 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                                 }),
                                 child: const Padding(
                                   padding: EdgeInsets.all(4),
-                                  child: Icon(Icons.clear, size: 16, color: _kMuted),
+                                  child: Icon(Icons.clear,
+                                      size: 16, color: _kMuted),
                                 ),
                               ),
                             ),
@@ -5494,55 +6884,109 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                         SizedBox(
                           height: 30,
                           child: FilledButton.icon(
-                            onPressed: (filteredItems.isEmpty || _exporting) ? null : () => _exportData(filteredItems),
+                            onPressed: (filteredItems.isEmpty || _exporting)
+                                ? null
+                                : () => _exportData(filteredItems),
                             style: FilledButton.styleFrom(
-                              backgroundColor: (filteredItems.isNotEmpty && !_exporting) ? _kSuccess : (isDark ? const Color(0xFF1B2B47) : const Color(0xFFE8EEF8)),
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              backgroundColor:
+                                  (filteredItems.isNotEmpty && !_exporting)
+                                      ? _kSuccess
+                                      : (isDark
+                                          ? const Color(0xFF1B2B47)
+                                          : const Color(0xFFE8EEF8)),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 10),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(6)),
                             ),
                             icon: _exporting
-                                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                : const Icon(Icons.file_download_outlined, size: 15),
-                            label: const Text('Exporter', style: TextStyle(fontSize: 12)),
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.file_download_outlined,
+                                    size: 15),
+                            label: const Text('Exporter',
+                                style: TextStyle(fontSize: 12)),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        _badge('${filteredItems.length} / ${allItems.length} entrées', _kBlue),
+                        const SizedBox(width: 3),
+                        _badge(
+                            '${filteredItems.length} / ${allItems.length} entrées',
+                            _kBlue),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 3),
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF13233E) : Colors.white,
-                          border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
+                          color:
+                              isDark ? const Color(0xFF13233E) : Colors.white,
+                          border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF304764)
+                                  : AppTheme.border),
                           borderRadius: BorderRadius.circular(5),
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: filteredItems.isEmpty
-                            ? Center(child: Text(
-                                allItems.isEmpty ? 'Aucun événement enregistré.' : 'Aucun résultat pour ces dates.',
+                            ? Center(
+                                child: Text(
+                                allItems.isEmpty
+                                    ? 'Aucun événement enregistré.'
+                                    : 'Aucun résultat pour ces dates.',
                                 style: const TextStyle(color: _kMuted),
                               ))
                             : SingleChildScrollView(
                                 child: Table(
-                                  columnWidths: const {0: FixedColumnWidth(150), 1: FixedColumnWidth(90), 2: FixedColumnWidth(90), 3: FixedColumnWidth(80), 4: FixedColumnWidth(120), 5: FlexColumnWidth()},
+                                  columnWidths: const {
+                                    0: FixedColumnWidth(150),
+                                    1: FixedColumnWidth(90),
+                                    2: FixedColumnWidth(90),
+                                    3: FixedColumnWidth(80),
+                                    4: FixedColumnWidth(120),
+                                    5: FlexColumnWidth()
+                                  },
                                   children: [
-                                    _tableHeader(['Date', 'Menu', 'Action', 'Utilisateur', 'Élément', 'Détail']),
+                                    _tableHeader([
+                                      'Date',
+                                      'Menu',
+                                      'Action',
+                                      'Utilisateur',
+                                      'Élément',
+                                      'Détail'
+                                    ]),
                                     ...filteredItems.map((h) => TableRow(
-                                      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0x11000000)))),
-                                      children: [
-                                        _cell(h.dateEvenement.replaceAll('T', ' ')),
-                                        _cell(h.menu),
-                                        TableCell(
-                                          verticalAlignment: TableCellVerticalAlignment.middle,
-                                          child: Padding(padding: const EdgeInsets.all(8), child: _badge(h.typeAction, _actionColor(h.typeAction))),
-                                        ),
-                                        _cell(h.utilisateur),
-                                        _cell(h.element),
-                                        _cellFlex(h.nouvelleValeur.isNotEmpty ? h.nouvelleValeur : h.commentaire),
-                                      ],
-                                    )),
+                                          decoration: const BoxDecoration(
+                                              border: Border(
+                                                  bottom: BorderSide(
+                                                      color:
+                                                          Color(0x11000000)))),
+                                          children: [
+                                            _cell(h.dateEvenement
+                                                .replaceAll('T', ' ')),
+                                            _cell(h.menu),
+                                            TableCell(
+                                              verticalAlignment:
+                                                  TableCellVerticalAlignment
+                                                      .middle,
+                                              child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8),
+                                                  child: _badge(
+                                                      h.typeAction,
+                                                      _actionColor(
+                                                          h.typeAction))),
+                                            ),
+                                            _cell(h.utilisateur),
+                                            _cell(h.element),
+                                            _cellFlex(
+                                                h.nouvelleValeur.isNotEmpty
+                                                    ? h.nouvelleValeur
+                                                    : h.commentaire),
+                                          ],
+                                        )),
                                   ],
                                 ),
                               ),
@@ -5558,7 +7002,8 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
     );
   }
 
-  Widget _histDateField(String label, TextEditingController ctrl, bool isDark, VoidCallback onTap) {
+  Widget _histDateField(String label, TextEditingController ctrl, bool isDark,
+      VoidCallback onTap) {
     return SizedBox(
       width: 130,
       height: 32,
@@ -5566,26 +7011,29 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
         controller: ctrl,
         readOnly: true,
         onTap: onTap,
-        style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black87),
+        style: TextStyle(
+            fontSize: 12, color: isDark ? Colors.white : Colors.black87),
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(fontSize: 11, color: _kMuted),
           isDense: true,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
-          suffixIcon: const Icon(Icons.calendar_today_outlined, size: 14, color: _kMuted),
+          suffixIcon: const Icon(Icons.calendar_today_outlined,
+              size: 14, color: _kMuted),
         ),
       ),
     );
   }
 
   Color _actionColor(String a) => switch (a) {
-    'CREATE' => _kSuccess,
-    'UPDATE' => _kBlue,
-    'DELETE' => _kDanger,
-    'EXPORT' => AppColors.prudentialSolvency,
-    _ => _kMuted,
-  };
+        'CREATE' => _kSuccess,
+        'UPDATE' => _kBlue,
+        'DELETE' => _kDanger,
+        'EXPORT' => AppColors.prudentialSolvency,
+        _ => _kMuted,
+      };
 }
 
 // ─── VIEW 10 : REPORTING ──────────────────────────────────────────────────────
@@ -5603,7 +7051,7 @@ class _ReportingViewState extends State<_ReportingView> {
   bool _generating = false;
   String? _savedFileName;
   final _dateDebutCtrl = TextEditingController();
-  final _dateFinCtrl   = TextEditingController();
+  final _dateFinCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -5635,7 +7083,7 @@ class _ReportingViewState extends State<_ReportingView> {
     setState(() {
       _periode = periode;
       _dateDebutCtrl.text = debut.toIso8601String().substring(0, 10);
-      _dateFinCtrl.text   = now.toIso8601String().substring(0, 10);
+      _dateFinCtrl.text = now.toIso8601String().substring(0, 10);
     });
   }
 
@@ -5643,7 +7091,9 @@ class _ReportingViewState extends State<_ReportingView> {
     try {
       final d = DateTime.parse(iso);
       return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-    } catch (_) { return iso; }
+    } catch (_) {
+      return iso;
+    }
   }
 
   String get _periodeLabel {
@@ -5656,7 +7106,10 @@ class _ReportingViewState extends State<_ReportingView> {
   // ─── Génération + dialog de sauvegarde ──────────────────────────────────────
 
   Future<void> _generateAndSave() async {
-    setState(() { _generating = true; _savedFileName = null; });
+    setState(() {
+      _generating = true;
+      _savedFileName = null;
+    });
     try {
       // 1. Récupérer les données
       final results = await Future.wait([
@@ -5667,40 +7120,52 @@ class _ReportingViewState extends State<_ReportingView> {
         widget.api.fetchRoControles(),
         widget.api.fetchRoPlans(),
       ]);
-      final dash      = results[0] as RoDashboardData;
-      final kriData   = results[2] as RoKriModuleData;
-      final risques   = results[3] as List<RoRisque>;
+      final dash = results[0] as RoDashboardData;
+      final kriData = results[2] as RoKriModuleData;
+      final risques = results[3] as List<RoRisque>;
       final controles = results[4] as List<RoControle>;
-      final plans     = results[5] as List<RoPlan>;
+      final plans = results[5] as List<RoPlan>;
 
-      final debut = _dateDebutCtrl.text.isNotEmpty ? DateTime.tryParse(_dateDebutCtrl.text) : null;
-      final fin   = _dateFinCtrl.text.isNotEmpty   ? DateTime.tryParse(_dateFinCtrl.text)   : null;
+      final debut = _dateDebutCtrl.text.isNotEmpty
+          ? DateTime.tryParse(_dateDebutCtrl.text)
+          : null;
+      final fin = _dateFinCtrl.text.isNotEmpty
+          ? DateTime.tryParse(_dateFinCtrl.text)
+          : null;
       final incidents = (results[1] as List<RoIncident>).where((i) {
         try {
           final d = DateTime.parse(i.dateOccurrence);
           if (debut != null && d.isBefore(debut)) return false;
-          if (fin   != null && d.isAfter(fin.add(const Duration(days: 1)))) return false;
+          if (fin != null && d.isAfter(fin.add(const Duration(days: 1))))
+            return false;
           return true;
-        } catch (_) { return true; }
+        } catch (_) {
+          return true;
+        }
       }).toList();
 
       // 2. Construire le PDF
       final now = DateTime.now();
-      final bytes = await _buildPdf(dash, incidents, kriData.kriList, risques, controles, plans, now);
+      final bytes = await _buildPdf(
+          dash, incidents, kriData.kriList, risques, controles, plans, now);
 
       if (!mounted) return;
 
       // 3. Dialog de sauvegarde natif Windows
-      final ts = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+      final ts =
+          '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
           '_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
       final location = await getSaveLocation(
         suggestedName: 'rapport_ro_${_periode.toLowerCase()}_$ts.pdf',
-        acceptedTypeGroups: const [XTypeGroup(label: 'PDF', extensions: ['pdf'])],
+        acceptedTypeGroups: const [
+          XTypeGroup(label: 'PDF', extensions: ['pdf'])
+        ],
       );
       if (!mounted || location == null) return;
 
       // 4. Enregistrer
-      final saved = await saveBytesAtLocation(location, bytes, requiredExtension: '.pdf');
+      final saved =
+          await saveBytesAtLocation(location, bytes, requiredExtension: '.pdf');
       if (!mounted) return;
 
       final fileName = saved.path.split(RegExp(r'[\\/]')).last;
@@ -5734,131 +7199,197 @@ class _ReportingViewState extends State<_ReportingView> {
     DateTime now,
   ) async {
     final doc = pw.Document();
-    const headerBg  = PdfColor.fromInt(0xFF0F2544);
-    const accentBg  = PdfColor.fromInt(0xFF2563EB);
+    const headerBg = PdfColor.fromInt(0xFF0F2544);
+    const accentBg = PdfColor.fromInt(0xFF2563EB);
     const borderCol = PdfColor.fromInt(0xFFE5E7EB);
-    const mutedCol  = PdfColor.fromInt(0xFF6B7280);
+    const mutedCol = PdfColor.fromInt(0xFF6B7280);
 
-    final dateStr = '${now.day.toString().padLeft(2,'0')}/${now.month.toString().padLeft(2,'0')}/${now.year}';
+    final dateStr =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
 
-    const mutedStyle  = pw.TextStyle(fontSize: 8.5, color: mutedCol);
-    const bodyStyle   = pw.TextStyle(fontSize: 9);
-    final headerStyle = pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white);
+    const mutedStyle = pw.TextStyle(fontSize: 8.5, color: mutedCol);
+    const bodyStyle = pw.TextStyle(fontSize: 9);
+    final headerStyle = pw.TextStyle(
+        fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white);
 
     pw.Widget sectionBanner(String text) => pw.Container(
-      width: double.infinity,
-      margin: const pw.EdgeInsets.only(bottom: 6),
-      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.circular(3)),
-      child: pw.Text(text, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-    );
+          width: double.infinity,
+          margin: const pw.EdgeInsets.only(bottom: 6),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 5.0),
+          decoration: pw.BoxDecoration(
+              color: headerBg, borderRadius: pw.BorderRadius.circular(3)),
+          child: pw.Text(text,
+              style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white)),
+        );
 
     pw.Widget kpiGrid(List<(String label, String value)> items) => pw.Row(
-      children: items.map((item) => pw.Expanded(
-        child: pw.Container(
-          margin: const pw.EdgeInsets.only(right: 6, bottom: 6),
-          padding: const pw.EdgeInsets.all(8),
-          decoration: pw.BoxDecoration(border: pw.Border.all(color: borderCol), borderRadius: pw.BorderRadius.circular(4)),
-          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-            pw.Text(item.$1, style: mutedStyle),
-            pw.SizedBox(height: 3),
-            pw.Text(item.$2, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: headerBg)),
-          ]),
-        ),
-      )).toList(),
-    );
+          children: items
+              .map((item) => pw.Expanded(
+                    child: pw.Container(
+                      margin: const pw.EdgeInsets.only(right: 6, bottom: 6),
+                      padding: const pw.EdgeInsets.all(8),
+                      decoration: pw.BoxDecoration(
+                          border: pw.Border.all(color: borderCol),
+                          borderRadius: pw.BorderRadius.circular(4)),
+                      child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(item.$1, style: mutedStyle),
+                            pw.SizedBox(height: 3),
+                            pw.Text(item.$2,
+                                style: pw.TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: pw.FontWeight.bold,
+                                    color: headerBg)),
+                          ]),
+                    ),
+                  ))
+              .toList(),
+        );
 
     pw.Widget table(List<String> headers, List<List<String>> rows) =>
-      pw.TableHelper.fromTextArray(
-        headers: headers,
-        data: rows,
-        headerStyle: headerStyle,
-        headerDecoration: const pw.BoxDecoration(color: accentBg),
-        cellStyle: bodyStyle,
-        border: pw.TableBorder.all(color: borderCol, width: 0.4),
-        cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-      );
+        pw.TableHelper.fromTextArray(
+          headers: headers,
+          data: rows,
+          headerStyle: headerStyle,
+          headerDecoration: const pw.BoxDecoration(color: accentBg),
+          cellStyle: bodyStyle,
+          border: pw.TableBorder.all(color: borderCol, width: 0.4),
+          cellPadding:
+              const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+        );
 
     doc.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.fromLTRB(28, 28, 28, 32),
+      margin: const pw.EdgeInsets.fromLTRB(6, 6, 6, 6),
       header: (_) => pw.Container(
         padding: const pw.EdgeInsets.only(bottom: 6),
-        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
-        child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-          pw.Text('Rapport Risque Opérationnel -- $_periodeLabel', style: mutedStyle),
-          pw.Text('$_destinataire  ·  $dateStr', style: mutedStyle),
-        ]),
+        decoration: const pw.BoxDecoration(
+            border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
+        child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Rapport Risque Opérationnel -- $_periodeLabel',
+                  style: mutedStyle),
+              pw.Text('$_destinataire  ·  $dateStr', style: mutedStyle),
+            ]),
       ),
       footer: (ctx) => pw.Container(
         padding: const pw.EdgeInsets.only(top: 6),
-        decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300))),
-        child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-          pw.Text('Confidentiel -- Usage interne', style: mutedStyle),
-          pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}', style: mutedStyle),
-        ]),
+        decoration: const pw.BoxDecoration(
+            border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300))),
+        child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Confidentiel -- Usage interne', style: mutedStyle),
+              pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}',
+                  style: mutedStyle),
+            ]),
       ),
       build: (_) => [
-
         // ── COUVERTURE ────────────────────────────────────────────────────────
         pw.Container(
           width: double.infinity,
-          padding: const pw.EdgeInsets.all(22),
-          decoration: pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.circular(6)),
-          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-            pw.Text('RAPPORT DE RISQUE OPÉRATIONNEL',
-                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-            pw.SizedBox(height: 6),
-            pw.Text('Période : $_periodeLabel  ·  Destinataire : $_destinataire',
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey300)),
-            pw.Text('Date de génération : $dateStr',
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey300)),
-            pw.SizedBox(height: 4),
-            pw.Text('Art. 313, 313.b, 313.c, 314, 545, 546 -- UMOA/BCEAO',
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey400)),
-          ]),
+          padding: const pw.EdgeInsets.all(6),
+          decoration: pw.BoxDecoration(
+              color: headerBg, borderRadius: pw.BorderRadius.circular(6)),
+          child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('RAPPORT DE RISQUE OPÉRATIONNEL',
+                    style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white)),
+                pw.SizedBox(height: 6),
+                pw.Text(
+                    'Période : $_periodeLabel  ·  Destinataire : $_destinataire',
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey300)),
+                pw.Text('Date de génération : $dateStr',
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey300)),
+                pw.SizedBox(height: 4),
+                pw.Text('Art. 313, 313.b, 313.c, 314, 545, 546 -- UMOA/BCEAO',
+                    style: const pw.TextStyle(
+                        fontSize: 8, color: PdfColors.grey400)),
+              ]),
         ),
-        pw.SizedBox(height: 16),
+        pw.SizedBox(height: 4),
 
         // ── 1. SYNTHÈSE GÉNÉRALE ─────────────────────────────────────────────
         sectionBanner('1. SYNTHÈSE GÉNÉRALE  '),
         kpiGrid([
-          ('Exigence fonds propres (K)', AppFormatters.currency(dash.widget1.exigenceFondsPropres)),
-          ('RWA risque opérationnel',    AppFormatters.currency(dash.widget1.aprRisqueOp)),
-          ('Statut réglementaire',       dash.widget1.statutReglementaire),
-          ('Incidents (mois)',           '${dash.widget2.totalIncidentsMois}'),
-          ('Non clôturés',              '${dash.widget2.incidentsNonClos}'),
-          ('Actions en retard',         '${dash.widget3.actionsEnRetard}'),
+          (
+            'Exigence fonds propres (K)',
+            AppFormatters.currency(dash.widget1.exigenceFondsPropres)
+          ),
+          (
+            'RWA risque opérationnel',
+            AppFormatters.currency(dash.widget1.aprRisqueOp)
+          ),
+          ('Statut réglementaire', dash.widget1.statutReglementaire),
+          ('Incidents (mois)', '${dash.widget2.totalIncidentsMois}'),
+          ('Non clôturés', '${dash.widget2.incidentsNonClos}'),
+          ('Actions en retard', '${dash.widget3.actionsEnRetard}'),
         ]),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 3),
 
         // ── 2. INCIDENTS ET PERTES ───────────────────────────────────────────
         sectionBanner('2. INCIDENTS ET PERTES  '),
         kpiGrid([
-          ('Pertes brutes totales', AppFormatters.currency(incidents.fold(0.0, (s, i) => s + i.perteBrute))),
-          ('Pertes nettes totales', AppFormatters.currency(incidents.fold(0.0, (s, i) => s + i.perteNette))),
-          ('Incidents significatifs', '${incidents.where((i) => i.significatif).length}'),
+          (
+            'Pertes brutes totales',
+            AppFormatters.currency(
+                incidents.fold(0.0, (s, i) => s + i.perteBrute))
+          ),
+          (
+            'Pertes nettes totales',
+            AppFormatters.currency(
+                incidents.fold(0.0, (s, i) => s + i.perteNette))
+          ),
+          (
+            'Incidents significatifs',
+            '${incidents.where((i) => i.significatif).length}'
+          ),
         ]),
         pw.SizedBox(height: 6),
         if (incidents.isEmpty)
           pw.Text('Aucun incident enregistré.', style: mutedStyle)
         else ...[
           table(
-            ['Référence', 'Date', 'Ligne métier', 'Perte brute', 'Perte nette', 'Statut'],
-            incidents.take(15).map((i) => [
-              i.reference, i.dateOccurrence, i.ligneMetier,
-              AppFormatters.currency(i.perteBrute),
-              AppFormatters.currency(i.perteNette),
-              i.statut,
-            ]).toList(),
+            [
+              'Référence',
+              'Date',
+              'Ligne métier',
+              'Perte brute',
+              'Perte nette',
+              'Statut'
+            ],
+            incidents
+                .take(15)
+                .map((i) => [
+                      i.reference,
+                      i.dateOccurrence,
+                      i.ligneMetier,
+                      AppFormatters.currency(i.perteBrute),
+                      AppFormatters.currency(i.perteNette),
+                      i.statut,
+                    ])
+                .toList(),
           ),
           if (incidents.length > 15)
             pw.Padding(
               padding: const pw.EdgeInsets.only(top: 3),
-              child: pw.Text('... et ${incidents.length - 15} autres incidents.', style: mutedStyle),
+              child: pw.Text(
+                  '... et ${incidents.length - 15} autres incidents.',
+                  style: mutedStyle),
             ),
         ],
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 3),
 
         // ── 3. INDICATEURS CLÉS (KRI) ────────────────────────────────────────
         sectionBanner('3. INDICATEURS CLÉS DE RISQUE  '),
@@ -5866,16 +7397,30 @@ class _ReportingViewState extends State<_ReportingView> {
           pw.Text('Aucun KRI configuré.', style: mutedStyle)
         else
           table(
-            ['KRI', 'Unité', 'Seuil alerte', 'Dernière valeur', 'Dernière date', 'Statut'],
-            kris.map((k) => [
-              k.definition.nom, k.definition.unite,
-              k.definition.sens == 'superieur' ? '> ${k.definition.seuilAlerte}' : '< ${k.definition.seuilAlerte}',
-              k.derniereValeur != null ? '${k.derniereValeur!.toStringAsFixed(1)} ${k.definition.unite}' : 'N/A',
-              k.derniereDate ?? 'N/A',
-              k.statut.toUpperCase(),
-            ]).toList(),
+            [
+              'KRI',
+              'Unité',
+              'Seuil alerte',
+              'Dernière valeur',
+              'Dernière date',
+              'Statut'
+            ],
+            kris
+                .map((k) => [
+                      k.definition.nom,
+                      k.definition.unite,
+                      k.definition.sens == 'superieur'
+                          ? '> ${k.definition.seuilAlerte}'
+                          : '< ${k.definition.seuilAlerte}',
+                      k.derniereValeur != null
+                          ? '${k.derniereValeur!.toStringAsFixed(1)} ${k.definition.unite}'
+                          : 'N/A',
+                      k.derniereDate ?? 'N/A',
+                      k.statut.toUpperCase(),
+                    ])
+                .toList(),
           ),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 3),
 
         // ── 4. CARTOGRAPHIE DES RISQUES ──────────────────────────────────────
         sectionBanner('4. CARTOGRAPHIE DES RISQUES  '),
@@ -5883,33 +7428,64 @@ class _ReportingViewState extends State<_ReportingView> {
           pw.Text('Aucun risque enregistré.', style: mutedStyle)
         else
           table(
-            ['Risque', 'Catégorie', 'Prob.', 'Impact', 'Niveau brut', 'Niveau résiduel'],
-            risques.map((r) => [
-              r.nom, r.categorie,
-              '${r.probabilite}/5', '${r.impact}/5',
-              r.niveauLabel, r.niveauResiduel.toStringAsFixed(1),
-            ]).toList(),
+            [
+              'Risque',
+              'Catégorie',
+              'Prob.',
+              'Impact',
+              'Niveau brut',
+              'Niveau résiduel'
+            ],
+            risques
+                .map((r) => [
+                      r.nom,
+                      r.categorie,
+                      '${r.probabilite}/5',
+                      '${r.impact}/5',
+                      r.niveauLabel,
+                      r.niveauResiduel.toStringAsFixed(1),
+                    ])
+                .toList(),
           ),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 3),
 
         // ── 5. CONTRÔLES INTERNES ────────────────────────────────────────────
         sectionBanner('5. CONTRÔLES INTERNES  '),
         if (controles.isNotEmpty) ...[
           kpiGrid([
             ('Total contrôles', '${controles.length}'),
-            ('Non conformes', '${controles.where((c) => c.resultat == 'Non-conforme').length}'),
-            ('Taux moyen', '${(controles.fold(0.0, (s, c) => s + c.tauxConformite) / controles.length).toStringAsFixed(1)} %'),
+            (
+              'Non conformes',
+              '${controles.where((c) => c.resultat == 'Non-conforme').length}'
+            ),
+            (
+              'Taux moyen',
+              '${(controles.fold(0.0, (s, c) => s + c.tauxConformite) / controles.length).toStringAsFixed(1)} %'
+            ),
           ]),
           table(
-            ['Référence', 'Périmètre', 'Type', 'Fréquence', 'Taux conf.', 'Résultat'],
-            controles.map((c) => [
-              c.reference, c.perimetre, c.typeControle, c.frequence,
-              '${c.tauxConformite.toStringAsFixed(1)} %', c.resultat,
-            ]).toList(),
+            [
+              'Référence',
+              'Périmètre',
+              'Type',
+              'Fréquence',
+              'Taux conf.',
+              'Résultat'
+            ],
+            controles
+                .map((c) => [
+                      c.reference,
+                      c.perimetre,
+                      c.typeControle,
+                      c.frequence,
+                      '${c.tauxConformite.toStringAsFixed(1)} %',
+                      c.resultat,
+                    ])
+                .toList(),
           ),
         ] else
           pw.Text('Aucun contrôle enregistré.', style: mutedStyle),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 3),
 
         // ── 6. PLANS D'ACTIONS ───────────────────────────────────────────────
         sectionBanner('6. PLANS D\'ACTIONS  '),
@@ -5917,35 +7493,71 @@ class _ReportingViewState extends State<_ReportingView> {
           kpiGrid([
             ('Plans total', '${plans.length}'),
             ('En retard', '${plans.where((p) => p.enRetard).length}'),
-            ('Réalisation moy.', '${(plans.fold(0.0, (s, p) => s + p.avancement) / plans.length).toStringAsFixed(0)} %'),
+            (
+              'Réalisation moy.',
+              '${(plans.fold(0.0, (s, p) => s + p.avancement) / plans.length).toStringAsFixed(0)} %'
+            ),
           ]),
           table(
-            ['Référence', 'Titre', 'Priorité', 'Responsable', 'Échéance', 'Avancement', 'Statut'],
-            plans.map((p) => [
-              p.reference,
-              p.titre.length > 30 ? '${p.titre.substring(0, 28)}…' : p.titre,
-              p.priorite,
-              p.responsable.isEmpty ? '—' : p.responsable,
-              p.dateEcheance.isEmpty ? '—' : p.dateEcheance,
-              '${p.avancement} %', p.statut,
-            ]).toList(),
+            [
+              'Référence',
+              'Titre',
+              'Priorité',
+              'Responsable',
+              'Échéance',
+              'Avancement',
+              'Statut'
+            ],
+            plans
+                .map((p) => [
+                      p.reference,
+                      p.titre.length > 30
+                          ? '${p.titre.substring(0, 28)}…'
+                          : p.titre,
+                      p.priorite,
+                      p.responsable.isEmpty ? '—' : p.responsable,
+                      p.dateEcheance.isEmpty ? '—' : p.dateEcheance,
+                      '${p.avancement} %',
+                      p.statut,
+                    ])
+                .toList(),
           ),
         ] else
           pw.Text('Aucun plan d\'action enregistré.', style: mutedStyle),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 3),
 
         // ── 7. SIMULATION DE CRISE ───────────────────────────────────────────
         sectionBanner('7. SIMULATION DE CRISE  '),
         table(
           ['Scénario', 'Variation PNB', 'RWA estimé', 'Exigence fonds propres'],
           [
-            ['Optimiste',    '+10 %', AppFormatters.currency(dash.widget1.aprRisqueOp * 1.10), AppFormatters.currency(dash.widget1.exigenceFondsPropres * 1.10)],
-            ['Neutre',        '0 %',  AppFormatters.currency(dash.widget1.aprRisqueOp),        AppFormatters.currency(dash.widget1.exigenceFondsPropres)],
-            ['Pessimiste',   '-20 %', AppFormatters.currency(dash.widget1.aprRisqueOp * 0.80), AppFormatters.currency(dash.widget1.exigenceFondsPropres * 0.80)],
-            ['Crise sévère', '-35 %', AppFormatters.currency(dash.widget1.aprRisqueOp * 0.65), AppFormatters.currency(dash.widget1.exigenceFondsPropres * 0.65)],
+            [
+              'Optimiste',
+              '+10 %',
+              AppFormatters.currency(dash.widget1.aprRisqueOp * 1.10),
+              AppFormatters.currency(dash.widget1.exigenceFondsPropres * 1.10)
+            ],
+            [
+              'Neutre',
+              '0 %',
+              AppFormatters.currency(dash.widget1.aprRisqueOp),
+              AppFormatters.currency(dash.widget1.exigenceFondsPropres)
+            ],
+            [
+              'Pessimiste',
+              '-20 %',
+              AppFormatters.currency(dash.widget1.aprRisqueOp * 0.80),
+              AppFormatters.currency(dash.widget1.exigenceFondsPropres * 0.80)
+            ],
+            [
+              'Crise sévère',
+              '-35 %',
+              AppFormatters.currency(dash.widget1.aprRisqueOp * 0.65),
+              AppFormatters.currency(dash.widget1.exigenceFondsPropres * 0.65)
+            ],
           ],
         ),
-        pw.SizedBox(height: 16),
+        pw.SizedBox(height: 4),
 
         // ── PIED ─────────────────────────────────────────────────────────────
         pw.Divider(color: PdfColors.grey300),
@@ -5977,7 +7589,7 @@ class _ReportingViewState extends State<_ReportingView> {
             subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo('Art. 313.c'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -5985,178 +7597,331 @@ class _ReportingViewState extends State<_ReportingView> {
                 children: [
                   SectionCard(
                     title: 'Paramètres du rapport',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text('Période rapide :',
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
-                        color: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkMuted : _kMuted)),
-                    const SizedBox(width: 10),
-                    ...['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'].map((p) {
-                      final sel = _periode == p &&
-                          _dateDebutCtrl.text.isNotEmpty && _dateFinCtrl.text.isNotEmpty;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () => _applyQuickPeriod(p),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: sel ? _kBlue : _kBlue.withValues(alpha: 0.07),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: sel ? _kBlue : _kBlue.withValues(alpha: 0.25)),
-                            ),
-                            child: Text(p, style: TextStyle(
-                              fontSize: 11.5, fontWeight: FontWeight.w600,
-                              color: sel ? Colors.white : _kBlue,
-                            )),
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _reportingDateField(context, 'Date de début', _dateDebutCtrl)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _reportingDateField(context, 'Date de fin', _dateFinCtrl)),
-                    const SizedBox(width: 12),
-                    Expanded(child: _dropdown('Destinataire', _destinataire,
-                      ['Organe exécutif', 'Organe délibérant', 'Commission Bancaire'],
-                      (v) => setState(() => _destinataire = v ?? 'Organe exécutif'))),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          SectionCard(
-            title: 'Structure du rapport',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [_artInfo('Art. 313.c'), const SizedBox(width: 4), _artInfo('Art. 546')],
-            ),
-            child: Table(
-              columnWidths: const {
-                0: FixedColumnWidth(44),
-                1: FlexColumnWidth(1.4),
-                2: FlexColumnWidth(3),
-                3: FixedColumnWidth(52),
-              },
-              children: [
-                _tableHeader(['#', 'Section', 'Éléments inclus', 'Réf.']),
-                ...[
-                  ('1', 'Synthèse générale',       '',           ['Exigence de fonds propres (Art. 301/307)', 'RWA risque opérationnel (Art. 89)', 'Statut de conformité', 'Évolution N-1']),
-                  ('2', 'Incidents et pertes',      'Art. 313.b', ['Nombre total d\'incidents', 'Pertes nettes totales', 'Top 5 incidents par perte', 'Répartition par ligne de métier']),
-                  ('3', 'Indicateurs clés (KRI)',   '',           ['Tableau des KRI avec statut', 'Évolutions significatives', 'Alertes et actions associées']),
-                  ('4', 'Cartographie des risques', '',           ['Matrice des risques (heatmap)', 'Top 5 risques critiques', 'Évolution risque résiduel']),
-                  ('5', 'Contrôles internes',       'Art. 314',   ['Taux de conformité global', 'Contrôles non conformes', 'Plan de contrôle', 'Actions correctives en cours']),
-                  ('6', 'Plans d\'action',          'Art. 313.c', ['Taux de réalisation', 'Actions en retard', 'Actions terminées (période)']),
-                  ('7', 'Simulation de crise',      'Art. 545',   ['Scénario optimiste (+10 %)', 'Scénario neutre (0 %)', 'Scénario pessimiste (-20 %)', 'Scénario crise sévère (-35 %)']),
-                  ('8', 'Annexes',                  '',           ['Détail des incidents', 'Journal des modifications', 'Glossaire']),
-                ].map<TableRow>((r) => TableRow(
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Color(0x11000000))),
-                  ),
-                  children: [
-                    TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        child: Center(
-                          child: Container(
-                            width: 24, height: 24,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _kBlue.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(r.$1,
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: _kBlue)),
-                          ),
-                        ),
-                      ),
-                    ),
-                    TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        child: Text(r.$2,
-                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
-                      ),
-                    ),
-                    TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: r.$4.map((item) {
-                            final refs = _extractArtRefs(item);
-                            final clean = _stripArtRefs(item);
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 3),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 4, height: 4,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text('Période rapide :',
+                                style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? AppTheme.darkMuted
+                                        : _kMuted)),
+                            const SizedBox(width: 3),
+                            ...[
+                              'Mensuel',
+                              'Trimestriel',
+                              'Semestriel',
+                              'Annuel'
+                            ].map((p) {
+                              final sel = _periode == p &&
+                                  _dateDebutCtrl.text.isNotEmpty &&
+                                  _dateFinCtrl.text.isNotEmpty;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
+                                  onTap: () => _applyQuickPeriod(p),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 180),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 3, vertical: 5.0),
                                     decoration: BoxDecoration(
-                                      color: _kBlue.withValues(alpha: 0.40),
-                                      shape: BoxShape.circle,
+                                      color: sel
+                                          ? _kBlue
+                                          : _kBlue.withValues(alpha: 0.07),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color: sel
+                                              ? _kBlue
+                                              : _kBlue.withValues(alpha: 0.25)),
+                                    ),
+                                    child: Text(p,
+                                        style: TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: sel ? Colors.white : _kBlue,
+                                        )),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                                child: _reportingDateField(
+                                    context, 'Date de début', _dateDebutCtrl)),
+                            const SizedBox(width: 3),
+                            Expanded(
+                                child: _reportingDateField(
+                                    context, 'Date de fin', _dateFinCtrl)),
+                            const SizedBox(width: 3),
+                            Expanded(
+                                child: _dropdown(
+                                    'Destinataire',
+                                    _destinataire,
+                                    [
+                                      'Organe exécutif',
+                                      'Organe délibérant',
+                                      'Commission Bancaire'
+                                    ],
+                                    (v) => setState(() => _destinataire =
+                                        v ?? 'Organe exécutif'))),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  SectionCard(
+                    title: 'Structure du rapport',
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _artInfo('Art. 313.c'),
+                        const SizedBox(width: 4),
+                        _artInfo('Art. 546')
+                      ],
+                    ),
+                    child: Table(
+                      columnWidths: const {
+                        0: FixedColumnWidth(44),
+                        1: FlexColumnWidth(1.4),
+                        2: FlexColumnWidth(3),
+                        3: FixedColumnWidth(52),
+                      },
+                      children: [
+                        _tableHeader(
+                            ['#', 'Section', 'Éléments inclus', 'Réf.']),
+                        ...[
+                          (
+                            '1',
+                            'Synthèse générale',
+                            '',
+                            [
+                              'Exigence de fonds propres (Art. 301/307)',
+                              'RWA risque opérationnel (Art. 89)',
+                              'Statut de conformité',
+                              'Évolution N-1'
+                            ]
+                          ),
+                          (
+                            '2',
+                            'Incidents et pertes',
+                            'Art. 313.b',
+                            [
+                              'Nombre total d\'incidents',
+                              'Pertes nettes totales',
+                              'Top 5 incidents par perte',
+                              'Répartition par ligne de métier'
+                            ]
+                          ),
+                          (
+                            '3',
+                            'Indicateurs clés (KRI)',
+                            '',
+                            [
+                              'Tableau des KRI avec statut',
+                              'Évolutions significatives',
+                              'Alertes et actions associées'
+                            ]
+                          ),
+                          (
+                            '4',
+                            'Cartographie des risques',
+                            '',
+                            [
+                              'Matrice des risques (heatmap)',
+                              'Top 5 risques critiques',
+                              'Évolution risque résiduel'
+                            ]
+                          ),
+                          (
+                            '5',
+                            'Contrôles internes',
+                            'Art. 314',
+                            [
+                              'Taux de conformité global',
+                              'Contrôles non conformes',
+                              'Plan de contrôle',
+                              'Actions correctives en cours'
+                            ]
+                          ),
+                          (
+                            '6',
+                            'Plans d\'action',
+                            'Art. 313.c',
+                            [
+                              'Taux de réalisation',
+                              'Actions en retard',
+                              'Actions terminées (période)'
+                            ]
+                          ),
+                          (
+                            '7',
+                            'Simulation de crise',
+                            'Art. 545',
+                            [
+                              'Scénario optimiste (+10 %)',
+                              'Scénario neutre (0 %)',
+                              'Scénario pessimiste (-20 %)',
+                              'Scénario crise sévère (-35 %)'
+                            ]
+                          ),
+                          (
+                            '8',
+                            'Annexes',
+                            '',
+                            [
+                              'Détail des incidents',
+                              'Journal des modifications',
+                              'Glossaire'
+                            ]
+                          ),
+                        ].map<TableRow>((r) => TableRow(
+                              decoration: const BoxDecoration(
+                                border: Border(
+                                    bottom:
+                                        BorderSide(color: Color(0x11000000))),
+                              ),
+                              children: [
+                                TableCell(
+                                  verticalAlignment:
+                                      TableCellVerticalAlignment.middle,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 3, vertical: 3),
+                                    child: Center(
+                                      child: Container(
+                                        width: 24,
+                                        height: 24,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: _kBlue.withValues(alpha: 0.10),
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: Text(r.$1,
+                                            style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w800,
+                                                color: _kBlue)),
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 7),
-                                  Text(clean, style: const TextStyle(fontSize: 12)),
-                                  ...refs.map((ref) => Padding(
-                                    padding: const EdgeInsets.only(left: 4),
-                                    child: _artInfo(ref),
-                                  )),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
+                                ),
+                                TableCell(
+                                  verticalAlignment:
+                                      TableCellVerticalAlignment.middle,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 3, vertical: 3),
+                                    child: Text(r.$2,
+                                        style: const TextStyle(
+                                            fontSize: 12.5,
+                                            fontWeight: FontWeight.w700)),
+                                  ),
+                                ),
+                                TableCell(
+                                  verticalAlignment:
+                                      TableCellVerticalAlignment.middle,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 3, vertical: 8.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: r.$4.map((item) {
+                                        final refs = _extractArtRefs(item);
+                                        final clean = _stripArtRefs(item);
+                                        return Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 3),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Container(
+                                                width: 4,
+                                                height: 4,
+                                                decoration: BoxDecoration(
+                                                  color: _kBlue.withValues(
+                                                      alpha: 0.40),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 7),
+                                              Text(clean,
+                                                  style: const TextStyle(
+                                                      fontSize: 12)),
+                                              ...refs.map((ref) => Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 4),
+                                                    child: _artInfo(ref),
+                                                  )),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ),
+                                ),
+                                TableCell(
+                                  verticalAlignment:
+                                      TableCellVerticalAlignment.middle,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.0, vertical: 3),
+                                    child: r.$3.isNotEmpty
+                                        ? _artInfo(r.$3)
+                                        : const SizedBox(),
+                                  ),
+                                ),
+                              ],
+                            )),
+                      ],
                     ),
-                    TableCell(
-                      verticalAlignment: TableCellVerticalAlignment.middle,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-                        child: r.$3.isNotEmpty ? _artInfo(r.$3) : const SizedBox(),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _generating ? null : _generateAndSave,
+                        icon: _generating
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.picture_as_pdf_outlined,
+                                size: 18),
+                        label: Text(_generating
+                            ? 'Génération en cours…'
+                            : 'Générer le rapport · $_periodeLabel'),
                       ),
-                    ),
-                  ],
-                )),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              FilledButton.icon(
-                onPressed: _generating ? null : _generateAndSave,
-                icon: _generating
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                label: Text(_generating ? 'Génération en cours…' : 'Générer le rapport · $_periodeLabel'),
-              ),
-              if (_savedFileName != null) ...[
-                const SizedBox(width: 14),
-                const Icon(Icons.check_circle_outline, size: 16, color: _kSuccess),
-                const SizedBox(width: 4),
-                Flexible(child: Text(_savedFileName!, style: const TextStyle(color: _kSuccess, fontSize: 12, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
-              ],
-            ],
-          ),
+                      if (_savedFileName != null) ...[
+                        const SizedBox(width: 4),
+                        const Icon(Icons.check_circle_outline,
+                            size: 16, color: _kSuccess),
+                        const SizedBox(width: 4),
+                        Flexible(
+                            child: Text(_savedFileName!,
+                                style: const TextStyle(
+                                    color: _kSuccess,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600),
+                                overflow: TextOverflow.ellipsis)),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -6166,16 +7931,22 @@ class _ReportingViewState extends State<_ReportingView> {
     );
   }
 
-  Widget _reportingDateField(BuildContext context, String label, TextEditingController ctrl) {
+  Widget _reportingDateField(
+      BuildContext context, String label, TextEditingController ctrl) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
             const Icon(Icons.calendar_month_outlined, size: 12, color: _kBlue),
             const SizedBox(width: 5),
-            Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: _kMuted, letterSpacing: 0.1)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: _kMuted,
+                    letterSpacing: 0.1)),
           ]),
           const SizedBox(height: 5),
           TextFormField(
@@ -6184,20 +7955,27 @@ class _ReportingViewState extends State<_ReportingView> {
             style: const TextStyle(fontSize: 13.5),
             decoration: InputDecoration(
               hintText: 'jj/mm/aaaa',
-              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+              hintStyle:
+                  const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
               border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
               suffixIcon: Container(
                 margin: const EdgeInsets.all(6),
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: _kBlue.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
-                child: const Icon(Icons.calendar_month_outlined, size: 14, color: _kBlue),
+                decoration: BoxDecoration(
+                    color: _kBlue.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6)),
+                child: const Icon(Icons.calendar_month_outlined,
+                    size: 14, color: _kBlue),
               ),
             ),
             onTap: () async {
               DateTime? current;
-              try { if (ctrl.text.isNotEmpty) current = DateTime.parse(ctrl.text); } catch (_) {}
+              try {
+                if (ctrl.text.isNotEmpty) current = DateTime.parse(ctrl.text);
+              } catch (_) {}
               final picked = await showDatePicker(
                 context: context,
                 initialDate: current ?? DateTime.now(),
@@ -6205,14 +7983,15 @@ class _ReportingViewState extends State<_ReportingView> {
                 lastDate: DateTime(2100),
                 helpText: 'Sélectionner une date',
               );
-              if (picked != null) setState(() => ctrl.text = picked.toIso8601String().substring(0, 10));
+              if (picked != null)
+                setState(() =>
+                    ctrl.text = picked.toIso8601String().substring(0, 10));
             },
           ),
         ],
       ),
     );
   }
-
 }
 
 // ─── VIEW : REGISTRE DES PERTES RO (BCEAO/UMOA) ──────────────────────────────
@@ -6233,7 +8012,7 @@ class _RegistreViewState extends State<_RegistreView> {
   final _searchCtrl = TextEditingController();
   String _search = '';
 
-  void _onVBody()  => _syncV(_vBodyCtrl);
+  void _onVBody() => _syncV(_vBodyCtrl);
   void _onVFixed() => _syncV(_vFixedCtrl);
   void _onVTrail() => _syncV(_vTrailCtrl);
   void _syncV(ScrollController src) {
@@ -6241,7 +8020,8 @@ class _RegistreViewState extends State<_RegistreView> {
     _isSyncV = true;
     for (final c in [_vBodyCtrl, _vFixedCtrl, _vTrailCtrl]) {
       if (c == src || !c.hasClients) continue;
-      final t = src.offset.clamp(c.position.minScrollExtent, c.position.maxScrollExtent);
+      final t = src.offset
+          .clamp(c.position.minScrollExtent, c.position.maxScrollExtent);
       if ((c.offset - t).abs() > 0.5) c.jumpTo(t);
     }
     _isSyncV = false;
@@ -6250,7 +8030,8 @@ class _RegistreViewState extends State<_RegistreView> {
   @override
   void initState() {
     super.initState();
-    _searchCtrl.addListener(() => setState(() => _search = _searchCtrl.text.toLowerCase()));
+    _searchCtrl.addListener(
+        () => setState(() => _search = _searchCtrl.text.toLowerCase()));
     _vBodyCtrl.addListener(_onVBody);
     _vFixedCtrl.addListener(_onVFixed);
     _vTrailCtrl.addListener(_onVTrail);
@@ -6275,8 +8056,12 @@ class _RegistreViewState extends State<_RegistreView> {
 
   void _reload() {
     final f = widget.api.fetchRoIncidents();
-    f.then((data) { if (mounted) setState(() => _cachedItems = data); }).catchError((_) {});
-    setState(() { _future = f; });
+    f.then((data) {
+      if (mounted) setState(() => _cachedItems = data);
+    }).catchError((_) {});
+    setState(() {
+      _future = f;
+    });
   }
 
   Future<void> _openImport() async {
@@ -6294,15 +8079,24 @@ class _RegistreViewState extends State<_RegistreView> {
   }
 
   Future<void> _showEditForm(RoIncident edit) async {
-    final dateCtrl  = TextEditingController(text: edit.dateOccurrence);
-    final descCtrl  = TextEditingController(text: edit.description);
-    final brutCtrl  = TextEditingController(text: edit.perteBrute.toStringAsFixed(0));
-    final recupCtrl = TextEditingController(text: edit.perteRecuperee.toStringAsFixed(0));
-    String? causeRacine = _causesRacine.contains(edit.causeRacine) ? edit.causeRacine : null;
-    String? ligne  = _lignesMetier.contains(edit.ligneMetier)       ? edit.ligneMetier   : _lignesMetier.first;
-    String? type   = _typesEvenement.contains(edit.typeEvenement)   ? edit.typeEvenement : _typesEvenement.first;
-    String? statut = _statutsIncident.contains(edit.statut)         ? edit.statut        : _statutsIncident.first;
-    final formKey  = GlobalKey<FormState>();
+    final dateCtrl = TextEditingController(text: edit.dateOccurrence);
+    final descCtrl = TextEditingController(text: edit.description);
+    final brutCtrl =
+        TextEditingController(text: edit.perteBrute.toStringAsFixed(0));
+    final recupCtrl =
+        TextEditingController(text: edit.perteRecuperee.toStringAsFixed(0));
+    String? causeRacine =
+        _causesRacine.contains(edit.causeRacine) ? edit.causeRacine : null;
+    String? ligne = _lignesMetier.contains(edit.ligneMetier)
+        ? edit.ligneMetier
+        : _lignesMetier.first;
+    String? type = _typesEvenement.contains(edit.typeEvenement)
+        ? edit.typeEvenement
+        : _typesEvenement.first;
+    String? statut = _statutsIncident.contains(edit.statut)
+        ? edit.statut
+        : _statutsIncident.first;
+    final formKey = GlobalKey<FormState>();
 
     final ok = await showDialog<bool>(
       context: context,
@@ -6310,27 +8104,36 @@ class _RegistreViewState extends State<_RegistreView> {
         builder: (ctx, setD) => AlertDialog(
           titlePadding: EdgeInsets.zero,
           title: Container(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+            padding: const EdgeInsets.fromLTRB(5, 5, 5, 4),
             decoration: BoxDecoration(
               color: _kBlue.withValues(alpha: 0.06),
-              border: Border(bottom: BorderSide(color: _kBlue.withValues(alpha: 0.15))),
+              border: Border(
+                  bottom: BorderSide(color: _kBlue.withValues(alpha: 0.15))),
             ),
             child: Row(children: [
               Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: _kBlue.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(9),
                 ),
                 child: const Icon(Icons.edit_outlined, color: _kBlue, size: 18),
               ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Modifier — ${edit.reference}',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Mise à jour conforme Art. 313.b UMOA',
-                  style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
-              ])),
+              const SizedBox(width: 3),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    Text('Modifier — ${edit.reference}',
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.w700)),
+                    const Text('Mise à jour conforme Art. 313.b UMOA',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: _kMuted,
+                            fontWeight: FontWeight.w400)),
+                  ])),
             ]),
           ),
           content: SizedBox(
@@ -6343,38 +8146,48 @@ class _RegistreViewState extends State<_RegistreView> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _formSection('Identification', icon: Icons.calendar_today_rounded, color: _kBlue),
+                    _formSection('Identification',
+                        icon: Icons.calendar_today_rounded, color: _kBlue),
                     _formRow(
-                      _dateField(ctx, 'Date d\'occurrence', dateCtrl, required: true),
-                      _dropdown('Statut', statut, _statutsIncident, (v) => setD(() => statut = v),
-                        required: true, icon: Icons.flag_rounded),
+                      _dateField(ctx, 'Date d\'occurrence', dateCtrl,
+                          required: true),
+                      _dropdown('Statut', statut, _statutsIncident,
+                          (v) => setD(() => statut = v),
+                          required: true, icon: Icons.flag_rounded),
                     ),
-                    _formSection('Classification', icon: Icons.category_rounded, color: _kWarning),
+                    _formSection('Classification',
+                        icon: Icons.category_rounded, color: _kWarning),
                     _formRow(
-                      _dropdown('Ligne de métier', ligne, _lignesMetier, (v) => setD(() => ligne = v),
-                        required: true, icon: Icons.business_rounded),
-                      _dropdown('Type d\'événement', type, _typesEvenement, (v) => setD(() => type = v),
-                        required: true, icon: Icons.label_rounded),
+                      _dropdown('Ligne de métier', ligne, _lignesMetier,
+                          (v) => setD(() => ligne = v),
+                          required: true, icon: Icons.business_rounded),
+                      _dropdown('Type d\'événement', type, _typesEvenement,
+                          (v) => setD(() => type = v),
+                          required: true, icon: Icons.label_rounded),
                     ),
                     _dropdown('Cause racine', causeRacine, _causesRacine,
-                      (v) => setD(() => causeRacine = v), icon: Icons.search_rounded),
+                        (v) => setD(() => causeRacine = v),
+                        icon: Icons.search_rounded),
                     _formSection('Description', icon: Icons.notes_rounded),
                     _field('Description de l\'incident', descCtrl,
-                      multiline: true, required: true),
-                    _formSection('Impact financier', icon: Icons.monetization_on_rounded, color: _kDanger),
+                        multiline: true, required: true),
+                    _formSection('Impact financier',
+                        icon: Icons.monetization_on_rounded, color: _kDanger),
                     _formRow(
                       _field('Perte brute (FCFA)', brutCtrl,
-                        keyboardType: TextInputType.number, required: true,
-                        icon: Icons.trending_down_rounded),
+                          keyboardType: TextInputType.number,
+                          required: true,
+                          icon: Icons.trending_down_rounded),
                       _field('Perte récupérée (FCFA)', recupCtrl,
-                        keyboardType: TextInputType.number, icon: Icons.trending_up_rounded),
+                          keyboardType: TextInputType.number,
+                          icon: Icons.trending_up_rounded),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          actionsPadding: const EdgeInsets.fromLTRB(5, 8, 5, 4),
           actions: [
             OutlinedButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -6388,19 +8201,22 @@ class _RegistreViewState extends State<_RegistreView> {
                 try {
                   await widget.api.updateRoIncident(edit.id, {
                     'date_occurrence': dateCtrl.text.trim(),
-                    'description':     descCtrl.text.trim(),
-                    'ligne_metier':    ligne,
-                    'type_evenement':  type,
-                    'cause_racine':    causeRacine ?? '',
-                    'perte_brute':     double.tryParse(brutCtrl.text)  ?? 0,
+                    'description': descCtrl.text.trim(),
+                    'ligne_metier': ligne,
+                    'type_evenement': type,
+                    'cause_racine': causeRacine ?? '',
+                    'perte_brute': double.tryParse(brutCtrl.text) ?? 0,
                     'perte_recuperee': double.tryParse(recupCtrl.text) ?? 0,
-                    'statut':          statut,
+                    'statut': statut,
                   });
-                  if (ctx.mounted) { Navigator.pop(ctx, true); }
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx, true);
+                  }
                 } catch (e) {
                   if (ctx.mounted) {
-                    ScaffoldMessenger.of(ctx).showSnackBar(
-                      SnackBar(content: Text('Erreur : $e'), backgroundColor: _kDanger));
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                        content: Text('Erreur : $e'),
+                        backgroundColor: _kDanger));
                   }
                 }
               },
@@ -6414,31 +8230,56 @@ class _RegistreViewState extends State<_RegistreView> {
   }
 
   List<RoIncident> _apply(List<RoIncident> all) => all.where((i) {
-    if (_filterStatut != null && i.statut != _filterStatut) return false;
-    if (_filterLigne  != null && i.ligneMetier   != _filterLigne)  return false;
-    if (_filterType   != null && i.typeEvenement != _filterType)   return false;
-    if (_search.isNotEmpty) {
-      final hay = '${i.reference} ${i.description} ${i.causeRacine}'.toLowerCase();
-      if (!hay.contains(_search)) return false;
-    }
-    return true;
-  }).toList();
+        if (_filterStatut != null && i.statut != _filterStatut) return false;
+        if (_filterLigne != null && i.ligneMetier != _filterLigne) return false;
+        if (_filterType != null && i.typeEvenement != _filterType) return false;
+        if (_search.isNotEmpty) {
+          final hay =
+              '${i.reference} ${i.description} ${i.causeRacine}'.toLowerCase();
+          if (!hay.contains(_search)) return false;
+        }
+        return true;
+      }).toList();
 
-  final _hCtrl       = ScrollController();
-  final _vBodyCtrl   = ScrollController();
-  final _vFixedCtrl  = ScrollController();
-  final _vTrailCtrl  = ScrollController();
-  bool  _isSyncV     = false;
+  final _hCtrl = ScrollController();
+  final _vBodyCtrl = ScrollController();
+  final _vFixedCtrl = ScrollController();
+  final _vTrailCtrl = ScrollController();
+  bool _isSyncV = false;
 
   static const _rowH = 48.0;
 
   static const _colLabels = [
-    'Référence', 'Date', 'Ligne de métier', "Type d'événement",
-    'Description', 'Cause racine', 'Perte brute (FCFA)', 'Récupéré (FCFA)',
-    'Perte nette (FCFA)', 'Capital minimal 15 %', 'RWA (×12,5)', 'Statut', 'Actions',
+    'Référence',
+    'Date',
+    'Ligne de métier',
+    "Type d'événement",
+    'Description',
+    'Cause racine',
+    'Perte brute (FCFA)',
+    'Récupéré (FCFA)',
+    'Perte nette (FCFA)',
+    'Capital minimal 15 %',
+    'RWA (×12,5)',
+    'Statut',
+    'Actions',
   ];
 
-  static const _colW = [140.0, 110.0, 190.0, 160.0, 260.0, 190.0, 155.0, 150.0, 155.0, 160.0, 145.0, 105.0, 80.0];
+  static const _colW = [
+    140.0,
+    110.0,
+    190.0,
+    160.0,
+    260.0,
+    190.0,
+    155.0,
+    150.0,
+    155.0,
+    160.0,
+    145.0,
+    105.0,
+    80.0
+  ];
 
   // Visibilité des colonnes
   final List<bool> _visibleCols = List.filled(13, true);
@@ -6447,22 +8288,23 @@ class _RegistreViewState extends State<_RegistreView> {
   // Sélection de ligne
   String? _selectedId;
 
-  int    get _visibleCount => _visibleCols.where((v) => v).length;
+  int get _visibleCount => _visibleCols.where((v) => v).length;
 
   // Colonnes défilantes (exclut col 0 figée à gauche et col 12 figée à droite)
   List<(String, double)> get _scrollableColDefs => [
-    for (int i = 1; i <= 11; i++)
-      if (_visibleCols[i]) (_colLabels[i], _colW[i]),
-  ];
-  double get _scrollableMinW => _scrollableColDefs.fold(0.0, (s, c) => s + c.$2);
+        for (int i = 1; i <= 11; i++)
+          if (_visibleCols[i]) (_colLabels[i], _colW[i]),
+      ];
+  double get _scrollableMinW =>
+      _scrollableColDefs.fold(0.0, (s, c) => s + c.$2);
 
   void _resetFilters() => setState(() {
-    _filterStatut = null;
-    _filterLigne  = null;
-    _filterType   = null;
-    _searchCtrl.clear();
-    _search = '';
-  });
+        _filterStatut = null;
+        _filterLigne = null;
+        _filterType = null;
+        _searchCtrl.clear();
+        _search = '';
+      });
 
   // Demande le format puis génère le fichier
   Future<void> _exportData() async {
@@ -6473,14 +8315,18 @@ class _RegistreViewState extends State<_RegistreView> {
     final format = await showDialog<String>(
       context: context,
       builder: (ctx) {
-        final th      = Theme.of(ctx);
+        final th = Theme.of(ctx);
         final isDlgDk = th.brightness == Brightness.dark;
-        final bg      = th.cardTheme.color ?? (isDlgDk ? const Color(0xFF1B2C4A) : Colors.white);
-        final soft    = isDlgDk ? const Color(0xFF14233D) : const Color(0xFFF8FAFE);
-        final border  = th.dividerColor;
-        final txt     = th.textTheme.bodyLarge?.color ?? (isDlgDk ? Colors.white : Colors.black87);
-        final muted   = isDlgDk ? const Color(0xFF8BA3C7) : const Color(0xFF94A3B8);
-        final accent  = th.colorScheme.primary;
+        final bg = th.cardTheme.color ??
+            (isDlgDk ? const Color(0xFF1B2C4A) : Colors.white);
+        final soft =
+            isDlgDk ? const Color(0xFF14233D) : const Color(0xFFF8FAFE);
+        final border = th.dividerColor;
+        final txt = th.textTheme.bodyLarge?.color ??
+            (isDlgDk ? Colors.white : Colors.black87);
+        final muted =
+            isDlgDk ? const Color(0xFF8BA3C7) : const Color(0xFF94A3B8);
+        final accent = th.colorScheme.primary;
 
         Widget optionRow({
           required IconData icon,
@@ -6494,7 +8340,7 @@ class _RegistreViewState extends State<_RegistreView> {
             onTap: () => Navigator.pop(ctx, value),
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               decoration: BoxDecoration(
                 color: soft,
                 border: Border.all(color: border),
@@ -6503,14 +8349,14 @@ class _RegistreViewState extends State<_RegistreView> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(3),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(icon, color: color, size: 22),
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -6556,7 +8402,7 @@ class _RegistreViewState extends State<_RegistreView> {
           child: SizedBox(
             width: 460,
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(6),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -6564,7 +8410,7 @@ class _RegistreViewState extends State<_RegistreView> {
                   // ── En-tête ──
                   Row(children: [
                     Icon(Icons.file_download_outlined, color: accent, size: 22),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 3),
                     Text('Exporter le registre',
                         style: TextStyle(
                             fontSize: 16,
@@ -6597,18 +8443,17 @@ class _RegistreViewState extends State<_RegistreView> {
                     'Sélectionnez le format du fichier à générer.',
                     style: TextStyle(fontSize: 12, color: muted),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 5),
                   // ── Options ──
                   optionRow(
                     icon: Icons.table_chart_outlined,
                     color: const Color(0xFF1E88E5),
                     label: 'Excel',
                     badge: '.xlsx',
-                    description:
-                        'Tableur éditable — formules, filtres et tri',
+                    description: 'Tableur éditable — formules, filtres et tri',
                     value: 'excel',
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 3),
                   optionRow(
                     icon: Icons.picture_as_pdf_outlined,
                     color: const Color(0xFFE53935),
@@ -6618,7 +8463,7 @@ class _RegistreViewState extends State<_RegistreView> {
                         'Document mis en page, prêt à imprimer ou partager',
                     value: 'pdf',
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
                   // ── Annuler ──
                   Align(
                     alignment: Alignment.centerRight,
@@ -6638,7 +8483,8 @@ class _RegistreViewState extends State<_RegistreView> {
     if (!mounted || format == null) return;
 
     final now = DateTime.now();
-    final ts  = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    final ts =
+        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
 
     if (format == 'excel') {
       await _saveExcel(items, ts);
@@ -6648,8 +8494,8 @@ class _RegistreViewState extends State<_RegistreView> {
   }
 
   Future<void> _saveExcel(List<RoIncident> items, String ts) async {
-    final workbook     = Excel.createExcel();
-    const sheetName    = 'Registre RO';
+    final workbook = Excel.createExcel();
+    const sheetName = 'Registre RO';
     final defaultSheet = workbook.getDefaultSheet();
     if (defaultSheet != null && defaultSheet != sheetName) {
       workbook.rename(defaultSheet, sheetName);
@@ -6657,17 +8503,18 @@ class _RegistreViewState extends State<_RegistreView> {
     final sheet = workbook[sheetName];
 
     // ── Palette ────────────────────────────────────────────────────────────
-    final cBlueDark  = ExcelColor.fromHexString('FF1D4ED8');
+    final cBlueDark = ExcelColor.fromHexString('FF1D4ED8');
     final cBlueLight = ExcelColor.fromHexString('FFDBEAFE');
-    final cGrey      = ExcelColor.fromHexString('FFF1F5F9');
-    final cWhite     = ExcelColor.fromHexString('FFFFFFFF');
-    final cRowAlt    = ExcelColor.fromHexString('FFF8FAFC');
+    final cGrey = ExcelColor.fromHexString('FFF1F5F9');
+    final cWhite = ExcelColor.fromHexString('FFFFFFFF');
+    final cRowAlt = ExcelColor.fromHexString('FFF8FAFC');
     final cGreenDark = ExcelColor.fromHexString('FF15803D');
-    final cGreenLt   = ExcelColor.fromHexString('FFDCFCE7');
-    final cMuted     = ExcelColor.fromHexString('FF475569');
-    final cBorder    = ExcelColor.fromHexString('FFCBD5E1');
+    final cGreenLt = ExcelColor.fromHexString('FFDCFCE7');
+    final cMuted = ExcelColor.fromHexString('FF475569');
+    final cBorder = ExcelColor.fromHexString('FFCBD5E1');
 
-    final thin = xl.Border(borderStyle: xl.BorderStyle.Thin, borderColorHex: cBorder);
+    final thin =
+        xl.Border(borderStyle: xl.BorderStyle.Thin, borderColorHex: cBorder);
 
     CellStyle baseStyle({
       ExcelColor? bg,
@@ -6675,7 +8522,7 @@ class _RegistreViewState extends State<_RegistreView> {
       bool bold = false,
       int size = 10,
       HorizontalAlign hAlign = HorizontalAlign.Left,
-      VerticalAlign   vAlign = VerticalAlign.Center,
+      VerticalAlign vAlign = VerticalAlign.Center,
       TextWrapping? wrap,
     }) =>
         CellStyle(
@@ -6686,8 +8533,10 @@ class _RegistreViewState extends State<_RegistreView> {
           horizontalAlign: hAlign,
           verticalAlign: vAlign,
           textWrapping: wrap,
-          leftBorder: thin, rightBorder: thin,
-          topBorder: thin,  bottomBorder: thin,
+          leftBorder: thin,
+          rightBorder: thin,
+          topBorder: thin,
+          bottomBorder: thin,
         );
 
     // ── Ligne 1 : Titre (fusionné A1:L1) ──────────────────────────────────
@@ -6698,16 +8547,23 @@ class _RegistreViewState extends State<_RegistreView> {
     );
     sheet.updateCell(
       CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
-      TextCellValue('Registre des Pertes Opérationnelles — Risque Opérationnel BCEAO'),
+      TextCellValue(
+          'Registre des Pertes Opérationnelles — Risque Opérationnel BCEAO'),
       cellStyle: baseStyle(
-        bg: cBlueDark, fg: cWhite, bold: true, size: 13,
+        bg: cBlueDark,
+        fg: cWhite,
+        bold: true,
+        size: 13,
         hAlign: HorizontalAlign.Center,
       ),
     );
     sheet.setMergedCellStyle(
       CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
       baseStyle(
-        bg: cBlueDark, fg: cWhite, bold: true, size: 13,
+        bg: cBlueDark,
+        fg: cWhite,
+        bold: true,
+        size: 13,
         hAlign: HorizontalAlign.Center,
       ),
     );
@@ -6715,18 +8571,18 @@ class _RegistreViewState extends State<_RegistreView> {
 
     // ── Ligne 2 : En-têtes de colonnes ────────────────────────────────────
     const colDefs = [
-      ('Référence',                  true,  14.0),
-      ('Date',                       true,  12.0),
-      ('Ligne de métier',            true,  22.0),
-      ("Type d'événement",           true,  18.0),
-      ('Description',                true,  36.0),
-      ('Cause racine',               false, 20.0),
-      ('Perte brute (FCFA)',         true,  18.0),
-      ('Récupéré (FCFA)',            false, 18.0),
-      ('Perte nette (FCFA)',         true,  18.0),
-      ('Capital 15 % (FCFA)',        true,  18.0),
-      ('RWA ×12,5 (FCFA)',           true,  18.0),
-      ('Statut',                     false, 14.0),
+      ('Référence', true, 14.0),
+      ('Date', true, 12.0),
+      ('Ligne de métier', true, 22.0),
+      ("Type d'événement", true, 18.0),
+      ('Description', true, 36.0),
+      ('Cause racine', false, 20.0),
+      ('Perte brute (FCFA)', true, 18.0),
+      ('Récupéré (FCFA)', false, 18.0),
+      ('Perte nette (FCFA)', true, 18.0),
+      ('Capital 15 % (FCFA)', true, 18.0),
+      ('RWA ×12,5 (FCFA)', true, 18.0),
+      ('Statut', false, 14.0),
     ];
 
     for (int c = 0; c < colDefs.length; c++) {
@@ -6736,7 +8592,7 @@ class _RegistreViewState extends State<_RegistreView> {
         TextCellValue('${required ? "★ " : "○ "}$label'),
         cellStyle: baseStyle(
           bg: required ? cBlueLight : cGrey,
-          fg: required ? cBlueDark  : cMuted,
+          fg: required ? cBlueDark : cMuted,
           bold: true,
           hAlign: HorizontalAlign.Center,
           wrap: TextWrapping.WrapText,
@@ -6747,19 +8603,26 @@ class _RegistreViewState extends State<_RegistreView> {
     sheet.setRowHeight(1, 34);
 
     // ── Ligne 3 : Totaux (ligne verte) ────────────────────────────────────
-    double totalBrut = 0, totalRec = 0, totalNette = 0, totalKro = 0, totalApr = 0;
+    double totalBrut = 0,
+        totalRec = 0,
+        totalNette = 0,
+        totalKro = 0,
+        totalApr = 0;
     for (final i in items) {
-      totalBrut  += i.perteBrute;
-      totalRec   += i.perteRecuperee;
+      totalBrut += i.perteBrute;
+      totalRec += i.perteRecuperee;
       totalNette += i.perteNette;
-      totalKro   += i.perteNette * 0.15;
-      totalApr   += i.perteNette * 0.15 * 12.5;
+      totalKro += i.perteNette * 0.15;
+      totalApr += i.perteNette * 0.15 * 12.5;
     }
     const totRow = 2;
     final totLabels = <int, String>{0: 'TOTAL (${items.length} incidents)'};
     final totVals = <int, int>{
-      6: totalBrut.round(), 7: totalRec.round(), 8: totalNette.round(),
-      9: totalKro.round(),  10: totalApr.round(),
+      6: totalBrut.round(),
+      7: totalRec.round(),
+      8: totalNette.round(),
+      9: totalKro.round(),
+      10: totalApr.round(),
     };
     for (int c = 0; c <= lastCol; c++) {
       final val = totVals[c] != null
@@ -6769,8 +8632,12 @@ class _RegistreViewState extends State<_RegistreView> {
         CellIndex.indexByColumnRow(columnIndex: c, rowIndex: totRow),
         val,
         cellStyle: baseStyle(
-          bg: cGreenLt, fg: cGreenDark, bold: true,
-          hAlign: (totVals.containsKey(c)) ? HorizontalAlign.Right : HorizontalAlign.Left,
+          bg: cGreenLt,
+          fg: cGreenDark,
+          bold: true,
+          hAlign: (totVals.containsKey(c))
+              ? HorizontalAlign.Right
+              : HorizontalAlign.Left,
         ),
       );
     }
@@ -6778,19 +8645,27 @@ class _RegistreViewState extends State<_RegistreView> {
 
     // ── Lignes de données (à partir de la ligne 4) ────────────────────────
     for (int r = 0; r < items.length; r++) {
-      final i   = items[r];
+      final i = items[r];
       final kro = i.perteNette * 0.15;
       final apr = kro * 12.5;
-      final bg  = r.isEven ? cWhite : cRowAlt;
+      final bg = r.isEven ? cWhite : cRowAlt;
       final rowIdx = r + 3;
 
       final textVals = <int, String>{
-        0: i.reference, 1: i.dateOccurrence, 2: i.ligneMetier,
-        3: i.typeEvenement, 4: i.description, 5: i.causeRacine, 11: i.statut,
+        0: i.reference,
+        1: i.dateOccurrence,
+        2: i.ligneMetier,
+        3: i.typeEvenement,
+        4: i.description,
+        5: i.causeRacine,
+        11: i.statut,
       };
       final numVals = <int, int>{
-        6: i.perteBrute.round(), 7: i.perteRecuperee.round(),
-        8: i.perteNette.round(), 9: kro.round(), 10: apr.round(),
+        6: i.perteBrute.round(),
+        7: i.perteRecuperee.round(),
+        8: i.perteNette.round(),
+        9: kro.round(),
+        10: apr.round(),
       };
 
       for (int c = 0; c <= lastCol; c++) {
@@ -6814,11 +8689,14 @@ class _RegistreViewState extends State<_RegistreView> {
 
     final location = await getSaveLocation(
       suggestedName: 'registre_ro_$ts.xlsx',
-      acceptedTypeGroups: const [XTypeGroup(label: 'Excel', extensions: ['xlsx'])],
+      acceptedTypeGroups: const [
+        XTypeGroup(label: 'Excel', extensions: ['xlsx'])
+      ],
     );
     if (!mounted || location == null) return;
 
-    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes), requiredExtension: '.xlsx');
+    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes),
+        requiredExtension: '.xlsx');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Export Excel réussi'),
@@ -6830,106 +8708,125 @@ class _RegistreViewState extends State<_RegistreView> {
   Future<void> _savePdf(List<RoIncident> items, String ts) async {
     // ── Polices (IBM Plex Sans — supporte tout le Latin étendu) ─────────
     final fontNormal = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/IBMPlexSans-Regular.ttf'));
-    final fontBold = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/IBMPlexSans-Bold.ttf'));
+        await rootBundle.load('assets/fonts/IBMPlexSans-Regular.ttf'));
+    final fontBold =
+        pw.Font.ttf(await rootBundle.load('assets/fonts/IBMPlexSans-Bold.ttf'));
     final fontItalic = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/IBMPlexSans-Italic.ttf'));
+        await rootBundle.load('assets/fonts/IBMPlexSans-Italic.ttf'));
 
     // ── Palette (identique au reporting opérationnel) ────────────────────
-    const headerBg  = PdfColor.fromInt(0xFF0F2544);  // navy foncé
-    const accentBg  = PdfColor.fromInt(0xFF2563EB);  // bleu accent
-    const greenBg   = PdfColor.fromInt(0xFF15803D);  // vert total
+    const headerBg = PdfColor.fromInt(0xFF0F2544); // navy foncé
+    const accentBg = PdfColor.fromInt(0xFF2563EB); // bleu accent
+    const greenBg = PdfColor.fromInt(0xFF15803D); // vert total
     const borderCol = PdfColor.fromInt(0xFFE5E7EB);
-    const mutedCol  = PdfColor.fromInt(0xFF6B7280);
+    const mutedCol = PdfColor.fromInt(0xFF6B7280);
 
-    final now     = DateTime.now();
-    final dateStr = '${now.day.toString().padLeft(2,'0')}/'
-                    '${now.month.toString().padLeft(2,'0')}/'
-                    '${now.year}';
+    final now = DateTime.now();
+    final dateStr = '${now.day.toString().padLeft(2, '0')}/'
+        '${now.month.toString().padLeft(2, '0')}/'
+        '${now.year}';
 
-    const mutedStyle  = pw.TextStyle(fontSize: 8, color: mutedCol);
-    const bodyStyle   = pw.TextStyle(fontSize: 7.5);
+    const mutedStyle = pw.TextStyle(fontSize: 8, color: mutedCol);
+    const bodyStyle = pw.TextStyle(fontSize: 7.5);
     final headerStyle = pw.TextStyle(
-      fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white);
+        fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white);
 
     // ── Calculs agrégés ──────────────────────────────────────────────────
-    final totalBrut  = items.fold(0.0, (s, i) => s + i.perteBrute);
-    final totalRec   = items.fold(0.0, (s, i) => s + i.perteRecuperee);
+    final totalBrut = items.fold(0.0, (s, i) => s + i.perteBrute);
+    final totalRec = items.fold(0.0, (s, i) => s + i.perteRecuperee);
     final totalNette = items.fold(0.0, (s, i) => s + i.perteNette);
-    final totalKro   = totalNette * 0.15;
-    final totalApr   = totalKro  * 12.5;
-    final nbSignif   = items.where((i) => i.significatif).length;
+    final totalKro = totalNette * 0.15;
+    final totalApr = totalKro * 12.5;
+    final nbSignif = items.where((i) => i.significatif).length;
 
     String fmt(double v) {
-      if (v >= 1e9)  return '${(v / 1e9).toStringAsFixed(1)} Md';
-      if (v >= 1e6)  return '${(v / 1e6).toStringAsFixed(1)} M';
-      if (v >= 1e3)  return '${(v / 1e3).toStringAsFixed(0)} K';
+      if (v >= 1e9) return '${(v / 1e9).toStringAsFixed(1)} Md';
+      if (v >= 1e6) return '${(v / 1e6).toStringAsFixed(1)} M';
+      if (v >= 1e3) return '${(v / 1e3).toStringAsFixed(0)} K';
       return v.toStringAsFixed(0);
     }
 
     // ── Helpers de widgets ───────────────────────────────────────────────
     pw.Widget sectionBanner(String text) => pw.Container(
-      width: double.infinity,
-      margin: const pw.EdgeInsets.only(bottom: 6),
-      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: pw.BoxDecoration(
-        color: headerBg,
-        borderRadius: pw.BorderRadius.circular(3),
-      ),
-      child: pw.Text(text,
-        style: pw.TextStyle(
-          fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-    );
+          width: double.infinity,
+          margin: const pw.EdgeInsets.only(bottom: 6),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 5.0),
+          decoration: pw.BoxDecoration(
+            color: headerBg,
+            borderRadius: pw.BorderRadius.circular(3),
+          ),
+          child: pw.Text(text,
+              style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white)),
+        );
 
     pw.Widget kpiCard(String label, String value, {PdfColor? valueColor}) =>
-      pw.Expanded(
-        child: pw.Container(
-          margin: const pw.EdgeInsets.only(right: 6, bottom: 6),
-          padding: const pw.EdgeInsets.all(8),
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: borderCol),
-            borderRadius: pw.BorderRadius.circular(4),
+        pw.Expanded(
+          child: pw.Container(
+            margin: const pw.EdgeInsets.only(right: 6, bottom: 6),
+            padding: const pw.EdgeInsets.all(8),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: borderCol),
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(label, style: mutedStyle),
+                pw.SizedBox(height: 3),
+                pw.Text(value,
+                    style: pw.TextStyle(
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                      color: valueColor ?? headerBg,
+                    )),
+              ],
+            ),
           ),
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(label, style: mutedStyle),
-              pw.SizedBox(height: 3),
-              pw.Text(value,
-                style: pw.TextStyle(
-                  fontSize: 11,
-                  fontWeight: pw.FontWeight.bold,
-                  color: valueColor ?? headerBg,
-                )),
-            ],
-          ),
-        ),
-      );
+        );
 
     pw.Widget kpiRow(List<(String, String, PdfColor?)> kpis) => pw.Row(
-      children: kpis.map((k) => kpiCard(k.$1, k.$2, valueColor: k.$3)).toList(),
-    );
+          children:
+              kpis.map((k) => kpiCard(k.$1, k.$2, valueColor: k.$3)).toList(),
+        );
 
     // Ligne de total sous le tableau
     pw.Widget totalRow(List<String> totals) => pw.Container(
-      decoration: const pw.BoxDecoration(color: PdfColor.fromInt(0xFFDCFCE7)),
-      child: pw.Row(
-        children: totals.asMap().entries.map((e) => pw.Expanded(
-          child: pw.Padding(
-            padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-            child: pw.Text(e.value,
-              style: pw.TextStyle(
-                fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: greenBg)),
+          decoration:
+              const pw.BoxDecoration(color: PdfColor.fromInt(0xFFDCFCE7)),
+          child: pw.Row(
+            children: totals
+                .asMap()
+                .entries
+                .map((e) => pw.Expanded(
+                      child: pw.Padding(
+                        padding: const pw.EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 4),
+                        child: pw.Text(e.value,
+                            style: pw.TextStyle(
+                                fontSize: 7.5,
+                                fontWeight: pw.FontWeight.bold,
+                                color: greenBg)),
+                      ),
+                    ))
+                .toList(),
           ),
-        )).toList(),
-      ),
-    );
+        );
 
     // ── Données du tableau ───────────────────────────────────────────────
     const tableHeaders = [
-      'Réf.', 'Date', 'Ligne de métier', "Type d'évén.",
-      'Perte brute', 'Récupéré', 'Perte nette', 'Capital min. (15 %)', 'RWA ×12,5', 'Statut',
+      'Réf.',
+      'Date',
+      'Ligne de métier',
+      "Type d'évén.",
+      'Perte brute',
+      'Récupéré',
+      'Perte nette',
+      'Capital min. (15 %)',
+      'RWA ×12,5',
+      'Statut',
     ];
 
     final tableRows = items.map((i) {
@@ -6938,7 +8835,9 @@ class _RegistreViewState extends State<_RegistreView> {
       return [
         i.reference,
         i.dateOccurrence,
-        i.ligneMetier.length > 18 ? '${i.ligneMetier.substring(0,16)}…' : i.ligneMetier,
+        i.ligneMetier.length > 18
+            ? '${i.ligneMetier.substring(0, 16)}…'
+            : i.ligneMetier,
         i.typeEvenement,
         fmt(i.perteBrute),
         fmt(i.perteRecuperee),
@@ -6952,25 +8851,25 @@ class _RegistreViewState extends State<_RegistreView> {
     // ── Construction du document ─────────────────────────────────────────
     final doc = pw.Document(
       theme: pw.ThemeData.withFont(
-        base:   fontNormal,
-        bold:   fontBold,
+        base: fontNormal,
+        bold: fontBold,
         italic: fontItalic,
       ),
     );
     doc.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4.landscape,
-      margin: const pw.EdgeInsets.fromLTRB(24, 24, 24, 30),
+      margin: const pw.EdgeInsets.fromLTRB(6, 6, 6, 6),
 
       // En-tête de chaque page
       header: (_) => pw.Container(
         padding: const pw.EdgeInsets.only(bottom: 5),
         decoration: const pw.BoxDecoration(
-          border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
+            border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
         child: pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text('Registre des Pertes — Risque Opérationnel BCEAO',
-              style: mutedStyle),
+                style: mutedStyle),
             pw.Text('Export du $dateStr', style: mutedStyle),
           ],
         ),
@@ -6980,23 +8879,22 @@ class _RegistreViewState extends State<_RegistreView> {
       footer: (ctx) => pw.Container(
         padding: const pw.EdgeInsets.only(top: 5),
         decoration: const pw.BoxDecoration(
-          border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300))),
+            border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300))),
         child: pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text('Confidentiel — Usage interne', style: mutedStyle),
             pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}',
-              style: mutedStyle),
+                style: mutedStyle),
           ],
         ),
       ),
 
       build: (_) => [
-
         // ── Bloc couverture ─────────────────────────────────────────────
         pw.Container(
           width: double.infinity,
-          padding: const pw.EdgeInsets.all(18),
+          padding: const pw.EdgeInsets.all(5),
           decoration: pw.BoxDecoration(
             color: headerBg,
             borderRadius: pw.BorderRadius.circular(6),
@@ -7005,38 +8903,45 @@ class _RegistreViewState extends State<_RegistreView> {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text('REGISTRE DES PERTES OPÉRATIONNELLES',
-                style: pw.TextStyle(
-                  fontSize: 16, fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.white)),
+                  style: pw.TextStyle(
+                      fontSize: 16,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.white)),
               pw.SizedBox(height: 4),
               pw.Text(
-                'Art. 313, 314, 545, 546 — UMOA/BCEAO  ·  Généré le $dateStr',
-                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey300)),
+                  'Art. 313, 314, 545, 546 — UMOA/BCEAO  ·  Généré le $dateStr',
+                  style: const pw.TextStyle(
+                      fontSize: 9, color: PdfColors.grey300)),
             ],
           ),
         ),
-        pw.SizedBox(height: 14),
+        pw.SizedBox(height: 4),
 
         // ── 1. Synthèse ─────────────────────────────────────────────────
         sectionBanner('1. SYNTHÈSE'),
         kpiRow([
-          ('Incidents totaux',    '${items.length}',        null),
-          ('Incidents significatifs', '$nbSignif',          null),
-          ('Pertes brutes',       '${fmt(totalBrut)} FCFA', null),
-          ('Pertes récupérées',   '${fmt(totalRec)} FCFA',  null),
-          ('Pertes nettes',       '${fmt(totalNette)} FCFA', null),
+          ('Incidents totaux', '${items.length}', null),
+          ('Incidents significatifs', '$nbSignif', null),
+          ('Pertes brutes', '${fmt(totalBrut)} FCFA', null),
+          ('Pertes récupérées', '${fmt(totalRec)} FCFA', null),
+          ('Pertes nettes', '${fmt(totalNette)} FCFA', null),
         ]),
         kpiRow([
           ('Capital minimum (15 %)', '${fmt(totalKro)} FCFA', accentBg),
-          ('RWA — Risque opérationnel',   '${fmt(totalApr)} FCFA', accentBg),
-          ('Taux de récupération',
-            totalBrut > 0 ? '${(totalRec / totalBrut * 100).toStringAsFixed(1)} %' : '0 %',
-            null),
+          ('RWA — Risque opérationnel', '${fmt(totalApr)} FCFA', accentBg),
+          (
+            'Taux de récupération',
+            totalBrut > 0
+                ? '${(totalRec / totalBrut * 100).toStringAsFixed(1)} %'
+                : '0 %',
+            null
+          ),
         ]),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 3),
 
         // ── 2. Registre détaillé ─────────────────────────────────────────
-        sectionBanner('2. REGISTRE DÉTAILLÉ  (${items.length} incident${items.length > 1 ? "s" : ""})'),
+        sectionBanner(
+            '2. REGISTRE DÉTAILLÉ  (${items.length} incident${items.length > 1 ? "s" : ""})'),
         if (items.isEmpty)
           pw.Text('Aucun incident dans le registre.', style: mutedStyle)
         else ...[
@@ -7047,7 +8952,8 @@ class _RegistreViewState extends State<_RegistreView> {
             headerDecoration: const pw.BoxDecoration(color: accentBg),
             cellStyle: bodyStyle,
             border: pw.TableBorder.all(color: borderCol, width: 0.4),
-            cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            cellPadding:
+                const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
             columnWidths: const {
               0: pw.FixedColumnWidth(42),
               1: pw.FixedColumnWidth(52),
@@ -7060,17 +8966,24 @@ class _RegistreViewState extends State<_RegistreView> {
               8: pw.FixedColumnWidth(56),
               9: pw.FixedColumnWidth(44),
             },
-            oddRowDecoration: const pw.BoxDecoration(
-              color: PdfColor.fromInt(0xFFF8FAFC)),
+            oddRowDecoration:
+                const pw.BoxDecoration(color: PdfColor.fromInt(0xFFF8FAFC)),
           ),
           // Ligne totaux
           totalRow([
-            'TOTAL', '', '', '',
-            fmt(totalBrut), fmt(totalRec), fmt(totalNette),
-            fmt(totalKro), fmt(totalApr), '',
+            'TOTAL',
+            '',
+            '',
+            '',
+            fmt(totalBrut),
+            fmt(totalRec),
+            fmt(totalNette),
+            fmt(totalKro),
+            fmt(totalApr),
+            '',
           ]),
         ],
-        pw.SizedBox(height: 16),
+        pw.SizedBox(height: 4),
 
         // ── Pied ────────────────────────────────────────────────────────
         pw.Divider(color: PdfColors.grey300),
@@ -7086,7 +8999,9 @@ class _RegistreViewState extends State<_RegistreView> {
     final pdfBytes = await doc.save();
     final location = await getSaveLocation(
       suggestedName: 'registre_ro_$ts.pdf',
-      acceptedTypeGroups: const [XTypeGroup(label: 'PDF', extensions: ['pdf'])],
+      acceptedTypeGroups: const [
+        XTypeGroup(label: 'PDF', extensions: ['pdf'])
+      ],
     );
     if (!mounted || location == null) return;
 
@@ -7117,8 +9032,8 @@ class _RegistreViewState extends State<_RegistreView> {
     final cached = _apply(_cachedItems);
     final cBrute = cached.fold(0.0, (s, i) => s + i.perteBrute);
     final cNette = cached.fold(0.0, (s, i) => s + i.perteNette);
-    final cKro   = cNette * 0.15;
-    final cApr   = cKro * 12.5;
+    final cKro = cNette * 0.15;
+    final cApr = cKro * 12.5;
 
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
@@ -7127,267 +9042,430 @@ class _RegistreViewState extends State<_RegistreView> {
         children: [
           PageHeader(
             title: 'Registre des pertes RO',
-            subtitle: 'Registre BCEAO/UMOA — pertes, Capital minimal et RWA (Art. 89 & 313.b)',
+            subtitle:
+                'Registre BCEAO/UMOA — pertes, Capital minimal et RWA (Art. 89 & 313.b)',
             titleFontSize: 26,
             subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo('Art. 89'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-        // ── Panneau de contrôles ─────────────────────────────────────────
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF),
-            borderRadius: BorderRadius.circular(5),
-            border: Border.all(color: isDark ? const Color(0xFF22304B) : const Color(0xFFDDE7F6), width: 0.8),
-            boxShadow: [BoxShadow(color: isDark ? const Color(0x26040A16) : const Color(0x080F172A), blurRadius: 14, offset: const Offset(0, 6))],
-          ),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              inputDecorationTheme: Theme.of(context).inputDecorationTheme.copyWith(
-                isDense: true,
-                filled: true,
-                fillColor: isDark ? const Color(0xFF14233D) : Colors.white,
-                constraints: const BoxConstraints(minHeight: 32, maxHeight: 32),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                floatingLabelBehavior: FloatingLabelBehavior.never,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(5),
-                  borderSide: BorderSide(color: isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6))),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(5),
-                  borderSide: BorderSide(color: isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6))),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(5),
-                  borderSide: const BorderSide(color: AppTheme.accent, width: 1.2)),
-              ),
-            ),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-              _fDropLabeled('Statut',           _filterStatut, _statutsIncident, (v) => setState(() => _filterStatut = v), 100, isDark),
-              const SizedBox(width: 6),
-              _fDropLabeled('Ligne de métier',  _filterLigne,  _lignesMetier,    (v) => setState(() => _filterLigne  = v), 138, isDark),
-              const SizedBox(width: 6),
-              _fDropLabeled("Type d'événement", _filterType,   _typesEvenement,  (v) => setState(() => _filterType   = v), 130, isDark),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Recherche',
-                      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFFB8C8E8) : const Color(0xFF2563EB))),
-                    const SizedBox(height: 3),
-                    TextField(
-                      controller: _searchCtrl,
-                      style: const TextStyle(fontSize: 11),
-                      decoration: const InputDecoration(
-                        hintText: 'Référence…',
-                        prefixIcon: Icon(Icons.search_outlined, size: 14),
-                        prefixIconConstraints: BoxConstraints(minWidth: 28, minHeight: 28),
-                      ),
+                // ── Panneau de contrôles ─────────────────────────────────────────
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF101C32)
+                        : const Color(0xFFF6F9FF),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF22304B)
+                            : const Color(0xFFDDE7F6),
+                        width: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                          color: isDark
+                              ? const Color(0x26040A16)
+                              : const Color(0x080F172A),
+                          blurRadius: 14,
+                          offset: const Offset(0, 6))
+                    ],
+                  ),
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      inputDecorationTheme: Theme.of(context)
+                          .inputDecorationTheme
+                          .copyWith(
+                            isDense: true,
+                            filled: true,
+                            fillColor:
+                                isDark ? const Color(0xFF14233D) : Colors.white,
+                            constraints: const BoxConstraints(
+                                minHeight: 32, maxHeight: 32),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 3, vertical: 0.0),
+                            floatingLabelBehavior: FloatingLabelBehavior.never,
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(5),
+                                borderSide: BorderSide(
+                                    color: isDark
+                                        ? const Color(0xFF2A4164)
+                                        : const Color(0xFFD5E2F6))),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(5),
+                                borderSide: BorderSide(
+                                    color: isDark
+                                        ? const Color(0xFF2A4164)
+                                        : const Color(0xFFD5E2F6))),
+                            focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(5),
+                                borderSide: const BorderSide(
+                                    color: AppTheme.accent, width: 1.2)),
+                          ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              SizedBox(width: 34, height: 34,
-                child: Tooltip(message: 'Réinitialiser les filtres',
-                  child: OutlinedButton(
-                    onPressed: _resetFilters,
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      foregroundColor: AppTheme.warning,
-                      backgroundColor: isDark ? const Color(0xFF13243F) : Colors.white,
-                      surfaceTintColor: Colors.transparent,
-                      elevation: 1,
-                      shadowColor: isDark ? const Color(0x22040A16) : const Color(0x10F59E0B),
-                      side: BorderSide(color: isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                    ),
-                    child: const Icon(Icons.restart_alt_rounded, size: 15, color: AppTheme.warning),
+                    child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          _fDropLabeled(
+                              'Statut',
+                              _filterStatut,
+                              _statutsIncident,
+                              (v) => setState(() => _filterStatut = v),
+                              100,
+                              isDark),
+                          const SizedBox(width: 6),
+                          _fDropLabeled(
+                              'Ligne de métier',
+                              _filterLigne,
+                              _lignesMetier,
+                              (v) => setState(() => _filterLigne = v),
+                              138,
+                              isDark),
+                          const SizedBox(width: 6),
+                          _fDropLabeled(
+                              "Type d'événement",
+                              _filterType,
+                              _typesEvenement,
+                              (v) => setState(() => _filterType = v),
+                              130,
+                              isDark),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Recherche',
+                                    style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? const Color(0xFFB8C8E8)
+                                            : const Color(0xFF2563EB))),
+                                const SizedBox(height: 3),
+                                TextField(
+                                  controller: _searchCtrl,
+                                  style: const TextStyle(fontSize: 11),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Référence…',
+                                    prefixIcon:
+                                        Icon(Icons.search_outlined, size: 14),
+                                    prefixIconConstraints: BoxConstraints(
+                                        minWidth: 28, minHeight: 28),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          SizedBox(
+                            width: 34,
+                            height: 34,
+                            child: Tooltip(
+                              message: 'Réinitialiser les filtres',
+                              child: OutlinedButton(
+                                onPressed: _resetFilters,
+                                style: OutlinedButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  foregroundColor: AppTheme.warning,
+                                  backgroundColor: isDark
+                                      ? const Color(0xFF13243F)
+                                      : Colors.white,
+                                  surfaceTintColor: Colors.transparent,
+                                  elevation: 1,
+                                  shadowColor: isDark
+                                      ? const Color(0x22040A16)
+                                      : const Color(0x10F59E0B),
+                                  side: BorderSide(
+                                      color: isDark
+                                          ? const Color(0xFF2A4164)
+                                          : const Color(0xFFD5E2F6)),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5)),
+                                ),
+                                child: const Icon(Icons.restart_alt_rounded,
+                                    size: 15, color: AppTheme.warning),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          // ── Sélecteur de colonnes ──────────────────────────────────────
+                          MenuAnchor(
+                            controller: _colMenuCtrl,
+                            alignmentOffset: const Offset(0, 4),
+                            style: MenuStyle(
+                              backgroundColor: WidgetStateProperty.all(isDark
+                                  ? const Color(0xFF14233D)
+                                  : Colors.white),
+                              surfaceTintColor:
+                                  WidgetStateProperty.all(Colors.transparent),
+                              shape: WidgetStateProperty.all(
+                                  RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                side: BorderSide(
+                                    color: isDark
+                                        ? const Color(0xFF22304B)
+                                        : const Color(0xFFDCE5F1)),
+                              )),
+                              elevation: WidgetStateProperty.all(6),
+                              padding: WidgetStateProperty.all(
+                                  const EdgeInsets.symmetric(vertical: 4)),
+                              maximumSize:
+                                  WidgetStateProperty.all(const Size(220, 380)),
+                            ),
+                            menuChildren: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(3, 6, 8, 4),
+                                child: Row(children: [
+                                  Text('Colonnes visibles',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          color: isDark
+                                              ? Colors.white70
+                                              : const Color(0xFF374151))),
+                                  const Spacer(),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        final allOn =
+                                            _visibleCols.every((v) => v);
+                                        for (int k = 0;
+                                            k < _visibleCols.length;
+                                            k++) {
+                                          _visibleCols[k] = !allOn;
+                                        }
+                                      });
+                                      _clampHScroll();
+                                    },
+                                    child: Text(
+                                      _visibleCols.every((v) => v)
+                                          ? 'Aucune'
+                                          : 'Toutes',
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          color: AppTheme.accent,
+                                          fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                ]),
+                              ),
+                              const Divider(height: 1),
+                              for (int ci = 0; ci < _colLabels.length; ci++)
+                                CheckboxMenuButton(
+                                  value: _visibleCols[ci],
+                                  onChanged: (v) {
+                                    if (v != null) {
+                                      setState(() => _visibleCols[ci] = v);
+                                      _clampHScroll();
+                                    }
+                                  },
+                                  child: Text(_colLabels[ci],
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark
+                                              ? Colors.white
+                                              : const Color(0xFF1F2937))),
+                                ),
+                            ],
+                            child: SizedBox(
+                              height: 34,
+                              child: OutlinedButton.icon(
+                                onPressed: () => _colMenuCtrl.isOpen
+                                    ? _colMenuCtrl.close()
+                                    : _colMenuCtrl.open(),
+                                icon: Icon(Icons.visibility_outlined,
+                                    size: 14,
+                                    color: _visibleCount < _colLabels.length
+                                        ? AppTheme.accent
+                                        : (isDark
+                                            ? const Color(0xFFDCEBFF)
+                                            : const Color(0xFF374151))),
+                                label: Text('Colonnes ($_visibleCount)',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: _visibleCount < _colLabels.length
+                                            ? AppTheme.accent
+                                            : (isDark
+                                                ? const Color(0xFFDCEBFF)
+                                                : const Color(0xFF374151)))),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10),
+                                  foregroundColor: isDark
+                                      ? const Color(0xFFDCEBFF)
+                                      : const Color(0xFF374151),
+                                  backgroundColor: isDark
+                                      ? const Color(0xFF13243F)
+                                      : Colors.white,
+                                  surfaceTintColor: Colors.transparent,
+                                  elevation: 1,
+                                  shadowColor: isDark
+                                      ? const Color(0x22040A16)
+                                      : const Color(0x102563EB),
+                                  side: BorderSide(
+                                      color: _visibleCount < _colLabels.length
+                                          ? AppTheme.accent
+                                          : (isDark
+                                              ? const Color(0xFF2A4164)
+                                              : const Color(0xFFD5E2F6))),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5)),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          _topBtn('Import', Icons.file_upload_outlined,
+                              const Color(0xFF1E88E5), _openImport, isDark),
+                          const SizedBox(width: 6),
+                          _topBtn(
+                              'Exporter',
+                              Icons.file_download_outlined,
+                              const Color(0xFF14A44D),
+                              _cachedItems.isEmpty ? null : _exportData,
+                              isDark),
+                          const SizedBox(width: 3),
+                          SizedBox(
+                            height: 32,
+                            child: FilledButton.icon(
+                              onPressed: _showWizard,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppTheme.accent,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                textStyle: const TextStyle(
+                                    fontSize: 11, fontWeight: FontWeight.w600),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(5)),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                              icon: const Icon(Icons.add, size: 14),
+                              label: const Text('Ajouter'),
+                            ),
+                          ),
+                        ]),
                   ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              // ── Sélecteur de colonnes ──────────────────────────────────────
-              MenuAnchor(
-                controller: _colMenuCtrl,
-                alignmentOffset: const Offset(0, 4),
-                style: MenuStyle(
-                  backgroundColor: WidgetStateProperty.all(
-                    isDark ? const Color(0xFF14233D) : Colors.white),
-                  surfaceTintColor: WidgetStateProperty.all(Colors.transparent),
-                  shape: WidgetStateProperty.all(
-                    RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: isDark ? const Color(0xFF22304B) : const Color(0xFFDCE5F1)),
-                    )),
-                  elevation: WidgetStateProperty.all(6),
-                  padding: WidgetStateProperty.all(const EdgeInsets.symmetric(vertical: 4)),
-                  maximumSize: WidgetStateProperty.all(const Size(220, 380)),
+                const SizedBox(height: 8),
+                // ── Tableau ──────────────────────────────────────────────────────
+                Expanded(
+                  child: FutureBuilder<List<RoIncident>>(
+                    future: _future,
+                    builder: (ctx, snap) {
+                      if (!snap.hasData)
+                        return snap.hasError
+                            ? _errorBox(snap.error!)
+                            : _loadingBox();
+                      return _buildTable(ctx, _apply(snap.data!), isDark);
+                    },
+                  ),
                 ),
-                menuChildren: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 6, 8, 4),
-                    child: Row(children: [
-                      Text('Colonnes visibles',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white70 : const Color(0xFF374151))),
-                      const Spacer(),
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            final allOn = _visibleCols.every((v) => v);
-                            for (int k = 0; k < _visibleCols.length; k++) {
-                              _visibleCols[k] = !allOn;
-                            }
-                          });
-                          _clampHScroll();
-                        },
-                        child: Text(
-                          _visibleCols.every((v) => v) ? 'Aucune' : 'Toutes',
-                          style: const TextStyle(fontSize: 11, color: AppTheme.accent,
-                            fontWeight: FontWeight.w600),
+                const SizedBox(height: 6),
+                // ── Footer KPI (style Dashboard Opérationnel) ────────────────────
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    border: Border.all(
+                      color: const Color(0xFF1E3A5F)
+                          .withValues(alpha: isDark ? 0.5 : 0.25),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF1E3A5F)
+                            .withValues(alpha: isDark ? 0.3 : 0.06),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF1E3A5F)
+                            .withValues(alpha: isDark ? 0.15 : 0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                          height: 3,
+                          color: AppTheme.accent.withValues(alpha: 0.7)),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [
+                                    const Color(0xFF1A2A4A),
+                                    const Color(0xFF13203A)
+                                  ]
+                                : [
+                                    const Color(0xFFF8F9FF),
+                                    const Color(0xFFF0F2FF)
+                                  ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                                child: _RoDashSummaryItem(
+                                    label: 'Pertes',
+                                    value: '${cached.length}',
+                                    accentColor: AppTheme.accent,
+                                    icon: Icons.list_alt_outlined)),
+                            Container(
+                                width: 1,
+                                height: 40,
+                                color: AppTheme.accent.withValues(alpha: 0.25)),
+                            Expanded(
+                                child: _RoDashSummaryItem(
+                                    label: 'Perte brute',
+                                    value: AppFormatters.currency(cBrute),
+                                    accentColor: _kDanger,
+                                    icon: Icons.trending_down_outlined)),
+                            Container(
+                                width: 1,
+                                height: 40,
+                                color: AppTheme.accent.withValues(alpha: 0.25)),
+                            Expanded(
+                                child: _RoDashSummaryItem(
+                                    label: 'Perte nette',
+                                    value: AppFormatters.currency(cNette),
+                                    accentColor: _kDanger,
+                                    icon: Icons.account_balance_outlined)),
+                            Container(
+                                width: 1,
+                                height: 40,
+                                color: AppTheme.accent.withValues(alpha: 0.25)),
+                            Expanded(
+                                child: _RoDashSummaryItem(
+                                    label: 'Capital minimum (Art. 89)',
+                                    value: AppFormatters.currency(cKro),
+                                    accentColor: AppColors.prudentialSolvency,
+                                    icon: Icons.shield_outlined)),
+                            Container(
+                                width: 1,
+                                height: 40,
+                                color: AppTheme.accent.withValues(alpha: 0.25)),
+                            Expanded(
+                                child: _RoDashSummaryItem(
+                                    label: 'RWA opérationnel',
+                                    value: AppFormatters.currency(cApr),
+                                    accentColor: AppColors.marketNeutral,
+                                    icon: Icons.bar_chart_outlined)),
+                          ],
                         ),
                       ),
-                    ]),
-                  ),
-                  const Divider(height: 1),
-                  for (int ci = 0; ci < _colLabels.length; ci++)
-                    CheckboxMenuButton(
-                      value: _visibleCols[ci],
-                      onChanged: (v) {
-                        if (v != null) {
-                          setState(() => _visibleCols[ci] = v);
-                          _clampHScroll();
-                        }
-                      },
-                      child: Text(_colLabels[ci],
-                        style: TextStyle(fontSize: 12,
-                          color: isDark ? Colors.white : const Color(0xFF1F2937))),
-                    ),
-                ],
-                child: SizedBox(
-                  height: 34,
-                  child: OutlinedButton.icon(
-                    onPressed: () => _colMenuCtrl.isOpen
-                        ? _colMenuCtrl.close()
-                        : _colMenuCtrl.open(),
-                    icon: Icon(Icons.visibility_outlined, size: 14,
-                      color: _visibleCount < _colLabels.length
-                          ? AppTheme.accent
-                          : (isDark ? const Color(0xFFDCEBFF) : const Color(0xFF374151))),
-                    label: Text('Colonnes ($_visibleCount)',
-                      style: TextStyle(fontSize: 11,
-                        color: _visibleCount < _colLabels.length
-                            ? AppTheme.accent
-                            : (isDark ? const Color(0xFFDCEBFF) : const Color(0xFF374151)))),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      foregroundColor: isDark ? const Color(0xFFDCEBFF) : const Color(0xFF374151),
-                      backgroundColor: isDark ? const Color(0xFF13243F) : Colors.white,
-                      surfaceTintColor: Colors.transparent,
-                      elevation: 1,
-                      shadowColor: isDark ? const Color(0x22040A16) : const Color(0x102563EB),
-                      side: BorderSide(
-                        color: _visibleCount < _colLabels.length
-                            ? AppTheme.accent
-                            : (isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6))),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                    ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              _topBtn('Import',   Icons.file_upload_outlined,   const Color(0xFF1E88E5), _openImport, isDark),
-              const SizedBox(width: 6),
-              _topBtn('Exporter', Icons.file_download_outlined, const Color(0xFF14A44D),
-                _cachedItems.isEmpty ? null : _exportData,
-                isDark),
-              const SizedBox(width: 10),
-              SizedBox(height: 32,
-                child: FilledButton.icon(
-                  onPressed: _showWizard,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.accent,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  icon: const Icon(Icons.add, size: 14),
-                  label: const Text('Ajouter'),
-                ),
-              ),
-            ]),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // ── Tableau ──────────────────────────────────────────────────────
-        Expanded(
-          child: FutureBuilder<List<RoIncident>>(
-            future: _future,
-            builder: (ctx, snap) {
-              if (!snap.hasData) return snap.hasError ? _errorBox(snap.error!) : _loadingBox();
-              return _buildTable(ctx, _apply(snap.data!), isDark);
-            },
-          ),
-        ),
-        const SizedBox(height: 6),
-        // ── Footer KPI (style Dashboard Opérationnel) ────────────────────
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            border: Border.all(
-              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isDark
-                        ? [const Color(0xFF1A2A4A), const Color(0xFF13203A)]
-                        : [const Color(0xFFF8F9FF), const Color(0xFFF0F2FF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(child: _RoDashSummaryItem(label: 'Pertes', value: '${cached.length}', accentColor: AppTheme.accent, icon: Icons.list_alt_outlined)),
-                    Container(width: 1, height: 40, color: AppTheme.accent.withValues(alpha: 0.25)),
-                    Expanded(child: _RoDashSummaryItem(label: 'Perte brute', value: AppFormatters.currency(cBrute), accentColor: _kDanger, icon: Icons.trending_down_outlined)),
-                    Container(width: 1, height: 40, color: AppTheme.accent.withValues(alpha: 0.25)),
-                    Expanded(child: _RoDashSummaryItem(label: 'Perte nette', value: AppFormatters.currency(cNette), accentColor: _kDanger, icon: Icons.account_balance_outlined)),
-                    Container(width: 1, height: 40, color: AppTheme.accent.withValues(alpha: 0.25)),
-                    Expanded(child: _RoDashSummaryItem(label: 'Capital minimum (Art. 89)', value: AppFormatters.currency(cKro), accentColor: AppColors.prudentialSolvency, icon: Icons.shield_outlined)),
-                    Container(width: 1, height: 40, color: AppTheme.accent.withValues(alpha: 0.25)),
-                    Expanded(child: _RoDashSummaryItem(label: 'RWA opérationnel', value: AppFormatters.currency(cApr), accentColor: AppColors.marketNeutral, icon: Icons.bar_chart_outlined)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
               ],
             ),
           ),
@@ -7396,30 +9474,40 @@ class _RegistreViewState extends State<_RegistreView> {
     );
   }
 
-
   // ── helpers UI ──────────────────────────────────────────────────────────────
 
-  Widget _topBtn(String label, IconData icon, Color color, VoidCallback? onPressed, bool isDark) => SizedBox(
-    height: 30,
-    child: FilledButton.icon(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: onPressed != null ? color : (isDark ? const Color(0xFF1B2B47) : const Color(0xFFE8EEF8)),
-        foregroundColor: onPressed != null ? Colors.white : (isDark ? const Color(0xFF6F7E96) : const Color(0xFF8A98AC)),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-        textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-        visualDensity: VisualDensity.compact,
-      ),
-      icon: Icon(icon, size: 14),
-      label: Text(label),
-    ),
-  );
+  Widget _topBtn(String label, IconData icon, Color color,
+          VoidCallback? onPressed, bool isDark) =>
+      SizedBox(
+        height: 30,
+        child: FilledButton.icon(
+          onPressed: onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: onPressed != null
+                ? color
+                : (isDark ? const Color(0xFF1B2B47) : const Color(0xFFE8EEF8)),
+            foregroundColor: onPressed != null
+                ? Colors.white
+                : (isDark ? const Color(0xFF6F7E96) : const Color(0xFF8A98AC)),
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0.0),
+            textStyle:
+                const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+            visualDensity: VisualDensity.compact,
+          ),
+          icon: Icon(icon, size: 14),
+          label: Text(label),
+        ),
+      );
 
-  Widget _fDropLabeled(String label, String? value, List<String> opts, ValueChanged<String?> onChange, double width, bool isDark) {
-    final borderColor = isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6);
-    final fillColor   = isDark ? const Color(0xFF13243F) : Colors.white;
-    final labelColor  = isDark ? const Color(0xFFB8C8E8) : const Color(0xFF2563EB);
+  Widget _fDropLabeled(String label, String? value, List<String> opts,
+      ValueChanged<String?> onChange, double width, bool isDark) {
+    final borderColor =
+        isDark ? const Color(0xFF2A4164) : const Color(0xFFD5E2F6);
+    final fillColor = isDark ? const Color(0xFF13243F) : Colors.white;
+    final labelColor =
+        isDark ? const Color(0xFFB8C8E8) : const Color(0xFF2563EB);
     return SizedBox(
       width: width,
       height: 34,
@@ -7432,19 +9520,30 @@ class _RegistreViewState extends State<_RegistreView> {
                 color: fillColor,
                 borderRadius: BorderRadius.circular(5),
                 border: Border.all(color: borderColor),
-                boxShadow: isDark ? null : [
-                  const BoxShadow(color: Color(0x0A2563EB), blurRadius: 10, offset: Offset(0, 4)),
-                ],
+                boxShadow: isDark
+                    ? null
+                    : [
+                        const BoxShadow(
+                            color: Color(0x0A2563EB),
+                            blurRadius: 10,
+                            offset: Offset(0, 4)),
+                      ],
               ),
             ),
           ),
           Positioned(
-            left: 8, top: -5,
+            left: 8,
+            top: -5,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 3),
               color: fillColor,
-              child: Text(label,
-                style: TextStyle(fontSize: 8.2, fontWeight: FontWeight.w600, color: labelColor, height: 1),
+              child: Text(
+                label,
+                style: TextStyle(
+                    fontSize: 8.2,
+                    fontWeight: FontWeight.w600,
+                    color: labelColor,
+                    height: 1),
               ),
             ),
           ),
@@ -7456,21 +9555,33 @@ class _RegistreViewState extends State<_RegistreView> {
                   value: value,
                   isExpanded: true,
                   isDense: true,
-                  hint: Text('Tous',
-                    style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : const Color(0xFF9AA8BA)),
+                  hint: Text(
+                    'Tous',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color:
+                            isDark ? Colors.white54 : const Color(0xFF9AA8BA)),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black87),
-                  icon: Icon(Icons.keyboard_arrow_down_rounded, size: 16,
-                    color: isDark ? Colors.white38 : Colors.black38),
-                  dropdownColor: isDark ? const Color(0xFF14233D) : Colors.white,
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white : Colors.black87),
+                  icon: Icon(Icons.keyboard_arrow_down_rounded,
+                      size: 16,
+                      color: isDark ? Colors.white38 : Colors.black38),
+                  dropdownColor:
+                      isDark ? const Color(0xFF14233D) : Colors.white,
                   borderRadius: BorderRadius.circular(5),
                   items: [
-                    const DropdownMenuItem<String?>(value: null, child: Text('Tous', style: TextStyle(fontSize: 12))),
+                    const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('Tous', style: TextStyle(fontSize: 12))),
                     ...opts.map((s) => DropdownMenuItem<String?>(
-                      value: s,
-                      child: Text(s, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
-                    )),
+                          value: s,
+                          child: Text(s,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12)),
+                        )),
                   ],
                   onChanged: onChange,
                 ),
@@ -7487,19 +9598,28 @@ class _RegistreViewState extends State<_RegistreView> {
       return Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF13233E) : Colors.white,
-          border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
+          border: Border.all(
+              color: isDark ? const Color(0xFF304764) : AppTheme.border),
           borderRadius: BorderRadius.circular(5),
         ),
-        child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.table_rows_outlined, size: 48, color: _kMuted.withValues(alpha: 0.4)),
-          const SizedBox(height: 14),
-          const Text('Aucune entrée dans le registre', style: TextStyle(color: _kMuted, fontSize: 14, fontWeight: FontWeight.w600)),
+        child: Center(
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.table_rows_outlined,
+              size: 48, color: _kMuted.withValues(alpha: 0.4)),
+          const SizedBox(height: 4),
+          const Text('Aucune entrée dans le registre',
+              style: TextStyle(
+                  color: _kMuted, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
-          const Text('Ajoutez une perte ou importez un fichier Excel', style: TextStyle(color: _kMuted, fontSize: 12)),
-          const SizedBox(height: 18),
+          const Text('Ajoutez une perte ou importez un fichier Excel',
+              style: TextStyle(color: _kMuted, fontSize: 12)),
+          const SizedBox(height: 5),
           Wrap(spacing: 10, children: [
-            _topBtn('Importer Excel',   Icons.file_upload_outlined, const Color(0xFF1E88E5), _openImport,  isDark),
-            _topBtn('Ajouter une perte', Icons.add,                 AppTheme.accent,         _showWizard,  isDark),
+            _topBtn('Importer Excel', Icons.file_upload_outlined,
+                const Color(0xFF1E88E5), _openImport, isDark),
+            _topBtn('Ajouter une perte', Icons.add, AppTheme.accent,
+                _showWizard, isDark),
           ]),
         ])),
       );
@@ -7507,27 +9627,36 @@ class _RegistreViewState extends State<_RegistreView> {
 
     return LayoutBuilder(builder: (_, bc) {
       final fixedVisible = _visibleCols[0];
-      final fixedW       = fixedVisible ? _colW[0] : 0.0;
+      final fixedW = fixedVisible ? _colW[0] : 0.0;
       final trailVisible = _visibleCols[12];
-      final trailW       = trailVisible ? _colW[12] : 0.0;
-      final scrollColW   = _scrollableMinW;
-      final availW       = (bc.maxWidth.isFinite ? bc.maxWidth : scrollColW) - fixedW - trailW;
-      final scrollMinW   = math.max(scrollColW, availW > 0 ? availW : scrollColW);
+      final trailW = trailVisible ? _colW[12] : 0.0;
+      final scrollColW = _scrollableMinW;
+      final availW =
+          (bc.maxWidth.isFinite ? bc.maxWidth : scrollColW) - fixedW - trailW;
+      final scrollMinW = math.max(scrollColW, availW > 0 ? availW : scrollColW);
 
-      const headerStyle  = TextStyle(color: Color(0xFFF5F8FF), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.18, height: 1);
-      const headerGrad   = BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF2A518A), Color(0xFF23477A)]),
+      const headerStyle = TextStyle(
+          color: Color(0xFFF5F8FF),
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.18,
+          height: 1);
+      const headerGrad = BoxDecoration(
+        gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF2A518A), Color(0xFF23477A)]),
         border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF))),
       );
 
       // ── Données ligne par ligne ──────────────────────────────────────────
-      final fixedCells      = <Widget>[];
+      final fixedCells = <Widget>[];
       final scrollableCells = <Widget>[];
-      final trailCells      = <Widget>[];
+      final trailCells = <Widget>[];
 
       for (var (rowIdx, i) in items.indexed) {
-        final kro        = i.perteNette * 0.15;
-        final apr        = kro * 12.5;
+        final kro = i.perteNette * 0.15;
+        final apr = kro * 12.5;
         final isSelected = _selectedId == i.id;
 
         final rowBg = isSelected
@@ -7539,7 +9668,9 @@ class _RegistreViewState extends State<_RegistreView> {
             ? (isDark ? const Color(0xFF5B7DB0) : const Color(0xFF8AB8FF))
             : (isDark ? const Color(0x14FFFFFF) : const Color(0x11000000));
         final rowDeco = BoxDecoration(
-          border: Border(bottom: BorderSide(color: rowBorderColor, width: isSelected ? 1.2 : 0.7)),
+          border: Border(
+              bottom: BorderSide(
+                  color: rowBorderColor, width: isSelected ? 1.2 : 0.7)),
         );
         final hoverColor = isSelected
             ? Colors.transparent
@@ -7565,17 +9696,31 @@ class _RegistreViewState extends State<_RegistreView> {
 
         // Cols 1-11 — zone défilante
         final scrollCols = <Widget>[
-          if (_visibleCols[1])  _rc(i.dateOccurrence,                    _colW[1]),
-          if (_visibleCols[2])  _rcf(i.ligneMetier,                      _colW[2]),
-          if (_visibleCols[3])  _rcf(i.typeEvenement,                    _colW[3]),
-          if (_visibleCols[4])  _rcf(i.description,                      _colW[4]),
-          if (_visibleCols[5])  _rcf(i.causeRacine,                      _colW[5]),
-          if (_visibleCols[6])  _rc(AppFormatters.currency(i.perteBrute),     _colW[6],  right: true),
-          if (_visibleCols[7])  _rc(AppFormatters.currency(i.perteRecuperee), _colW[7],  right: true, color: i.perteRecuperee > 0 ? _kSuccess : _kMuted),
-          if (_visibleCols[8])  _rc(AppFormatters.currency(i.perteNette),     _colW[8],  right: true, color: i.perteNette > 0 ? _kDanger : null),
-          if (_visibleCols[9])  _rc(AppFormatters.currency(kro),              _colW[9],  right: true, color: AppColors.prudentialSolvency),
-          if (_visibleCols[10]) _rc(AppFormatters.currency(apr),              _colW[10], right: true, color: AppColors.marketNeutral),
-          if (_visibleCols[11]) SizedBox(width: _colW[11], child: Padding(padding: const EdgeInsets.all(8), child: _badge(i.statut, _statutColor(i.statut)))),
+          if (_visibleCols[1]) _rc(i.dateOccurrence, _colW[1]),
+          if (_visibleCols[2]) _rcf(i.ligneMetier, _colW[2]),
+          if (_visibleCols[3]) _rcf(i.typeEvenement, _colW[3]),
+          if (_visibleCols[4]) _rcf(i.description, _colW[4]),
+          if (_visibleCols[5]) _rcf(i.causeRacine, _colW[5]),
+          if (_visibleCols[6])
+            _rc(AppFormatters.currency(i.perteBrute), _colW[6], right: true),
+          if (_visibleCols[7])
+            _rc(AppFormatters.currency(i.perteRecuperee), _colW[7],
+                right: true, color: i.perteRecuperee > 0 ? _kSuccess : _kMuted),
+          if (_visibleCols[8])
+            _rc(AppFormatters.currency(i.perteNette), _colW[8],
+                right: true, color: i.perteNette > 0 ? _kDanger : null),
+          if (_visibleCols[9])
+            _rc(AppFormatters.currency(kro), _colW[9],
+                right: true, color: AppColors.prudentialSolvency),
+          if (_visibleCols[10])
+            _rc(AppFormatters.currency(apr), _colW[10],
+                right: true, color: AppColors.marketNeutral),
+          if (_visibleCols[11])
+            SizedBox(
+                width: _colW[11],
+                child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: _badge(i.statut, _statutColor(i.statut)))),
         ];
 
         // Col 12 — colonne Actions figée à droite
@@ -7588,22 +9733,32 @@ class _RegistreViewState extends State<_RegistreView> {
               hoverColor: hoverColor,
               child: Container(
                 decoration: rowDeco,
-                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  SizedBox(width: 32, height: 32, child: IconButton(
-                    padding: EdgeInsets.zero,
-                    icon: Icon(Icons.edit_outlined, size: 15, color: isDark ? Colors.white54 : _kMuted),
-                    tooltip: 'Modifier',
-                    onPressed: () => _showEditForm(i),
-                  )),
-                  SizedBox(width: 32, height: 32, child: IconButton(
-                    padding: EdgeInsets.zero,
-                    icon: const Icon(Icons.delete_outline, size: 15, color: _kDanger),
-                    tooltip: 'Supprimer',
-                    onPressed: () => _confirm(context, 'Supprimer cet incident ?', () async {
-                      await widget.api.deleteRoIncident(i.id);
-                      _reload();
-                    }),
-                  )),
+                child:
+                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: Icon(Icons.edit_outlined,
+                            size: 15, color: isDark ? Colors.white54 : _kMuted),
+                        tooltip: 'Modifier',
+                        onPressed: () => _showEditForm(i),
+                      )),
+                  SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.delete_outline,
+                            size: 15, color: _kDanger),
+                        tooltip: 'Supprimer',
+                        onPressed: () => _confirm(
+                            context, 'Supprimer cet incident ?', () async {
+                          await widget.api.deleteRoIncident(i.id);
+                          _reload();
+                        }),
+                      )),
                 ]),
               ),
             ),
@@ -7629,7 +9784,8 @@ class _RegistreViewState extends State<_RegistreView> {
       return Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF13233E) : Colors.white,
-          border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
+          border: Border.all(
+              color: isDark ? const Color(0xFF304764) : AppTheme.border),
           borderRadius: BorderRadius.circular(5),
         ),
         clipBehavior: Clip.antiAlias,
@@ -7640,30 +9796,34 @@ class _RegistreViewState extends State<_RegistreView> {
               height: 40,
               child: Row(children: [
                 // Cellule d'en-tête de la colonne figée
-                if (fixedVisible) Container(
-                  width: fixedW,
-                  height: 40,
-                  decoration: headerGrad.copyWith(
-                    border: const Border(
-                      bottom: BorderSide(color: Color(0x1AFFFFFF)),
-                      right:  BorderSide(color: Color(0x33FFFFFF)),
+                if (fixedVisible)
+                  Container(
+                    width: fixedW,
+                    height: 40,
+                    decoration: headerGrad.copyWith(
+                      border: const Border(
+                        bottom: BorderSide(color: Color(0x1AFFFFFF)),
+                        right: BorderSide(color: Color(0x33FFFFFF)),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(_colLabels[0],
+                            style: headerStyle,
+                            overflow: TextOverflow.ellipsis),
+                      ),
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(_colLabels[0], style: headerStyle, overflow: TextOverflow.ellipsis),
-                    ),
-                  ),
-                ),
                 // En-têtes défilants (cols 1-11)
                 Expanded(
                   child: ClipRect(
                     child: AnimatedBuilder(
                       animation: _hCtrl,
                       builder: (_, child) => Transform.translate(
-                        offset: Offset(-(_hCtrl.hasClients ? _hCtrl.offset : 0.0), 0),
+                        offset: Offset(
+                            -(_hCtrl.hasClients ? _hCtrl.offset : 0.0), 0),
                         child: child,
                       ),
                       child: OverflowBox(
@@ -7676,13 +9836,18 @@ class _RegistreViewState extends State<_RegistreView> {
                             height: 40,
                             decoration: headerGrad,
                             child: Row(
-                              children: _scrollableColDefs.map((c) => SizedBox(
-                                width: c.$2,
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(c.$1, style: headerStyle, overflow: TextOverflow.ellipsis),
-                                ),
-                              )).toList(),
+                              children: _scrollableColDefs
+                                  .map((c) => SizedBox(
+                                        width: c.$2,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8),
+                                          child: Text(c.$1,
+                                              style: headerStyle,
+                                              overflow: TextOverflow.ellipsis),
+                                        ),
+                                      ))
+                                  .toList(),
                             ),
                           ),
                         ),
@@ -7691,43 +9856,58 @@ class _RegistreViewState extends State<_RegistreView> {
                   ),
                 ),
                 // En-tête Actions figé à droite
-                if (trailVisible) Container(
-                  width: trailW,
-                  height: 40,
-                  decoration: headerGrad.copyWith(
-                    border: const Border(
-                      bottom: BorderSide(color: Color(0x1AFFFFFF)),
-                      left:   BorderSide(color: Color(0x33FFFFFF)),
+                if (trailVisible)
+                  Container(
+                    width: trailW,
+                    height: 40,
+                    decoration: headerGrad.copyWith(
+                      border: const Border(
+                        bottom: BorderSide(color: Color(0x1AFFFFFF)),
+                        left: BorderSide(color: Color(0x33FFFFFF)),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(_colLabels[12],
+                            style: headerStyle,
+                            overflow: TextOverflow.ellipsis),
+                      ),
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(_colLabels[12], style: headerStyle, overflow: TextOverflow.ellipsis),
-                    ),
-                  ),
-                ),
               ]),
             ),
             // ── Corps ────────────────────────────────────────────────────────
             Expanded(
               child: Row(children: [
                 // Colonne Référence figée à gauche
-                if (fixedVisible) Container(
-                  width: fixedW,
-                  decoration: BoxDecoration(
-                    border: Border(right: BorderSide(color: isDark ? const Color(0xFF304764) : const Color(0xFFD6E0EF))),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.06), blurRadius: 10, offset: const Offset(3, 0))],
-                  ),
-                  child: ScrollConfiguration(
-                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                    child: SingleChildScrollView(
-                      controller: _vFixedCtrl,
-                      child: Column(children: fixedCells),
+                if (fixedVisible)
+                  Container(
+                    width: fixedW,
+                    decoration: BoxDecoration(
+                      border: Border(
+                          right: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF304764)
+                                  : const Color(0xFFD6E0EF))),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black
+                                .withValues(alpha: isDark ? 0.20 : 0.06),
+                            blurRadius: 10,
+                            offset: const Offset(3, 0))
+                      ],
+                    ),
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context)
+                          .copyWith(scrollbars: false),
+                      child: SingleChildScrollView(
+                        controller: _vFixedCtrl,
+                        child: Column(children: fixedCells),
+                      ),
                     ),
                   ),
-                ),
                 // Zone défilante (cols 1-11)
                 Expanded(
                   child: SingleChildScrollView(
@@ -7746,20 +9926,32 @@ class _RegistreViewState extends State<_RegistreView> {
                   ),
                 ),
                 // Colonne Actions figée à droite
-                if (trailVisible) Container(
-                  width: trailW,
-                  decoration: BoxDecoration(
-                    border: Border(left: BorderSide(color: isDark ? const Color(0xFF304764) : const Color(0xFFD6E0EF))),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.06), blurRadius: 10, offset: const Offset(-3, 0))],
-                  ),
-                  child: ScrollConfiguration(
-                    behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-                    child: SingleChildScrollView(
-                      controller: _vTrailCtrl,
-                      child: Column(children: trailCells),
+                if (trailVisible)
+                  Container(
+                    width: trailW,
+                    decoration: BoxDecoration(
+                      border: Border(
+                          left: BorderSide(
+                              color: isDark
+                                  ? const Color(0xFF304764)
+                                  : const Color(0xFFD6E0EF))),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black
+                                .withValues(alpha: isDark ? 0.20 : 0.06),
+                            blurRadius: 10,
+                            offset: const Offset(-3, 0))
+                      ],
+                    ),
+                    child: ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context)
+                          .copyWith(scrollbars: false),
+                      child: SingleChildScrollView(
+                        controller: _vTrailCtrl,
+                        child: Column(children: trailCells),
+                      ),
                     ),
                   ),
-                ),
               ]),
             ),
           ],
@@ -7768,28 +9960,35 @@ class _RegistreViewState extends State<_RegistreView> {
     });
   }
 
-  Widget _rc(String t, double w, {bool bold = false, bool right = false, Color? color}) => SizedBox(
-    width: w,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Text(t,
-        textAlign: right ? TextAlign.right : TextAlign.left,
-        style: TextStyle(fontWeight: bold ? FontWeight.w700 : FontWeight.normal, fontSize: 12, color: color),
-        overflow: TextOverflow.ellipsis,
-      ),
-    ),
-  );
+  Widget _rc(String t, double w,
+          {bool bold = false, bool right = false, Color? color}) =>
+      SizedBox(
+        width: w,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Text(
+            t,
+            textAlign: right ? TextAlign.right : TextAlign.left,
+            style: TextStyle(
+                fontWeight: bold ? FontWeight.w700 : FontWeight.normal,
+                fontSize: 12,
+                color: color),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      );
 
   Widget _rcf(String t, double w) => SizedBox(
-    width: w,
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Text(t, style: const TextStyle(fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-    ),
-  );
-
+        width: w,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Text(t,
+              style: const TextStyle(fontSize: 12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis),
+        ),
+      );
 }
-
 
 // ─── Wizard — Déclarer un incident opérationnel ───────────────────────────────
 
@@ -7798,7 +9997,8 @@ class _RoIncidentWizardDialog extends StatefulWidget {
   final RwaApiService api;
 
   @override
-  State<_RoIncidentWizardDialog> createState() => _RoIncidentWizardDialogState();
+  State<_RoIncidentWizardDialog> createState() =>
+      _RoIncidentWizardDialogState();
 }
 
 class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
@@ -7826,7 +10026,12 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
   final _step2Key = GlobalKey<FormState>();
   final _step3Key = GlobalKey<FormState>();
 
-  static const _stepLabels = ['Identification', 'Description', 'Impact', 'Validation'];
+  static const _stepLabels = [
+    'Identification',
+    'Description',
+    'Impact',
+    'Validation'
+  ];
   static const _stepSubtitles = [
     'Date, ligne, type',
     'Détails et cause',
@@ -7858,8 +10063,13 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
     };
   }
 
-  void _next() { if (_validateCurrent() && _step < _totalSteps) setState(() => _step++); }
-  void _prev() { if (_step > 1) setState(() => _step--); }
+  void _next() {
+    if (_validateCurrent() && _step < _totalSteps) setState(() => _step++);
+  }
+
+  void _prev() {
+    if (_step > 1) setState(() => _step--);
+  }
 
   Future<void> _submit() async {
     setState(() => _submitting = true);
@@ -7895,7 +10105,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 660, maxHeight: 740),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -7908,15 +10118,19 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                       color: _kBlue.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.report_problem_outlined, color: _kBlue, size: 18),
+                    child: const Icon(Icons.report_problem_outlined,
+                        color: _kBlue, size: 18),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 3),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Déclarer un incident', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                        Text('Risque opérationnel — Art. 313 BCEAO', style: TextStyle(fontSize: 11, color: _kMuted)),
+                        Text('Déclarer un incident',
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w700)),
+                        Text('Risque opérationnel — Art. 313 BCEAO',
+                            style: TextStyle(fontSize: 11, color: _kMuted)),
                       ],
                     ),
                   ),
@@ -7926,12 +10140,12 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 5),
               // Indicateur d'étapes
               _buildStepBar(),
-              const SizedBox(height: 20),
+              const SizedBox(height: 5),
               const Divider(height: 1),
-              const SizedBox(height: 16),
+              const SizedBox(height: 4),
               // Contenu de l'étape
               Expanded(
                 child: SingleChildScrollView(
@@ -7943,9 +10157,9 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                   },
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 4),
               const Divider(height: 1),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               // Boutons de navigation
               _buildNavRow(),
             ],
@@ -7961,19 +10175,36 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
       children: List.generate(_totalSteps * 2 - 1, (i) {
         if (i.isOdd) {
           final done = i ~/ 2 + 1 < _step;
-          return Expanded(child: Container(height: 2, color: done ? _kBlue : (Theme.of(context).brightness == Brightness.dark ? AppTheme.darkBorder : AppTheme.border)));
+          return Expanded(
+              child: Container(
+                  height: 2,
+                  color: done
+                      ? _kBlue
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkBorder
+                          : AppTheme.border)));
         }
         final n = i ~/ 2 + 1;
         final active = n == _step;
         final done = n < _step;
-        final col = active ? _kBlue : done ? _kSuccess : _kMuted;
+        final col = active
+            ? _kBlue
+            : done
+                ? _kSuccess
+                : _kMuted;
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 36, height: 36,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: (active || done) ? col.withValues(alpha: 0.12) : (Theme.of(context).brightness == Brightness.dark ? AppTheme.darkBorder : AppTheme.border).withValues(alpha: 0.4),
+                color: (active || done)
+                    ? col.withValues(alpha: 0.12)
+                    : (Theme.of(context).brightness == Brightness.dark
+                            ? AppTheme.darkBorder
+                            : AppTheme.border)
+                        .withValues(alpha: 0.4),
                 shape: BoxShape.circle,
                 border: Border.all(color: col, width: active ? 2 : 1),
               ),
@@ -7984,7 +10215,10 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
             const SizedBox(height: 4),
             Text(
               _stepLabels[i ~/ 2],
-              style: TextStyle(fontSize: 10, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: col),
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                  color: col),
             ),
             Text(
               _stepSubtitles[i ~/ 2],
@@ -7999,123 +10233,150 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
 
   // ── Étape 1 : Identification ───────────────────────────────────────────────
   Widget _buildStep1() => Form(
-    key: _step1Key,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _wizBanner(
-          icon: Icons.badge_outlined,
-          title: 'Identification de l\'incident',
-          subtitle: 'Art. 313.b — Déclarez dans les 5 jours ouvrés suivant la détection',
+        key: _step1Key,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _wizBanner(
+              icon: Icons.badge_outlined,
+              title: 'Identification de l\'incident',
+              subtitle:
+                  'Art. 313.b — Déclarez dans les 5 jours ouvrés suivant la détection',
+            ),
+            const SizedBox(height: 4),
+            _formSection('Quand et où ?',
+                icon: Icons.calendar_today_rounded, color: _kDanger),
+            _dateField(context, 'Date d\'occurrence', _dateCtrl,
+                required: true),
+            _formSection('Classification',
+                icon: Icons.category_rounded, color: _kWarning),
+            _formRow(
+              _dropdown('Ligne de métier', _ligne, _lignesMetier, (v) {
+                if (v != null) setState(() => _ligne = v);
+              }, required: true, icon: Icons.business_rounded),
+              _dropdown('Type d\'événement', _type, _typesEvenement, (v) {
+                if (v != null) setState(() => _type = v);
+              }, required: true, icon: Icons.label_rounded),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        _formSection('Quand et où ?', icon: Icons.calendar_today_rounded, color: _kDanger),
-        _dateField(context, 'Date d\'occurrence', _dateCtrl, required: true),
-        _formSection('Classification', icon: Icons.category_rounded, color: _kWarning),
-        _formRow(
-          _dropdown('Ligne de métier', _ligne, _lignesMetier,
-            (v) { if (v != null) setState(() => _ligne = v); },
-            required: true, icon: Icons.business_rounded),
-          _dropdown('Type d\'événement', _type, _typesEvenement,
-            (v) { if (v != null) setState(() => _type = v); },
-            required: true, icon: Icons.label_rounded),
-        ),
-      ],
-    ),
-  );
+      );
 
   // ── Étape 2 : Description ─────────────────────────────────────────────────
   Widget _buildStep2() => Form(
-    key: _step2Key,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _wizBanner(
-          icon: Icons.edit_note_outlined,
-          title: 'Description et cause racine',
-          subtitle: 'Décrivez précisément l\'incident et identifiez sa cause principale',
+        key: _step2Key,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _wizBanner(
+              icon: Icons.edit_note_outlined,
+              title: 'Description et cause racine',
+              subtitle:
+                  'Décrivez précisément l\'incident et identifiez sa cause principale',
+            ),
+            const SizedBox(height: 4),
+            _formSection('Que s\'est-il passé ?',
+                icon: Icons.notes_rounded, color: _kBlue),
+            _field('Description de l\'incident', _descCtrl,
+                multiline: true,
+                required: true,
+                icon: Icons.description_rounded,
+                hint:
+                    'Que s\'est-il passé ? Quels systèmes / processus sont concernés ?'),
+            _formSection('Analyse',
+                icon: Icons.search_rounded, color: _kWarning),
+            _dropdown('Cause racine identifiée', _causeRacine, _causesRacine,
+                (v) {
+              if (v != null) setState(() => _causeRacine = v);
+            }, icon: Icons.account_tree_rounded),
+          ],
         ),
-        const SizedBox(height: 16),
-        _formSection('Que s\'est-il passé ?', icon: Icons.notes_rounded, color: _kBlue),
-        _field('Description de l\'incident', _descCtrl, multiline: true, required: true,
-          icon: Icons.description_rounded,
-          hint: 'Que s\'est-il passé ? Quels systèmes / processus sont concernés ?'),
-        _formSection('Analyse', icon: Icons.search_rounded, color: _kWarning),
-        _dropdown('Cause racine identifiée', _causeRacine, _causesRacine,
-          (v) { if (v != null) setState(() => _causeRacine = v); },
-          icon: Icons.account_tree_rounded),
-      ],
-    ),
-  );
+      );
 
   // ── Étape 3 : Impact financier ────────────────────────────────────────────
   Widget _buildStep3() => Form(
-    key: _step3Key,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _wizBanner(
-          icon: Icons.account_balance_wallet_outlined,
-          title: 'Impact financier',
-          subtitle: 'Art. 89 — Perte nette = Perte brute − Récupérations. Saisir en FCFA.',
-        ),
-        const SizedBox(height: 16),
-        _formSection('Montants de perte', icon: Icons.monetization_on_rounded, color: _kDanger),
-        _formRow(
-          _field('Perte brute (FCFA)', _brutCtrl,
-            keyboardType: TextInputType.number, required: true,
-            icon: Icons.trending_down_rounded,
-            hint: 'Montant total avant récupérations'),
-          _field('Perte récupérée (FCFA)', _recupCtrl,
-            keyboardType: TextInputType.number,
-            icon: Icons.trending_up_rounded,
-            hint: 'Assurances, provisions, reversements'),
-        ),
-        const SizedBox(height: 4),
-        // Estimation BIA temps réel
-        ListenableBuilder(
-          listenable: Listenable.merge([_brutCtrl, _recupCtrl]),
-          builder: (_, __) {
-            final brut = double.tryParse(_brutCtrl.text) ?? 0;
-            final recup = double.tryParse(_recupCtrl.text) ?? 0;
-            if (brut == 0) return const SizedBox.shrink();
-            final nette = brut - recup;
-            final kBia = nette * 0.15;
-            final apr = kBia * 12.5;
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: _kBlue.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: _kBlue.withValues(alpha: 0.20)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
+        key: _step3Key,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _wizBanner(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'Impact financier',
+              subtitle:
+                  'Art. 89 — Perte nette = Perte brute − Récupérations. Saisir en FCFA.',
+            ),
+            const SizedBox(height: 4),
+            _formSection('Montants de perte',
+                icon: Icons.monetization_on_rounded, color: _kDanger),
+            _formRow(
+              _field('Perte brute (FCFA)', _brutCtrl,
+                  keyboardType: TextInputType.number,
+                  required: true,
+                  icon: Icons.trending_down_rounded,
+                  hint: 'Montant total avant récupérations'),
+              _field('Perte récupérée (FCFA)', _recupCtrl,
+                  keyboardType: TextInputType.number,
+                  icon: Icons.trending_up_rounded,
+                  hint: 'Assurances, provisions, reversements'),
+            ),
+            const SizedBox(height: 4),
+            // Estimation BIA temps réel
+            ListenableBuilder(
+              listenable: Listenable.merge([_brutCtrl, _recupCtrl]),
+              builder: (_, __) {
+                final brut = double.tryParse(_brutCtrl.text) ?? 0;
+                final recup = double.tryParse(_recupCtrl.text) ?? 0;
+                if (brut == 0) return const SizedBox.shrink();
+                final nette = brut - recup;
+                final kBia = nette * 0.15;
+                final apr = kBia * 12.5;
+                return Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: _kBlue.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: _kBlue.withValues(alpha: 0.20)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.calculate_outlined, size: 13, color: _kBlue),
-                      SizedBox(width: 6),
-                      Text('Estimation BIA (Art. 89) — indicative', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kBlue)),
+                      const Row(
+                        children: [
+                          Icon(Icons.calculate_outlined,
+                              size: 13, color: _kBlue),
+                          SizedBox(width: 6),
+                          Text('Estimation BIA (Art. 89) — indicative',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: _kBlue)),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Expanded(
+                              child: _biaKpi(
+                                  'Perte brute', AppFormatters.currency(brut))),
+                          Expanded(
+                              child: _biaKpi('Perte nette',
+                                  AppFormatters.currency(nette))),
+                          Expanded(
+                              child: _biaKpi('Capital minimal (15 %)',
+                                  AppFormatters.currency(kBia))),
+                          Expanded(
+                              child: _biaKpi(
+                                  'RWA estimé', AppFormatters.currency(apr))),
+                        ],
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(child: _biaKpi('Perte brute', AppFormatters.currency(brut))),
-                      Expanded(child: _biaKpi('Perte nette', AppFormatters.currency(nette))),
-                      Expanded(child: _biaKpi('Capital minimal (15 %)', AppFormatters.currency(kBia))),
-                      Expanded(child: _biaKpi('RWA estimé', AppFormatters.currency(apr))),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 
   // ── Étape 4 : Récapitulatif + validation ──────────────────────────────────
   Widget _buildStep4() {
@@ -8129,13 +10390,14 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         _wizBanner(
           icon: Icons.task_alt_outlined,
           title: 'Validation finale',
-          subtitle: 'Vérifiez les informations avant d\'enregistrer l\'incident',
+          subtitle:
+              'Vérifiez les informations avant d\'enregistrer l\'incident',
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 4),
         // Récapitulatif
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: _kBlue.withValues(alpha: 0.04),
             borderRadius: BorderRadius.circular(8),
@@ -8144,28 +10406,38 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Récapitulatif', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _kBlue)),
-              const SizedBox(height: 12),
-              _recap('Date d\'occurrence', _dateCtrl.text.isEmpty ? '—' : _dateCtrl.text),
+              const Text('Récapitulatif',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      color: _kBlue)),
+              const SizedBox(height: 3),
+              _recap('Date d\'occurrence',
+                  _dateCtrl.text.isEmpty ? '—' : _dateCtrl.text),
               _recap('Ligne de métier', _ligne),
               _recap('Type d\'événement', _type),
               _recap('Cause racine', _causeRacine),
               _recap('Description', () {
                 final s = _descCtrl.text.trim();
-                return s.length > 90 ? '${s.substring(0, 87)}…' : (s.isEmpty ? '—' : s);
+                return s.length > 90
+                    ? '${s.substring(0, 87)}…'
+                    : (s.isEmpty ? '—' : s);
               }()),
               const Divider(height: 16),
               _recap('Perte brute', AppFormatters.currency(brut)),
               _recap('Perte récupérée', AppFormatters.currency(recup)),
-              _recap('Perte nette', AppFormatters.currency(nette), highlight: nette > 0),
+              _recap('Perte nette', AppFormatters.currency(nette),
+                  highlight: nette > 0),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        _dropdown('Statut de l\'incident', _statut, _statutsIncident, (v) { if (v != null) setState(() => _statut = v); }, required: true),
+        const SizedBox(height: 4),
+        _dropdown('Statut de l\'incident', _statut, _statutsIncident, (v) {
+          if (v != null) setState(() => _statut = v);
+        }, required: true),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
           decoration: BoxDecoration(
             color: _kSuccess.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(6),
@@ -8189,84 +10461,106 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
   }
 
   // ── Helpers visuels ───────────────────────────────────────────────────────
-  Widget _wizBanner({required IconData icon, required String title, required String subtitle}) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Icon(icon, size: 18, color: _kBlue),
-      const SizedBox(width: 10),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 2),
-            Text(subtitle, style: const TextStyle(fontSize: 11, color: _kMuted, height: 1.3)),
-          ],
-        ),
-      ),
-    ],
-  );
-
-  Widget _biaKpi(String label, String value) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: const TextStyle(fontSize: 9, color: _kMuted)),
-      const SizedBox(height: 2),
-      Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _kBlue)),
-    ],
-  );
-
-  Widget _recap(String label, String value, {bool highlight = false}) => Padding(
-    padding: const EdgeInsets.only(bottom: 5),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(width: 130, child: Text(label, style: const TextStyle(fontSize: 11, color: _kMuted))),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: highlight ? FontWeight.w700 : FontWeight.w400,
-              color: highlight ? _kDanger : null,
+  Widget _wizBanner(
+          {required IconData icon,
+          required String title,
+          required String subtitle}) =>
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: _kBlue),
+          const SizedBox(width: 3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: const TextStyle(
+                        fontSize: 11, color: _kMuted, height: 1.3)),
+              ],
             ),
           ),
+        ],
+      );
+
+  Widget _biaKpi(String label, String value) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 9, color: _kMuted)),
+          const SizedBox(height: 2),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: _kBlue)),
+        ],
+      );
+
+  Widget _recap(String label, String value, {bool highlight = false}) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+                width: 130,
+                child: Text(label,
+                    style: const TextStyle(fontSize: 11, color: _kMuted))),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: highlight ? FontWeight.w700 : FontWeight.w400,
+                  color: highlight ? _kDanger : null,
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 
   // ── Boutons navigation ────────────────────────────────────────────────────
   Widget _buildNavRow() => Row(
-    children: [
-      if (_step > 1)
-        OutlinedButton.icon(
-          onPressed: _prev,
-          icon: const Icon(Icons.chevron_left, size: 18),
-          label: const Text('Précédent'),
-          style: OutlinedButton.styleFrom(foregroundColor: _kMuted, side: const BorderSide(color: _kMuted)),
-        ),
-      const Spacer(),
-      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
-      const SizedBox(width: 8),
-      if (_step < _totalSteps)
-        FilledButton.icon(
-          onPressed: _next,
-          icon: const Icon(Icons.chevron_right, size: 18),
-          label: Text('Étape suivante ($_step/$_totalSteps)'),
-        )
-      else
-        FilledButton.icon(
-          onPressed: _submitting ? null : _submit,
-          icon: _submitting
-              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : const Icon(Icons.check, size: 18),
-          label: const Text('Enregistrer l\'incident'),
-          style: FilledButton.styleFrom(backgroundColor: _kSuccess),
-        ),
-    ],
-  );
+        children: [
+          if (_step > 1)
+            OutlinedButton.icon(
+              onPressed: _prev,
+              icon: const Icon(Icons.chevron_left, size: 18),
+              label: const Text('Précédent'),
+              style: OutlinedButton.styleFrom(
+                  foregroundColor: _kMuted,
+                  side: const BorderSide(color: _kMuted)),
+            ),
+          const Spacer(),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
+          const SizedBox(width: 8),
+          if (_step < _totalSteps)
+            FilledButton.icon(
+              onPressed: _next,
+              icon: const Icon(Icons.chevron_right, size: 18),
+              label: Text('Étape suivante ($_step/$_totalSteps)'),
+            )
+          else
+            FilledButton.icon(
+              onPressed: _submitting ? null : _submit,
+              icon: _submitting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.check, size: 18),
+              label: const Text('Enregistrer l\'incident'),
+              style: FilledButton.styleFrom(backgroundColor: _kSuccess),
+            ),
+        ],
+      );
 }
 
 // ─── Shared visual widgets ────────────────────────────────────────────────────
@@ -8291,8 +10585,10 @@ class _RoRiskMatrix extends StatelessWidget {
     return 'Critique';
   }
 
-  List<String> _namesAt(int p, int i) =>
-      risques.where((r) => r.probabilite == p && r.impact == i).map((r) => r.nom).toList();
+  List<String> _namesAt(int p, int i) => risques
+      .where((r) => r.probabilite == p && r.impact == i)
+      .map((r) => r.nom)
+      .toList();
 
   @override
   Widget build(BuildContext context) {
@@ -8309,25 +10605,33 @@ class _RoRiskMatrix extends StatelessWidget {
             // Colonne gauche : label vertical + numéros P
             Column(children: [
               // Espace pour aligner avec le label "IMPACT →" + chiffres
-              const SizedBox(height: 34),
+              const SizedBox(height: 6),
               // Numéros P (5 → 1, top → bottom)
               ...List.generate(5, (pi) {
                 final p = 5 - pi;
                 return SizedBox(
                   height: cellSz + 3,
-                  child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  child:
+                      Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                     if (pi == 2)
-                      const RotatedBox(quarterTurns: -1,
-                        child: Padding(
-                          padding: EdgeInsets.only(right: 4),
-                          child: Text('PROBABILITÉ ↑',
-                            style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700,
-                              color: _kMuted, letterSpacing: 0.7)),
-                        ))
+                      const RotatedBox(
+                          quarterTurns: -1,
+                          child: Padding(
+                            padding: EdgeInsets.only(right: 4),
+                            child: Text('PROBABILITÉ ↑',
+                                style: TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: _kMuted,
+                                    letterSpacing: 0.7)),
+                          ))
                     else
-                      const SizedBox(width: 60),
+                      const SizedBox(width: 6),
                     Text('$p',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kMuted)),
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _kMuted)),
                   ]),
                 );
               }),
@@ -8340,15 +10644,24 @@ class _RoRiskMatrix extends StatelessWidget {
                 // Axe Impact
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   const Text('IMPACT →',
-                    style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700,
-                      color: _kMuted, letterSpacing: 0.8)),
+                      style: TextStyle(
+                          fontSize: 8.5,
+                          fontWeight: FontWeight.w700,
+                          color: _kMuted,
+                          letterSpacing: 0.8)),
                   const SizedBox(height: 4),
-                  Row(children: List.generate(5, (i) => SizedBox(
-                    width: cellSz + 3,
-                    child: Text('${i + 1}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kMuted)),
-                  ))),
+                  Row(
+                      children: List.generate(
+                          5,
+                          (i) => SizedBox(
+                                width: cellSz + 3,
+                                child: Text('${i + 1}',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: _kMuted)),
+                              ))),
                 ]),
                 const SizedBox(height: 4),
                 // Grille 5×5
@@ -8358,66 +10671,82 @@ class _RoRiskMatrix extends StatelessWidget {
                     children: List.generate(5, (ii) {
                       final impact = ii + 1;
                       final names = _namesAt(p, impact);
-                      final cnt   = names.length;
-                      final c     = _zoneColor(p, impact);
-                      final zl    = _zoneLabel(p, impact);
+                      final cnt = names.length;
+                      final c = _zoneColor(p, impact);
+                      final zl = _zoneLabel(p, impact);
                       final score = p * impact;
 
                       return ExcludeSemantics(
                         child: Tooltip(
-                        key: ValueKey('matrix_${p}_$impact'),
-                        message: cnt == 0
-                            ? 'P=$p × I=$impact = $score ($zl)\nAucun risque positionné ici'
-                            : 'P=$p × I=$impact = $score ($zl)\n${names.join('\n')}',
-                        waitDuration: const Duration(milliseconds: 300),
-                        showDuration: const Duration(seconds: 6),
-                        textStyle: const TextStyle(fontSize: 11, color: Colors.white, height: 1.55),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E2A3A),
-                          borderRadius: BorderRadius.circular(7),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: Container(
-                          width: cellSz,
-                          height: cellSz,
-                          margin: const EdgeInsets.all(1.5),
+                          key: ValueKey('matrix_${p}_$impact'),
+                          message: cnt == 0
+                              ? 'P=$p × I=$impact = $score ($zl)\nAucun risque positionné ici'
+                              : 'P=$p × I=$impact = $score ($zl)\n${names.join('\n')}',
+                          waitDuration: const Duration(milliseconds: 300),
+                          showDuration: const Duration(seconds: 6),
+                          textStyle: const TextStyle(
+                              fontSize: 11, color: Colors.white, height: 1.55),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                c.withValues(alpha: isDark ? 0.38 : 0.20),
-                                c.withValues(alpha: isDark ? 0.20 : 0.09),
-                              ],
-                            ),
-                            border: Border.all(
-                              color: cnt > 0 ? c.withValues(alpha: 0.75) : c.withValues(alpha: 0.30),
-                              width: cnt > 0 ? 1.5 : 0.8,
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                            boxShadow: cnt > 0
-                                ? [BoxShadow(color: c.withValues(alpha: 0.18), blurRadius: 5)]
-                                : null,
+                            color: const Color(0xFF1E2A3A),
+                            borderRadius: BorderRadius.circular(7),
                           ),
-                          alignment: Alignment.center,
-                          child: cnt > 0
-                              ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                  Text('$cnt',
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 3, vertical: 8.0),
+                          child: Container(
+                            width: cellSz,
+                            height: cellSz,
+                            margin: const EdgeInsets.all(1.5),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  c.withValues(alpha: isDark ? 0.38 : 0.20),
+                                  c.withValues(alpha: isDark ? 0.20 : 0.09),
+                                ],
+                              ),
+                              border: Border.all(
+                                color: cnt > 0
+                                    ? c.withValues(alpha: 0.75)
+                                    : c.withValues(alpha: 0.30),
+                                width: cnt > 0 ? 1.5 : 0.8,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: cnt > 0
+                                  ? [
+                                      BoxShadow(
+                                          color: c.withValues(alpha: 0.18),
+                                          blurRadius: 5)
+                                    ]
+                                  : null,
+                            ),
+                            alignment: Alignment.center,
+                            child: cnt > 0
+                                ? Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                        Text('$cnt',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: cnt > 9 ? 13 : 17,
+                                                color: c,
+                                                height: 1.0)),
+                                        Text('risque${cnt > 1 ? 's' : ''}',
+                                            style: TextStyle(
+                                                fontSize: 7,
+                                                color:
+                                                    c.withValues(alpha: 0.72),
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: -0.2)),
+                                      ])
+                                : Text('$score',
                                     style: TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: cnt > 9 ? 13 : 17,
-                                      color: c, height: 1.0)),
-                                  Text('risque${cnt > 1 ? 's' : ''}',
-                                    style: TextStyle(fontSize: 7,
-                                      color: c.withValues(alpha: 0.72),
-                                      fontWeight: FontWeight.w700, letterSpacing: -0.2)),
-                                ])
-                              : Text('$score',
-                                  style: TextStyle(fontSize: 10,
-                                    color: c.withValues(alpha: isDark ? 0.40 : 0.25),
-                                    fontWeight: FontWeight.w700)),
+                                        fontSize: 10,
+                                        color: c.withValues(
+                                            alpha: isDark ? 0.40 : 0.25),
+                                        fontWeight: FontWeight.w700)),
+                          ),
                         ),
-                      ),
                       );
                     }),
                   );
@@ -8426,7 +10755,7 @@ class _RoRiskMatrix extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 4),
         // ── Légende ───────────────────────────────────────────────────────
         Wrap(spacing: 10, runSpacing: 6, children: [
           _legendItem('Faible ≤4', _kSuccess),
@@ -8435,9 +10764,9 @@ class _RoRiskMatrix extends StatelessWidget {
           _legendItem('Critique >16', _kDanger),
         ]),
         if (risques.isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
             decoration: BoxDecoration(
               color: _kBlue.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(6),
@@ -8447,7 +10776,7 @@ class _RoRiskMatrix extends StatelessWidget {
               Icon(Icons.touch_app_rounded, size: 11, color: _kBlue),
               SizedBox(width: 5),
               Text('Survolez une cellule pour voir les risques',
-                style: TextStyle(fontSize: 10, color: _kMuted)),
+                  style: TextStyle(fontSize: 10, color: _kMuted)),
             ]),
           ),
         ],
@@ -8456,20 +10785,23 @@ class _RoRiskMatrix extends StatelessWidget {
   }
 
   Widget _legendItem(String label, Color c) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 12, height: 12,
-        decoration: BoxDecoration(
-          color: c.withValues(alpha: 0.22),
-          borderRadius: BorderRadius.circular(3),
-          border: Border.all(color: c.withValues(alpha: 0.55)),
-        ),
-      ),
-      const SizedBox(width: 5),
-      Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: _kMuted)),
-    ],
-  );
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 12,
+            height: 12,
+            decoration: BoxDecoration(
+              color: c.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(color: c.withValues(alpha: 0.55)),
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w500, color: _kMuted)),
+        ],
+      );
 }
 
 class _RoPieChart extends StatelessWidget {
@@ -8480,7 +10812,16 @@ class _RoPieChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = items.fold(0, (s, e) => s + e.valeur);
     if (total == 0) return const SizedBox();
-    final palette = [_kBlue, _kSuccess, _kWarning, _kDanger, AppColors.prudentialSolvency, AppColors.marketNeutral, const Color(0xFFF97316), const Color(0xFF84CC16)];
+    final palette = [
+      _kBlue,
+      _kSuccess,
+      _kWarning,
+      _kDanger,
+      AppColors.prudentialSolvency,
+      AppColors.marketNeutral,
+      const Color(0xFFF97316),
+      const Color(0xFF84CC16)
+    ];
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final sorted = items.asMap().entries.toList()
@@ -8495,15 +10836,17 @@ class _RoPieChart extends StatelessWidget {
           final pct = total > 0 ? entry.value.valeur / total : 0.0;
           final pctStr = (pct * 100).toStringAsFixed(1);
           return Padding(
-            padding: const EdgeInsets.only(bottom: 11),
+            padding: const EdgeInsets.only(bottom: 3),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 9, height: 9,
-                      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+                      width: 9,
+                      height: 9,
+                      decoration:
+                          BoxDecoration(color: c, shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 7),
                     Expanded(
@@ -8521,7 +10864,8 @@ class _RoPieChart extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       '$pctStr %',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c),
+                      style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w700, color: c),
                     ),
                   ],
                 ),
@@ -8534,7 +10878,9 @@ class _RoPieChart extends StatelessWidget {
                         height: 9,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: isDark ? c.withValues(alpha: 0.14) : c.withValues(alpha: 0.10),
+                          color: isDark
+                              ? c.withValues(alpha: 0.14)
+                              : c.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
@@ -8563,7 +10909,8 @@ class _RoPieChart extends StatelessWidget {
 }
 
 class _RoLineChartPainter extends CustomPainter {
-  const _RoLineChartPainter({required this.dataBlue, required this.dataGreen, required this.labels});
+  const _RoLineChartPainter(
+      {required this.dataBlue, required this.dataGreen, required this.labels});
   final List<double> dataBlue;
   final List<double> dataGreen;
   final List<String> labels;
@@ -8578,16 +10925,23 @@ class _RoLineChartPainter extends CustomPainter {
     final maxV = all.reduce(math.max);
     if (maxV == 0) return;
 
-    final gridPaint = Paint()..color = const Color(0x22000000)..strokeWidth = 0.5;
+    final gridPaint = Paint()
+      ..color = const Color(0x22000000)
+      ..strokeWidth = 0.5;
     final textPainter = TextPainter(textDirection: TextDirection.ltr);
     const gridLines = 4;
     for (var i = 0; i <= gridLines; i++) {
       final y = padT + h - (i / gridLines) * h;
       canvas.drawLine(Offset(padL, y), Offset(padL + w, y), gridPaint);
       final val = (maxV * i / gridLines).round();
-      textPainter.text = TextSpan(text: val >= 1000000 ? '${(val / 1000000).toStringAsFixed(1)}M' : '$val', style: const TextStyle(color: _kMuted, fontSize: 8));
+      textPainter.text = TextSpan(
+          text: val >= 1000000
+              ? '${(val / 1000000).toStringAsFixed(1)}M'
+              : '$val',
+          style: const TextStyle(color: _kMuted, fontSize: 8));
       textPainter.layout();
-      textPainter.paint(canvas, Offset(padL - textPainter.width - 4, y - textPainter.height / 2));
+      textPainter.paint(canvas,
+          Offset(padL - textPainter.width - 4, y - textPainter.height / 2));
     }
 
     void drawLine(List<double> data, Color color) {
@@ -8598,7 +10952,13 @@ class _RoLineChartPainter extends CustomPainter {
         final y = padT + h - (data[i] / maxV) * h;
         i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
       }
-      canvas.drawPath(path, Paint()..color = color..strokeWidth = 1.8..style = PaintingStyle.stroke..strokeCap = StrokeCap.round);
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = color
+            ..strokeWidth = 1.8
+            ..style = PaintingStyle.stroke
+            ..strokeCap = StrokeCap.round);
     }
 
     drawLine(dataBlue, _kBlue);
@@ -8607,24 +10967,39 @@ class _RoLineChartPainter extends CustomPainter {
     final step = labels.length > 1 ? w / (labels.length - 1) : w;
     for (var i = 0; i < labels.length; i++) {
       if (i % 3 != 0) continue;
-      textPainter.text = TextSpan(text: labels[i], style: const TextStyle(color: _kMuted, fontSize: 8));
+      textPainter.text = TextSpan(
+          text: labels[i], style: const TextStyle(color: _kMuted, fontSize: 8));
       textPainter.layout();
-      textPainter.paint(canvas, Offset(padL + i * step - textPainter.width / 2, padT + h + 6));
+      textPainter.paint(canvas,
+          Offset(padL + i * step - textPainter.width / 2, padT + h + 6));
     }
 
     // Légende
-    canvas.drawLine(const Offset(padL, padT - 4), const Offset(padL + 20, padT - 4), Paint()..color = _kBlue..strokeWidth = 2);
-    textPainter.text = const TextSpan(text: 'Brute', style: TextStyle(color: _kMuted, fontSize: 8));
+    canvas.drawLine(
+        const Offset(padL, padT - 4),
+        const Offset(padL + 20, padT - 4),
+        Paint()
+          ..color = _kBlue
+          ..strokeWidth = 2);
+    textPainter.text = const TextSpan(
+        text: 'Brute', style: TextStyle(color: _kMuted, fontSize: 8));
     textPainter.layout();
     textPainter.paint(canvas, const Offset(padL + 24, padT - 8));
-    canvas.drawLine(const Offset(padL + 60, padT - 4), const Offset(padL + 80, padT - 4), Paint()..color = _kSuccess..strokeWidth = 2);
-    textPainter.text = const TextSpan(text: 'Nette', style: TextStyle(color: _kMuted, fontSize: 8));
+    canvas.drawLine(
+        const Offset(padL + 60, padT - 4),
+        const Offset(padL + 80, padT - 4),
+        Paint()
+          ..color = _kSuccess
+          ..strokeWidth = 2);
+    textPainter.text = const TextSpan(
+        text: 'Nette', style: TextStyle(color: _kMuted, fontSize: 8));
     textPainter.layout();
     textPainter.paint(canvas, const Offset(padL + 84, padT - 8));
   }
 
   @override
-  bool shouldRepaint(covariant _RoLineChartPainter old) => old.dataBlue != dataBlue;
+  bool shouldRepaint(covariant _RoLineChartPainter old) =>
+      old.dataBlue != dataBlue;
 }
 
 // ─── Suivi des incidents — mini-dashboard ────────────────────────────────────
@@ -8694,7 +11069,7 @@ class _IncidentsDashSection extends StatelessWidget {
             ),
           ),
         ]),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
 
         // ── Ligne 2 : Line chart + Bar chart ─────────────────────────────
         Row(
@@ -8727,7 +11102,7 @@ class _IncidentsDashSection extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 3),
             Expanded(
               flex: 2,
               child: SectionCard(
@@ -8751,7 +11126,7 @@ class _IncidentsDashSection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
 
         // ── Ligne 3 : Donut + Horizontal bars ────────────────────────────
         Row(
@@ -8775,14 +11150,14 @@ class _IncidentsDashSection extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 3),
             Expanded(
               flex: 3,
               child: SectionCard(
                 title: 'Répartition par type',
                 child: data.repartitionType.isEmpty
                     ? const Padding(
-                        padding: EdgeInsets.all(20),
+                        padding: EdgeInsets.all(5),
                         child: Center(
                             child: Text('Aucun incident',
                                 style: TextStyle(color: _kMuted))),
@@ -8818,56 +11193,56 @@ class _IncidentKpiCard extends StatelessWidget {
     return SizedBox(
       height: 90,
       child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.09 : 0.06),
-        borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: color.withValues(alpha: isDark ? 0.30 : 0.20)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: isDark ? 0.14 : 0.07),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.13),
-              borderRadius: BorderRadius.circular(6),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: isDark ? 0.09 : 0.06),
+          borderRadius: BorderRadius.circular(8),
+          border:
+              Border.all(color: color.withValues(alpha: isDark ? 0.30 : 0.20)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: isDark ? 0.14 : 0.07),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-            child: Icon(icon, size: 13, color: color),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: isDark ? AppTheme.darkText : AppTheme.text,
-              letterSpacing: -0.3,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.13),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(icon, size: 13, color: color),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              color: isDark ? AppTheme.darkMuted : AppTheme.muted,
-              fontWeight: FontWeight.w500,
-              height: 1.3,
+            const SizedBox(height: 7),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: isDark ? AppTheme.darkText : AppTheme.text,
+                letterSpacing: -0.3,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                color: isDark ? AppTheme.darkMuted : AppTheme.muted,
+                fontWeight: FontWeight.w500,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -8939,8 +11314,8 @@ class _RoVertBarChartPainter extends CustomPainter {
       // Valeur au-dessus
       textPainter.text = TextSpan(
         text: '${items[i].valeur}',
-        style: TextStyle(
-            color: color, fontSize: 9, fontWeight: FontWeight.w700),
+        style:
+            TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w700),
       );
       textPainter.layout();
       textPainter.paint(
@@ -8956,8 +11331,7 @@ class _RoVertBarChartPainter extends CustomPainter {
       );
       textPainter.layout();
       textPainter.paint(
-          canvas,
-          Offset(x + barW / 2 - textPainter.width / 2, padT + h + 5));
+          canvas, Offset(x + barW / 2 - textPainter.width / 2, padT + h + 5));
     }
   }
 
@@ -9002,7 +11376,7 @@ class _RoDonutChart extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 3),
         // Légende
         Expanded(
           child: Column(
@@ -9109,8 +11483,7 @@ class _DonutPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     );
     tp.layout(maxWidth: radius * 1.4);
-    tp.paint(
-        canvas, center - Offset(tp.width / 2, tp.height / 2));
+    tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
   }
 
   @override
@@ -9123,45 +11496,56 @@ TableRow _tableHeader(List<String> headers) {
   return TableRow(
     decoration: const BoxDecoration(
       gradient: LinearGradient(
-        begin: Alignment.topLeft, end: Alignment.bottomRight,
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
         colors: [Color(0xFF2A518A), Color(0xFF23477A)],
       ),
       border: Border(bottom: BorderSide(color: Color(0x1AFFFFFF))),
     ),
-    children: headers.map((h) => TableCell(
-      verticalAlignment: TableCellVerticalAlignment.middle,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-        child: Text(h,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 10,
-            color: Color(0xFFF5F8FF), letterSpacing: 0.18)),
-      ),
-    )).toList(),
+    children: headers
+        .map((h) => TableCell(
+              verticalAlignment: TableCellVerticalAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+                child: Text(h,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10,
+                        color: Color(0xFFF5F8FF),
+                        letterSpacing: 0.18)),
+              ),
+            ))
+        .toList(),
   );
 }
 
-TableCell _cell(String text, {bool bold = false, bool right = false, Color? color}) => TableCell(
-  verticalAlignment: TableCellVerticalAlignment.middle,
-  child: Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-    child: Text(
-      text,
-      textAlign: right ? TextAlign.right : TextAlign.left,
-      style: TextStyle(
-        fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-        fontSize: 12,
-        color: color,
-        letterSpacing: bold ? 0.1 : 0,
+TableCell _cell(String text,
+        {bool bold = false, bool right = false, Color? color}) =>
+    TableCell(
+      verticalAlignment: TableCellVerticalAlignment.middle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
+        child: Text(
+          text,
+          textAlign: right ? TextAlign.right : TextAlign.left,
+          style: TextStyle(
+            fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+            fontSize: 12,
+            color: color,
+            letterSpacing: bold ? 0.1 : 0,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
       ),
-      overflow: TextOverflow.ellipsis,
-    ),
-  ),
-);
+    );
 
 TableCell _cellFlex(String text) => TableCell(
-  verticalAlignment: TableCellVerticalAlignment.middle,
-  child: Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-    child: Text(text, style: const TextStyle(fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
-  ),
-);
+      verticalAlignment: TableCellVerticalAlignment.middle,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
+        child: Text(text,
+            style: const TextStyle(fontSize: 12),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis),
+      ),
+    );

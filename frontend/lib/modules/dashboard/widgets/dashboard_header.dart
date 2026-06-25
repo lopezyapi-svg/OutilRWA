@@ -23,7 +23,7 @@ class DashboardHeader extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: dashboardPanelColor(isDark),
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -39,7 +39,7 @@ class DashboardHeader extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _HeaderText(isDark: isDark),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 3),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,

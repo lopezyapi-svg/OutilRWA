@@ -76,7 +76,7 @@ void main() {
     // Ouvre l'éditeur en cliquant la pastille USD via son icône.
     await tester.tap(find.byIcon(CupertinoIcons.pencil));
     await tester.pumpAndSettle();
-    expect(find.text('Taux courant — USD'), findsOneWidget);
+    expect(find.text('Taux courant - USD'), findsOneWidget);
 
     // Déclenche la cotation en ligne.
     await tester.tap(find.text('Récupérer le taux en ligne'));
@@ -93,7 +93,7 @@ void main() {
     await tester.tap(find.text('Valider'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Taux courant — USD'), findsNothing);
+    expect(find.text('Taux courant - USD'), findsNothing);
     expect(find.byIcon(CupertinoIcons.cloud_download), findsOneWidget);
     expect(find.byIcon(CupertinoIcons.pencil), findsNothing);
 

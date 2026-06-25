@@ -307,7 +307,8 @@ class MarketRiskOrchestrator {
       if (date == null) continue;
       final amount = math.max(0.0, r.valuationAmount).toDouble();
       if (amount <= 0) continue;
-      final key = DateTime(date.year, date.month, date.day).millisecondsSinceEpoch;
+      final key =
+          DateTime(date.year, date.month, date.day).millisecondsSinceEpoch;
       totalsByDate.update(key, (v) => v + amount, ifAbsent: () => amount);
     }
     final dates = totalsByDate.keys.toList()..sort();

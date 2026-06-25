@@ -515,7 +515,9 @@ class _PortfolioTabButton extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: selected ? AppColors.concentrationDeeper : Colors.transparent,
+                color: selected
+                    ? AppColors.concentrationDeeper
+                    : Colors.transparent,
                 width: 2,
               ),
             ),
@@ -2043,10 +2045,12 @@ class _RwaExposureDataRowState extends State<_RwaExposureDataRow> {
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = true);
+      }),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = false);
+      }),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => widget.onSelected(row),
@@ -2365,7 +2369,7 @@ class _RiskWeightLegend extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _RiskWeightLegendItem(label: 'EAD', color: AppColors.riskWeightGreen),
-        SizedBox(width: 10),
+        SizedBox(width: 3),
         _RiskWeightLegendItem(label: 'RWA', color: AppColors.riskWeightDark),
       ],
     );
@@ -2445,7 +2449,7 @@ class _IssuerResidenceCountryCardState
         side: BorderSide(color: border),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2603,7 +2607,8 @@ class _ModeSwitchButton extends StatelessWidget {
             boxShadow: item.selected
                 ? [
                     BoxShadow(
-                      color: AppColors.concentrationPrimary.withValues(alpha: 0.15),
+                      color: AppColors.concentrationPrimary
+                          .withValues(alpha: 0.15),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -2727,7 +2732,7 @@ class _ZoneDistributionView extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 18),
+                const SizedBox(width: 5),
                 SizedBox(
                   width: legendWidth,
                   child: Column(
@@ -2741,7 +2746,7 @@ class _ZoneDistributionView extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 24),
+                const SizedBox(width: 6),
                 SizedBox(
                   width: metricsWidth,
                   child: Column(
@@ -3051,7 +3056,7 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
         side: BorderSide(color: border),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3142,15 +3147,18 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
         (_hovered ? baseShare * 1.045 : baseShare).clamp(0.0, 1.0).toDouble();
     final labelColor =
         _hovered ? AppTheme.text : AppTheme.text.withValues(alpha: 0.92);
-    final valueColor =
-        _hovered ? widget.color : widget.valueColor ?? AppColors.concentrationDark;
+    final valueColor = _hovered
+        ? widget.color
+        : widget.valueColor ?? AppColors.concentrationDark;
     final barHeight = _hovered ? 13.0 : 11.0;
 
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = true);
+      }),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = false);
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
@@ -3294,7 +3302,7 @@ class _RiskWeightDistributionCardState
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+        padding: const EdgeInsets.fromLTRB(3, 9, 3, 9),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3577,7 +3585,7 @@ class _RatingBarColumnState extends State<_RatingBarColumn> {
       ].join('\n'),
       waitDuration: const Duration(milliseconds: 240),
       showDuration: const Duration(seconds: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
       margin: const EdgeInsets.symmetric(horizontal: 16),
       preferBelow: false,
       decoration: BoxDecoration(
@@ -3599,10 +3607,12 @@ class _RatingBarColumnState extends State<_RatingBarColumn> {
         height: 1.28,
       ),
       child: MouseRegion(
-        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = true);
+        }),
+        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = false);
+        }),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -4067,7 +4077,7 @@ class _RiskWeightShareMeterState extends State<_RiskWeightShareMeter> {
       ].join('\n'),
       waitDuration: const Duration(milliseconds: 220),
       showDuration: const Duration(seconds: 4),
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      padding: const EdgeInsets.fromLTRB(3, 8, 3, 8),
       margin: const EdgeInsets.symmetric(horizontal: 18),
       preferBelow: false,
       verticalOffset: 36,
@@ -4090,10 +4100,12 @@ class _RiskWeightShareMeterState extends State<_RiskWeightShareMeter> {
         height: 1.28,
       ),
       child: MouseRegion(
-        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = true);
+        }),
+        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = false);
+        }),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
@@ -5074,7 +5086,7 @@ class _AlertsKpiInfographicCanvas extends StatelessWidget {
     const headerGap = 8.0;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
       child: Column(
         children: [
           Center(
@@ -5106,7 +5118,7 @@ class _AlertsKpiInfographicCanvas extends StatelessWidget {
                   if (index == 2)
                     const _AlertGroupDivider(topExtension: headerGap)
                   else if (index != _alertsKpiSteps.length - 1)
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 3),
                 ],
               ],
             ),
@@ -5186,14 +5198,16 @@ class _KpiStepCardState extends State<_KpiStepCard> {
     );
 
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = true);
+      }),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = false);
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.fromLTRB(11, 10, 11, 11),
+        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
         decoration: BoxDecoration(
           color: surface,
           borderRadius: BorderRadius.circular(_concentrationRadius),
@@ -5254,11 +5268,11 @@ class _KpiStepCardState extends State<_KpiStepCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 6),
             Expanded(
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+                padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor.withValues(alpha: 0.76),
                   borderRadius: BorderRadius.circular(_concentrationRadius),
@@ -5407,7 +5421,7 @@ class _KpiHeaderBadge extends StatelessWidget {
       width: width,
       height: height,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(18, 6, 18, 5),
+        padding: const EdgeInsets.fromLTRB(5, 6, 5, 5),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             begin: Alignment.topCenter,
@@ -5523,7 +5537,7 @@ class _KpiAlertSelectorChip extends StatelessWidget {
       waitDuration: const Duration(milliseconds: 220),
       showDuration: const Duration(seconds: 6),
       constraints: const BoxConstraints(maxWidth: 330),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
       margin: const EdgeInsets.symmetric(horizontal: 18),
       preferBelow: false,
       verticalOffset: 14,
@@ -5704,7 +5718,7 @@ class _AlertsDecisionHero extends StatelessWidget {
         'Le portefeuille ne présente pas de signal de concentration nécessitant une décision immédiate.';
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
       decoration: BoxDecoration(
         color: Color.alphaBlend(
           severityColor.withValues(alpha: 0.045),
@@ -5735,7 +5749,7 @@ class _AlertsDecisionHero extends StatelessWidget {
               size: 24,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 4),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -5777,7 +5791,7 @@ class _AlertsDecisionHero extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 4),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -5831,7 +5845,7 @@ class _AlertHeroMetric extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 126,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(_concentrationRadius),
@@ -5922,7 +5936,7 @@ class _PrudentialRequirementsPanel extends StatelessWidget {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+              padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
               child: Column(
                 children: [
                   Center(
@@ -5932,7 +5946,7 @@ class _PrudentialRequirementsPanel extends StatelessWidget {
                       statusColor: statusColor,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 4),
                   Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -5947,9 +5961,9 @@ class _PrudentialRequirementsPanel extends StatelessWidget {
                             ),
                           ),
                           if (index == 2)
-                            const SizedBox(width: 26)
+                            const SizedBox(width: 6)
                           else if (index != metrics.length - 1)
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 3),
                         ],
                       ],
                     ),
@@ -6112,7 +6126,7 @@ class _PrudentialHeaderBadge extends StatelessWidget {
     return Container(
       width: width,
       height: 58,
-      padding: const EdgeInsets.fromLTRB(18, 9, 18, 9),
+      padding: const EdgeInsets.fromLTRB(5, 9, 5, 9),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(48),
@@ -6188,7 +6202,7 @@ class _PrudentialMetricCardState extends State<_PrudentialMetricCard> {
         ),
       ],
       if (metric.description != null) ...[
-        const SizedBox(height: 12),
+        const SizedBox(height: 3),
         _PrudentialInsightText(
           color: metric.color,
           text: metric.description!,
@@ -6197,14 +6211,16 @@ class _PrudentialMetricCardState extends State<_PrudentialMetricCard> {
     ];
 
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = true);
+      }),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = false);
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
         decoration: BoxDecoration(
           color: surface,
           borderRadius: BorderRadius.circular(_concentrationRadius),
@@ -6265,7 +6281,7 @@ class _PrudentialMetricCardState extends State<_PrudentialMetricCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 3),
             Expanded(
               child: Container(
                 width: double.infinity,
@@ -6300,7 +6316,7 @@ class _PrudentialMetricCardState extends State<_PrudentialMetricCard> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 44),
+                    const SizedBox(height: 6),
                     Expanded(
                       child: LayoutBuilder(
                         builder: (context, detailConstraints) {
@@ -6453,7 +6469,7 @@ class _AlertDecisionRow extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+      padding: const EdgeInsets.fromLTRB(3, 9, 3, 9),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.055),
         borderRadius: BorderRadius.circular(_concentrationRadius),
@@ -6816,10 +6832,12 @@ class _QualityMetricCardState extends State<_QualityMetricCard> {
     final trackColor = isDark ? AppTheme.darkBorder : const Color(0xFFE2E8F0);
 
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = true);
+      }),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = false);
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
@@ -6846,7 +6864,7 @@ class _QualityMetricCardState extends State<_QualityMetricCard> {
                   waitDuration: const Duration(milliseconds: 220),
                   showDuration: const Duration(seconds: 6),
                   constraints: const BoxConstraints(maxWidth: 360),
-                  padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+                  padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
                   margin: const EdgeInsets.symmetric(horizontal: 18),
                   preferBelow: false,
                   verticalOffset: 16,
@@ -7042,7 +7060,7 @@ class _EmptyInline extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 14),
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(_concentrationRadius),

@@ -99,7 +99,7 @@ class _InsightItem extends StatelessWidget {
                 color: severityColor,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

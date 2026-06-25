@@ -6,15 +6,15 @@ import 'package:flutter/foundation.dart';
 
 /// Énumération pour le statut d'un titre vis-à-vis du risque de change
 enum FxSecurityStatus {
-  favorable,   // Gain de change positif 🟢
+  favorable, // Gain de change positif 🟢
   unfavorable, // Perte de change négative 🔴
-  stable,      // Gain/Perte proche de 0 ⚪
+  stable, // Gain/Perte proche de 0 ⚪
 }
 
 /// Énumération pour la position de change
 enum FxPositionType {
-  long,   // Position longue
-  short,  // Position courte
+  long, // Position longue
+  short, // Position courte
   neutral, // Position nulle
 }
 
@@ -33,16 +33,16 @@ class FxSecurityAnalysis {
     required this.analysisDate,
   });
 
-  final String titleId;               // Identifiant unique du titre
-  final String titleName;             // Nom du titre (ex: "Obligation Trésor US")
-  final String currency;              // Devise (XOF, EUR ou USD ; XAF/FCFA repliés sur XOF)
-  final double initialValue;          // Valeur initiale du titre en devise d'origine
-  final double currentValue;          // Valeur actuelle du titre en devise d'origine
-  final double initialRate;           // Taux de change initial (1 devise = X XOF)
-  final double currentRate;           // Taux de change actuel (1 devise = X XOF)
-  final double quantity;              // Quantité détenue
-  final DateTime acquisitionDate;     // Date d'acquisition du titre
-  final DateTime analysisDate;        // Date d'analyse
+  final String titleId; // Identifiant unique du titre
+  final String titleName; // Nom du titre (ex: "Obligation Trésor US")
+  final String currency; // Devise (XOF, EUR ou USD ; XAF/FCFA repliés sur XOF)
+  final double initialValue; // Valeur initiale du titre en devise d'origine
+  final double currentValue; // Valeur actuelle du titre en devise d'origine
+  final double initialRate; // Taux de change initial (1 devise = X XOF)
+  final double currentRate; // Taux de change actuel (1 devise = X XOF)
+  final double quantity; // Quantité détenue
+  final DateTime acquisitionDate; // Date d'acquisition du titre
+  final DateTime analysisDate; // Date d'analyse
 
   /// Valeur initiale convertie en XOF
   double get initialValueInXof => (initialValue * quantity * initialRate).abs();
@@ -129,10 +129,10 @@ class FxCurrencyExposure {
   });
 
   final String currency;
-  final double totalLongExposure;      // Somme des expositions longues en XOF
-  final double totalShortExposure;     // Somme des expositions courtes en XOF
-  final double netExposure;            // Position nette en XOF
-  final int securitiesCount;           // Nombre de titres exposés
+  final double totalLongExposure; // Somme des expositions longues en XOF
+  final double totalShortExposure; // Somme des expositions courtes en XOF
+  final double netExposure; // Position nette en XOF
+  final int securitiesCount; // Nombre de titres exposés
   final DateTime acquisitionDate;
   final DateTime analysisDate;
 
@@ -172,14 +172,16 @@ class FxRiskAnalysisResult {
 
   final List<FxSecurityAnalysis> securities;
   final List<FxCurrencyExposure> currencyExposures;
-  final double totalExposure;              // Exposition totale en devises
-  final double globalFxGainLoss;           // Gain/Perte global de change
-  final double totalLongPositions;         // Total positions longues
-  final double totalShortPositions;        // Total positions courtes
-  final double globalNetPosition;          // Position nette globale = MAX(longues, courtes)
-  final double capitalRequirement;         // Exigence FP Change = globalNetPosition × 8%
-  final double rwaChange;                  // RWA Change = capitalRequirement × 12.5
-  final double marketRiskContribution;     // Contribution au risque de marché (%)
+  final double totalExposure; // Exposition totale en devises
+  final double globalFxGainLoss; // Gain/Perte global de change
+  final double totalLongPositions; // Total positions longues
+  final double totalShortPositions; // Total positions courtes
+  final double
+      globalNetPosition; // Position nette globale = MAX(longues, courtes)
+  final double
+      capitalRequirement; // Exigence FP Change = globalNetPosition × 8%
+  final double rwaChange; // RWA Change = capitalRequirement × 12.5
+  final double marketRiskContribution; // Contribution au risque de marché (%)
   final DateTime analysisDate;
 
   /// Nombre de titres exposés au risque de change
@@ -189,14 +191,17 @@ class FxRiskAnalysisResult {
   int get currenciesCount => currencyExposures.length;
 
   /// Nombre de titres avec gain de change
-  int get securitiesWithGain => securities.where((s) => s.fxGainLoss > 0).length;
+  int get securitiesWithGain =>
+      securities.where((s) => s.fxGainLoss > 0).length;
 
   /// Nombre de titres avec perte de change
-  int get securitiesWithLoss => securities.where((s) => s.fxGainLoss < 0).length;
+  int get securitiesWithLoss =>
+      securities.where((s) => s.fxGainLoss < 0).length;
 
   /// Gain moyen par titre
-  double get averageFxGainLoss =>
-      exposedSecuritiesCount > 0 ? globalFxGainLoss / exposedSecuritiesCount : 0;
+  double get averageFxGainLoss => exposedSecuritiesCount > 0
+      ? globalFxGainLoss / exposedSecuritiesCount
+      : 0;
 
   /// Ratio de concentration des positions longues
   double get longConcentrationRatio {

@@ -39,7 +39,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
         children: [
           PageHeader(
             title: 'Stress Test',
-            subtitle: 'Simulation de chocs et scénarios adverses sur le portefeuille et le capital.',
+            subtitle:
+                'Simulation de chocs et scénarios adverses sur le portefeuille et le capital.',
             trailing: _buildScenarioSelector(isDark),
           ),
           const SizedBox(height: AppSpacing.lg),
@@ -79,7 +80,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -94,13 +96,16 @@ class _StressTestScreenState extends State<StressTestScreen> {
                 onTap: () => setState(() => _selectedScenario = scenario.$1),
                 borderRadius: BorderRadius.circular(5),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
                   child: Text(
                     scenario.$2,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : (isDark ? AppTheme.darkText : AppTheme.text),
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? AppTheme.darkText : AppTheme.text),
                     ),
                   ),
                 ),
@@ -121,9 +126,11 @@ class _StressTestScreenState extends State<StressTestScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
                 decoration: BoxDecoration(
-                  color: AppColors.severityColor(scenario.severity).withValues(alpha: 0.15),
+                  color: AppColors.severityColor(scenario.severity)
+                      .withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(5),
                 ),
                 child: Text(
@@ -135,7 +142,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: Text(
                   scenario.description,
@@ -152,11 +159,17 @@ class _StressTestScreenState extends State<StressTestScreen> {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _buildParameterChip('Impact RWA', '+${(scenario.rwaImpact * 100).toStringAsFixed(0)}%', isDark),
-              _buildParameterChip('Hausse NPL', '+${(scenario.nplIncrease * 100).toStringAsFixed(0)}%', isDark),
-              _buildParameterChip('Impact PIB', '${(scenario.gdpImpact * 100).toStringAsFixed(1)}%', isDark),
+              _buildParameterChip('Impact RWA',
+                  '+${(scenario.rwaImpact * 100).toStringAsFixed(0)}%', isDark),
+              _buildParameterChip(
+                  'Hausse NPL',
+                  '+${(scenario.nplIncrease * 100).toStringAsFixed(0)}%',
+                  isDark),
+              _buildParameterChip('Impact PIB',
+                  '${(scenario.gdpImpact * 100).toStringAsFixed(1)}%', isDark),
               if (scenario.spreadIncrease > 0)
-                _buildParameterChip('Spreads', '+${scenario.spreadIncrease} bps', isDark),
+                _buildParameterChip(
+                    'Spreads', '+${scenario.spreadIncrease} bps', isDark),
             ],
           ),
         ],
@@ -166,11 +179,14 @@ class _StressTestScreenState extends State<StressTestScreen> {
 
   Widget _buildParameterChip(String label, String value, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03),
+        color: isDark
+            ? Colors.white.withValues(alpha: 0.05)
+            : Colors.black.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(5),
-        border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+        border: Border.all(
+            color: isDark ? AppColors.borderDark : AppColors.borderLight),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -203,7 +219,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
 
     final stressedRwa = baseRwa * (1 + scenario.rwaImpact);
     final stressedRatio = baseCapital / stressedRwa;
-    final capitalGap = stressedRatio < 0.105 ? (stressedRwa * 0.105 - baseCapital) : 0.0;
+    final capitalGap =
+        stressedRatio < 0.105 ? (stressedRwa * 0.105 - baseCapital) : 0.0;
 
     return SectionCard(
       title: 'Vue d\'ensemble de l\'impact',
@@ -240,7 +257,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
               baseValue: baseRatio,
               stressedValue: stressedRatio,
               icon: CupertinoIcons.gauge,
-              color: stressedRatio >= 0.105 ? AppColors.success : AppColors.danger,
+              color:
+                  stressedRatio >= 0.105 ? AppColors.success : AppColors.danger,
               isDark: isDark,
               format: 'percent',
             ),
@@ -277,7 +295,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
         ? AppFormatters.percent(stressedValue)
         : AppFormatters.currency(stressedValue);
 
-    final delta = showDelta && baseValue > 0 ? ((stressedValue - baseValue) / baseValue) : 0.0;
+    final delta = showDelta && baseValue > 0
+        ? ((stressedValue - baseValue) / baseValue)
+        : 0.0;
     final deltaText = showDelta && baseValue > 0
         ? '${delta >= 0 ? '+' : ''}${(delta * 100).toStringAsFixed(1)}%'
         : '';
@@ -285,7 +305,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
     return Container(
       padding: AppSpacing.cardInsets,
       decoration: BoxDecoration(
-        color: isDark ? color.withValues(alpha: 0.08) : color.withValues(alpha: 0.05),
+        color: isDark
+            ? color.withValues(alpha: 0.08)
+            : color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(5),
         border: Border.all(color: color.withValues(alpha: isDark ? 0.3 : 0.25)),
       ),
@@ -346,7 +368,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
       child: Column(
         children: categories.map((cat) {
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 3),
             child: _buildCategoryImpactRow(cat, isDark),
           );
         }).toList(),
@@ -379,7 +401,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
             textAlign: TextAlign.right,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 3),
         Expanded(
           flex: 2,
           child: Text(
@@ -392,7 +414,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
             textAlign: TextAlign.right,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 3),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -466,7 +488,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
         color: isDark ? AppColors.surfaceDark : Colors.white,
         borderRadius: BorderRadius.circular(5),
         border: Border.all(
-          color: isStressed ? color.withValues(alpha: 0.4) : (isDark ? AppColors.borderDark : AppColors.borderLight),
+          color: isStressed
+              ? color.withValues(alpha: 0.4)
+              : (isDark ? AppColors.borderDark : AppColors.borderLight),
           width: isStressed ? 2 : 1,
         ),
       ),
@@ -486,12 +510,14 @@ class _StressTestScreenState extends State<StressTestScreen> {
             style: TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.w800,
-              color: isStressed ? color : (isDark ? AppTheme.darkText : AppTheme.text),
+              color: isStressed
+                  ? color
+                  : (isDark ? AppTheme.darkText : AppTheme.text),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 5.0),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(5),
@@ -511,7 +537,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
             child: LinearProgressIndicator(
               value: (ratio / 0.15).clamp(0.0, 1.0),
               minHeight: 8,
-              backgroundColor: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+              backgroundColor: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.05),
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
@@ -575,7 +603,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 3),
                     Text(
                       scenario.name,
                       textAlign: TextAlign.center,
@@ -602,7 +630,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
         return _StressScenario(
           id: 'recession',
           name: 'Récession modérée',
-          description: 'Ralentissement économique avec hausse modérée des défauts',
+          description:
+              'Ralentissement économique avec hausse modérée des défauts',
           severity: 'medium',
           rwaImpact: 0.15,
           nplIncrease: 0.03,
@@ -659,7 +688,12 @@ class _StressTestScreenState extends State<StressTestScreen> {
 
     return categories.entries.map((entry) {
       final baseAmount = baseRwa * entry.value;
-      final impact = scenario.rwaImpact * (entry.key == 'Entreprises' ? 1.2 : entry.key == 'Crédits immobiliers' ? 1.3 : 1.0);
+      final impact = scenario.rwaImpact *
+          (entry.key == 'Entreprises'
+              ? 1.2
+              : entry.key == 'Crédits immobiliers'
+                  ? 1.3
+                  : 1.0);
       final stressedAmount = baseAmount * (1 + impact);
 
       return _CategoryImpact(

@@ -39,7 +39,7 @@ class ReferentielsScreen extends StatelessWidget {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -47,12 +47,12 @@ class ReferentielsScreen extends StatelessWidget {
             title: 'Paramètres',
             subtitle: 'Préférences globales, devises et services essentiels.',
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           Expanded(
             child: Scrollbar(
               thumbVisibility: true,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.only(right: 8, bottom: 14),
+                padding: const EdgeInsets.only(right: 8, bottom: 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -64,7 +64,7 @@ class ReferentielsScreen extends StatelessWidget {
                       portfolioAmountUnit: portfolioAmountUnit,
                       appLanguage: appLanguage,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 3),
                     _SettingsGrid(
                       children: [
                         _SettingsPanel(
@@ -270,7 +270,7 @@ class _SettingsOverview extends StatelessWidget {
     final muted = isDark ? const Color(0xFF9FB0D0) : AppTheme.muted;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+      padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF111C33) : const Color(0xFFF8FAFF),
         borderRadius: BorderRadius.circular(2),
@@ -294,7 +294,7 @@ class _SettingsOverview extends StatelessWidget {
               size: 22,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,7 +321,7 @@ class _SettingsOverview extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 3),
           Flexible(
             flex: 2,
             child: Wrap(
@@ -473,7 +473,7 @@ class _SettingsPanel extends StatelessWidget {
 
     return Container(
       constraints: const BoxConstraints(minHeight: 210),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF111C33).withValues(alpha: 0.92)
@@ -505,7 +505,7 @@ class _SettingsPanel extends StatelessWidget {
                 ),
                 child: Icon(icon, color: accent, size: 18),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -538,7 +538,7 @@ class _SettingsPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           child,
         ],
       ),
@@ -626,7 +626,7 @@ class _ChoiceTile<T> extends StatelessWidget {
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
           constraints: const BoxConstraints(minHeight: 66),
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: selected
                 ? primary.withValues(alpha: isDark ? 0.18 : 0.09)
@@ -854,7 +854,7 @@ class _ServiceTile extends StatelessWidget {
     final muted = isDark ? const Color(0xFF9FB0D0) : AppTheme.muted;
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F1B31) : const Color(0xFFF8FAFF),
         borderRadius: BorderRadius.circular(2),
@@ -875,7 +875,7 @@ class _ServiceTile extends StatelessWidget {
             ),
             child: Icon(icon, color: primary, size: 16),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

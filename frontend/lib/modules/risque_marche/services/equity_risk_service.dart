@@ -140,7 +140,8 @@ EquityRiskResult calculateEquityRisk({
 
   journal.add({
     'etape': 'Capital requis',
-    'description': 'Risque spécifique + général actions = 8% de la position brute',
+    'description':
+        'Risque spécifique + général actions = 8% de la position brute',
     'grossPosition': grossPosition,
     'capitalRequirement': capitalReq,
     'formule': 'Exigence FP Actions = Position_brute × 8%',

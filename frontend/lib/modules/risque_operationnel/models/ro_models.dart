@@ -131,7 +131,8 @@ class RoKriView {
   final List<RoKriValeur> historique;
 
   factory RoKriView.fromJson(Map<String, dynamic> j) => RoKriView(
-        definition: RoKriDefinition.fromJson(j['definition'] as Map<String, dynamic>),
+        definition:
+            RoKriDefinition.fromJson(j['definition'] as Map<String, dynamic>),
         derniereValeur: (j['derniere_valeur'] as num?)?.toDouble(),
         derniereDate: j['derniere_date'] as String?,
         statut: j['statut'] as String,
@@ -475,9 +476,12 @@ class RoDashboardData {
   final List<RoRepartitionItem> repartitionType;
 
   factory RoDashboardData.fromJson(Map<String, dynamic> j) => RoDashboardData(
-        widget1: RoDashboardWidget1.fromJson(j['widget1'] as Map<String, dynamic>),
-        widget2: RoDashboardWidget2.fromJson(j['widget2'] as Map<String, dynamic>),
-        widget3: RoDashboardWidget3.fromJson(j['widget3'] as Map<String, dynamic>),
+        widget1:
+            RoDashboardWidget1.fromJson(j['widget1'] as Map<String, dynamic>),
+        widget2:
+            RoDashboardWidget2.fromJson(j['widget2'] as Map<String, dynamic>),
+        widget3:
+            RoDashboardWidget3.fromJson(j['widget3'] as Map<String, dynamic>),
         evolutionPertes: (j['evolution_pertes'] as List<dynamic>)
             .map((e) => RoEvolutionPoint.fromJson(e as Map<String, dynamic>))
             .toList(),

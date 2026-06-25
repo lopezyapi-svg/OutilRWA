@@ -636,10 +636,10 @@ double _marketRecordPositionSign(MarketPortfolioRecord record) {
 
 /// Catégories réglementaires pour le risque spécifique
 enum _MarketSpecificCategory {
-  uemoaSovereignXof,    // État UEMOA FCFA
-  sovereignDebt,        // Titre souverain
-  eligibleDebt,         // Titre éligible
-  otherDebt,            // Autre émetteur
+  uemoaSovereignXof, // État UEMOA FCFA
+  sovereignDebt, // Titre souverain
+  eligibleDebt, // Titre éligible
+  otherDebt, // Autre émetteur
 }
 
 /// Récupère la pondération spécifique selon catégorie, notation et maturité
@@ -656,14 +656,17 @@ double _getSpecificRiskWeight(
     case _MarketSpecificCategory.sovereignDebt:
       // Tableau 16: Titres souverains
       return switch (quality) {
-        _MarketCreditQuality.aaaToAa => 0.0000,           // AAA à A- = 0%
-        _MarketCreditQuality.aToBbb => 
-          residualYears < 0.5 ? 0.0025 :                  // < 6 mois = 0.25%
-          residualYears <= 2.0 ? 0.0100 :                 // 6 à 24 mois = 1%
-          0.0160,                                         // > 24 mois = 1.6%
-        _MarketCreditQuality.bbToB => 0.0800,             // BB+ à B- = 8%
-        _MarketCreditQuality.belowB => 0.1200,            // < B- = 12%
-        _MarketCreditQuality.unrated => 0.0800,           // Sans notation = 8%
+        _MarketCreditQuality.aaaToAa => 0.0000, // AAA à A- = 0%
+        _MarketCreditQuality.aToBbb => residualYears < 0.5
+            ? 0.0025
+            : // < 6 mois = 0.25%
+            residualYears <= 2.0
+                ? 0.0100
+                : // 6 à 24 mois = 1%
+                0.0160, // > 24 mois = 1.6%
+        _MarketCreditQuality.bbToB => 0.0800, // BB+ à B- = 8%
+        _MarketCreditQuality.belowB => 0.1200, // < B- = 12%
+        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 8%
       };
 
     case _MarketSpecificCategory.eligibleDebt:
@@ -672,20 +675,24 @@ double _getSpecificRiskWeight(
         return 0.0800; // BB+ à BB- = 8%
       }
       // Tous autres (AAA-BBB- + multilatéraux sans notation)
-      return residualYears < 0.5 ? 0.0025 :               // < 6 mois = 0.25%
-             residualYears <= 2.0 ? 0.0100 :              // 6 à 24 mois = 1%
-             0.0160;                                      // > 24 mois = 1.6%
+      return residualYears < 0.5
+          ? 0.0025
+          : // < 6 mois = 0.25%
+          residualYears <= 2.0
+              ? 0.0100
+              : // 6 à 24 mois = 1%
+              0.0160; // > 24 mois = 1.6%
 
     case _MarketSpecificCategory.otherDebt:
       // Autres émetteurs (ni souverains, ni éligibles) : traités comme les
       // entreprises de qualité inférieure selon l'approche standard crédit
       // (Art. 357, Titre IV). Pondération conservatrice de 8 %.
       return switch (quality) {
-        _MarketCreditQuality.aaaToAa => 0.0000,           // AAA à A- = 0%
-        _MarketCreditQuality.aToBbb => 0.0800,            // A+ à BBB- = 8% (Art. 357)
-        _MarketCreditQuality.bbToB => 0.0800,             // BB+ à BB- = 8%
-        _MarketCreditQuality.belowB => 0.1200,            // Sous BB- = 12%
-        _MarketCreditQuality.unrated => 0.0800,           // Sans notation = 8%
+        _MarketCreditQuality.aaaToAa => 0.0000, // AAA à A- = 0%
+        _MarketCreditQuality.aToBbb => 0.0800, // A+ à BBB- = 8% (Art. 357)
+        _MarketCreditQuality.bbToB => 0.0800, // BB+ à BB- = 8%
+        _MarketCreditQuality.belowB => 0.1200, // Sous BB- = 12%
+        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 8%
       };
   }
 }
@@ -699,39 +706,39 @@ double marketGeneralRiskWeight(double residualYears, double couponRate) {
 /// Table BCEAO: Méthode fondée sur les échéances (Tableau 17)
 double _getGeneralRiskWeight(double residualYears, double couponRate) {
   final isHighCoupon = couponRate >= 0.03; // Coupon ≥ 3%
-  
+
   if (isHighCoupon) {
     // Colonne "Coupon ≥ 3%"
-    if (residualYears <= 1.0 / 12.0) return 0.0000;          // ≤ 1 mois
-    if (residualYears <= 3.0 / 12.0) return 0.0020;          // 1-3 mois
-    if (residualYears <= 6.0 / 12.0) return 0.0040;          // 3-6 mois
-    if (residualYears <= 12.0 / 12.0) return 0.0070;         // 6-12 mois
-    if (residualYears <= 2.0) return 0.0125;                 // 1-2 ans
-    if (residualYears <= 3.0) return 0.0175;                 // 2-3 ans
-    if (residualYears <= 4.0) return 0.0225;                 // 3-4 ans
-    if (residualYears <= 5.0) return 0.0275;                 // 4-5 ans
-    if (residualYears <= 7.0) return 0.0325;                 // 5-7 ans
-    if (residualYears <= 10.0) return 0.0375;                // 7-10 ans
-    if (residualYears <= 15.0) return 0.0450;                // 10-15 ans
-    if (residualYears <= 20.0) return 0.0525;                // 15-20 ans
-    return 0.0600;                                           // > 20 ans
+    if (residualYears <= 1.0 / 12.0) return 0.0000; // ≤ 1 mois
+    if (residualYears <= 3.0 / 12.0) return 0.0020; // 1-3 mois
+    if (residualYears <= 6.0 / 12.0) return 0.0040; // 3-6 mois
+    if (residualYears <= 12.0 / 12.0) return 0.0070; // 6-12 mois
+    if (residualYears <= 2.0) return 0.0125; // 1-2 ans
+    if (residualYears <= 3.0) return 0.0175; // 2-3 ans
+    if (residualYears <= 4.0) return 0.0225; // 3-4 ans
+    if (residualYears <= 5.0) return 0.0275; // 4-5 ans
+    if (residualYears <= 7.0) return 0.0325; // 5-7 ans
+    if (residualYears <= 10.0) return 0.0375; // 7-10 ans
+    if (residualYears <= 15.0) return 0.0450; // 10-15 ans
+    if (residualYears <= 20.0) return 0.0525; // 15-20 ans
+    return 0.0600; // > 20 ans
   } else {
     // Colonne "Coupon < 3%"
-    if (residualYears <= 1.0 / 12.0) return 0.0000;          // ≤ 1 mois
-    if (residualYears <= 3.0 / 12.0) return 0.0020;          // 1-3 mois
-    if (residualYears <= 6.0 / 12.0) return 0.0040;          // 3-6 mois
-    if (residualYears <= 12.0 / 12.0) return 0.0070;         // 6-12 mois
-    if (residualYears <= 1.9) return 0.0125;                 // 1,0-1,9 ans
-    if (residualYears <= 2.8) return 0.0175;                 // 1,9-2,8 ans
-    if (residualYears <= 3.6) return 0.0225;                 // 2,8-3,6 ans
-    if (residualYears <= 4.3) return 0.0275;                 // 3,6-4,3 ans
-    if (residualYears <= 5.7) return 0.0325;                 // 4,3-5,7 ans
-    if (residualYears <= 7.3) return 0.0375;                 // 5,7-7,3 ans
-    if (residualYears <= 9.3) return 0.0450;                 // 7,3-9,3 ans
-    if (residualYears <= 10.6) return 0.0525;                // 9,3-10,6 ans
-    if (residualYears <= 12.0) return 0.0600;                // 10,6-12 ans
-    if (residualYears <= 20.0) return 0.0800;                // 12-20 ans
-    return 0.1250;                                           // > 20 ans
+    if (residualYears <= 1.0 / 12.0) return 0.0000; // ≤ 1 mois
+    if (residualYears <= 3.0 / 12.0) return 0.0020; // 1-3 mois
+    if (residualYears <= 6.0 / 12.0) return 0.0040; // 3-6 mois
+    if (residualYears <= 12.0 / 12.0) return 0.0070; // 6-12 mois
+    if (residualYears <= 1.9) return 0.0125; // 1,0-1,9 ans
+    if (residualYears <= 2.8) return 0.0175; // 1,9-2,8 ans
+    if (residualYears <= 3.6) return 0.0225; // 2,8-3,6 ans
+    if (residualYears <= 4.3) return 0.0275; // 3,6-4,3 ans
+    if (residualYears <= 5.7) return 0.0325; // 4,3-5,7 ans
+    if (residualYears <= 7.3) return 0.0375; // 5,7-7,3 ans
+    if (residualYears <= 9.3) return 0.0450; // 7,3-9,3 ans
+    if (residualYears <= 10.6) return 0.0525; // 9,3-10,6 ans
+    if (residualYears <= 12.0) return 0.0600; // 10,6-12 ans
+    if (residualYears <= 20.0) return 0.0800; // 12-20 ans
+    return 0.1250; // > 20 ans
   }
 }
 
@@ -783,51 +790,54 @@ String marketSpecificDebtRiskCategoryLabel(MarketPortfolioRecord record) {
   }
 }
 
-
 _MarketGeneralRiskBucket _marketGeneralRiskBucket(
   MarketPortfolioRecord record,
 ) {
   final years = math.max(0.0, _bondRecordResidualYears(record)).toDouble();
-  
+
   // Seuils et poids BCEAO pour le risque général (approche standard)
   const thresholds = [
-    1.0 / 12.0,    // ≤ 1 mois
-    3.0 / 12.0,    // ≤ 3 mois
-    6.0 / 12.0,    // ≤ 6 mois
-    12.0 / 12.0,   // ≤ 1 an (12 mois)
-    2.0,           // ≤ 2 ans
-    3.0,           // ≤ 3 ans
-    4.0,           // ≤ 4 ans
-    5.0,           // ≤ 5 ans
-    7.0,           // ≤ 7 ans
-    10.0,          // ≤ 10 ans
-    15.0,          // ≤ 15 ans
-    20.0,          // ≤ 20 ans
+    1.0 / 12.0, // ≤ 1 mois
+    3.0 / 12.0, // ≤ 3 mois
+    6.0 / 12.0, // ≤ 6 mois
+    12.0 / 12.0, // ≤ 1 an (12 mois)
+    2.0, // ≤ 2 ans
+    3.0, // ≤ 3 ans
+    4.0, // ≤ 4 ans
+    5.0, // ≤ 5 ans
+    7.0, // ≤ 7 ans
+    10.0, // ≤ 10 ans
+    15.0, // ≤ 15 ans
+    20.0, // ≤ 20 ans
     double.infinity, // > 20 ans
   ];
-  
+
   const weights = [
-    0.0000,  // ≤ 1 mois = 0.00%
-    0.0020,  // 1-3 mois = 0.20%
-    0.0040,  // 3-6 mois = 0.40%
-    0.0070,  // 6-12 mois = 0.70%
-    0.0125,  // 1-2 ans = 1.25%
-    0.0175,  // 2-3 ans = 1.75%
-    0.0225,  // 3-4 ans = 2.25%
-    0.0275,  // 4-5 ans = 2.75%
-    0.0325,  // 5-7 ans = 3.25%
-    0.0375,  // 7-10 ans = 3.75%
-    0.0450,  // 10-15 ans = 4.50%
-    0.0525,  // 15-20 ans = 5.25%
-    0.0600,  // > 20 ans = 6.00%
+    0.0000, // ≤ 1 mois = 0.00%
+    0.0020, // 1-3 mois = 0.20%
+    0.0040, // 3-6 mois = 0.40%
+    0.0070, // 6-12 mois = 0.70%
+    0.0125, // 1-2 ans = 1.25%
+    0.0175, // 2-3 ans = 1.75%
+    0.0225, // 3-4 ans = 2.25%
+    0.0275, // 4-5 ans = 2.75%
+    0.0325, // 5-7 ans = 3.25%
+    0.0375, // 7-10 ans = 3.75%
+    0.0450, // 10-15 ans = 4.50%
+    0.0525, // 15-20 ans = 5.25%
+    0.0600, // > 20 ans = 6.00%
   ];
-  
+
   var index = thresholds.indexWhere((threshold) => years <= threshold);
   if (index < 0) index = thresholds.length - 1;
-  
+
   // Zones pour les compensations: court terme (1-4), moyen terme (5-9), long terme (10-13)
-  final zone = index <= 3 ? 1 : index <= 8 ? 2 : 3;
-  
+  final zone = index <= 3
+      ? 1
+      : index <= 8
+          ? 2
+          : 3;
+
   return _MarketGeneralRiskBucket(
     index: index,
     zone: zone,
@@ -1024,7 +1034,9 @@ class MarketPortfolioRecord {
         cleanMap[cleanKey] = entry.value;
       }
       final lower = entry.key.toLowerCase();
-      if (lower.startsWith('quantit') || lower.startsWith('qty') || lower.startsWith('qt')) {
+      if (lower.startsWith('quantit') ||
+          lower.startsWith('qty') ||
+          lower.startsWith('qt')) {
         cleanMap['quantités'] = entry.value;
         cleanMap['Quantité'] = entry.value;
       }
@@ -1053,19 +1065,27 @@ class MarketPortfolioRecord {
     if (lower.startsWith('emetteur') || lower.startsWith('metteur')) {
       return 'Emetteur';
     }
-    if (lower.contains('pays') && (lower.contains('emett') || lower.contains('marche') || lower.contains('mettour'))) {
+    if (lower.contains('pays') &&
+        (lower.contains('emett') ||
+            lower.contains('marche') ||
+            lower.contains('mettour'))) {
       return 'Pays émetteur';
     }
-    if (lower.contains('date') && (lower.contains('emiss') || lower.contains('emision'))) {
+    if (lower.contains('date') &&
+        (lower.contains('emiss') || lower.contains('emision'))) {
       return 'Date d\'émission';
     }
-    if (lower.contains('date') && (lower.contains('echean') || lower.contains('echeanc'))) {
+    if (lower.contains('date') &&
+        (lower.contains('echean') || lower.contains('echeanc'))) {
       return 'Date d\'échéance';
     }
-    if (lower.contains('valeur nominale') || lower.contains('nominal unitaire')) {
+    if (lower.contains('valeur nominale') ||
+        lower.contains('nominal unitaire')) {
       return 'Valeur nominale unitaire';
     }
-    if (lower.contains('valeur actualis') || lower.contains('valeur actuell') || lower.contains('present value')) {
+    if (lower.contains('valeur actualis') ||
+        lower.contains('valeur actuell') ||
+        lower.contains('present value')) {
       return 'Valeur actualisée';
     }
     if (lower.contains('frequence') && lower.contains('paiement')) {
@@ -1098,13 +1118,15 @@ class MarketPortfolioRecord {
     if (lower == 'nombre dactions') return 'Nombre d\'actions';
     if (lower == 'cours actuel') return 'Cours actuel';
     if (lower == 'valeur de marche') return 'Valeur de marché';
-    if (lower == 'volatilite annualisee (%)') return 'Volatilité annualisée (%)';
+    if (lower == 'volatilite annualisee (%)')
+      return 'Volatilité annualisée (%)';
     if (lower == 'prix dachat unitaire') return 'Prix d\'achat unitaire';
     if (lower == 'cout dacquisition') return 'Coût d\'acquisition';
     if (lower == 'date danalyse') return 'Date d\'analyse';
     if (lower == 'la pire notation externe') return 'La pire notation externe';
     if (lower == 'maturite (mois)') return 'Maturité (mois)';
-    if (lower == 'maturite residuelle (mois)') return 'Maturité résiduelle (mois)';
+    if (lower == 'maturite residuelle (mois)')
+      return 'Maturité résiduelle (mois)';
 
     return key;
   }
@@ -1121,7 +1143,7 @@ class MarketPortfolioRecord {
   /// Code ISO3 du marché national/régional du titre (Art. 400-401).
   /// Lit « Pays émetteur » (obligations) ou « Pays / marché » (actions).
   String get marketCountryIso3 => _marketCountryIso3(
-        _textAny(const ['Pays émetteur', 'Pays / marché'], fallback: '').trim());
+      _textAny(const ['Pays émetteur', 'Pays / marché'], fallback: '').trim());
 
   /// Intention comptable déclarée (Trading/HFT/FVTPL, HTM, AFS/FVOCI…).
   String get accountingIntent => _text('Intention comptable', fallback: '');
@@ -2535,7 +2557,8 @@ class MarketDataImportStore {
 
   MarketDataSnapshot get snapshot => snapshotNotifier.value;
 
-  MarketRiskOrchestrator get riskOrchestrator => MarketRiskOrchestrator.instance;
+  MarketRiskOrchestrator get riskOrchestrator =>
+      MarketRiskOrchestrator.instance;
 
   bool _publishDatasets(
     Map<MarketPortfolioType, MarketPortfolioDataset> datasets, {

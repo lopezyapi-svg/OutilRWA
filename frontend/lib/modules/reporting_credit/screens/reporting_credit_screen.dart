@@ -445,7 +445,7 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
     document.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4.landscape,
-        margin: const pw.EdgeInsets.all(18),
+        margin: const pw.EdgeInsets.all(5),
         build: (_) => [
           pw.Text(
             'Reporting ${_selectedFamily.label} - $_selectedPeriod',
@@ -454,7 +454,7 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
               fontWeight: pw.FontWeight.bold,
             ),
           ),
-          pw.SizedBox(height: 10),
+          pw.SizedBox(height: 3),
           pw.TableHelper.fromTextArray(
             headers: dataset.headers,
             data: dataset.rows,
@@ -547,7 +547,7 @@ class _FamilySnapshotCard extends StatelessWidget {
                     color: AppTheme.muted,
                   ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 4),
             Row(
               children: [
                 Expanded(
@@ -587,7 +587,7 @@ class _SnapshotPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(999),

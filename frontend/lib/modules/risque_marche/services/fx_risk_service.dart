@@ -134,12 +134,14 @@ FxRiskResult calculateFxRisk({
 
   journal.add({
     'etape': 'Capital requis',
-    'description': 'Risque de change = 8% de la position nette globale maximale',
+    'description':
+        'Risque de change = 8% de la position nette globale maximale',
     'longTotal': longTotal,
     'shortTotal': shortTotal,
     'maxLeg': maxLeg,
     'capitalRequirement': capitalReq,
-    'formule': 'Exigence FP Change = max(Positions_longues, Positions_courtes) × 8%',
+    'formule':
+        'Exigence FP Change = max(Positions_longues, Positions_courtes) × 8%',
   });
 
   final shocks = shockScenarios.map((percent) {
@@ -152,7 +154,8 @@ FxRiskResult calculateFxRisk({
       'impactLong': impactLong,
       'impactShort': impactShort,
       'netImpact': netImpact,
-      'formule': 'Impact = Position_longue × $percent% + Position_courte × (-$percent%)',
+      'formule':
+          'Impact = Position_longue × $percent% + Position_courte × (-$percent%)',
     });
     return FxShockResult(
       shockPercent: percent.toDouble(),
@@ -193,9 +196,8 @@ double _bondMarketValue(MarketPortfolioRecord record) {
 double _bondOutstandingCapital(MarketPortfolioRecord record) {
   if (_bondIsMaturedAtAnalysisDate(record)) return 0;
   if (record.capitalRemainingDue > 0) return record.capitalRemainingDue;
-  final initial = record.capitalInitial > 0
-      ? record.capitalInitial
-      : record.exposureAmount;
+  final initial =
+      record.capitalInitial > 0 ? record.capitalInitial : record.exposureAmount;
   return math.max(0.0, initial).toDouble();
 }
 

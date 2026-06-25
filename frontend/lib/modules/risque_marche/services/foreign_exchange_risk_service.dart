@@ -17,10 +17,10 @@ class ForeignExchangePosition {
   });
 
   final String currency;
-  final double assets;              // Actifs en devise
-  final double liabilities;         // Passifs en devise
-  final double forwardPurchases;    // Achats à terme en devise
-  final double forwardSales;        // Ventes à terme en devise
+  final double assets; // Actifs en devise
+  final double liabilities; // Passifs en devise
+  final double forwardPurchases; // Achats à terme en devise
+  final double forwardSales; // Ventes à terme en devise
 
   /// Calcule la position nette : Actifs - Passifs - Achats_à_terme + Ventes_à_terme
   double get netPosition =>
@@ -48,11 +48,12 @@ class ForeignExchangeRiskResult {
   });
 
   final List<ForeignExchangePosition> positions;
-  final double totalLongPositions;      // Somme des positions positives
-  final double totalShortPositions;     // Somme des positions négatives (valeur absolue)
-  final double globalNetPosition;       // MAX(longues, courtes)
-  final double capitalRequirement;      // Position_Nette_Globale × 8%
-  final double marketRwa;               // Capital_Requirement × 12.5
+  final double totalLongPositions; // Somme des positions positives
+  final double
+      totalShortPositions; // Somme des positions négatives (valeur absolue)
+  final double globalNetPosition; // MAX(longues, courtes)
+  final double capitalRequirement; // Position_Nette_Globale × 8%
+  final double marketRwa; // Capital_Requirement × 12.5
 }
 
 /// Calcule le risque de change conformément à l'approche standard BCEAO
@@ -132,9 +133,11 @@ PositionAnalysis analyzePositions(List<ForeignExchangePosition> positions) {
     }
   }
 
-  final averageSize = positions.isNotEmpty ? totalAbsolute / positions.length : 0.0;
+  final averageSize =
+      positions.isNotEmpty ? totalAbsolute / positions.length : 0.0;
   final concentrationRatio = largestLong > 0 || largestShort > 0
-      ? (math.max(largestLong, largestShort)) / (totalAbsolute > 0 ? totalAbsolute : 1)
+      ? (math.max(largestLong, largestShort)) /
+          (totalAbsolute > 0 ? totalAbsolute : 1)
       : 0.0;
 
   return PositionAnalysis(

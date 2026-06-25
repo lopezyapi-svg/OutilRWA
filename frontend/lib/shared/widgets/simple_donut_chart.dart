@@ -31,7 +31,7 @@ class SimpleDonutChart extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 24),
+        const SizedBox(width: 6),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +39,7 @@ class SimpleDonutChart extends StatelessWidget {
               final color = palette[item.key % palette.length];
               final entry = item.value;
               return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.only(bottom: 4),
                 child: Row(
                   children: [
                     Container(
@@ -50,7 +50,7 @@ class SimpleDonutChart extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 3),
                     Expanded(child: Text(entry.label)),
                     Text(
                       AppFormatters.percent(entry.percentage),

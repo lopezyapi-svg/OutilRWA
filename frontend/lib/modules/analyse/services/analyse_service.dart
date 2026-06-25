@@ -322,8 +322,7 @@ class AnalyseService {
             : RegulatoryStatus.green,
         keyValue: _pct(irrbbRatio),
         keyLabel: 'Delta VE / T1',
-        diagnostic:
-            'Le choc +200 bps est estime a ${_pct(irrbbRatio)} du T1.',
+        diagnostic: 'Le choc +200 bps est estime a ${_pct(irrbbRatio)} du T1.',
         cause:
             'Le proxy retient la part des expositions longues et la concentration credit.',
         recommendation:
@@ -466,9 +465,11 @@ class AnalyseService {
       );
     }
     if (sorted.length >= 3) {
-      final top3 = sorted.take(3).fold<double>(0.0, (sum, e) => sum + e.percentage);
+      final top3 =
+          sorted.take(3).fold<double>(0.0, (sum, e) => sum + e.percentage);
       if (top3 > 0.7) {
-        insights.add('Les 3 premiers segments representent ${_pct(top3)} du RWA.');
+        insights
+            .add('Les 3 premiers segments representent ${_pct(top3)} du RWA.');
       }
     }
     return insights;
@@ -484,15 +485,22 @@ class AnalyseService {
           r.startsWith('BBB');
     }).fold<double>(0.0, (sum, e) => sum + e.percentage);
     if (investmentGrade > 0.7) {
-      return ['Portefeuille de qualite: ${_pct(investmentGrade)} investment grade.'];
+      return [
+        'Portefeuille de qualite: ${_pct(investmentGrade)} investment grade.'
+      ];
     }
     if (investmentGrade < 0.4) {
-      return ['Attention: seulement ${_pct(investmentGrade)} investment grade.'];
+      return [
+        'Attention: seulement ${_pct(investmentGrade)} investment grade.'
+      ];
     }
-    return ['Qualite de signature equilibree: ${_pct(investmentGrade)} investment grade.'];
+    return [
+      'Qualite de signature equilibree: ${_pct(investmentGrade)} investment grade.'
+    ];
   }
 
-  DistributionEntry? _findTopConcentration(List<DistributionEntry> distribution) {
+  DistributionEntry? _findTopConcentration(
+      List<DistributionEntry> distribution) {
     if (distribution.isEmpty) return null;
     final sorted = List<DistributionEntry>.from(distribution)
       ..sort((a, b) => b.percentage.compareTo(a.percentage));
@@ -506,7 +514,8 @@ class AnalyseService {
     }).fold<double>(0.0, (sum, e) => sum + e.percentage);
   }
 
-  String? _calculateWeightedAverageRating(List<DistributionEntry> distribution) {
+  String? _calculateWeightedAverageRating(
+      List<DistributionEntry> distribution) {
     if (distribution.isEmpty) return null;
     final sorted = List<DistributionEntry>.from(distribution)
       ..sort((a, b) => b.percentage.compareTo(a.percentage));
@@ -587,13 +596,16 @@ class AnalyseService {
     for (final action in report.recommendations) {
       recommendations.add(
         AnalyseRecommendation(
-          title: action.priority == 1 ? 'Action prudentielle prioritaire' : 'Pilotage du capital',
+          title: action.priority == 1
+              ? 'Action prudentielle prioritaire'
+              : 'Pilotage du capital',
           description: action.action,
           impact: action.priority == 1 ? 'high' : 'medium',
           effort: action.priority == 1 ? 'medium' : 'low',
           priority: action.priority == 1 ? 'high' : 'medium',
           category: 'regulatory',
-          estimatedSaving: report.capitalGap < 0 ? report.capitalGap.abs() : null,
+          estimatedSaving:
+              report.capitalGap < 0 ? report.capitalGap.abs() : null,
           actions: [
             'Documenter la cause dans le dossier trimestriel.',
             'Affecter un responsable et une date cible.',
@@ -669,8 +681,10 @@ class AnalyseService {
     required double threshold,
     bool higherIsBad = false,
   }) {
-    final gap = higherIsBad ? threshold - currentRatio : currentRatio - threshold;
-    final compliant = higherIsBad ? currentRatio <= threshold : currentRatio >= threshold;
+    final gap =
+        higherIsBad ? threshold - currentRatio : currentRatio - threshold;
+    final compliant =
+        higherIsBad ? currentRatio <= threshold : currentRatio >= threshold;
     final severity = compliant
         ? 'LOW'
         : gap.abs() >= 0.015

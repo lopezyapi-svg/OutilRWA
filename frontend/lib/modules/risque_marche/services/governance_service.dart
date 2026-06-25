@@ -285,8 +285,7 @@ class BacktestingService {
   }
 
   String _computeHash(Map<String, dynamic> input, Map<String, dynamic> output) {
-    final combined =
-        '$input|$output|${DateTime.now().millisecondsSinceEpoch}';
+    final combined = '$input|$output|${DateTime.now().millisecondsSinceEpoch}';
     var hash = 0;
     for (final codeUnit in combined.codeUnits) {
       hash = ((hash << 5) - hash) + codeUnit;

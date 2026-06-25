@@ -36,7 +36,7 @@ class CreditDataTableCard extends StatelessWidget {
           if (rows.isEmpty)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 18),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 5),
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(AppTheme.radius),

@@ -27,7 +27,8 @@ abstract class ForeignExchangeRepository {
 /// Implémentation en mémoire (à remplacer par BD plus tard)
 class InMemoryForeignExchangeRepository implements ForeignExchangeRepository {
   final Map<String, ForeignExchangePosition> _positions = {};
-  final _positionsController = StreamController<List<ForeignExchangePosition>>.broadcast();
+  final _positionsController =
+      StreamController<List<ForeignExchangePosition>>.broadcast();
 
   static final InMemoryForeignExchangeRepository _instance =
       InMemoryForeignExchangeRepository._internal();

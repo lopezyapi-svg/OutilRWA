@@ -195,8 +195,7 @@ RateRiskResult _calculateInstrumentRateRisk(
     RateRiskInput input, double shockBps, List<Map<String, dynamic>> journal) {
   final frequency = input.paymentsPerYear;
   final periods = math.max(1, (input.residualYears * frequency).ceil());
-  final couponCF =
-      input.couponRate * input.outstandingCapital / frequency;
+  final couponCF = input.couponRate * input.outstandingCapital / frequency;
   final yieldPerPeriod = input.yieldToMaturity / frequency;
   final periodicBase = 1 + yieldPerPeriod;
 
@@ -206,16 +205,17 @@ RateRiskResult _calculateInstrumentRateRisk(
 
   for (var period = 1; period <= periods; period++) {
     final time = math.min(period / frequency, input.residualYears);
-    final cf = couponCF +
-        (period == periods ? input.outstandingCapital : 0.0);
+    final cf = couponCF + (period == periods ? input.outstandingCapital : 0.0);
     if (cf <= 0) continue;
     final discount = math.pow(periodicBase, period);
     if (discount <= 0) continue;
     final dcf = cf / discount;
     pv += dcf;
     macaulayNum += time * dcf;
-    convNum +=
-        cf * time * (time + 1 / frequency) / (discount * periodicBase * periodicBase);
+    convNum += cf *
+        time *
+        (time + 1 / frequency) /
+        (discount * periodicBase * periodicBase);
   }
 
   if (pv <= 0) {
@@ -281,9 +281,8 @@ double _localBondMarketValue(MarketPortfolioRecord record) {
 double _localBondOutstanding(MarketPortfolioRecord record) {
   if (_localIsMatured(record)) return 0;
   if (record.capitalRemainingDue > 0) return record.capitalRemainingDue;
-  final initial = record.capitalInitial > 0
-      ? record.capitalInitial
-      : record.exposureAmount;
+  final initial =
+      record.capitalInitial > 0 ? record.capitalInitial : record.exposureAmount;
   return math.max(0.0, initial).toDouble();
 }
 

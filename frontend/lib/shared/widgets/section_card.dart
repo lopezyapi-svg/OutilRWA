@@ -52,8 +52,10 @@ class SectionCard extends StatelessWidget {
               if (hasHeader) ...[
                 Container(
                   padding: const EdgeInsets.fromLTRB(
-                    AppTheme.spacing, AppTheme.spacing - 2,
-                    AppTheme.spacing, AppTheme.spacing - 2,
+                    AppTheme.spacing,
+                    AppTheme.spacing - 2,
+                    AppTheme.spacing,
+                    AppTheme.spacing - 2,
                   ),
                   decoration: BoxDecoration(
                     border: Border(
@@ -66,7 +68,7 @@ class SectionCard extends StatelessWidget {
                         Container(
                           width: 3,
                           height: 14,
-                          margin: const EdgeInsets.only(right: 8),
+                          margin: const EdgeInsets.only(right: 3),
                           decoration: BoxDecoration(
                             color: AppTheme.accent,
                             borderRadius: BorderRadius.circular(2),
@@ -80,7 +82,9 @@ class SectionCard extends StatelessWidget {
                                 .titleSmall
                                 ?.copyWith(
                                   fontWeight: FontWeight.w700,
-                                  color: isDark ? AppTheme.darkText : AppTheme.text,
+                                  color: isDark
+                                      ? AppTheme.darkText
+                                      : AppTheme.text,
                                   letterSpacing: 0.1,
                                 )
                                 .merge(titleStyle),

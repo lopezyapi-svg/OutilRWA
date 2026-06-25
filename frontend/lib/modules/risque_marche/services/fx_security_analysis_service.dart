@@ -69,8 +69,9 @@ class FxSecurityAnalysisService {
   }) async {
     try {
       // Fetch real portfolio data from backend
-      final portfolioPayload = await _rwaApiService?.fetchMarketPortfolioPayload();
-      
+      final portfolioPayload =
+          await _rwaApiService?.fetchMarketPortfolioPayload();
+
       if (portfolioPayload == null || portfolioPayload.isEmpty) {
         if (useFallbackData) {
           return createDemoData();
@@ -147,12 +148,12 @@ class FxSecurityAnalysisService {
   /// Get real FX rates from CurrencyRegistry
   Map<String, double> _getRealExchangeRates() {
     final rates = <String, double>{};
-    
+
     // Get rates for all currencies in the registry
     for (final rate in _currencyRegistry.getAllRates()) {
       rates[rate.code] = rate.rateToXof;
     }
-    
+
     return rates;
   }
 
@@ -172,8 +173,10 @@ class FxSecurityAnalysisService {
       if (currency.isEmpty) continue;
 
       // Récupérer les taux de change
-      final initialRate = _getInitialExchangeRate(record, currency, exchangeRates);
-      final currentRate = _getCurrentExchangeRate(record, currency, exchangeRates);
+      final initialRate =
+          _getInitialExchangeRate(record, currency, exchangeRates);
+      final currentRate =
+          _getCurrentExchangeRate(record, currency, exchangeRates);
 
       if (initialRate <= 0 || currentRate <= 0) continue;
 
@@ -220,13 +223,16 @@ class FxSecurityAnalysisService {
   String _getTitleName(MarketPortfolioRecord record) {
     if (record.issuer.isNotEmpty) return record.issuer;
     if (record.titleId.isNotEmpty) return record.titleId;
-    return record.instrumentType.isNotEmpty ? record.instrumentType : 'Titre sans nom';
+    return record.instrumentType.isNotEmpty
+        ? record.instrumentType
+        : 'Titre sans nom';
   }
 
   /// Récupère la valeur initiale du titre
   double _getInitialValue(MarketPortfolioRecord record) {
     if (record.portfolioType == MarketPortfolioType.equities) {
-      final price = record.marketPrice > 0 ? record.marketPrice : record.priceObservation;
+      final price =
+          record.marketPrice > 0 ? record.marketPrice : record.priceObservation;
       return price > 0 ? price : record.nominalUnit;
     }
     // Pour les obligations
@@ -236,7 +242,8 @@ class FxSecurityAnalysisService {
   /// Récupère la valeur actuelle du titre
   double _getCurrentValue(MarketPortfolioRecord record) {
     if (record.portfolioType == MarketPortfolioType.equities) {
-      final price = record.marketPrice > 0 ? record.marketPrice : record.priceObservation;
+      final price =
+          record.marketPrice > 0 ? record.marketPrice : record.priceObservation;
       return price > 0 ? price : record.nominalUnit;
     }
     // Pour les obligations: utiliser la valeur actualisée ou le prix de marché
@@ -294,12 +301,10 @@ class FxSecurityAnalysisService {
       if (currency == 'XOF' || currency == 'XAF') continue;
       final existing = byDevise[currency];
 
-      final longExposure = security.quantity > 0
-          ? security.currentValueInXof
-          : 0.0;
-      final shortExposure = security.quantity < 0
-          ? security.currentValueInXof.abs()
-          : 0.0;
+      final longExposure =
+          security.quantity > 0 ? security.currentValueInXof : 0.0;
+      final shortExposure =
+          security.quantity < 0 ? security.currentValueInXof.abs() : 0.0;
 
       if (existing != null) {
         byDevise[currency] = FxCurrencyExposure(
@@ -351,7 +356,8 @@ class FxSecurityAnalysisService {
     }
 
     // Position nette globale = MAX(longues, courtes)
-    final globalNetPosition = math.max(totalLongPositions, totalShortPositions).toDouble();
+    final globalNetPosition =
+        math.max(totalLongPositions, totalShortPositions).toDouble();
 
     // Exigence de fonds propres = Position_Nette_Globale × 8%
     final capitalRequirement = globalNetPosition * 0.08;
@@ -359,9 +365,8 @@ class FxSecurityAnalysisService {
     // RWA Change = Exigence_FP × 12.5
     final rwaChange = capitalRequirement * 12.5;
 
-    final marketRiskContribution = totalExposure > 0
-        ? (capitalRequirement / totalExposure) * 100
-        : 0.0;
+    final marketRiskContribution =
+        totalExposure > 0 ? (capitalRequirement / totalExposure) * 100 : 0.0;
 
     return {
       'totalExposure': totalExposure,
@@ -466,12 +471,10 @@ class FxSecurityAnalysisService {
       if (currency == 'XOF' || currency == 'XAF') continue;
       final existing = byDevise[currency];
 
-      final longExposure = security.quantity > 0
-          ? security.currentValueInXof
-          : 0.0;
-      final shortExposure = security.quantity < 0
-          ? security.currentValueInXof.abs()
-          : 0.0;
+      final longExposure =
+          security.quantity > 0 ? security.currentValueInXof : 0.0;
+      final shortExposure =
+          security.quantity < 0 ? security.currentValueInXof.abs() : 0.0;
 
       if (existing != null) {
         byDevise[currency] = FxCurrencyExposure(
@@ -521,13 +524,13 @@ class FxSecurityAnalysisService {
       totalShortPositions += exposure.totalShortExposure;
     }
 
-    final globalNetPosition = math.max(totalLongPositions, totalShortPositions).toDouble();
+    final globalNetPosition =
+        math.max(totalLongPositions, totalShortPositions).toDouble();
     final capitalRequirement = globalNetPosition * 0.08;
     final rwaChange = capitalRequirement * 12.5;
 
-    final marketRiskContribution = totalExposure > 0
-        ? (capitalRequirement / totalExposure) * 100
-        : 0.0;
+    final marketRiskContribution =
+        totalExposure > 0 ? (capitalRequirement / totalExposure) * 100 : 0.0;
 
     return {
       'totalExposure': totalExposure,

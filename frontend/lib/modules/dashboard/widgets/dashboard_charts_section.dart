@@ -46,7 +46,7 @@ class DashboardChartsSection extends StatelessWidget {
                     rwaEntries: rwaCategoryEntries,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 2),
                 Expanded(
                   flex: 3,
                   child: _CrmDonutCard(
@@ -161,7 +161,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
 
     Widget buildEmptyCategoryCard(String title) {
       return Container(
-        padding: const EdgeInsets.fromLTRB(11, 11, 11, 10),
+        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
         decoration: BoxDecoration(
           color: dashboardPanelColor(isDark).withValues(
             alpha: isDark ? 0.68 : 1,
@@ -173,7 +173,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 3),
               child: Text(
                 title.tr(context),
                 maxLines: 1,
@@ -213,7 +213,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
       }
 
       return Container(
-        padding: const EdgeInsets.fromLTRB(11, 11, 11, 10),
+        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
         decoration: BoxDecoration(
           color: dashboardPanelColor(isDark).withValues(
             alpha: isDark ? 0.68 : 1,
@@ -225,7 +225,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 3),
               child: Text(
                 title.tr(context),
                 maxLines: 1,
@@ -272,11 +272,16 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                   bottom: index == entries.length - 1 ? 0 : 6,
                                 ),
                                 child: MouseRegion(
-                                  onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    if (mounted) setState(() => _activeEntryKey = entryKey);
+                                  onEnter: (_) => WidgetsBinding.instance
+                                      .addPostFrameCallback((_) {
+                                    if (mounted)
+                                      setState(
+                                          () => _activeEntryKey = entryKey);
                                   }),
-                                  onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
-                                    if (mounted && _activeEntryKey == entryKey) {
+                                  onExit: (_) => WidgetsBinding.instance
+                                      .addPostFrameCallback((_) {
+                                    if (mounted &&
+                                        _activeEntryKey == entryKey) {
                                       setState(() => _activeEntryKey = null);
                                     }
                                   }),
@@ -313,7 +318,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(height: 1),
                                       AnimatedContainer(
                                         duration: const Duration(
                                           milliseconds: 180,
@@ -325,7 +330,8 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                           0,
                                         ),
                                         child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(5),
+                                          borderRadius:
+                                              BorderRadius.circular(5),
                                           child: Stack(
                                             children: [
                                               AnimatedContainer(
@@ -450,7 +456,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
       }
 
       return Container(
-        padding: const EdgeInsets.fromLTRB(11, 11, 11, 10),
+        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
         decoration: BoxDecoration(
           color: dashboardPanelColor(isDark).withValues(
             alpha: isDark ? 0.68 : 1,
@@ -462,7 +468,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 3),
               child: Text(
                 title,
                 maxLines: 1,
@@ -544,7 +550,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 5),
+                                const SizedBox(height: 1),
                                 Center(
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 180),
@@ -573,7 +579,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 9),
+                                const SizedBox(height: 3),
                                 Expanded(
                                   child: LayoutBuilder(
                                     builder: (context, constraints) {
@@ -709,7 +715,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                                     },
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 2),
                                 Text(
                                   shortExposureLabel(label),
                                   maxLines: 2,
@@ -756,7 +762,7 @@ class _ExposureAreaChartCardState extends State<_ExposureAreaChartCard> {
                 entryKeyPrefix: 'gross',
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 3),
             Expanded(
               child: buildTopFiveRwaBarCard(
                 title: 'Top 5 du RWA total par catégorie',
@@ -1030,7 +1036,7 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                                       height: 1,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 1),
                                   Text(
                                     _getCrmLabel(activeEntry.label),
                                     maxLines: 2,
@@ -1051,7 +1057,7 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 4),
             SizedBox(
               height: 54,
               child: Row(
@@ -1069,10 +1075,12 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                   return Expanded(
                     child: MouseRegion(
                       cursor: SystemMouseCursors.click,
-                      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+                      onEnter: (_) =>
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted) setState(() => _hoveredIndex = index);
                       }),
-                      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+                      onExit: (_) =>
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted && _hoveredIndex == index) {
                           setState(() => _hoveredIndex = null);
                         }
@@ -1133,7 +1141,7 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                                       shape: BoxShape.circle,
                                     ),
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 2),
                                   Expanded(
                                     child: FittedBox(
                                       fit: BoxFit.scaleDown,
@@ -1153,7 +1161,7 @@ class _CrmDonutCardState extends State<_CrmDonutCard> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 5),
+                              const SizedBox(height: 1),
                               FittedBox(
                                 fit: BoxFit.scaleDown,
                                 child: Text(

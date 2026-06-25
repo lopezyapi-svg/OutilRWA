@@ -400,7 +400,8 @@ void main() {
       );
     });
 
-    test('applies the 4% specific equity rate when liquid and diversified '
+    test(
+        'applies the 4% specific equity rate when liquid and diversified '
         '(Art. 399)', () {
       final record = MarketPortfolioRecord(
         portfolioType: MarketPortfolioType.equities,
@@ -443,8 +444,7 @@ void main() {
         },
       );
 
-      final result =
-          calculateMarketPrudentialCapital(records: [long, short]);
+      final result = calculateMarketPrudentialCapital(records: [long, short]);
 
       // Spécifique : Σ|net par émetteur| = 200M → 16M (Art. 399)
       expect(result.equitySpecificRisk, 16000000);

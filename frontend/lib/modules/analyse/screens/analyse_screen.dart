@@ -284,7 +284,7 @@ class _DiagnosticList extends StatelessWidget {
         children: report.diagnostics.take(6).map((item) {
           final color = AppColors.severityColor(item.severity);
           return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.only(bottom: 3),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -317,7 +317,8 @@ class _AlertTimeline extends StatelessWidget {
             RegulatoryAlertEvent(
               date: DateTime.now(),
               title: 'Aucune non-conformite majeure',
-              detail: 'Les seuils critiques sont respectes sur les donnees chargees.',
+              detail:
+                  'Les seuils critiques sont respectes sur les donnees chargees.',
               status: RegulatoryStatus.green,
             ),
           ]
@@ -328,7 +329,7 @@ class _AlertTimeline extends StatelessWidget {
         children: list.map((event) {
           final color = _statusColor(event.status);
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 3),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -337,7 +338,8 @@ class _AlertTimeline extends StatelessWidget {
                     Container(
                       width: 10,
                       height: 10,
-                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                      decoration:
+                          BoxDecoration(color: color, shape: BoxShape.circle),
                     ),
                     Container(
                       width: 1,
@@ -418,9 +420,11 @@ class _JsonPreview extends StatelessWidget {
       title: 'Objet JSON genere',
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
-          color: isDark ? Colors.black.withValues(alpha: 0.22) : AppColors.surfaceLight,
+          color: isDark
+              ? Colors.black.withValues(alpha: 0.22)
+              : AppColors.surfaceLight,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
@@ -481,7 +485,8 @@ class _ResponsiveGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = math.max(1, constraints.maxWidth ~/ minTileWidth);
-        final width = (constraints.maxWidth - ((columns - 1) * AppSpacing.md)) / columns;
+        final width =
+            (constraints.maxWidth - ((columns - 1) * AppSpacing.md)) / columns;
         return Wrap(
           spacing: AppSpacing.md,
           runSpacing: AppSpacing.md,
@@ -537,13 +542,14 @@ class _BarLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final factor = maxValue <= 0 ? 0.0 : (value / maxValue).clamp(0.0, 1.0);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
+              Expanded(
+                  child: Text(label, style: const TextStyle(fontSize: 13))),
               Text(
                 formatCurrencyCompact(value),
                 style: const TextStyle(fontWeight: FontWeight.w800),
@@ -583,11 +589,17 @@ class _TrafficLight extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _Light(color: AppColors.success, active: status == RegulatoryStatus.green),
+          _Light(
+              color: AppColors.success,
+              active: status == RegulatoryStatus.green),
           AppSpacing.gapSm,
-          _Light(color: AppColors.warning, active: status == RegulatoryStatus.warning),
+          _Light(
+              color: AppColors.warning,
+              active: status == RegulatoryStatus.warning),
           AppSpacing.gapSm,
-          _Light(color: AppColors.danger, active: status == RegulatoryStatus.critical),
+          _Light(
+              color: AppColors.danger,
+              active: status == RegulatoryStatus.critical),
         ],
       ),
     );
@@ -631,7 +643,7 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _statusColor(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),

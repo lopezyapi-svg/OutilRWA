@@ -16,9 +16,9 @@ class AggregatedMarketRiskResult {
   });
 
   final ForeignExchangeRiskResult foreignExchangeRisk;
-  final double tauxRwa;          // RWA du risque de taux
-  final double actionsRwa;       // RWA du risque actions
-  final double totalMarketRwa;   // RWA Marché total
+  final double tauxRwa; // RWA du risque de taux
+  final double actionsRwa; // RWA du risque actions
+  final double totalMarketRwa; // RWA Marché total
   final double fxContributionPercent; // Contribution FX au RWA total (%)
 }
 
@@ -54,7 +54,8 @@ class MarketRiskAggregationService {
     final totalRwa = fxRisk.marketRwa + tauxRwa + actionsRwa;
 
     // 5. Calcule la contribution FX
-    final fxContribution = totalRwa > 0 ? (fxRisk.marketRwa / totalRwa) * 100 : 0.0;
+    final fxContribution =
+        totalRwa > 0 ? (fxRisk.marketRwa / totalRwa) * 100 : 0.0;
 
     return AggregatedMarketRiskResult(
       foreignExchangeRisk: fxRisk,

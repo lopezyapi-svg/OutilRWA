@@ -509,27 +509,35 @@ class RwaApiService {
   // ─── Risque Opérationnel ─────────────────────────────────────────────────
 
   Future<RoDashboardData> fetchRoDashboard() async {
-    final json = await _client.get('/risque-operationnel/dashboard') as Map<String, dynamic>;
+    final json = await _client.get('/risque-operationnel/dashboard')
+        as Map<String, dynamic>;
     return RoDashboardData.fromJson(json);
   }
 
-  Future<List<RoIncident>> fetchRoIncidents({String? statut, String? ligneMetier}) async {
+  Future<List<RoIncident>> fetchRoIncidents(
+      {String? statut, String? ligneMetier}) async {
     var path = '/risque-operationnel/incidents';
     final params = <String>[];
     if (statut != null) params.add('statut=${Uri.encodeComponent(statut)}');
-    if (ligneMetier != null) params.add('ligne_metier=${Uri.encodeComponent(ligneMetier)}');
+    if (ligneMetier != null)
+      params.add('ligne_metier=${Uri.encodeComponent(ligneMetier)}');
     if (params.isNotEmpty) path = '$path?${params.join('&')}';
     final json = await _client.get(path) as List<dynamic>;
-    return json.map((e) => RoIncident.fromJson(e as Map<String, dynamic>)).toList();
+    return json
+        .map((e) => RoIncident.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<RoIncident> createRoIncident(Map<String, dynamic> data) async {
-    final json = await _client.post('/risque-operationnel/incidents', data) as Map<String, dynamic>;
+    final json = await _client.post('/risque-operationnel/incidents', data)
+        as Map<String, dynamic>;
     return RoIncident.fromJson(json);
   }
 
-  Future<RoIncident> updateRoIncident(String id, Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/incidents/$id', data) as Map<String, dynamic>;
+  Future<RoIncident> updateRoIncident(
+      String id, Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/incidents/$id', data)
+        as Map<String, dynamic>;
     return RoIncident.fromJson(json);
   }
 
@@ -553,32 +561,40 @@ class RwaApiService {
   }
 
   Future<RoKriModuleData> fetchRoKri() async {
-    final json = await _client.get('/risque-operationnel/kri') as Map<String, dynamic>;
+    final json =
+        await _client.get('/risque-operationnel/kri') as Map<String, dynamic>;
     return RoKriModuleData.fromJson(json);
   }
 
   Future<RoKriValeur> addRoKriValeur(Map<String, dynamic> data) async {
-    final json = await _client.post('/risque-operationnel/kri/valeurs', data) as Map<String, dynamic>;
+    final json = await _client.post('/risque-operationnel/kri/valeurs', data)
+        as Map<String, dynamic>;
     return RoKriValeur.fromJson(json);
   }
 
   Future<RoKriModuleData> autoCalculKri() async {
-    final json = await _client.post('/risque-operationnel/kri/auto-calcul', {}) as Map<String, dynamic>;
+    final json = await _client.post('/risque-operationnel/kri/auto-calcul', {})
+        as Map<String, dynamic>;
     return RoKriModuleData.fromJson(json);
   }
 
   Future<List<RoRisque>> fetchRoRisques() async {
-    final json = await _client.get('/risque-operationnel/risques') as List<dynamic>;
-    return json.map((e) => RoRisque.fromJson(e as Map<String, dynamic>)).toList();
+    final json =
+        await _client.get('/risque-operationnel/risques') as List<dynamic>;
+    return json
+        .map((e) => RoRisque.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<RoRisque> createRoRisque(Map<String, dynamic> data) async {
-    final json = await _client.post('/risque-operationnel/risques', data) as Map<String, dynamic>;
+    final json = await _client.post('/risque-operationnel/risques', data)
+        as Map<String, dynamic>;
     return RoRisque.fromJson(json);
   }
 
   Future<RoRisque> updateRoRisque(String id, Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/risques/$id', data) as Map<String, dynamic>;
+    final json = await _client.put('/risque-operationnel/risques/$id', data)
+        as Map<String, dynamic>;
     return RoRisque.fromJson(json);
   }
 
@@ -587,17 +603,23 @@ class RwaApiService {
   }
 
   Future<List<RoControle>> fetchRoControles() async {
-    final json = await _client.get('/risque-operationnel/controles') as List<dynamic>;
-    return json.map((e) => RoControle.fromJson(e as Map<String, dynamic>)).toList();
+    final json =
+        await _client.get('/risque-operationnel/controles') as List<dynamic>;
+    return json
+        .map((e) => RoControle.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<RoControle> createRoControle(Map<String, dynamic> data) async {
-    final json = await _client.post('/risque-operationnel/controles', data) as Map<String, dynamic>;
+    final json = await _client.post('/risque-operationnel/controles', data)
+        as Map<String, dynamic>;
     return RoControle.fromJson(json);
   }
 
-  Future<RoControle> updateRoControle(String id, Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/controles/$id', data) as Map<String, dynamic>;
+  Future<RoControle> updateRoControle(
+      String id, Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/controles/$id', data)
+        as Map<String, dynamic>;
     return RoControle.fromJson(json);
   }
 
@@ -606,17 +628,20 @@ class RwaApiService {
   }
 
   Future<List<RoPlan>> fetchRoPlans() async {
-    final json = await _client.get('/risque-operationnel/plans') as List<dynamic>;
+    final json =
+        await _client.get('/risque-operationnel/plans') as List<dynamic>;
     return json.map((e) => RoPlan.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   Future<RoPlan> createRoPlan(Map<String, dynamic> data) async {
-    final json = await _client.post('/risque-operationnel/plans', data) as Map<String, dynamic>;
+    final json = await _client.post('/risque-operationnel/plans', data)
+        as Map<String, dynamic>;
     return RoPlan.fromJson(json);
   }
 
   Future<RoPlan> updateRoPlan(String id, Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/plans/$id', data) as Map<String, dynamic>;
+    final json = await _client.put('/risque-operationnel/plans/$id', data)
+        as Map<String, dynamic>;
     return RoPlan.fromJson(json);
   }
 
@@ -625,8 +650,11 @@ class RwaApiService {
   }
 
   Future<List<RoHistorique>> fetchRoHistorique({int limit = 200}) async {
-    final json = await _client.get('/risque-operationnel/historique?limit=$limit') as List<dynamic>;
-    return json.map((e) => RoHistorique.fromJson(e as Map<String, dynamic>)).toList();
+    final json = await _client
+        .get('/risque-operationnel/historique?limit=$limit') as List<dynamic>;
+    return json
+        .map((e) => RoHistorique.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   void dispose() {

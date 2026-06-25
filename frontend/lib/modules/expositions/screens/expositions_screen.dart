@@ -286,7 +286,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                                             _visibleRows,
                                           ),
                                         ),
-                                        const SizedBox(height: 10),
+                                        const SizedBox(height: 3),
                                         _buildCompactSummaryCards(
                                           context,
                                           _visibleSummary,
@@ -381,7 +381,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       child: FilledButton.icon(
         onPressed: onPressed,
         style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0.0),
           backgroundColor: color,
           foregroundColor: Colors.white,
           textStyle: const TextStyle(
@@ -426,7 +426,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         alignment: Alignment.center,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 360),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF14233D) : Colors.white,
             borderRadius: BorderRadius.circular(_screenBorderRadius),
@@ -449,7 +449,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 height: 22,
                 child: CircularProgressIndicator(strokeWidth: 2.4),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 4),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -867,7 +867,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 7),
+              padding: const EdgeInsets.fromLTRB(3, 8, 3, 7),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1235,7 +1235,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               showDuration: const Duration(seconds: 4),
               preferBelow: false,
               verticalOffset: 14,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
               margin: const EdgeInsets.symmetric(horizontal: 12),
               textStyle: TextStyle(
                 color:
@@ -2103,7 +2103,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             },
             semanticLabel: "Modifier l'exposition ${row.id}",
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 3),
           _tableActionIconButton(
             icon: CupertinoIcons.trash,
             color: AppTheme.danger,
@@ -2188,7 +2188,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           theme,
           minHeight: _optionControlHeight,
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
           labelFontSize: 9.2,
           floatingLabelFontSize: 9.2,
           hintFontSize: 10.2,
@@ -2633,9 +2633,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 borderRadius: BorderRadius.circular(_screenBorderRadius),
                 side: BorderSide(color: borderColor),
               ),
-              titlePadding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
-              contentPadding: const EdgeInsets.fromLTRB(18, 8, 18, 8),
-              actionsPadding: const EdgeInsets.fromLTRB(18, 8, 18, 14),
+              titlePadding: const EdgeInsets.fromLTRB(5, 4, 5, 8),
+              contentPadding: const EdgeInsets.fromLTRB(5, 8, 5, 8),
+              actionsPadding: const EdgeInsets.fromLTRB(5, 8, 5, 4),
               title: Row(
                 children: [
                   const Icon(
@@ -2890,7 +2890,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     ThemeData baseTheme, {
     double minHeight = _filterControlHeight,
     EdgeInsetsGeometry contentPadding =
-        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        const EdgeInsets.symmetric(horizontal: 3, vertical: 4.0),
     double labelFontSize = 8.8,
     double floatingLabelFontSize = 8.8,
     double hintFontSize = 9.8,
@@ -3037,7 +3037,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
     if (!showFrame) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(0, 10, 10, 2),
+        padding: const EdgeInsets.fromLTRB(0, 3, 3, 2),
         child: dropdown,
       );
     }
@@ -3097,7 +3097,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           ),
           Positioned.fill(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 8, 2),
+              padding: const EdgeInsets.fromLTRB(3, 3, 8, 2),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: child,
@@ -3640,7 +3640,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                             'Cette action supprimera les expositions selectionnees dans le tableau et dans la base locale.',
                           ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 3),
                   Text(
                     remainingCount > 0
                         ? '$previewIds, et $remainingCount autre(s).'
@@ -3650,7 +3650,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                               fontWeight: FontWeight.w500,
                             ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
                   CheckboxListTile(
                     contentPadding: EdgeInsets.zero,
                     value: reindexIds,
@@ -3819,7 +3819,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         borderRadius: BorderRadius.circular(_screenBorderRadius),
         onTap: () => Navigator.of(dialogContext).pop(format),
         child: Ink(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: Theme.of(dialogContext).cardColor,
             borderRadius: BorderRadius.circular(_screenBorderRadius),
@@ -3836,7 +3836,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 ),
                 child: Icon(icon, color: accent, size: 20),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -3886,7 +3886,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                   ),
                   accent: const Color(0xFF2E7D32),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 3),
                 buildOption(
                   dialogContext: dialogContext,
                   format: _ExposureExportFormat.pdf,
@@ -3986,7 +3986,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     document.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a3.landscape,
-        margin: const pw.EdgeInsets.all(14),
+        margin: const pw.EdgeInsets.all(4),
         build: (_) => [
           pw.Table(
             border: const pw.TableBorder(

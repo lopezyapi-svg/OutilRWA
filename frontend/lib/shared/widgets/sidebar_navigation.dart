@@ -236,7 +236,6 @@ const List<_MenuEntry> _riskCreditChildren = [
   ),
 ];
 
-
 const List<_MenuEntry> _operationalRiskChildren = [
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnel,
@@ -571,7 +570,7 @@ class _CompactSidebar extends StatelessWidget {
 
     return Container(
       width: 54,
-      padding: const EdgeInsets.all(5),
+      padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF0F1B31).withValues(alpha: 0.96)
@@ -590,7 +589,7 @@ class _CompactSidebar extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const SizedBox(height: 2),
+          const SizedBox(height: 0),
           if (contentTopInset > 0) SizedBox(height: contentTopInset),
           if (headerTrailing != null) ...[
             Align(
@@ -604,7 +603,7 @@ class _CompactSidebar extends StatelessWidget {
               padding: EdgeInsets.zero,
               physics: const ClampingScrollPhysics(),
               itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, __) => const SizedBox(height: 2),
               itemBuilder: (context, index) {
                 final entry = items[index];
                 if (entry.hasChildren) {
@@ -631,13 +630,13 @@ class _CompactSidebar extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
           Divider(
             height: 1,
             thickness: 1,
             color: isDark ? const Color(0xFF22304B) : const Color(0xFFE5ECFA),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 2),
           const _CompactSidebarLogo(),
         ],
       ),
@@ -705,10 +704,11 @@ Future<_MenuEntry?> _showNestedMenuForEntry(
         PopupMenuItem<_MenuEntry>(
           value: child,
           height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
           child: _CompactFloatingMenuItem(
             entry: child,
-            selected: _entrySelected(child, currentModule, selectedSettingsSectionId),
+            selected:
+                _entrySelected(child, currentModule, selectedSettingsSectionId),
           ),
         ),
     ],
@@ -717,7 +717,9 @@ Future<_MenuEntry?> _showNestedMenuForEntry(
   if (selection == null) return null;
   if (!context.mounted) return null;
   if (selection.hasChildren) {
-    return _showNestedMenuForEntry(context, selection, currentModule, selectedSettingsSectionId, popupOffset: popupOffset);
+    return _showNestedMenuForEntry(
+        context, selection, currentModule, selectedSettingsSectionId,
+        popupOffset: popupOffset);
   }
   return selection;
 }
@@ -746,7 +748,10 @@ class _CompactNavGroup extends StatelessWidget {
     return GestureDetector(
       onTap: () async {
         final selection = await _showNestedMenuForEntry(
-          context, entry, selectedModule, selectedSettingsSectionId,
+          context,
+          entry,
+          selectedModule,
+          selectedSettingsSectionId,
           popupOffset: const Offset(48, -4),
         );
         if (selection == null) return;
@@ -792,7 +797,7 @@ class _CompactFloatingMenuItem extends StatelessWidget {
 
     return Container(
       height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 3),
       decoration: BoxDecoration(
         color: selected ? selectedBlue : Colors.transparent,
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -806,7 +811,7 @@ class _CompactFloatingMenuItem extends StatelessWidget {
                 ? Colors.white
                 : (isDark ? const Color(0xFF9FB2D6) : iconColor),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 3),
           Expanded(
             child: Text(
               entry.label.tr(context),
@@ -964,7 +969,7 @@ class _ExpandedSidebar extends StatelessWidget {
               if (contentTopInset > 0) SizedBox(height: contentTopInset),
               if (showBrand && !isCondensed) ...[
                 const _BrandHeader(),
-                const SizedBox(height: 12),
+                const SizedBox(height: 3),
               ],
               if (!isCondensed) ...[
                 Row(
@@ -978,7 +983,7 @@ class _ExpandedSidebar extends StatelessWidget {
                     ],
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 3),
               ],
               Expanded(
                 child: ListView.separated(
@@ -1014,14 +1019,14 @@ class _ExpandedSidebar extends StatelessWidget {
                   },
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 2),
               Divider(
                 height: 1,
                 thickness: 1,
                 color:
                     isDark ? const Color(0xFF22304B) : const Color(0xFFE5ECFA),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 3),
               if (isCondensed) ...[
                 const Center(child: _CompactSidebarLogo()),
               ] else ...[
@@ -1071,7 +1076,9 @@ class _ExpandedNavGroup extends StatelessWidget {
               size: 12,
               color: groupSelected
                   ? Colors.white.withValues(alpha: 0.95)
-                  : (isDark ? const Color(0xFFD7E3FA) : const Color(0xFF5270A7)),
+                  : (isDark
+                      ? const Color(0xFFD7E3FA)
+                      : const Color(0xFF5270A7)),
             )
           : null,
       onTap: () => _openPopupMenu(context),
@@ -1080,7 +1087,10 @@ class _ExpandedNavGroup extends StatelessWidget {
 
   Future<void> _openPopupMenu(BuildContext context) async {
     final selection = await _showNestedMenuForEntry(
-      context, entry, selectedModule, selectedSettingsSectionId,
+      context,
+      entry,
+      selectedModule,
+      selectedSettingsSectionId,
     );
     if (selection == null) return;
     if (!context.mounted) return;
@@ -1282,14 +1292,14 @@ class _ExpandedNavTile extends StatelessWidget {
     const tileRadius = AppTheme.radius;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 2),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(tileRadius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
           decoration: BoxDecoration(
             color: tileColor,
             borderRadius: BorderRadius.circular(tileRadius),

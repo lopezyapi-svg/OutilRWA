@@ -104,7 +104,7 @@ class _WelcomeMainArea extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(height: 650, child: content),
-              const SizedBox(height: 18),
+              const SizedBox(height: 5),
               SizedBox(height: 384, child: insightCard),
             ],
           );
@@ -232,7 +232,7 @@ class _WelcomeContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   mark,
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 6),
                   copy,
                 ],
               )
@@ -245,7 +245,7 @@ class _WelcomeContent extends StatelessWidget {
                       child: mark,
                     ),
                   ),
-                  const SizedBox(width: 36),
+                  const SizedBox(width: 6),
                   Expanded(flex: 6, child: copy),
                 ],
               );
@@ -279,7 +279,7 @@ class _WelcomeContent extends StatelessWidget {
                 mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
                 children: [
                   topContent,
-                  if (compact) const SizedBox(height: 36) else const Spacer(),
+                  if (compact) const SizedBox(height: 6) else const Spacer(),
                   _WelcomeBrandInsideCard(isDark: isDark, compact: compact),
                 ],
               ),
@@ -326,7 +326,7 @@ class _WelcomeMark extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 5),
         Text(
           'Risk management',
           maxLines: 1,
@@ -382,7 +382,7 @@ class _WelcomeCopy extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 5),
         Text(
           'Bienvenue dans votre espace de pilotage prudentiel',
           maxLines: 3,
@@ -395,7 +395,7 @@ class _WelcomeCopy extends StatelessWidget {
             height: 1.08,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 4),
         Text(
           'Une interface conçue pour suivre les RWA, le capital minimum et les indicateurs clés avec une lecture claire, fiable et professionnelle.',
           maxLines: 3,
@@ -408,7 +408,7 @@ class _WelcomeCopy extends StatelessWidget {
             height: 1.55,
           ),
         ),
-        const SizedBox(height: 42),
+        const SizedBox(height: 6),
         _OpenHomeButton(onPressed: onOpenHome),
       ],
     );
@@ -571,7 +571,7 @@ class _WelcomeInsightCarouselState extends State<_WelcomeInsightCarousel> {
         onEnter: (_) => _setPaused(true),
         onExit: (_) => _setPaused(false),
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             color: widget.isDark
                 ? const Color(0xFF111F37).withValues(alpha: 0.82)
@@ -607,7 +607,7 @@ class _WelcomeInsightCarouselState extends State<_WelcomeInsightCarousel> {
                       color: headerAccent,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 3),
                   Expanded(
                     child: Text(
                       'Essentiels métier',
@@ -624,7 +624,7 @@ class _WelcomeInsightCarouselState extends State<_WelcomeInsightCarousel> {
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 5),
               SizedBox(
                 height: 240,
                 child: _WelcomeInsightMessageView(
@@ -841,7 +841,7 @@ class _WelcomeInsightMessageViewState extends State<_WelcomeInsightMessageView>
                 letterSpacing: 0.18,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 3),
             SizedBox(
               height: 64,
               child: Align(
@@ -858,7 +858,7 @@ class _WelcomeInsightMessageViewState extends State<_WelcomeInsightMessageView>
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             Expanded(
               child: Align(
                 alignment: Alignment.topLeft,

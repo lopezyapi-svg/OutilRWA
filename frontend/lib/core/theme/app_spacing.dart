@@ -7,55 +7,55 @@ class AppSpacing {
   AppSpacing._();
 
   // Espacements de base
-  static const double xs = 4.0;
-  static const double sm = 8.0;
-  static const double md = 12.0;
-  static const double lg = 16.0;
-  static const double xl = 24.0;
-  static const double xxl = 32.0;
-  static const double xxxl = 48.0;
+  static const double xs = 1.0;
+  static const double sm = 2.0;
+  static const double md = 3.0;
+  static const double lg = 4.0;
+  static const double xl = 6.0;
+  static const double xxl = 8.0;
+  static const double xxxl = 12.0;
 
   // Espacements pour les pages
-  static const double pagePadding = lg; // 16
-  static const double pageGap = md; // 12
+  static const double pagePadding = lg; // 4
+  static const double pageGap = sm; // 2
 
   // Espacements pour les cartes
-  static const double cardPadding = lg; // 16
-  static const double cardGap = md; // 12
-  static const double cardInnerGap = sm; // 8
+  static const double cardPadding = md; // 3
+  static const double cardGap = sm; // 2
+  static const double cardInnerGap = xs; // 1
 
   // Espacements pour les sections
-  static const double sectionPadding = xl; // 24
-  static const double sectionGap = lg; // 16
-  static const double sectionHeaderGap = md; // 12
+  static const double sectionPadding = lg; // 4
+  static const double sectionGap = sm; // 2
+  static const double sectionHeaderGap = sm; // 2
 
   // Espacements pour les formulaires
-  static const double formFieldGap = md; // 12
-  static const double formSectionGap = xl; // 24
-  static const double formLabelGap = xs; // 4
+  static const double formFieldGap = sm; // 2
+  static const double formSectionGap = lg; // 4
+  static const double formLabelGap = xs; // 1
 
   // Espacements pour les tableaux
-  static const double tableCellPadding = md; // 12
-  static const double tableRowGap = sm; // 8
-  static const double tableHeaderGap = lg; // 16
+  static const double tableCellPadding = sm; // 2
+  static const double tableRowGap = xs; // 1
+  static const double tableHeaderGap = sm; // 2
 
   // Espacements pour les boutons
-  static const double buttonPaddingHorizontal = lg; // 16
-  static const double buttonPaddingVertical = md; // 12
-  static const double buttonGap = sm; // 8
+  static const double buttonPaddingHorizontal = md; // 3
+  static const double buttonPaddingVertical = sm; // 2
+  static const double buttonGap = xs; // 1
 
   // Espacements pour les KPI et métriques
-  static const double kpiPadding = lg; // 16
-  static const double kpiGap = md; // 12
-  static const double kpiLabelGap = xs; // 4
+  static const double kpiPadding = md; // 3
+  static const double kpiGap = sm; // 2
+  static const double kpiLabelGap = xs; // 1
 
   // EdgeInsets prédéfinis pour usage courant
   static const EdgeInsets pageInsets = EdgeInsets.all(pagePadding);
   static const EdgeInsets cardInsets = EdgeInsets.all(cardPadding);
   static const EdgeInsets sectionInsets = EdgeInsets.all(sectionPadding);
   static const EdgeInsets formFieldInsets = EdgeInsets.symmetric(
-    horizontal: lg,
-    vertical: md,
+    horizontal: md,
+    vertical: sm,
   );
   static const EdgeInsets buttonInsets = EdgeInsets.symmetric(
     horizontal: buttonPaddingHorizontal,

@@ -61,7 +61,8 @@ void main() {
       expect(analysis.rwa, 671000.0);
     });
 
-    test('fxGainLoss and currencyVariationPercent are calculated correctly', () {
+    test('fxGainLoss and currencyVariationPercent are calculated correctly',
+        () {
       final analysis = FxSecurityAnalysis(
         titleId: 'T004',
         titleName: 'Obligation EUR',
@@ -79,7 +80,8 @@ void main() {
       // currentValueInXof = 200 * 5 * 655 = 655,000.0
       // fxGainLoss = 655,000.0 - 650,000.0 = 5,000.0
       expect(analysis.fxGainLoss, 5000.0);
-      expect(analysis.currencyVariationPercent, closeTo(((655.0 - 650.0) / 650.0) * 100, 0.0001));
+      expect(analysis.currencyVariationPercent,
+          closeTo(((655.0 - 650.0) / 650.0) * 100, 0.0001));
     });
   });
 
@@ -93,11 +95,21 @@ void main() {
           values: values,
         );
 
-    test('inclut les titres en devise de référence (XOF/XAF) avec RWA et gain nuls', () {
+    test(
+        'inclut les titres en devise de référence (XOF/XAF) avec RWA et gain nuls',
+        () {
       final result = service.analyzePortfolio(
         records: [
-          bond({'Devise': 'XOF', 'Valeur nominale unitaire': 1000.0, 'quantités': 5.0}),
-          bond({'Devise': 'XAF', 'Valeur nominale unitaire': 1000.0, 'quantités': 5.0}),
+          bond({
+            'Devise': 'XOF',
+            'Valeur nominale unitaire': 1000.0,
+            'quantités': 5.0
+          }),
+          bond({
+            'Devise': 'XAF',
+            'Valeur nominale unitaire': 1000.0,
+            'quantités': 5.0
+          }),
         ],
         analysisDate: now,
       );
@@ -123,7 +135,11 @@ void main() {
             'Taux d\'acquisition': 580.0,
           }),
           // Un titre XOF doit être inclus dans la liste mais n'a pas d'impact sur le calcul du risque.
-          bond({'Devise': 'XOF', 'Valeur nominale unitaire': 9999.0, 'quantités': 1.0}),
+          bond({
+            'Devise': 'XOF',
+            'Valeur nominale unitaire': 9999.0,
+            'quantités': 1.0
+          }),
         ],
         analysisDate: now,
         exchangeRates: {'USD': 625.0},
@@ -146,7 +162,8 @@ void main() {
       expect(result.rwaChange, closeTo(62500.0, 0.0001));
     });
 
-    test('sans taux d\'acquisition, la variation est nulle (repli sur le courant)',
+    test(
+        'sans taux d\'acquisition, la variation est nulle (repli sur le courant)',
         () {
       final result = service.analyzePortfolio(
         records: [

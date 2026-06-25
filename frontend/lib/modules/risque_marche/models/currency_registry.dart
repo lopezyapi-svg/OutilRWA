@@ -11,10 +11,10 @@ class CurrencyRate {
     required this.lastUpdate,
   });
 
-  final String code;                  // Code devise (USD, EUR, etc.)
-  final String label;                 // Libellé complet
-  final double rateToXof;             // Taux de change vers XOF
-  final DateTime lastUpdate;          // Date de mise à jour du taux
+  final String code; // Code devise (USD, EUR, etc.)
+  final String label; // Libellé complet
+  final double rateToXof; // Taux de change vers XOF
+  final DateTime lastUpdate; // Date de mise à jour du taux
 
   /// Convertit une montant depuis cette devise vers XOF
   double toXof(double amount) => amount * rateToXof;
@@ -91,12 +91,12 @@ class PositionAnalysis {
     required this.concentrationRatio,
   });
 
-  final int totalDevises;                 // Nombre de devises
-  final int longPositions;                // Nombre de positions longues
-  final int shortPositions;               // Nombre de positions courtes
-  final int neutralPositions;             // Nombre de positions neutres
-  final double averagePositionSize;       // Taille moyenne en XOF
-  final double largestLongPosition;       // Plus grande position longue
-  final double largestShortPosition;      // Plus grande position courte
-  final double concentrationRatio;        // Ratio de concentration (0-1)
+  final int totalDevises; // Nombre de devises
+  final int longPositions; // Nombre de positions longues
+  final int shortPositions; // Nombre de positions courtes
+  final int neutralPositions; // Nombre de positions neutres
+  final double averagePositionSize; // Taille moyenne en XOF
+  final double largestLongPosition; // Plus grande position longue
+  final double largestShortPosition; // Plus grande position courte
+  final double concentrationRatio; // Ratio de concentration (0-1)
 }

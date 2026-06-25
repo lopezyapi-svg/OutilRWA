@@ -15,9 +15,9 @@ class AppTheme {
     'Nunito Sans',
   ];
   static const double radius = 2;
-  static const double spacing = 12;
-  static const double pagePadding = 18;
-  static const double pageGap = 14;
+  static const double spacing = 4;
+  static const double pagePadding = 4;
+  static const double pageGap = 4;
   static const Color sidebar = Color(0xFF11047A);
   static const Color sidebarLight = Color(0xFF190793);
   static const Color accent = Color(0xFF4318FF);
@@ -142,7 +142,7 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: accentColor,
           foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius),
           ),
@@ -154,8 +154,7 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: inputFillColor,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         labelStyle: textTheme.bodyMedium?.copyWith(
           color: mutedColor,
           fontWeight: FontWeight.w500,

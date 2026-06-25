@@ -24,7 +24,7 @@ class DashboardPanel extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(11),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: dashboardPanelColor(isDark),
         borderRadius: BorderRadius.circular(2),
@@ -63,7 +63,7 @@ class DashboardPanel extends StatelessWidget {
                     ],
                   ],
                 ),
-              const SizedBox(height: 11),
+              const SizedBox(height: 3),
               child,
             ],
           );

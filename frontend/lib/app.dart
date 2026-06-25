@@ -349,7 +349,8 @@ class _RwaAppState extends State<RwaApp> {
           view: MarketRiskView.amortizationCapital,
         ),
       AppModule.risqueOperationnel => RisqueOperationnelScreen(api: _api),
-      AppModule.risqueOperationnelImport => RisqueOperationnelScreen(api: _api, view: OperationalRiskView.registre),
+      AppModule.risqueOperationnelImport =>
+        RisqueOperationnelScreen(api: _api, view: OperationalRiskView.registre),
       AppModule.risqueOperationnelIncidents => RisqueOperationnelScreen(
           api: _api,
           view: OperationalRiskView.incidents,

@@ -431,11 +431,14 @@ class _IcapScreenState extends State<IcapScreen> {
       title: 'Simulation de stress - Impact sur le capital',
       child: Column(
         children: [
-          _buildStressScenarioCard(scenario: stressScenarios[0], isDark: isDark),
+          _buildStressScenarioCard(
+              scenario: stressScenarios[0], isDark: isDark),
           AppSpacing.vGapMd,
-          _buildStressScenarioCard(scenario: stressScenarios[1], isDark: isDark),
+          _buildStressScenarioCard(
+              scenario: stressScenarios[1], isDark: isDark),
           AppSpacing.vGapMd,
-          _buildStressScenarioCard(scenario: stressScenarios[2], isDark: isDark),
+          _buildStressScenarioCard(
+              scenario: stressScenarios[2], isDark: isDark),
         ],
       ),
     );
@@ -477,7 +480,8 @@ class _IcapScreenState extends State<IcapScreen> {
               if (helper != null)
                 Tooltip(
                   message: helper,
-                  child: Icon(Icons.info_outline, size: 16,
+                  child: Icon(Icons.info_outline,
+                      size: 16,
                       color: isDark ? AppTheme.darkMuted : AppTheme.muted),
                 ),
             ],
@@ -518,7 +522,7 @@ class _IcapScreenState extends State<IcapScreen> {
     final statusColor = isSufficient ? AppColors.success : AppColors.danger;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isFinal
             ? (isDark
@@ -633,7 +637,8 @@ class _IcapScreenState extends State<IcapScreen> {
               if (helper != null)
                 Tooltip(
                   message: helper,
-                  child: Icon(Icons.info_outline, size: 16,
+                  child: Icon(Icons.info_outline,
+                      size: 16,
                       color: isDark ? AppTheme.darkMuted : AppTheme.muted),
                 ),
             ],
@@ -709,7 +714,7 @@ class _IcapScreenState extends State<IcapScreen> {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: color.withValues(alpha: isDark ? 0.15 : 0.1),
               borderRadius: BorderRadius.circular(5),
@@ -736,8 +741,10 @@ class _IcapScreenState extends State<IcapScreen> {
                     if (helper != null)
                       Tooltip(
                         message: helper,
-                        child: Icon(Icons.info_outline, size: 16,
-                            color: isDark ? AppTheme.darkMuted : AppTheme.muted),
+                        child: Icon(Icons.info_outline,
+                            size: 16,
+                            color:
+                                isDark ? AppTheme.darkMuted : AppTheme.muted),
                       ),
                   ],
                 ),
@@ -845,7 +852,7 @@ class _IcapScreenState extends State<IcapScreen> {
               AppSpacing.hGapMd,
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: scenario.isCompliant
                         ? AppColors.success.withValues(alpha: 0.1)
@@ -901,7 +908,7 @@ class _IcapScreenState extends State<IcapScreen> {
         : (isDark ? AppTheme.darkText : AppTheme.text);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark
             ? Colors.white.withValues(alpha: 0.03)
@@ -955,7 +962,8 @@ class _IcapScreenState extends State<IcapScreen> {
         ),
         _IcapStatusItem(
           label: 'Risque operationnel',
-          value: AppFormatters.currency(data.requirements.operationalRiskCapital),
+          value:
+              AppFormatters.currency(data.requirements.operationalRiskCapital),
           detail: 'Pertes internes, incidents et controles',
           icon: Icons.shield_outlined,
           color: AppColors.operationalMedium,
@@ -1258,7 +1266,8 @@ class _IcapScreenState extends State<IcapScreen> {
       ),
       _StressScenario(
         name: 'Choc sévère',
-        description: 'Croissance -4%, NPL à 12%, chute marchés 30%, taux +200bp',
+        description:
+            'Croissance -4%, NPL à 12%, chute marchés 30%, taux +200bp',
         cet1Impact: 62.3e9,
         cet1PostStress: baseData.cet1Capital - 62.3e9,
         ratioPostStress: (baseData.cet1Capital - 62.3e9) / baseData.totalRwa,

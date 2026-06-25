@@ -164,7 +164,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                 AppTheme.pagePadding, AppTheme.pagePadding, 0),
             child: _FxKpiSection(result: _analysisResult),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           // Titre de section + barre des taux courants éditables sur la même
           // ligne (les taux ne sont affichés que s'il y a une exposition en
           // devise étrangère à valoriser).
@@ -189,13 +189,13 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 2),
                       _FxInfoButton(result: _analysisResult),
                     ],
                   ),
                 ),
                 if (hasExposure) ...[
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 3),
                   _FxRatesBar(
                     rates: _currentRates,
                     meta: _rateMeta,
@@ -206,7 +206,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           // Tableau — occupe toute la hauteur restante (scroll interne + pied
           // figé) au lieu d'une hauteur fixe qui paraissait coincée en bas.
           Expanded(
@@ -263,8 +263,9 @@ String _formatRateAsOf(DateTime dt) {
   final now = DateTime.now();
   String two(int n) => n.toString().padLeft(2, '0');
   final time = '${two(local.hour)}:${two(local.minute)}';
-  final sameDay =
-      local.year == now.year && local.month == now.month && local.day == now.day;
+  final sameDay = local.year == now.year &&
+      local.month == now.month &&
+      local.day == now.day;
   return sameDay ? time : '${two(local.day)}/${two(local.month)} $time';
 }
 
@@ -304,7 +305,7 @@ class _FxInfoButton extends StatelessWidget {
       child: Tooltip(
         message: 'Méthodologie et formules',
         child: Padding(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(1),
           child: Icon(CupertinoIcons.info_circle, size: 17, color: _fxPrimary),
         ),
       ),
@@ -329,7 +330,7 @@ class _FxMethodologyDialog extends StatelessWidget {
         children: [
           const Icon(CupertinoIcons.info_circle_fill,
               size: 18, color: _fxPrimary),
-          const SizedBox(width: 8),
+          const SizedBox(width: 2),
           Expanded(
             child: Text('Risque de change — méthodologie',
                 style: TextStyle(
@@ -351,10 +352,10 @@ class _FxMethodologyDialog extends StatelessWidget {
                 'devises sur les positions en devise étrangère.',
                 style: TextStyle(fontSize: 12.5, color: textColor, height: 1.4),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 3),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   color: _fxWarning.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -367,7 +368,7 @@ class _FxMethodologyDialog extends StatelessWidget {
                   style: TextStyle(fontSize: 12, color: textColor, height: 1.4),
                 ),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 4),
               _section(context, 'Définitions'),
               _definition(context, 'Position longue',
                   'La banque détient la devise (actif) : elle gagne si la devise s\'apprécie face au XOF.'),
@@ -377,7 +378,7 @@ class _FxMethodologyDialog extends StatelessWidget {
                   'Positions longues − positions courtes d\'une même devise. Positive = nette longue ; négative = nette courte.'),
               _definition(context, 'Position nette globale',
                   'Sur l\'ensemble des devises : MAX(somme des nettes longues ; somme des nettes courtes). C\'est la base de l\'exigence de fonds propres.'),
-              const SizedBox(height: 14),
+              const SizedBox(height: 4),
               _section(context, 'Au niveau du portefeuille'),
               _formulaBlock(context, const [
                 'Position nette / devise = Σ(longues) − Σ(courtes)   [en XOF]',
@@ -385,7 +386,7 @@ class _FxMethodologyDialog extends StatelessWidget {
                 'Exigence de fonds propres = Position nette globale × 8 %',
                 'RWA Change = Exigence FP × 12,5',
               ]),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               _section(context, 'Par titre'),
               _formulaBlock(context, const [
                 'Variation devise (%) =',
@@ -393,7 +394,7 @@ class _FxMethodologyDialog extends StatelessWidget {
                 'Gain/Perte de change =',
                 '   Valeur actuelle (XOF) − Valeur d\'acquisition (XOF)',
               ]),
-              const SizedBox(height: 14),
+              const SizedBox(height: 4),
               _section(context, 'Valeurs actuelles'),
               _kv(context, 'Σ Positions longues',
                   '${formatLargeNumber(result.totalLongPositions)} XOF'),
@@ -406,7 +407,7 @@ class _FxMethodologyDialog extends StatelessWidget {
               _kv(context, 'RWA Change',
                   '${formatLargeNumber(result.rwaChange)} XOF',
                   highlight: true),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               Text('Référence : BCEAO — Dispositif prudentiel, Art. 45.',
                   style: TextStyle(
                       fontSize: 10.5,
@@ -426,7 +427,7 @@ class _FxMethodologyDialog extends StatelessWidget {
   }
 
   Widget _section(BuildContext context, String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.only(bottom: 2),
         child: Text(title.toUpperCase(),
             style: const TextStyle(
                 fontSize: 10.5,
@@ -436,7 +437,7 @@ class _FxMethodologyDialog extends StatelessWidget {
       );
 
   Widget _definition(BuildContext context, String term, String desc) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: 2),
         child: RichText(
           text: TextSpan(
             style: TextStyle(
@@ -454,7 +455,7 @@ class _FxMethodologyDialog extends StatelessWidget {
 
   Widget _formulaBlock(BuildContext context, List<String> lines) => Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           color: _isFxDark(context)
               ? Colors.white.withValues(alpha: 0.04)
@@ -479,7 +480,7 @@ class _FxMethodologyDialog extends StatelessWidget {
   Widget _kv(BuildContext context, String k, String v,
           {bool highlight = false}) =>
       Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.symmetric(vertical: 1),
         child: Row(
           children: [
             Expanded(
@@ -526,7 +527,7 @@ class _FxEmptyState extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: _fxSurfaceFor(context),
         borderRadius: BorderRadius.circular(2),
@@ -547,7 +548,7 @@ class _FxEmptyState extends StatelessWidget {
                 ),
                 child: Icon(icon, color: accent, size: 20),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -557,7 +558,7 @@ class _FxEmptyState extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 1),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: Text(
@@ -613,7 +614,7 @@ class _FxContentSplit extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: table),
-              const SizedBox(height: 14),
+              const SizedBox(height: 4),
               SizedBox(height: hasFx ? 500 : 300, child: right),
             ],
           );
@@ -622,7 +623,7 @@ class _FxContentSplit extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(flex: 6, child: table),
-            const SizedBox(width: 14),
+            const SizedBox(width: 4),
             Expanded(flex: 4, child: right),
           ],
         );
@@ -675,7 +676,7 @@ class _FxShockChartState extends State<_FxShockChart> {
     final effectiveNet = hasFx ? floatingNet : _exampleNet;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
       decoration: BoxDecoration(
         color: _fxSurfaceFor(context),
         border: Border.all(color: _fxBorderFor(context)),
@@ -693,9 +694,9 @@ class _FxShockChartState extends State<_FxShockChart> {
           Row(
             children: [
               const Icon(Icons.show_chart_rounded, size: 17, color: _fxPrimary),
-              const SizedBox(width: 8),
+              const SizedBox(width: 2),
               Expanded(
-                child: Text('Profil de gain/perte — choc USD',
+                child: Text('Profil de gain/perte - choc USD',
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -704,10 +705,10 @@ class _FxShockChartState extends State<_FxShockChart> {
             ],
           ),
           if (showCurve) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 2),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
               decoration: BoxDecoration(
                 color: _fxPrimary.withValues(alpha: 0.07),
                 borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -718,7 +719,7 @@ class _FxShockChartState extends State<_FxShockChart> {
                 children: [
                   const Icon(Icons.lightbulb_outline,
                       size: 15, color: _fxPrimary),
-                  const SizedBox(width: 7),
+                  const SizedBox(width: 2),
                   Expanded(
                     child: _interpretationWidget(context, effectiveNet),
                   ),
@@ -726,16 +727,23 @@ class _FxShockChartState extends State<_FxShockChart> {
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Expanded(
             child: showCurve
-                ? CustomPaint(
-                    painter: _FxShockPainter(
-                      netSensitivity: effectiveNet,
-                      maxShock: _maxShock,
-                      isDark: _isFxDark(context),
-                    ),
-                    child: const SizedBox.expand(),
+                ? TweenAnimationBuilder<double>(
+                    tween: Tween<double>(begin: 0.0, end: effectiveNet),
+                    duration: const Duration(milliseconds: 1200),
+                    curve: Curves.easeOutQuart,
+                    builder: (context, animatedNet, child) {
+                      return CustomPaint(
+                        painter: _FxShockPainter(
+                          netSensitivity: animatedNet,
+                          maxShock: _maxShock,
+                          isDark: _isFxDark(context),
+                        ),
+                        child: const SizedBox.expand(),
+                      );
+                    },
                   )
                 : _buildEmpty(context),
           ),
@@ -760,11 +768,11 @@ class _FxShockChartState extends State<_FxShockChart> {
               fontWeight: FontWeight.w600,
               color: _fxMutedFor(context)),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
         _scenarioLine(context, 'USD +10 %', net * 0.10),
-        const SizedBox(height: 4),
+        const SizedBox(height: 1),
         _scenarioLine(context, 'USD −10 %', net * -0.10),
-        const SizedBox(height: 6),
+        const SizedBox(height: 2),
         Text(
           'La banque ${long ? 'gagne' : 'perd'} quand le USD s\'apprécie.',
           style: TextStyle(
@@ -784,7 +792,7 @@ class _FxShockChartState extends State<_FxShockChart> {
       children: [
         Icon(gain ? Icons.arrow_upward : Icons.arrow_downward,
             size: 13, color: color),
-        const SizedBox(width: 6),
+        const SizedBox(width: 2),
         SizedBox(
           width: 64,
           child: Text(scenario,
@@ -798,7 +806,7 @@ class _FxShockChartState extends State<_FxShockChart> {
         Text('${_signed(pnl)} XOF',
             style: TextStyle(
                 fontSize: 11.5, fontWeight: FontWeight.w800, color: color)),
-        const SizedBox(width: 6),
+        const SizedBox(width: 2),
         Text('(${gain ? 'gain' : 'perte'})',
             style: TextStyle(fontSize: 10, color: _fxMutedFor(context))),
       ],
@@ -822,14 +830,14 @@ class _FxShockChartState extends State<_FxShockChart> {
         children: [
           Icon(CupertinoIcons.checkmark_shield,
               size: 28, color: _fxSuccess.withValues(alpha: 0.7)),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           Text('Aucune sensibilité au change',
               textAlign: TextAlign.center,
               style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                   color: _fxTextFor(context))),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           OutlinedButton.icon(
             onPressed: () => setState(() => _example = true),
             icon: const Icon(CupertinoIcons.eye, size: 15),
@@ -837,8 +845,7 @@ class _FxShockChartState extends State<_FxShockChart> {
             style: OutlinedButton.styleFrom(
               foregroundColor: _fxPrimary,
               side: BorderSide(color: _fxPrimary.withValues(alpha: 0.5)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             ),
           ),
         ],
@@ -898,23 +905,25 @@ class _FxShockPainter extends CustomPainter {
     for (final s in const [-0.20, -0.10, 0.0, 0.10, 0.20]) {
       final x = xFor(s);
       canvas.drawLine(Offset(x, plot.top), Offset(x, plot.bottom), gridPaint);
-      final l =
-          label('${s > 0 ? '+' : ''}${(s * 100).toStringAsFixed(0)} %');
+      final l = label('${s > 0 ? '+' : ''}${(s * 100).toStringAsFixed(0)} %');
       l.paint(canvas, Offset(x - l.width / 2, plot.bottom + 6));
     }
 
     // Ligne de base (P&L = 0) + libellés Y.
-    canvas.drawLine(Offset(plot.left, cy), Offset(plot.right, cy),
+    canvas.drawLine(
+        Offset(plot.left, cy),
+        Offset(plot.right, cy),
         Paint()
           ..color = axisColor
           ..strokeWidth = 1.2);
     final topL = label('+${_compact(yMax)}');
     topL.paint(canvas, Offset(plot.left - topL.width - 6, plot.top - 2));
     final zeroL = label('0');
-    zeroL.paint(canvas, Offset(plot.left - zeroL.width - 6, cy - zeroL.height / 2));
+    zeroL.paint(
+        canvas, Offset(plot.left - zeroL.width - 6, cy - zeroL.height / 2));
     final botL = label('-${_compact(yMax)}');
-    botL.paint(
-        canvas, Offset(plot.left - botL.width - 6, plot.bottom - botL.height + 2));
+    botL.paint(canvas,
+        Offset(plot.left - botL.width - 6, plot.bottom - botL.height + 2));
 
     // Aires gain/perte (deux triangles autour du centre).
     void fillHalf(double xEnd, double yEnd) {
@@ -1034,10 +1043,10 @@ class _FxRatesBar extends StatelessWidget {
       onTap: fixed ? null : () => onEdit(code),
       borderRadius: BorderRadius.circular(2),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 3, 6, 3),
+        padding: const EdgeInsets.fromLTRB(2, 1, 2, 1),
         decoration: BoxDecoration(
           color: accent.withValues(alpha: fixed ? 0.04 : 0.07),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(6),
           border: Border.all(color: accent.withValues(alpha: 0.22)),
         ),
         child: Row(
@@ -1049,21 +1058,21 @@ class _FxRatesBar extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.4,
                     color: accent)),
-            const SizedBox(width: 6),
+            const SizedBox(width: 2),
             Text(formatDecimal(rate, 2),
                 style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,
                     color: _fxTextFor(context))),
-            const SizedBox(width: 2),
+            const SizedBox(width: 1),
             Text('XOF',
                 style: TextStyle(
                     fontSize: 8,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.3,
                     color: _fxMutedFor(context))),
-            const SizedBox(width: 5),
+            const SizedBox(width: 1),
             Icon(statusIcon,
                 size: 11, color: accent.withValues(alpha: fixed ? 0.6 : 0.9)),
           ],
@@ -1162,8 +1171,8 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
   void _submit() {
     final rate = _parseRateInput(_controller.text);
     if (rate == null || rate <= 0) {
-      setState(() =>
-          _error = 'Saisissez un taux numérique strictement positif.');
+      setState(
+          () => _error = 'Saisissez un taux numérique strictement positif.');
       return;
     }
     final usedOnline = _fetched != null && !_editedSinceFetch;
@@ -1181,11 +1190,34 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
         _fetched != null && !_editedSinceFetch && _error == null;
     return AlertDialog(
       title: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(CupertinoIcons.money_dollar_circle,
-              size: 18, color: _fxPrimary),
-          const SizedBox(width: 8),
-          Text('Taux courant — ${widget.code}'),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              color: _fxPrimary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Icon(CupertinoIcons.money_dollar_circle_fill,
+                size: 20, color: _fxPrimary),
+          ),
+          const SizedBox(width: 3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Taux courant - ${widget.code}',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 16)),
+                Text('Mise à jour de la valorisation',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.normal,
+                        color: _fxMutedFor(context))),
+              ],
+            ),
+          ),
         ],
       ),
       content: ConstrainedBox(
@@ -1194,19 +1226,39 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('1 ${widget.code} = ? XOF',
-                style: TextStyle(fontSize: 12, color: _fxMutedFor(context))),
-            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+              decoration: BoxDecoration(
+                color: _fxPrimary.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(children: [
+                const Icon(CupertinoIcons.arrow_right_arrow_left,
+                    size: 14, color: _fxPrimary),
+                const SizedBox(width: 2),
+                Text('1 ${widget.code} = ? XOF',
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _fxPrimary)),
+              ]),
+            ),
+            const SizedBox(height: 3),
             TextField(
               controller: _controller,
               autofocus: true,
               keyboardType:
                   const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              decoration: InputDecoration(
                 isDense: true,
                 labelText: 'Taux de change',
-                border: OutlineInputBorder(),
-                suffixText: 'XOF',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                suffix: Text('XOF',
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _fxTextFor(context))),
               ),
               onChanged: (_) {
                 if (_editedSinceFetch && _error == null) return;
@@ -1217,7 +1269,7 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
               },
               onSubmitted: (_) => _submit(),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 3),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -1228,14 +1280,14 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
                         height: 14,
                         child: CupertinoActivityIndicator(radius: 7),
                       )
-                    : const Icon(CupertinoIcons.cloud_download, size: 16),
+                    : const Icon(CupertinoIcons.cloud_download_fill, size: 16),
                 label: Text(_fetching
                     ? 'Récupération en cours…'
                     : 'Récupérer le taux en ligne'),
               ),
             ),
             if (showSuccess) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 3),
               _banner(
                 context,
                 icon: CupertinoIcons.check_mark_circled_solid,
@@ -1245,7 +1297,7 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
               ),
             ],
             if (_error != null) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: 3),
               _banner(
                 context,
                 icon: CupertinoIcons.exclamationmark_triangle_fill,
@@ -1259,23 +1311,30 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
+          style: TextButton.styleFrom(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          ),
           child: const Text('Annuler'),
         ),
         FilledButton(
           onPressed: _fetching ? null : _submit,
-          child: const Text('Valider'),
+          style: FilledButton.styleFrom(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          ),
+          child: const Text('Valider',
+              style: TextStyle(fontWeight: FontWeight.w600)),
         ),
       ],
     );
   }
 
   Widget _banner(BuildContext context,
-      {required IconData icon,
-      required Color color,
-      required String message}) {
+      {required IconData icon, required Color color, required String message}) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(8),
@@ -1285,7 +1344,7 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 14, color: color),
-          const SizedBox(width: 8),
+          const SizedBox(width: 2),
           Expanded(
             child: Text(message,
                 style: TextStyle(
@@ -1298,8 +1357,6 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
     );
   }
 }
-
-
 
 class _FxKpiSection extends StatelessWidget {
   const _FxKpiSection({required this.result});
@@ -1451,7 +1508,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         transform: Matrix4.translationValues(0, _hovered ? -3 : 0, 0),
-        padding: const EdgeInsets.fromLTRB(13, 8, 13, 8),
+        padding: const EdgeInsets.fromLTRB(4, 2, 4, 2),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -1495,7 +1552,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
               ),
               child: Icon(widget.icon, color: Colors.white, size: 19),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1522,21 +1579,24 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                               ),
                             ),
                             if (widget.tooltipMessage != null) ...[
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 1),
                               Tooltip(
                                 message: widget.tooltipMessage!,
                                 preferBelow: false,
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF1E293B),
-                                  borderRadius: BorderRadius.circular(AppTheme.radius),
+                                  borderRadius:
+                                      BorderRadius.circular(AppTheme.radius),
                                 ),
                                 textStyle: const TextStyle(
                                   fontSize: 11,
                                   color: Colors.white,
                                   height: 1.4,
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                margin: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 3, vertical: 2),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 5),
                                 child: Icon(
                                   CupertinoIcons.info_circle,
                                   size: 11,
@@ -1548,12 +1608,12 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                         ),
                       ),
                       if (widget.trend != null) ...[
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 2),
                         _FxTrendChip(trend: widget.trend!),
                       ],
                     ],
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
@@ -1571,9 +1631,9 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                             color: _fxTextFor(context),
                           ),
                         ),
-                        const SizedBox(width: 5),
+                        const SizedBox(width: 1),
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 1.5),
+                          padding: const EdgeInsets.only(bottom: 1),
                           child: Text(
                             widget.unit,
                             style: TextStyle(
@@ -1607,7 +1667,7 @@ class _FxTrendChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = trend.isPositive ? _fxSuccess : _fxDanger;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
+      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
@@ -1622,7 +1682,7 @@ class _FxTrendChip extends StatelessWidget {
             size: 9,
             color: color,
           ),
-          const SizedBox(width: 2),
+          const SizedBox(width: 1),
           Text(
             trend.label,
             style: TextStyle(
@@ -1710,9 +1770,13 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
     final securities = widget.securities;
 
     const rowH = 40.0;
-    final headerTextLight = const TextStyle(
-        fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white);
-    final cellText = TextStyle(fontSize: 11, color: _fxTextFor(context));
+    final headerTextLight = TextStyle(
+        fontSize: 10.5,
+        fontWeight: FontWeight.w800,
+        color: _fxPrimary.withValues(alpha: 0.9),
+        letterSpacing: 0.5);
+    final cellText = TextStyle(
+        fontSize: 11, color: _fxTextFor(context), fontWeight: FontWeight.w500);
 
     return LayoutBuilder(builder: (context, constraints) {
       // Largeurs naturelles des colonnes.
@@ -1802,18 +1866,22 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
             builder: (context) {
               return Column(children: [
                 // Header row
-                SizedBox(
+                Container(
                   height: rowH,
+                  decoration: BoxDecoration(
+                    color: _fxPrimary.withValues(alpha: 0.05),
+                    border: Border(
+                        bottom: BorderSide(
+                            color: _fxPrimary.withValues(alpha: 0.15))),
+                  ),
                   child: Row(children: [
-                    Container(
+                    SizedBox(
                         width: colW[0]!,
-                        color: const Color(0xFF1A237E),
                         child: _HCell(
                             'ÉMETTEUR', TextAlign.left, headerTextLight)),
                     Expanded(
-                      child: Container(
+                      child: SizedBox(
                         height: rowH,
-                        color: const Color(0xFF1A237E),
                         child: ScrollConfiguration(
                           behavior: ScrollConfiguration.of(context)
                               .copyWith(scrollbars: false),
@@ -1825,14 +1893,12 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                         ),
                       ),
                     ),
-                    Container(
+                    SizedBox(
                         width: colW[7]!,
-                        color: const Color(0xFF1A237E),
                         child: _HCell('GAIN/PERTE DE CHANGE', TextAlign.right,
                             headerTextLight)),
                   ]),
                 ),
-                Container(height: 1, color: _fxBorder),
                 // Body — liste verticale unique et VIRTUALISÉE. Chaque ligne
                 // (_FxSecurityRow) porte la colonne gauche figée, le milieu
                 // défilant et la colonne droite figée ; toutes partagent
@@ -1875,8 +1941,8 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                               leftCell: cells[0],
                               middle: _syncedMiddle(middleWidth, middleRow),
                               rightCell: cells[7],
-                              onTap: () => setState(() =>
-                                  _selectedIndex = _selectedIndex == i ? null : i),
+                              onTap: () => setState(() => _selectedIndex =
+                                  _selectedIndex == i ? null : i),
                             );
                           },
                         ),
@@ -2009,8 +2075,8 @@ class _FxSecurityRow extends StatelessWidget {
         decoration: BoxDecoration(
           color: background,
           border: Border(
-            bottom: BorderSide(
-                color: _fxBorder.withValues(alpha: 0.3), width: 0.5),
+            bottom:
+                BorderSide(color: _fxBorder.withValues(alpha: 0.3), width: 0.5),
           ),
         ),
         child: Row(
@@ -2038,7 +2104,7 @@ Alignment _cellAlignment(TextAlign align) => switch (align) {
 Widget _HCell(String text, TextAlign align, TextStyle style) => Container(
       height: 40,
       alignment: _cellAlignment(align),
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 3),
       child: Text(text, style: style, textAlign: align, maxLines: 1),
     );
 
@@ -2049,12 +2115,13 @@ Widget _DCell(String text, TextStyle style,
       height: 40,
       decoration: BoxDecoration(color: bg ?? Colors.transparent),
       alignment: _cellAlignment(align),
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 3),
       child: chip != null
           ? Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
               decoration: BoxDecoration(
-                  color: chip, borderRadius: BorderRadius.circular(AppTheme.radius)),
+                  color: chip,
+                  borderRadius: BorderRadius.circular(AppTheme.radius)),
               child: Text(text,
                   style: style,
                   textAlign: align,

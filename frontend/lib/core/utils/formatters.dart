@@ -17,9 +17,8 @@ class AppFormatters {
 
   static String currency(num value, {String currencyCode = 'XOF'}) {
     final upper = currencyCode.toUpperCase();
-    final locale = upper == 'USD'
-        ? 'en_US'
-        : AppLocalizations.currentLanguage.intlLocale;
+    final locale =
+        upper == 'USD' ? 'en_US' : AppLocalizations.currentLanguage.intlLocale;
     final key = '$locale:$upper';
     final formatter = _currencyFormatCache.putIfAbsent(key, () {
       return NumberFormat.currency(
@@ -52,7 +51,8 @@ class AppFormatters {
   static String percent(num value) {
     final locale = AppLocalizations.currentLanguage.intlLocale;
     final formatter = _percentFormatCache.putIfAbsent(locale, () {
-      return NumberFormat.decimalPercentPattern(locale: locale, decimalDigits: 1);
+      return NumberFormat.decimalPercentPattern(
+          locale: locale, decimalDigits: 1);
     });
     return formatter.format(value);
   }

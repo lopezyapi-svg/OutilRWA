@@ -88,12 +88,9 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
           return GestureDetector(
             onTap: () => setState(() => _selectedScenario = scenario.$1),
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.accent
-                    : Colors.transparent,
+                color: isSelected ? AppColors.accent : Colors.transparent,
                 borderRadius: BorderRadius.circular(5),
               ),
               child: Row(
@@ -195,7 +192,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(4),
         child: Row(
           children: [
             Container(
@@ -297,27 +294,27 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text('Année', style: headerStyle),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text('Capital', style: headerStyle),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text('RWA', style: headerStyle),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text('Croissance RWA', style: headerStyle),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text('Ratio', style: headerStyle),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text('Statut', style: headerStyle),
         ),
       ],
@@ -339,7 +336,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
       ),
       children: [
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text(
             '${item.year}',
             style: TextStyle(
@@ -350,34 +347,33 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text(
             AppFormatters.currency(item.capital),
             style: TextStyle(fontSize: 13, color: textColor),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text(
             AppFormatters.currency(item.rwa),
             style: TextStyle(fontSize: 13, color: textColor),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text(
             AppFormatters.percent(item.rwaGrowth),
             style: TextStyle(
               fontSize: 13,
-              color: item.rwaGrowth > 0.1
-                  ? AppColors.warning
-                  : AppColors.success,
+              color:
+                  item.rwaGrowth > 0.1 ? AppColors.warning : AppColors.success,
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Text(
             AppFormatters.percent(item.ratio),
             style: TextStyle(
@@ -388,7 +384,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: _buildStatusBadge(
             isCompliant ? 'Conforme' : 'Déficit',
             isCompliant ? AppColors.success : AppColors.danger,
@@ -442,7 +438,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
               Expanded(
                 child: _buildInfoCard(
                   title: 'Années en déficit',
-                  value: '${ deficitYears.length} / 5',
+                  value: '${deficitYears.length} / 5',
                   icon: CupertinoIcons.exclamationmark_triangle_fill,
                   color: hasDeficit ? AppColors.danger : AppColors.success,
                   isDark: isDark,
@@ -515,7 +511,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
                     size: 20,
                     color: AppColors.success,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 3),
                   Expanded(
                     child: Text(
                       'Le capital projeté reste au-dessus du seuil minimum réglementaire sur toute la période.',
@@ -607,7 +603,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
                   shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 3),
               Expanded(
                 child: RichText(
                   text: TextSpan(
@@ -754,8 +750,8 @@ class _CapitalProjectionChartPainter extends CustomPainter {
     );
 
     // Draw threshold line (10.5%)
-    final thresholdY = padding +
-        chartHeight * (1 - (thresholdRatio - minY) / (maxY - minY));
+    final thresholdY =
+        padding + chartHeight * (1 - (thresholdRatio - minY) / (maxY - minY));
     final thresholdPaint = Paint()
       ..color = AppColors.danger.withValues(alpha: 0.4)
       ..strokeWidth = 2
@@ -799,8 +795,8 @@ class _CapitalProjectionChartPainter extends CustomPainter {
     final linePath = Path();
     for (var i = 0; i < data.length; i++) {
       final x = leftPadding + (chartWidth / (data.length - 1)) * i;
-      final y = padding +
-          chartHeight * (1 - (data[i].ratio - minY) / (maxY - minY));
+      final y =
+          padding + chartHeight * (1 - (data[i].ratio - minY) / (maxY - minY));
 
       if (i == 0) {
         linePath.moveTo(x, y);
@@ -816,8 +812,9 @@ class _CapitalProjectionChartPainter extends CustomPainter {
       final y =
           padding + chartHeight * (1 - (data[i].ratio - minY) / (maxY - minY));
 
-      final pointColor =
-          data[i].ratio >= thresholdRatio ? AppColors.success : AppColors.danger;
+      final pointColor = data[i].ratio >= thresholdRatio
+          ? AppColors.success
+          : AppColors.danger;
 
       canvas.drawCircle(
         Offset(x, y),

@@ -145,7 +145,7 @@ InlineSpan _buildTooltipCardSpan(String line) {
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+        padding: const EdgeInsets.fromLTRB(3, 9, 3, 9),
         decoration: BoxDecoration(
           color: const Color(0xFF172845),
           borderRadius: BorderRadius.circular(10),
@@ -1362,7 +1362,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       preferBelow: false,
       verticalOffset: 18,
       textAlign: TextAlign.start,
-      padding: const EdgeInsets.fromLTRB(5, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(5, 3, 4, 3),
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1C34),
@@ -1662,7 +1662,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                                   : CrossAxisAlignment.start,
                               children: [
                                 Expanded(flex: 6, child: rightPanel),
-                                const SizedBox(width: 18),
+                                const SizedBox(width: 5),
                                 Expanded(flex: 4, child: leftColumn),
                               ],
                             )
@@ -1670,13 +1670,13 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 leftColumn,
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 4),
                                 rightPanel,
                               ],
                             );
 
                       return SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                        padding: const EdgeInsets.fromLTRB(5, 4, 5, 5),
                         child: Container(
                           width: double.infinity,
                           constraints: fixedMainCardHeight == null
@@ -1685,7 +1685,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                                   minHeight: fixedMainCardHeight,
                                   maxHeight: fixedMainCardHeight,
                                 ),
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
                             color: _wizardShellColor(context),
                             borderRadius:
@@ -1696,7 +1696,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildTopActionStepRow(context),
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 3),
                               if (useFixedMainCard)
                                 Expanded(child: sharedContent)
                               else
@@ -1769,7 +1769,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         builder: (context, outerConstraints) {
           final hasBoundedOuterHeight = outerConstraints.maxHeight.isFinite;
           final summaryBody = Padding(
-            padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 const spacing = 8.0;
@@ -1848,7 +1848,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                                   color: Color(0xFF2563EB),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 3),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1883,7 +1883,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 4),
                           if (hasBoundedHeight)
                             Expanded(
                               child: SingleChildScrollView(
@@ -1984,7 +1984,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           width: 0.55,
         ),
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       child: Column(
         mainAxisSize: fixedHeight ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2012,7 +2012,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               preview,
               displayCurrency,
             ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           _buildInlineStepFooter(context),
         ],
       ),
@@ -3655,7 +3655,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           onPressed: _submitting || isFirst ? null : _goBack,
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(0, 34),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
             backgroundColor: _wizardCardColor(context),
             foregroundColor: _wizardMutedColor(context),
             side: _wizardBorderSide(context),
@@ -3677,7 +3677,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           onPressed: _submitting ? null : _handlePrimaryAction,
           style: FilledButton.styleFrom(
             minimumSize: const Size(0, 34),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
             backgroundColor: AppTheme.accent,
             foregroundColor: Colors.white,
             elevation: 0,
@@ -3710,9 +3710,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   Widget _buildTopBar(BuildContext context) {
     final isDark = _isExposureDark(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 14, 6),
+      padding: const EdgeInsets.fromLTRB(5, 3, 4, 6),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: isDark
@@ -3762,7 +3762,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 size: 18,
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -3836,7 +3836,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         alignment: Alignment.center,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 340),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
           decoration: BoxDecoration(
             color: _wizardCardColor(context),
             borderRadius: BorderRadius.circular(_exposureFormRadius),
@@ -3856,7 +3856,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 height: 22,
                 child: CircularProgressIndicator(strokeWidth: 2.4),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 4),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -4495,9 +4495,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         _buildBasketItemEditor(
                             context, index, _basketItems[index]),
                         if (index < _basketItems.length - 1)
-                          const SizedBox(height: 10),
+                          const SizedBox(height: 3),
                       ],
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 3),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: OutlinedButton.icon(
@@ -4506,7 +4506,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                           label: const Text('Ajouter un actif'),
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 3),
                       const _InfoBanner(
                         icon: Icons.info_outline,
                         accent: Color(0xFF0F766E),
@@ -4791,7 +4791,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       message: message,
       preferBelow: false,
       textAlign: TextAlign.start,
-      padding: const EdgeInsets.fromLTRB(5, 8, 12, 8),
+      padding: const EdgeInsets.fromLTRB(5, 8, 3, 8),
       decoration: BoxDecoration(
         color: const Color(0xFF172544),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
@@ -4838,7 +4838,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             .clamp(0.0, 1.0)
             .toDouble();
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF14233D) : Colors.white,
         borderRadius: BorderRadius.circular(_exposureFormRadius),
@@ -5469,7 +5469,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             ),
           ),
           if (isExpanded) ...[
-            const SizedBox(width: 10),
+            const SizedBox(width: 3),
             Expanded(
               child: Text(
                 meta.title,
@@ -6523,7 +6523,7 @@ class _CompactFieldCard extends StatelessWidget {
       preferBelow: false,
       verticalOffset: 18,
       textAlign: TextAlign.start,
-      padding: const EdgeInsets.fromLTRB(5, 12, 14, 12),
+      padding: const EdgeInsets.fromLTRB(5, 3, 4, 3),
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1C34),
@@ -6557,7 +6557,7 @@ class _CompactFieldCard extends StatelessWidget {
       child: Icon(icon, size: 14, color: AppTheme.accent),
     );
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _wizardSoftCardColor(context),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
@@ -6753,7 +6753,7 @@ class _FinancialDataStepScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _StepGrid(children: fields),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
             helper,
           ],
         ),
@@ -6803,7 +6803,7 @@ class _CrmChoiceStepScreen extends StatelessWidget {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
               decoration: BoxDecoration(
                 color: questionAccent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(5),
@@ -6846,7 +6846,7 @@ class _CrmChoiceStepScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 6),
             Center(
               child: Wrap(
                 alignment: WrapAlignment.center,
@@ -6984,7 +6984,7 @@ class _FinalDecisionStepScreen extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(144, 44),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
                   backgroundColor: _wizardCardColor(context),
                   foregroundColor: _wizardMutedColor(context),
                   side: _wizardBorderSide(context),
@@ -7006,7 +7006,7 @@ class _FinalDecisionStepScreen extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(196, 44),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
                   backgroundColor: const Color(0xFF16A34A),
                   foregroundColor: Colors.white,
                   elevation: 0,
@@ -7064,7 +7064,7 @@ class _StepSurface extends StatelessWidget {
     final isDark = _isExposureDark(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: _wizardCardColor(context),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
@@ -7095,7 +7095,7 @@ class _StepSurface extends StatelessWidget {
                 ),
                 child: Icon(icon, color: accent, size: 22),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -7130,7 +7130,7 @@ class _StepSurface extends StatelessWidget {
                             preferBelow: false,
                             verticalOffset: 18,
                             textAlign: TextAlign.start,
-                            padding: const EdgeInsets.fromLTRB(5, 12, 14, 12),
+                            padding: const EdgeInsets.fromLTRB(5, 3, 4, 3),
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               color: const Color(0xFF0F1C34),
@@ -7178,7 +7178,7 @@ class _StepSurface extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           child,
         ],
       ),
@@ -7516,7 +7516,7 @@ class _ModeChoiceCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF13233C) : Colors.white,
             borderRadius: BorderRadius.circular(5),
@@ -7558,7 +7558,7 @@ class _ModeChoiceCard extends StatelessWidget {
                       : accent.withValues(alpha: isDark ? 0.92 : 0.82),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 3),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -7642,7 +7642,7 @@ class _InfoBanner extends StatelessWidget {
     final isDark = _isExposureDark(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: isDark ? 0.14 : 0.08),
         borderRadius: BorderRadius.circular(_exposureFormRadius),
@@ -7655,7 +7655,7 @@ class _InfoBanner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon, size: 18, color: accent),
-          const SizedBox(width: 10),
+          const SizedBox(width: 3),
           Expanded(
             child: Text(
               text,

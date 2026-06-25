@@ -66,7 +66,8 @@ UemoaCapitalRequirement calculateUemoaMarketCapitalRequirement({
     'specific': prudentialResult.interestRateSpecificRisk,
     'general': prudentialResult.interestRateGeneralRisk,
     'total': interestRateRisk,
-    'formule': 'Exigence Taux = Risque spécifique + Risque général (Art. 349-394)',
+    'formule':
+        'Exigence Taux = Risque spécifique + Risque général (Art. 349-394)',
   });
 
   journal.add({
@@ -75,7 +76,8 @@ UemoaCapitalRequirement calculateUemoaMarketCapitalRequirement({
     'specific': prudentialResult.equitySpecificRisk,
     'general': prudentialResult.equityGeneralRisk,
     'total': equityRisk,
-    'formule': 'Exigence Actions = 8%×Σ|net émetteur| + 8%×Σ|net marché| (Art. 398-401)',
+    'formule':
+        'Exigence Actions = 8%×Σ|net émetteur| + 8%×Σ|net marché| (Art. 398-401)',
   });
 
   journal.add({
@@ -83,7 +85,8 @@ UemoaCapitalRequirement calculateUemoaMarketCapitalRequirement({
     'description': '8% de la position nette globale',
     'netPosition': prudentialResult.foreignExchangeGlobalNetPosition,
     'total': fxRisk,
-    'formule': 'Exigence Change = max(Σ longues, Σ courtes) × 8% (Art. 416-417)',
+    'formule':
+        'Exigence Change = max(Σ longues, Σ courtes) × 8% (Art. 416-417)',
   });
 
   journal.add({
@@ -128,9 +131,7 @@ UemoaLimitCheck checkUemoaCapitalLimit({
 }) {
   final ratio = marketRwa > 0 ? actualCapital / marketRwa : 0.0;
   final compliant = ratio >= minimumRatio;
-  final shortfall = compliant
-      ? 0.0
-      : marketRwa * minimumRatio - actualCapital;
+  final shortfall = compliant ? 0.0 : marketRwa * minimumRatio - actualCapital;
   final excess = compliant ? actualCapital - marketRwa * minimumRatio : 0.0;
 
   return UemoaLimitCheck(
@@ -142,7 +143,8 @@ UemoaLimitCheck checkUemoaCapitalLimit({
     shortfall: shortfall,
     excessCapital: excess,
     details: {
-      'reglement': 'Dispositif prudentiel UMOA — ratio de solvabilité (Titre III)',
+      'reglement':
+          'Dispositif prudentiel UMOA — ratio de solvabilité (Titre III)',
       'ratio_minimum': minimumRatio,
       'ratio_calcule': ratio,
       'conforme': compliant ? 'OUI' : 'NON',
@@ -159,7 +161,8 @@ UemoaLimitCheck checkUemoaCapitalLimit({
 class MarketRiskExemptionAssessment {
   final bool interestAndEquityExempt; // Art. 326
   final bool foreignExchangeExempt; // Art. 327
-  final double tradingBookRatio; // portefeuille de négociation / assiette (Art. 326)
+  final double
+      tradingBookRatio; // portefeuille de négociation / assiette (Art. 326)
   final Map<String, dynamic> details;
 
   const MarketRiskExemptionAssessment({
@@ -187,7 +190,8 @@ MarketRiskExemptionAssessment assessMarketRiskExemptions({
   // Art. 326 : exonération taux + actions si le portefeuille de négociation
   // ne dépasse pas 2 % de (actif total + |hors bilan| + |dérivés|).
   final base326 = totalAssets + offBalanceAbsolute + derivativesAbsolute;
-  final tradingRatio = base326 > 0 ? tradingBookValue / base326 : double.infinity;
+  final tradingRatio =
+      base326 > 0 ? tradingBookValue / base326 : double.infinity;
   final interestEquityExempt = base326 > 0 && tradingRatio <= 0.02;
 
   // Art. 327 : exonération change si (a) volume de change ≤ 100 % des FP
@@ -202,11 +206,13 @@ MarketRiskExemptionAssessment assessMarketRiskExemptions({
     foreignExchangeExempt: fxExempt,
     tradingBookRatio: tradingRatio.isFinite ? tradingRatio : 0.0,
     details: {
-      'article_326': 'Exonération taux/actions si négociation ≤ 2 % de l\'assiette',
+      'article_326':
+          'Exonération taux/actions si négociation ≤ 2 % de l\'assiette',
       'ratio_negociation': tradingRatio.isFinite ? tradingRatio : null,
       'seuil_326': 0.02,
       'exempt_taux_actions': interestEquityExempt,
-      'article_327': 'Exonération change si volume ≤ 100 % FP et position nette ≤ 2 % FP',
+      'article_327':
+          'Exonération change si volume ≤ 100 % FP et position nette ≤ 2 % FP',
       'fx_volume_conforme': fxVolumeOk,
       'fx_position_nette_conforme': fxNetOk,
       'exempt_change': fxExempt,

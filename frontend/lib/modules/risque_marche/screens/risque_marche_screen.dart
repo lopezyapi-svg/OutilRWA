@@ -316,7 +316,7 @@ class _MarketYieldCurvesWorkspaceState
               onPressed: _refreshCurves,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           Expanded(
             child: _loading
                 ? const _MarketCard(
@@ -403,7 +403,7 @@ class _YieldCurveRefreshDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 460),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             color: _marketSurfaceFor(context),
             border: Border.all(color: border.withValues(alpha: 0.86)),
@@ -437,7 +437,7 @@ class _YieldCurveRefreshDialog extends StatelessWidget {
                       size: 17,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 3),
                   Expanded(
                     child: Text(
                       'Actualisation des courbes'.tr(context),
@@ -451,7 +451,7 @@ class _YieldCurveRefreshDialog extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 4),
               Column(
                 children: [
                   for (var index = 0; index < statusLines.length; index++) ...[
@@ -461,7 +461,7 @@ class _YieldCurveRefreshDialog extends StatelessWidget {
                   ],
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 5),
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton(
@@ -511,7 +511,7 @@ class _YieldCurveRefreshStatusLine extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: isDark ? 0.14 : 0.08),
         border: Border.all(
@@ -529,7 +529,7 @@ class _YieldCurveRefreshStatusLine extends StatelessWidget {
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 3),
           Expanded(
             child: Text(
               message.tr(context),
@@ -637,7 +637,7 @@ class _YieldCurveInfoBanner extends StatelessWidget {
         waitDuration: const Duration(milliseconds: 350),
         showDuration: const Duration(seconds: 5),
         preferBelow: false,
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(3),
         margin: const EdgeInsets.symmetric(horizontal: 18),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF162642) : const Color(0xFF13203A),
@@ -774,7 +774,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
         : null;
 
     return _MarketCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -794,7 +794,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
                   size: 18,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -828,7 +828,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 3),
               if (hasDrawableData && primarySeries != null) ...[
                 _YieldCurveInterpretationButton(
                   snapshot: snapshot,
@@ -839,7 +839,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
               _YieldCurveSourceInfoButton(snapshot: snapshot),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           if (hasDrawableData) ...[
             Row(
               children: [
@@ -878,7 +878,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 4),
           ],
           Container(
             height: 286,
@@ -889,7 +889,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
               borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              padding: const EdgeInsets.fromLTRB(3, 8, 3, 8),
               child: _YieldCurveChart(
                 snapshot: snapshot,
                 selectedSeriesIds: selectedSeriesIds,
@@ -897,13 +897,13 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           if (hasDrawableData && primarySeries != null) ...[
             _YieldCurveRateTypeLegend(
               color: primarySeries.color,
               showZeroCoupon: _yieldHasDistinctZeroCouponRate(visibleSeries),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 3),
           ],
           if (snapshot.hasSeriesControls) ...[
             _YieldCurveCountryLegend(
@@ -911,7 +911,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
               selectedSeriesIds: selectedSeriesIds,
               onToggle: _toggleSeries,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 3),
           ],
           if (hasDrawableData)
             SizedBox(
@@ -1165,7 +1165,7 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
 
     return Container(
       width: panelWidth,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context).withValues(alpha: isDark ? 0.98 : 1),
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1229,10 +1229,10 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: interpretation.color.withValues(
                 alpha: isDark ? 0.14 : 0.075,
@@ -1278,7 +1278,7 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Icon(
                   CupertinoIcons.waveform_path_ecg,
                   color: interpretation.color,
@@ -1287,7 +1287,7 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Text(
             interpretation.description.tr(context),
             style: TextStyle(
@@ -1297,7 +1297,7 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
               height: 1.45,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Container(
             height: 1,
             color: border.withValues(alpha: isDark ? 0.42 : 0.68),
@@ -1405,7 +1405,7 @@ class _YieldCurveRateTypeLegend extends StatelessWidget {
               height: 1,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 4),
         ],
         _YieldCurveLegendLine(color: color, dashed: false),
         const SizedBox(width: 6),
@@ -1496,7 +1496,7 @@ class _YieldCurveSourceInfoButton extends StatelessWidget {
       waitDuration: const Duration(milliseconds: 350),
       showDuration: const Duration(seconds: 5),
       preferBelow: true,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(3),
       margin: const EdgeInsets.symmetric(horizontal: 18),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF162642) : const Color(0xFF13203A),
@@ -1994,7 +1994,7 @@ class _YieldCurveNoDataChart extends StatelessWidget {
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 260),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
         decoration: BoxDecoration(
           color: _marketSurfaceFor(context).withValues(
             alpha: isDark ? 0.62 : 0.82,
@@ -4208,7 +4208,7 @@ class _MarketDeferredLoadingState extends StatelessWidget {
                 dimension: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4306,7 +4306,7 @@ class _MarketNoImportedDataState extends StatelessWidget {
                         ),
                         child: Icon(icon, color: accent, size: 24),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 4),
                       Text(
                         title.tr(context),
                         textAlign: TextAlign.center,
@@ -4430,20 +4430,20 @@ class _MarketCrdEvolutionContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _MarketCrdEvolutionHeader(),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           _MarketCrdEvolutionKpis(
             result: result,
             displayCurrency: displayCurrency,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           _MarketCard(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+            padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
             child: _MarketCrdEvolutionChartPanel(
               result: result,
               displayCurrency: displayCurrency,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           _MarketCrdInputsPanel(result: result),
         ],
       ),
@@ -4706,7 +4706,7 @@ class _MarketCrdEvolutionChartPanel extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
         SizedBox(
           height: 342,
           child: _BondCrdEvolutionChart(
@@ -4742,7 +4742,7 @@ class _MarketCrdInputsPanel extends StatelessWidget {
               height: 1,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           _MarketCrdInputLine(
             label: 'Date d’analyse',
             value: _bondCrdShortDate(result.analysisDate),
@@ -4763,7 +4763,7 @@ class _MarketCrdInputsPanel extends StatelessWidget {
             value: 'Profil amortissement',
             icon: CupertinoIcons.repeat,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           Text(
             'Répartition par profil',
             style: TextStyle(
@@ -4875,8 +4875,9 @@ class _BondCrdEvolutionChartState extends State<_BondCrdEvolutionChart> {
             final index = metrics.indexNear(event.localPosition.dx);
             if (index != _hoverIndex) setState(() => _hoverIndex = index);
           },
-          onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverIndex = null); }),
-
+          onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => _hoverIndex = null);
+          }),
           child: Stack(
             children: [
               CustomPaint(
@@ -4952,7 +4953,7 @@ class _BondCrdEvolutionTooltip extends StatelessWidget {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -5645,7 +5646,7 @@ class _BondKeyIndicatorsSection extends StatelessWidget {
         border: Border.all(color: _marketBorderFor(context)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(3),
         child: _BondIndicatorContentBoard(stats: stats, items: items),
       ),
     );
@@ -5877,7 +5878,7 @@ class _BondViewModeToggle extends StatelessWidget {
           onTap: () => onChanged(index),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 140),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 5.0),
             decoration: BoxDecoration(
               color: selected
                   ? _marketPrimary.withValues(alpha: isDark ? 0.30 : 0.12)
@@ -5918,7 +5919,8 @@ class _BondViewModeToggle extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          buildButton(0, 'Synthèse du Portefeuille', CupertinoIcons.briefcase_fill),
+          buildButton(
+              0, 'Synthèse du Portefeuille', CupertinoIcons.briefcase_fill),
           const SizedBox(width: 2),
           buildButton(1, 'Indicateurs par Titre', CupertinoIcons.table_fill),
         ],
@@ -5969,7 +5971,7 @@ class _BondIndicatorContentBoardState
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 3),
               _activeView == 0
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -5977,7 +5979,7 @@ class _BondIndicatorContentBoardState
                         _BondIndicatorKpiPanel(
                           items: widget.items,
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 3),
                         const _BondZoneMonetaryTable(
                           rows: [],
                         ),
@@ -6011,7 +6013,7 @@ class _BondIndicatorContentBoardState
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
         _activeView == 0
             ? Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -6019,7 +6021,7 @@ class _BondIndicatorContentBoardState
                   _BondIndicatorKpiPanel(
                     items: widget.items,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 3),
                   _BondZoneMonetaryTable(
                     rows: rows.zoneRows,
                   ),
@@ -6430,7 +6432,7 @@ class _BondIndicatorKpiPanel extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(10, 7, 10, 8),
+      padding: const EdgeInsets.fromLTRB(3, 7, 3, 8),
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context).withValues(
           alpha: isDark ? 0.86 : 0.98,
@@ -6494,7 +6496,7 @@ class _BondIndicatorKpiPanel extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 78),
+              const SizedBox(width: 6),
             ],
           ),
           const SizedBox(height: 8),
@@ -6539,7 +6541,7 @@ class _BondZoneMonetaryTable extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+      padding: const EdgeInsets.fromLTRB(3, 8, 3, 9),
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context).withValues(
           alpha: isDark ? 0.86 : 0.98,
@@ -6604,7 +6606,7 @@ class _BondZoneMonetaryTable extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 78),
+              const SizedBox(width: 6),
             ],
           ),
           const SizedBox(height: 7),
@@ -6723,7 +6725,7 @@ class _BondZoneAllocationCard extends StatelessWidget {
                 muted: muted,
                 alignEnd: true,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               _BondZoneMetricText(
                 label: 'Duration',
                 value:
@@ -7259,7 +7261,7 @@ class _BondTitleIndicatorsTableState extends State<_BondTitleIndicatorsTable> {
     return Container(
       width: double.infinity,
       height: tableHeight,
-      padding: const EdgeInsets.fromLTRB(12, 9, 12, 12),
+      padding: const EdgeInsets.fromLTRB(3, 9, 3, 3),
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context).withValues(
           alpha: isDark ? 0.88 : 0.98,
@@ -7543,7 +7545,7 @@ class _BondTitleHeaderCell extends StatelessWidget {
           width: column.width,
           height: double.infinity,
           alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
           decoration: BoxDecoration(
             border: Border(
               right: BorderSide(color: border.withValues(alpha: 0.44)),
@@ -7981,7 +7983,7 @@ class _BondTitleColumnOptionRow extends StatelessWidget {
         height: 34,
         child: Row(
           children: [
-            const SizedBox(width: 14),
+            const SizedBox(width: 4),
             SizedBox(
               width: 22,
               child: selected
@@ -7992,7 +7994,7 @@ class _BondTitleColumnOptionRow extends StatelessWidget {
                     )
                   : null,
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 3),
             Expanded(
               child: Text(
                 label.tr(context),
@@ -8008,7 +8010,7 @@ class _BondTitleColumnOptionRow extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 3),
           ],
         ),
       ),
@@ -8676,10 +8678,10 @@ class _BondIndicatorInfoDialog extends StatelessWidget {
     return Dialog(
       elevation: 0,
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
+      insetPadding: const EdgeInsets.all(6),
       child: Container(
         width: 470,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: _marketSurfaceFor(context),
           borderRadius: BorderRadius.circular(2),
@@ -8708,7 +8710,7 @@ class _BondIndicatorInfoDialog extends StatelessWidget {
                   ),
                   child: Icon(item.icon, color: item.color, size: 18),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Expanded(
                   child: Text(
                     item.label,
@@ -8727,10 +8729,10 @@ class _BondIndicatorInfoDialog extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 4),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
               decoration: BoxDecoration(
                 color: item.color.withValues(alpha: 0.055),
                 borderRadius: BorderRadius.circular(2),
@@ -8748,7 +8750,7 @@ class _BondIndicatorInfoDialog extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 3),
             Text(
               item.detail,
               style: TextStyle(
@@ -9321,7 +9323,7 @@ class _MarketDashboardVisualisation extends StatelessWidget {
     final hasData = source != null && source.rowCount > 0;
 
     return _MarketCard(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -9329,7 +9331,7 @@ class _MarketDashboardVisualisation extends StatelessWidget {
             selectedType: selectedType,
             onTypeChanged: onTypeChanged,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -9341,12 +9343,12 @@ class _MarketDashboardVisualisation extends StatelessWidget {
                     _BondInstitutionalDashboard(dataset: source)
                   else ...[
                     _MarketAnalyticKpiGrid(dataset: source),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 3),
                     _MarketVisualTwoColumnLayout(
                       left: _MarketConcentrationPanel(dataset: source),
                       right: _MarketScenarioRiskPanel(dataset: source),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 3),
                     _MarketVisualTwoColumnLayout(
                       left: _MarketAllocationPanel(dataset: source),
                       right: _MarketRiskSignalPanel(dataset: source),
@@ -9422,7 +9424,7 @@ class _MarketVisualHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 3),
         _MarketPortfolioTypeToggle(
           selectedType: selectedType,
           onChanged: onTypeChanged,
@@ -9565,7 +9567,7 @@ class _MarketVisualEmptyState extends StatelessWidget {
             size: 30,
             color: muted,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           Text(
             'Aucune donnée ${type.label} importée',
             style: TextStyle(
@@ -9606,7 +9608,7 @@ class _MarketVisualTwoColumnLayout extends StatelessWidget {
           return Column(
             children: [
               left,
-              const SizedBox(height: 10),
+              const SizedBox(height: 3),
               right,
             ],
           );
@@ -9615,7 +9617,7 @@ class _MarketVisualTwoColumnLayout extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(flex: 13, child: left),
-            const SizedBox(width: 10),
+            const SizedBox(width: 3),
             Expanded(flex: 12, child: right),
           ],
         );
@@ -9782,7 +9784,7 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _BondDashboardKpiStrip(stats: stats),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 980;
@@ -9792,7 +9794,7 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               return Column(
                 children: [
                   performance,
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 3),
                   rating,
                 ],
               );
@@ -9801,13 +9803,13 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(flex: 15, child: performance),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Expanded(flex: 10, child: rating),
               ],
             );
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 980;
@@ -9818,9 +9820,9 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               return Column(
                 children: [
                   countries,
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 3),
                   zones,
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 3),
                   issuers,
                 ],
               );
@@ -9829,15 +9831,15 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(flex: 10, child: countries),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Expanded(flex: 8, child: zones),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Expanded(flex: 12, child: issuers),
               ],
             );
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 980;
@@ -9848,9 +9850,9 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               return Column(
                 children: [
                   maturity,
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 3),
                   scatter,
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 3),
                   profile,
                 ],
               );
@@ -9859,9 +9861,9 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(flex: 11, child: maturity),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Expanded(flex: 11, child: scatter),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Expanded(flex: 8, child: profile),
               ],
             );
@@ -10723,7 +10725,7 @@ class _BondSectionPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(child: titleContent),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 3),
                   actions!,
                 ],
               );
@@ -10731,7 +10733,7 @@ class _BondSectionPanel extends StatelessWidget {
           );
     final panel = Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(11),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _marketSurfaceSoftFor(context)
             .withValues(alpha: _isMarketDark(context) ? 0.50 : 0.74),
@@ -11036,7 +11038,7 @@ class _BondRiskNotificationsOverlay extends StatelessWidget {
 
     return Container(
       width: 312,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: surface.withValues(alpha: isDark ? 0.98 : 0.99),
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -11127,7 +11129,7 @@ class _BondRiskNotificationsOverlay extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           for (var index = 0; index < notifications.length; index++) ...[
             if (index > 0) const SizedBox(height: 7),
             _BondRiskNotificationTile(notification: notifications[index]),
@@ -11646,7 +11648,7 @@ class _BondRatingPanel extends StatelessWidget {
       height: 262,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
+        padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
         decoration: BoxDecoration(
           color: _marketSurfaceFor(context),
           borderRadius: BorderRadius.circular(1),
@@ -11681,7 +11683,7 @@ class _BondRatingPanel extends StatelessWidget {
                 height: 1,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 3),
             Expanded(
               child: _BondRatingBarChart(
                 entries: stats.ratingEntries.take(6).toList(),
@@ -11710,8 +11712,9 @@ class _BondRatingBarChartState extends State<_BondRatingBarChart> {
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) => setState(() => _hoverPosition = event.localPosition),
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
-
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hoverPosition = null);
+      }),
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0, end: 1),
         duration: const Duration(milliseconds: 420),
@@ -11850,8 +11853,10 @@ class _BondRatingBarChartPainter extends CustomPainter {
       canvas.drawRRect(
         RRect.fromRectAndCorners(
           rect,
-          topLeft: Radius.circular(isHovered ? AppTheme.radius : AppTheme.radius),
-          topRight: Radius.circular(isHovered ? AppTheme.radius : AppTheme.radius),
+          topLeft:
+              Radius.circular(isHovered ? AppTheme.radius : AppTheme.radius),
+          topRight:
+              Radius.circular(isHovered ? AppTheme.radius : AppTheme.radius),
         ),
         barPaint,
       );
@@ -12132,7 +12137,10 @@ class _BondProfileBreakdownPieState extends State<_BondProfileBreakdownPie> {
             _isHovering = true;
           }),
           onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) setState(() { _isHovering = false; });
+            if (mounted)
+              setState(() {
+                _isHovering = false;
+              });
           }),
           child: SizedBox.square(
             dimension: chartSize,
@@ -12180,7 +12188,7 @@ class _BondProfileBreakdownPieState extends State<_BondProfileBreakdownPie> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               pie,
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               Expanded(child: legend),
             ],
           );
@@ -12646,10 +12654,12 @@ class _BondDistributionBarRowState extends State<_BondDistributionBarRow> {
           '${widget.entry.label}\n${AppFormatters.percent(widget.entry.share)} du portefeuille\n${_marketReadableMoney(widget.entry.amount)}',
       waitDuration: const Duration(milliseconds: 220),
       child: MouseRegion(
-        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = true);
+        }),
+        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = false);
+        }),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
@@ -12838,10 +12848,12 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
           '#${widget.rank} ${widget.entry.label}\n${AppFormatters.percent(widget.entry.share)} du portefeuille\n${_marketReadableMoney(widget.entry.amount)}',
       waitDuration: const Duration(milliseconds: 220),
       child: MouseRegion(
-        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = true);
+        }),
+        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = false);
+        }),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
@@ -12888,7 +12900,7 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
                   ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 3),
               Expanded(
                 flex: 4,
                 child: SizedBox(
@@ -13093,8 +13105,10 @@ class _BondZoneDonutBreakdownState extends State<_BondZoneDonutBreakdown> {
                 onHover: (event) {
                   setState(() => _hoverPosition = event.localPosition);
                 },
-                onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
-
+                onExit: (_) =>
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) setState(() => _hoverPosition = null);
+                }),
                 child: TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0, end: 1),
                   duration: const Duration(milliseconds: 360),
@@ -13202,7 +13216,7 @@ class _BondZoneDonutBreakdownState extends State<_BondZoneDonutBreakdown> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 3),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -13355,14 +13369,16 @@ class _BondZoneRowState extends State<_BondZoneRow> {
     final muted = _marketMutedFor(context);
 
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = true);
+      }),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = false);
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 155),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.fromLTRB(14, 3, 10, 3),
+        padding: const EdgeInsets.fromLTRB(4, 3, 3, 3),
         decoration: BoxDecoration(
           color: widget.entry.color.withValues(
             alpha: _isMarketDark(context)
@@ -13508,8 +13524,9 @@ class _BondLossDistributionChartState
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) => setState(() => _hoverPosition = event.localPosition),
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
-
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hoverPosition = null);
+      }),
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0, end: _hoverPosition == null ? 0 : 1),
         duration: const Duration(milliseconds: 170),
@@ -13560,8 +13577,9 @@ class _BondMaturityHistogramChartState
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) => setState(() => _hoverPosition = event.localPosition),
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
-
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hoverPosition = null);
+      }),
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0, end: _hoverPosition == null ? 0 : 1),
         duration: const Duration(milliseconds: 170),
@@ -13604,8 +13622,9 @@ class _BondCouponCurveChartState extends State<_BondCouponCurveChart> {
   Widget build(BuildContext context) {
     return MouseRegion(
       onHover: (event) => setState(() => _hoverPosition = event.localPosition),
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
-
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hoverPosition = null);
+      }),
       child: TweenAnimationBuilder<double>(
         tween: Tween<double>(begin: 0, end: _hoverPosition == null ? 0 : 1),
         duration: const Duration(milliseconds: 170),
@@ -14417,7 +14436,7 @@ class _MarketIssuerCardList extends StatelessWidget {
                 width: itemWidth,
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
                   decoration: BoxDecoration(
                     color: entries[index].color.withValues(alpha: 0.055),
                     borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -14553,7 +14572,7 @@ class _MarketEquityRankedBars extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 3),
                     Expanded(
                       flex: 4,
                       child: Stack(
@@ -14646,8 +14665,9 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
             onHover: (event) {
               setState(() => _hoverPosition = event.localPosition);
             },
-            onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hoverPosition = null); }),
-
+            onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) setState(() => _hoverPosition = null);
+            }),
             child: TweenAnimationBuilder<double>(
               tween: Tween<double>(
                 begin: 0,
@@ -14708,7 +14728,7 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
             ),
           ),
         ),
-        const SizedBox(width: 18),
+        const SizedBox(width: 5),
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -14994,7 +15014,7 @@ class _MarketScenarioRiskPanel extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           Row(
             children: [
               Expanded(
@@ -15049,7 +15069,7 @@ class _MarketRiskSignalPanel extends StatelessWidget {
                   )
                 : _MarketEquityRiskReturnProfile(dataset: dataset),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           _MarketRiskTileGrid(
             items: isBonds
                 ? [
@@ -15358,7 +15378,7 @@ class _MarketEquityProfileGauge extends StatelessWidget {
           borderRadius: BorderRadius.circular(2),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -15774,7 +15794,7 @@ class _MarketVisualPanel extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(11),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _marketSurfaceSoftFor(context)
             .withValues(alpha: _isMarketDark(context) ? 0.50 : 0.72),
@@ -15807,7 +15827,7 @@ class _MarketVisualPanel extends StatelessWidget {
               height: 1,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           child,
         ],
       ),
@@ -16625,7 +16645,7 @@ class _MarketDashboardDataTable extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -16644,7 +16664,7 @@ class _MarketDashboardDataTable extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 4),
                 _MarketPortfolioTypeSwitch(
                   selectedType: selectedType,
                   onChanged: onTypeChanged,
@@ -16652,12 +16672,12 @@ class _MarketDashboardDataTable extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           _MarketPortfolioMetricStrip(
             dataset: dataset,
             selectedType: selectedType,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Expanded(
             child: _MarketPortfolioDetailsTable(
               portfolioType: portfolioType,
@@ -17284,7 +17304,7 @@ class _MarketPortfolioDetailsTableState
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+      padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -17465,7 +17485,7 @@ class _MarketPortfolioTableToolbar extends StatelessWidget {
 
     return Container(
       height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 5.0),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF101B31) : Colors.white,
         border: Border.all(color: border),
@@ -17742,7 +17762,7 @@ class _MarketColumnVisibilityButtonState
                   size: 15,
                   color: text,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Expanded(
                   child: Text(
                     'Colonnes ($count)'.tr(context),
@@ -17865,7 +17885,7 @@ class _MarketColumnVisibilityPanel extends StatelessWidget {
                     if (groupIndex > 0)
                       Divider(height: 1, thickness: 1, color: border),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
+                      padding: const EdgeInsets.fromLTRB(5, 3, 5, 8),
                       child: Text(
                         groups[groupIndex].label.tr(context),
                         style: TextStyle(
@@ -17956,14 +17976,14 @@ class _MarketColumnOptionRow extends StatelessWidget {
         height: 42,
         child: Row(
           children: [
-            const SizedBox(width: 18),
+            const SizedBox(width: 5),
             SizedBox(
               width: 26,
               child: selected
                   ? const Icon(CupertinoIcons.check_mark, size: 16)
                   : null,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 3),
             Expanded(
               child: Text(
                 label.tr(context),
@@ -17976,7 +17996,7 @@ class _MarketColumnOptionRow extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 4),
           ],
         ),
       ),
@@ -18584,7 +18604,7 @@ class _MarketPortfolioActionRow extends StatelessWidget {
             color: _marketTextFor(context),
             onTap: onEdit,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 3),
           _MarketPortfolioActionButton(
             tooltip: 'Supprimer le titre',
             icon: CupertinoIcons.trash,
@@ -19973,7 +19993,7 @@ class _UnifiedVarMethodView extends StatelessWidget {
                     width: parameterWidth,
                     height: double.infinity,
                     child: _MarketCard(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(3),
                       child: _PersistentVarContentStack(
                         activeIndex: method.index,
                         children: [
@@ -20507,7 +20527,7 @@ class _VarEmptyChartState extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 460),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           decoration: BoxDecoration(
             color: _marketSurfaceSoftFor(context).withValues(
               alpha: isDark ? 0.44 : 0.74,
@@ -20529,7 +20549,7 @@ class _VarEmptyChartState extends StatelessWidget {
                 ),
                 child: Icon(icon, color: accent, size: 22),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               Text(
                 title.tr(context),
                 textAlign: TextAlign.center,
@@ -20583,10 +20603,12 @@ class _VarResetDefaultsButtonState extends State<_VarResetDefaultsButton> {
       waitDuration: const Duration(milliseconds: 350),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+        onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = true);
+        }),
+        onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _hovered = false);
+        }),
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: widget.onPressed,
@@ -20777,7 +20799,7 @@ class _MethodHeader extends StatelessWidget {
     final mutedColor = _marketMutedFor(context);
 
     return _MarketCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       child: Row(
         children: [
           _MethodInsightIcon(
@@ -20785,7 +20807,7 @@ class _MethodHeader extends StatelessWidget {
             color: color,
             insight: insight,
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -20810,7 +20832,7 @@ class _MethodHeader extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 3),
           _FormulaDetailsButton(spec: formula),
         ],
       ),
@@ -20980,7 +21002,7 @@ class _MethodInsightTooltip extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 560),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: _marketText.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -21008,7 +21030,7 @@ class _MethodInsightTooltip extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                 ),
-                const SizedBox(width: 11),
+                const SizedBox(width: 3),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -21037,7 +21059,7 @@ class _MethodInsightTooltip extends StatelessWidget {
               ],
             ),
             if (insight.footer != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               insight.footer!,
             ],
           ],
@@ -21231,7 +21253,7 @@ class _FormulaDetailsTooltip extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: surface,
           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -21280,7 +21302,7 @@ class _FormulaDetailsTooltip extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 3),
                   Expanded(
                     child: Text(
                       spec.title.tr(context),
@@ -21294,7 +21316,7 @@ class _FormulaDetailsTooltip extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               _FormulaTextSection(
                 title: 'Formules de calcul',
                 color: spec.color,
@@ -21339,7 +21361,7 @@ class _FormulaMathBlock extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: fm.Math.tex(
@@ -21376,7 +21398,7 @@ class _FormulaTextSection extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
       decoration: BoxDecoration(
         color: surfaceSoft,
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -21457,10 +21479,10 @@ class _ParameterStack extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
         for (var index = 0; index < children.length; index++) ...[
           children[index],
-          if (index < children.length - 1) const SizedBox(height: 10),
+          if (index < children.length - 1) const SizedBox(height: 3),
         ],
       ],
     );
@@ -21856,7 +21878,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
 
     return Container(
       width: _panelWidth,
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.98),
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -21943,7 +21965,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
               ),
             ],
           ),
-          const SizedBox(height: 11),
+          const SizedBox(height: 3),
           _SliderParameter(
             label: 'Volatilité σ',
             value: widget.result.annualVolatility
@@ -22587,7 +22609,8 @@ class _HistoricalHistogramPainter extends CustomPainter {
             : 0.34;
 
     canvas.drawRRect(
-      RRect.fromRectAndRadius(rect.translate(0, 2), const Radius.circular(AppTheme.radius)),
+      RRect.fromRectAndRadius(
+          rect.translate(0, 2), const Radius.circular(AppTheme.radius)),
       Paint()..color = Colors.black.withValues(alpha: 0.025),
     );
     canvas.drawRRect(
@@ -23905,8 +23928,10 @@ class _MonteCarloDistributionChartState
                     setState(() => _hover = hover);
                   }
                 },
-                onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hover = null); }),
-
+                onExit: (_) =>
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) setState(() => _hover = null);
+                }),
                 child: Stack(
                   children: [
                     TweenAnimationBuilder<double>(
@@ -24592,7 +24617,8 @@ void _drawMonteCarloHistogram(
     );
     if (height > 10) {
       canvas.drawRRect(
-        RRect.fromRectAndRadius(rect.deflate(0.35), const Radius.circular(AppTheme.radius)),
+        RRect.fromRectAndRadius(
+            rect.deflate(0.35), const Radius.circular(AppTheme.radius)),
         Paint()
           ..color = Colors.white.withValues(alpha: isCritical ? 0.10 : 0.16)
           ..style = PaintingStyle.stroke
@@ -24788,7 +24814,8 @@ void _drawMonteCarloConvergence(
   final left = math.max(chart.left + 8, chart.right - width - 10);
   final top = chart.top + 10;
   final rect = Rect.fromLTWH(left, top, width, height);
-  final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(AppTheme.radius));
+  final rrect =
+      RRect.fromRectAndRadius(rect, const Radius.circular(AppTheme.radius));
 
   canvas.drawRRect(
     rrect,
@@ -25129,7 +25156,7 @@ class _PipelineStep extends StatelessWidget {
       child: SizedBox(
         width: width,
         child: Container(
-          padding: const EdgeInsets.all(11),
+          padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: color.withValues(alpha: onDark ? 0.13 : 0.055),
             borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -25175,7 +25202,7 @@ class _ChartTooltip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
       decoration: BoxDecoration(
         color: _marketText.withValues(alpha: 0.91),
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -25225,7 +25252,7 @@ class _ChartTooltip extends StatelessWidget {
 class _MarketCard extends StatelessWidget {
   const _MarketCard({
     required this.child,
-    this.padding = const EdgeInsets.all(14),
+    this.padding = const EdgeInsets.all(4),
   });
 
   final Widget child;
@@ -26239,7 +26266,7 @@ class _CalculPrudentielWorkspaceState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          padding: const EdgeInsets.fromLTRB(5, 4, 5, 0),
           child: _CalculPrudentielTabBar(
             selectedTab: _selectedTab,
             onChanged: (tab) => setState(() => _selectedTab = tab),
@@ -26332,9 +26359,10 @@ class _CalculPrudentielTabBar extends StatelessWidget {
     final fgColor = isSelected ? AppColors.accent : const Color(0xFF234A84);
     return InkWell(
       onTap: () => onChanged(tab),
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radius)),
+      borderRadius:
+          const BorderRadius.vertical(top: Radius.circular(AppTheme.radius)),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
           border: Border(
               bottom: BorderSide(
@@ -26493,7 +26521,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
               rwa: '${_fmt(rwa)} FCFA',
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Expanded(
             child: _loadingMarketData
                 ? const Center(child: CupertinoActivityIndicator())
@@ -26537,7 +26565,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
+            padding: const EdgeInsets.fromLTRB(5, 4, 5, 3),
             child: Row(
               children: [
                 Container(
@@ -26553,7 +26581,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                     color: AppColors.accent,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Expanded(
                     child: Text(
                         _selectedView == 0
@@ -26569,7 +26597,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              padding: const EdgeInsets.fromLTRB(5, 0, 5, 5),
               child: Container(
                 decoration: BoxDecoration(
                   color: _marketSurfaceFor(context),
@@ -26630,7 +26658,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
               size: 20,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Text(
             'Aucune donnée de taux importée',
             style: TextStyle(
@@ -26690,12 +26718,11 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
             TextAlign.right,
             TextAlign.right
           ];
-    final flexes = _selectedView == 0
-        ? [3, 3, 2, 1, 2, 2, 2]
-        : [3, 2, 2, 2, 2, 2];
+    final flexes =
+        _selectedView == 0 ? [3, 3, 2, 1, 2, 2, 2] : [3, 2, 2, 2, 2, 2];
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
       decoration: BoxDecoration(
         color: const Color(0xFF1A237E),
         boxShadow: [
@@ -26742,7 +26769,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           onTap: () => setState(() => _selectedRowIndex = selected ? null : i),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
             decoration: BoxDecoration(
               color: selected
                   ? AppColors.accent.withValues(alpha: 0.15)
@@ -26753,8 +26780,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                   ? null
                   : Border(
                       bottom: BorderSide(
-                        color:
-                            const Color(0xFF234A84).withValues(alpha: 0.055),
+                        color: const Color(0xFF234A84).withValues(alpha: 0.055),
                         width: 0.6,
                       ),
                     ),
@@ -26837,7 +26863,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           onTap: () => setState(() => _selectedRowIndex = selected ? null : i),
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
             decoration: BoxDecoration(
               color: selected
                   ? AppColors.accent.withValues(alpha: 0.15)
@@ -26848,8 +26874,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                   ? null
                   : Border(
                       bottom: BorderSide(
-                        color:
-                            const Color(0xFF234A84).withValues(alpha: 0.055),
+                        color: const Color(0xFF234A84).withValues(alpha: 0.055),
                         width: 0.6,
                       ),
                     ),
@@ -26906,7 +26931,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
   Widget _totalRow(String label, String exigenceVal, String rwaVal) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
       decoration: BoxDecoration(
         color: AppColors.accent.withValues(alpha: 0.06),
         border: Border(
@@ -26935,7 +26960,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                   fontWeight: FontWeight.w700,
                   color: AppColors.accent)),
         ),
-        const SizedBox(width: 24),
+        const SizedBox(width: 6),
         Expanded(
           flex: 2,
           child: Text('RWA: $rwaVal',
@@ -26981,7 +27006,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
       }),
       borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
         decoration: BoxDecoration(
           color: selected ? AppColors.accent : Colors.transparent,
           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -27030,28 +27055,28 @@ class _TauxSummaryRow extends StatelessWidget {
                 value: specificRisk,
                 accentColor: const Color(0xFF2563EB),
                 icon: Icons.shield_outlined)),
-        const SizedBox(width: 12),
+        const SizedBox(width: 3),
         Expanded(
             child: _TauxSummaryItem(
                 label: 'Risque Général',
                 value: generalRisk,
                 accentColor: const Color(0xFF7C3AED),
                 icon: Icons.multiline_chart_rounded)),
-        const SizedBox(width: 12),
+        const SizedBox(width: 3),
         Expanded(
             child: _TauxSummaryItem(
                 label: 'Exigence FP Taux',
                 value: exigenceFP,
                 accentColor: const Color(0xFF059669),
                 icon: Icons.account_balance_wallet_rounded)),
-        const SizedBox(width: 12),
+        const SizedBox(width: 3),
         Expanded(
             child: _TauxSummaryItem(
                 label: 'RWA Taux',
                 value: rwa,
                 accentColor: const Color(0xFFD97706),
                 icon: Icons.account_balance_rounded)),
-        const SizedBox(width: 12),
+        const SizedBox(width: 3),
         Expanded(
             child: _TauxSummaryItem(
                 label: 'Contribution Risque Marché',
@@ -27124,15 +27149,15 @@ class _SummaryInfoButton extends StatelessWidget {
           ]),
       textStyle:
           const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
-      padding: const EdgeInsets.all(14),
-      margin: const EdgeInsets.only(left: 40, right: 40),
+      padding: const EdgeInsets.all(4),
+      margin: const EdgeInsets.only(left: 6, right: 6),
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
             color: const Color(0xFF4F46E5).withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20)),
-        child: Icon(Icons.info_outline,
-            size: 12, color: const Color(0xFF4F46E5)),
+        child:
+            Icon(Icons.info_outline, size: 12, color: const Color(0xFF4F46E5)),
       ),
     );
   }
@@ -27178,15 +27203,17 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
     final (numberPart, unitPart) = _splitValue(widget.value);
 
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
-
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
-
+      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = true);
+      }),
+      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _hovered = false);
+      }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         transform: Matrix4.translationValues(0, _hovered ? -3 : 0, 0),
-        padding: const EdgeInsets.fromLTRB(13, 8, 13, 8),
+        padding: const EdgeInsets.fromLTRB(3, 8, 3, 8),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -27229,7 +27256,7 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
               ),
               child: Icon(widget.icon, color: Colors.white, size: 20),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -27352,7 +27379,7 @@ class _TauxTable extends StatelessWidget {
             // Header — bleu nuit + texte blanc (style Risque de change)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
               decoration: const BoxDecoration(color: _marketTableHeaderBg),
               child: Row(
                 children: columns.asMap().entries.map((e) {
@@ -27382,7 +27409,7 @@ class _TauxTable extends StatelessWidget {
 
               return Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                 decoration: BoxDecoration(
                   color: isOdd
                       ? AppColors.accent.withValues(alpha: 0.015)
@@ -27409,10 +27436,9 @@ class _TauxTable extends StatelessWidget {
                     if (isPercent) {
                       final cleanVal = cellValue.trim();
                       final isZero = cleanVal == '0 %' || cleanVal == '0%';
-                      final badgeColor = isZero
-                          ? Colors.grey
-                          : AppColors.accent;
-                      
+                      final badgeColor =
+                          isZero ? Colors.grey : AppColors.accent;
+
                       cellWidget = Align(
                         alignment: alignment == TextAlign.right
                             ? Alignment.centerRight
@@ -27441,17 +27467,22 @@ class _TauxTable extends StatelessWidget {
                         ),
                       );
                     } else {
-                      final isRwaColumn = columns.asMap().entries.any(
-                          (e) => e.value.toLowerCase().contains('rwa') && e.key == cellIndex);
+                      final isRwaColumn = columns.asMap().entries.any((e) =>
+                          e.value.toLowerCase().contains('rwa') &&
+                          e.key == cellIndex);
                       final isExigenceColumn = columns.asMap().entries.any(
-                          (e) => e.value.toLowerCase().contains('exigence') && e.key == cellIndex);
-                      
+                          (e) =>
+                              e.value.toLowerCase().contains('exigence') &&
+                              e.key == cellIndex);
+
                       cellWidget = Text(
                         cellValue,
                         textAlign: alignment,
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: (cellIndex == 0 || isRwaColumn || isExigenceColumn)
+                          fontWeight: (cellIndex == 0 ||
+                                  isRwaColumn ||
+                                  isExigenceColumn)
                               ? FontWeight.w600
                               : FontWeight.normal,
                           color: (isRwaColumn && cellValue != '0')
@@ -27496,7 +27527,7 @@ class _TauxTotalRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       decoration: BoxDecoration(
           color: AppColors.accent.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -27563,8 +27594,7 @@ class _RwaContributionBar extends StatelessWidget {
                     for (final seg in segments)
                       if (seg.value > 0)
                         Expanded(
-                          flex: math.max(
-                              1, (seg.value / total * 1000).round()),
+                          flex: math.max(1, (seg.value / total * 1000).round()),
                           child: Container(color: seg.color),
                         ),
                   ]),
@@ -27676,7 +27706,7 @@ class _PilotageWorkspaceState extends State<_PilotageWorkspace> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+          padding: const EdgeInsets.fromLTRB(5, 4, 5, 0),
           child: _PilotageTabBar(
             selectedTab: _selectedTab,
             onChanged: (tab) => setState(() => _selectedTab = tab),
@@ -27753,10 +27783,11 @@ class _PilotageTabBar extends StatelessWidget {
     final fgColor = isSelected ? AppColors.accent : const Color(0xFF234A84);
     return InkWell(
       onTap: () => onChanged(tab),
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radius)),
+      borderRadius:
+          const BorderRadius.vertical(top: Radius.circular(AppTheme.radius)),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 3),
         decoration: BoxDecoration(
           border: Border(
               bottom: BorderSide(
@@ -27810,7 +27841,7 @@ class _GenericSummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final children = <Widget>[];
     for (var i = 0; i < items.length; i++) {
-      if (i > 0) children.add(const SizedBox(width: 12));
+      if (i > 0) children.add(const SizedBox(width: 3));
       children.add(
         Expanded(
           child: _TauxSummaryItem(
@@ -27908,7 +27939,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                   style: TextStyle(fontFamily: 'monospace', fontSize: 12),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 4),
               Text(
                 'Classification des Positions :',
                 style: Theme.of(context).textTheme.titleSmall,
@@ -27918,7 +27949,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                 '• Longue si Position_Nette > 0\n• Courte si Position_Nette < 0\n• Neutre si Position_Nette = 0',
                 style: TextStyle(fontSize: 12),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 4),
               Text(
                 'Calculs Prudentiels (DISPRUD UMOA, Art. 349-425) :',
                 style: Theme.of(context).textTheme.titleSmall,
@@ -27990,7 +28021,8 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radius)),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radius)),
                       ),
                     ),
                   ),
@@ -28005,7 +28037,8 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppTheme.radius)),
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radius)),
                       ),
                     ),
                   ),
@@ -28013,7 +28046,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           // Contenu scrollable
           Expanded(
             child: SingleChildScrollView(
@@ -28022,10 +28055,10 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                 children: [
                   // Bloc 1: Tableau des expositions
                   _buildExposuresCard(context),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
                   // Bloc 2: Synthèse réglementaire
                   if (result != null) _buildRegulatorysSummary(context, result),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
                   // Bloc 3: Calcul prudentiel
                   if (result != null)
                     _buildPrudentialCalculation(context, result),
@@ -28186,7 +28219,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
               color: _marketTextFor(context),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           // Grille 3 colonnes
           Row(
             children: [
@@ -28199,7 +28232,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                   color: Colors.green,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: _buildSummaryCard(
                   context,
@@ -28209,7 +28242,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                   color: Colors.red,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: _buildSummaryCard(
                   context,
@@ -28237,7 +28270,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
     bool isBold = false,
   }) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -28293,9 +28326,9 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
               color: _marketTextFor(context),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           const Divider(height: 1),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           // Ligne 1: Exigence FP Change
           _buildCalculationLine(
             context,
@@ -28305,7 +28338,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
             valueColor: Colors.orange[700],
             isBold: true,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           // Ligne 2: RWA Change
           _buildCalculationLine(
             context,
@@ -28315,10 +28348,10 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
             valueColor: Colors.red[700],
             isBold: true,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           // Contributions
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -28585,28 +28618,28 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                     const InputDecoration(labelText: 'Devise (ex: USD)'),
                 enabled: !isEditing,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               TextField(
                 controller: assetsController,
                 decoration: const InputDecoration(labelText: 'Actifs'),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               TextField(
                 controller: liabilitiesController,
                 decoration: const InputDecoration(labelText: 'Passifs'),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               TextField(
                 controller: forwardPurchasesController,
                 decoration: const InputDecoration(labelText: 'Achats à terme'),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               TextField(
                 controller: forwardSalesController,
                 decoration: const InputDecoration(labelText: 'Ventes à terme'),
@@ -28718,7 +28751,8 @@ MarketPortfolioDataset? _marketDatasetOf(MarketPortfolioType type) =>
 double _equityLineValueXof(MarketPortfolioRecord r) {
   final raw = r.valuationAmount > 0 ? r.valuationAmount : r.exposureAmount;
   if (raw <= 0 || !raw.isFinite) return 0;
-  return convertCurrencyAmount(raw, fromCurrency: r.currency, toCurrency: 'XOF');
+  return convertCurrencyAmount(raw,
+      fromCurrency: r.currency, toCurrency: 'XOF');
 }
 
 /// Sens de la position action (true = courte / short).
@@ -28756,7 +28790,7 @@ class _MarketSectionEmpty extends StatelessWidget {
           children: [
             Icon(Icons.inbox_outlined,
                 size: 40, color: _marketMutedFor(context)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 3),
             Text(message,
                 textAlign: TextAlign.center,
                 style:
@@ -28874,7 +28908,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
                   icon: Icons.account_balance_rounded),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Expanded(
             child: _loading
                 ? const Center(child: CupertinoActivityIndicator())
@@ -28889,14 +28923,14 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _buildPortfolio(context, lines, gross),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 3),
                             _buildConcentration(context, lines, gross),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 3),
                             _buildPrudential(context, gross, net, specific,
                                 general, exigence, rwa),
-                            const SizedBox(height: 12),
-                            _buildAudit(context, equities.length, gross,
-                                exigence, rwa),
+                            const SizedBox(height: 3),
+                            _buildAudit(
+                                context, equities.length, gross, exigence, rwa),
                           ],
                         ),
                       ),
@@ -28917,7 +28951,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
         children: [
           _TauxBlockHeader(
               title: 'Portefeuille Actions', icon: Icons.show_chart_rounded),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           _TauxTable(
             columns: const [
               'Émetteur',
@@ -28945,7 +28979,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
             ],
             columnWidths: const [4, 2, 3, 2, 3],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           _TauxTotalRow(label: 'Position Brute Actions', value: _fcfa(gross)),
         ],
       ),
@@ -28974,7 +29008,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
           _TauxBlockHeader(
               title: 'Indicateurs de Concentration',
               icon: Icons.analytics_rounded),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Column(children: [
@@ -28995,7 +29029,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
                 color: AppColors.accent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppTheme.radius)),
@@ -29032,7 +29066,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
         children: [
           _TauxBlockHeader(
               title: 'Résultat Prudentiel', icon: Icons.calculate_rounded),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           _TauxResultLine(label: 'Position Brute Actions', value: _fcfa(gross)),
           _TauxResultLine(
               label: 'Risque Spécifique (8 % du brut)', value: _fcfa(specific)),
@@ -29048,7 +29082,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
               label: 'RWA Actions (× 12,5)', value: _fcfa(rwa), bold: true),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
                 color: AppColors.accent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppTheme.radius)),
@@ -29083,7 +29117,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _TauxBlockHeader(title: 'Audit', icon: Icons.description_outlined),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           _TauxAuditLine(
               label: 'Données utilisées',
               value: 'Portefeuille actions importé ($count lignes)'),
@@ -29094,7 +29128,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
               label: 'Méthode de calcul',
               value: 'Approche standard (Bâle II / BCEAO Art. 45)'),
           _TauxAuditLine(label: 'Devise de référence', value: 'FCFA (XOF)'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           _TauxTableHeader('Journal détaillé des calculs'),
           const SizedBox(height: 8),
           _TauxTable(
@@ -29205,7 +29239,7 @@ RWA Marché = Exigence FP Marché × 12,5 (DISPRUD UMOA, Art. 318-319)''',
                   icon: Icons.account_balance_rounded),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Expanded(
             child: _loading
                 ? const Center(child: CupertinoActivityIndicator())
@@ -29269,7 +29303,7 @@ RWA Marché = Exigence FP Marché × 12,5 (DISPRUD UMOA, Art. 318-319)''',
           _TauxBlockHeader(
               title: 'Synthèse par Type de Risque',
               icon: Icons.pie_chart_rounded),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           _TauxTable(
             columns: const [
               'Type de Risque',
@@ -29288,12 +29322,12 @@ RWA Marché = Exigence FP Marché × 12,5 (DISPRUD UMOA, Art. 318-319)''',
             ],
             columnWidths: const [4, 3, 3, 3, 3],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           _TauxTotalRow(
               label: 'Exigence FP Marché', value: _fcfa(r.capitalRequirement)),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
                 color: const Color(0xFF4F46E5).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppTheme.radius)),
@@ -29411,7 +29445,7 @@ Le multiplicateur 12,5 est l'inverse du ratio de solvabilité minimal (8 %).''',
                   icon: Icons.shield_rounded),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           Expanded(
             child: _loading
                 ? const Center(child: CupertinoActivityIndicator())
@@ -29435,7 +29469,8 @@ Le multiplicateur 12,5 est l'inverse du ratio de solvabilité minimal (8 %).''',
     );
   }
 
-  Widget _buildRwaByType(BuildContext context, MarketPrudentialCapitalResult r) {
+  Widget _buildRwaByType(
+      BuildContext context, MarketPrudentialCapitalResult r) {
     final total = r.marketRwa;
     String contrib(double rwa) => total > 0 ? _pct(rwa / total * 100) : '—';
     final rows = <List<String>>[
@@ -29476,7 +29511,7 @@ Le multiplicateur 12,5 est l'inverse du ratio de solvabilité minimal (8 %).''',
         children: [
           _TauxBlockHeader(
               title: 'RWA par Type de Risque', icon: Icons.pie_chart_rounded),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           _TauxTable(
             columns: const [
               'Type de Risque',
@@ -29495,9 +29530,9 @@ Le multiplicateur 12,5 est l'inverse du ratio de solvabilité minimal (8 %).''',
             ],
             columnWidths: const [4, 3, 2, 3, 2],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           _TauxTotalRow(label: 'RWA Marché Total', value: _fcfa(total)),
-          const SizedBox(height: 14),
+          const SizedBox(height: 4),
           _RwaContributionBar(segments: [
             _RwaContributionSegment(
                 'Taux', r.interestRateRisk * 12.5, _marketPrimary),

@@ -36,7 +36,7 @@ class SimpleBarChart extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 3),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 400),
                   height: 160.0 * (entry.percentage.clamp(0.08, 1.0)),
@@ -49,7 +49,7 @@ class SimpleBarChart extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 3),
                 Text(
                   entry.label,
                   textAlign: TextAlign.center,

@@ -14,7 +14,7 @@ const double _sidebarToggleButtonWidth = 28;
 const double _sidebarToggleButtonHeight = 28;
 const double _sidebarToggleHitArea = 42;
 const double _sidebarToggleButtonRadius = 6;
-const double _desktopPanelGap = 8.0;
+const double _desktopPanelGap = 2.0;
 const double _desktopRailWidth = 54;
 const double _desktopOverlayWidth = 220;
 const double _workspaceTopBarControlHeight = 24;
@@ -103,7 +103,7 @@ class AppShell extends StatefulWidget {
 
 /// Etat interne qui pilote la sidebar et la top bar.
 class _AppShellState extends State<AppShell> {
-  static const double _screenSpacing = 8.0;
+  static const double _screenSpacing = 0.0;
   bool _isSidebarOverlayOpen = false;
   String? _activeSettingsSectionId;
 
@@ -126,8 +126,7 @@ class _AppShellState extends State<AppShell> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF091224) : AppTheme.background,
+      backgroundColor: isDark ? const Color(0xFF091224) : AppTheme.background,
       body: Stack(
         children: [
           // Ce fond reste fixe derrière tout l'espace de travail.
@@ -149,7 +148,7 @@ class _AppShellState extends State<AppShell> {
                     notifications: widget.notifications,
                     onNotificationSelected: widget.onNotificationSelected,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 2),
                   Expanded(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -298,8 +297,7 @@ class _AppShellState extends State<AppShell> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF091224) : AppTheme.background,
+      backgroundColor: isDark ? const Color(0xFF091224) : AppTheme.background,
       // Sur mobile, la navigation passe dans un drawer pour conserver de l'espace utile.
       drawer: Drawer(
         child: SidebarNavigation(
@@ -1122,7 +1120,7 @@ class _SettingsCascadeMenuItem extends StatelessWidget {
                   size: 16,
                   color: selected ? Colors.white : muted,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 Expanded(
                   child: Text(
                     _sectionTitle(section),
@@ -1190,7 +1188,7 @@ class _SettingsOverlayCard extends StatelessWidget {
           );
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F1B31) : Colors.white,
         borderRadius: BorderRadius.circular(2),
@@ -1266,7 +1264,7 @@ class _SettingsOverlayCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           body,
         ],
       ),
@@ -1383,7 +1381,7 @@ class _SettingsMenuButton extends StatelessWidget {
                     size: 17,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 3),
                 Expanded(
                   child: Text(
                     title,
@@ -1520,7 +1518,7 @@ class _SettingsOptionTile<T> extends StatelessWidget {
                             size: 13,
                           ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: Text(
                   option.title,
@@ -1704,7 +1702,7 @@ class _SettingsCurrencyOptionRow extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: Text(
                   label,
@@ -1884,7 +1882,7 @@ class _SettingsColorTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 3),
               Expanded(
                 child: Text(
                   label,
@@ -1939,7 +1937,7 @@ class _SettingsServiceTile extends StatelessWidget {
               ),
               child: Icon(icon, color: Colors.white, size: 13),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 3),
             Expanded(
               child: Text(
                 title,
@@ -2141,7 +2139,7 @@ class _ShellBrand extends StatelessWidget {
             filterQuality: FilterQuality.high,
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 3),
         Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2245,7 +2243,7 @@ class _SidebarToggleButton extends StatelessWidget {
           waitDuration: const Duration(milliseconds: 160),
           showDuration: const Duration(milliseconds: 1500),
           preferBelow: false,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
           decoration: BoxDecoration(
             color: const Color(0xFF102A55),
             borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -2803,7 +2801,7 @@ class _NotificationsPanel extends StatelessWidget {
       color: Colors.transparent,
       child: Container(
         width: 620,
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(3),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF0F1B31) : Colors.white,
           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -3047,7 +3045,7 @@ class _NotificationTile extends StatelessWidget {
                                     ),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 3),
                         SizedBox(
                           width: 164,
                           child: Text(

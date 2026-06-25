@@ -320,7 +320,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
         _isDark ? const Color(0xFF16A6A0) : const Color(0xFF1FAFA7);
 
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 1120, maxHeight: 860),
@@ -340,7 +340,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+                padding: const EdgeInsets.fromLTRB(5, 4, 3, 3),
                 child: Row(
                   children: [
                     Container(
@@ -367,7 +367,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                         size: 20,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 3),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,12 +396,12 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
               Divider(height: 1, color: _border),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+                  padding: const EdgeInsets.fromLTRB(5, 5, 5, 3),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildImportZone(),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 4),
                       if (showInspectionPanel) ...[
                         _buildSectionCard(
                           key: const ValueKey('inspection_panel'),
@@ -415,7 +415,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                             isInspecting: _isInspecting,
                           ),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 4),
                       ],
                       _buildExpectedFormatSection(
                         key: ValueKey(
@@ -424,21 +424,21 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                               : 'expected_format_panel',
                         ),
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 4),
                       if (_isImporting)
                         _buildSectionCard(
                           icon: Icons.sync,
                           title: 'Importation en cours',
                           child: _buildImportProgress(),
                         ),
-                      if (_isImporting) const SizedBox(height: 14),
+                      if (_isImporting) const SizedBox(height: 4),
                     ],
                   ),
                 ),
               ),
               Divider(height: 1, color: _border),
               Padding(
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
+                padding: const EdgeInsets.fromLTRB(5, 3, 5, 4),
                 child: Row(
                   children: [
                     TextButton(
@@ -452,7 +452,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                       constraints: const BoxConstraints(maxWidth: 290),
                       child: _buildInlineModeSelector(),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 3),
                     FilledButton.icon(
                       onPressed: canImport ? _runImport : null,
                       icon: _isImporting
@@ -539,7 +539,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
             borderRadius: BorderRadius.circular(8),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               decoration: BoxDecoration(
                 color: _isDragging
                     ? Color.lerp(zoneBackground, _accent, 0.08)
@@ -669,20 +669,20 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 iconBadge,
-                                const SizedBox(width: 12),
+                                const SizedBox(width: 3),
                                 Expanded(child: summary),
                               ],
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 3),
                             actionButton,
                           ],
                         )
                       : Row(
                           children: [
                             iconBadge,
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 4),
                             Expanded(child: summary),
-                            const SizedBox(width: 14),
+                            const SizedBox(width: 4),
                             actionButton,
                           ],
                         );
@@ -772,7 +772,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                     fontWeight: FontWeight.w500,
                   ),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(5),
                     side: BorderSide(color: buttonBorder),
@@ -780,7 +780,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 3),
             SizedBox(
               width: 182,
               height: 34,
@@ -820,7 +820,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
           duration: const Duration(milliseconds: 180),
           child: !_showExpectedFormat && _selectedFile == null
               ? Padding(
-                  padding: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.only(top: 3),
                   child: DropTarget(
                     onDragDone: (details) async {
                       if (mounted) {
@@ -887,7 +887,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                                     size: 28,
                                   ),
                                 ),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 3),
                                 Text(
                                   _isDragging
                                       ? 'Relâchez pour charger le fichier'
@@ -920,10 +920,10 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
               : !_showExpectedFormat
                   ? const SizedBox.shrink()
                   : Padding(
-                      padding: const EdgeInsets.only(top: 12),
+                      padding: const EdgeInsets.only(top: 3),
                       child: Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: _background,
                           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -941,7 +941,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
     final spec = _spec;
     if (_isLoadingSpec) {
       return const Padding(
-        padding: EdgeInsets.all(12),
+        padding: EdgeInsets.all(3),
         child: LinearProgressIndicator(minHeight: 3),
       );
     }
@@ -960,14 +960,14 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
       children: [
         if (sheets.isNotEmpty) _buildWorkbookSummaryCard(sheets),
         if (detailedSheets.isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           for (final sheet in detailedSheets) _buildSheetSpecTile(sheet),
         ],
         if (notes.isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: 3),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: _cardSoft,
               borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1011,7 +1011,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(11),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _cardSoft,
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1110,8 +1110,8 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
     final role = sheet['role']?.toString() ?? 'Saisie';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(11),
+      margin: const EdgeInsets.only(bottom: 3),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _cardSoft,
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1456,7 +1456,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: headerSurface,
             borderRadius: BorderRadius.circular(8),
@@ -1495,7 +1495,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 3),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -1521,7 +1521,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 3),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -1556,7 +1556,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
             ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
         if (inspection == null && isInspecting)
           Row(
             children: [
@@ -1565,7 +1565,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 height: 14,
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 3),
               Text(
                 'Analyse du fichier en cours…',
                 style: TextStyle(color: _muted, fontSize: 10.8),
@@ -1802,7 +1802,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
         ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
         decoration: BoxDecoration(
           color: _background,
           borderRadius: BorderRadius.circular(4),
@@ -1919,7 +1919,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const LinearProgressIndicator(minHeight: 4),
-        const SizedBox(height: 10),
+        const SizedBox(height: 3),
         Text(
           _importStage,
           style: TextStyle(
@@ -1946,7 +1946,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
   }) {
     return Container(
       key: key,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: _background,
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1970,12 +1970,12 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
                 ),
               ),
               if (trailing != null) ...[
-                const SizedBox(width: 10),
+                const SizedBox(width: 3),
                 trailing,
               ],
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 3),
           child,
         ],
       ),
