@@ -328,7 +328,7 @@ def _critical_incident_count(
 def get_dashboard_snapshot() -> DashboardSnapshot:
     """Construit le contenu complet du tableau de bord."""
     # FETCH REAL DATA
-    with database_manager.get_connection() as conn:
+    with database_manager.read_connection() as conn:
         cursor = conn.cursor()
         
         # Fonds propres
@@ -562,7 +562,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     )
 
 def update_fonds_propres(update_data: FondsPropresUpdate) -> DashboardSnapshot:
-    with database_manager.get_connection() as conn:
+    with database_manager.transaction() as conn:
         cursor = conn.cursor()
         
         # Obtenir l'ID existant ou en generer un nouveau
