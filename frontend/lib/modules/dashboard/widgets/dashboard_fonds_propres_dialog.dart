@@ -186,7 +186,11 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
               Expanded(
                 child: Text(
                   'Modifier les Fonds Propres',
-                  style: DashText.h2(c),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: c.ink,
+                  ),
                 ),
               ),
               IconButton(
@@ -310,7 +314,7 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
             ),
             child: Text(
               title,
-              style: DashText.label(c).copyWith(fontWeight: FontWeight.w700),
+              style: DashText.eyebrow(c).copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           Divider(height: 1, thickness: Dash.hairline, color: c.divider),

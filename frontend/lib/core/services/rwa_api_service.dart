@@ -714,6 +714,20 @@ class RwaApiService {
     );
   }
 
+  Future<DashboardSnapshot> updateFondsPropres(FondsPropresUpdate update) async {
+    if (useMockData) {
+      return fetchDashboard();
+    }
+    
+    final json = await _client.put(
+      '/dashboard/fonds-propres',
+      body: update.toJson(),
+    ) as Map<String, dynamic>;
+    
+    _dashboardFuture = null; // invalidation
+    return DashboardSnapshot.fromJson(json);
+  }
+
   Future<ExposureModuleData> fetchExpositionsModule() async {
     return _memoizeFuture<ExposureModuleData>(
       cached: _expositionsFuture,
