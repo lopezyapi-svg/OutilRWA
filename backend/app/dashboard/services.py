@@ -3,60 +3,48 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 import math
 import unicodedata
 
 from app.core.calculations import convert_currency_amount, safe_ratio
+from app.core.bceao_calculations import (
+    calculate_fonds_propres,
+    calculate_risque_operationnel,
+    calculate_risque_marche,
+    evaluate_ratios
+)
 from app.dashboard.models import (
     DashboardMetric,
     DashboardProjectionPoint,
     DashboardSnapshot,
     DistributionEntry,
     PortfolioRow,
+    TopExposure,
+    FondsPropresDetail,
+    FondsPropresUpdate
 )
 from app.expositions.models import ExposureView
 from app.expositions.services import list_expositions
+from database.connection import database_manager
 from database.services.rwa_calculation_service import (
     normalize_exposure_category_label,
     normalize_exposure_crm_mode,
     normalize_exposure_rating_label,
 )
 
-
 _MONTH_LABELS = [
-    "Janv.",
-    "Fevr.",
-    "Mars",
-    "Avr.",
-    "Mai",
-    "Juin",
-    "Juil.",
-    "Aout",
-    "Sept.",
-    "Oct.",
-    "Nov.",
-    "Dec.",
+    "Janv.", "Fevr.", "Mars", "Avr.", "Mai", "Juin",
+    "Juil.", "Aout", "Sept.", "Oct.", "Nov.", "Dec.",
 ]
 
 _TOP5_FALLBACK_COUNTRIES = [
-    "Côte d'Ivoire",
-    "Sénégal",
-    "Bénin",
-    "Togo",
-    "Burkina Faso",
-    "Mali",
-    "Niger",
-    "Guinée-Bissau",
+    "Côte d'Ivoire", "Sénégal", "Bénin", "Togo",
+    "Burkina Faso", "Mali", "Niger", "Guinée-Bissau",
 ]
 
-_CRM_BUCKET_ORDER = (
-    "CRM financee",
-    "CRM non financee",
-    "Aucune",
-)
+_CRM_BUCKET_ORDER = ("CRM financee", "CRM non financee", "Aucune")
 _DISPLAY_CURRENCY = "XOF"
-
 
 def _build_metric(key: str, label: str, value: float) -> DashboardMetric:
     trend = [round(value, 2) for _ in range(7)]
@@ -67,7 +55,6 @@ def _build_metric(key: str, label: str, value: float) -> DashboardMetric:
         variation="+0.0% M/M",
         trend=trend,
     )
-
 
 def _build_distribution_from_buckets(
     buckets: dict[str, float],
@@ -95,7 +82,6 @@ def _build_distribution_from_buckets(
         )
         for label in ordered_labels
     ]
-
 
 def _normalize_row(row: ExposureView) -> dict[str, object]:
     on_balance_source = (
@@ -157,15 +143,12 @@ def _normalize_row(row: ExposureView) -> dict[str, object]:
         "capital": capital,
     }
 
-
 def _text_key(value: str) -> str:
     normalized = unicodedata.normalize("NFKD", value)
     return normalized.encode("ascii", "ignore").decode("ascii").lower()
 
-
 def _country_key(value: str) -> str:
     return _text_key(value).replace("'", " ").replace("-", " ").strip()
-
 
 def _canonical_country_label(value: str) -> str:
     aliases = {
@@ -178,7 +161,6 @@ def _canonical_country_label(value: str) -> str:
     normalized = " ".join(_country_key(value).split())
     return aliases.get(normalized, value.strip())
 
-
 def _is_defaulted_exposure(row: ExposureView, category: str) -> bool:
     status_key = _text_key(row.status)
     category_key = _text_key(category)
@@ -190,7 +172,6 @@ def _is_defaulted_exposure(row: ExposureView, category: str) -> bool:
         or "defaut" in raw_category_key
         or "souffrance" in raw_category_key
     )
-
 
 def _build_country_distribution(buckets: dict[str, float]) -> list[DistributionEntry]:
     total = sum(buckets.values())
@@ -216,7 +197,6 @@ def _build_country_distribution(buckets: dict[str, float]) -> list[DistributionE
         top.append(DistributionEntry(label=candidate, amount=0.0, percentage=0.0))
     return top
 
-
 def _build_projection(valuation_date: date, base_rwa: float) -> list[DashboardProjectionPoint]:
     points: list[DashboardProjectionPoint] = []
     for month_index in range(12):
@@ -233,7 +213,6 @@ def _build_projection(valuation_date: date, base_rwa: float) -> list[DashboardPr
             )
         )
     return points
-
 
 def _max_grouped_share(
     exposure_rows: list[dict[str, object]],
@@ -256,7 +235,6 @@ def _max_grouped_share(
         buckets[str(key_value or "Non renseigne")] += float(item[amount_name])
 
     return max(buckets.values(), default=0.0) / total
-
 
 def _portfolio_value_at_risk(
     exposure_rows: list[dict[str, object]],
@@ -299,7 +277,6 @@ def _portfolio_value_at_risk(
         0.16,
     )
     return rwa_total * volatility_proxy * 1.65
-
 
 def _critical_incident_count(
     exposure_rows: list[dict[str, object]],
@@ -348,30 +325,70 @@ def _critical_incident_count(
 
     return incidents
 
-
 def get_dashboard_snapshot() -> DashboardSnapshot:
-    """Construit le contenu complet du tableau de bord.
+    """Construit le contenu complet du tableau de bord."""
+    # FETCH REAL DATA
+    with database_manager.get_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Fonds propres
+        cursor.execute("SELECT * FROM fonds_propres ORDER BY date_analyse DESC LIMIT 1")
+        fp_row = cursor.fetchone()
+        fp_data = dict(fp_row) if fp_row else {}
+        
+        # Risque Op
+        cursor.execute("SELECT * FROM risque_operationnel ORDER BY date_analyse DESC LIMIT 1")
+        ro_row = cursor.fetchone()
+        ro_data = dict(ro_row) if ro_row else {}
+        
+        # Risque Marché
+        cursor.execute("SELECT * FROM risque_marche ORDER BY date_analyse DESC LIMIT 1")
+        rm_row = cursor.fetchone()
+        rm_data = dict(rm_row) if rm_row else {}
 
-    Entree:
-        Aucune.
-    Sortie:
-        Les KPI, graphiques et apercu portefeuille.
-    """
+    # CALCULATIONS BCEAO
+    fp_calc = calculate_fonds_propres(fp_data)
+    ro_calc = calculate_risque_operationnel(ro_data)
+    rm_calc = calculate_risque_marche(rm_data)
+
+    fp_detail = FondsPropresDetail(
+        capital_ordinaire=fp_data.get("capital_ordinaire", 0.0),
+        reserves=fp_data.get("reserves", 0.0),
+        resultats_report=fp_data.get("resultats_report", 0.0),
+        resultat_eligible=fp_data.get("resultat_eligible", 0.0),
+        deductions_prud_cet1=fp_data.get("deductions_prud_cet1", 0.0),
+        cet1=fp_calc["cet1"],
+        instruments_at1=fp_data.get("instruments_at1", 0.0),
+        primes_emission_at1=fp_data.get("primes_emission_at1", 0.0),
+        deductions_prud_at1=fp_data.get("deductions_prud_at1", 0.0),
+        at1=fp_calc["at1"],
+        tier1=fp_calc["t1"],
+        dettes_subordonnees_t2=fp_data.get("dettes_subordonnees_t2", 0.0),
+        provisions_generales_t2=fp_data.get("provisions_generales_t2", 0.0),
+        deductions_prud_t2=fp_data.get("deductions_prud_t2", 0.0),
+        tier2=fp_calc["t2"],
+        total_fp=fp_calc["total_capital"],
+    )
 
     exposure_rows = [_normalize_row(item) for item in list_expositions()]
 
     gross_total = sum(float(row["gross_amount"]) for row in exposure_rows)
     ead_total = sum(float(row["ead"]) for row in exposure_rows)
-    rwa_total = sum(float(row["rwa"]) for row in exposure_rows)
+    rwa_credit = sum(float(row["rwa"]) for row in exposure_rows)
+    
+    # RWA Total = Crédit + Marché + Opérationnel
+    rwa_total = rwa_credit + ro_calc["rwa_operationnel"] + rm_calc["rwa_marche"]
+
     capital_total = sum(float(row["capital"]) for row in exposure_rows)
     risk_ratio = safe_ratio(rwa_total, gross_total if gross_total > 0 else ead_total)
+    
     default_gross_total = sum(
         float(row["gross_amount"])
         for row in exposure_rows
         if _is_defaulted_exposure(row["row"], str(row["category"]))
     )
     default_rate = safe_ratio(default_gross_total, gross_total)
-    solvency_ratio = safe_ratio(capital_total * 1.35, rwa_total)
+    
     crm_gross = sum(
         float(row["gross_amount"]) * row["row"].crm_coverage_percent
         for row in exposure_rows
@@ -379,6 +396,9 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     )
     residual_risk = max(gross_total - crm_gross, 0.0)
     covered_ratio = safe_ratio(crm_gross, gross_total)
+
+    # Calculate Official Ratios (Solvency, Leverage, etc.)
+    ratios = evaluate_ratios(rwa_total, fp_calc, gross_total)
 
     portfolio_rows = [
         PortfolioRow(
@@ -421,6 +441,10 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         crm_buckets[crm_mode] += float(item["gross_amount"])
         rating_buckets[rating] += float(item["gross_amount"])
 
+    # ADD RWA TYPES (Credit, Market, Op) to buckets
+    rwa_category_buckets["Risque de Marché"] += rm_calc["rwa_marche"]
+    rwa_category_buckets["Risque Opérationnel"] += ro_calc["rwa_operationnel"]
+
     category_distribution = _build_distribution_from_buckets(category_buckets)
     rwa_category_distribution = _build_distribution_from_buckets(rwa_category_buckets)
     crm_distribution = _build_distribution_from_buckets(crm_buckets, ordered_labels=_CRM_BUCKET_ORDER)
@@ -445,14 +469,21 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         key_name="counterparty",
         amount_name="gross_amount",
     )
+    
+    # Update metrics with the real ratios
     metrics = [
         _build_metric("encours", "Exposition totale brute", gross_total),
         _build_metric("risque_residuel", "Risque residuel", residual_risk),
-        _build_metric("rwa", "RWA", rwa_total),
-        _build_metric("capital", "Capital", capital_total),
+        _build_metric("rwa", "RWA Total", rwa_total),
+        _build_metric("capital", "Capital Total (FPE)", fp_calc["total_capital"]),
         _build_metric("taux_risque", "Taux de risque", risk_ratio),
         _build_metric("taux_defaut", "Taux de defaut", default_rate),
-        _build_metric("solvabilite", "Solvabilite", solvency_ratio),
+        _build_metric("solvabilite", "Ratio Solvabilite Globale", ratios["solvency"]["value"] / 100.0),
+        _build_metric("cet1_ratio", "Ratio CET1", ratios["cet1"]["value"] / 100.0),
+        _build_metric("tier1_ratio", "Ratio Tier 1", ratios["tier1"]["value"] / 100.0),
+        _build_metric("rwa_credit", "RWA Crédit", rwa_credit),
+        _build_metric("rwa_market", "RWA Marché", rm_calc["rwa_marche"]),
+        _build_metric("rwa_op", "RWA Opérationnel", ro_calc["rwa_operationnel"]),
         _build_metric("crm", "Couverture CRM", covered_ratio),
         _build_metric("value_at_risk", "VaR globale", value_at_risk),
         _build_metric(
@@ -467,8 +498,57 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         ),
     ]
 
+    grouped_risk = {}
+    for item in exposure_rows:
+        row = item["row"]
+        group_name = row.counterparty.name
+        if group_name not in grouped_risk:
+            grouped_risk[group_name] = {
+                "country": row.counterparty.country if row.counterparty.country else "Non spécifié",
+                "rating": item["rating"],
+                "category": item["category"],
+                "gross_amount": 0.0,
+                "net_exposure": 0.0,
+                "rwa_amount": 0.0,
+            }
+        grouped_risk[group_name]["gross_amount"] += float(item["gross_amount"])
+        grouped_risk[group_name]["net_exposure"] += float(item["ead"])
+        grouped_risk[group_name]["rwa_amount"] += float(item["rwa"])
+
+    actual_top10 = []
+    own_funds = fp_calc["total_capital"]
+    for group_name, agg in grouped_risk.items():
+        gross = agg["gross_amount"]
+        net = agg["net_exposure"]
+        rwa_agg = agg["rwa_amount"]
+        ratio_fp = (net / own_funds * 100.0) if own_funds > 0 else 0.0
+
+        if ratio_fp >= 10.0:
+            status = "Conforme"
+            if ratio_fp > 25.0:
+                status = "Alerte"
+            elif ratio_fp >= 20.0:
+                status = "Sous cible"
+
+            actual_top10.append(TopExposure(
+                counterparty=group_name,
+                sector=str(agg["category"]),
+                country=str(agg["country"]),
+                rating=str(agg["rating"]),
+                exposure_amount=gross,
+                net_exposure=net,
+                rwa_amount=rwa_agg,
+                fp_ratio=ratio_fp,
+                status=status,
+            ))
+            
+    actual_top10.sort(key=lambda x: x.net_exposure, reverse=True)
+    top10_exposures = actual_top10[:10]
+    grands_risques = actual_top10
+
     return DashboardSnapshot(
         metrics=metrics,
+        fonds_propres=fp_detail,
         valuation_date=valuation_date.isoformat(),
         category_distribution=category_distribution,
         rwa_category_distribution=rwa_category_distribution,
@@ -477,4 +557,54 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         rating_distribution=rating_distribution,
         rwa_projection=_build_projection(valuation_date, projection_base),
         portfolio_overview=portfolio_rows,
+        top10_exposures=top10_exposures,
+        grands_risques=grands_risques,
     )
+
+def update_fonds_propres(update_data: FondsPropresUpdate) -> DashboardSnapshot:
+    with database_manager.get_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Obtenir l'ID existant ou en generer un nouveau
+        cursor.execute("SELECT id, date_analyse FROM fonds_propres ORDER BY date_analyse DESC LIMIT 1")
+        row = cursor.fetchone()
+        
+        now = datetime.now().isoformat()
+        if row:
+            # Mettre a jour l'existant
+            cursor.execute('''
+                UPDATE fonds_propres SET
+                    capital_ordinaire = ?, reserves = ?, resultats_report = ?, resultat_eligible = ?, deductions_prud_cet1 = ?,
+                    instruments_at1 = ?, primes_emission_at1 = ?, deductions_prud_at1 = ?,
+                    dettes_subordonnees_t2 = ?, provisions_generales_t2 = ?, deductions_prud_t2 = ?,
+                    modifie_le = ?
+                WHERE id = ?
+            ''', (
+                update_data.capital_ordinaire, update_data.reserves, update_data.resultats_report,
+                update_data.resultat_eligible, update_data.deductions_prud_cet1,
+                update_data.instruments_at1, update_data.primes_emission_at1, update_data.deductions_prud_at1,
+                update_data.dettes_subordonnees_t2, update_data.provisions_generales_t2, update_data.deductions_prud_t2,
+                now, row['id']
+            ))
+        else:
+            # Creer une nouvelle ligne
+            import uuid
+            new_id = str(uuid.uuid4())
+            cursor.execute('''
+                INSERT INTO fonds_propres (
+                    id, date_analyse, capital_ordinaire, reserves, resultats_report, resultat_eligible, deductions_prud_cet1,
+                    instruments_at1, primes_emission_at1, deductions_prud_at1,
+                    dettes_subordonnees_t2, provisions_generales_t2, deductions_prud_t2,
+                    cree_le, modifie_le
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                new_id, now, update_data.capital_ordinaire, update_data.reserves, update_data.resultats_report,
+                update_data.resultat_eligible, update_data.deductions_prud_cet1,
+                update_data.instruments_at1, update_data.primes_emission_at1, update_data.deductions_prud_at1,
+                update_data.dettes_subordonnees_t2, update_data.provisions_generales_t2, update_data.deductions_prud_t2,
+                now, now
+            ))
+        
+        conn.commit()
+    
+    return get_dashboard_snapshot()

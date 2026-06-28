@@ -2,28 +2,22 @@
 
 from pydantic import BaseModel, Field
 
-
 class DashboardMetric(BaseModel):
     """Represente une carte de KPI du dashboard."""
-
     key: str = Field(..., description="Cle technique du KPI.")
     label: str = Field(..., description="Libelle metier du KPI.")
     value: float = Field(..., description="Valeur principale du KPI.")
     variation: str = Field(..., description="Variation courte affichee sur la carte.")
     trend: list[float] = Field(..., description="Serie courte pour le mini graphique.")
 
-
 class DistributionEntry(BaseModel):
     """Represente une repartition simple pour un graphique."""
-
     label: str = Field(..., description="Libelle de la categorie.")
     amount: float = Field(..., description="Montant du bucket.")
     percentage: float = Field(..., description="Part du bucket dans le total.")
 
-
 class PortfolioRow(BaseModel):
     """Represente une ligne de synthese du portefeuille."""
-
     id: str
     analysis_date: str
     counterparty: str
@@ -38,17 +32,59 @@ class PortfolioRow(BaseModel):
     rwa: float
     capital: float
 
+class TopExposure(BaseModel):
+    counterparty: str
+    sector: str
+    country: str
+    rating: str
+    exposure_amount: float
+    net_exposure: float
+    rwa_amount: float
+    fp_ratio: float
+    status: str
 
 class DashboardProjectionPoint(BaseModel):
     """Represente un point de projection de maturite."""
-
     label: str
     value: float
 
+class FondsPropresDetail(BaseModel):
+    """Details des fonds propres."""
+    capital_ordinaire: float = 0.0
+    reserves: float = 0.0
+    resultats_report: float = 0.0
+    resultat_eligible: float = 0.0
+    deductions_prud_cet1: float = 0.0
+    cet1: float = 0.0
+    instruments_at1: float = 0.0
+    primes_emission_at1: float = 0.0
+    deductions_prud_at1: float = 0.0
+    at1: float = 0.0
+    tier1: float = 0.0
+    dettes_subordonnees_t2: float = 0.0
+    provisions_generales_t2: float = 0.0
+    deductions_prud_t2: float = 0.0
+    tier2: float = 0.0
+    total_fp: float = 0.0
+
+class FondsPropresUpdate(BaseModel):
+    """Model de mise a jour manuelle des fonds propres."""
+    capital_ordinaire: float
+    reserves: float
+    resultats_report: float
+    resultat_eligible: float
+    deductions_prud_cet1: float
+    instruments_at1: float
+    primes_emission_at1: float
+    deductions_prud_at1: float
+    dettes_subordonnees_t2: float
+    provisions_generales_t2: float
+    deductions_prud_t2: float
+
 class DashboardSnapshot(BaseModel):
     """Represente le contenu complet du dashboard."""
-
     metrics: list[DashboardMetric]
+    fonds_propres: FondsPropresDetail
     valuation_date: str
     category_distribution: list[DistributionEntry]
     rwa_category_distribution: list[DistributionEntry]
@@ -57,3 +93,5 @@ class DashboardSnapshot(BaseModel):
     rating_distribution: list[DistributionEntry]
     rwa_projection: list[DashboardProjectionPoint]
     portfolio_overview: list[PortfolioRow]
+    top10_exposures: list[TopExposure]
+    grands_risques: list[TopExposure]
