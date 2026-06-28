@@ -16,7 +16,6 @@ import 'modules/analyse/screens/analyse_screen.dart';
 import 'modules/capital_planing/screens/capital_planing_screen.dart';
 import 'modules/concentration/screens/concentration_screen.dart';
 import 'modules/crm/screens/crm_screen.dart';
-import 'modules/dashboard/screens/dashboard_screen.dart';
 import 'modules/defauts_impayes/screens/defauts_impayes_screen.dart';
 import 'modules/expositions/screens/expositions_screen.dart';
 import 'modules/garanties/screens/garanties_screen.dart';
@@ -67,32 +66,20 @@ class _RwaAppState extends State<RwaApp> {
   bool _isMarketImportDialogOpen = false;
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
   CreditRiskSubmodulesService? _creditRiskService;
-  Future<List<AppShellNotification>>? _notificationsFuture;
-  StreamSubscription<int>? _portfolioNotificationSubscription;
-  final Set<String> _readNotificationIds = <String>{};
 
   @override
   void initState() {
     super.initState();
     _creditRiskService = CreditRiskSubmodulesService(_api);
-    _notificationsFuture = _loadNotifications();
     AppLocalizations.setCurrentLanguage(_appLanguage.value);
     PortfolioAmountUnitPreference.current = _portfolioAmountUnit.value;
     _portfolioAmountUnit.addListener(_handleAmountUnitChanged);
     _appLanguage.addListener(_handleLanguageChanged);
-    _portfolioNotificationSubscription =
-        _api.portfolioRefreshStream.listen((_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() => _notificationsFuture = _loadNotifications());
-    });
     unawaited(MarketDataImportStore.instance.configureSqlBackend(_api));
   }
 
   @override
   void dispose() {
-    _portfolioNotificationSubscription?.cancel();
     _portfolioAmountUnit.removeListener(_handleAmountUnitChanged);
     _appLanguage.removeListener(_handleLanguageChanged);
     _portfolioDisplayCurrency.dispose();
@@ -142,43 +129,24 @@ class _RwaAppState extends State<RwaApp> {
                           key: const ValueKey<String>('welcome-screen'),
                           onOpenHome: _openHome,
                         )
-                      : FutureBuilder<List<AppShellNotification>>(
-                          key: const ValueKey<String>('app-shell'),
-                          future: _notificationsFuture ??= _loadNotifications(),
-                          builder: (context, snapshot) {
-                            final notifications = (snapshot.data ??
-                                    const <AppShellNotification>[])
-                                .map(
-                                  (notification) => notification.copyWith(
-                                    isRead: _readNotificationIds
-                                        .contains(notification.id),
-                                  ),
-                                )
-                                .toList(growable: false);
-
-                            return AppShell(
-                              selectedModule: _selectedModule,
-                              onSelectModule: _selectModule,
-                              onReturnToWelcome: _returnToWelcome,
-                              themeMode: _themeMode,
-                              onThemeModeChanged: (themeMode) =>
-                                  setState(() => _themeMode = themeMode),
-                              portfolioDisplayCurrency:
-                                  _portfolioDisplayCurrency,
-                              portfolioAmountUnit: _portfolioAmountUnit,
-                              appLanguage: _appLanguage,
-                              fontFamily: _fontFamily,
-                              onFontFamilyChanged: (fontFamily) =>
-                                  setState(() => _fontFamily = fontFamily),
-                              primaryColor: _primaryColor,
-                              onPrimaryColorChanged: (primaryColor) =>
-                                  setState(() => _primaryColor = primaryColor),
-                              onNotificationSelected:
-                                  _handleNotificationSelected,
-                              notifications: notifications,
-                              child: _buildSelectedScreen(),
-                            );
-                          },
+                      : AppShell(
+                          selectedModule: _selectedModule,
+                          onSelectModule: _selectModule,
+                          onReturnToWelcome: _returnToWelcome,
+                          themeMode: _themeMode,
+                          onThemeModeChanged: (themeMode) =>
+                              setState(() => _themeMode = themeMode),
+                          portfolioDisplayCurrency:
+                              _portfolioDisplayCurrency,
+                          portfolioAmountUnit: _portfolioAmountUnit,
+                          appLanguage: _appLanguage,
+                          fontFamily: _fontFamily,
+                          onFontFamilyChanged: (fontFamily) =>
+                              setState(() => _fontFamily = fontFamily),
+                          primaryColor: _primaryColor,
+                          onPrimaryColorChanged: (primaryColor) =>
+                              setState(() => _primaryColor = primaryColor),
+                          child: _buildSelectedScreen(),
                         ),
                 ),
               ),
@@ -200,61 +168,6 @@ class _RwaAppState extends State<RwaApp> {
     if (!mounted) return;
     setState(() {});
   }
-
-  Future<List<AppShellNotification>> _loadNotifications() async {
-    try {
-      final service = _creditRiskService ??= CreditRiskSubmodulesService(_api);
-      final data = await service.fetchConcentrationModule();
-      final alerts = data.alerts.toList(growable: false)
-        ..sort((left, right) {
-          final severityComparison = _notificationSeverityRank(left.severity)
-              .compareTo(_notificationSeverityRank(right.severity));
-          if (severityComparison != 0) {
-            return severityComparison;
-          }
-          return right.date.compareTo(left.date);
-        });
-
-      return [
-        for (var index = 0; index < alerts.length; index++)
-          _notificationFromConcentrationAlert(alerts[index]),
-      ];
-    } catch (_) {
-      return const <AppShellNotification>[];
-    }
-  }
-
-  AppShellNotification _notificationFromConcentrationAlert(
-    ConcentrationAlert alert,
-  ) {
-    return AppShellNotification(
-      id: 'portefeuille-${alert.level}-${alert.severity}-${alert.message}-${alert.date.millisecondsSinceEpoch}',
-      title: '${alert.level} · ${alert.severity}',
-      body: alert.message,
-      detail: alert.recommendation,
-      severity: alert.severity,
-      source: 'Portefeuille',
-      date: alert.date,
-      targetModule: AppModule.concentrationCredit,
-    );
-  }
-
-  void _handleNotificationSelected(AppShellNotification notification) {
-    setState(() {
-      _readNotificationIds.add(notification.id);
-      _showWelcomeScreen = false;
-      _selectedModule = notification.targetModule;
-    });
-  }
-
-  static const Map<String, int> _severityRanks = {
-    'élevé': 0,
-    'eleve': 0,
-    'moyen': 1,
-  };
-
-  int _notificationSeverityRank(String severity) =>
-      _severityRanks[severity.toLowerCase()] ?? 2;
 
   void _selectModule(AppModule module) {
     if (module == AppModule.referentiels) {
@@ -306,8 +219,10 @@ class _RwaAppState extends State<RwaApp> {
 
   Widget _screenFor(AppModule module) {
     return switch (module) {
-      AppModule.vueEnsemble => VueEnsembleScreen(api: _api),
-      AppModule.dashboard => DashboardScreen(api: _api),
+      AppModule.vueEnsemble => VueEnsembleScreen(
+          api: _api,
+          onNavigateToModule: _selectModule,
+        ),
       AppModule.expositions => ExpositionsScreen(
           api: _api,
           displayCurrencyListenable: _portfolioDisplayCurrency,

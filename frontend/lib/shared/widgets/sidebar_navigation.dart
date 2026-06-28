@@ -4,12 +4,18 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_module.dart';
 import '../../core/localization/app_localization.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 import 'desktop_asset_image.dart';
 import 'rwa_tool_logo.dart';
 
 const Color _sidebarDeepBlue = Color(0xFF234A84);
 const double _sidebarPanelRadius = 1;
+
+/// Couleur de l'état sélectionné = navy institutionnel (accord avec le
+/// dashboard). En mode sombre, navy éclairci pour rester lisible sur le fond.
+Color _selectedNavColor(bool isDark) =>
+    isDark ? const Color(0xFF2E4E86) : AppColors.sidebar;
 
 const String settingsSectionLanguageId = 'language';
 const String settingsSectionCurrenciesId = 'currencies';
@@ -209,11 +215,6 @@ Rect _anchorRectFrom(BuildContext context) {
 }
 
 const List<_MenuEntry> _riskCreditChildren = [
-  _MenuEntry.leaf(
-    module: AppModule.dashboard,
-    icon: Icons.dashboard_outlined,
-    label: 'Dashboard Crédit',
-  ),
   _MenuEntry.leaf(
     module: AppModule.expositions,
     icon: Icons.credit_card_outlined,
@@ -789,7 +790,7 @@ class _CompactFloatingMenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final selectedBlue = Theme.of(context).colorScheme.primary;
+    final selectedBlue = _selectedNavColor(isDark);
     final iconColor = selected ? Colors.white : const Color(0xFF71829F);
     final textColor = selected
         ? Colors.white
@@ -855,7 +856,7 @@ class _CompactNavButtonSurface extends StatelessWidget {
         : (isDark ? const Color(0xFFB8C8E8) : _sidebarDeepBlue);
     const buttonSize = 36.0;
     const iconSize = 16.0;
-    final selectedColor = Theme.of(context).colorScheme.primary;
+    final selectedColor = _selectedNavColor(isDark);
 
     return Container(
       width: buttonSize,
@@ -866,17 +867,6 @@ class _CompactNavButtonSurface extends StatelessWidget {
         border: Border.all(
           color: selected ? selectedColor : Colors.transparent,
         ),
-        boxShadow: selected
-            ? [
-                BoxShadow(
-                  color: isDark
-                      ? selectedColor.withValues(alpha: 0.34)
-                      : selectedColor.withValues(alpha: 0.20),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
       ),
       child: Center(
         child: Icon(entry.iconFor(selected), size: iconSize, color: iconColor),
@@ -1260,7 +1250,7 @@ class _ExpandedNavTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final selectedBlue = Theme.of(context).colorScheme.primary;
+    final selectedBlue = _selectedNavColor(isDark);
     final iconColor = selected
         ? Colors.white
         : (isDark ? const Color(0xFFB8C8E8) : _sidebarDeepBlue);
@@ -1275,13 +1265,7 @@ class _ExpandedNavTile extends StatelessWidget {
     final tileBorderColor = selected ? selectedBlue : Colors.transparent;
     final tileBorderWidth = selected ? 1.0 : 0.0;
     final tileShadow = selected
-        ? [
-            BoxShadow(
-              color: selectedBlue.withValues(alpha: isDark ? 0.34 : 0.22),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
-            ),
-          ]
+        ? const <BoxShadow>[]
         : [
             BoxShadow(
               color: isDark ? const Color(0x0A040A16) : const Color(0x040F172A),

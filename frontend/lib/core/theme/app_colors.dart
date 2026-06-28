@@ -129,7 +129,7 @@ class AppColors {
 
   /// Retourne la couleur appropriée pour un ratio prudentiel
   static Color ratioColor(double ratio, double minimum, double target) {
-    if (ratio >= target) return prudentialCompliance;
+    if (ratio >= target) return success;
     if (ratio >= minimum) return warning;
     return danger;
   }

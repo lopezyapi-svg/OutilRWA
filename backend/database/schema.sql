@@ -309,3 +309,49 @@ CREATE INDEX IF NOT EXISTS idx_baremes_ponderation_segment ON baremes_ponderatio
 CREATE INDEX IF NOT EXISTS idx_baremes_ccf_type ON baremes_ccf(type_engagement);
 CREATE INDEX IF NOT EXISTS idx_references_notation_ordre ON references_notation(ordre_tri);
 CREATE INDEX IF NOT EXISTS idx_lignes_rapport ON lignes_rapport(rapport_id, ordre_ligne);
+
+
+-- =======================================================================
+-- TABLES AJOUTÉES POUR LE CALCUL RÉEL DES FONDS PROPRES ET RATIOS (BCEAO)
+-- =======================================================================
+
+CREATE TABLE IF NOT EXISTS fonds_propres (
+    id TEXT PRIMARY KEY,
+    date_analyse TEXT NOT NULL,
+    capital_ordinaire REAL NOT NULL DEFAULT 0,
+    reserves REAL NOT NULL DEFAULT 0,
+    resultats_report REAL NOT NULL DEFAULT 0,
+    resultat_eligible REAL NOT NULL DEFAULT 0,
+    deductions_prud_cet1 REAL NOT NULL DEFAULT 0,
+    instruments_at1 REAL NOT NULL DEFAULT 0,
+    primes_emission_at1 REAL NOT NULL DEFAULT 0,
+    deductions_prud_at1 REAL NOT NULL DEFAULT 0,
+    dettes_subordonnees_t2 REAL NOT NULL DEFAULT 0,
+    provisions_generales_t2 REAL NOT NULL DEFAULT 0,
+    deductions_prud_t2 REAL NOT NULL DEFAULT 0,
+    cree_le TEXT NOT NULL,
+    modifie_le TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS risque_operationnel (
+    id TEXT PRIMARY KEY,
+    date_analyse TEXT NOT NULL,
+    produit_brut_annee_1 REAL NOT NULL DEFAULT 0,
+    produit_brut_annee_2 REAL NOT NULL DEFAULT 0,
+    produit_brut_annee_3 REAL NOT NULL DEFAULT 0,
+    cree_le TEXT NOT NULL,
+    modifie_le TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS risque_marche (
+    id TEXT PRIMARY KEY,
+    date_analyse TEXT NOT NULL,
+    position_nette_change REAL NOT NULL DEFAULT 0,
+    cree_le TEXT NOT NULL,
+    modifie_le TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_fonds_propres_date ON fonds_propres(date_analyse);
+CREATE INDEX IF NOT EXISTS idx_risque_op_date ON risque_operationnel(date_analyse);
+CREATE INDEX IF NOT EXISTS idx_risque_marche_date ON risque_marche(date_analyse);
+

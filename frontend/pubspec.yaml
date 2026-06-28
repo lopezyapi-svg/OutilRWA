@@ -26,6 +26,7 @@ dependencies:
   xml: ^6.6.1
   shared_preferences: ^2.5.5
   linked_scroll_controller: ^0.2.0
+  fl_chart: ^1.2.0
 
 dev_dependencies:
   flutter_test:

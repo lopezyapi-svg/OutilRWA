@@ -721,7 +721,7 @@ class RwaApiService {
     
     final json = await _client.put(
       '/dashboard/fonds-propres',
-      body: update.toJson(),
+      update.toJson(),
     ) as Map<String, dynamic>;
     
     _dashboardFuture = null; // invalidation

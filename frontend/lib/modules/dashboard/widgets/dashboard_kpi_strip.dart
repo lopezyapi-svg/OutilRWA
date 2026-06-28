@@ -45,16 +45,18 @@ class DashboardKpiStrip extends StatelessWidget {
         final tight = constraints.maxWidth < 680;
         final gap = tight ? 8.0 : 16.0;
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              Expanded(
-                child: _CleanKpiCard(item: items[i]),
-              ),
-              if (i < items.length - 1) SizedBox(width: gap),
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                Expanded(
+                  child: _CleanKpiCard(item: items[i]),
+                ),
+                if (i < items.length - 1) SizedBox(width: gap),
+              ],
             ],
-          ],
+          ),
         );
       },
     );

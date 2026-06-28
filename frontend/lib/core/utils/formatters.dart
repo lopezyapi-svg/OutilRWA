@@ -34,11 +34,21 @@ class AppFormatters {
     final amount = value.toDouble();
     final absolute = amount.abs();
 
-    final decimals = absolute >= 100
-        ? 0
-        : absolute >= 10
-            ? 1
-            : 2;
+    int decimals;
+    if (absolute == 0) {
+      decimals = 0;
+    } else if (absolute >= 1000) {
+      decimals = 0;
+    } else if (absolute >= 100) {
+      decimals = 1;
+    } else if (absolute >= 10) {
+      decimals = 2;
+    } else if (absolute >= 1) {
+      decimals = 3;
+    } else {
+      decimals = 4;
+    }
+    
     return _number(decimals).format(amount);
   }
 

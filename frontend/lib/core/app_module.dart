@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 /// Enumération des modules disponibles dans l'application.
 enum AppModule {
   vueEnsemble,
-  dashboard,
   expositions,
   rwaEngine,
   crm,
@@ -51,8 +50,6 @@ extension AppModuleLabel on AppModule {
     switch (this) {
       case AppModule.vueEnsemble:
         return 'Vue d\'ensemble';
-      case AppModule.dashboard:
-        return 'Dashboard';
       case AppModule.expositions:
         return 'Risque de crédit';
       case AppModule.rwaEngine:
@@ -126,8 +123,6 @@ extension AppModuleLabel on AppModule {
     switch (this) {
       case AppModule.vueEnsemble:
         return 'Synthèse du module risque de crédit.';
-      case AppModule.dashboard:
-        return 'Pilotage global des encours, RWA, capital et couverture CRM.';
       case AppModule.expositions:
         return 'Saisie, import, edition et suivi detaille des expositions du portefeuille.';
       case AppModule.rwaEngine:
@@ -201,8 +196,6 @@ extension AppModuleLabel on AppModule {
     switch (this) {
       case AppModule.vueEnsemble:
         return Icons.pie_chart_rounded;
-      case AppModule.dashboard:
-        return Icons.dashboard_rounded;
       case AppModule.expositions:
         return Icons.credit_card_rounded;
       case AppModule.rwaEngine:

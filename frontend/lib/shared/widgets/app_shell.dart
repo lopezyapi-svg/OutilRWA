@@ -76,8 +76,6 @@ class AppShell extends StatefulWidget {
     required this.onFontFamilyChanged,
     required this.primaryColor,
     required this.onPrimaryColorChanged,
-    required this.onNotificationSelected,
-    this.notifications = const <AppShellNotification>[],
     required this.child,
   });
 
@@ -93,8 +91,6 @@ class AppShell extends StatefulWidget {
   final ValueChanged<String> onFontFamilyChanged;
   final Color primaryColor;
   final ValueChanged<Color> onPrimaryColorChanged;
-  final ValueChanged<AppShellNotification> onNotificationSelected;
-  final List<AppShellNotification> notifications;
   final Widget child;
 
   @override
@@ -145,8 +141,6 @@ class _AppShellState extends State<AppShell> {
                     onReturnToWelcome: widget.onReturnToWelcome,
                     portfolioDisplayCurrency: widget.portfolioDisplayCurrency,
                     portfolioAmountUnit: widget.portfolioAmountUnit,
-                    notifications: widget.notifications,
-                    onNotificationSelected: widget.onNotificationSelected,
                   ),
                   const SizedBox(height: 2),
                   Expanded(
@@ -341,8 +335,6 @@ class _AppShellState extends State<AppShell> {
                 selectedModule: widget.selectedModule,
                 showMenuButton: true,
                 onReturnToWelcome: widget.onReturnToWelcome,
-                notifications: widget.notifications,
-                onNotificationSelected: widget.onNotificationSelected,
               ),
               const SizedBox(height: AppTheme.pageGap),
               Expanded(
@@ -2016,16 +2008,12 @@ class _WorkspaceTopBar extends StatelessWidget {
     required this.onReturnToWelcome,
     required this.portfolioDisplayCurrency,
     required this.portfolioAmountUnit,
-    required this.notifications,
-    required this.onNotificationSelected,
   });
 
   final AppModule selectedModule;
   final VoidCallback onReturnToWelcome;
   final ValueNotifier<String> portfolioDisplayCurrency;
   final ValueNotifier<PortfolioAmountUnit> portfolioAmountUnit;
-  final List<AppShellNotification> notifications;
-  final ValueChanged<AppShellNotification> onNotificationSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -2068,11 +2056,6 @@ class _WorkspaceTopBar extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               if (showHeaderStatus) ...[
-                _NotificationBellButton(
-                  icon: CupertinoIcons.bell_fill,
-                  notifications: notifications,
-                  onNotificationSelected: onNotificationSelected,
-                ),
                 const SizedBox(width: 6),
               ],
               _PortfolioAmountUnitPicker(
@@ -3242,15 +3225,11 @@ class _TopBar extends StatelessWidget {
     required this.selectedModule,
     required this.showMenuButton,
     required this.onReturnToWelcome,
-    required this.notifications,
-    required this.onNotificationSelected,
   });
 
   final AppModule selectedModule;
   final bool showMenuButton;
   final VoidCallback onReturnToWelcome;
-  final List<AppShellNotification> notifications;
-  final ValueChanged<AppShellNotification> onNotificationSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -3294,12 +3273,6 @@ class _TopBar extends StatelessWidget {
             icon: CupertinoIcons.circle_grid_3x3_fill,
             accent: Theme.of(context).colorScheme.primary,
             onPressed: onReturnToWelcome,
-          ),
-          const SizedBox(width: 8),
-          _NotificationBellButton(
-            icon: CupertinoIcons.bell_fill,
-            notifications: notifications,
-            onNotificationSelected: onNotificationSelected,
           ),
         ],
       ),

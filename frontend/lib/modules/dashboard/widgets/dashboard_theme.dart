@@ -121,7 +121,7 @@ String dashboardShortMonth(DateTime date) {
 
 String dashboardCompactCurrency(double value) {
   final amountUnit = PortfolioAmountUnitPreference.current;
-  return '${AppFormatters.compactNumber(value / amountUnit.divisor)} ${amountUnit.label} XOF';
+  return '${AppFormatters.compactNumber(value / amountUnit.divisor)} ${amountUnit.label} (XOF)';
 }
 
 String dashboardCompactPercent(double value) {

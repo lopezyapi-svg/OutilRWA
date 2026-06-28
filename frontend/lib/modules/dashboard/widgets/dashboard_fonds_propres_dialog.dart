@@ -84,7 +84,7 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
   }
 
   TextEditingController _ctrl(double? val) {
-    if (val == null || val == 0.0) return TextEditingController(text: '0');
+    if (val == null || val == 0.0) return TextEditingController(text: '');
     // Enlever ".0" si c'est un entier
     String text = val.toStringAsFixed(0);
     if (val != val.truncateToDouble()) {
@@ -213,14 +213,14 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
                       child: _buildColumn(
                         c,
                         isDark,
-                        'CET1 (Cat. 1)',
+                        'CET1 (Catégorie 1)',
                         const Color(0xFF1E40AF),
                         [
                           _buildField('Capital ordinaire', _capOrdinaireCtrl, isDark),
                           _buildField('Réserves', _reservesCtrl, isDark),
                           _buildField('Résultats en report', _reportCtrl, isDark),
                           _buildField('Résultat éligible', _eligibleCtrl, isDark),
-                          _buildField('Déductions prud.', _deducCet1Ctrl, isDark),
+                          _buildField('Déductions prudentielles', _deducCet1Ctrl, isDark),
                         ],
                       ),
                     ),
@@ -229,12 +229,12 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
                       child: _buildColumn(
                         c,
                         isDark,
-                        'AT1 (Add. Cat. 1)',
+                        'AT1 (Additionnel Catégorie 1)',
                         const Color(0xFF1E3A8A),
                         [
-                          _buildField('Instruments add.', _instAt1Ctrl, isDark),
+                          _buildField('Instruments additionnels', _instAt1Ctrl, isDark),
                           _buildField('Primes d\'émission', _primesAt1Ctrl, isDark),
-                          _buildField('Déductions prud.', _deducAt1Ctrl, isDark),
+                          _buildField('Déductions prudentielles', _deducAt1Ctrl, isDark),
                         ],
                       ),
                     ),
@@ -243,12 +243,12 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
                       child: _buildColumn(
                         c,
                         isDark,
-                        'Tier 2 (Compl.)',
+                        'Tier 2 (Complémentaire)',
                         const Color(0xFF475569),
                         [
                           _buildField('Dettes subordonnées', _subordT2Ctrl, isDark),
                           _buildField('Provisions générales', _provGenT2Ctrl, isDark),
-                          _buildField('Déductions prud.', _deducT2Ctrl, isDark),
+                          _buildField('Déductions prudentielles', _deducT2Ctrl, isDark),
                         ],
                       ),
                     ),
