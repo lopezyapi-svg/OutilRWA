@@ -358,6 +358,11 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
             decoration: InputDecoration(
               isDense: true,
               contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              hintText: '0',
+              hintStyle: TextStyle(
+                color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8),
+                fontWeight: FontWeight.w400,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(4),
                 borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
