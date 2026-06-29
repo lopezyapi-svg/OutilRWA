@@ -57,12 +57,16 @@ class _VueEnsembleScreenState extends State<VueEnsembleScreen> {
       if (!mounted) {
         return;
       }
-      setState(() => _future = _loadDashboard());
+      setState(() {
+        _future = _loadDashboard();
+      });
     });
   }
 
   void _refresh() {
-    setState(() => _future = _loadDashboard());
+    setState(() {
+      _future = _loadDashboard();
+    });
   }
 
   void _export() {
@@ -200,8 +204,12 @@ class _ExecutiveDashboard extends StatelessWidget {
                 );
                 final rwaDonut = DashboardRwaDonut(currency: currency, data: data);
                 final rwaSecteurTable = DashboardRwaSecteurChart(currency: currency, data: data);
-                final top10Table = DashboardTop10RisquesTable(currency: currency, exposures: data.top10Exposures ?? const []);
-                final top10Chart = DashboardGrandsRisquesSummary(currency: currency, exposures: data.grandsRisques);
+                final top10Table = DashboardTop10RisquesTable(currency: currency, exposures: data.top10Exposures ?? const [], allExposures: data.grandsRisques);
+                final top10Chart = DashboardGrandsRisquesSummary(
+                  currency: currency,
+                  exposures: data.grandsRisques,
+                  allCategories: data.categoryDistribution,
+                );
                 const bottomStrip = DashboardBottomStrip();
 
                 List<Widget> children;

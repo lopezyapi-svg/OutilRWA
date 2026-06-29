@@ -56,6 +56,26 @@ class AppFormatters {
     return _number(maxDecimals).format(value);
   }
 
+  static String formatAmountValue(double value, double divisor) {
+    final absolute = value.abs();
+    if (absolute == 0) return '0';
+    if (absolute < 1000000) {
+      return decimalNumber(value, maxDecimals: 3);
+    } else {
+      return compactNumber(value / divisor);
+    }
+  }
+
+  static String formatAmountSuffix(double value, String unitLabel, String currencyLabel) {
+    final absolute = value.abs();
+    if (absolute == 0) return '';
+    if (absolute < 1000000) {
+      return '';
+    } else {
+      return unitLabel;
+    }
+  }
+
   static String integer(num value) => _plainNumber().format(value.round());
 
   static String percent(num value) {

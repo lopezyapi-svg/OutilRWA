@@ -224,287 +224,13 @@ class RwaApiService {
     },
   ];
 
-  final List<Map<String, dynamic>> _exposures = [
-    {
-      'id': 'CP001',
-      'analysis_date': '2026-04-21',
-      'counterparty': {
-        'id': 'CP001',
-        'name': 'Societe A',
-        'country': "Cote d'Ivoire",
-        'category': 'Entreprises',
-        'rating': 'BBB',
-      },
-      'gross_amount': 50000000.0,
-      'crm_type': 'Garantie etatique',
-      'crm_coverage_percent': 0.4,
-      'original_rw': 1.0,
-      'final_rw': 0.6,
-      'ead': 50000000.0,
-      'rwa': 30000000.0,
-      'capital': 2400000.0,
-      'comment': "Portefeuille corporate Cote d'Ivoire",
-    },
-    {
-      'id': 'CP002',
-      'analysis_date': '2026-04-21',
-      'counterparty': {
-        'id': 'CP002',
-        'name': 'Banque X',
-        'country': 'Senegal',
-        'category': 'Banques',
-        'rating': 'A',
-      },
-      'gross_amount': 30000000.0,
-      'crm_type': 'Cash collateral',
-      'crm_coverage_percent': 0.2,
-      'original_rw': 0.5,
-      'final_rw': 0.4,
-      'ead': 30000000.0,
-      'rwa': 12000000.0,
-      'capital': 960000.0,
-      'comment': 'Ligne interbancaire',
-    },
-    {
-      'id': 'CP003',
-      'analysis_date': '2026-04-21',
-      'counterparty': {
-        'id': 'CP003',
-        'name': 'Etat Y',
-        'country': 'Benin',
-        'category': 'Souverains',
-        'rating': 'AA',
-      },
-      'gross_amount': 40000000.0,
-      'crm_type': 'Aucune',
-      'crm_coverage_percent': 0.0,
-      'original_rw': 0.0,
-      'final_rw': 0.0,
-      'ead': 40000000.0,
-      'rwa': 0.0,
-      'capital': 0.0,
-      'comment': 'Exposition souveraine',
-    },
-    {
-      'id': 'CP004',
-      'analysis_date': '2026-04-21',
-      'counterparty': {
-        'id': 'CP004',
-        'name': 'Client ABC',
-        'country': "Cote d'Ivoire",
-        'category': 'Particuliers',
-        'rating': 'BB+',
-      },
-      'gross_amount': 10000000.0,
-      'crm_type': 'Assurance credit',
-      'crm_coverage_percent': 0.75,
-      'original_rw': 1.0,
-      'final_rw': 0.25,
-      'ead': 10000000.0,
-      'rwa': 2500000.0,
-      'capital': 200000.0,
-      'comment': 'Retail securise',
-    },
-    {
-      'id': 'CP005',
-      'analysis_date': '2026-04-21',
-      'counterparty': {
-        'id': 'CP005',
-        'name': 'Client XYZ',
-        'country': 'Togo',
-        'category': 'Entreprises',
-        'rating': 'BBB',
-      },
-      'gross_amount': 18000000.0,
-      'crm_type': 'Garantie bancaire',
-      'crm_coverage_percent': 0.35,
-      'original_rw': 1.0,
-      'final_rw': 0.7,
-      'ead': 18000000.0,
-      'rwa': 9500000.0,
-      'capital': 760000.0,
-      'comment': 'Portefeuille corporate Togo',
-    },
-    {
-      'id': 'CP006',
-      'analysis_date': '2026-04-21',
-      'counterparty': {
-        'id': 'CP006',
-        'name': 'Banque ABC',
-        'country': 'Burkina Faso',
-        'category': 'Banques',
-        'rating': 'A',
-      },
-      'gross_amount': 16000000.0,
-      'crm_type': 'Cash collateral',
-      'crm_coverage_percent': 0.25,
-      'original_rw': 0.5,
-      'final_rw': 0.4,
-      'ead': 16000000.0,
-      'rwa': 6800000.0,
-      'capital': 544000.0,
-      'comment': 'Ligne interbancaire Burkina Faso',
-    },
-  ];
+  final List<Map<String, dynamic>> _exposures = [];
 
-  final List<Map<String, dynamic>> _offBalance = [
-    {
-      'id': 'HB001',
-      'analysis_date': '2026-04-21',
-      'counterparty_id': 'CP002',
-      'counterparty_name': 'Banque X',
-      'category': 'Banques',
-      'rating': 'A',
-      'engagement_type': 'Credit documentaire',
-      'nominal_amount': 10000000.0,
-      'ccf': 0.75,
-      'ead': 7500000.0,
-      'risk_weight': 0.5,
-      'rwa': 3750000.0,
-      'capital': 300000.0,
-      'comment': 'Flux import',
-    },
-    {
-      'id': 'HB002',
-      'analysis_date': '2026-04-21',
-      'counterparty_id': 'CP005',
-      'counterparty_name': 'Client XYZ',
-      'category': 'Entreprises',
-      'rating': 'BBB',
-      'engagement_type': 'Lignes de credit',
-      'nominal_amount': 15000000.0,
-      'ccf': 0.5,
-      'ead': 7500000.0,
-      'risk_weight': 1.0,
-      'rwa': 7500000.0,
-      'capital': 600000.0,
-      'comment': 'Lignes non annullables',
-    },
-    {
-      'id': 'HB003',
-      'analysis_date': '2026-04-21',
-      'counterparty_id': 'CP006',
-      'counterparty_name': 'Banque ABC',
-      'category': 'Banques',
-      'rating': 'A',
-      'engagement_type': 'Instruments financiers',
-      'nominal_amount': 8000000.0,
-      'ccf': 1.0,
-      'ead': 8000000.0,
-      'risk_weight': 0.5,
-      'rwa': 4000000.0,
-      'capital': 320000.0,
-      'comment': 'Back-up market',
-    },
-  ];
+  final List<Map<String, dynamic>> _offBalance = [];
 
-  final List<Map<String, dynamic>> _crmItems = [
-    {
-      'id': 'CRM001',
-      'exposure_id': 'CP001',
-      'borrower_name': 'Societe A',
-      'borrower_category': 'Entreprises',
-      'borrower_rating': 'BBB',
-      'gross_amount': 50000000.0,
-      'guarantor_name': 'Etat Francais',
-      'guarantor_category': 'Souverains',
-      'guarantor_rating': 'AA',
-      'guarantee_type': 'CRM non financee',
-      'coverage_amount': 20000000.0,
-      'coverage_ratio': 0.4,
-      'borrower_rw': 1.0,
-      'guarantor_rw': 0.0,
-      'final_rw': 0.6,
-      'ead': 50000000.0,
-      'rwa_before': 50000000.0,
-      'rwa_after': 30000000.0,
-      'capital_before': 4000000.0,
-      'capital_after': 2400000.0,
-      'rwa_reduction': 20000000.0,
-      'capital_saving': 1600000.0,
-    },
-    {
-      'id': 'CRM002',
-      'exposure_id': 'CP002',
-      'borrower_name': 'Banque X',
-      'borrower_category': 'Banques',
-      'borrower_rating': 'A',
-      'gross_amount': 30000000.0,
-      'guarantor_name': 'Societe Z',
-      'guarantor_category': 'Entreprises',
-      'guarantor_rating': 'A',
-      'guarantee_type': 'CRM financee',
-      'coverage_amount': 9000000.0,
-      'coverage_ratio': 0.3,
-      'borrower_rw': 0.5,
-      'guarantor_rw': 0.5,
-      'final_rw': 0.5,
-      'ead': 30000000.0,
-      'rwa_before': 15000000.0,
-      'rwa_after': 15000000.0,
-      'capital_before': 1200000.0,
-      'capital_after': 1200000.0,
-      'rwa_reduction': 0.0,
-      'capital_saving': 0.0,
-    },
-    {
-      'id': 'CRM003',
-      'exposure_id': 'CP004',
-      'borrower_name': 'Client ABC',
-      'borrower_category': 'Particuliers',
-      'borrower_rating': 'BB+',
-      'gross_amount': 10000000.0,
-      'guarantor_name': 'Assurance C',
-      'guarantor_category': 'Entreprises',
-      'guarantor_rating': 'BBB',
-      'guarantee_type': 'Assurance credit',
-      'coverage_amount': 4500000.0,
-      'coverage_ratio': 0.45,
-      'borrower_rw': 1.0,
-      'guarantor_rw': 1.0,
-      'final_rw': 1.0,
-      'ead': 10000000.0,
-      'rwa_before': 10000000.0,
-      'rwa_after': 10000000.0,
-      'capital_before': 800000.0,
-      'capital_after': 800000.0,
-      'rwa_reduction': 0.0,
-      'capital_saving': 0.0,
-    },
-  ];
+  final List<Map<String, dynamic>> _crmItems = [];
 
-  final List<Map<String, dynamic>> _reports = [
-    {
-      'id': 'RPT001',
-      'created_at': '2026-04-19',
-      'period': 'Mars 2026',
-      'report_type': 'Synthese',
-      'currency': 'EUR',
-      'exposure_scope': 'Toutes',
-      'include_category_chart': true,
-      'include_rating_chart': true,
-      'exports': {
-        'pdf': '/exports/RPT001.pdf',
-        'excel': '/exports/RPT001.xlsx',
-      },
-      'lines': <Map<String, dynamic>>[],
-    },
-    {
-      'id': 'RPT002',
-      'created_at': '2026-04-20',
-      'period': 'Mars 2026',
-      'report_type': 'Detaille',
-      'currency': 'EUR',
-      'exposure_scope': 'Toutes',
-      'include_category_chart': true,
-      'include_rating_chart': false,
-      'exports': {
-        'pdf': '/exports/RPT002.pdf',
-        'excel': '/exports/RPT002.xlsx',
-      },
-      'lines': <Map<String, dynamic>>[],
-    },
-  ];
+  final List<Map<String, dynamic>> _reports = [];
 
   // ─── Risque Opérationnel ─────────────────────────────────────────────────
 
@@ -714,16 +440,17 @@ class RwaApiService {
     );
   }
 
-  Future<DashboardSnapshot> updateFondsPropres(FondsPropresUpdate update) async {
+  Future<DashboardSnapshot> updateFondsPropres(
+      FondsPropresUpdate update) async {
     if (useMockData) {
       return fetchDashboard();
     }
-    
+
     final json = await _client.put(
       '/dashboard/fonds-propres',
       update.toJson(),
     ) as Map<String, dynamic>;
-    
+
     _dashboardFuture = null; // invalidation
     return DashboardSnapshot.fromJson(json);
   }
@@ -1409,7 +1136,9 @@ class RwaApiService {
       final groupName = item.counterparty.name;
       if (!groupedRisk.containsKey(groupName)) {
         groupedRisk[groupName] = {
-          'country': item.counterparty.country.isNotEmpty ? item.counterparty.country : 'Non spécifié',
+          'country': item.counterparty.country.isNotEmpty
+              ? item.counterparty.country
+              : 'Non spécifié',
           'rating': _portfolioDisplayRating(item.counterparty.rating),
           'category': item.categoryLabel,
           'grossAmount': 0.0,
@@ -1417,9 +1146,13 @@ class RwaApiService {
           'rwaAmount': 0.0,
         };
       }
-      groupedRisk[groupName]!['grossAmount'] = (groupedRisk[groupName]!['grossAmount'] as double) + _dashboardGrossAmount(item);
-      groupedRisk[groupName]!['netExposure'] = (groupedRisk[groupName]!['netExposure'] as double) + item.ead;
-      groupedRisk[groupName]!['rwaAmount'] = (groupedRisk[groupName]!['rwaAmount'] as double) + item.rwa;
+      groupedRisk[groupName]!['grossAmount'] =
+          (groupedRisk[groupName]!['grossAmount'] as double) +
+              _dashboardGrossAmount(item);
+      groupedRisk[groupName]!['netExposure'] =
+          (groupedRisk[groupName]!['netExposure'] as double) + item.ead;
+      groupedRisk[groupName]!['rwaAmount'] =
+          (groupedRisk[groupName]!['rwaAmount'] as double) + item.rwa;
     }
 
     final List<TopExposure> actualTop10 = [];
@@ -1430,7 +1163,7 @@ class RwaApiService {
       final rwaAgg = agg['rwaAmount'] as double;
       // Calcul du Ratio FP : (Risque Net / Fonds Propres) * 100
       final ratioFp = ownFunds > 0 ? (netAgg / ownFunds) * 100 : 0.0;
-      
+
       // Identifier les Grands Risques : Ratio FP (%) >= 10
       if (ratioFp >= 10.0) {
         String status = 'Conforme';
@@ -1453,7 +1186,7 @@ class RwaApiService {
         ));
       }
     }
-    
+
     // Trier par Risque Net décroissant
     actualTop10.sort((a, b) => b.netExposure.compareTo(a.netExposure));
 
@@ -1518,17 +1251,20 @@ class RwaApiService {
         DistributionEntry(
           label: 'Crédit',
           amount: rwa,
-          percentage: rwa / (rwa + rwa * 0.16 + rwa * 0.13) * 100, // roughly 77%
+          percentage:
+              rwa / (rwa + rwa * 0.16 + rwa * 0.13) * 100, // roughly 77%
         ),
         DistributionEntry(
           label: 'Opérationnel',
           amount: rwa * 0.1673, // about 410 / 2450 ratio
-          percentage: (rwa * 0.1673) / (rwa + rwa * 0.1673 + rwa * 0.1306) * 100,
+          percentage:
+              (rwa * 0.1673) / (rwa + rwa * 0.1673 + rwa * 0.1306) * 100,
         ),
         DistributionEntry(
           label: 'Marché',
           amount: rwa * 0.1306, // about 320 / 2450 ratio
-          percentage: (rwa * 0.1306) / (rwa + rwa * 0.1673 + rwa * 0.1306) * 100,
+          percentage:
+              (rwa * 0.1306) / (rwa + rwa * 0.1673 + rwa * 0.1306) * 100,
         ),
       ],
       rwaCategoryDistribution: _buildDistributionByCategory(exposureModels),

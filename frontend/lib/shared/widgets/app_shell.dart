@@ -1612,24 +1612,24 @@ class _SettingsCurrencyOptionList extends StatelessWidget {
           label: 'XOF - FCFA BCEAO',
           symbol: 'CFA',
           color: const Color(0xFF12BBD2),
-          selected: selectedCurrency == 'XOF',
+          selected: true,
           onTap: () => onChanged('XOF'),
         ),
         _SettingsCurrencyOptionRow(
           code: 'EUR',
-          label: 'EUR - Euro',
+          label: 'EUR - Euro (Indisponible)',
           symbol: '€',
           color: const Color(0xFF2563EB),
-          selected: selectedCurrency == 'EUR',
-          onTap: () => onChanged('EUR'),
+          selected: false,
+          onTap: null,
         ),
         _SettingsCurrencyOptionRow(
           code: 'USD',
-          label: 'USD - Dollar américain',
+          label: 'USD - Dollar américain (Indisponible)',
           symbol: r'$',
           color: const Color(0xFF10B981),
-          selected: selectedCurrency == 'USD',
-          onTap: () => onChanged('USD'),
+          selected: false,
+          onTap: null,
         ),
       ],
     );
@@ -1651,12 +1651,15 @@ class _SettingsCurrencyOptionRow extends StatelessWidget {
   final String symbol;
   final Color color;
   final bool selected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final text = isDark ? const Color(0xFFF2F6FF) : AppTheme.text;
+    final disabled = onTap == null;
+    final text = isDark
+        ? const Color(0xFFF2F6FF).withOpacity(disabled ? 0.35 : 1.0)
+        : AppTheme.text.withOpacity(disabled ? 0.35 : 1.0);
     final selectedBg =
         isDark ? const Color(0xFF16233A) : const Color(0xFFF4F6FA);
 
@@ -1680,14 +1683,14 @@ class _SettingsCurrencyOptionRow extends StatelessWidget {
                 height: 24,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: color,
+                  color: disabled ? color.withOpacity(0.3) : color,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   symbol,
                   maxLines: 1,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: disabled ? Colors.white.withOpacity(0.5) : Colors.white,
                     fontSize: symbol.length > 1 ? 7.9 : 12,
                     fontWeight: FontWeight.w900,
                     height: 1,
@@ -2455,16 +2458,11 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
     return ValueListenableBuilder<String>(
       valueListenable: selectedCurrencyListenable,
       builder: (context, selectedCurrency, _) {
-        final normalizedSelectedCurrency =
-            normalizeCurrencyCode(selectedCurrency);
         return PopupMenuButton<String>(
-          tooltip: '',
+          enabled: false,
+          tooltip: 'FCFA (XOF) uniquement pour l\'instant',
           padding: EdgeInsets.zero,
-          onSelected: (value) {
-            final normalizedValue = normalizeCurrencyCode(value);
-            if (normalizedValue == normalizedSelectedCurrency) return;
-            selectedCurrencyListenable.value = normalizedValue;
-          },
+          onSelected: (value) {},
           offset: const Offset(0, _workspaceTopBarControlHeight + 8),
           color: isDark ? const Color(0xFF14233D) : Colors.white,
           shape: RoundedRectangleBorder(
@@ -2473,32 +2471,7 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
               color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
             ),
           ),
-          itemBuilder: (context) => [
-            PopupMenuItem<String>(
-              value: 'XOF',
-              height: 40,
-              child: _CurrencyMenuItem(
-                currencyCode: 'XOF',
-                label: context.tr('XOF - FCFA BCEAO'),
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'EUR',
-              height: 40,
-              child: _CurrencyMenuItem(
-                currencyCode: 'EUR',
-                label: context.tr('EUR - Euro'),
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'USD',
-              height: 40,
-              child: _CurrencyMenuItem(
-                currencyCode: 'USD',
-                label: context.tr('USD - Dollar americain'),
-              ),
-            ),
-          ],
+          itemBuilder: (context) => [],
           child: Container(
             height: _workspaceTopBarControlHeight,
             padding: const EdgeInsets.symmetric(horizontal: 7),
@@ -2514,25 +2487,29 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _CurrencyBadge(
-                  currencyCode: normalizedSelectedCurrency,
+                const _CurrencyBadge(
+                  currencyCode: 'XOF',
                   size: 15,
                 ),
                 const SizedBox(width: 5),
                 Text(
-                  normalizedSelectedCurrency,
+                  'XOF',
                   style: TextStyle(
-                    color: isDark ? const Color(0xFFF2F6FF) : AppTheme.text,
+                    color: isDark
+                        ? const Color(0xFFF2F6FF).withOpacity(0.5)
+                        : AppTheme.text.withOpacity(0.5),
                     fontSize: 9.8,
                     fontWeight: FontWeight.w500,
                     height: 1,
                   ),
                 ),
-                const SizedBox(width: 3),
+                const SizedBox(width: 4),
                 Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  size: 12,
-                  color: isDark ? const Color(0xFFD7E3FA) : AppTheme.muted,
+                  Icons.lock_outline,
+                  size: 10,
+                  color: isDark
+                      ? const Color(0xFFD7E3FA).withOpacity(0.4)
+                      : AppTheme.muted.withOpacity(0.4),
                 ),
               ],
             ),
