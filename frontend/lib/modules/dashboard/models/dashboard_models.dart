@@ -36,17 +36,20 @@ class DistributionEntry {
     required this.label,
     required this.amount,
     required this.percentage,
+    this.count,
   });
 
   final String label;
   final double amount;
   final double percentage;
+  final int? count;
 
   factory DistributionEntry.fromJson(Map<String, dynamic> json) {
     return DistributionEntry(
       label: json['label'] as String,
       amount: (json['amount'] as num).toDouble(),
       percentage: (json['percentage'] as num).toDouble(),
+      count: (json['count'] as num?)?.toInt(),
     );
   }
 }

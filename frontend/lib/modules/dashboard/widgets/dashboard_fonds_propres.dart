@@ -23,18 +23,15 @@ class DashboardFondsPropres extends StatelessWidget {
   final VoidCallback? onEdit;
 
   String _formatAmount(double value, PortfolioAmountUnit unit) {
-    return AppFormatters.formatAmountValue(value, unit.divisor);
+    return AppFormatters.formatAmountValue(value);
   }
 
   String _formatTotalAmount(double value, PortfolioAmountUnit unit) {
-    if (value.abs() < 1000000) {
-      return AppFormatters.decimalNumber(value, maxDecimals: 1);
-    }
-    return AppFormatters.decimalNumber(value / unit.divisor, maxDecimals: 1);
+    return AppFormatters.formatAmountValue(value);
   }
 
   String _formatTotalUnit(double value, PortfolioAmountUnit unit) {
-    return AppFormatters.formatAmountSuffix(value, unit.label, displayCurrencyLabel(currency));
+    return AppFormatters.formatAmountSuffix(value);
   }
 
   @override
@@ -216,9 +213,9 @@ class DashboardFondsPropres extends StatelessWidget {
   }
 
   String _formatAmountWithUnit(double value, PortfolioAmountUnit unit) {
-    final amountVal = AppFormatters.formatAmountValue(value, unit.divisor);
-    final suffixStr = AppFormatters.formatAmountSuffix(value, unit.label, displayCurrencyLabel(currency));
-    return '$amountVal $suffixStr'.trim();
+    final amountVal = AppFormatters.formatAmountValue(value);
+    final amountSuffix = AppFormatters.formatAmountSuffix(value);
+    return '$amountVal $amountSuffix'.trim();
   }
 
   Widget _buildCompactRow(String label, double amount, Color color, PortfolioAmountUnit amountUnit) {

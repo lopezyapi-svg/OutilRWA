@@ -186,8 +186,8 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                         }
 
                         final e = data[index];
-                        final expScaled = (e.exposureAmount / 1000000000) * scale;
-                        final netScaled = (e.netExposure / 1000000000) * scale;
+                        final expScaled = e.exposureAmount;
+                        final netScaled = e.netExposure;
 
                         return Container(
                           color: isEven ? rowEvenBg : rowOddBg,
@@ -248,7 +248,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8),
                                     child: Text(
-                                      '${AppFormatters.compactNumber(expScaled)} ${amountUnit.label}',
+                                      '${AppFormatters.formatAmountValue(expScaled)} ${AppFormatters.formatAmountSuffix(expScaled)}'.trim(),
                                       textAlign: TextAlign.right,
                                       style: TextStyle(
                                         fontSize: 11,
@@ -266,7 +266,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8),
                                     child: Text(
-                                      '${AppFormatters.compactNumber(netScaled)} ${amountUnit.label}',
+                                      '${AppFormatters.formatAmountValue(netScaled)} ${AppFormatters.formatAmountSuffix(netScaled)}'.trim(),
                                       textAlign: TextAlign.right,
                                       style: TextStyle(
                                         fontSize: 11,

@@ -9,7 +9,7 @@ class PageHeader extends StatelessWidget {
   const PageHeader({
     super.key,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     this.trailing,
     this.titleFontSize,
     this.subtitleFontSize,
@@ -18,7 +18,7 @@ class PageHeader extends StatelessWidget {
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final Widget? trailing;
   final double? titleFontSize;
   final double? subtitleFontSize;
@@ -46,27 +46,29 @@ class PageHeader extends StatelessWidget {
                       fontSize: titleFontSize,
                     ),
               ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Text(
-                      subtitle.tr(context),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: subtitleColor,
-                            fontSize: subtitleFontSize,
-                            fontWeight: FontWeight.w500,
-                          ),
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        subtitle!.tr(context),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: subtitleColor,
+                              fontSize: subtitleFontSize,
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
                     ),
-                  ),
-                  if (subtitleSuffix != null) ...[
-                    const SizedBox(width: 6),
-                    subtitleSuffix!,
+                    if (subtitleSuffix != null) ...[
+                      const SizedBox(width: 6),
+                      subtitleSuffix!,
+                    ],
                   ],
-                ],
-              ),
+                ),
+              ],
             ],
           ),
         ),

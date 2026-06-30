@@ -4,74 +4,41 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localization.dart';
 import '../../../core/theme/app_theme.dart';
 import 'dashboard_theme.dart';
+import 'dashboard_design.dart';
 
 /// En-tête du dashboard avec date de référence et valorisation.
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({
     super.key,
-    required this.selectedDate,
-    required this.valuationDate,
-    required this.onPickDate,
+    this.onReload,
+    this.onExport,
   });
 
-  final DateTime selectedDate;
-  final DateTime valuationDate;
-  final VoidCallback onPickDate;
+  final VoidCallback? onReload;
+  final VoidCallback? onExport;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
-      padding: const EdgeInsets.all(3),
-      decoration: BoxDecoration(
-        color: dashboardPanelColor(isDark),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(color: dashboardPanelBorder(isDark)),
-        boxShadow: dashboardPanelShadow(isDark),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 840;
-
-          return compact
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _HeaderText(isDark: isDark),
-                    const SizedBox(height: 3),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _CalendarPill(
-                          date: selectedDate,
-                          onTap: onPickDate,
-                        ),
-                        _InfoPill(
-                          label: context.tr('Dernière évaluation'),
-                          value: dashboardLongDate(valuationDate),
-                        ),
-                      ],
-                    ),
-                  ],
-                )
-              : Row(
-                  children: [
-                    Expanded(child: _HeaderText(isDark: isDark)),
-                    const SizedBox(width: 8),
-                    _CalendarPill(
-                      date: selectedDate,
-                      onTap: onPickDate,
-                    ),
-                    const SizedBox(width: 8),
-                    _InfoPill(
-                      label: context.tr('Dernière évaluation'),
-                      value: dashboardLongDate(valuationDate),
-                    ),
-                  ],
-                );
-        },
+      padding: const EdgeInsets.only(bottom: 8, top: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Expanded(child: _HeaderText()),
+          const SizedBox(width: 16),
+          _HeaderButton(
+            icon: Icons.refresh_rounded,
+            label: 'Actualiser',
+            onTap: onReload,
+          ),
+          const SizedBox(width: 8),
+          _HeaderButton(
+            icon: Icons.download_rounded,
+            label: 'Exporter',
+            isPrimary: true,
+            onTap: onExport,
+          ),
+        ],
       ),
     );
   }
@@ -79,36 +46,33 @@ class DashboardHeader extends StatelessWidget {
 
 /// Bloc texte interne utilisé dans l'en-tête du dashboard.
 class _HeaderText extends StatelessWidget {
-  const _HeaderText({
-    required this.isDark,
-  });
-
-  final bool isDark;
+  const _HeaderText();
 
   @override
   Widget build(BuildContext context) {
+    final c = DashColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           context.tr('Tableau de bord'),
           style: TextStyle(
-            color: dashboardTitleColor(isDark),
-            fontSize: 17,
-            fontWeight: FontWeight.w500,
+            color: c.ink,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
             letterSpacing: -0.3,
+            height: 1.0,
           ),
         ),
-        const SizedBox(height: 3),
         Text(
           context.tr(
-            'Vue synthèse du portefeuille, des RWA et du capital prudentiel.',
+            'Vue d\'ensemble du portefeuille',
           ),
           style: TextStyle(
-            color: dashboardSubtitleColor(isDark),
-            fontSize: 9.5,
-            fontWeight: FontWeight.w500,
-            height: 1.25,
+            color: c.muted,
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            height: 1.2,
           ),
         ),
       ],
@@ -116,106 +80,58 @@ class _HeaderText extends StatelessWidget {
   }
 }
 
-/// Pastille de date interactive affichée dans l'en-tête.
-class _CalendarPill extends StatelessWidget {
-  const _CalendarPill({
-    required this.date,
-    required this.onTap,
+class _HeaderButton extends StatelessWidget {
+  const _HeaderButton({
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.isPrimary = false,
   });
 
-  final DateTime date;
-  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool isPrimary;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Tooltip(
-      message: context.tr('Choisir une date de reférence'),
+    final c = DashColors.of(context);
+    
+    return Material(
+      color: isPrimary ? c.navy : Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+        side: isPrimary ? BorderSide.none : BorderSide(color: c.border),
+      ),
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        onTap: onTap ?? () {},
+        borderRadius: BorderRadius.circular(6),
         child: Container(
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF14233D) : const Color(0xFFF8FAFF),
-            borderRadius: BorderRadius.circular(AppTheme.radius),
-            border: Border.all(color: dashboardPanelBorder(isDark)),
-          ),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.calendar_month_rounded,
+              Icon(
+                icon,
                 size: 14,
-                color: Color(0xFF234A84),
+                color: isPrimary ? Colors.white : c.navy,
               ),
               const SizedBox(width: 8),
               Text(
-                dashboardLongDate(date),
+                label,
                 style: TextStyle(
-                  color: dashboardTitleColor(isDark),
-                  fontSize: 8.8,
-                  fontWeight: FontWeight.w500,
+                  color: isPrimary ? Colors.white : c.navy,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// Pastille d'information secondaire affichée dans l'en-tête.
-class _InfoPill extends StatelessWidget {
-  const _InfoPill({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      height: 34,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14233D) : const Color(0xFFF8FAFF),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(color: dashboardPanelBorder(isDark)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label.tr(context),
-                style: TextStyle(
-                  color: dashboardSubtitleColor(isDark),
-                  fontSize: 7.8,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  color: dashboardTitleColor(isDark),
-                  fontSize: 8.3,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

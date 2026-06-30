@@ -154,9 +154,15 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
           Divider(height: 1, thickness: Dash.hairline, color: c.divider),
           const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Capital minimum requis = ${AppFormatters.compactNumber(total)} × 8%', style: TextStyle(fontSize: 12, color: c.muted, fontWeight: FontWeight.w500)),
+              Expanded(
+                child: Text(
+                  'Capital minimum requis = ${AppFormatters.compactNumber(total)} × 8%', 
+                  style: TextStyle(fontSize: 12, color: c.muted, fontWeight: FontWeight.w500),
+                ),
+              ),
+              const SizedBox(width: 8),
               Text(
                 '${AppFormatters.compactNumber(total * 0.08)} ${amountUnit.label}',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: c.ink),

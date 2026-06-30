@@ -230,6 +230,7 @@ const Map<String, String> _englishTranslations = {
       'Assess solvency ratio sensitivity.',
   'Choisir une date de reférence': 'Choose a reference date',
   'Dernière évaluation': 'Last valuation',
+  'Vue d\'ensemble du portefeuille': 'Portfolio Overview',
   'Vue synthèse du portefeuille, des RWA et du capital prudentiel.':
       'Summary view of the portfolio, RWA and prudential capital.',
   'Import Excel impossible': 'Excel import failed',

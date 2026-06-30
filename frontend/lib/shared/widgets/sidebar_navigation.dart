@@ -216,6 +216,11 @@ Rect _anchorRectFrom(BuildContext context) {
 
 const List<_MenuEntry> _riskCreditChildren = [
   _MenuEntry.leaf(
+    module: AppModule.dashboardCredit,
+    icon: Icons.dashboard_outlined,
+    label: 'Dashboard Crédit',
+  ),
+  _MenuEntry.leaf(
     module: AppModule.expositions,
     icon: Icons.credit_card_outlined,
     label: 'Expositions',

@@ -16,6 +16,7 @@ import 'modules/analyse/screens/analyse_screen.dart';
 import 'modules/capital_planing/screens/capital_planing_screen.dart';
 import 'modules/concentration/screens/concentration_screen.dart';
 import 'modules/crm/screens/crm_screen.dart';
+import 'modules/dashboard/screens/dashboard_screen.dart';
 import 'modules/defauts_impayes/screens/defauts_impayes_screen.dart';
 import 'modules/expositions/screens/expositions_screen.dart';
 import 'modules/garanties/screens/garanties_screen.dart';
@@ -223,6 +224,7 @@ class _RwaAppState extends State<RwaApp> {
           api: _api,
           onNavigateToModule: _selectModule,
         ),
+      AppModule.dashboardCredit => DashboardScreen(api: _api),
       AppModule.expositions => ExpositionsScreen(
           api: _api,
           displayCurrencyListenable: _portfolioDisplayCurrency,
