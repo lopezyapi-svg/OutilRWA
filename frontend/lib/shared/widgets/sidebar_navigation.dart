@@ -1,4 +1,4 @@
-// Ce fichier construit la navigation laterale reutilisable.
+﻿// Ce fichier construit la navigation laterale reutilisable.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 

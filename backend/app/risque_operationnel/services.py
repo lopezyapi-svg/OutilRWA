@@ -8,6 +8,12 @@ from datetime import date, datetime, timedelta
 from database.connection import database_manager, utcnow_iso
 
 from .models import (
+    AibCalculResult,
+    AsAnneeDetail,
+    AsCalculResult,
+    AsLigneDetail,
+    BetaLigneUpdate,
+    BetaLigneView,
     ControleCreate,
     ControleUpdate,
     ControleView,
@@ -26,13 +32,34 @@ from .models import (
     KriValeurCreate,
     KriValeurView,
     KriView,
+    OpRiskBiDetail,
+    OpRiskCalculResult,
+    OpRiskFcDetail,
+    OpRiskIldcDetail,
+    OpRiskInput,
+    OpRiskInputUpdate,
+    OpRiskParametres,
+    OpRiskParametresUpdate,
+    OpRiskScDetail,
+    ParametresAib,
+    ParametresAibUpdate,
+    ParametresAs,
+    ParametresAsUpdate,
+    ParametresSeuils,
+    ParametresSeuilsUpdate,
     PlanCreate,
     PlanUpdate,
     PlanView,
+    PnbAnnuelCreate,
+    PnbAnnuelView,
+    PnbParLigneCreate,
+    PnbParLigneView,
     RepartitionItem,
     RisqueCreate,
     RisqueUpdate,
     RisqueView,
+    SyntheseLigne,
+    SyntheseResult,
 )
 
 _LIGNES_METIER = [
@@ -876,3 +903,554 @@ def get_dashboard() -> DashboardData:
         repartition_ligne_metier=repartition_lm,
         repartition_type=repartition_type,
     )
+
+
+# ─── BIC — Approche Standard CRR3 ────────────────────────────────────────────
+
+def _row_to_input(row) -> OpRiskInput:
+    return OpRiskInput(
+        annee=row["annee"],
+        interets_percus=row["interets_percus"],
+        interets_verses=row["interets_verses"],
+        revenus_leasing=row["revenus_leasing"] if "revenus_leasing" in row.keys() else 0.0,
+        dividendes_percus=row["dividendes_percus"],
+        autres_produits_exploitation=row["autres_produits_exploitation"],
+        autres_charges_exploitation=row["autres_charges_exploitation"],
+        commissions_percues=row["commissions_percues"],
+        commissions_versees=row["commissions_versees"],
+        resultat_portefeuille_negociation=row["resultat_portefeuille_negociation"],
+        resultat_portefeuille_bancaire=row["resultat_portefeuille_bancaire"],
+        tresorerie_et_banques_centrales=row["tresorerie_et_banques_centrales"],
+        creances_etablissements_credit=row["creances_etablissements_credit"],
+        creances_clientele=row["creances_clientele"],
+        provisions=row["provisions"],
+        pnb=row["pnb"],
+    )
+
+
+def _row_to_params(row) -> OpRiskParametres:
+    return OpRiskParametres(
+        seuil_ildc=row["seuil_ildc"],
+        coef_tranche1=row["coef_tranche1"],
+        coef_tranche2=row["coef_tranche2"],
+        coef_tranche3=row["coef_tranche3"],
+        seuil1_fcfa=row["seuil1_fcfa"],
+        seuil2_fcfa=row["seuil2_fcfa"],
+        multiplicateur_rea=row["multiplicateur_rea"],
+        taux_conversion_eur_fcfa=row["taux_conversion_eur_fcfa"],
+    )
+
+
+def get_op_risk_input(annee: int) -> OpRiskInput:
+    with database_manager.read_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM op_risk_financial_inputs WHERE annee = ?", (annee,)
+        ).fetchone()
+        if row is None:
+            return OpRiskInput(annee=annee)
+        return _row_to_input(row)
+
+
+def upsert_op_risk_input(annee: int, data: OpRiskInputUpdate) -> OpRiskInput:
+    now = utcnow_iso()
+    with database_manager.transaction() as conn:
+        existing = conn.execute(
+            "SELECT annee FROM op_risk_financial_inputs WHERE annee = ?", (annee,)
+        ).fetchone()
+        if existing is None:
+            fields = {
+                "annee": annee,
+                "interets_percus": data.interets_percus or 0.0,
+                "interets_verses": data.interets_verses or 0.0,
+                "revenus_leasing": data.revenus_leasing or 0.0,
+                "dividendes_percus": data.dividendes_percus or 0.0,
+                "autres_produits_exploitation": data.autres_produits_exploitation or 0.0,
+                "autres_charges_exploitation": data.autres_charges_exploitation or 0.0,
+                "commissions_percues": data.commissions_percues or 0.0,
+                "commissions_versees": data.commissions_versees or 0.0,
+                "resultat_portefeuille_negociation": data.resultat_portefeuille_negociation or 0.0,
+                "resultat_portefeuille_bancaire": data.resultat_portefeuille_bancaire or 0.0,
+                "tresorerie_et_banques_centrales": data.tresorerie_et_banques_centrales or 0.0,
+                "creances_etablissements_credit": data.creances_etablissements_credit or 0.0,
+                "creances_clientele": data.creances_clientele or 0.0,
+                "provisions": data.provisions or 0.0,
+                "pnb": data.pnb or 0.0,
+                "modifie_le": now,
+            }
+            cols = ", ".join(fields.keys())
+            placeholders = ", ".join("?" * len(fields))
+            conn.execute(
+                f"INSERT INTO op_risk_financial_inputs ({cols}) VALUES ({placeholders})",
+                list(fields.values()),
+            )
+        else:
+            updates = {k: v for k, v in data.model_dump().items() if v is not None}
+            updates["modifie_le"] = now
+            set_clause = ", ".join(f"{k} = ?" for k in updates)
+            conn.execute(
+                f"UPDATE op_risk_financial_inputs SET {set_clause} WHERE annee = ?",
+                [*updates.values(), annee],
+            )
+        row = conn.execute(
+            "SELECT * FROM op_risk_financial_inputs WHERE annee = ?", (annee,)
+        ).fetchone()
+        return _row_to_input(row)
+
+
+def get_op_risk_parametres() -> OpRiskParametres:
+    with database_manager.read_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM op_risk_parametres WHERE id = 1"
+        ).fetchone()
+        return _row_to_params(row)
+
+
+def update_op_risk_parametres(data: OpRiskParametresUpdate) -> OpRiskParametres:
+    with database_manager.transaction() as conn:
+        updates = {k: v for k, v in data.model_dump().items() if v is not None}
+        if updates:
+            set_clause = ", ".join(f"{k} = ?" for k in updates)
+            conn.execute(
+                f"UPDATE op_risk_parametres SET {set_clause} WHERE id = 1",
+                list(updates.values()),
+            )
+        row = conn.execute(
+            "SELECT * FROM op_risk_parametres WHERE id = 1"
+        ).fetchone()
+        return _row_to_params(row)
+
+
+def calcul_bic(annee_n: int | None = None) -> OpRiskCalculResult:
+    """
+    Business Indicator Component (CRR3 Art. 315-321).
+    ILM = 1 par hypothèse (non activé — cadre réglementaire UE actuel).
+    annee_n : dernier exercice clos (défaut = année courante - 1).
+    """
+    year_n = annee_n if annee_n is not None else date.today().year - 1
+    annees = [year_n - 2, year_n - 1, year_n]
+
+    params = get_op_risk_parametres()
+
+    with database_manager.read_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM op_risk_financial_inputs WHERE annee IN (?, ?, ?)",
+            annees,
+        ).fetchall()
+
+    inputs_map = {row["annee"]: _row_to_input(row) for row in rows}
+    inputs = [inputs_map.get(y, OpRiskInput(annee=y)) for y in annees]
+    donnees_insuffisantes = len(rows) == 0
+
+    def moy(attr: str) -> float:
+        return sum(getattr(inp, attr) for inp in inputs) / 3
+
+    # ── ILDC ──────────────────────────────────────────────────────────────────
+    ic = moy("interets_percus") - moy("interets_verses")
+    ac = (
+        moy("tresorerie_et_banques_centrales")
+        + moy("creances_etablissements_credit")
+        + (moy("creances_clientele") - moy("provisions"))
+    )
+    plafond_ildc = ac * params.seuil_ildc
+    plafond_actif = abs(ic) > plafond_ildc
+    dividendes = moy("dividendes_percus")
+    ildc = min(abs(ic), plafond_ildc) + dividendes
+
+    # ── SC ────────────────────────────────────────────────────────────────────
+    oi = moy("autres_produits_exploitation")
+    oe = moy("autres_charges_exploitation")
+    fi = moy("commissions_percues")
+    fe = moy("commissions_versees")
+    sc = max(oi, oe) + max(fi, fe)
+
+    # ── FC ────────────────────────────────────────────────────────────────────
+    tc = abs(moy("resultat_portefeuille_negociation"))
+    bc = abs(moy("resultat_portefeuille_bancaire"))
+    fc = tc + bc
+
+    # ── BI et BIC (tranches marginales) ───────────────────────────────────────
+    bi = ildc + sc + fc
+    s1 = params.seuil1_fcfa
+    s2 = params.seuil2_fcfa
+    c1, c2, c3 = params.coef_tranche1, params.coef_tranche2, params.coef_tranche3
+
+    if bi <= s1:
+        bic = bi * c1
+        tranche_active = 1
+        marge: float | None = s1 - bi
+    elif bi <= s2:
+        bic = s1 * c1 + (bi - s1) * c2
+        tranche_active = 2
+        marge = s2 - bi
+    else:
+        bic = s1 * c1 + (s2 - s1) * c2 + (bi - s2) * c3
+        tranche_active = 3
+        marge = None
+
+    # ── Résultats (ILM = 1) ───────────────────────────────────────────────────
+    mult = params.multiplicateur_rea
+    ofr_crr3 = bic
+    rea_crr3 = ofr_crr3 * mult
+
+    pnb_moy = moy("pnb")
+    ofr_bia = pnb_moy * 0.15
+    rea_bia = ofr_bia * mult
+    ecart = ofr_crr3 - ofr_bia
+
+    return OpRiskCalculResult(
+        annees=annees,
+        inputs=inputs,
+        params=params,
+        ildc_detail=OpRiskIldcDetail(
+            ic=ic, ac=ac, plafond_ildc=plafond_ildc,
+            plafond_actif=plafond_actif, dividendes=dividendes, ildc=ildc,
+        ),
+        sc_detail=OpRiskScDetail(oi=oi, oe=oe, fi=fi, fe=fe, sc=sc),
+        fc_detail=OpRiskFcDetail(tc=tc, bc=bc, fc=fc),
+        bi_detail=OpRiskBiDetail(
+            bi=bi, tranche_active=tranche_active, bic=bic,
+            marge_avant_tranche_suivante=marge,
+        ),
+        ofr_crr3=ofr_crr3,
+        rea_crr3=rea_crr3,
+        ofr_bia=ofr_bia,
+        rea_bia=rea_bia,
+        ecart=ecart,
+        donnees_insuffisantes=donnees_insuffisantes,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BLOC A1 — AIB (Approche Indicateur de Base) — art. 301
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _row_to_pnb_annuel(row) -> PnbAnnuelView:
+    pbt = float(row["produit_brut_total"])
+    return PnbAnnuelView(
+        annee=int(row["annee"]),
+        produit_brut_total=pbt,
+        pnb_positif=pbt > 0,
+        pnb_retenu_aib=pbt if pbt > 0 else 0.0,
+        source_document=row["source_document"] or "",
+        modifie_le=row["modifie_le"] or "",
+    )
+
+
+def list_pnb_annuel() -> list[PnbAnnuelView]:
+    with database_manager.read_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM op_pnb_annuel ORDER BY annee"
+        ).fetchall()
+    return [_row_to_pnb_annuel(r) for r in rows]
+
+
+def upsert_pnb_annuel(annee: int, data: PnbAnnuelCreate) -> PnbAnnuelView:
+    now = utcnow_iso()
+    with database_manager.transaction() as conn:
+        existing = conn.execute(
+            "SELECT annee FROM op_pnb_annuel WHERE annee = ?", (annee,)
+        ).fetchone()
+        if existing is None:
+            conn.execute(
+                "INSERT INTO op_pnb_annuel (annee, produit_brut_total, source_document, modifie_le)"
+                " VALUES (?, ?, ?, ?)",
+                (annee, data.produit_brut_total, data.source_document, now),
+            )
+        else:
+            conn.execute(
+                "UPDATE op_pnb_annuel SET produit_brut_total=?, source_document=?, modifie_le=?"
+                " WHERE annee=?",
+                (data.produit_brut_total, data.source_document, now, annee),
+            )
+        row = conn.execute(
+            "SELECT * FROM op_pnb_annuel WHERE annee = ?", (annee,)
+        ).fetchone()
+    return _row_to_pnb_annuel(row)
+
+
+def delete_pnb_annuel(annee: int) -> None:
+    with database_manager.transaction() as conn:
+        conn.execute("DELETE FROM op_pnb_annuel WHERE annee = ?", (annee,))
+
+
+def get_aib_parametres() -> ParametresAib:
+    with database_manager.read_connection() as conn:
+        row = conn.execute("SELECT * FROM op_parametres_aib WHERE id = 1").fetchone()
+    return ParametresAib(
+        alpha=row["alpha"],
+        multiplicateur_rwa=row["multiplicateur_rwa"],
+        ratio_solvabilite_min=row["ratio_solvabilite_min"],
+    )
+
+
+def update_aib_parametres(data: ParametresAibUpdate) -> ParametresAib:
+    with database_manager.transaction() as conn:
+        updates = {k: v for k, v in data.model_dump().items() if v is not None}
+        if updates:
+            set_clause = ", ".join(f"{k} = ?" for k in updates)
+            conn.execute(
+                f"UPDATE op_parametres_aib SET {set_clause} WHERE id = 1",
+                list(updates.values()),
+            )
+        row = conn.execute("SELECT * FROM op_parametres_aib WHERE id = 1").fetchone()
+    return ParametresAib(
+        alpha=row["alpha"],
+        multiplicateur_rwa=row["multiplicateur_rwa"],
+        ratio_solvabilite_min=row["ratio_solvabilite_min"],
+    )
+
+
+def calcul_aib() -> AibCalculResult:
+    annees_saisies = list_pnb_annuel()
+    params = get_aib_parametres()
+
+    positifs = [a for a in annees_saisies if a.pnb_retenu_aib > 0]
+    n = len(positifs)
+    somme = sum(a.pnb_retenu_aib for a in positifs)
+    pnb_moyen = somme / n if n > 0 else 0.0
+    k_ib = pnb_moyen * params.alpha
+    apr = k_ib * params.multiplicateur_rwa
+    capital = apr * params.ratio_solvabilite_min
+
+    return AibCalculResult(
+        annees_saisies=annees_saisies,
+        n=n,
+        somme_pnb_positifs=somme,
+        pnb_moyen=pnb_moyen,
+        alpha=params.alpha,
+        k_ib=k_ib,
+        apr_aib=apr,
+        capital_min_aib=capital,
+        donnees_insuffisantes=n == 0,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BLOC A2 — AS (Approche Standard) — art. 305-311
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def list_beta_lignes() -> list[BetaLigneView]:
+    with database_manager.read_connection() as conn:
+        rows = conn.execute("SELECT * FROM op_beta_lignes ORDER BY beta DESC, ligne_metier").fetchall()
+    return [BetaLigneView(ligne_metier=r["ligne_metier"], beta=r["beta"], description=r["description"]) for r in rows]
+
+
+def update_beta_ligne(ligne_metier: str, data: BetaLigneUpdate) -> BetaLigneView:
+    with database_manager.transaction() as conn:
+        conn.execute(
+            "UPDATE op_beta_lignes SET beta = ? WHERE ligne_metier = ?",
+            (data.beta, ligne_metier),
+        )
+        row = conn.execute(
+            "SELECT * FROM op_beta_lignes WHERE ligne_metier = ?", (ligne_metier,)
+        ).fetchone()
+    return BetaLigneView(ligne_metier=row["ligne_metier"], beta=row["beta"], description=row["description"])
+
+
+def get_pnb_lignes(annee: int) -> list[PnbParLigneView]:
+    with database_manager.read_connection() as conn:
+        betas = {r["ligne_metier"]: r["beta"] for r in conn.execute("SELECT * FROM op_beta_lignes").fetchall()}
+        rows = conn.execute(
+            "SELECT * FROM op_pnb_par_ligne WHERE annee = ? ORDER BY ligne_metier", (annee,)
+        ).fetchall()
+    result = []
+    for r in rows:
+        beta = betas.get(r["ligne_metier"], 0.0)
+        pbl = float(r["produit_brut_ligne"])
+        result.append(PnbParLigneView(
+            annee=annee, ligne_metier=r["ligne_metier"],
+            produit_brut_ligne=pbl, beta=beta, k_ligne=pbl * beta,
+        ))
+    return result
+
+
+def upsert_pnb_ligne(annee: int, ligne_metier: str, data: PnbParLigneCreate) -> PnbParLigneView:
+    now = utcnow_iso()
+    with database_manager.transaction() as conn:
+        existing = conn.execute(
+            "SELECT annee FROM op_pnb_par_ligne WHERE annee=? AND ligne_metier=?",
+            (annee, ligne_metier),
+        ).fetchone()
+        if existing is None:
+            conn.execute(
+                "INSERT INTO op_pnb_par_ligne (annee, ligne_metier, produit_brut_ligne, modifie_le)"
+                " VALUES (?, ?, ?, ?)",
+                (annee, ligne_metier, data.produit_brut_ligne, now),
+            )
+        else:
+            conn.execute(
+                "UPDATE op_pnb_par_ligne SET produit_brut_ligne=?, modifie_le=?"
+                " WHERE annee=? AND ligne_metier=?",
+                (data.produit_brut_ligne, now, annee, ligne_metier),
+            )
+        betas = {r["ligne_metier"]: r["beta"] for r in conn.execute("SELECT * FROM op_beta_lignes").fetchall()}
+        row = conn.execute(
+            "SELECT * FROM op_pnb_par_ligne WHERE annee=? AND ligne_metier=?",
+            (annee, ligne_metier),
+        ).fetchone()
+    beta = betas.get(ligne_metier, 0.0)
+    pbl = float(row["produit_brut_ligne"])
+    return PnbParLigneView(annee=annee, ligne_metier=ligne_metier, produit_brut_ligne=pbl, beta=beta, k_ligne=pbl * beta)
+
+
+def get_as_parametres() -> ParametresAs:
+    with database_manager.read_connection() as conn:
+        row = conn.execute("SELECT * FROM op_parametres_as WHERE id = 1").fetchone()
+    return ParametresAs(
+        as_autorisee=bool(row["as_autorisee"]),
+        date_autorisation=row["date_autorisation"] or "",
+        reference_autorisation=row["reference_autorisation"] or "",
+        multiplicateur_rwa=row["multiplicateur_rwa"],
+        ratio_solvabilite_min=row["ratio_solvabilite_min"],
+    )
+
+
+def update_as_parametres(data: ParametresAsUpdate) -> ParametresAs:
+    with database_manager.transaction() as conn:
+        raw = data.model_dump()
+        updates: dict = {}
+        for k, v in raw.items():
+            if v is not None:
+                updates[k] = int(v) if k == "as_autorisee" else v
+        if updates:
+            set_clause = ", ".join(f"{k} = ?" for k in updates)
+            conn.execute(
+                f"UPDATE op_parametres_as SET {set_clause} WHERE id = 1",
+                list(updates.values()),
+            )
+        row = conn.execute("SELECT * FROM op_parametres_as WHERE id = 1").fetchone()
+    return ParametresAs(
+        as_autorisee=bool(row["as_autorisee"]),
+        date_autorisation=row["date_autorisation"] or "",
+        reference_autorisation=row["reference_autorisation"] or "",
+        multiplicateur_rwa=row["multiplicateur_rwa"],
+        ratio_solvabilite_min=row["ratio_solvabilite_min"],
+    )
+
+
+def calcul_as() -> AsCalculResult:
+    params = get_as_parametres()
+    annees_saisies = sorted({r.annee for r in list_pnb_annuel()})
+
+    detail_par_annee: list[AsAnneeDetail] = []
+    with database_manager.read_connection() as conn:
+        betas = {r["ligne_metier"]: float(r["beta"]) for r in conn.execute("SELECT * FROM op_beta_lignes").fetchall()}
+        for annee in annees_saisies:
+            rows = conn.execute(
+                "SELECT * FROM op_pnb_par_ligne WHERE annee = ?", (annee,)
+            ).fetchall()
+            lignes: list[AsLigneDetail] = []
+            for r in rows:
+                beta = betas.get(r["ligne_metier"], 0.0)
+                pbl = float(r["produit_brut_ligne"])
+                lignes.append(AsLigneDetail(ligne_metier=r["ligne_metier"], pnb=pbl, beta=beta, k_ligne=pbl * beta))
+            k_total = sum(l.k_ligne for l in lignes)
+            k_retenu = max(k_total, 0.0)
+            detail_par_annee.append(AsAnneeDetail(annee=annee, lignes=lignes, k_total=k_total, k_retenu=k_retenu))
+
+    n = len(detail_par_annee)
+    k_as = sum(d.k_retenu for d in detail_par_annee) / n if n > 0 else 0.0
+    apr = k_as * params.multiplicateur_rwa
+    capital = apr * params.ratio_solvabilite_min
+
+    return AsCalculResult(
+        as_autorisee=params.as_autorisee,
+        detail_par_annee=detail_par_annee,
+        k_as=k_as,
+        apr_as=apr,
+        capital_min_as=capital,
+        donnees_insuffisantes=n == 0,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Seuils de reporting Pilier 2
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_pertes_seuils() -> ParametresSeuils:
+    with database_manager.read_connection() as conn:
+        row = conn.execute("SELECT * FROM op_parametres_seuils WHERE id = 1").fetchone()
+    return ParametresSeuils(
+        seuil_reporting_interne=row["seuil_reporting_interne"],
+        seuil_reporting_direction=row["seuil_reporting_direction"],
+        seuil_reporting_conseil=row["seuil_reporting_conseil"],
+    )
+
+
+def update_pertes_seuils(data: ParametresSeuilsUpdate) -> ParametresSeuils:
+    with database_manager.transaction() as conn:
+        updates = {k: v for k, v in data.model_dump().items() if v is not None}
+        if updates:
+            set_clause = ", ".join(f"{k} = ?" for k in updates)
+            conn.execute(
+                f"UPDATE op_parametres_seuils SET {set_clause} WHERE id = 1",
+                list(updates.values()),
+            )
+        row = conn.execute("SELECT * FROM op_parametres_seuils WHERE id = 1").fetchone()
+    return ParametresSeuils(
+        seuil_reporting_interne=row["seuil_reporting_interne"],
+        seuil_reporting_direction=row["seuil_reporting_direction"],
+        seuil_reporting_conseil=row["seuil_reporting_conseil"],
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Synthèse comparative AIB / AS / BIC
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_synthese() -> SyntheseResult:
+    lignes: list[SyntheseLigne] = []
+
+    # AIB
+    try:
+        aib = calcul_aib()
+        lignes.append(SyntheseLigne(
+            methode="AIB — Indicateur de Base (art. 301)",
+            k=aib.k_ib, apr=aib.apr_aib, capital_min=aib.capital_min_aib,
+            disponible=not aib.donnees_insuffisantes,
+        ))
+        k_ib = aib.k_ib if not aib.donnees_insuffisantes else None
+    except Exception:
+        k_ib = None
+        lignes.append(SyntheseLigne(methode="AIB — Indicateur de Base (art. 301)", k=0, apr=0, capital_min=0, disponible=False))
+
+    # AS
+    try:
+        as_res = calcul_as()
+        lignes.append(SyntheseLigne(
+            methode="AS — Approche Standard (art. 305-311)",
+            k=as_res.k_as, apr=as_res.apr_as, capital_min=as_res.capital_min_as,
+            disponible=as_res.as_autorisee and not as_res.donnees_insuffisantes,
+        ))
+    except Exception:
+        lignes.append(SyntheseLigne(methode="AS — Approche Standard (art. 305-311)", k=0, apr=0, capital_min=0, disponible=False))
+
+    # BIC
+    try:
+        bic = calcul_bic()
+        lignes.append(SyntheseLigne(
+            methode="BIC — CRR3 Pilotage interne",
+            k=bic.ofr_crr3, apr=bic.rea_crr3, capital_min=bic.rea_crr3 * 0.08,
+            disponible=not bic.donnees_insuffisantes,
+        ))
+        ofr_bic = bic.ofr_crr3 if not bic.donnees_insuffisantes else None
+    except Exception:
+        ofr_bic = None
+        lignes.append(SyntheseLigne(methode="BIC — CRR3 Pilotage interne", k=0, apr=0, capital_min=0, disponible=False))
+
+    ecart = (ofr_bic - k_ib) if (ofr_bic is not None and k_ib is not None) else None
+
+    # Ratio de couverture : K_IB / perte_nette_annuelle_moy
+    ratio: float | None = None
+    try:
+        with database_manager.read_connection() as conn:
+            row = conn.execute(
+                "SELECT AVG(perte_brute - perte_recuperee) as pnm FROM ro_incidents"
+            ).fetchone()
+            pnm = float(row["pnm"]) if row and row["pnm"] else 0.0
+        if pnm > 0 and k_ib is not None and k_ib > 0:
+            ratio = k_ib / pnm
+    except Exception:
+        pass
+
+    return SyntheseResult(lignes=lignes, ecart_bic_vs_aib=ecart, ratio_couverture=ratio)

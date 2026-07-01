@@ -1,4 +1,4 @@
-import 'market_data_import_store.dart';
+﻿import 'market_data_import_store.dart';
 
 class UemoaCapitalRequirement {
   final double interestRateRisk;

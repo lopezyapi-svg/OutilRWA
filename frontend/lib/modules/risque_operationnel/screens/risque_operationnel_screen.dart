@@ -1,4 +1,4 @@
-// Ecran principal du module Risque Opérationnel — 10 vues.
+﻿// Ecran principal du module Risque Opérationnel — 10 vues.
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -18,8 +18,12 @@ import '../../../shared/utils/file_save.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../../dashboard/models/dashboard_models.dart';
+import '../../dashboard/widgets/dashboard_design.dart';
 import '../models/ro_models.dart';
 import '../widgets/ro_import_pertes_dialog.dart';
+import '../widgets/uemoi_aib_screen.dart';
+import '../widgets/uemoi_as_screen.dart';
+import '../widgets/uemoi_synthese_screen.dart';
 
 // ─── Enum vues ────────────────────────────────────────────────────────────────
 
@@ -147,9 +151,7 @@ String _stripArtRefs(String text) =>
 Widget _artInfo(String artRef) {
   final explanation = _artExplanations[artRef];
   if (explanation == null) return const SizedBox.shrink();
-  return Semantics(
-    hidden: true,
-    container: true,
+  return ExcludeSemantics(
     child: Tooltip(
       message: '$artRef\n$explanation',
       preferBelow: false,
@@ -180,11 +182,7 @@ class RisqueOperationnelScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Masque les widgets aux aides accessibles sans retirer brutalement
-    // les nœuds du `AXTree`, ce qui réduit les erreurs sur Windows.
-    return Semantics(
-      hidden: true,
-      container: true,
+    return ExcludeSemantics(
       child: switch (view) {
         OperationalRiskView.dashboard    => _DashboardView(api: api),
         OperationalRiskView.registre     => _RegistreView(api: api),
@@ -332,68 +330,25 @@ Widget _roMetricRow(
   required String artRef,
   required List<({String label, String value, Color color, IconData icon})> items,
 }) {
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Row(children: [
-        Text(title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-        const Spacer(),
-        _artInfo(artRef),
-      ]),
-      const SizedBox(height: 8),
-      Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(2),
-          border: Border.all(
-            color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25)),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
-              blurRadius: 20, offset: const Offset(0, 6)),
-            BoxShadow(
-              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
-              blurRadius: 6, offset: const Offset(0, 2)),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? [const Color(0xFF1A2A4A), const Color(0xFF13203A)]
-                      : [const Color(0xFFF8F9FF), const Color(0xFFF0F2FF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Row(
-                children: [
-                  for (var i = 0; i < items.length; i++) ...[
-                    if (i > 0)
-                      Container(
-                        width: 1, height: 40,
-                        color: AppTheme.accent.withValues(alpha: 0.25)),
-                    Expanded(
-                      child: _RoDashSummaryItem(
-                        label: items[i].label,
-                        value: items[i].value,
-                        accentColor: items[i].color,
-                        icon: items[i].icon,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+  return DashPanel(
+    title: title,
+    subtitle: 'Suivi opérationnel et actions correctives',
+    trailing: _artInfo(artRef),
+    child: Row(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) const SizedBox(width: 10),
+          Expanded(
+            child: _RoDashSummaryItem(
+              label: items[i].label,
+              value: items[i].value,
+              accentColor: items[i].color,
+              icon: items[i].icon,
             ),
-          ],
-        ),
-      ),
-    ],
+          ),
+        ],
+      ],
+    ),
   );
 }
 
@@ -661,28 +616,49 @@ class _DashboardView extends StatefulWidget {
 
 class _DashboardViewState extends State<_DashboardView> {
   late Future<RoDashboardData> _future;
+  late DateTime _analysisDate;
 
   @override
   void initState() {
     super.initState();
+    _analysisDate = DateUtils.dateOnly(DateTime.now());
     _future = widget.api.fetchRoDashboard();
+  }
+
+  void _refresh() {
+    setState(() {
+      _future = widget.api.fetchRoDashboard();
+    });
+  }
+
+  Future<void> _pickAnalysisDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _analysisDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+      helpText: "Choisir la date d'analyse",
+    );
+
+    if (picked == null) {
+      return;
+    }
+
+    setState(() => _analysisDate = DateUtils.dateOnly(picked));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppTheme.pagePadding),
+    return DecoratedBox(
+      decoration: BoxDecoration(color: _roDashboardBackgroundFor(context)),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PageHeader(
-            title: 'Dashboard Opérationnel',
-            subtitle: 'KPI réglementaires et alertes (Art. 313)',
-            titleFontSize: 26,
-            subtitleFontSize: 12.5,
-            subtitleSuffix: _artInfo('Art. 313'),
+          _RoDashboardHeader(
+            analysisDate: _analysisDate,
+            onPickAnalysisDate: _pickAnalysisDate,
+            onRefresh: _refresh,
           ),
-          const SizedBox(height: 14),
           Expanded(
             child: FutureBuilder<RoDashboardData>(
               future: _future,
@@ -690,48 +666,190 @@ class _DashboardViewState extends State<_DashboardView> {
                 if (snap.connectionState != ConnectionState.done) return _loadingBox();
                 if (snap.hasError) return _errorBox(snap.error!);
                 final d = snap.data!;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _RoDashSummaryRow(data: d),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-              // Suivi des incidents — mini-dashboard
-              _IncidentsDashSection(data: d),
-              const SizedBox(height: 12),
-              // Widget 3 — Alertes
-              _roMetricRow(context,
-                title: 'Alertes et actions',
-                artRef: 'Art. 313.c',
-                items: [
-                  (
-                    label: 'Actions en retard',
-                    value: '${d.widget3.actionsEnRetard}',
-                    color: d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
-                    icon: Icons.alarm_outlined,
-                  ),
-                  (
-                    label: 'Contrôles non conformes',
-                    value: '${d.widget3.controlesNonConformes}',
-                    color: d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
-                    icon: Icons.rule_outlined,
-                  ),
-                ],
-              ),
-                          ],
-                        ),
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _RoDashSummaryRow(data: d),
+                      const SizedBox(height: 16),
+                      _IncidentsDashSection(data: d),
+                      const SizedBox(height: 16),
+                      _roMetricRow(
+                        context,
+                        title: 'Alertes et actions',
+                        artRef: 'Art. 313.c',
+                        items: [
+                          (
+                            label: 'Actions en retard',
+                            value: '${d.widget3.actionsEnRetard}',
+                            color: d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
+                            icon: Icons.alarm_outlined,
+                          ),
+                          (
+                            label: 'Contrôles non conformes',
+                            value: '${d.widget3.controlesNonConformes}',
+                            color: d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
+                            icon: Icons.rule_outlined,
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+Color _roDashboardBackgroundFor(BuildContext context) {
+  return Theme.of(context).brightness == Brightness.dark
+      ? const Color(0xFF0B1220)
+      : const Color(0xFFF6F7F9);
+}
+
+class _RoDashboardHeader extends StatelessWidget {
+  const _RoDashboardHeader({
+    required this.analysisDate,
+    required this.onPickAnalysisDate,
+    required this.onRefresh,
+  });
+
+  final DateTime analysisDate;
+  final VoidCallback onPickAnalysisDate;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DashColors.of(context);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(
+          bottom: BorderSide(color: c.border, width: Dash.hairline),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Dashboard Opérationnel',
+                  style: TextStyle(
+                    color: c.ink,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  'KPI réglementaires, incidents et alertes opérationnelles',
+                  style: TextStyle(
+                    color: c.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    height: 1.2,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Tooltip(
+            message: 'Date d\'analyse',
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onPickAnalysisDate,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: c.border, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.calendar_today_outlined, size: 15, color: c.muted),
+                      const SizedBox(width: 8),
+                      Text(
+                        AppFormatters.shortDate(analysisDate),
+                        style: TextStyle(
+                          color: c.ink,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: Dash.tabular,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(Icons.expand_more, size: 16, color: c.faint),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _RoDashboardIconButton(
+            icon: Icons.refresh_rounded,
+            tooltip: 'Actualiser',
+            onTap: onRefresh,
+            colors: c,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoDashboardIconButton extends StatelessWidget {
+  const _RoDashboardIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    required this.colors,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  final DashColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: colors.border, width: 1),
+            ),
+            child: Icon(icon, size: 17, color: colors.muted),
+          ),
+        ),
       ),
     );
   }
@@ -757,41 +875,67 @@ class _RoDashSummaryItemState extends State<_RoDashSummaryItem> {
   bool _hovered = false;
   @override
   Widget build(BuildContext context) {
+    final c = DashColors.of(context);
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = true); }),
+      onEnter: (_) {
+        if (mounted) setState(() => _hovered = true);
+      },
 
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) setState(() => _hovered = false); }),
+      onExit: (_) {
+        if (mounted) setState(() => _hovered = false);
+      },
 
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.fromLTRB(8, _hovered ? 9 : 12, 8, _hovered ? 15 : 12),
+        duration: const Duration(milliseconds: 160),
+        constraints: const BoxConstraints(minHeight: 92),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: _hovered
-              ? widget.accentColor.withValues(alpha: 0.10)
-              : widget.accentColor.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(4),
+          color: _hovered ? c.surfaceAlt : c.surface,
+          borderRadius: BorderRadius.circular(Dash.radius),
+          border: Border.all(
+            color: _hovered ? widget.accentColor.withValues(alpha: 0.45) : c.border,
+            width: Dash.hairline,
+          ),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(widget.icon, size: 16, color: widget.accentColor.withValues(alpha: 0.7)),
-            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(widget.icon, size: 15, color: widget.accentColor),
+                const Spacer(),
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: widget.accentColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             Text(
               widget.value,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-                color: widget.accentColor,
-                letterSpacing: -0.3,
+              style: DashText.hero(
+                c,
+                size: 18,
+                color: widget.accentColor == _kSuccess ||
+                        widget.accentColor == _kWarning ||
+                        widget.accentColor == _kDanger
+                    ? widget.accentColor
+                    : c.ink,
               ),
-              textAlign: TextAlign.center,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 6),
             Text(
               widget.label,
-              style: const TextStyle(fontSize: 10, color: Color(0xFF1E3A5F), letterSpacing: 0.2),
-              textAlign: TextAlign.center,
+              style: DashText.caption(c, color: c.muted),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -806,7 +950,6 @@ class _RoDashSummaryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final statutColor = data.widget1.statutReglementaire == 'Conforme' ? _kSuccess : _kDanger;
     final statutIcon  = data.widget1.statutReglementaire == 'Conforme'
         ? Icons.check_circle_outline
@@ -851,94 +994,52 @@ class _RoDashSummaryRow extends StatelessWidget {
       ),
     ];
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(2),
-            border: Border.all(
-              color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.5 : 0.25),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.3 : 0.06),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-              BoxShadow(
-                color: const Color(0xFF1E3A5F).withValues(alpha: isDark ? 0.15 : 0.03),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(height: 3, color: AppTheme.accent.withValues(alpha: 0.7)),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isDark
-                        ? [const Color(0xFF1A2A4A), const Color(0xFF13203A)]
-                        : [const Color(0xFFF8F9FF), const Color(0xFFF0F2FF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    for (var i = 0; i < items.length; i++) ...[
-                      if (i > 0)
-                        Container(
-                          width: 1,
-                          height: 40,
-                          color: AppTheme.accent.withValues(alpha: 0.25),
-                        ),
-                      Expanded(
-                        child: _RoDashSummaryItem(
-                          label: items[i].label,
-                          value: items[i].value,
-                          accentColor: items[i].color,
-                          icon: items[i].icon,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
+    return DashPanel(
+      title: 'Synthèse réglementaire',
+      subtitle: 'Capital, RWA opérationnel et surveillance mensuelle',
+      trailing: Tooltip(
+        message: 'Dashboard Opérationnel — Art. 313 & 89 UMOA\n\n'
+            'Capital minimum = 15 % × PNB moyen positif (BIA — Art. 89)\n'
+            'RWA = Capital minimum × 12,5 (facteur prudentiel)\n'
+            'Statut : Conforme si les seuils prudentiels sont respectés',
+        preferBelow: false,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(6),
         ),
-        Positioned(
-          top: 6,
-          left: 4,
-          child: Tooltip(
-            message: 'Dashboard Opérationnel — Art. 313 & 89 UMOA\n\n'
-                'Capital minimum = 15 % × Pertes nettes (BIA — Art. 89)\n'
-                'RWA = Capital minimum × 12,5 (facteur prudentiel)\n'
-                'Statut : Conforme si Tier 1 ≥ 5 % et ratio global ≥ 8 %',
-            preferBelow: false,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 8, offset: const Offset(0, 4))],
+        textStyle: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
+        padding: const EdgeInsets.all(14),
+        child: const Icon(Icons.info_outline_rounded, size: 15, color: AppTheme.accent),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final columns = constraints.maxWidth >= 1100
+              ? 6
+              : constraints.maxWidth >= 760
+                  ? 3
+                  : 2;
+          return GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              mainAxisExtent: 104,
             ),
-            textStyle: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
-            padding: const EdgeInsets.all(14),
-            margin: const EdgeInsets.only(left: 40, right: 40),
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: AppTheme.accent.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(Icons.info_outline, size: 12, color: AppTheme.accent),
-            ),
-          ),
-        ),
-      ],
+            itemCount: items.length,
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return _RoDashSummaryItem(
+                label: item.label,
+                value: item.value,
+                accentColor: item.color,
+                icon: item.icon,
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -1616,6 +1717,7 @@ class _PertesView extends StatefulWidget {
 }
 
 class _PertesViewState extends State<_PertesView> {
+  int _mainSection = 0;
   int _selectedTab = 0;
 
   static const _tabDefs = [
@@ -1643,70 +1745,451 @@ class _PertesViewState extends State<_PertesView> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
+
+    const sectionDefs = [
+      (Icons.monetization_on_rounded, 'Pertes opérationnelles'),
+      (Icons.analytics_outlined, 'Analyse & Reporting'),
+    ];
+
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          PageHeader(
-            title: 'Pertes opérationnelles',
-            subtitle: 'Base de pertes historiques — calcul RWA BIA (Art. 89)',
-            titleFontSize: 26,
-            subtitleFontSize: 12.5,
-            subtitleSuffix: _artInfo('Art. 89'),
-          ),
-          const SizedBox(height: 14),
-          Expanded(
-            child: Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: borderColor)),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
+          // ── Sélecteur de section ──
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: borderColor, width: 1.5)),
+            ),
+            child: Row(
+              children: List.generate(sectionDefs.length, (i) {
+                final isSelected = _mainSection == i;
+                final fg = isSelected
+                    ? AppColors.accent
+                    : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF6B7FA8));
+                return InkWell(
+                  onTap: () => setState(() => _mainSection = i),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(
+                        color: isSelected ? AppColors.accent : Colors.transparent,
+                        width: 3,
+                      )),
+                    ),
                     child: Row(
-                      children: List.generate(_tabDefs.length, (i) {
-                        final isSelected = _selectedTab == i;
-                        final fgColor = isSelected
-                            ? AppColors.accent
-                            : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF234A84));
-                        return InkWell(
-                          onTap: () => setState(() => _selectedTab = i),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              border: Border(bottom: BorderSide(
-                                color: isSelected ? AppColors.accent : Colors.transparent,
-                                width: 2,
-                              )),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(_tabDefs[i].$1, size: 16, color: fgColor),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _tabDefs[i].$2,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                    color: fgColor,
-                                  ),
-                                ),
-                              ],
-                            ),
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(sectionDefs[i].$1, size: 18, color: fg),
+                        const SizedBox(width: 8),
+                        Text(
+                          sectionDefs[i].$2,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: fg,
                           ),
-                        );
-                      }),
+                        ),
+                      ],
                     ),
                   ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _mainSection == 0
+                ? _buildPertesSection(isDark, borderColor)
+                : _AnalyseReportingTab(api: widget.api),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPertesSection(bool isDark, Color borderColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Base de pertes historiques — calcul RWA BIA (Art. 89)',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: isDark ? const Color(0xFF9FB0CE) : const Color(0xFF6B7FA8),
                 ),
-                const SizedBox(height: 10),
-                Expanded(child: _buildCurrentTab()),
-              ],
+              ),
+            ),
+            _artInfo('Art. 89'),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: borderColor)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(_tabDefs.length, (i) {
+                final isSelected = _selectedTab == i;
+                final fgColor = isSelected
+                    ? AppColors.accent
+                    : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF234A84));
+                return InkWell(
+                  onTap: () => setState(() => _selectedTab = i),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(
+                        color: isSelected ? AppColors.accent : Colors.transparent,
+                        width: 2,
+                      )),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_tabDefs[i].$1, size: 16, color: fgColor),
+                        const SizedBox(width: 8),
+                        Text(
+                          _tabDefs[i].$2,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: fgColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Expanded(child: _buildCurrentTab()),
+      ],
+    );
+  }
+}
+
+// ─── Analyse & Reporting ──────────────────────────────────────────────────────
+
+class _AnalyseReportingTab extends StatefulWidget {
+  const _AnalyseReportingTab({required this.api});
+  final RwaApiService api;
+  @override
+  State<_AnalyseReportingTab> createState() => _AnalyseReportingTabState();
+}
+
+class _AnalyseReportingTabState extends State<_AnalyseReportingTab> {
+  late Future<List<RoIncident>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = widget.api.fetchRoIncidents();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return FutureBuilder<List<RoIncident>>(
+      future: _future,
+      builder: (ctx, snap) {
+        if (snap.connectionState != ConnectionState.done) return _loadingBox();
+        if (snap.hasError) return _errorBox(snap.error!);
+        final items = snap.data!;
+
+        final totalBrute = items.fold(0.0, (s, e) => s + e.perteBrute);
+        final totalNette = items.fold(0.0, (s, e) => s + e.perteNette);
+        final totalRecup = items.fold(0.0, (s, e) => s + e.perteRecuperee);
+        final tauxRecup = totalBrute > 0 ? (totalRecup / totalBrute * 100) : 0.0;
+        final capitalBia = totalNette * 0.15;
+        final significatifs = items.where((e) => e.significatif).length;
+
+        final byType = <String, double>{};
+        final byLigne = <String, double>{};
+        for (final i in items) {
+          byType[i.typeEvenement] = (byType[i.typeEvenement] ?? 0) + i.perteNette;
+          byLigne[i.ligneMetier] = (byLigne[i.ligneMetier] ?? 0) + i.perteNette;
+        }
+        final sortedType = byType.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        final sortedLigne = byLigne.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        final top10 = ([...items]..sort((a, b) => b.perteNette.compareTo(a.perteNette)))
+            .take(10).toList();
+
+        final textColor = isDark ? const Color(0xFFCDD8F0) : const Color(0xFF1A2B4A);
+        final mutedColor = isDark ? const Color(0xFF9FB0CE) : const Color(0xFF6B7FA8);
+
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── KPIs ──
+              Row(
+                children: [
+                  _ArKpi(
+                    label: 'Capital RWA BIA',
+                    value: AppFormatters.currency(capitalBia),
+                    sublabel: '15 % × pertes nettes (Art. 89)',
+                    icon: Icons.account_balance_rounded,
+                    color: _kBlue,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 12),
+                  _ArKpi(
+                    label: 'Taux de récupération',
+                    value: '${tauxRecup.toStringAsFixed(1)} %',
+                    sublabel: AppFormatters.currency(totalRecup),
+                    icon: Icons.recycling_rounded,
+                    color: _kSuccess,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 12),
+                  _ArKpi(
+                    label: 'Incidents enregistrés',
+                    value: '${items.length}',
+                    sublabel: '$significatifs significatifs',
+                    icon: Icons.report_outlined,
+                    color: _kWarning,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 12),
+                  _ArKpi(
+                    label: 'Perte nette totale',
+                    value: AppFormatters.currency(totalNette),
+                    sublabel: 'Brute : ${AppFormatters.currency(totalBrute)}',
+                    icon: Icons.trending_down_rounded,
+                    color: _kDanger,
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ── Répartitions ──
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: SectionCard(
+                        title: 'Répartition par type d\'événement',
+                        child: Column(
+                          children: sortedType.map((e) {
+                            final pct = totalNette > 0 ? e.value / totalNette : 0.0;
+                            return _ArBar(
+                              label: e.key,
+                              value: AppFormatters.currency(e.value),
+                              pct: pct,
+                              color: _kBlue,
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                              isDark: isDark,
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SectionCard(
+                        title: 'Répartition par ligne de métier',
+                        child: Column(
+                          children: sortedLigne.map((e) {
+                            final pct = totalNette > 0 ? e.value / totalNette : 0.0;
+                            return _ArBar(
+                              label: e.key,
+                              value: AppFormatters.currency(e.value),
+                              pct: pct,
+                              color: _kSuccess,
+                              textColor: textColor,
+                              mutedColor: mutedColor,
+                              isDark: isDark,
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Top 10 incidents ──
+              SectionCard(
+                title: 'Top 10 incidents — perte nette',
+                child: Column(
+                  children: [
+                    // header
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      child: Row(children: [
+                        SizedBox(width: 32, child: Text('#', style: TextStyle(fontSize: 11, color: mutedColor, fontWeight: FontWeight.w600))),
+                        Expanded(child: Text('Référence', style: TextStyle(fontSize: 11, color: mutedColor, fontWeight: FontWeight.w600))),
+                        SizedBox(width: 120, child: Text('Type', style: TextStyle(fontSize: 11, color: mutedColor, fontWeight: FontWeight.w600))),
+                        SizedBox(width: 140, child: Text('Ligne de métier', style: TextStyle(fontSize: 11, color: mutedColor, fontWeight: FontWeight.w600))),
+                        SizedBox(width: 130, child: Text('Perte nette', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, color: mutedColor, fontWeight: FontWeight.w600))),
+                      ]),
+                    ),
+                    const Divider(height: 1),
+                    ...List.generate(top10.length, (idx) {
+                      final inc = top10[idx];
+                      final bg = idx.isEven
+                          ? (isDark ? Colors.white.withValues(alpha: 0.03) : Colors.transparent)
+                          : (isDark ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF7F9FC));
+                      return Container(
+                        color: bg,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        child: Row(children: [
+                          SizedBox(
+                            width: 32,
+                            child: Container(
+                              width: 22, height: 22,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: _kBlue.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text('${idx + 1}', style: const TextStyle(fontSize: 11, color: _kBlue, fontWeight: FontWeight.w700)),
+                            ),
+                          ),
+                          Expanded(child: Text(inc.reference, style: TextStyle(fontSize: 12, color: textColor, fontWeight: FontWeight.w500))),
+                          SizedBox(width: 120, child: Text(inc.typeEvenement, style: TextStyle(fontSize: 11, color: mutedColor))),
+                          SizedBox(width: 140, child: Text(inc.ligneMetier, style: TextStyle(fontSize: 11, color: mutedColor), overflow: TextOverflow.ellipsis)),
+                          SizedBox(
+                            width: 130,
+                            child: Text(
+                              AppFormatters.currency(inc.perteNette),
+                              textAlign: TextAlign.right,
+                              style: const TextStyle(fontSize: 12, color: _kDanger, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ]),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ArKpi extends StatelessWidget {
+  const _ArKpi({
+    required this.label,
+    required this.value,
+    required this.sublabel,
+    required this.icon,
+    required this.color,
+    required this.isDark,
+  });
+
+  final String label;
+  final String value;
+  final String sublabel;
+  final IconData icon;
+  final Color color;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF111F37) : Colors.white,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          border: Border.all(
+            color: isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38, height: 38,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TextStyle(fontSize: 11, color: isDark ? const Color(0xFF9FB0CE) : const Color(0xFF6B7FA8))),
+                  const SizedBox(height: 2),
+                  Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: color), overflow: TextOverflow.ellipsis),
+                  Text(sublabel, style: TextStyle(fontSize: 10, color: isDark ? const Color(0xFF9FB0CE) : const Color(0xFF6B7FA8)), overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ArBar extends StatelessWidget {
+  const _ArBar({
+    required this.label,
+    required this.value,
+    required this.pct,
+    required this.color,
+    required this.textColor,
+    required this.mutedColor,
+    required this.isDark,
+  });
+
+  final String label;
+  final String value;
+  final double pct;
+  final Color color;
+  final Color textColor;
+  final Color mutedColor;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(label, style: TextStyle(fontSize: 12, color: textColor))),
+              Text('${(pct * 100).toStringAsFixed(1)} %', style: TextStyle(fontSize: 11, color: mutedColor)),
+              const SizedBox(width: 8),
+              SizedBox(width: 110, child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor), overflow: TextOverflow.ellipsis)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: pct.clamp(0.0, 1.0),
+              minHeight: 5,
+              backgroundColor: isDark ? const Color(0xFF263856) : const Color(0xFFEDF1F8),
+              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ),
         ],
@@ -2544,9 +3027,11 @@ class _KriViewState extends State<_KriView> {
                       'valeur': computedValue,
                       'commentaire': commentaireCtrl.text,
                     });
+                    if (!ctx2.mounted) return;
                     Navigator.of(ctx2).pop(true);
                   } catch (_) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors de l’enregistrement.')));
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors de l\'enregistrement.')));
                   }
                 },
                 child: const Text('Enregistrer'),
@@ -2558,6 +3043,7 @@ class _KriViewState extends State<_KriView> {
     ).then((saved) {
       if (saved == true) {
         _reload();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Valeur KRI enregistrée.')));
       }
     });
@@ -6268,9 +6754,6 @@ class _RegistreViewState extends State<_RegistreView> {
     _vBodyCtrl.dispose();
     _vFixedCtrl.dispose();
     _vTrailCtrl.dispose();
-    for (final g in [_c3ip, _c3iv, _c3ls, _c3dv, _c3cp, _c3cv, _c3tr, _c3en, _c3fg]) {
-      for (final c in g) c.dispose();
-    }
     super.dispose();
   }
 
@@ -6434,82 +6917,22 @@ class _RegistreViewState extends State<_RegistreView> {
   final _vTrailCtrl  = ScrollController();
   bool  _isSyncV     = false;
 
-  int _selectedTab = 0;
+  int _selectedTab    = 0;
+  int _uemoiSubTab    = 0;
 
   static const _tabDefs = [
-    (Icons.list_alt_outlined,        'Registre des pertes'),
-    (Icons.account_balance_outlined, 'CRR3-COREP (Common Reporting)'),
+    (Icons.compare_arrows_outlined,  'CCR3'),
+    (Icons.policy_outlined,          'Dispositif UEMOI'),
   ];
 
-  // ── CRR3 state ──────────────────────────────────────────────────────────────
-  int    _crr3YearBase  = DateTime.now().year;
-  double _whatIfComm    = 0.0;   // % de variation sur commissions
-  bool   _crr3WhatIfOn = false;
-
-  // Contrôleurs de saisie CRR3 : index 0 = N, 1 = N-1, 2 = N-2
-  final _c3ip = List.generate(3, (_) => TextEditingController()); // Intérêts perçus
-  final _c3iv = List.generate(3, (_) => TextEditingController()); // Intérêts versés
-  final _c3ls = List.generate(3, (_) => TextEditingController()); // Leasing
-  final _c3dv = List.generate(3, (_) => TextEditingController()); // Dividendes
-  final _c3cp = List.generate(3, (_) => TextEditingController()); // Comm perçues
-  final _c3cv = List.generate(3, (_) => TextEditingController()); // Comm versées
-  final _c3tr = List.generate(3, (_) => TextEditingController()); // Trading
-  final _c3en = List.generate(3, (_) => TextEditingController()); // Encours créances
-  final _c3fg = List.generate(3, (_) => TextEditingController()); // Frais généraux
-
-  // Seuils CRR3 convertis en FCFA (1 EUR ≈ 655.957 FCFA)
-  static const _crr3T1 = 655957000000.0;       // 1 Md EUR
-  static const _crr3T2 = 19678710000000.0;     // 30 Md EUR
-
-  double _c3num(TextEditingController c) =>
-      double.tryParse(c.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0.0;
-
-  double _c3moy(List<TextEditingController> ctls) =>
-      (_c3num(ctls[0]) + _c3num(ctls[1]) + _c3num(ctls[2])) / 3;
-
-  _Crr3Result _computeCrr3() {
-    final ipM = _c3moy(_c3ip);
-    final ivM = _c3moy(_c3iv);
-    final lsM = _c3moy(_c3ls);
-    final dvM = _c3moy(_c3dv);
-    final factor = 1 + (_crr3WhatIfOn ? _whatIfComm / 100 : 0);
-    final cpM = _c3moy(_c3cp) * factor;
-    final cvM = _c3moy(_c3cv) * factor;
-    final trM = _c3moy(_c3tr).abs();
-    final enM = _c3moy(_c3en);
-    final fgM = _c3moy(_c3fg);
-
-    final rbe = (ipM + lsM + dvM) - ivM;
-    final ac  = enM;
-    final plafond = ac * 0.0225;
-    final ildc = math.min(math.max(rbe, 0.0), math.max(plafond, 0.0));
-    final sc   = math.max(cpM, cvM);
-    final fc   = trM;
-    final bi   = ildc + sc + fc;
-
-    double bic;
-    if (bi <= _crr3T1) {
-      bic = bi * 0.12;
-    } else if (bi <= _crr3T2) {
-      bic = _crr3T1 * 0.12 + (bi - _crr3T1) * 0.18;
-    } else {
-      bic = _crr3T1 * 0.12 + (_crr3T2 - _crr3T1) * 0.18 + (bi - _crr3T2) * 0.24;
-    }
-
-    final ofr = bic;
-    final rea = ofr * 12.5;
-    final pnb = ipM - ivM + cpM - cvM + _c3moy(_c3tr);
-    final ofrCrr2 = math.max(pnb, 0.0) * 0.15;
-
-    return _Crr3Result(
-      ipM: ipM, ivM: ivM, lsM: lsM, dvM: dvM,
-      cpM: cpM, cvM: cvM, trM: trM, enM: enM, fgM: fgM,
-      rbe: rbe, ac: ac, ildc: ildc, sc: sc, fc: fc, bi: bi,
-      bic: bic, ofr: ofr, rea: rea,
-      ofrCrr2: ofrCrr2, plafond: plafond,
-      ildcPlafonne: rbe > plafond && plafond > 0,
-    );
-  }
+  static const _uemoiSubTabDefs = [
+    (Icons.trending_up_outlined,   'A1 — Indicateur de Base (AIB)'),
+    (Icons.account_tree_outlined,  'A2 — Approche Standard (AS)'),
+    (Icons.analytics_outlined,     'B1 — BIC / Pilotage interne'),
+    (Icons.warning_amber_outlined, 'C1 — Pertes opérationnelles'),
+    (Icons.dashboard_outlined,     'C2 — Tableau de bord'),
+    (Icons.compare_arrows_outlined,'Synthèse globale'),
+  ];
 
   static const _rowH = 48.0;
 
@@ -7269,723 +7692,134 @@ class _RegistreViewState extends State<_RegistreView> {
 
   Widget _buildCurrentTab(bool isDark) {
     switch (_selectedTab) {
-      case 0: return _buildRegistreContent(isDark);
-      case 1: return _buildCrr3CorepContent(isDark);
+      case 0: return _buildCcr3Content(isDark);
+      case 1: return _buildDispositifUemoiContent(isDark);
       default: return const SizedBox.shrink();
     }
   }
 
-  Widget _buildCrr3CorepContent(bool isDark) {
-    final result = _computeCrr3();
-    final border = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
-    final card   = isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF);
-    final txt    = isDark ? Colors.white : const Color(0xFF1F2937);
-    final muted  = isDark ? const Color(0xFF8BA3C7) : const Color(0xFF6B7280);
+  Widget _buildDispositifUemoiContent(bool isDark) {
+    final borderColor = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
+    final muted       = isDark ? const Color(0xFF8BA3C7) : const Color(0xFF94A3B8);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Barre de contrôle ────────────────────────────────────────────────
+        // ── Bandeau informatif ──────────────────────────────────────────────
         Container(
-          padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
-            color: card,
-            borderRadius: BorderRadius.circular(5),
-            border: Border.all(color: border, width: 0.8),
+            color: isDark ? const Color(0xFF0F1E36) : const Color(0xFFF0F5FF),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: borderColor),
           ),
-          child: Row(
-            children: [
-              Icon(Icons.calendar_month_outlined, size: 15, color: muted),
-              const SizedBox(width: 6),
-              Text('Années de référence :', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: muted)),
-              const SizedBox(width: 6),
-              _crr3YearBtn(Icons.remove, () => setState(() => _crr3YearBase--), isDark),
-              const SizedBox(width: 6),
-              Text(
-                '${_crr3YearBase - 2}  ·  ${_crr3YearBase - 1}  ·  $_crr3YearBase',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: txt),
+          child: Row(children: [
+            Icon(Icons.info_outline, size: 14, color: muted),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'AIB et AS sont déclaratoires BCEAO (Pilier 1). BIC est un outil de pilotage interne uniquement. PIEAFP relève du Pilier 2 (art. 534-535).',
+                style: TextStyle(fontSize: 11, color: muted),
               ),
-              const SizedBox(width: 6),
-              _crr3YearBtn(Icons.add, () => setState(() => _crr3YearBase++), isDark),
-              const SizedBox(width: 20),
-              // What-if toggle
-              GestureDetector(
-                onTap: () => setState(() => _crr3WhatIfOn = !_crr3WhatIfOn),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _crr3WhatIfOn ? AppTheme.accent.withValues(alpha: 0.12) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(5),
-                    border: Border.all(color: _crr3WhatIfOn ? AppTheme.accent : border),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.science_outlined, size: 13,
-                      color: _crr3WhatIfOn ? AppTheme.accent : muted),
-                    const SizedBox(width: 5),
-                    Text('Mode What-If',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                        color: _crr3WhatIfOn ? AppTheme.accent : muted)),
-                  ]),
-                ),
-              ),
-              if (_crr3WhatIfOn) ...[
-                const SizedBox(width: 12),
-                Text('Comm. ${_whatIfComm >= 0 ? '+' : ''}${_whatIfComm.toStringAsFixed(0)} %',
-                  style: TextStyle(fontSize: 11, color: AppTheme.accent, fontWeight: FontWeight.w600)),
-                SizedBox(
-                  width: 140,
-                  child: Slider(
-                    value: _whatIfComm,
-                    min: -30, max: 30, divisions: 60,
-                    onChanged: (v) => setState(() => _whatIfComm = v),
-                    activeColor: AppTheme.accent,
-                  ),
-                ),
-              ],
-              const Spacer(),
-              SizedBox(
-                height: 30,
-                child: FilledButton.icon(
-                  onPressed: result.hasInputs ? () => _exportCrr3Pdf(result) : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFDC2626),
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                  ),
-                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 14),
-                  label: const Text('Rapport C 16.01'),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ]),
         ),
-        const SizedBox(height: 8),
 
-        // ── KPI cards ────────────────────────────────────────────────────────
-        SizedBox(
-          height: 82,
-          child: Row(
-            children: [
-              _crr3KpiCard('OFR / Fonds propres exigés',
-                result.hasInputs ? AppFormatters.currency(result.ofr) : '—',
-                Icons.shield_outlined, const Color(0xFFDC2626), isDark,
-                sub: result.hasInputs ? 'REA = ${AppFormatters.currency(result.rea)}' : null),
-              const SizedBox(width: 8),
-              _crr3KpiCard('Impact CRR3 vs CRR2 (Art. 89)',
-                result.hasInputs
-                  ? '${result.delta >= 0 ? '+' : ''}${AppFormatters.currency(result.delta)}'
-                  : '—',
-                result.delta >= 0 ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                result.delta >= 0 ? const Color(0xFFD97706) : const Color(0xFF16A34A),
-                isDark,
-                sub: result.hasInputs
-                  ? 'CRR2 = ${AppFormatters.currency(result.ofrCrr2)}'
-                  : null),
-              const SizedBox(width: 8),
-              _crr3KpiCard('Niveau Business Indicator',
-                result.hasInputs ? AppFormatters.currency(result.bi) : '—',
-                Icons.bar_chart_rounded, const Color(0xFF6366F1), isDark,
-                sub: result.hasInputs ? result.biTranche : null),
-              const SizedBox(width: 8),
-              _crr3KpiCard('BIC (Business Indicator Component)',
-                result.hasInputs ? AppFormatters.currency(result.bic) : '—',
-                Icons.calculate_outlined, AppTheme.accent, isDark,
-                sub: result.hasInputs
-                  ? 'Taux effectif ${result.bi > 0 ? (result.bic / result.bi * 100).toStringAsFixed(1) : 0} %'
-                  : null),
-            ],
+        // ── Barre de sous-onglets ───────────────────────────────────────────
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: borderColor)),
           ),
-        ),
-        const SizedBox(height: 8),
-
-        // ── Corps principal — 3 colonnes ────────────────────────────────────
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-
-              // ── Col 1 : Saisie des données ──────────────────────────────
-              Expanded(
-                flex: 44,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF13233E) : Colors.white,
-                    border: Border.all(color: border),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF2A518A), Color(0xFF23477A)],
-                            begin: Alignment.topLeft, end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Expanded(flex: 34, child: Text('Catégorie / Poste',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                                color: Color(0xFFF5F8FF)))),
-                            for (final yr in [_crr3YearBase - 2, _crr3YearBase - 1, _crr3YearBase])
-                              SizedBox(width: 88, child: Text('$yr',
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                                  color: Color(0xFFF5F8FF)))),
-                            const SizedBox(width: 88, child: Text('Moyenne',
-                              textAlign: TextAlign.right,
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                                color: Color(0xFFAAC8F8)))),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Column(
-                            children: [
-                              _crr3Section('Intérêts & Dividendes', isDark, border),
-                              _crr3Row('Intérêts perçus', _c3ip, isDark, result),
-                              _crr3Row('Intérêts versés', _c3iv, isDark, result),
-                              _crr3Row('Revenus leasing', _c3ls, isDark, result),
-                              _crr3Row('Dividendes', _c3dv, isDark, result),
-                              _crr3Section('Services (Commissions)', isDark, border),
-                              _crr3Row('Commissions perçues', _c3cp, isDark, result),
-                              _crr3Row('Commissions versées', _c3cv, isDark, result),
-                              _crr3Section('Financier (Trading)', isDark, border),
-                              _crr3Row('Trading & instruments financiers', _c3tr, isDark, result),
-                              _crr3Section('Bilan — Créances nettes de provisions', isDark, border),
-                              _crr3Row('Encours créances clients + interbancaires', _c3en, isDark, result),
-                              _crr3Section('Frais généraux', isDark, border),
-                              _crr3Row('Charges admin. & personnel', _c3fg, isDark, result),
-                              Container(
-                                margin: const EdgeInsets.fromLTRB(0, 8, 0, 0),
-                                height: 2,
-                                color: AppTheme.accent.withValues(alpha: 0.25),
-                              ),
-                              _crr3ResultRow('RBE (Résultat brut exploitation)', result.rbe,
-                                AppTheme.accent, isDark, border),
-                              _crr3ResultRow('Plafond ILDC (AC × 2,25 %)', result.plafond,
-                                const Color(0xFF6366F1), isDark, border, alert: result.ildcPlafonne),
-                              _crr3ResultRow('ILDC', result.ildc,
-                                const Color(0xFF2563EB), isDark, border,
-                                bold: true, alert: result.ildcPlafonne),
-                              _crr3ResultRow('SC (Composante Services)', result.sc,
-                                const Color(0xFF16A34A), isDark, border, bold: true),
-                              _crr3ResultRow('FC (Composante Financière)', result.fc,
-                                const Color(0xFFD97706), isDark, border, bold: true),
-                              _crr3ResultRow('BI (Business Indicator)', result.bi,
-                                const Color(0xFF6366F1), isDark, border, bold: true),
-                              _crr3ResultRow('BIC / OFR', result.ofr,
-                                const Color(0xFFDC2626), isDark, border, bold: true),
-                              _crr3ResultRow('REA opérationnel CRR3', result.rea,
-                                const Color(0xFFDC2626), isDark, border),
-                              _crr3ResultRow('OFR CRR2 (Art. 89, 15 % × PNB)', result.ofrCrr2,
-                                const Color(0xFF6366F1), isDark, border),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              // ── Col 2 : Waterfall — pleine hauteur ──────────────────────
-              Expanded(
-                flex: 34,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(14, 14, 10, 12),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF13233E) : Colors.white,
-                    border: Border.all(color: border),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(Icons.waterfall_chart_rounded,
-                            size: 16, color: Color(0xFF6366F1)),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Décomposition BI → OFR',
-                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: txt)),
-                            Text('Cascade CRR3 — tranches marginales',
-                              style: TextStyle(fontSize: 9.5, color: muted)),
-                          ],
-                        )),
-                      ]),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: result.hasInputs
-                          ? CustomPaint(
-                              painter: _Crr3WaterfallPainter(result: result, isDark: isDark),
-                              size: Size.infinite,
-                            )
-                          : Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Icon(Icons.waterfall_chart_rounded,
-                                size: 40, color: muted.withValues(alpha: 0.3)),
-                              const SizedBox(height: 10),
-                              Text('Saisir les données\npour afficher le graphe',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 11, color: muted)),
-                            ])),
-                      ),
-                      if (result.hasInputs) ...[
-                        const SizedBox(height: 10),
-                        Wrap(spacing: 12, runSpacing: 4, children: [
-                          _crr3Legend(const Color(0xFF2563EB), 'ILDC'),
-                          _crr3Legend(const Color(0xFF16A34A), 'SC'),
-                          _crr3Legend(const Color(0xFFD97706), 'FC'),
-                          _crr3Legend(const Color(0xFF6366F1), 'BI'),
-                          _crr3Legend(const Color(0xFFDC2626), 'OFR'),
-                        ]),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              // ── Col 3 : Jauge — pleine hauteur ──────────────────────────
-              Expanded(
-                flex: 22,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF13233E) : Colors.white,
-                          border: Border.all(color: border),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFDC2626).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Icon(Icons.speed_rounded,
-                                  size: 16, color: Color(0xFFDC2626)),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('OFR vs CRR2',
-                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: txt)),
-                                  Text('Comparaison réglementaire',
-                                    style: TextStyle(fontSize: 9.5, color: muted)),
-                                ],
-                              )),
-                            ]),
-                            const SizedBox(height: 8),
-                            Expanded(
-                              child: result.hasInputs && (result.ofr > 0 || result.ofrCrr2 > 0)
-                                ? CustomPaint(
-                                    painter: _Crr3GaugePainter(
-                                      ofr: result.ofr, ofrCrr2: result.ofrCrr2, isDark: isDark),
-                                    size: Size.infinite,
-                                  )
-                                : Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                    Icon(Icons.speed_rounded,
-                                      size: 40, color: muted.withValues(alpha: 0.3)),
-                                    const SizedBox(height: 8),
-                                    Text('Données manquantes',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 10, color: muted)),
-                                  ])),
-                            ),
-                            if (result.hasInputs) ...[
-                              const SizedBox(height: 6),
-                              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                _crr3Legend(const Color(0xFFDC2626), 'CRR3'),
-                                const SizedBox(width: 12),
-                                _crr3Legend(const Color(0xFF6366F1), 'CRR2'),
-                              ]),
-                              const SizedBox(height: 8),
-                              // OFR values recap
-                              _crr3GaugeKpi('OFR CRR3', result.ofr, const Color(0xFFDC2626), isDark),
-                              const SizedBox(height: 4),
-                              _crr3GaugeKpi('OFR CRR2', result.ofrCrr2, const Color(0xFF6366F1), isDark),
-                              const SizedBox(height: 4),
-                              _crr3GaugeKpi('Δ Impact', result.delta,
-                                result.delta >= 0 ? const Color(0xFFD97706) : const Color(0xFF16A34A),
-                                isDark, prefix: result.delta >= 0 ? '+' : ''),
-                            ],
-                          ],
-                        ),
-                      ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(_uemoiSubTabDefs.length, (i) {
+                final isSelected = _uemoiSubTab == i;
+                final fgColor = isSelected
+                    ? AppColors.accent
+                    : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF234A84));
+                return InkWell(
+                  onTap: () => setState(() => _uemoiSubTab = i),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(
+                        color: isSelected ? AppColors.accent : Colors.transparent,
+                        width: 2,
+                      )),
                     ),
-                    // Alerte ILDC plafonné
-                    if (result.hasInputs && result.ildcPlafonne) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(5),
-                          border: Border.all(
-                            color: const Color(0xFFF59E0B).withValues(alpha: 0.45)),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_uemoiSubTabDefs[i].$1, size: 14, color: fgColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          _uemoiSubTabDefs[i].$2,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: fgColor,
+                          ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(children: [
-                              const Icon(Icons.warning_amber_rounded,
-                                size: 13, color: Color(0xFFF59E0B)),
-                              const SizedBox(width: 5),
-                              const Text('Alerte ILDC',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                                  color: Color(0xFFF59E0B))),
-                            ]),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'ILDC plafonné à 2,25 % de l\'AC.\nLe RBE dépasse le seuil réglementaire.',
-                              style: TextStyle(fontSize: 9.5, color: Color(0xFFF59E0B)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-            ],
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
           ),
         ),
+        const SizedBox(height: 10),
+
+        // ── Contenu du sous-onglet actif ────────────────────────────────────
+        Expanded(child: _buildUemoiSubTab(isDark)),
       ],
     );
   }
 
-  // ── Helpers UI CRR3 ─────────────────────────────────────────────────────────
-
-  Widget _crr3YearBtn(IconData icon, VoidCallback onTap, bool isDark) => InkWell(
-    onTap: onTap,
-    borderRadius: BorderRadius.circular(4),
-    child: Container(
-      width: 22, height: 22,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: isDark ? const Color(0xFF263856) : const Color(0xFFD5E2F6)),
-        color: isDark ? const Color(0xFF14233D) : Colors.white,
-      ),
-      child: Icon(icon, size: 14, color: isDark ? const Color(0xFF9FB0CE) : const Color(0xFF374151)),
-    ),
-  );
-
-  Widget _crr3KpiCard(String label, String value, IconData icon, Color color, bool isDark, {String? sub}) {
-    final bg = isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF);
-    final bdr = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
-    final txt = isDark ? Colors.white : const Color(0xFF1F2937);
-    final mut = isDark ? const Color(0xFF8BA3C7) : const Color(0xFF6B7280);
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: bdr),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(children: [
-              Icon(icon, size: 13, color: color),
-              const SizedBox(width: 5),
-              Expanded(child: Text(label,
-                style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600, color: mut),
-                maxLines: 1, overflow: TextOverflow.ellipsis)),
-            ]),
-            Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: txt),
-              maxLines: 1, overflow: TextOverflow.ellipsis),
-            if (sub != null)
-              Text(sub, style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.w500),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _crr3Section(String title, bool isDark, Color border) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-    decoration: BoxDecoration(
-      color: isDark ? const Color(0xFF14233D) : const Color(0xFFF0F5FF),
-      border: Border(top: BorderSide(color: border), bottom: BorderSide(color: border)),
-    ),
-    child: Text(title, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-      color: Color(0xFF2563EB))),
-  );
-
-  Widget _crr3Row(String label, List<TextEditingController> ctls, bool isDark, _Crr3Result result) {
-    final bg   = isDark ? const Color(0xFF0F1B31) : Colors.white;
-    final txt  = isDark ? Colors.white : const Color(0xFF1F2937);
-    final bdr  = isDark ? const Color(0xFF1E2F4A) : const Color(0xFFE8F0FA);
-    final moy  = _c3moy(ctls);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border(bottom: BorderSide(color: bdr)),
-      ),
-      child: Row(
-        children: [
-          Expanded(flex: 34, child: Text(label,
-            style: TextStyle(fontSize: 10.5, color: txt), maxLines: 2, overflow: TextOverflow.ellipsis)),
-          for (int i = 2; i >= 0; i--)
-            SizedBox(
-              width: 90,
-              child: TextField(
-                controller: ctls[i],
-                textAlign: TextAlign.right,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                style: TextStyle(fontSize: 10.5, color: txt),
-                decoration: InputDecoration(
-                  isDense: true,
-                  filled: true,
-                  fillColor: isDark ? const Color(0xFF14233D) : const Color(0xFFF8FAFF),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(color: bdr)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(color: bdr)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4),
-                    borderSide: const BorderSide(color: AppTheme.accent)),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-          SizedBox(
-            width: 90,
-            child: Text(
-              moy != 0 ? AppFormatters.currency(moy) : '—',
-              textAlign: TextAlign.right,
-              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600,
-                color: AppTheme.accent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _crr3ResultRow(String label, double value, Color color, bool isDark, Color border,
-      {bool bold = false, bool alert = false}) {
-    final bg  = alert
-        ? const Color(0xFFF59E0B).withValues(alpha: 0.08)
-        : (isDark ? const Color(0xFF0D1826) : const Color(0xFFFAFBFF));
-    final txt = isDark ? Colors.white : const Color(0xFF1F2937);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 5, 12, 5),
-      decoration: BoxDecoration(
-        color: bg,
-        border: Border(bottom: BorderSide(color: border.withValues(alpha: 0.5))),
-      ),
-      child: Row(
-        children: [
-          if (alert)
-            const Padding(padding: EdgeInsets.only(right: 5),
-              child: Icon(Icons.warning_amber_rounded, size: 12, color: Color(0xFFF59E0B))),
-          Expanded(child: Text(label,
-            style: TextStyle(fontSize: 10.5, color: txt,
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w500))),
-          Text(value != 0 ? AppFormatters.currency(value) : '—',
-            style: TextStyle(fontSize: 10.5, fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-              color: color)),
-        ],
-      ),
-    );
-  }
-
-  Widget _crr3Legend(Color color, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
-    Container(width: 10, height: 10, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
-    const SizedBox(width: 4),
-    Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Color(0xFF6B7280))),
-  ]);
-
-  Widget _crr3GaugeKpi(String label, double value, Color color, bool isDark, {String prefix = ''}) {
-    final bg  = isDark ? const Color(0xFF0D1826) : const Color(0xFFF8FAFF);
-    final bdr = isDark ? const Color(0xFF1E2F4A) : const Color(0xFFE8F0FA);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: bdr),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label,
-            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600,
-              color: isDark ? const Color(0xFF8BA3C7) : const Color(0xFF6B7280))),
-          Text('$prefix${AppFormatters.currency(value)}',
-            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: color),
-            overflow: TextOverflow.ellipsis),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _exportCrr3Pdf(_Crr3Result r) async {
-    final doc = pw.Document();
-    const navy  = PdfColor.fromInt(0xFF1E3A5F);
-    const white = PdfColors.white;
-
-    pw.Widget cell(String t, {bool bold = false, bool right = false, PdfColor? bg, PdfColor? fg}) =>
-      pw.Container(
-        color: bg,
-        padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        child: pw.Text(t,
-          textAlign: right ? pw.TextAlign.right : pw.TextAlign.left,
-          style: pw.TextStyle(fontSize: 8.5,
-            fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-            color: fg ?? PdfColors.black)),
-      );
-
-    String f(double v) => AppFormatters.currency(v);
-
-    doc.addPage(pw.MultiPage(
-      pageFormat: PdfPageFormat.a4,
-      margin: const pw.EdgeInsets.all(28),
-      build: (pw.Context ctx) => [
-        pw.Container(
-          padding: const pw.EdgeInsets.all(12),
-          color: navy,
-          child: pw.Row(children: [
-            pw.Expanded(child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-              pw.Text('COREP — Feuille C 16.01', style: pw.TextStyle(fontSize: 14,
-                fontWeight: pw.FontWeight.bold, color: white)),
-              pw.Text('Exigences de fonds propres — Risque opérationnel (CRR3)',
-                style: pw.TextStyle(fontSize: 9, color: PdfColor.fromInt(0xFFAAC8F8))),
-            ])),
-            pw.Text('Années : ${_crr3YearBase - 2} – $_crr3YearBase',
-              style: pw.TextStyle(fontSize: 9, color: white)),
-          ]),
-        ),
-        pw.SizedBox(height: 14),
-        pw.Text('1. Composantes du Business Indicator',
-          style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-        pw.SizedBox(height: 6),
-        pw.Table(
-          border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-          columnWidths: {
-            0: const pw.FlexColumnWidth(3),
-            1: const pw.FlexColumnWidth(2),
-          },
-          children: [
-            pw.TableRow(decoration: const pw.BoxDecoration(color: navy), children: [
-              cell('Poste', bold: true, fg: white),
-              cell('Moyenne triennale', bold: true, right: true, fg: white),
-            ]),
-            for (final row in [
-              ('Intérêts perçus', r.ipM),
-              ('Intérêts versés', r.ivM),
-              ('Revenus leasing', r.lsM),
-              ('Dividendes', r.dvM),
-              ('Commissions perçues', r.cpM),
-              ('Commissions versées', r.cvM),
-              ('Trading & instruments', r.trM),
-              ('Encours créances (AC)', r.enM),
-            ])
-              pw.TableRow(children: [cell(row.$1), cell(f(row.$2), right: true)]),
-          ],
-        ),
-        pw.SizedBox(height: 12),
-        pw.Text('2. Calcul du BI et du BIC',
-          style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-        pw.SizedBox(height: 6),
-        pw.Table(
-          border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-          columnWidths: {0: const pw.FlexColumnWidth(3), 1: const pw.FlexColumnWidth(2)},
-          children: [
-            pw.TableRow(decoration: const pw.BoxDecoration(color: navy), children: [
-              cell('Composante', bold: true, fg: white),
-              cell('Montant (FCFA)', bold: true, right: true, fg: white),
-            ]),
-            for (final row in [
-              ('RBE (Résultat brut exploitation)', r.rbe),
-              ('Plafond ILDC (AC × 2,25 %)', r.plafond),
-              ('ILDC${r.ildcPlafonne ? " [PLAFONNÉ]" : ""}', r.ildc),
-              ('SC (Services)', r.sc),
-              ('FC (Financier)', r.fc),
-              ('BI (Business Indicator)', r.bi),
-              ('BIC / OFR', r.ofr),
-              ('REA opérationnel', r.rea),
-              ('Méthode CRR2 Art. 89 (ref)', r.ofrCrr2),
-            ])
-              pw.TableRow(
-                decoration: pw.BoxDecoration(
-                  color: (row.$1.startsWith('BI') || row.$1.startsWith('BIC'))
-                    ? PdfColor.fromInt(0xFFEEF2FF) : null),
-                children: [
-                  cell(row.$1, bold: row.$1.startsWith('BI') || row.$1.startsWith('BIC')),
-                  cell(f(row.$2), right: true,
-                    bold: row.$1.startsWith('BI') || row.$1.startsWith('BIC')),
-                ]),
-          ],
-        ),
-        pw.SizedBox(height: 12),
-        pw.Container(
-          padding: const pw.EdgeInsets.all(8),
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: PdfColors.grey300),
-            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
-          ),
-          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-            pw.Text('3. Note méthodologique',
-              style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              'ILDC = MIN(MAX(RBE, 0) ; MAX(AC × 2,25 %, 0))  ·  SC = MAX(comm_perçues ; comm_versées)\n'
-              'FC = |Trading|  ·  BI = ILDC + SC + FC\n'
-              'BIC : BI ≤ 1 Md€ → 12 %  ;  1–30 Md€ → 18 % marginal  ;  > 30 Md€ → 24 % marginal\n'
-              'Seuils convertis en FCFA (1 EUR ≈ 655,957 FCFA)  ·  OFR = BIC  ·  REA = OFR × 12,5',
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
-            ),
-          ]),
-        ),
-      ],
-    ));
-
-    final bytes = await doc.save();
-    final location = await getSaveLocation(
-      suggestedName: 'corep_c1601_$_crr3YearBase.pdf',
-      acceptedTypeGroups: const [XTypeGroup(label: 'PDF', extensions: ['pdf'])],
-    );
-    if (!mounted || location == null) return;
-    await saveBytesAtLocation(location, bytes, requiredExtension: '.pdf');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rapport C 16.01 exporté avec succès'), backgroundColor: _kSuccess),
-      );
+  Widget _buildUemoiSubTab(bool isDark) {
+    switch (_uemoiSubTab) {
+      case 0: return UemoiAibScreen(api: widget.api);
+      case 1: return UemoiAsScreen(api: widget.api);
+      case 2: return _CorepTabView(api: widget.api, isDark: isDark);
+      case 3: return _buildRegistreContent(isDark);
+      case 4: return _buildUemoiPlaceholder(isDark, 'C2 — Tableau de bord & indicateurs', 'Pilier 2 PIEAFP — indicateurs agrégés', Icons.dashboard_outlined, 'BLOC C');
+      case 5: return UemoiSyntheseScreen(api: widget.api);
+      default: return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildUemoiPlaceholder(bool isDark, String title, String subtitle, IconData icon, String bloc) {
+    final muted      = isDark ? const Color(0xFF8BA3C7) : const Color(0xFF94A3B8);
+    final blocColor  = isDark ? const Color(0xFF1E88E5) : const Color(0xFF1565C0);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: blocColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: blocColor.withValues(alpha: 0.3)),
+            ),
+            child: Text(bloc, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: blocColor)),
+          ),
+          const SizedBox(height: 16),
+          Icon(icon, size: 44, color: muted.withValues(alpha: 0.35)),
+          const SizedBox(height: 14),
+          Text(title,    style: TextStyle(color: muted, fontSize: 14, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Text(subtitle, style: TextStyle(color: muted, fontSize: 11)),
+          const SizedBox(height: 10),
+          Text('Section en cours de développement', style: TextStyle(color: muted.withValues(alpha: 0.6), fontSize: 11, fontStyle: FontStyle.italic)),
+        ],
+      ),
+    );
   }
 
   Widget _buildRegistreContent(bool isDark) {
@@ -8646,6 +8480,2307 @@ class _RegistreViewState extends State<_RegistreView> {
     ),
   );
 
+  Widget _buildCcr3Content(bool isDark) =>
+      _Ccr3TabView(api: widget.api, isDark: isDark);
+
+}
+
+
+// ─── CRR3-COREP — Onglet BIC avec saisie directe du PNB ──────────────────────
+
+class _CorepTabView extends StatefulWidget {
+  const _CorepTabView({required this.api, required this.isDark});
+  final RwaApiService api;
+  final bool isDark;
+
+  @override
+  State<_CorepTabView> createState() => _CorepTabViewState();
+}
+
+class _CorepTabViewState extends State<_CorepTabView> {
+  int _view = 0;
+  bool _loading = true;
+  String? _error;
+  bool _saving = false;
+
+  int _anneeN = DateTime.now().year - 1;
+  OpRiskCalculResult? _result;
+
+  late final List<TextEditingController> _pnbCtrl; // 3 ctrl : index 0=N-2, 1=N-1, 2=N
+
+  final _pSeuilIldc = TextEditingController();
+  final _pCoef1     = TextEditingController();
+  final _pCoef2     = TextEditingController();
+  final _pCoef3     = TextEditingController();
+  final _pSeuil1    = TextEditingController();
+  final _pSeuil2    = TextEditingController();
+  final _pMultRea   = TextEditingController();
+  final _pTauxConv  = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _pnbCtrl = List.generate(3, (_) => TextEditingController());
+    _load();
+  }
+
+  @override
+  void dispose() {
+    for (final c in _pnbCtrl) { c.dispose(); }
+    for (final c in [_pSeuilIldc, _pCoef1, _pCoef2, _pCoef3,
+                     _pSeuil1, _pSeuil2, _pMultRea, _pTauxConv]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final result = await widget.api.calculeOpRiskBic(anneeN: _anneeN);
+      _populatePnbCtrl(result);
+      _populateParamControllers(result.params);
+      if (mounted) setState(() { _result = result; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  void _populatePnbCtrl(OpRiskCalculResult r) {
+    for (var i = 0; i < 3; i++) {
+      final v = r.inputs[i].pnb;
+      _pnbCtrl[i].text = v == 0 ? '' : v.toStringAsFixed(0);
+    }
+  }
+
+  void _populateParamControllers(OpRiskParametres p) {
+    _pSeuilIldc.text = (p.seuilIldc * 100).toStringAsFixed(4);
+    _pCoef1.text     = (p.coefTranche1 * 100).toStringAsFixed(0);
+    _pCoef2.text     = (p.coefTranche2 * 100).toStringAsFixed(0);
+    _pCoef3.text     = (p.coefTranche3 * 100).toStringAsFixed(0);
+    _pSeuil1.text    = p.seuil1Fcfa.toStringAsFixed(0);
+    _pSeuil2.text    = p.seuil2Fcfa.toStringAsFixed(0);
+    _pMultRea.text   = p.multiplicateurRea.toStringAsFixed(1);
+    _pTauxConv.text  = p.tauxConversionEurFcfa.toStringAsFixed(3);
+  }
+
+  double _parse(TextEditingController c) =>
+      double.tryParse(c.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0.0;
+
+  Future<void> _saveInputs() async {
+    if (_result == null) return;
+    setState(() => _saving = true);
+    try {
+      for (var i = 0; i < 3; i++) {
+        await widget.api.upsertBicInput(_result!.annees[i], {
+          'pnb': _parse(_pnbCtrl[i]),
+        });
+      }
+      final refreshed = await widget.api.calculeOpRiskBic(anneeN: _anneeN);
+      _populatePnbCtrl(refreshed);
+      if (mounted) {
+        setState(() { _result = refreshed; _saving = false; _view = 1; });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('PNB sauvegardé — résultats mis à jour'),
+          backgroundColor: Color(0xFF14A44D),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
+  Future<void> _saveParams() async {
+    setState(() => _saving = true);
+    try {
+      final data = {
+        'seuil_ildc': _parse(_pSeuilIldc) / 100,
+        'coef_tranche1': _parse(_pCoef1) / 100,
+        'coef_tranche2': _parse(_pCoef2) / 100,
+        'coef_tranche3': _parse(_pCoef3) / 100,
+        'seuil1_fcfa': _parse(_pSeuil1),
+        'seuil2_fcfa': _parse(_pSeuil2),
+        'multiplicateur_rea': _parse(_pMultRea),
+        'taux_conversion_eur_fcfa': _parse(_pTauxConv),
+      };
+      final newParams = await widget.api.updateBicParametres(data);
+      final refreshed = await widget.api.calculeOpRiskBic(anneeN: _anneeN);
+      _populateParamControllers(newParams);
+      _populatePnbCtrl(refreshed);
+      if (mounted) {
+        setState(() { _result = refreshed; _saving = false; });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Paramètres mis à jour'),
+          backgroundColor: Color(0xFF14A44D),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
+  bool get _dk => widget.isDark;
+  Color get _border => _dk ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
+  Color get _card   => _dk ? const Color(0xFF101C32) : const Color(0xFFF6F9FF);
+  Color get _surf   => _dk ? const Color(0xFF0D1A2E) : Colors.white;
+  Color get _txt    => _dk ? Colors.white : const Color(0xFF1F2937);
+  Color get _muted  => _dk ? const Color(0xFF8BA3C7) : const Color(0xFF6B7280);
+
+  static const _kAccent = Color(0xFF2563EB);
+  static const _kGreen  = Color(0xFF14A44D);
+  static const _kRed    = Color(0xFFDC2626);
+
+  String _fcfa(double v) {
+    if (v == 0) return '0 FCFA';
+    final abs = v.abs();
+    final sign = v < 0 ? '−' : '';
+    if (abs >= 1e9) return '$sign${(abs / 1e9).toStringAsFixed(3)} Md FCFA';
+    if (abs >= 1e6) return '$sign${(abs / 1e6).toStringAsFixed(3)} M FCFA';
+    return '$sign${abs.toStringAsFixed(2)} FCFA';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.cloud_off_outlined, size: 36, color: Colors.red),
+          const SizedBox(height: 8),
+          Text('Impossible de charger les données BIC COREP', style: TextStyle(color: _txt)),
+          const SizedBox(height: 4),
+          Text(_error!, style: TextStyle(fontSize: 11, color: _muted)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(onPressed: _load,
+              icon: const Icon(Icons.refresh), label: const Text('Réessayer')),
+        ]),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTopBar(),
+        const SizedBox(height: 10),
+        Expanded(
+          child: switch (_view) {
+            0 => _buildSaisieView(),
+            1 => _buildResultsView(),
+            2 => _buildAnalyseRapideView(),
+            _ => _buildParamsView(),
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopBar() {
+    final years = _result?.annees ?? [_anneeN - 2, _anneeN - 1, _anneeN];
+    final yearLabel = '${years[0]} · ${years[1]} · ${years[2]}';
+
+    Widget tab(int idx, IconData icon, String label) {
+      final sel = _view == idx;
+      return GestureDetector(
+        onTap: () => setState(() => _view = idx),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: sel ? _kAccent : Colors.transparent,
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 13, color: sel ? Colors.white : _muted),
+            const SizedBox(width: 5),
+            Text(label, style: TextStyle(
+              fontSize: 11.5, fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+              color: sel ? Colors.white : _muted,
+            )),
+          ]),
+        ),
+      );
+    }
+
+    Widget yearBtn(IconData icon, VoidCallback onTap) => Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(3),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+          child: Icon(icon, size: 12, color: _kAccent),
+        ),
+      ),
+    );
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: _border, width: 0.8),
+      ),
+      child: Row(children: [
+        const Icon(Icons.account_balance_outlined, size: 14, color: _kAccent),
+        const SizedBox(width: 6),
+        Text('CRR3-COREP', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
+        const SizedBox(width: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: _kAccent.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: _kAccent.withValues(alpha: 0.25)),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            yearBtn(Icons.remove, () {
+              setState(() { _anneeN--; _result = null; });
+              _load();
+            }),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(yearLabel, style: const TextStyle(
+                  fontSize: 10.5, fontWeight: FontWeight.w600, color: _kAccent)),
+            ),
+            yearBtn(Icons.add, () {
+              setState(() { _anneeN++; _result = null; });
+              _load();
+            }),
+          ]),
+        ),
+        const SizedBox(width: 14),
+        tab(0, Icons.edit_note_outlined, 'Saisie PNB'),
+        const SizedBox(width: 4),
+        tab(1, Icons.analytics_outlined, 'Résultats'),
+        const SizedBox(width: 4),
+        tab(2, Icons.speed_outlined, 'Analyse rapide'),
+        const SizedBox(width: 4),
+        tab(3, Icons.tune_outlined, 'Paramètres'),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0891B2).withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: const Color(0xFF0891B2).withValues(alpha: 0.4)),
+          ),
+          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.info_outline, size: 11, color: Color(0xFF0891B2)),
+            SizedBox(width: 4),
+            Text('Art. 315–321 CRR3 • PNB saisi directement',
+              style: TextStyle(fontSize: 10, color: Color(0xFF0891B2), fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  // ── Vue Saisie : 3 champs PNB ─────────────────────────────────────────────────
+
+  Widget _buildSaisieView() {
+    final years = _result?.annees ?? [_anneeN - 2, _anneeN - 1, _anneeN];
+
+    Widget pnbCell(int i) => SizedBox(
+      height: 34,
+      child: TextField(
+        controller: _pnbCtrl[i],
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        textAlign: TextAlign.right,
+        style: TextStyle(fontSize: 13, color: _txt),
+        decoration: InputDecoration(
+          hintText: '0',
+          hintStyle: TextStyle(fontSize: 12, color: _muted),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          isDense: true,
+          filled: true,
+          fillColor: _surf,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(4),
+            borderSide: BorderSide(color: _border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(4),
+            borderSide: BorderSide(color: _border),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(4)),
+            borderSide: BorderSide(color: _kAccent, width: 1.5),
+          ),
+        ),
+      ),
+    );
+
+    return Column(
+      children: [
+        // En-tête colonnes
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 0.8)),
+          child: Row(children: [
+            const SizedBox(width: 260),
+            for (var i = 0; i < 3; i++) ...[
+              const SizedBox(width: 8),
+              Expanded(child: Text(
+                'N${i == 2 ? "" : i == 1 ? "−1" : "−2"} (${years[i]})',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                    color: i == 2 ? _kAccent : _txt),
+              )),
+            ],
+          ]),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          decoration: BoxDecoration(
+            color: _surf,
+            border: Border.all(color: _border),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(children: [
+              SizedBox(
+                width: 260,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Produit Net Bancaire (PNB)',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _txt)),
+                  const SizedBox(height: 2),
+                  Text('Montant annuel en FCFA', style: TextStyle(fontSize: 10.5, color: _muted)),
+                ]),
+              ),
+              for (var i = 0; i < 3; i++) ...[
+                const SizedBox(width: 8),
+                Expanded(child: pnbCell(i)),
+              ],
+            ]),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0891B2).withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFF0891B2).withValues(alpha: 0.25)),
+          ),
+          child: Row(children: [
+            const Icon(Icons.info_outline, size: 14, color: Color(0xFF0891B2)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Entrez le PNB (Produit Net Bancaire) pour chacune des 3 années. '
+                'Le système appliquera les règles CRR3 (ILDC, SC, FC, BI, BIC) et la méthode BIA (15 % × PNB moyen). '
+                'Pour saisir le détail des composantes, utilisez l\'onglet CCR3.',
+                style: TextStyle(fontSize: 11, color: const Color(0xFF0891B2).withValues(alpha: 0.85)),
+              ),
+            ),
+          ]),
+        ),
+        const Spacer(),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text('Montants en FCFA', style: TextStyle(fontSize: 10.5, color: _muted)),
+            const Spacer(),
+            FilledButton.icon(
+              onPressed: _saving ? null : _saveInputs,
+              icon: _saving
+                  ? const SizedBox(width: 14, height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save_outlined, size: 15),
+              label: Text(_saving ? 'Sauvegarde…' : 'Sauvegarder & Calculer'),
+              style: FilledButton.styleFrom(backgroundColor: _kAccent),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Vue Résultats (identique à CCR3) ─────────────────────────────────────────
+
+  Widget _buildResultsView() {
+    final r = _result;
+    if (r == null) return const SizedBox.shrink();
+
+    if (r.donneesInsuffisantes) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.inbox_outlined, size: 40, color: _muted),
+          const SizedBox(height: 10),
+          Text('Aucun PNB saisi', style: TextStyle(fontSize: 15, color: _txt)),
+          const SizedBox(height: 4),
+          Text('Entrez le PNB des 3 exercices dans l\'onglet Saisie PNB.',
+              style: TextStyle(fontSize: 12, color: _muted)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => setState(() => _view = 0),
+            icon: const Icon(Icons.edit_note_outlined),
+            label: const Text('Aller à la Saisie'),
+          ),
+        ]),
+      );
+    }
+
+    Widget kpiCard(String title, String value, {Color? valueColor, String? subtitle, IconData? icon}) =>
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _surf, border: Border.all(color: _border),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              if (icon != null) ...[Icon(icon, size: 14, color: _muted), const SizedBox(width: 5)],
+              Expanded(child: Text(title,
+                style: TextStyle(fontSize: 11, color: _muted, fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis)),
+            ]),
+            const SizedBox(height: 8),
+            Text(value, style: TextStyle(
+              fontSize: 16, fontWeight: FontWeight.w800, color: valueColor ?? _txt)),
+            if (subtitle != null) ...[
+              const SizedBox(height: 3),
+              Text(subtitle, style: TextStyle(fontSize: 10.5, color: _muted)),
+            ],
+          ]),
+        );
+
+    Widget detailRow(String label, String value, {bool bold = false, Color? color}) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+          child: Row(children: [
+            Expanded(child: Text(label, style: TextStyle(
+              fontSize: 11.5, color: bold ? _txt : _muted,
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w500))),
+            Text(value, style: TextStyle(
+              fontSize: 12, fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+              color: color ?? _txt)),
+          ]),
+        );
+
+    Widget detailCard(String title, Color accent, List<Widget> rows) =>
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: _surf, border: Border.all(color: _border),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(12, 7, 12, 7),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.08),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                border: Border(bottom: BorderSide(color: _border)),
+              ),
+              child: Text(title, style: TextStyle(
+                fontSize: 12, fontWeight: FontWeight.w700, color: accent)),
+            ),
+            ...rows,
+            const SizedBox(height: 4),
+          ]),
+        );
+
+    final bi   = r.biDetail;
+    final ildc = r.ildcDetail;
+    final sc   = r.scDetail;
+    final fc   = r.fcDetail;
+
+    final trancheLabel = 'Tranche ${bi.trancheActive} '
+        '(${bi.trancheActive == 1 ? "${(r.params.coefTranche1 * 100).toStringAsFixed(0)} %" :
+           bi.trancheActive == 2 ? "${(r.params.coefTranche2 * 100).toStringAsFixed(0)} %" :
+           "${(r.params.coefTranche3 * 100).toStringAsFixed(0)} %"})';
+
+    final ecartPos = r.ecart >= 0;
+
+    return SingleChildScrollView(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        LayoutBuilder(builder: (_, c) {
+          final cols = c.maxWidth >= 700 ? 4 : 2;
+          return GridView.count(
+            crossAxisCount: cols,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 8, mainAxisSpacing: 8,
+            childAspectRatio: 2.5,
+            children: [
+              kpiCard('OFR CRR3 (BIC)', _fcfa(r.ofrCrr3),
+                  valueColor: _kAccent, icon: Icons.shield_outlined,
+                  subtitle: 'Fonds propres min. requis'),
+              kpiCard('REA CRR3', _fcfa(r.reaCrr3),
+                  icon: Icons.bar_chart_outlined,
+                  subtitle: '× ${r.params.multiplicateurRea.toStringAsFixed(1)}'),
+              kpiCard('Tranche BIC', trancheLabel,
+                  icon: Icons.layers_outlined,
+                  valueColor: bi.trancheActive == 1 ? _kGreen :
+                              bi.trancheActive == 2 ? Colors.orange : _kRed,
+                  subtitle: bi.margeAvantTrancheSuivante != null
+                      ? 'Marge : ${_fcfa(bi.margeAvantTrancheSuivante!)}'
+                      : 'Tranche maximale'),
+              kpiCard('Écart CRR3 − BIA', _fcfa(r.ecart),
+                  icon: Icons.compare_arrows_outlined,
+                  valueColor: ecartPos ? _kRed : _kGreen,
+                  subtitle: ecartPos ? 'CRR3 > BIA' : 'CRR3 < BIA (favorable)'),
+            ],
+          );
+        }),
+        const SizedBox(height: 12),
+
+        detailCard('ILDC — Intérêts, Leasing & Dividendes', _kAccent, [
+          detailRow('IC = moy(IP − IV)', _fcfa(ildc.ic)),
+          detailRow('AC = moy(Tréso + Créances − Provisions)', _fcfa(ildc.ac)),
+          detailRow('Plafond ILDC  (AC × ${(r.params.seuilIldc * 100).toStringAsFixed(4)} %)', _fcfa(ildc.plafondIldc)),
+          if (ildc.plafondActif)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                ),
+                child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
+                  SizedBox(width: 5),
+                  Text('Plafond ILDC actif — ABS(IC) > AC×seuil',
+                    style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w600)),
+                ]),
+              ),
+            ),
+          detailRow('Dividendes perçus (moy)', _fcfa(ildc.dividendes)),
+          Divider(height: 1, color: _border),
+          detailRow('ILDC retenu', _fcfa(ildc.ildc), bold: true, color: _kAccent),
+        ]),
+
+        detailCard('SC — Services', const Color(0xFF7C3AED), [
+          detailRow('Autres produits exploitation (moy)', _fcfa(sc.oi)),
+          detailRow('Autres charges exploitation (moy)', _fcfa(sc.oe)),
+          detailRow('MAX(OI, OE) retenu', _fcfa(math.max(sc.oi, sc.oe))),
+          detailRow('Commissions perçues (moy)', _fcfa(sc.fi)),
+          detailRow('Commissions versées (moy)', _fcfa(sc.fe)),
+          detailRow('MAX(FI, FE) retenu', _fcfa(math.max(sc.fi, sc.fe))),
+          Divider(height: 1, color: _border),
+          detailRow('SC retenu', _fcfa(sc.sc), bold: true, color: const Color(0xFF7C3AED)),
+        ]),
+
+        detailCard('FC — Financière', const Color(0xFFEA580C), [
+          detailRow('ABS(Résultat Ptf négociation) moy', _fcfa(fc.tc)),
+          detailRow('ABS(Résultat Ptf bancaire) moy', _fcfa(fc.bc)),
+          Divider(height: 1, color: _border),
+          detailRow('FC retenu', _fcfa(fc.fc), bold: true, color: const Color(0xFFEA580C)),
+        ]),
+
+        detailCard('BI & BIC', _kAccent, [
+          detailRow('ILDC', _fcfa(ildc.ildc)),
+          detailRow('SC', _fcfa(sc.sc)),
+          detailRow('FC', _fcfa(fc.fc)),
+          Divider(height: 1, color: _border),
+          detailRow('Business Indicator (BI)', _fcfa(bi.bi), bold: true),
+          detailRow(trancheLabel, _fcfa(bi.bic), bold: true, color: _kAccent),
+          detailRow('OFR CRR3  (ILM = 1 par hypothèse)', _fcfa(r.ofrCrr3), bold: true, color: _kAccent),
+          detailRow('REA CRR3  (×${r.params.multiplicateurRea.toStringAsFixed(1)})', _fcfa(r.reaCrr3), bold: true),
+        ]),
+
+        detailCard('Comparatif — Approche Indicateur de Base (BIA)', const Color(0xFF0891B2), [
+          detailRow('OFR BIA  (15 % × PNB moy)', _fcfa(r.ofrBia)),
+          detailRow('REA BIA', _fcfa(r.reaBia)),
+          Divider(height: 1, color: _border),
+          detailRow('Écart (CRR3 − BIA)', _fcfa(r.ecart), bold: true,
+              color: r.ecart >= 0 ? _kRed : _kGreen),
+        ]),
+      ]),
+    );
+  }
+
+  // ── Vue Analyse rapide (identique à CCR3) ─────────────────────────────────────
+
+  Widget _buildAnalyseRapideView() {
+    final r = _result;
+    if (r == null || r.donneesInsuffisantes) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.inbox_outlined, size: 40, color: _muted),
+          const SizedBox(height: 10),
+          Text('Aucune donnée disponible', style: TextStyle(fontSize: 15, color: _txt)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => setState(() => _view = 0),
+            icon: const Icon(Icons.edit_note_outlined),
+            label: const Text('Aller à la Saisie'),
+          ),
+        ]),
+      );
+    }
+    return SingleChildScrollView(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _buildArKpiRow(r),
+        const SizedBox(height: 12),
+        _buildBiCompositionCard(r),
+        const SizedBox(height: 12),
+        LayoutBuilder(builder: (_, bc) {
+          final side = (bc.maxWidth - 12) / 2;
+          return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SizedBox(width: side, child: _buildComparBarCard(
+              'OFR — CRR3 vs BIA',
+              [('OFR CRR3', r.ofrCrr3, _kAccent), ('OFR BIA', r.ofrBia, const Color(0xFF94A3B8))],
+            )),
+            const SizedBox(width: 12),
+            SizedBox(width: side, child: _buildComparBarCard(
+              'REA — CRR3 vs BIA',
+              [('REA CRR3', r.reaCrr3, _kAccent), ('REA BIA', r.reaBia, const Color(0xFF94A3B8))],
+            )),
+          ]);
+        }),
+        const SizedBox(height: 12),
+        _buildTranchePositionCard(r),
+        const SizedBox(height: 8),
+      ]),
+    );
+  }
+
+  Widget _buildArKpiRow(OpRiskCalculResult r) {
+    final ecartPos = r.ecart > 0;
+    final ecartColor = ecartPos ? _kRed : _kGreen;
+
+    Widget card(String label, String value, {Color? valueColor, String? sub}) =>
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: _surf, border: Border.all(color: _border),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label, style: TextStyle(fontSize: 10.5, color: _muted, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              Text(value, style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w800, color: valueColor ?? _txt)),
+              if (sub != null) Text(sub, style: TextStyle(fontSize: 9.5, color: _muted)),
+            ]),
+          ),
+        );
+
+    return Row(children: [
+      card('OFR CRR3', _fcfa(r.ofrCrr3), valueColor: _kAccent),
+      const SizedBox(width: 8),
+      card('OFR BIA', _fcfa(r.ofrBia), valueColor: const Color(0xFF0891B2)),
+      const SizedBox(width: 8),
+      card('Écart', _fcfa(r.ecart), valueColor: ecartColor,
+          sub: ecartPos ? 'CRR3 > BIA' : 'CRR3 ≤ BIA'),
+      const SizedBox(width: 8),
+      card('Tranche BIC', 'T${r.biDetail.trancheActive}',
+          valueColor: r.biDetail.trancheActive == 1 ? _kGreen :
+                      r.biDetail.trancheActive == 2 ? Colors.orange : _kRed),
+    ]);
+  }
+
+  Widget _buildBiCompositionCard(OpRiskCalculResult r) {
+    final total = r.biDetail.bi;
+    Widget barRow(String label, double v, Color c) {
+      final pct = total > 0 ? (v / total).clamp(0.0, 1.0) : 0.0;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(children: [
+          SizedBox(width: 120, child: Text(label, style: TextStyle(fontSize: 11, color: _muted))),
+          Expanded(
+            child: LayoutBuilder(builder: (_, bc) => Stack(children: [
+              Container(height: 16,
+                decoration: BoxDecoration(color: _border, borderRadius: BorderRadius.circular(3))),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 400),
+                height: 16, width: bc.maxWidth * pct,
+                decoration: BoxDecoration(color: c.withValues(alpha: 0.75), borderRadius: BorderRadius.circular(3)),
+              ),
+            ])),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(width: 130, child: Text(_fcfa(v),
+            textAlign: TextAlign.right,
+            style: TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w600))),
+        ]),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surf, border: Border.all(color: _border), borderRadius: BorderRadius.circular(6)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Composition du BI (Business Indicator)',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
+        const SizedBox(height: 10),
+        barRow('ILDC', r.ildcDetail.ildc, _kAccent),
+        barRow('SC', r.scDetail.sc, const Color(0xFF7C3AED)),
+        barRow('FC', r.fcDetail.fc, const Color(0xFFEA580C)),
+        Divider(height: 16, color: _border),
+        Row(children: [
+          Text('BI total', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
+          const Spacer(),
+          Text(_fcfa(total), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: _kAccent)),
+        ]),
+      ]),
+    );
+  }
+
+  Widget _buildComparBarCard(String title, List<(String, double, Color)> bars) {
+    final maxV = bars.fold(0.0, (m, b) => math.max(m, b.$2));
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surf, border: Border.all(color: _border), borderRadius: BorderRadius.circular(6)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 120,
+          child: CustomPaint(
+            painter: _BicBarPainter(
+              bars: bars,
+              maxV: maxV > 0 ? maxV : 1,
+              borderColor: _border,
+              mutedColor: _muted,
+              textColor: _txt,
+              isDark: _dk,
+            ),
+            child: const SizedBox.shrink(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...bars.map((b) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(children: [
+            Container(width: 10, height: 10,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(color: b.$3, borderRadius: BorderRadius.circular(2))),
+            Text(b.$1, style: TextStyle(fontSize: 11, color: _muted)),
+            const Spacer(),
+            Text(_fcfa(b.$2), style: TextStyle(
+              fontSize: 11.5, fontWeight: FontWeight.w700, color: b.$3)),
+          ]),
+        )),
+      ]),
+    );
+  }
+
+  Widget _buildTranchePositionCard(OpRiskCalculResult r) {
+    final bi = r.biDetail;
+    final s1 = r.params.seuil1Fcfa;
+    final s2 = r.params.seuil2Fcfa;
+    final biV = bi.bi;
+    final maxRange = math.max(biV * 1.2, s2 * 1.1);
+
+    Widget trancheBar(String label, double from, double to, Color c) {
+      final pctFrom = (from / maxRange).clamp(0.0, 1.0);
+      final pctTo   = (to   / maxRange).clamp(0.0, 1.0);
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(children: [
+          SizedBox(width: 70, child: Text(label, style: TextStyle(fontSize: 10.5, color: c, fontWeight: FontWeight.w600))),
+          Expanded(
+            child: LayoutBuilder(builder: (_, bc) => SizedBox(
+              height: 18,
+              child: Stack(children: [
+                Container(height: 18, decoration: BoxDecoration(
+                  color: _border.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(3))),
+                Positioned(
+                  left: bc.maxWidth * pctFrom,
+                  width: bc.maxWidth * (pctTo - pctFrom),
+                  top: 0, bottom: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: c.withValues(alpha: 0.65), borderRadius: BorderRadius.circular(3)),
+                  ),
+                ),
+                if (biV > 0)
+                  Positioned(
+                    left: bc.maxWidth * (biV / maxRange).clamp(0.0, 1.0) - 1,
+                    top: 0, bottom: 0,
+                    child: Container(width: 2, color: _kRed),
+                  ),
+              ]),
+            )),
+          ),
+        ]),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surf, border: Border.all(color: _border), borderRadius: BorderRadius.circular(6)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Position Tranche BIC', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
+        const SizedBox(height: 4),
+        Text('BI = ${_fcfa(biV)}   •   Seuils : ${_fcfa(s1)} / ${_fcfa(s2)}',
+          style: TextStyle(fontSize: 11, color: _muted)),
+        const SizedBox(height: 10),
+        trancheBar('T1 (${(r.params.coefTranche1 * 100).toStringAsFixed(0)} %)', 0, s1, _kGreen),
+        trancheBar('T2 (${(r.params.coefTranche2 * 100).toStringAsFixed(0)} %)', s1, s2, Colors.orange),
+        trancheBar('T3 (${(r.params.coefTranche3 * 100).toStringAsFixed(0)} %)', s2, maxRange, _kRed),
+        const SizedBox(height: 8),
+        Row(children: [
+          Container(width: 10, height: 10,
+            decoration: BoxDecoration(color: _kRed, borderRadius: BorderRadius.circular(2))),
+          const SizedBox(width: 6),
+          Text('Position BI actuelle', style: TextStyle(fontSize: 11, color: _muted)),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: (bi.trancheActive == 1 ? _kGreen :
+                      bi.trancheActive == 2 ? Colors.orange : _kRed).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text('Tranche ${bi.trancheActive} active',
+              style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700,
+                color: bi.trancheActive == 1 ? _kGreen :
+                       bi.trancheActive == 2 ? Colors.orange : _kRed)),
+          ),
+        ]),
+      ]),
+    );
+  }
+
+  // ── Vue Paramètres (identique à CCR3) ─────────────────────────────────────────
+
+  Widget _buildParamsView() {
+    Widget paramField(TextEditingController ctrl, String label, String hint) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(children: [
+            SizedBox(
+              width: 280,
+              child: Text(label, style: TextStyle(fontSize: 12, color: _txt))),
+            SizedBox(
+              width: 140,
+              child: TextField(
+                controller: ctrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textAlign: TextAlign.right,
+                style: TextStyle(fontSize: 12, color: _txt),
+                decoration: InputDecoration(
+                  hintText: hint,
+                  hintStyle: TextStyle(color: _muted, fontSize: 11),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  filled: true, fillColor: _surf,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: _border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4),
+                      borderSide: BorderSide(color: _border)),
+                  focusedBorder: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                      borderSide: BorderSide(color: _kAccent, width: 1.5)),
+                ),
+              ),
+            ),
+          ]),
+        );
+
+    return SingleChildScrollView(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _surf, border: Border.all(color: _border), borderRadius: BorderRadius.circular(6)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Paramètres du calcul BIC CRR3',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _txt)),
+            const SizedBox(height: 4),
+            Text('Art. 315–321 CRR3 (Règlement UE 2019/876 adapté BCEAO)',
+              style: TextStyle(fontSize: 11, color: _muted)),
+            const Divider(height: 20),
+            paramField(_pSeuilIldc, 'Seuil plafond ILDC (%)', '2.26'),
+            paramField(_pCoef1, 'Taux BIC Tranche 1 (%)', '12'),
+            paramField(_pCoef2, 'Taux BIC Tranche 2 (%)', '18'),
+            paramField(_pCoef3, 'Taux BIC Tranche 3 (%)', '24'),
+            const Divider(height: 16),
+            paramField(_pSeuil1, 'Seuil BI Tranche 1→2 (FCFA)', '0'),
+            paramField(_pSeuil2, 'Seuil BI Tranche 2→3 (FCFA)', '0'),
+            const Divider(height: 16),
+            paramField(_pMultRea, 'Multiplicateur REA', '12.5'),
+            paramField(_pTauxConv, 'Taux EUR→FCFA', '655.957'),
+            const SizedBox(height: 12),
+            Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+              FilledButton.icon(
+                onPressed: _saving ? null : _saveParams,
+                icon: _saving
+                    ? const SizedBox(width: 14, height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.save_outlined, size: 15),
+                label: Text(_saving ? 'Sauvegarde…' : 'Enregistrer les paramètres'),
+                style: FilledButton.styleFrom(backgroundColor: _kAccent),
+              ),
+            ]),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+
+// ─── CCR3 — Onglet BIC CRR3 ──────────────────────────────────────────────────
+
+class _Ccr3TabView extends StatefulWidget {
+  const _Ccr3TabView({required this.api, required this.isDark});
+  final RwaApiService api;
+  final bool isDark;
+
+  @override
+  State<_Ccr3TabView> createState() => _Ccr3TabViewState();
+}
+
+class _Ccr3TabViewState extends State<_Ccr3TabView> {
+  // Vues internes : 0 = Saisie, 1 = Résultats, 2 = Paramètres
+  int _view = 0;
+  bool _loading = true;
+  String? _error;
+  bool _saving = false;
+
+  // Année N (dernier exercice clos) — modifiable par l'utilisateur
+  int _anneeN = DateTime.now().year - 1;
+
+  OpRiskCalculResult? _result;
+
+  // Contrôleurs indexés par [yearIndex 0..2][fieldIndex 0..13]
+  // Ordre des champs : voir _kFields
+  late final List<List<TextEditingController>> _ctrl;
+
+  // Contrôleurs paramètres
+  final _pSeuilIldc     = TextEditingController();
+  final _pCoef1         = TextEditingController();
+  final _pCoef2         = TextEditingController();
+  final _pCoef3         = TextEditingController();
+  final _pSeuil1        = TextEditingController();
+  final _pSeuil2        = TextEditingController();
+  final _pMultRea       = TextEditingController();
+  final _pTauxConv      = TextEditingController();
+
+  static const _kFields = [
+    // ILDC
+    'interets_percus', 'interets_verses', 'dividendes_percus',
+    'tresorerie_et_banques_centrales', 'creances_etablissements_credit',
+    'creances_clientele', 'provisions',
+    // SC
+    'autres_produits_exploitation', 'autres_charges_exploitation',
+    'commissions_percues', 'commissions_versees',
+    // FC
+    'resultat_portefeuille_negociation', 'resultat_portefeuille_bancaire',
+    // BIA
+    'pnb',
+  ];
+
+  static const _kLabels = [
+    'Intérêts perçus', 'Intérêts versés', 'Dividendes perçus',
+    'Trésorerie & Banques centrales', 'Créances sur Étab. de crédit',
+    'Créances clientèle (brut)', 'Provisions sur créances',
+    'Autres produits d\'exploitation', 'Autres charges d\'exploitation',
+    'Commissions perçues', 'Commissions versées',
+    'Résultat net Ptf négociation', 'Résultat net Ptf bancaire',
+    'PNB (Produit Net Bancaire)',
+  ];
+
+  static const _kSections = [
+    ('ILDC — Composante Intérêts, Leasing & Dividendes', 0, 7),
+    ('SC — Composante Services', 7, 11),
+    ('FC — Composante Financière', 11, 13),
+    ('BIA — Comparatif Indicateur de Base', 13, 14),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = List.generate(3, (_) =>
+        List.generate(_kFields.length, (_) => TextEditingController()));
+    _load();
+  }
+
+  @override
+  void dispose() {
+    for (final row in _ctrl) {
+      for (final c in row) { c.dispose(); }
+    }
+    for (final c in [_pSeuilIldc, _pCoef1, _pCoef2, _pCoef3,
+                     _pSeuil1, _pSeuil2, _pMultRea, _pTauxConv]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final result = await widget.api.calculeOpRiskBic(anneeN: _anneeN);
+      _populateControllers(result);
+      _populateParamControllers(result.params);
+      if (mounted) setState(() { _result = result; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  void _populateControllers(OpRiskCalculResult r) {
+    for (var yi = 0; yi < 3; yi++) {
+      final inp = r.inputs[yi];
+      final vals = [
+        inp.interetsPercus, inp.interetsVerses, inp.dividendesPercus,
+        inp.tresorerie, inp.creancesEtabCredit, inp.creancesClientele, inp.provisions,
+        inp.autresProduits, inp.autresCharges,
+        inp.commissionsPercues, inp.commissionsVersees,
+        inp.resPfNegociation, inp.resPfBancaire,
+        inp.pnb,
+      ];
+      for (var fi = 0; fi < _kFields.length; fi++) {
+        _ctrl[yi][fi].text = vals[fi] == 0 ? '' : vals[fi].toStringAsFixed(0);
+      }
+    }
+  }
+
+  void _populateParamControllers(OpRiskParametres p) {
+    _pSeuilIldc.text  = (p.seuilIldc * 100).toStringAsFixed(4);
+    _pCoef1.text      = (p.coefTranche1 * 100).toStringAsFixed(0);
+    _pCoef2.text      = (p.coefTranche2 * 100).toStringAsFixed(0);
+    _pCoef3.text      = (p.coefTranche3 * 100).toStringAsFixed(0);
+    _pSeuil1.text     = p.seuil1Fcfa.toStringAsFixed(0);
+    _pSeuil2.text     = p.seuil2Fcfa.toStringAsFixed(0);
+    _pMultRea.text    = p.multiplicateurRea.toStringAsFixed(1);
+    _pTauxConv.text   = p.tauxConversionEurFcfa.toStringAsFixed(3);
+  }
+
+  double _parse(TextEditingController c) =>
+      double.tryParse(c.text.replaceAll(' ', '').replaceAll(',', '.')) ?? 0.0;
+
+  Future<void> _saveInputs() async {
+    if (_result == null) return;
+    setState(() => _saving = true);
+    try {
+      for (var yi = 0; yi < 3; yi++) {
+        final annee = _result!.annees[yi];
+        final data = <String, dynamic>{};
+        for (var fi = 0; fi < _kFields.length; fi++) {
+          data[_kFields[fi]] = _parse(_ctrl[yi][fi]);
+        }
+        await widget.api.upsertBicInput(annee, data);
+      }
+      final refreshed = await widget.api.calculeOpRiskBic();
+      _populateControllers(refreshed);
+      if (mounted) {
+        setState(() { _result = refreshed; _saving = false; _view = 1; });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Données sauvegardées — résultats mis à jour'),
+          backgroundColor: Color(0xFF14A44D),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
+  Future<void> _saveParams() async {
+    setState(() => _saving = true);
+    try {
+      final data = {
+        'seuil_ildc': _parse(_pSeuilIldc) / 100,
+        'coef_tranche1': _parse(_pCoef1) / 100,
+        'coef_tranche2': _parse(_pCoef2) / 100,
+        'coef_tranche3': _parse(_pCoef3) / 100,
+        'seuil1_fcfa': _parse(_pSeuil1),
+        'seuil2_fcfa': _parse(_pSeuil2),
+        'multiplicateur_rea': _parse(_pMultRea),
+        'taux_conversion_eur_fcfa': _parse(_pTauxConv),
+      };
+      final newParams = await widget.api.updateBicParametres(data);
+      final refreshed = await widget.api.calculeOpRiskBic();
+      _populateParamControllers(newParams);
+      _populateControllers(refreshed);
+      if (mounted) {
+        setState(() { _result = refreshed; _saving = false; });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Paramètres mis à jour'),
+          backgroundColor: Color(0xFF14A44D),
+        ));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Erreur : $e'),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  }
+
+  // ── Couleurs thème ────────────────────────────────────────────────────────────
+  bool get _dk => widget.isDark;
+  Color get _border => _dk ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
+  Color get _card   => _dk ? const Color(0xFF101C32) : const Color(0xFFF6F9FF);
+  Color get _surf   => _dk ? const Color(0xFF0D1A2E) : Colors.white;
+  Color get _txt    => _dk ? Colors.white : const Color(0xFF1F2937);
+  Color get _muted  => _dk ? const Color(0xFF8BA3C7) : const Color(0xFF6B7280);
+
+  static const _kAccent = Color(0xFF2563EB);
+  static const _kGreen  = Color(0xFF14A44D);
+  static const _kRed    = Color(0xFFDC2626);
+
+  String _fcfa(double v) {
+    if (v == 0) return '0 FCFA';
+    final abs = v.abs();
+    final sign = v < 0 ? '−' : '';
+    if (abs >= 1e9) return '$sign${(abs / 1e9).toStringAsFixed(3)} Md FCFA';
+    if (abs >= 1e6) return '$sign${(abs / 1e6).toStringAsFixed(3)} M FCFA';
+    return '$sign${abs.toStringAsFixed(2)} FCFA';
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.cloud_off_outlined, size: 36, color: Colors.red),
+          const SizedBox(height: 8),
+          Text('Impossible de charger les données BIC', style: TextStyle(color: _txt)),
+          const SizedBox(height: 4),
+          Text(_error!, style: TextStyle(fontSize: 11, color: _muted)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _load,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Réessayer'),
+          ),
+        ]),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTopBar(),
+        const SizedBox(height: 10),
+        Expanded(
+          child: switch (_view) {
+            0 => _buildSaisieView(),
+            1 => _buildResultsView(),
+            2 => _buildAnalyseRapideView(),
+            _ => _buildParamsView(),
+          },
+        ),
+      ],
+    );
+  }
+
+  // ── Barre de navigation ───────────────────────────────────────────────────────
+
+  Widget _buildTopBar() {
+    final years = _result?.annees ?? [_anneeN - 2, _anneeN - 1, _anneeN];
+    final yearLabel = '${years[0]} · ${years[1]} · ${years[2]}';
+
+    Widget tab(int idx, IconData icon, String label) {
+      final sel = _view == idx;
+      return GestureDetector(
+        onTap: () => setState(() => _view = idx),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: sel ? _kAccent : Colors.transparent,
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 13, color: sel ? Colors.white : _muted),
+            const SizedBox(width: 5),
+            Text(label, style: TextStyle(
+              fontSize: 11.5, fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+              color: sel ? Colors.white : _muted,
+            )),
+          ]),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: _border, width: 0.8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.account_balance_outlined, size: 14, color: _kAccent),
+          const SizedBox(width: 6),
+          Text('BIC / CRR3', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
+          const SizedBox(width: 8),
+          // Sélecteur d'années — cliquer sur − / + pour changer l'exercice N
+          Container(
+            decoration: BoxDecoration(
+              color: _kAccent.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: _kAccent.withValues(alpha: 0.25)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              _yearBtn(Icons.remove, () {
+                setState(() { _anneeN--; _result = null; });
+                _load();
+              }),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(yearLabel, style: const TextStyle(
+                    fontSize: 10.5, fontWeight: FontWeight.w600, color: _kAccent)),
+              ),
+              _yearBtn(Icons.add, () {
+                setState(() { _anneeN++; _result = null; });
+                _load();
+              }),
+            ]),
+          ),
+          const SizedBox(width: 14),
+          tab(0, Icons.edit_note_outlined, 'Saisie'),
+          const SizedBox(width: 4),
+          tab(1, Icons.analytics_outlined, 'Résultats'),
+          const SizedBox(width: 4),
+          tab(2, Icons.speed_outlined, 'Analyse rapide'),
+          const SizedBox(width: 4),
+          tab(3, Icons.tune_outlined, 'Paramètres'),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+            ),
+            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.info_outline, size: 11, color: Colors.orange),
+              SizedBox(width: 4),
+              Text('Pilotage interne — pas de seuils BCEAO publiés',
+                style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _yearBtn(IconData icon, VoidCallback onTap) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(3),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+        child: Icon(icon, size: 12, color: _kAccent),
+      ),
+    ),
+  );
+
+  // ── Vue Saisie ────────────────────────────────────────────────────────────────
+
+  Widget _buildSaisieView() {
+    final years = _result?.annees ?? [0, 0, 0];
+
+    Widget inputCell(int yi, int fi) => SizedBox(
+      height: 30,
+      child: TextField(
+        controller: _ctrl[yi][fi],
+        keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+        textAlign: TextAlign.right,
+        style: TextStyle(fontSize: 11.5, color: _txt),
+        decoration: InputDecoration(
+          hintText: '0',
+          hintStyle: TextStyle(fontSize: 11, color: _muted),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          isDense: true,
+          filled: true,
+          fillColor: _surf,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: _border),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(3),
+            borderSide: BorderSide(color: _border),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(3)),
+            borderSide: BorderSide(color: _kAccent, width: 1.5),
+          ),
+        ),
+      ),
+    );
+
+    Widget sectionHeader(String title, Color color) => Container(
+      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        border: Border(
+          left: BorderSide(color: color, width: 3),
+          bottom: BorderSide(color: _border),
+        ),
+      ),
+      child: Text(title, style: TextStyle(
+        fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+    );
+
+    const sectionColors = [_kAccent, Color(0xFF7C3AED), Color(0xFFEA580C), Color(0xFF0891B2)];
+
+    return Column(
+      children: [
+        // En-tête colonnes
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 0.8)),
+          child: Row(
+            children: [
+              const SizedBox(width: 240, child: Text('Poste',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
+              for (var yi = 0; yi < 3; yi++) ...[
+                const SizedBox(width: 8),
+                Expanded(child: Text('N${yi == 2 ? "" : yi == 1 ? "−1" : "−2"} (${years[yi]})',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+                      color: yi == 2 ? _kAccent : _txt))),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 2),
+        // Tableau saisie
+        Expanded(
+          child: SingleChildScrollView(
+            child: Container(
+              decoration: BoxDecoration(
+                color: _surf,
+                border: Border.all(color: _border),
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Column(
+                children: [
+                  for (final (title, from, to) in _kSections) ...[
+                    sectionHeader(title, sectionColors[_kSections.indexOf(
+                        _kSections.firstWhere((s) => s.$2 == from))]),
+                    for (var fi = from; fi < to; fi++) ...[
+                      if (fi > from) Divider(height: 1, color: _border),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 240,
+                              child: Text(_kLabels[fi],
+                                style: TextStyle(fontSize: 11.5, color: _txt),
+                                overflow: TextOverflow.ellipsis),
+                            ),
+                            for (var yi = 0; yi < 3; yi++) ...[
+                              const SizedBox(width: 8),
+                              Expanded(child: inputCell(yi, fi)),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Bouton sauvegarde
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text('Montants en FCFA · valeurs absolues (positif = produit, négatif = charge pour FC)',
+              style: TextStyle(fontSize: 10, color: _muted)),
+            const Spacer(),
+            FilledButton.icon(
+              onPressed: _saving ? null : _saveInputs,
+              icon: _saving
+                  ? const SizedBox(width: 14, height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save_outlined, size: 15),
+              label: Text(_saving ? 'Sauvegarde…' : 'Sauvegarder & Calculer'),
+              style: FilledButton.styleFrom(backgroundColor: _kAccent),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Vue Résultats ─────────────────────────────────────────────────────────────
+
+  Widget _buildResultsView() {
+    final r = _result;
+    if (r == null) return const SizedBox.shrink();
+
+    if (r.donneesInsuffisantes) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.inbox_outlined, size: 40, color: _muted),
+          const SizedBox(height: 10),
+          Text('Aucune donnée saisie', style: TextStyle(fontSize: 15, color: _txt)),
+          const SizedBox(height: 4),
+          Text('Allez dans l\'onglet Saisie pour entrer les données des 3 exercices.',
+              style: TextStyle(fontSize: 12, color: _muted)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => setState(() => _view = 0),
+            icon: const Icon(Icons.edit_note_outlined),
+            label: const Text('Aller à la Saisie'),
+          ),
+        ]),
+      );
+    }
+
+    Widget kpiCard(String title, String value, {Color? valueColor, String? subtitle, IconData? icon}) =>
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _surf,
+            border: Border.all(color: _border),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 14, color: _muted),
+                  const SizedBox(width: 5),
+                ],
+                Expanded(child: Text(title,
+                  style: TextStyle(fontSize: 11, color: _muted, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis)),
+              ]),
+              const SizedBox(height: 8),
+              Text(value, style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w800,
+                color: valueColor ?? _txt)),
+              if (subtitle != null) ...[
+                const SizedBox(height: 3),
+                Text(subtitle, style: TextStyle(fontSize: 10.5, color: _muted)),
+              ],
+            ],
+          ),
+        );
+
+    Widget detailRow(String label, String value, {bool bold = false, Color? color}) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
+          child: Row(
+            children: [
+              Expanded(child: Text(label, style: TextStyle(
+                fontSize: 11.5, color: bold ? _txt : _muted,
+                fontWeight: bold ? FontWeight.w700 : FontWeight.w500))),
+              Text(value, style: TextStyle(
+                fontSize: 12, fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
+                color: color ?? _txt)),
+            ],
+          ),
+        );
+
+    Widget detailCard(String title, Color accent, List<Widget> rows) =>
+        Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: _surf, border: Border.all(color: _border),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(12, 7, 12, 7),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.08),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                  border: Border(bottom: BorderSide(color: _border)),
+                ),
+                child: Text(title, style: TextStyle(
+                  fontSize: 12, fontWeight: FontWeight.w700, color: accent)),
+              ),
+              ...rows,
+              const SizedBox(height: 4),
+            ],
+          ),
+        );
+
+    final bi   = r.biDetail;
+    final ildc = r.ildcDetail;
+    final sc   = r.scDetail;
+    final fc   = r.fcDetail;
+
+    final trancheLabel = 'Tranche ${bi.trancheActive} '
+        '(${bi.trancheActive == 1 ? "${(r.params.coefTranche1 * 100).toStringAsFixed(0)} %" :
+           bi.trancheActive == 2 ? "${(r.params.coefTranche2 * 100).toStringAsFixed(0)} %" :
+           "${(r.params.coefTranche3 * 100).toStringAsFixed(0)} %"})';
+
+    final ecartPos = r.ecart >= 0;
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // KPI cards
+          LayoutBuilder(builder: (_, c) {
+            final cols = c.maxWidth >= 700 ? 4 : 2;
+            return GridView.count(
+              crossAxisCount: cols,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 2.5,
+              children: [
+                kpiCard('OFR CRR3 (BIC)', _fcfa(r.ofrCrr3),
+                    valueColor: _kAccent, icon: Icons.shield_outlined,
+                    subtitle: 'Fonds propres min. requis'),
+                kpiCard('REA CRR3', _fcfa(r.reaCrr3),
+                    icon: Icons.bar_chart_outlined,
+                    subtitle: '× ${r.params.multiplicateurRea.toStringAsFixed(1)}'),
+                kpiCard('Tranche BIC', trancheLabel,
+                    icon: Icons.layers_outlined,
+                    valueColor: bi.trancheActive == 1 ? _kGreen :
+                                bi.trancheActive == 2 ? Colors.orange : _kRed,
+                    subtitle: bi.margeAvantTrancheSuivante != null
+                        ? 'Marge : ${_fcfa(bi.margeAvantTrancheSuivante!)}'
+                        : 'Tranche maximale'),
+                kpiCard('Écart CRR3 − BIA', _fcfa(r.ecart),
+                    icon: Icons.compare_arrows_outlined,
+                    valueColor: ecartPos ? _kRed : _kGreen,
+                    subtitle: ecartPos ? 'CRR3 > BIA' : 'CRR3 < BIA (favorable)'),
+              ],
+            );
+          }),
+          const SizedBox(height: 12),
+
+          // Détail ILDC
+          detailCard('ILDC — Intérêts, Leasing & Dividendes', _kAccent, [
+            detailRow('IC = moy(IP − IV)', _fcfa(ildc.ic)),
+            detailRow('AC = moy(Tréso + Créances − Provisions)', _fcfa(ildc.ac)),
+            detailRow('Plafond ILDC  (AC × ${(r.params.seuilIldc * 100).toStringAsFixed(4)} %)', _fcfa(ildc.plafondIldc)),
+            if (ildc.plafondActif)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                  ),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
+                    SizedBox(width: 5),
+                    Text('Plafond ILDC actif — ABS(IC) > AC×seuil',
+                      style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+              ),
+            detailRow('Dividendes perçus (moy)', _fcfa(ildc.dividendes)),
+            Divider(height: 1, color: _border),
+            detailRow('ILDC retenu', _fcfa(ildc.ildc), bold: true, color: _kAccent),
+          ]),
+
+          // Détail SC
+          detailCard('SC — Services', const Color(0xFF7C3AED), [
+            detailRow('Autres produits exploitation (moy)', _fcfa(sc.oi)),
+            detailRow('Autres charges exploitation (moy)', _fcfa(sc.oe)),
+            detailRow('MAX(OI, OE) retenu', _fcfa(math.max(sc.oi, sc.oe))),
+            detailRow('Commissions perçues (moy)', _fcfa(sc.fi)),
+            detailRow('Commissions versées (moy)', _fcfa(sc.fe)),
+            detailRow('MAX(FI, FE) retenu', _fcfa(math.max(sc.fi, sc.fe))),
+            Divider(height: 1, color: _border),
+            detailRow('SC retenu', _fcfa(sc.sc), bold: true, color: const Color(0xFF7C3AED)),
+          ]),
+
+          // Détail FC
+          detailCard('FC — Financière', const Color(0xFFEA580C), [
+            detailRow('ABS(Résultat Ptf négociation) moy', _fcfa(fc.tc)),
+            detailRow('ABS(Résultat Ptf bancaire) moy', _fcfa(fc.bc)),
+            Divider(height: 1, color: _border),
+            detailRow('FC retenu', _fcfa(fc.fc), bold: true, color: const Color(0xFFEA580C)),
+          ]),
+
+          // BI et BIC
+          detailCard('BI & BIC', _kAccent, [
+            detailRow('ILDC', _fcfa(ildc.ildc)),
+            detailRow('SC', _fcfa(sc.sc)),
+            detailRow('FC', _fcfa(fc.fc)),
+            Divider(height: 1, color: _border),
+            detailRow('Business Indicator (BI)', _fcfa(bi.bi), bold: true),
+            detailRow(trancheLabel, _fcfa(bi.bic), bold: true, color: _kAccent),
+            detailRow('OFR CRR3  (ILM = 1 par hypothèse)', _fcfa(r.ofrCrr3), bold: true, color: _kAccent),
+            detailRow('REA CRR3  (×${r.params.multiplicateurRea.toStringAsFixed(1)})', _fcfa(r.reaCrr3), bold: true),
+          ]),
+
+          // Comparatif BIA
+          detailCard('Comparatif — Approche Indicateur de Base (BIA)', const Color(0xFF0891B2), [
+            detailRow('OFR BIA  (15 % × PNB moy)', _fcfa(r.ofrBia)),
+            detailRow('REA BIA', _fcfa(r.reaBia)),
+            Divider(height: 1, color: _border),
+            detailRow('Écart (CRR3 − BIA)', _fcfa(r.ecart), bold: true,
+                color: r.ecart >= 0 ? _kRed : _kGreen),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  // ── Vue Analyse rapide ───────────────────────────────────────────────────────
+
+  Widget _buildAnalyseRapideView() {
+    final r = _result;
+    if (r == null || r.donneesInsuffisantes) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.inbox_outlined, size: 40, color: _muted),
+          const SizedBox(height: 10),
+          Text('Aucune donnée disponible', style: TextStyle(fontSize: 15, color: _txt)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => setState(() => _view = 0),
+            icon: const Icon(Icons.edit_note_outlined),
+            label: const Text('Aller à la Saisie'),
+          ),
+        ]),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 1 — KPI cards
+          _buildArKpiRow(r),
+          const SizedBox(height: 12),
+          // 2 — Composition BI
+          _buildBiCompositionCard(r),
+          const SizedBox(height: 12),
+          // 3 — OFR + REA comparaison côte à côte
+          LayoutBuilder(builder: (_, bc) {
+            final side = (bc.maxWidth - 12) / 2;
+            return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SizedBox(width: side, child: _buildComparBarCard(
+                'OFR — CRR3 vs BIA',
+                [('OFR CRR3', r.ofrCrr3, _kAccent), ('OFR BIA', r.ofrBia, const Color(0xFF94A3B8))],
+              )),
+              const SizedBox(width: 12),
+              SizedBox(width: side, child: _buildComparBarCard(
+                'REA — CRR3 vs BIA',
+                [('REA CRR3', r.reaCrr3, _kAccent), ('REA BIA', r.reaBia, const Color(0xFF94A3B8))],
+              )),
+            ]);
+          }),
+          const SizedBox(height: 12),
+          // 4 — Position tranche
+          _buildTranchePositionCard(r),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  // ── 1. KPI cards ──────────────────────────────────────────────────────────────
+
+  Widget _buildArKpiRow(OpRiskCalculResult r) {
+    final ecartPos = r.ecart > 0;
+    final ecartColor = ecartPos ? _kRed : _kGreen;
+
+    Widget card(String label, String value, {Color? valueColor, String? sub}) =>
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            decoration: BoxDecoration(
+              color: _surf, border: Border.all(color: _border),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label, style: TextStyle(fontSize: 10.5, color: _muted,
+                  fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              Text(value, style: TextStyle(
+                fontSize: 15, fontWeight: FontWeight.w800,
+                color: valueColor ?? _txt)),
+              if (sub != null) ...[
+                const SizedBox(height: 2),
+                Text(sub, style: TextStyle(fontSize: 10, color: _muted)),
+              ],
+            ]),
+          ),
+        );
+
+    return Row(children: [
+      card('OFR CRR3', _arFcfa(r.ofrCrr3), valueColor: _kAccent, sub: 'Besoin en fonds propres'),
+      const SizedBox(width: 8),
+      card('REA CRR3', _arFcfa(r.reaCrr3), sub: '× ${r.params.multiplicateurRea.toStringAsFixed(1)}'),
+      const SizedBox(width: 8),
+      card('OFR BIA', _arFcfa(r.ofrBia), sub: '15 % × PNB moy'),
+      const SizedBox(width: 8),
+      card(
+        'Écart OFR (CRR3 − BIA)',
+        '${r.ecart > 0 ? "+" : ""}${_arFcfa(r.ecart)}',
+        valueColor: ecartColor,
+        sub: ecartPos ? 'CRR3 > BIA (défavorable)' : 'CRR3 < BIA (favorable)',
+      ),
+    ]);
+  }
+
+  // ── 2. Composition du BI ──────────────────────────────────────────────────────
+
+  Widget _buildBiCompositionCard(OpRiskCalculResult r) {
+    final ildc = r.ildcDetail.ildc;
+    final sc   = r.scDetail.sc;
+    final fc   = r.fcDetail.fc;
+    final bi   = r.biDetail.bi;
+    final total = bi > 0 ? bi : 1.0;
+
+    final components = [
+      ('ILDC', ildc, _kAccent),
+      ('SC',   sc,   const Color(0xFF7C3AED)),
+      ('FC',   fc,   const Color(0xFFEA580C)),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surf, border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Composition du Business Indicator (BI)',
+              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _txt)),
+          const SizedBox(height: 12),
+          // Barre empilée
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: SizedBox(
+              height: 24,
+              child: Row(
+                children: [
+                  for (final (_, v, c) in components)
+                    if (v > 0)
+                      Expanded(
+                        flex: (v / total * 10000).round().clamp(1, 9999999),
+                        child: Container(color: c),
+                      ),
+                  // espace vide si bi = 0
+                  if (bi <= 0)
+                    Expanded(child: Container(color: _border)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Légende
+          Row(
+            children: [
+              for (final (lbl, v, c) in components) ...[
+                Container(
+                  width: 10, height: 10,
+                  decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2)),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: RichText(text: TextSpan(children: [
+                    TextSpan(text: lbl,
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c)),
+                    TextSpan(
+                        text: '  ${_arFcfa(v)}  (${(v / total * 100).toStringAsFixed(1)} %)',
+                        style: TextStyle(fontSize: 10.5, color: _muted)),
+                  ])),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          Divider(height: 1, color: _border),
+          const SizedBox(height: 8),
+          Row(children: [
+            Icon(Icons.account_balance_wallet_outlined, size: 13, color: _muted),
+            const SizedBox(width: 5),
+            Text('BI total : ', style: TextStyle(fontSize: 11, color: _muted)),
+            Text(_arFcfa(bi),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _txt)),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  // ── 3. Graphiques de comparaison verticaux ────────────────────────────────────
+
+  Widget _buildComparBarCard(String title, List<(String, double, Color)> bars) {
+    final maxV = bars.fold(0.0, (m, b) => math.max(m, b.$2));
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surf, border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(
+              fontSize: 12.5, fontWeight: FontWeight.w700, color: _txt)),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 150,
+            child: CustomPaint(
+              painter: _BicBarPainter(
+                bars: bars,
+                maxV: maxV,
+                borderColor: _border,
+                mutedColor: _muted,
+                textColor: _txt,
+                isDark: _dk,
+              ),
+              size: const Size(double.infinity, 150),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Légende
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (final (lbl, v, c) in bars) ...[
+                Container(width: 10, height: 10,
+                    decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
+                const SizedBox(width: 4),
+                Text('$lbl : ${_arFcfa(v)}',
+                    style: TextStyle(fontSize: 10.5, color: _muted)),
+                const SizedBox(width: 14),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 4. Position dans la tranche ───────────────────────────────────────────────
+
+  Widget _buildTranchePositionCard(OpRiskCalculResult r) {
+    final bi   = r.biDetail.bi;
+    final s1   = r.params.seuil1Fcfa;
+    final s2   = r.params.seuil2Fcfa;
+    final t    = r.biDetail.trancheActive;
+    final marge = r.biDetail.margeAvantTrancheSuivante;
+
+    // Plafond de l'axe : s2 × 1.05 pour voir les 3 zones
+    final axisMax = s2 * 1.05;
+    double rel(double v) => (v / axisMax).clamp(0.0, 1.0);
+
+    final biRel = rel(bi);
+    final s1Rel = rel(s1);
+    final s2Rel = rel(s2);
+
+    // Couleur de la position selon la tranche active
+    final biColor = t == 1 ? _kGreen : t == 2 ? Colors.orange : _kRed;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _surf, border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Position du BI dans la grille de tranches',
+              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _txt)),
+          const SizedBox(height: 12),
+          // Barre de position
+          LayoutBuilder(builder: (_, bc) {
+            final w = bc.maxWidth;
+            return Stack(clipBehavior: Clip.none, children: [
+              // Fond 3 zones colorées
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  height: 18,
+                  child: Row(children: [
+                    Expanded(
+                      flex: (s1Rel * 10000).round(),
+                      child: Container(color: _kGreen.withValues(alpha: 0.18)),
+                    ),
+                    Expanded(
+                      flex: ((s2Rel - s1Rel) * 10000).round(),
+                      child: Container(color: Colors.orange.withValues(alpha: 0.18)),
+                    ),
+                    Expanded(
+                      flex: ((1 - s2Rel) * 10000).round(),
+                      child: Container(color: _kRed.withValues(alpha: 0.18)),
+                    ),
+                  ]),
+                ),
+              ),
+              // Marqueur S1
+              Positioned(
+                left: s1Rel * w - 1,
+                top: 0, height: 18,
+                child: Container(width: 2, color: Colors.orange.withValues(alpha: 0.7)),
+              ),
+              // Marqueur S2
+              Positioned(
+                left: s2Rel * w - 1,
+                top: 0, height: 18,
+                child: Container(width: 2, color: _kRed.withValues(alpha: 0.7)),
+              ),
+              // Position BI
+              Positioned(
+                left: (biRel * w - 8).clamp(0, w - 16),
+                top: -5,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Container(
+                    width: 16, height: 16,
+                    decoration: BoxDecoration(
+                      color: biColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [BoxShadow(
+                        color: biColor.withValues(alpha: 0.4),
+                        blurRadius: 4, spreadRadius: 1,
+                      )],
+                    ),
+                  ),
+                ]),
+              ),
+            ]);
+          }),
+          const SizedBox(height: 18),
+          // Étiquettes S1, S2
+          LayoutBuilder(builder: (_, bc) {
+            final w = bc.maxWidth;
+            return Stack(children: [
+              SizedBox(width: w, height: 14),
+              Positioned(
+                left: (s1Rel * w - 12).clamp(0, w - 24),
+                child: Text('S1', style: TextStyle(
+                    fontSize: 9.5, fontWeight: FontWeight.w700,
+                    color: Colors.orange.withValues(alpha: 0.9))),
+              ),
+              Positioned(
+                left: (s2Rel * w - 12).clamp(0, w - 24),
+                child: Text('S2', style: TextStyle(
+                    fontSize: 9.5, fontWeight: FontWeight.w700,
+                    color: _kRed.withValues(alpha: 0.9))),
+              ),
+            ]);
+          }),
+          const SizedBox(height: 10),
+          // Texte récapitulatif
+          Row(children: [
+            Container(width: 10, height: 10,
+                decoration: BoxDecoration(color: biColor, shape: BoxShape.circle)),
+            const SizedBox(width: 6),
+            RichText(text: TextSpan(children: [
+              TextSpan(text: 'BI = ${_arFcfa(bi)}',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: biColor)),
+              TextSpan(text: '  —  Tranche $t  (${(biRel / (t == 1 ? s1Rel : t == 2 ? s2Rel : 1) * 100).toStringAsFixed(1)} % du seuil)',
+                  style: TextStyle(fontSize: 11, color: _muted)),
+            ])),
+          ]),
+          if (marge != null) ...[
+            const SizedBox(height: 6),
+            Row(children: [
+              Icon(Icons.arrow_forward_outlined, size: 12, color: _muted),
+              const SizedBox(width: 5),
+              Text('Marge avant tranche ${t + 1} : ${_arFcfa(marge)}',
+                  style: TextStyle(fontSize: 11, color: _muted)),
+            ]),
+          ] else ...[
+            const SizedBox(height: 6),
+            const Row(children: [
+              Icon(Icons.warning_amber_rounded, size: 12, color: _kRed),
+              SizedBox(width: 5),
+              Text('Tranche maximale atteinte',
+                  style: TextStyle(fontSize: 11, color: _kRed, fontWeight: FontWeight.w600)),
+            ]),
+          ],
+          const SizedBox(height: 8),
+          // Légende zones
+          Row(children: [
+            _arDot(_kGreen), const SizedBox(width: 4),
+            Text('Tranche 1  (≤ S1)', style: TextStyle(fontSize: 10.5, color: _muted)),
+            const SizedBox(width: 12),
+            _arDot(Colors.orange), const SizedBox(width: 4),
+            Text('Tranche 2  (S1–S2)', style: TextStyle(fontSize: 10.5, color: _muted)),
+            const SizedBox(width: 12),
+            _arDot(_kRed), const SizedBox(width: 4),
+            Text('Tranche 3  (> S2)', style: TextStyle(fontSize: 10.5, color: _muted)),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _arDot(Color c) => Container(
+    width: 8, height: 8,
+    decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+  );
+
+  // Format FCFA avec séparateur d'espace (format français)
+  String _arFcfa(double v) {
+    final abs = v.abs();
+    final sign = v < 0 ? '− ' : '';
+    // Formatage entier avec espaces insécables comme séparateurs de milliers
+    final str = abs.toStringAsFixed(2);
+    final parts = str.split('.');
+    final intPart = parts[0].replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+$)'),
+      (m) => '${m[1]} ',
+    );
+    return '$sign$intPart,${parts[1]} FCFA';
+  }
+
+  // ── Vue Paramètres ────────────────────────────────────────────────────────────
+
+  Widget _buildParamsView() {
+    Widget paramField(TextEditingController ctrl, String label, String hint) =>
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              SizedBox(width: 280,
+                child: Text(label, style: TextStyle(fontSize: 12, color: _txt))),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: 200,
+                height: 34,
+                child: TextField(
+                  controller: ctrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: TextStyle(fontSize: 12, color: _txt),
+                  decoration: InputDecoration(
+                    hintText: hint,
+                    hintStyle: TextStyle(fontSize: 11, color: _muted),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    isDense: true,
+                    filled: true, fillColor: _surf,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(4),
+                        borderSide: BorderSide(color: _border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4),
+                        borderSide: BorderSide(color: _border)),
+                    focusedBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(4)),
+                        borderSide: BorderSide(color: _kAccent, width: 1.5)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _surf, border: Border.all(color: _border),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Coefficients et seuils BIC', style: TextStyle(
+                  fontSize: 13, fontWeight: FontWeight.w700, color: _txt)),
+                const SizedBox(height: 12),
+                paramField(_pSeuilIldc, 'Seuil ILDC (%)', '2.25'),
+                paramField(_pCoef1, 'Coefficient tranche 1 (%)', '12'),
+                paramField(_pCoef2, 'Coefficient tranche 2 (%)', '15'),
+                paramField(_pCoef3, 'Coefficient tranche 3 (%)', '18'),
+                const SizedBox(height: 8),
+                Divider(color: _border),
+                const SizedBox(height: 8),
+                Text('Seuils en FCFA  (Option A recommandée : parité EUR/FCFA fixe = 655,957)',
+                    style: TextStyle(fontSize: 11, color: _muted)),
+                const SizedBox(height: 8),
+                paramField(_pSeuil1, 'Seuil 1 (FCFA)  ≈ 1 Md EUR', '655957000000'),
+                paramField(_pSeuil2, 'Seuil 2 (FCFA)  ≈ 30 Mds EUR', '19678710000000'),
+                paramField(_pTauxConv, 'Taux conversion EUR → FCFA', '655.957'),
+                paramField(_pMultRea, 'Multiplicateur REA', '12.5'),
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.info_outline, size: 13, color: Colors.orange),
+                      SizedBox(width: 7),
+                      Expanded(child: Text(
+                        'La BCEAO n\'a pas publié de seuils propres à ce jour. '
+                        'Les seuils affichés correspondent aux seuils CRR3 (1 Md€ / 30 Mds€) '
+                        'convertis au taux de parité fixe EUR/FCFA (Art. 315-318 CRR3). '
+                        'Ce module est un outil de pilotage interne — pas une déclaration COREP officielle BCEAO.',
+                        style: TextStyle(fontSize: 10.5, color: Colors.orange, height: 1.45),
+                      )),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: _saving ? null : _saveParams,
+                      icon: _saving
+                          ? const SizedBox(width: 14, height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.save_outlined, size: 15),
+                      label: Text(_saving ? 'Sauvegarde…' : 'Enregistrer les paramètres'),
+                      style: FilledButton.styleFrom(backgroundColor: _kAccent),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+// ─── Graphique comparaison barres verticales (Analyse rapide CRR3) ───────────
+
+class _BicBarPainter extends CustomPainter {
+  const _BicBarPainter({
+    required this.bars,
+    required this.maxV,
+    required this.borderColor,
+    required this.mutedColor,
+    required this.textColor,
+    required this.isDark,
+  });
+
+  final List<(String label, double value, Color color)> bars;
+  final double maxV;
+  final Color borderColor, mutedColor, textColor;
+  final bool isDark;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (bars.isEmpty || maxV <= 0 || size.width < 60 || size.height < 40) return;
+
+    const leftPad = 56.0;
+    const bottomPad = 32.0;
+    const topPad = 16.0;
+    final chartW = size.width - leftPad - 8;
+    final chartH = size.height - bottomPad - topPad;
+    const chartL = leftPad;
+    final chartB = size.height - bottomPad;
+    const chartT = topPad;
+
+    // Axe
+    final axisPaint = Paint()
+      ..color = mutedColor.withValues(alpha: 0.4)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+    canvas.drawLine(const Offset(chartL, chartT), Offset(chartL, chartB), axisPaint);
+    canvas.drawLine(Offset(chartL, chartB), Offset(size.width - 8, chartB), axisPaint);
+
+    // Grille horizontale (4 lignes)
+    final gridPaint = Paint()
+      ..color = borderColor.withValues(alpha: isDark ? 0.35 : 0.55)
+      ..strokeWidth = 0.6
+      ..style = PaintingStyle.stroke;
+    for (var i = 1; i <= 4; i++) {
+      final y = chartB - chartH * i / 4;
+      canvas.drawLine(Offset(chartL, y), Offset(size.width - 8, y), gridPaint);
+      final tickVal = maxV * i / 4;
+      _paintLabel(canvas, _shortNum(tickVal),
+          Offset(0, y - 6), chartL - 4, TextAlign.right,
+          mutedColor.withValues(alpha: 0.8), 8.5);
+    }
+
+    // Barres
+    final nBars = bars.length;
+    final groupW = chartW / nBars;
+    final barW = (groupW * 0.50).clamp(16.0, 52.0);
+
+    for (var i = 0; i < nBars; i++) {
+      final (lbl, v, c) = bars[i];
+      final centerX = chartL + groupW * (i + 0.5);
+      final barH = chartH * (v / maxV).clamp(0.0, 1.0);
+      final rect = Rect.fromLTWH(
+        centerX - barW / 2, chartB - barH, barW, barH);
+      final rRect = RRect.fromRectAndCorners(rect,
+          topLeft: const Radius.circular(3), topRight: const Radius.circular(3));
+      canvas.drawRRect(rRect, Paint()..color = c.withValues(alpha: 0.90)..style = PaintingStyle.fill);
+
+      // Valeur au-dessus de la barre
+      _paintLabel(canvas, _shortNum(v),
+          Offset(centerX - groupW * 0.45, chartB - barH - 14),
+          groupW * 0.9, TextAlign.center,
+          c, 9.5, fontWeight: FontWeight.w700);
+
+      // Étiquette sous l'axe
+      _paintLabel(canvas, lbl,
+          Offset(centerX - groupW * 0.45, chartB + 6),
+          groupW * 0.9, TextAlign.center,
+          mutedColor.withValues(alpha: 0.85), 9.0);
+    }
+  }
+
+  void _paintLabel(Canvas canvas, String text, Offset offset, double maxWidth,
+      TextAlign align, Color color, double fontSize,
+      {FontWeight fontWeight = FontWeight.w500}) {
+    final tp = TextPainter(
+      text: TextSpan(text: text, style: TextStyle(
+          fontSize: fontSize, color: color, fontWeight: fontWeight)),
+      textDirection: TextDirection.ltr,
+      textAlign: align,
+    )..layout(minWidth: 0, maxWidth: maxWidth);
+    tp.paint(canvas, offset);
+  }
+
+  String _shortNum(double v) {
+    final abs = v.abs();
+    final sign = v < 0 ? '-' : '';
+    if (abs >= 1e9)  return '$sign${(abs / 1e9).toStringAsFixed(1)} Md';
+    if (abs >= 1e6)  return '$sign${(abs / 1e6).toStringAsFixed(1)} M';
+    if (abs >= 1e3)  return '$sign${(abs / 1e3).toStringAsFixed(1)} k';
+    return '$sign${abs.toStringAsFixed(0)}';
+  }
+
+  @override
+  bool shouldRepaint(covariant _BicBarPainter old) =>
+      old.bars != bars || old.maxV != maxV || old.isDark != isDark;
 }
 
 
@@ -9221,9 +11356,7 @@ class _RoRiskMatrix extends StatelessWidget {
                       final zl    = _zoneLabel(p, impact);
                       final score = p * impact;
 
-                      return Semantics(
-                        hidden: true,
-                        container: true,
+                      return ExcludeSemantics(
                         child: Tooltip(
                         key: ValueKey('matrix_${p}_$impact'),
                         message: cnt == 0
@@ -9513,6 +11646,7 @@ class _IncidentsDashSection extends StatelessWidget {
         ? '${evo >= 0 ? '+' : ''}${evo.toStringAsFixed(1)} %'
         : 'N/A';
     final evoColor = evo == null ? _kMuted : (evo > 0 ? _kDanger : _kSuccess);
+    final c = DashColors.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -9520,11 +11654,13 @@ class _IncidentsDashSection extends StatelessWidget {
       children: [
         Row(children: [
           Text(
-            'Suivi des incidents',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w600),
+            'SUIVI DES INCIDENTS',
+            style: DashText.eyebrow(
+              c,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF818CF8)
+                  : const Color(0xFF3730A3),
+            ),
           ),
           const Spacer(),
           _artInfo('Art. 313.b'),
@@ -9540,7 +11676,6 @@ class _IncidentsDashSection extends StatelessWidget {
               value: '${data.widget2.incidentsNonClos}',
               icon: Icons.pending_outlined,
               color: _kWarning,
-              isDark: isDark,
             ),
           ),
           const SizedBox(width: 8),
@@ -9551,7 +11686,6 @@ class _IncidentsDashSection extends StatelessWidget {
               value: evoStr,
               icon: Icons.compare_arrows_outlined,
               color: evoColor,
-              isDark: isDark,
             ),
           ),
         ]),
@@ -9563,7 +11697,7 @@ class _IncidentsDashSection extends StatelessWidget {
           children: [
             Expanded(
               flex: 3,
-              child: SectionCard(
+              child: DashPanel(
                 title: 'Évolution des pertes (12 mois)',
                 child: SizedBox(
                   height: 170,
@@ -9591,7 +11725,7 @@ class _IncidentsDashSection extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               flex: 2,
-              child: SectionCard(
+              child: DashPanel(
                 title: "Par type d'événement",
                 child: SizedBox(
                   height: 170,
@@ -9620,7 +11754,7 @@ class _IncidentsDashSection extends StatelessWidget {
           children: [
             Expanded(
               flex: 2,
-              child: SectionCard(
+              child: DashPanel(
                 title: 'Par ligne de métier',
                 child: SizedBox(
                   height: 160,
@@ -9639,7 +11773,7 @@ class _IncidentsDashSection extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               flex: 3,
-              child: SectionCard(
+              child: DashPanel(
                 title: 'Répartition par type',
                 child: data.repartitionType.isEmpty
                     ? const Padding(
@@ -9666,66 +11800,42 @@ class _IncidentKpiCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
-    required this.isDark,
   });
   final String label;
   final String value;
   final IconData icon;
   final Color color;
-  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
+    final c = DashColors.of(context);
     return SizedBox(
       height: 90,
       child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.09 : 0.06),
-        borderRadius: BorderRadius.circular(8),
-        border:
-            Border.all(color: color.withValues(alpha: isDark ? 0.30 : 0.20)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: isDark ? 0.14 : 0.07),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: c.surface,
+        borderRadius: BorderRadius.circular(Dash.radius),
+        border: Border.all(color: c.border, width: Dash.hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.13),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(icon, size: 13, color: color),
-          ),
+          Icon(icon, size: 15, color: color),
           const SizedBox(height: 7),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: isDark ? AppTheme.darkText : AppTheme.text,
-              letterSpacing: -0.3,
-            ),
+            style: DashText.hero(c, size: 17, color: color),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 3),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 10,
-              color: isDark ? AppTheme.darkMuted : AppTheme.muted,
-              fontWeight: FontWeight.w500,
-              height: 1.3,
-            ),
+            style: DashText.caption(c, color: c.muted),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -10027,280 +12137,4 @@ TableCell _cellFlex(String text) => TableCell(
   ),
 );
 
-// ─── CRR3-COREP — Modèle de résultat ─────────────────────────────────────────
 
-class _Crr3Result {
-  const _Crr3Result({
-    required this.ipM, required this.ivM, required this.lsM, required this.dvM,
-    required this.cpM, required this.cvM, required this.trM, required this.enM, required this.fgM,
-    required this.rbe, required this.ac,  required this.ildc,
-    required this.sc,  required this.fc,  required this.bi,
-    required this.bic, required this.ofr, required this.rea,
-    required this.ofrCrr2, required this.plafond, required this.ildcPlafonne,
-  });
-
-  // Moyennes triennales des inputs
-  final double ipM, ivM, lsM, dvM;         // Intérêts & Dividendes
-  final double cpM, cvM;                    // Commissions
-  final double trM;                         // Trading
-  final double enM;                         // Encours créances
-  final double fgM;                         // Frais généraux
-
-  // Composantes intermédiaires
-  final double rbe, ac, plafond;
-  final bool   ildcPlafonne;
-
-  // Composantes BI
-  final double ildc, sc, fc, bi;
-
-  // Outputs
-  final double bic, ofr, rea;
-  final double ofrCrr2;
-
-  bool get hasInputs => bi > 0 || ildc > 0 || sc > 0 || fc > 0;
-
-  double get delta => ofr - ofrCrr2;  // > 0 = plus exigeant avec CRR3
-
-  String get biTranche {
-    const t1 = 655957000000.0;
-    const t2 = 19678710000000.0;
-    if (bi <= t1) return 'Tranche 1  ·  taux 12 %';
-    if (bi <= t2) return 'Tranche 2  ·  taux marginal 18 %';
-    return 'Tranche 3  ·  taux marginal 24 %';
-  }
-
-  int get biTrancheIndex {
-    const t1 = 655957000000.0;
-    const t2 = 19678710000000.0;
-    if (bi <= t1) return 1;
-    if (bi <= t2) return 2;
-    return 3;
-  }
-}
-
-// ─── CRR3-COREP — Peintre Waterfall ──────────────────────────────────────────
-
-class _Crr3WaterfallPainter extends CustomPainter {
-  const _Crr3WaterfallPainter({required this.result, required this.isDark});
-
-  final _Crr3Result result;
-  final bool isDark;
-
-  static const _bars = [
-    (label: 'ILDC',  color: Color(0xFF2563EB)),
-    (label: 'SC',    color: Color(0xFF16A34A)),
-    (label: 'FC',    color: Color(0xFFD97706)),
-    (label: 'BI',    color: Color(0xFF6366F1)),
-    (label: 'OFR',   color: Color(0xFFDC2626)),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (!result.hasInputs || result.bi <= 0) return;
-
-    const labelW   = 34.0;   // largeur de l'étiquette gauche
-    const valW     = 70.0;   // espace réservé à la valeur droite
-    const gapX     = 8.0;    // espace entre barres
-    const barCount = 5;
-
-    final chartW = size.width - labelW - valW;
-    final availH = size.height;
-    final barH   = ((availH - gapX * (barCount - 1)) / barCount).clamp(14.0, 52.0);
-    final totalH = barH * barCount + gapX * (barCount - 1);
-    final topPad = (availH - totalH) / 2;
-
-    final textColor  = isDark ? const Color(0xFFB8C8E8) : const Color(0xFF374151);
-    final mutedColor = isDark ? const Color(0xFF6B7E9C) : const Color(0xFF9AA8BA);
-    final gridColor  = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.05);
-
-    // Grille de fond
-    for (int g = 0; g <= 4; g++) {
-      final gx = labelW + chartW * g / 4;
-      canvas.drawLine(Offset(gx, 0), Offset(gx, size.height),
-        Paint()..color = gridColor..strokeWidth = 0.5);
-    }
-
-    String fmt(double v) {
-      if (v.abs() >= 1e9)  return '${(v / 1e9).toStringAsFixed(1)} Md';
-      if (v.abs() >= 1e6)  return '${(v / 1e6).toStringAsFixed(0)} M';
-      if (v.abs() >= 1e3)  return '${(v / 1e3).toStringAsFixed(0)} k';
-      return v.toStringAsFixed(0);
-    }
-
-    final maxVal = result.bi;
-    final scale  = chartW / maxVal;
-
-    // données de chaque barre : (start, end)
-    final vals = [
-      (0.0, result.ildc),
-      (result.ildc, result.ildc + result.sc),
-      (result.ildc + result.sc, result.bi),
-      (0.0, result.bi),
-      (0.0, result.ofr),
-    ];
-
-    for (int i = 0; i < barCount; i++) {
-      final top   = topPad + i * (barH + gapX);
-      final start = vals[i].$1 * scale;
-      final end   = vals[i].$2 * scale;
-      final color = _bars[i].color;
-      final w     = (end - start).abs().clamp(2.0, chartW);
-
-      final rect  = Rect.fromLTWH(labelW + start, top, w, barH);
-      final rRect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
-
-      // Fond avec gradient
-      canvas.drawRRect(rRect,
-        Paint()..shader = LinearGradient(
-          colors: [color.withValues(alpha: 0.9), color.withValues(alpha: 0.65)],
-          begin: Alignment.topCenter, end: Alignment.bottomCenter,
-        ).createShader(rect));
-
-      // Bordure
-      canvas.drawRRect(rRect,
-        Paint()..color = color..style = PaintingStyle.stroke..strokeWidth = 1.0);
-
-      // Étiquette gauche
-      final lp = TextPainter(
-        text: TextSpan(text: _bars[i].label,
-          style: TextStyle(fontSize: 10.5, color: color, fontWeight: FontWeight.w700)),
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: labelW - 3);
-      lp.paint(canvas, Offset(0, top + (barH - lp.height) / 2));
-
-      // Valeur à droite
-      final valStr = fmt(vals[i].$2 - vals[i].$1);
-      final vp = TextPainter(
-        text: TextSpan(text: valStr,
-          style: TextStyle(fontSize: 9.5, color: mutedColor, fontWeight: FontWeight.w600)),
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: valW - 4);
-      vp.paint(canvas, Offset(labelW + end + 5, top + (barH - vp.height) / 2));
-
-      // Valeur dans la barre si assez large
-      if (w > 40) {
-        final ip = TextPainter(
-          text: TextSpan(text: valStr,
-            style: const TextStyle(fontSize: 9, color: Colors.white,
-              fontWeight: FontWeight.w600)),
-          textDirection: TextDirection.ltr,
-        )..layout(maxWidth: w - 8);
-        if (ip.width < w - 8) {
-          ip.paint(canvas,
-            Offset(labelW + start + (w - ip.width) / 2, top + (barH - ip.height) / 2));
-        }
-      }
-
-      // Connecteur de cascade (lignes pointillées entre les barres cumulées)
-      if (i < 2) {
-        final nextStart = vals[i + 1].$1 * scale;
-        if ((nextStart - end).abs() < 1) {
-          final connX = labelW + end;
-          final nextTop = topPad + (i + 1) * (barH + gapX);
-          canvas.drawLine(
-            Offset(connX, top + barH),
-            Offset(connX, nextTop),
-            Paint()
-              ..color = color.withValues(alpha: 0.4)
-              ..strokeWidth = 1.2
-              ..style = PaintingStyle.stroke,
-          );
-        }
-      }
-    }
-
-    // Axe X
-    canvas.drawLine(
-      Offset(labelW, topPad + totalH),
-      Offset(labelW + chartW, topPad + totalH),
-      Paint()..color = textColor.withValues(alpha: 0.2)..strokeWidth = 0.8,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_Crr3WaterfallPainter old) =>
-      old.result != result || old.isDark != isDark;
-}
-
-// ─── CRR3-COREP — Peintre Jauge OFR ─────────────────────────────────────────
-
-class _Crr3GaugePainter extends CustomPainter {
-  const _Crr3GaugePainter({
-    required this.ofr,
-    required this.ofrCrr2,
-    required this.isDark,
-  });
-
-  final double ofr, ofrCrr2;
-  final bool isDark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height * 0.72;
-    final r  = math.min(cx, cy) - 10;
-
-    const startAngle = math.pi;
-    const sweepAngle = math.pi;
-
-    // Fond de jauge
-    canvas.drawArc(
-      Rect.fromCircle(center: Offset(cx, cy), radius: r),
-      startAngle, sweepAngle, false,
-      Paint()
-        ..color = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 18,
-    );
-
-    // Zones colorées
-    final ref = math.max(ofr, ofrCrr2) * 1.5;
-    if (ref <= 0) return;
-
-    void arc(double from, double to, Color color) {
-      final s = startAngle + (from / ref) * sweepAngle;
-      final sw = ((to - from) / ref) * sweepAngle;
-      if (sw <= 0) return;
-      canvas.drawArc(
-        Rect.fromCircle(center: Offset(cx, cy), radius: r),
-        s, sw, false,
-        Paint()
-          ..color = color
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 18
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-
-    final safeLimit = math.min(ofr, ofrCrr2);
-    arc(0, safeLimit, const Color(0xFF16A34A));                  // vert
-    arc(safeLimit, math.max(ofr, ofrCrr2), const Color(0xFFD97706)); // orange
-    arc(math.max(ofr, ofrCrr2), ref, const Color(0xFF374151).withValues(alpha: 0.15));
-
-    // Aiguille OFR
-    final needleAngle = startAngle + (ofr / ref) * sweepAngle;
-    final nx = cx + r * math.cos(needleAngle);
-    final ny = cy + r * math.sin(needleAngle);
-    canvas.drawLine(Offset(cx, cy), Offset(nx, ny),
-      Paint()..color = const Color(0xFFDC2626)..strokeWidth = 2.5..strokeCap = StrokeCap.round);
-
-    // Aiguille CRR2
-    if (ofrCrr2 > 0) {
-      final a2 = startAngle + (ofrCrr2 / ref) * sweepAngle;
-      final nx2 = cx + (r - 6) * math.cos(a2);
-      final ny2 = cy + (r - 6) * math.sin(a2);
-      canvas.drawLine(Offset(cx, cy), Offset(nx2, ny2),
-        Paint()..color = const Color(0xFF6366F1)..strokeWidth = 1.5
-          ..strokeCap = StrokeCap.round
-          ..style = PaintingStyle.stroke);
-    }
-
-    // Centre
-    canvas.drawCircle(Offset(cx, cy), 5,
-      Paint()..color = isDark ? Colors.white : const Color(0xFF1F2937));
-  }
-
-  @override
-  bool shouldRepaint(_Crr3GaugePainter old) =>
-      old.ofr != ofr || old.ofrCrr2 != ofrCrr2 || old.isDark != isDark;
-}

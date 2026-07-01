@@ -1,4 +1,4 @@
-﻿"\"\"Module de calcul des ratios réglementaires stricts (Dispositif Prudentiel BCEAO)."""
+﻿"""Module de calcul des ratios réglementaires stricts (Dispositif Prudentiel BCEAO)."""
 
 from typing import Any
 

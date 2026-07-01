@@ -1,4 +1,4 @@
-/// Service de calcul du risque de change conforme BCEAO
+﻿/// Service de calcul du risque de change conforme BCEAO
 /// Approche standard: Position nette globale × 8%
 library;
 

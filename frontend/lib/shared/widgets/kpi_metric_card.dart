@@ -67,12 +67,12 @@ class _KpiMetricCardState extends State<KpiMetricCard> {
     }
 
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+      onEnter: (_) {
         if (mounted) setState(() => _hovered = true);
-      }),
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
+      },
+      onExit: (_) {
         if (mounted) setState(() => _hovered = false);
-      }),
+      },
       child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,

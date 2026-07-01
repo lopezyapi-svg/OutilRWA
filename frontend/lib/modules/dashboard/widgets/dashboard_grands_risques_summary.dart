@@ -78,7 +78,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
               ),
             ],
           ),
-          Divider(height: 16, thickness: 1, color: Colors.indigo.withOpacity(0.2)),
+          Divider(height: 16, thickness: 1, color: Colors.indigo.withValues(alpha: 0.2)),
           const Text(
             'CLASSIFICATION PRUDENTIELLE',
             style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.indigo),
@@ -92,7 +92,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
               _buildStatusPill('Alerte', '> 25%', alertes, const Color(0xFFFFEBE6), const Color(0xFFDE350B)),
             ],
           ),
-          Divider(height: 16, thickness: 1, color: Colors.indigo.withOpacity(0.2)),
+          Divider(height: 16, thickness: 1, color: Colors.indigo.withValues(alpha: 0.2)),
           if (topSecteurs.isNotEmpty) ...[
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -117,8 +117,8 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
                       );
                     },
                     borderRadius: BorderRadius.circular(4),
-                    hoverColor: c.navy.withOpacity(0.08),
-                    splashColor: c.navy.withOpacity(0.12),
+                    hoverColor: c.navy.withValues(alpha: 0.08),
+                    splashColor: c.navy.withValues(alpha: 0.12),
                     highlightColor: Colors.transparent,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -154,7 +154,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 10),
                 margin: const EdgeInsets.only(bottom: 10),
                 decoration: BoxDecoration(
-                  border: isLast ? null : Border(bottom: BorderSide(color: c.navy.withOpacity(0.1), width: 0.5)),
+                  border: isLast ? null : Border(bottom: BorderSide(color: c.navy.withValues(alpha: 0.1), width: 0.5)),
                 ),
                 child: Row(
                   children: [
@@ -164,7 +164,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
                       height: 18,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: c.navy.withOpacity(0.05),
+                        color: c.navy.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -192,7 +192,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: c.accent.withOpacity(0.1),
+                        color: c.accent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
@@ -218,7 +218,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
         border: Border.all(color: const Color(0xFF1E3A8A), width: 0.1),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withOpacity(0.06), // Ombre pro et douce
+            color: const Color(0xFF0F172A).withValues(alpha: 0.06), // Ombre pro et douce
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

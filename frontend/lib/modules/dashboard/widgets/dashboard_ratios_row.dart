@@ -100,15 +100,15 @@ class _RatioTile extends StatelessWidget {
     Color textColor;
 
     if (status == DashStatus.conforme) {
-      bgColor = isDark ? const Color(0xFF064E3B).withOpacity(0.5) : const Color(0xFFECFDF5);
+      bgColor = isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFECFDF5);
       borderColor = isDark ? const Color(0xFF059669) : const Color(0xFF6EE7B7);
       textColor = isDark ? const Color(0xFF34D399) : const Color(0xFF065F46);
     } else if (status == DashStatus.sousCible) {
-      bgColor = isDark ? const Color(0xFF78350F).withOpacity(0.5) : const Color(0xFFFFFBEB);
+      bgColor = isDark ? const Color(0xFF78350F).withValues(alpha: 0.5) : const Color(0xFFFFFBEB);
       borderColor = isDark ? const Color(0xFFD97706) : const Color(0xFFFCD34D);
       textColor = isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E);
     } else {
-      bgColor = isDark ? const Color(0xFF7F1D1D).withOpacity(0.5) : const Color(0xFFFEF2F2);
+      bgColor = isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.5) : const Color(0xFFFEF2F2);
       borderColor = isDark ? const Color(0xFFDC2626) : const Color(0xFFFCA5A5);
       textColor = isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B);
     }
@@ -177,7 +177,7 @@ class _RatioTile extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: CustomPaint(
-                  painter: _DottedLinePainter(c.muted.withOpacity(0.15)),
+                  painter: _DottedLinePainter(c.muted.withValues(alpha: 0.15)),
                   size: const Size(double.infinity, 1),
                 ),
               ),

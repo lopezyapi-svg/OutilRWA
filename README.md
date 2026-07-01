@@ -24,7 +24,7 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --port 8001
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
 Si `python -m venv .venv` echoue sous Windows, verifie que Python est bien installe hors alias `WindowsApps`, puis recree le venv avec l'interprete reel.

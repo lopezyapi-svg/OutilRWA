@@ -25,7 +25,6 @@ import 'modules/icap/screens/icap_screen.dart';
 import 'modules/icap/screens/icap_uemoa_cemac_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/reporting_credit/screens/reporting_credit_screen.dart';
-import 'modules/risque_credit_shared/models/credit_risk_models.dart';
 import 'modules/risque_credit_shared/services/credit_risk_submodules_service.dart';
 import 'modules/risque_marche/screens/market_data_import_screen.dart';
 import 'modules/risque_marche/screens/risque_marche_screen.dart';

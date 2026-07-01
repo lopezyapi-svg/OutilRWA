@@ -1,4 +1,4 @@
-// Ce fichier affiche l'inventaire interactif des expositions.
+﻿// Ce fichier affiche l'inventaire interactif des expositions.
 import 'dart:async';
 import 'dart:math' as math;
 

@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'market_data_import_store.dart';
 
 class EquityPositionResult {

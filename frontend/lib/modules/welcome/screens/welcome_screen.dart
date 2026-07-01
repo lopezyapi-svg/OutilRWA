@@ -553,7 +553,9 @@ class _WelcomeInsightCarouselState extends State<_WelcomeInsightCarousel> {
 
   void _setPaused(bool value) {
     if (_paused == value) return;
-    setState(() => _paused = value);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _paused = value);
+    });
   }
 
   @override

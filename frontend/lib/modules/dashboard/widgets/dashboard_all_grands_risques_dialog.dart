@@ -78,55 +78,55 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                     child: Row(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 32,
                           child: Text('#', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                         ),
                         vDivHeader(),
-                        Expanded(
+                        const Expanded(
                           flex: 3,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text('Contrepartie / Groupe lié', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        Expanded(
+                        const Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text('Pays de risque', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        Expanded(
+                        const Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Catégorie d\'exposition', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                          ),
+                        ),
+                        vDivHeader(),
+                        const Expanded(
+                          flex: 2,
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text('Risque Brut', textAlign: TextAlign.right, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        Expanded(
+                        const Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Risque Net', textAlign: TextAlign.right, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
-                          ),
-                        ),
-                        vDivHeader(),
-                        Expanded(
-                          flex: 2,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text('Ratio RN/FP (%)', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        Expanded(
+                        const Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text('Statut', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
@@ -142,8 +142,8 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final isEven = index.isEven;
                         final e = data[index];
-                        final expScaled = e.exposureAmount;
-                        final netScaled = e.netExposure;
+                        final expScaled = (e.exposureAmount / 1000000000) * scale;
+                        final netScaled = (e.netExposure / 1000000000) * scale;
 
                         return Container(
                           color: isEven ? rowEvenBg : rowOddBg,
@@ -179,7 +179,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                                 flex: 2,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text('${AppFormatters.formatAmountValue(expScaled)} ${AppFormatters.formatAmountSuffix(expScaled)}'.trim(), textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: c.ink, fontFeatures: Dash.tabular)),
+                                  child: Text('${AppFormatters.compactNumber(expScaled)} ${amountUnit.label}', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: c.ink, fontFeatures: Dash.tabular)),
                                 ),
                               ),
                               vDiv(),
@@ -187,7 +187,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                                 flex: 2,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text('${AppFormatters.formatAmountValue(netScaled)} ${AppFormatters.formatAmountSuffix(netScaled)}'.trim(), textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: c.ink, fontFeatures: Dash.tabular)),
+                                  child: Text('${AppFormatters.compactNumber(netScaled)} ${amountUnit.label}', textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: c.ink, fontFeatures: Dash.tabular)),
                                 ),
                               ),
                               vDiv(),

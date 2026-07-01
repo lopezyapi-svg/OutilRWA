@@ -261,7 +261,7 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -628,7 +628,7 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide(color: AppColors.sidebar, width: 1.2),
+                    borderSide: const BorderSide(color: AppColors.sidebar, width: 1.2),
                   ),
                   filled: true,
                   fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),

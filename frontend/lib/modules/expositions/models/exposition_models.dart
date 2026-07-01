@@ -1,4 +1,4 @@
-// Ce fichier decrit les donnees et regles du module expositions.
+﻿// Ce fichier decrit les donnees et regles du module expositions.
 
 import '../../../core/utils/currency_conversion.dart';
 

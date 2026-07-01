@@ -4,6 +4,10 @@ from fastapi import APIRouter, Query
 from fastapi.responses import Response
 
 from .models import (
+    AibCalculResult,
+    AsCalculResult,
+    BetaLigneUpdate,
+    BetaLigneView,
     ControleCreate,
     ControleUpdate,
     ControleView,
@@ -17,12 +21,28 @@ from .models import (
     KriModuleData,
     KriValeurCreate,
     KriValeurView,
+    OpRiskCalculResult,
+    OpRiskInput,
+    OpRiskInputUpdate,
+    OpRiskParametres,
+    OpRiskParametresUpdate,
+    ParametresAib,
+    ParametresAibUpdate,
+    ParametresAs,
+    ParametresAsUpdate,
+    ParametresSeuils,
+    ParametresSeuilsUpdate,
     PlanCreate,
     PlanUpdate,
     PlanView,
+    PnbAnnuelCreate,
+    PnbAnnuelView,
+    PnbParLigneCreate,
+    PnbParLigneView,
     RisqueCreate,
     RisqueUpdate,
     RisqueView,
+    SyntheseResult,
 )
 from . import services
 
@@ -165,3 +185,118 @@ def delete_plan(id_: str) -> None:
 @router.get("/historique", response_model=list[HistoriqueView])
 def list_historique(limit: int = Query(default=200, le=1000)) -> list[HistoriqueView]:
     return services.list_historique(limit=limit)
+
+
+# ─── BIC — Approche Standard CRR3 ────────────────────────────────────────────
+
+@router.get("/bic/inputs/{annee}", response_model=OpRiskInput)
+def get_bic_input(annee: int) -> OpRiskInput:
+    return services.get_op_risk_input(annee)
+
+
+@router.put("/bic/inputs/{annee}", response_model=OpRiskInput)
+def upsert_bic_input(annee: int, data: OpRiskInputUpdate) -> OpRiskInput:
+    return services.upsert_op_risk_input(annee, data)
+
+
+@router.get("/bic/parametres", response_model=OpRiskParametres)
+def get_bic_parametres() -> OpRiskParametres:
+    return services.get_op_risk_parametres()
+
+
+@router.put("/bic/parametres", response_model=OpRiskParametres)
+def update_bic_parametres(data: OpRiskParametresUpdate) -> OpRiskParametres:
+    return services.update_op_risk_parametres(data)
+
+
+@router.get("/bic/calcul", response_model=OpRiskCalculResult)
+def calcul_bic(annee_n: int | None = Query(default=None)) -> OpRiskCalculResult:
+    return services.calcul_bic(annee_n=annee_n)
+
+
+# ─── BLOC A1 — AIB (Approche Indicateur de Base) ─────────────────────────────
+
+@router.get("/aib/pnb", response_model=list[PnbAnnuelView])
+def list_pnb_annuel() -> list[PnbAnnuelView]:
+    return services.list_pnb_annuel()
+
+
+@router.put("/aib/pnb/{annee}", response_model=PnbAnnuelView)
+def upsert_pnb_annuel(annee: int, data: PnbAnnuelCreate) -> PnbAnnuelView:
+    return services.upsert_pnb_annuel(annee, data)
+
+
+@router.delete("/aib/pnb/{annee}", status_code=204)
+def delete_pnb_annuel(annee: int) -> None:
+    services.delete_pnb_annuel(annee)
+
+
+@router.get("/aib/parametres", response_model=ParametresAib)
+def get_aib_parametres() -> ParametresAib:
+    return services.get_aib_parametres()
+
+
+@router.put("/aib/parametres", response_model=ParametresAib)
+def update_aib_parametres(data: ParametresAibUpdate) -> ParametresAib:
+    return services.update_aib_parametres(data)
+
+
+@router.get("/aib/calcul", response_model=AibCalculResult)
+def calcul_aib() -> AibCalculResult:
+    return services.calcul_aib()
+
+
+# ─── BLOC A2 — AS (Approche Standard) ────────────────────────────────────────
+
+@router.get("/as/beta-lignes", response_model=list[BetaLigneView])
+def list_beta_lignes() -> list[BetaLigneView]:
+    return services.list_beta_lignes()
+
+
+@router.put("/as/beta-lignes/{ligne_metier:path}", response_model=BetaLigneView)
+def update_beta_ligne(ligne_metier: str, data: BetaLigneUpdate) -> BetaLigneView:
+    return services.update_beta_ligne(ligne_metier, data)
+
+
+@router.get("/as/pnb-lignes/{annee}", response_model=list[PnbParLigneView])
+def get_pnb_lignes(annee: int) -> list[PnbParLigneView]:
+    return services.get_pnb_lignes(annee)
+
+
+@router.put("/as/pnb-lignes/{annee}/{ligne_metier:path}", response_model=PnbParLigneView)
+def upsert_pnb_ligne(annee: int, ligne_metier: str, data: PnbParLigneCreate) -> PnbParLigneView:
+    return services.upsert_pnb_ligne(annee, ligne_metier, data)
+
+
+@router.get("/as/parametres", response_model=ParametresAs)
+def get_as_parametres() -> ParametresAs:
+    return services.get_as_parametres()
+
+
+@router.put("/as/parametres", response_model=ParametresAs)
+def update_as_parametres(data: ParametresAsUpdate) -> ParametresAs:
+    return services.update_as_parametres(data)
+
+
+@router.get("/as/calcul", response_model=AsCalculResult)
+def calcul_as() -> AsCalculResult:
+    return services.calcul_as()
+
+
+# ─── Seuils de reporting Pilier 2 ────────────────────────────────────────────
+
+@router.get("/pertes/seuils", response_model=ParametresSeuils)
+def get_pertes_seuils() -> ParametresSeuils:
+    return services.get_pertes_seuils()
+
+
+@router.put("/pertes/seuils", response_model=ParametresSeuils)
+def update_pertes_seuils(data: ParametresSeuilsUpdate) -> ParametresSeuils:
+    return services.update_pertes_seuils(data)
+
+
+# ─── Synthèse comparative AIB / AS / BIC ─────────────────────────────────────
+
+@router.get("/synthese", response_model=SyntheseResult)
+def get_synthese() -> SyntheseResult:
+    return services.get_synthese()

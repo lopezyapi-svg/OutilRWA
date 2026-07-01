@@ -167,7 +167,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
     final pctOp = rwaTotalXof > 0 ? (rwaOpXof / rwaTotalXof) : 0.0;
 
     final creditColor = c.navy;
-    final marcheColor = const Color(0xFF38BDF8); // Light Sky Blue
+    const marcheColor = Color(0xFF38BDF8); // Light Sky Blue
     final opColor = c.accent;
 
     return DashPanel(

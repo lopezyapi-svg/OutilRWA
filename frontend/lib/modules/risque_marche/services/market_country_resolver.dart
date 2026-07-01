@@ -1,4 +1,4 @@
-// Country and flag resolver for market-risk portfolio data.
+﻿// Country and flag resolver for market-risk portfolio data.
 // Generated from ISO country metadata; keys are normalized ASCII aliases.
 
 String marketCountrySearchKey(String value) {

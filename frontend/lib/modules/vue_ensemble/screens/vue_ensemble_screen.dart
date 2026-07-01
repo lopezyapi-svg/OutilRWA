@@ -16,7 +16,6 @@ import '../../dashboard/widgets/dashboard_fonds_propres_dialog.dart';
 import '../../dashboard/widgets/dashboard_rwa_donut.dart';
 import '../../dashboard/widgets/dashboard_rwa_secteur_table.dart';
 import '../../dashboard/widgets/dashboard_grands_risques_summary.dart';
-import '../../dashboard/widgets/dashboard_top10_risques_chart.dart';
 import '../../dashboard/widgets/dashboard_top10_risques_table.dart';
 
 bool _isDashboardDark(BuildContext context) =>
@@ -204,10 +203,10 @@ class _ExecutiveDashboard extends StatelessWidget {
                 );
                 final rwaDonut = DashboardRwaDonut(currency: currency, data: data);
                 final rwaSecteurTable = DashboardRwaSecteurChart(currency: currency, data: data);
-                final top10Table = DashboardTop10RisquesTable(currency: currency, exposures: data.top10Exposures ?? const [], allExposures: data.grandsRisques);
+                final top10Table = DashboardTop10RisquesTable(currency: currency, exposures: data.top10Exposures ?? const [], allExposures: data.grandsRisques ?? const []);
                 final top10Chart = DashboardGrandsRisquesSummary(
                   currency: currency,
-                  exposures: data.grandsRisques,
+                  exposures: data.grandsRisques ?? const [],
                   allCategories: data.categoryDistribution,
                 );
                 const bottomStrip = DashboardBottomStrip();
