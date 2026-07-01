@@ -398,10 +398,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     covered_ratio = safe_ratio(crm_gross, gross_total)
 
     # Calculate Official Ratios (Solvency, Leverage, etc.)
-    # Align scale: own funds in database are in Millions (e.g. 690), while RWA/exposures are in absolute XOF.
-    # We multiply by 10,000 to scale own funds to billions/trillions for solvency ratios (yielding correct 17.55% solvency).
-    fp_calc_solv = {k: v * 10000.0 for k, v in fp_calc.items()}
-    ratios = evaluate_ratios(rwa_total, fp_calc_solv, gross_total)
+    ratios = evaluate_ratios(rwa_total, fp_calc, gross_total)
 
     portfolio_rows = [
         PortfolioRow(
@@ -519,8 +516,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         grouped_risk[group_name]["rwa_amount"] += float(item["rwa"])
 
     actual_top10 = []
-    # Scale own funds by 100,000x for large exposure ratios to get correct percentage (ex: 18.66% instead of 1,866,561%)
-    own_funds = fp_calc["total_capital"] * 100000.0
+    own_funds = fp_calc["total_capital"]
     for group_name, agg in grouped_risk.items():
         gross = agg["gross_amount"]
         net = agg["net_exposure"]

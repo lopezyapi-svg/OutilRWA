@@ -447,8 +447,8 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
   }
 
   Widget _buildSummaryItem(String label, double val, PortfolioAmountUnit unit, String currency, Color color, bool isDark, {bool isTotal = false}) {
-    final textVal = AppFormatters.formatAmountValue(val, unit.divisor);
-    final suffixStr = AppFormatters.formatAmountSuffix(val, unit.label, displayCurrencyLabel(currency));
+    final textVal = AppFormatters.formatAmountValue(val);
+    final suffixStr = AppFormatters.formatAmountSuffix(val);
     final valueColor = isTotal
         ? color
         : (isDark ? const Color(0xFFF2F6FF) : const Color(0xFF1E293B));

@@ -266,9 +266,28 @@ class DashPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: Text(
-                    title!.toUpperCase(),
-                    style: DashText.eyebrow(c, color: c.ink),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    reverseDuration: const Duration(milliseconds: 100),
+                    layoutBuilder: (currentChild, previousChildren) {
+                      return Stack(
+                        alignment: Alignment.centerLeft,
+                        children: <Widget>[
+                          ...previousChildren,
+                          if (currentChild != null) currentChild,
+                        ],
+                      );
+                    },
+                    child: Text(
+                      title!.toUpperCase(),
+                      key: ValueKey(title),
+                      style: DashText.eyebrow(
+                        c,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF818CF8)
+                            : const Color(0xFF3730A3),
+                      ),
+                    ),
                   ),
                 ),
                 if (trailing != null)

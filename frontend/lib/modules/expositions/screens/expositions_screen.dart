@@ -251,10 +251,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                         padding: EdgeInsets.zero,
                         child: PageHeader(
                           title: 'Tableau des expositions',
-                          subtitle:
-                              'Saisissez, importez et suivez les expositions avec calcul automatique des zones UEMOA/CEMAC.',
                           titleFontSize: 22,
-                          subtitleFontSize: 11,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           trailing: _buildHeaderActionButtons(_visibleRows),
                         ),

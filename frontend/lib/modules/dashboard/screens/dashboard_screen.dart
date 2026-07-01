@@ -10,9 +10,9 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../models/dashboard_models.dart';
 import '../widgets/dashboard_header.dart';
-import '../widgets/dashboard_kpi_strip.dart';
-import '../widgets/dashboard_regulatory_ratios.dart';
-import '../widgets/dashboard_large_exposures.dart';
+import '../../../shared/widgets/kpi_metric_card.dart';
+import '../widgets/dashboard_charts_section.dart';
+import '../widgets/dashboard_top_metrics_grid.dart';
 
 /// Ecran principal de pilotage des RWA et du capital.
 class DashboardScreen extends StatefulWidget {
@@ -93,133 +93,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final metrics = {
           for (final metric in data.metrics) metric.key: metric,
         };
-
         final rwaMetric = _metric(metrics, 'rwa');
         final grossMetric = _metric(metrics, 'encours');
         final defaultRateMetric = _metric(metrics, 'taux_defaut');
+        final capitalMetric = _metric(metrics, 'capital');
+        final residualRiskMetric = _metric(metrics, 'risque_residuel');
+        final solvMetric = _metric(metrics, 'solvabilite');
+        final crmMetric = _metric(metrics, 'crm');
 
-        final totalRwa = rwaMetric.value;
-
-        // Simulation des RWA ventilés si absents (85% Credit, 5% Market, 10% Op)
-        final rwaCredit = _metric(metrics, 'rwa_credit').value > 0
-            ? _metric(metrics, 'rwa_credit').value
-            : totalRwa * 0.85;
-        final rwaMarket = _metric(metrics, 'rwa_market').value > 0
-            ? _metric(metrics, 'rwa_market').value
-            : totalRwa * 0.05;
-        final rwaOp = _metric(metrics, 'rwa_op').value > 0
-            ? _metric(metrics, 'rwa_op').value
-            : totalRwa * 0.10;
-
-        // Simulation des Fonds Propres Effectifs (FPE) pour atteindre 12.5% de solvabilité globale si non fournis
-        final fpEffectifs = totalRwa * 0.125;
-        final cet1Effectif = fpEffectifs * 0.70;
-        final tier1Effectif = fpEffectifs * 0.85;
-
-        final ratios = [
-          RegulatoryRatioSpec(
-            label: 'Ratio CET1',
-            value: totalRwa > 0 ? cet1Effectif / totalRwa : 0.0,
-            minimum: 0.055,
-            capitalRequired: totalRwa * 0.055,
-          ),
-          RegulatoryRatioSpec(
-            label: 'Ratio Tier 1',
-            value: totalRwa > 0 ? tier1Effectif / totalRwa : 0.0,
-            minimum: 0.075,
-            capitalRequired: totalRwa * 0.075,
-          ),
-          RegulatoryRatioSpec(
-            label: 'Ratio de Solvabilité (Global)',
-            value: totalRwa > 0 ? fpEffectifs / totalRwa : 0.0,
-            minimum: 0.115,
-            capitalRequired: totalRwa * 0.115,
-          ),
-        ];
-
-        final topCounterparties =
-            List<PortfolioRow>.from(data.portfolioOverview)
-              ..sort((a, b) => b.ead > 0
-                  ? b.ead.compareTo(a.ead)
-                  : b.grossAmount.compareTo(a.grossAmount));
-
-        final kpis = [
-          DashboardKpiItem(
-            label: 'RWA Total',
-            value: _dashboardKpiCurrencyValue(totalRwa, displayCurrency),
-            bottomLabel: 'Total',
-            bottomValue: 'RWA',
-            subItems: [
-              DashboardKpiSubItem(
-                  label: 'Crédit',
-                  value: _dashboardKpiCurrencyValue(rwaCredit, displayCurrency),
-                  color: Colors.blue),
-              DashboardKpiSubItem(
-                  label: 'Marché',
-                  value: _dashboardKpiCurrencyValue(rwaMarket, displayCurrency),
-                  color: Colors.orange),
-              DashboardKpiSubItem(
-                  label: 'Opérationnel',
-                  value: _dashboardKpiCurrencyValue(rwaOp, displayCurrency),
-                  color: Colors.red),
-            ],
-          ),
-          DashboardKpiItem(
-            label: 'Ratio de Solvabilité',
-            value: totalRwa > 0
-                ? '${((fpEffectifs / totalRwa) * 100).toStringAsFixed(1)}%'
-                : '0.0%',
-            bottomLabel: 'Fonds Propres vs RWA',
-            bottomValue: 'Actuel',
-          ),
-          DashboardKpiItem(
-            label: 'Exposition Brute',
-            value:
-                _dashboardKpiCurrencyValue(grossMetric.value, displayCurrency),
-            bottomLabel: 'Taux de défaut',
-            bottomValue:
-                '${(defaultRateMetric.value * 100).toStringAsFixed(1)}%',
-          ),
-        ];
-
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.pagePadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DashboardHeader(
-                selectedDate: _selectedDate,
-                valuationDate: data.valuationDate,
-                onPickDate: () {
-                  _pickReferenceDate();
-                },
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppTheme.pagePadding,
+                AppTheme.pagePadding,
+                AppTheme.pagePadding,
+                0,
               ),
-              const SizedBox(height: AppTheme.pageGap + 8),
-              DashboardKpiStrip(items: kpis),
-              const SizedBox(height: AppTheme.pageGap),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 1,
-                    child: DashboardRegulatoryRatios(
-                      ratios: ratios,
-                      displayCurrency: displayCurrency,
+              child: const DashboardHeader(),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppTheme.pagePadding,
+                  AppTheme.pagePadding,
+                  AppTheme.pagePadding,
+                  AppTheme.pagePadding,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DashboardTopMetricsGrid(
+                      grossMetric: grossMetric,
+                      rwaMetric: rwaMetric,
+                      capitalMetric: capitalMetric,
+                      residualRiskMetric: residualRiskMetric,
+                      defaultRateMetric: defaultRateMetric,
                     ),
-                  ),
-                  const SizedBox(width: AppTheme.pageGap),
-                  Expanded(
-                    flex: 1,
-                    child: DashboardLargeExposures(
-                      topCounterparties: topCounterparties,
-                      fondsPropres: fpEffectifs,
-                      displayCurrency: displayCurrency,
+                    const SizedBox(height: AppTheme.pageGap),
+                    Builder(
+                      builder: (context) {
+                        // Recompute counts locally from the portfolio overview
+                        final crmCounts = <String, int>{};
+                        int totalFound = 0;
+                        for (final row in data.portfolioOverview) {
+                          final normalized = row.crmType.toLowerCase();
+                          String label;
+                          if (normalized.contains('aucune') || normalized.contains('sans crm')) {
+                            label = 'AUCUNE GARANTIE';
+                          } else if (normalized.contains('non') && normalized.contains('financ')) {
+                            label = 'GARANTIE NON FINANCÉE';
+                          } else if (normalized.contains('cash') || normalized.contains('financ')) {
+                            label = 'GARANTIE FINANCÉE';
+                          } else {
+                            label = 'GARANTIE NON FINANCÉE';
+                          }
+                          crmCounts[label] = (crmCounts[label] ?? 0) + 1;
+                          totalFound++;
+                        }
+
+                        final enrichedCrmEntries = data.crmDistribution.map((e) {
+                          final normalizedLabel = e.label.toLowerCase();
+                          String displayLabel;
+                          if (normalizedLabel.contains('aucune') || normalizedLabel.contains('sans crm')) {
+                            displayLabel = 'AUCUNE GARANTIE';
+                          } else if (normalizedLabel.contains('non') && normalizedLabel.contains('financ')) {
+                            displayLabel = 'GARANTIE NON FINANCÉE';
+                          } else if (normalizedLabel.contains('cash') || normalizedLabel.contains('financ')) {
+                            displayLabel = 'GARANTIE FINANCÉE';
+                          } else {
+                            displayLabel = e.label.toUpperCase();
+                          }
+
+                          // If portfolioOverview was empty, fallback to e.count
+                          final finalCount = totalFound > 0 ? (crmCounts[displayLabel] ?? 0) : (e.count ?? 0);
+
+                          return DistributionEntry(
+                            label: displayLabel,
+                            amount: e.amount,
+                            percentage: e.percentage,
+                            count: finalCount,
+                          );
+                        }).toList();
+
+                        return DashboardChartsSection(
+                          displayCurrency: displayCurrency,
+                          grossCategoryEntries: data.categoryDistribution,
+                          rwaCategoryEntries: data.rwaCategoryDistribution,
+                          crmEntries: enrichedCrmEntries,
+                          coveredRatio: grossMetric.value > 0
+                              ? crmMetric.value / grossMetric.value
+                              : 0.0,
+                        );
+                      }
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );

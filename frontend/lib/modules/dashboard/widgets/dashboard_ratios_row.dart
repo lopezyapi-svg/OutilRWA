@@ -124,7 +124,13 @@ class _RatioTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label.toUpperCase(), style: DashText.eyebrow(c, color: c.muted)),
+          Text(
+            label.toUpperCase(),
+            style: DashText.eyebrow(
+              c,
+              color: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
+            ),
+          ),
           const SizedBox(height: 14),
           Text('${_fr(value)} %', style: DashText.hero(c, size: 32)),
           const SizedBox(height: 8),

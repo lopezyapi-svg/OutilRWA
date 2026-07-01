@@ -30,8 +30,6 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
     // Calculs de synthèse
     final totalRisques = exposures.length;
     final totalNet = exposures.fold<double>(0.0, (sum, e) => sum + e.netExposure);
-    final totalNetScaled = (totalNet / 1000000000) * scale;
-    
     // Classification par statut
     final alertes = exposures.where((e) => e.status == 'Alerte').length;
     final sousCibles = exposures.where((e) => e.status == 'Sous cible').length;
@@ -72,8 +70,8 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
                 child: _buildMetric(
                   context,
                   label: 'Risque Net Total',
-                  value: AppFormatters.compactNumber(totalNetScaled),
-                  suffix: amountUnit.label,
+                  value: AppFormatters.formatAmountValue(totalNet),
+                  suffix: AppFormatters.formatAmountSuffix(totalNet),
                   color: const Color(0xFF0F172A),
                   centerValue: true,
                 ),

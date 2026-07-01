@@ -31,7 +31,7 @@ String _resolveDefaultApiBaseUrl() {
   final host =
       runtimeHost == null || runtimeHost.isEmpty ? '127.0.0.1' : runtimeHost;
   final port =
-      runtimePort == null || runtimePort.isEmpty ? '8000' : runtimePort;
+      runtimePort == null || runtimePort.isEmpty ? '8001' : runtimePort;
   return 'http://$host:$port';
 }
 
@@ -1589,6 +1589,7 @@ class RwaApiService {
     List<ExposureRecord> exposures,
   ) {
     final totals = <String, double>{};
+    final counts = <String, int>{};
     final global = exposures.fold<double>(
       0.0,
       (sum, item) => sum + _dashboardGrossAmount(item),
@@ -1602,6 +1603,11 @@ class RwaApiService {
         (value) => value + _dashboardGrossAmount(exposure),
         ifAbsent: () => _dashboardGrossAmount(exposure),
       );
+      counts.update(
+        label,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
     }
 
     return totals.entries
@@ -1610,6 +1616,7 @@ class RwaApiService {
             label: entry.key,
             amount: entry.value,
             percentage: global == 0 ? 0.0 : entry.value / global,
+            count: counts[entry.key],
           ),
         )
         .toList();

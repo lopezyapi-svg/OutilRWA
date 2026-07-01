@@ -159,7 +159,9 @@ class DashboardAllCategoriesRisquesDialog extends StatelessWidget {
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
                                   child: Text(
-                                    '${pct.toStringAsFixed(1)} %',
+                                    (entry.value > 0 && pct < 0.05)
+                                        ? '< 0.1 %'
+                                        : '${pct.toStringAsFixed(1)} %',
                                     textAlign: TextAlign.center,
                                     style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: c.accent, fontFeatures: Dash.tabular),
                                   ),

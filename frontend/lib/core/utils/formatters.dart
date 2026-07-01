@@ -56,23 +56,27 @@ class AppFormatters {
     return _number(maxDecimals).format(value);
   }
 
-  static String formatAmountValue(double value, double divisor) {
+  static String formatAmountValue(double value, [double? ignoredDivisor]) {
     final absolute = value.abs();
     if (absolute == 0) return '0';
     if (absolute < 1000000) {
-      return decimalNumber(value, maxDecimals: 3);
+      return decimalNumber(value, maxDecimals: 2);
+    } else if (absolute < 1000000000) {
+      return decimalNumber(value / 1000000, maxDecimals: 2);
     } else {
-      return compactNumber(value / divisor);
+      return decimalNumber(value / 1000000000, maxDecimals: 2);
     }
   }
 
-  static String formatAmountSuffix(double value, String unitLabel, String currencyLabel) {
+  static String formatAmountSuffix(double value, [String? ignoredUnit, String? ignoredCurrency]) {
     final absolute = value.abs();
     if (absolute == 0) return '';
     if (absolute < 1000000) {
       return '';
+    } else if (absolute < 1000000000) {
+      return 'M';
     } else {
-      return unitLabel;
+      return 'Md';
     }
   }
 
