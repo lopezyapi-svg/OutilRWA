@@ -78,6 +78,17 @@ String _roPct(double value) {
   return oneDecimal;
 }
 
+/// Formate un nombre avec au plus [maxDecimals] décimales, en supprimant les
+/// zéros de fin superflus (ex. 14.0000 -> "14", 2.2500 -> "2.25").
+String _roTrim(double value, {int maxDecimals = 4}) {
+  var s = value.toStringAsFixed(maxDecimals);
+  if (s.contains('.')) {
+    s = s.replaceFirst(RegExp(r'0+$'), '');
+    s = s.replaceFirst(RegExp(r'\.$'), '');
+  }
+  return s;
+}
+
 /// Assombrit une couleur de statut trop claire (ex. l'orange d'alerte) pour
 /// que les chiffres des cartes du dashboard restent bien lisibles sur fond
 /// clair — la teinte est conservée, seule la luminosité est réduite.
@@ -7762,10 +7773,7 @@ class _RegistreViewState extends State<_RegistreView> {
         children: [
           PageHeader(
             title: 'Import de données',
-            subtitle: 'Registre BCEAO/UMOA — pertes, Capital minimal et RWA (Art. 89 & 313.b)',
             titleFontSize: 26,
-            subtitleFontSize: 12.5,
-            subtitleSuffix: _artInfo('Art. 89'),
           ),
           const SizedBox(height: 14),
           Expanded(
@@ -8618,7 +8626,7 @@ class _RegistreViewState extends State<_RegistreView> {
   );
 
   Widget _buildCcr3Content(bool isDark) =>
-      _Ccr3TabView(api: widget.api, isDark: isDark);
+      _Ccr3TabView(api: widget.api, isDark: isDark, hideAnalyseRapideTab: true);
 
 }
 
@@ -9776,12 +9784,20 @@ class _CorepTabViewState extends State<_CorepTabView> {
 // ─── CCR3 — Onglet BIC CRR3 ──────────────────────────────────────────────────
 
 class _Ccr3TabView extends StatefulWidget {
-  const _Ccr3TabView({required this.api, required this.isDark, this.onlyAnalyseRapide = false});
+  const _Ccr3TabView({
+    required this.api,
+    required this.isDark,
+    this.onlyAnalyseRapide = false,
+    this.hideAnalyseRapideTab = false,
+  });
   final RwaApiService api;
   final bool isDark;
   /// Quand true, seul l'onglet "Analyse rapide" est accessible — Résultats,
   /// Saisie et Paramètres sont masqués (saisie/config à faire depuis UEMOI).
   final bool onlyAnalyseRapide;
+  /// Quand true, le bouton "Analyse rapide" est masqué (les autres onglets
+  /// restent accessibles) — utilisé sur l'écran Import de données.
+  final bool hideAnalyseRapideTab;
 
   @override
   State<_Ccr3TabView> createState() => _Ccr3TabViewState();
@@ -9838,10 +9854,10 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
   ];
 
   static const _kSections = [
-    ('ILDC — Composante Intérêts, Leasing & Dividendes', 0, 7),
-    ('SC — Composante Services', 7, 11),
-    ('FC — Composante Financière', 11, 13),
-    ('BIA — Comparatif Indicateur de Base', 13, 14),
+    ('ILDC (Composante Intérêts, Leasing & Dividendes)', 0, 7),
+    ('SC (Composante Services)', 7, 11),
+    ('FC (Composante Financière)', 11, 13),
+    ('BIA (Comparatif Indicateur de Base)', 13, 14),
   ];
 
   @override
@@ -9894,7 +9910,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
   }
 
   void _populateParamControllers(OpRiskParametres p) {
-    _pSeuilIldc.text  = (p.seuilIldc * 100).toStringAsFixed(4);
+    _pSeuilIldc.text  = _roTrim(p.seuilIldc * 100, maxDecimals: 4);
     _pCoef1.text      = (p.coefTranche1 * 100).toStringAsFixed(0);
     _pCoef2.text      = (p.coefTranche2 * 100).toStringAsFixed(0);
     _pCoef3.text      = (p.coefTranche3 * 100).toStringAsFixed(0);
@@ -10047,22 +10063,43 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
 
     Widget tab(int idx, IconData icon, String label) {
       final sel = _view == idx;
-      return GestureDetector(
-        onTap: () => setState(() => _view = idx),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: sel ? _kAccent : Colors.transparent,
-            borderRadius: BorderRadius.circular(5),
+      const glow = Color(0xFF3B5BFF);
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => setState(() => _view = idx),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: sel
+                    ? const [Color(0xFF4A6BFF), Color(0xFF1830B8)]
+                    : const [Color(0xFF16213E), Color(0xFF0B1226)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: sel ? const Color(0xFF8FA5FF) : glow.withValues(alpha: 0.35),
+                width: sel ? 1.3 : 1,
+              ),
+              boxShadow: sel
+                  ? [
+                      BoxShadow(color: glow.withValues(alpha: 0.28), blurRadius: 8, spreadRadius: 0),
+                      BoxShadow(color: glow.withValues(alpha: 0.12), blurRadius: 14),
+                    ]
+                  : [
+                      BoxShadow(color: glow.withValues(alpha: 0.06), blurRadius: 4),
+                    ],
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(label.toUpperCase(), style: const TextStyle(
+                fontSize: 10.5, fontWeight: FontWeight.w700,
+                color: Colors.white, letterSpacing: 0.5,
+              )),
+            ]),
           ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 13, color: sel ? Colors.white : _muted),
-            const SizedBox(width: 5),
-            Text(label, style: TextStyle(
-              fontSize: 11.5, fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-              color: sel ? Colors.white : _muted,
-            )),
-          ]),
         ),
       );
     }
@@ -10104,12 +10141,14 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             ]),
           ),
           const SizedBox(width: 14),
-          tab(0, Icons.speed_outlined, 'Analyse rapide'),
           if (!widget.onlyAnalyseRapide) ...[
+            if (!widget.hideAnalyseRapideTab) ...[
+              tab(0, Icons.speed_outlined, 'Analyse rapide'),
+              const SizedBox(width: 4),
+            ],
+            tab(2, Icons.edit_note_outlined, 'Saisie'),
             const SizedBox(width: 4),
             tab(1, Icons.analytics_outlined, 'Résultats'),
-            const SizedBox(width: 4),
-            tab(2, Icons.edit_note_outlined, 'Saisie'),
             const SizedBox(width: 4),
             tab(3, Icons.tune_outlined, 'Paramètres'),
           ],
@@ -10137,29 +10176,29 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     final years = _result?.annees ?? [0, 0, 0];
 
     Widget inputCell(int yi, int fi) => SizedBox(
-      height: 30,
+      height: 40,
       child: TextField(
         controller: _ctrl[yi][fi],
         keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
         textAlign: TextAlign.right,
-        style: TextStyle(fontSize: 11.5, color: _txt),
+        style: TextStyle(fontSize: 12, color: _txt),
         decoration: InputDecoration(
           hintText: '0',
-          hintStyle: TextStyle(fontSize: 11, color: _muted),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          hintStyle: TextStyle(fontSize: 11.5, color: _muted),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           isDense: true,
           filled: true,
           fillColor: _surf,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: _border),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide(color: _border),
           ),
           focusedBorder: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(3)),
+            borderRadius: BorderRadius.all(Radius.circular(4)),
             borderSide: BorderSide(color: _kAccent, width: 1.5),
           ),
         ),
@@ -10167,7 +10206,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     );
 
     Widget sectionHeader(String title, Color color) => Container(
-      padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.07),
         border: Border(
@@ -10176,7 +10215,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         ),
       ),
       child: Text(title, style: TextStyle(
-        fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+        fontSize: 11.5, fontWeight: FontWeight.w700, color: color)),
     );
 
     const sectionColors = [_kAccent, Color(0xFF7C3AED), Color(0xFFEA580C), Color(0xFF0891B2)];
@@ -10185,60 +10224,70 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       children: [
         // En-tête colonnes
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(color: _card, border: Border.all(color: _border, width: 0.8)),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: _card,
+            border: Border.all(color: _border, width: 0.8),
+            borderRadius: BorderRadius.circular(6),
+          ),
           child: Row(
             children: [
               const SizedBox(width: 240, child: Text('Poste',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700))),
               for (var yi = 0; yi < 3; yi++) ...[
                 const SizedBox(width: 8),
                 Expanded(child: Text('N${yi == 2 ? "" : yi == 1 ? "−1" : "−2"} (${years[yi]})',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
                       color: yi == 2 ? _kAccent : _txt))),
               ],
             ],
           ),
         ),
-        const SizedBox(height: 2),
-        // Tableau saisie
+        const SizedBox(height: 10),
+        // Tableau saisie — une section = un bloc distinct
         Expanded(
           child: SingleChildScrollView(
-            child: Container(
-              decoration: BoxDecoration(
-                color: _surf,
-                border: Border.all(color: _border),
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: Column(
-                children: [
-                  for (final (title, from, to) in _kSections) ...[
-                    sectionHeader(title, sectionColors[_kSections.indexOf(
-                        _kSections.firstWhere((s) => s.$2 == from))]),
-                    for (var fi = from; fi < to; fi++) ...[
-                      if (fi > from) Divider(height: 1, color: _border),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 240,
-                              child: Text(_kLabels[fi],
-                                style: TextStyle(fontSize: 11.5, color: _txt),
-                                overflow: TextOverflow.ellipsis),
+            child: Column(
+              children: [
+                for (final (title, from, to) in _kSections) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: _surf,
+                      border: Border.all(color: _border),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Column(
+                      children: [
+                        sectionHeader(title, sectionColors[_kSections.indexOf(
+                            _kSections.firstWhere((s) => s.$2 == from))]),
+                        for (var fi = from; fi < to; fi++) ...[
+                          if (fi > from) Divider(height: 1, color: _border),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 240,
+                                  child: Text(_kLabels[fi],
+                                    style: TextStyle(fontSize: 12, color: _txt),
+                                    overflow: TextOverflow.ellipsis),
+                                ),
+                                for (var yi = 0; yi < 3; yi++) ...[
+                                  const SizedBox(width: 8),
+                                  Expanded(child: inputCell(yi, fi)),
+                                ],
+                              ],
                             ),
-                            for (var yi = 0; yi < 3; yi++) ...[
-                              const SizedBox(width: 8),
-                              Expanded(child: inputCell(yi, fi)),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
-              ),
+              ],
             ),
           ),
         ),
@@ -10250,14 +10299,38 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             Text('Montants en FCFA · valeurs absolues (positif = produit, négatif = charge pour FC)',
               style: TextStyle(fontSize: 10, color: _muted)),
             const Spacer(),
-            FilledButton.icon(
-              onPressed: _saving ? null : _saveInputs,
-              icon: _saving
-                  ? const SizedBox(width: 14, height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.save_outlined, size: 15),
-              label: Text(_saving ? 'Sauvegarde…' : 'Sauvegarder & Calculer'),
-              style: FilledButton.styleFrom(backgroundColor: _kAccent),
+            MouseRegion(
+              cursor: _saving ? SystemMouseCursors.basic : SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: _saving ? null : _saveInputs,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFF4A6BFF), Color(0xFF1830B8)],
+                    ),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFF8FA5FF), width: 1.3),
+                    boxShadow: [
+                      BoxShadow(color: const Color(0xFF3B5BFF).withValues(alpha: _saving ? 0.12 : 0.28), blurRadius: 8, spreadRadius: 0),
+                      BoxShadow(color: const Color(0xFF3B5BFF).withValues(alpha: _saving ? 0.06 : 0.12), blurRadius: 14),
+                    ],
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    _saving
+                        ? const SizedBox(width: 14, height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.save_outlined, size: 15, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text((_saving ? 'Sauvegarde…' : 'Sauvegarder & Calculer').toUpperCase(),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                          color: Colors.white, letterSpacing: 0.5)),
+                  ]),
+                ),
+              ),
             ),
           ],
         ),
@@ -10339,124 +10412,113 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
            bi.trancheActive == 2 ? "${(r.params.coefTranche2 * 100).toStringAsFixed(0)} %" :
            "${(r.params.coefTranche3 * 100).toStringAsFixed(0)} %"})';
 
-    final ecartPos = r.ecart >= 0;
+    final detailCards = <Widget>[
+      // Détail ILDC
+      detailCard('ILDC (Intérêts, Leasing & Dividendes)', [
+        detailRow('IC = moy(IP − IV)', _fcfa(ildc.ic)),
+        detailRow('AC = moy(Tréso + Créances − Provisions)', _fcfa(ildc.ac)),
+        detailRow('Plafond ILDC  (AC × ${(r.params.seuilIldc * 100).toStringAsFixed(4)} %)', _fcfa(ildc.plafondIldc)),
+        if (ildc.plafondActif)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+              ),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
+                SizedBox(width: 5),
+                Text('Plafond ILDC actif (ABS(IC) > AC×seuil)',
+                  style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w600)),
+              ]),
+            ),
+          ),
+        detailRow('Dividendes perçus (moy)', _fcfa(ildc.dividendes)),
+        Divider(height: 1, color: _border),
+        detailRow('ILDC retenu', _fcfa(ildc.ildc), bold: true),
+      ]),
+
+      // Détail SC
+      detailCard('SC (Services)', [
+        detailRow('Autres produits exploitation (moy)', _fcfa(sc.oi)),
+        detailRow('Autres charges exploitation (moy)', _fcfa(sc.oe)),
+        detailRow('MAX(OI, OE) retenu', _fcfa(math.max(sc.oi, sc.oe))),
+        detailRow('Commissions perçues (moy)', _fcfa(sc.fi)),
+        detailRow('Commissions versées (moy)', _fcfa(sc.fe)),
+        detailRow('MAX(FI, FE) retenu', _fcfa(math.max(sc.fi, sc.fe))),
+        Divider(height: 1, color: _border),
+        detailRow('SC retenu', _fcfa(sc.sc), bold: true),
+      ]),
+
+      // Détail FC
+      detailCard('FC (Financière)', [
+        detailRow('ABS(Résultat Ptf négociation) moy', _fcfa(fc.tc)),
+        detailRow('ABS(Résultat Ptf bancaire) moy', _fcfa(fc.bc)),
+        Divider(height: 1, color: _border),
+        detailRow('FC retenu', _fcfa(fc.fc), bold: true),
+      ]),
+
+      // BI et BIC
+      detailCard('BI & BIC', [
+        detailRow('ILDC', _fcfa(ildc.ildc)),
+        detailRow('SC', _fcfa(sc.sc)),
+        detailRow('FC', _fcfa(fc.fc)),
+        Divider(height: 1, color: _border),
+        detailRow('Business Indicator (BI)', _fcfa(bi.bi), bold: true),
+        detailRow(trancheLabel, _fcfa(bi.bic), bold: true),
+        detailRow('OFR CRR3  (ILM = 1 par hypothèse)', _fcfa(r.ofrCrr3), bold: true),
+        detailRow('REA CRR3  (×${r.params.multiplicateurRea.toStringAsFixed(1)})', _fcfa(r.reaCrr3), bold: true),
+      ]),
+
+      // Comparatif BIA
+      detailCard('Comparatif (Approche Indicateur de Base, BIA)', [
+        detailRow('OFR BIA  (15 % × PNB moy)', _fcfa(r.ofrBia)),
+        detailRow('REA BIA', _fcfa(r.reaBia)),
+        Divider(height: 1, color: _border),
+        detailRow('Écart (CRR3 − BIA)', _fcfa(r.ecart), bold: true,
+            color: r.ecart >= 0 ? _kRed : _kGreen),
+      ]),
+    ];
 
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // KPI cards
-          LayoutBuilder(builder: (_, c) {
-            final cols = c.maxWidth >= 700 ? 4 : 2;
-            final items = <Widget>[
-              _RoHeroStatCard(
-                label: 'OFR CRR3 (BIC)',
-                value: _roAmount(context, r.ofrCrr3),
-                valueColor: _kAccent,
-                subtitle: 'Fonds propres min. requis',
+      child: LayoutBuilder(builder: (_, bc) {
+        final compact = bc.maxWidth < 700;
+        if (compact) {
+          return Column(
+            children: [
+              for (final card in detailCards) ...[
+                card,
+                const SizedBox(height: 12),
+              ],
+            ],
+          );
+        }
+        // Regroupe les cartes par paire ; chaque paire est étirée à la même
+        // hauteur (celle de la carte la plus haute) grâce à IntrinsicHeight.
+        final rows = <Widget>[];
+        for (var i = 0; i < detailCards.length; i += 2) {
+          final isLastAlone = i == detailCards.length - 1;
+          rows.add(
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: isLastAlone
+                    ? [Expanded(child: detailCards[i]), const Spacer()]
+                    : [
+                        Expanded(child: detailCards[i]),
+                        const SizedBox(width: 12),
+                        Expanded(child: detailCards[i + 1]),
+                      ],
               ),
-              _RoHeroStatCard(
-                label: 'REA CRR3',
-                value: _roAmount(context, r.reaCrr3),
-                subtitle: '× ${r.params.multiplicateurRea.toStringAsFixed(1)}',
-              ),
-              _RoHeroStatCard(
-                label: 'Tranche BIC',
-                value: trancheLabel,
-                valueColor: bi.trancheActive == 1 ? _kGreen :
-                            bi.trancheActive == 2 ? Colors.orange : _kRed,
-                subtitle: bi.margeAvantTrancheSuivante != null
-                    ? 'Marge : ${_roAmount(context, bi.margeAvantTrancheSuivante!)}'
-                    : 'Tranche maximale',
-              ),
-              _RoHeroStatCard(
-                label: 'Écart CRR3 − BIA',
-                value: _roAmount(context, r.ecart),
-                valueColor: ecartPos ? _kRed : _kGreen,
-                subtitle: ecartPos ? 'CRR3 > BIA' : 'CRR3 < BIA (favorable)',
-              ),
-            ];
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: cols, crossAxisSpacing: 12, mainAxisSpacing: 12, mainAxisExtent: 130),
-              itemCount: items.length,
-              itemBuilder: (_, i) => items[i],
-            );
-          }),
-          const SizedBox(height: 12),
-
-          // Détail ILDC
-          detailCard('ILDC — Intérêts, Leasing & Dividendes', [
-            detailRow('IC = moy(IP − IV)', _fcfa(ildc.ic)),
-            detailRow('AC = moy(Tréso + Créances − Provisions)', _fcfa(ildc.ac)),
-            detailRow('Plafond ILDC  (AC × ${(r.params.seuilIldc * 100).toStringAsFixed(4)} %)', _fcfa(ildc.plafondIldc)),
-            if (ildc.plafondActif)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
-                  ),
-                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
-                    SizedBox(width: 5),
-                    Text('Plafond ILDC actif — ABS(IC) > AC×seuil',
-                      style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w600)),
-                  ]),
-                ),
-              ),
-            detailRow('Dividendes perçus (moy)', _fcfa(ildc.dividendes)),
-            Divider(height: 1, color: _border),
-            detailRow('ILDC retenu', _fcfa(ildc.ildc), bold: true),
-          ]),
-
-          // Détail SC
-          detailCard('SC — Services', [
-            detailRow('Autres produits exploitation (moy)', _fcfa(sc.oi)),
-            detailRow('Autres charges exploitation (moy)', _fcfa(sc.oe)),
-            detailRow('MAX(OI, OE) retenu', _fcfa(math.max(sc.oi, sc.oe))),
-            detailRow('Commissions perçues (moy)', _fcfa(sc.fi)),
-            detailRow('Commissions versées (moy)', _fcfa(sc.fe)),
-            detailRow('MAX(FI, FE) retenu', _fcfa(math.max(sc.fi, sc.fe))),
-            Divider(height: 1, color: _border),
-            detailRow('SC retenu', _fcfa(sc.sc), bold: true),
-          ]),
-
-          // Détail FC
-          detailCard('FC — Financière', [
-            detailRow('ABS(Résultat Ptf négociation) moy', _fcfa(fc.tc)),
-            detailRow('ABS(Résultat Ptf bancaire) moy', _fcfa(fc.bc)),
-            Divider(height: 1, color: _border),
-            detailRow('FC retenu', _fcfa(fc.fc), bold: true),
-          ]),
-
-          // BI et BIC
-          detailCard('BI & BIC', [
-            detailRow('ILDC', _fcfa(ildc.ildc)),
-            detailRow('SC', _fcfa(sc.sc)),
-            detailRow('FC', _fcfa(fc.fc)),
-            Divider(height: 1, color: _border),
-            detailRow('Business Indicator (BI)', _fcfa(bi.bi), bold: true),
-            detailRow(trancheLabel, _fcfa(bi.bic), bold: true),
-            detailRow('OFR CRR3  (ILM = 1 par hypothèse)', _fcfa(r.ofrCrr3), bold: true),
-            detailRow('REA CRR3  (×${r.params.multiplicateurRea.toStringAsFixed(1)})', _fcfa(r.reaCrr3), bold: true),
-          ]),
-
-          // Comparatif BIA
-          detailCard('Comparatif — Approche Indicateur de Base (BIA)', [
-            detailRow('OFR BIA  (15 % × PNB moy)', _fcfa(r.ofrBia)),
-            detailRow('REA BIA', _fcfa(r.reaBia)),
-            Divider(height: 1, color: _border),
-            detailRow('Écart (CRR3 − BIA)', _fcfa(r.ecart), bold: true,
-                color: r.ecart >= 0 ? _kRed : _kGreen),
-          ]),
-        ],
-      ),
+            ),
+          );
+          rows.add(const SizedBox(height: 12));
+        }
+        return Column(children: rows);
+      }),
     );
   }
 
@@ -10499,15 +10561,16 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           // 3 — OFR + REA comparaison côte à côte
           LayoutBuilder(builder: (_, bc) {
             final side = (bc.maxWidth - 12) / 2;
+            final c = DashColors.of(context);
             return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SizedBox(width: side, child: _buildComparBarCard(
-                'OFR — CRR3 vs BIA',
-                [('OFR CRR3', r.ofrCrr3, _kAccent), ('OFR BIA', r.ofrBia, const Color(0xFF475569))],
+                'OFR (CRR3 vs BIA)',
+                [('OFR CRR3', r.ofrCrr3, c.accent), ('OFR BIA', r.ofrBia, c.navy)],
               )),
               const SizedBox(width: 12),
               SizedBox(width: side, child: _buildComparBarCard(
-                'REA — CRR3 vs BIA',
-                [('REA CRR3', r.reaCrr3, _kAccent), ('REA BIA', r.reaBia, const Color(0xFF475569))],
+                'REA (CRR3 vs BIA)',
+                [('REA CRR3', r.reaCrr3, c.accent), ('REA BIA', r.reaBia, c.navy)],
               )),
             ]);
           }),
@@ -10573,6 +10636,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
   // ── 2. Composition du BI ──────────────────────────────────────────────────────
 
   Widget _buildBiCompositionCard(OpRiskCalculResult r) {
+    final c = DashColors.of(context);
     final ildc = r.ildcDetail.ildc;
     final sc   = r.scDetail.sc;
     final fc   = r.fcDetail.fc;
@@ -10580,9 +10644,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     final total = bi > 0 ? bi : 1.0;
 
     final components = [
-      ('ILDC', ildc, _kAccent),
-      ('SC',   sc,   const Color(0xFF7C3AED)),
-      ('FC',   fc,   const Color(0xFFEA580C)),
+      ('ILDC', ildc, c.navy),
+      ('SC',   sc,   c.accent),
+      ('FC',   fc,   const Color(0xFF38BDF8)),
     ];
 
     return Container(
@@ -10949,40 +11013,41 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                 paramField(_pTauxConv, 'Taux conversion EUR → FCFA', '655.957'),
                 paramField(_pMultRea, 'Multiplicateur REA', '12.5'),
                 const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.07),
-                    borderRadius: BorderRadius.circular(5),
-                    border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-                  ),
-                  child: const Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.info_outline, size: 13, color: Colors.orange),
-                      SizedBox(width: 7),
-                      Expanded(child: Text(
-                        'La BCEAO n\'a pas publié de seuils propres à ce jour. '
-                        'Les seuils affichés correspondent aux seuils CRR3 (1 Md€ / 30 Mds€) '
-                        'convertis au taux de parité fixe EUR/FCFA (Art. 315-318 CRR3). '
-                        'Ce module est un outil de pilotage interne — pas une déclaration COREP officielle BCEAO.',
-                        style: TextStyle(fontSize: 10.5, color: Colors.orange, height: 1.45),
-                      )),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    FilledButton.icon(
-                      onPressed: _saving ? null : _saveParams,
-                      icon: _saving
-                          ? const SizedBox(width: 14, height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.save_outlined, size: 15),
-                      label: Text(_saving ? 'Sauvegarde…' : 'Enregistrer les paramètres'),
-                      style: FilledButton.styleFrom(backgroundColor: _kAccent),
+                    MouseRegion(
+                      cursor: _saving ? SystemMouseCursors.basic : SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: _saving ? null : _saveParams,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Color(0xFF4A6BFF), Color(0xFF1830B8)],
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: const Color(0xFF8FA5FF), width: 1.3),
+                            boxShadow: [
+                              BoxShadow(color: const Color(0xFF3B5BFF).withValues(alpha: _saving ? 0.25 : 0.55), blurRadius: 14, spreadRadius: 0.5),
+                              BoxShadow(color: const Color(0xFF3B5BFF).withValues(alpha: _saving ? 0.12 : 0.25), blurRadius: 26, spreadRadius: 2),
+                            ],
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            _saving
+                                ? const SizedBox(width: 14, height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.save_outlined, size: 15, color: Colors.white),
+                            const SizedBox(width: 8),
+                            Text((_saving ? 'Sauvegarde…' : 'Enregistrer les paramètres').toUpperCase(),
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                                  color: Colors.white, letterSpacing: 0.5)),
+                          ]),
+                        ),
+                      ),
                     ),
                   ],
                 ),
