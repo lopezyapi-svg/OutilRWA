@@ -235,11 +235,7 @@ const List<_MenuEntry> _riskCreditChildren = [
     icon: Icons.functions_rounded,
     label: 'Pilotage RWA Crédit',
   ),
-  _MenuEntry.leaf(
-    module: AppModule.reportingCredit,
-    icon: Icons.summarize_outlined,
-    label: 'Reporting Crédit',
-  ),
+
 ];
 
 const List<_MenuEntry> _operationalRiskChildren = [
@@ -492,6 +488,11 @@ const List<_MenuEntry> _settingsChildren = [
 ];
 
 const List<_MenuEntry> _sidebarItems = [
+  _MenuEntry.leaf(
+    module: AppModule.importations,
+    icon: Icons.cloud_upload_outlined,
+    label: 'Importations',
+  ),
   _MenuEntry.leaf(
     module: AppModule.vueEnsemble,
     icon: Icons.pie_chart_outline_rounded,
@@ -1288,7 +1289,7 @@ class _ExpandedNavTile extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
           decoration: BoxDecoration(
             color: tileColor,
             borderRadius: BorderRadius.circular(tileRadius),
@@ -1309,8 +1310,8 @@ class _ExpandedNavTile extends StatelessWidget {
               : Row(
                   children: [
                     Container(
-                      width: 22,
-                      height: 22,
+                      width: 24,
+                      height: 24,
                       decoration: BoxDecoration(
                         color: selected
                             ? Colors.white.withValues(alpha: 0.16)
@@ -1321,7 +1322,7 @@ class _ExpandedNavTile extends StatelessWidget {
                       ),
                       child: Icon(
                         entry.iconFor(selected),
-                        size: 14,
+                        size: 15,
                         color: iconColor,
                       ),
                     ),

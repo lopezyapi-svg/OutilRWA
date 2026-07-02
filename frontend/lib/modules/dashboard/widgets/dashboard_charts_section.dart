@@ -27,78 +27,10 @@ class DashboardChartsSection extends StatefulWidget {
 }
 
 class _DashboardChartsSectionState extends State<DashboardChartsSection> {
-  bool _showGross = true;
-
-  Widget _buildToggle(DashColors c) {
-    return Container(
-      height: 28,
-      decoration: BoxDecoration(
-        color: c.surfaceAlt,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: c.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          InkWell(
-            onTap: () => setState(() => _showGross = true),
-            borderRadius: BorderRadius.circular(4),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _showGross ? c.accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: DashText.caption(c).copyWith(
-                  fontWeight: _showGross ? FontWeight.w700 : FontWeight.w500,
-                  color: _showGross ? Colors.white : c.muted,
-                ),
-                child: const Text('EAD'),
-              ),
-            ),
-          ),
-          InkWell(
-            onTap: () => setState(() => _showGross = false),
-            borderRadius: BorderRadius.circular(4),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: !_showGross ? c.accent : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: DashText.caption(c).copyWith(
-                  fontWeight: !_showGross ? FontWeight.w700 : FontWeight.w500,
-                  color: !_showGross ? Colors.white : c.muted,
-                ),
-                child: const Text('RWA'),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final c = DashColors.of(context);
-    final toggleWidget = _buildToggle(c);
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final isDesktop = width >= 1200;
-
         final grossContent = DashboardTopGrossChart(
           key: const ValueKey('grossChart'),
           entries: widget.grossCategoryEntries,
@@ -115,41 +47,33 @@ class _DashboardChartsSectionState extends State<DashboardChartsSection> {
           entries: widget.crmEntries,
         );
 
-        final activeChart = DashPanel(
-          title: _showGross ? 'Top 5 de l\'EAD par catégorie' : 'Top 5 du RWA total par catégorie',
-          trailing: toggleWidget,
+        final eadPanel = DashPanel(
+          title: 'Top 5 de l\'EAD par catégorie',
           height: 360,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 350),
-            reverseDuration: const Duration(milliseconds: 100),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.05, 0),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: _showGross ? grossContent : rwaContent,
-          ),
+          child: grossContent,
+        );
+
+        final rwaPanel = DashPanel(
+          title: 'Top 5 du RWA total par catégorie',
+          height: 360,
+          child: rwaContent,
         );
 
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 45,
-              child: activeChart,
+              flex: 30,
+              child: eadPanel,
             ),
             const SizedBox(width: 16),
             Expanded(
-              flex: 55,
+              flex: 40,
+              child: rwaPanel,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 30,
               child: donutChart,
             ),
           ],

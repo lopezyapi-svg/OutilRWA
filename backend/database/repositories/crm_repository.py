@@ -270,7 +270,7 @@ class CrmRepository:
                 guarantor_rw = float(row["guarantor_rw"] or 0.0)
 
             rwa_before = round(float(row["ead"] or 0.0) * float(row["borrower_rw"] or 0.0), 2)
-            capital_before = round(rwa_before * 0.08, 2)
+            capital_before = round(rwa_before * 0.09, 2)
             rwa_after = round(float(row["rwa"] or 0.0), 2)
             capital_after = round(float(row["capital"] or 0.0), 2)
 

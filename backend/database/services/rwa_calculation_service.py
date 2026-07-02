@@ -678,7 +678,7 @@ def lookup_financed_crm_hfx(exposure_currency: str, collateral_currency: str) ->
         exposure == "EUR" and collateral == "FCFA"
     ):
         return 0.0
-    return 0.08
+    return 0.09
 
 
 def _lookup_financed_crm_debt_haircut(

@@ -31,11 +31,10 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
     final totalRisques = exposures.length;
     final totalNet = exposures.fold<double>(0.0, (sum, e) => sum + e.netExposure);
     // Classification par statut
-    final alertes = exposures.where((e) => e.status == 'Alerte').length;
-    final sousCibles = exposures.where((e) => e.status == 'Sous cible').length;
-    final conformes = exposures.where((e) => e.status == 'Conforme').length;
+    final alertes = exposures.where((e) => e.status == 'Dépassement').length;
+    final conformes = exposures.where((e) => e.status == 'Dans la norme').length;
 
-    // Top secteurs (jusqu'à 3)
+    // Top secteurs (jusqu'à 5)
     final mapSecteurs = <String, double>{};
     for (final cat in allCategories) {
       mapSecteurs[cat.label] = 0.0;
@@ -44,7 +43,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
       mapSecteurs[e.sector] = (mapSecteurs[e.sector] ?? 0.0) + e.netExposure;
     }
     final sortedSecteurs = mapSecteurs.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    final topSecteurs = sortedSecteurs.take(3).toList();
+    final topSecteurs = sortedSecteurs.take(5).toList();
 
     return DashPanel(
       title: 'SYNTHÈSE DES GRANDS RISQUES',
@@ -87,9 +86,9 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStatusPill('Conforme', '< 20%', conformes, const Color(0xFFE3FCEF), const Color(0xFF006644)),
-              _buildStatusPill('Sous cible', '20% - 25%', sousCibles, const Color(0xFFFFF0B3), const Color(0xFFFF8B00)),
-              _buildStatusPill('Alerte', '> 25%', alertes, const Color(0xFFFFEBE6), const Color(0xFFDE350B)),
+              Expanded(child: _buildStatusPill('Dans la norme', '< 25%', conformes, const Color(0xFFE3FCEF), const Color(0xFF006644))),
+              const SizedBox(width: 8),
+              Expanded(child: _buildStatusPill('Dépassement', '> 25%', alertes, const Color(0xFFFFEBE6), const Color(0xFFDE350B))),
             ],
           ),
           Divider(height: 16, thickness: 1, color: Colors.indigo.withOpacity(0.2)),
@@ -99,7 +98,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 const Text(
-                  'CATÉGORIES LES PLUS CONCENTRÉES ( TOP 3 )',
+                  'CATÉGORIES LES PLUS CONCENTRÉES ( TOP 5 )',
                   style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.indigo),
                 ),
                 Material(
@@ -151,8 +150,8 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
               final isLast = index == topSecteurs.length - 1;
 
               return Container(
-                padding: const EdgeInsets.only(bottom: 10),
-                margin: const EdgeInsets.only(bottom: 10),
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
+                margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
                 decoration: BoxDecoration(
                   border: isLast ? null : Border(bottom: BorderSide(color: c.navy.withOpacity(0.1), width: 0.5)),
                 ),
@@ -292,13 +291,15 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
     return Column(
       children: [
         Container(
-          width: 80,
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
           alignment: Alignment.center,
           decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(6)),
           child: Text(
             title,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: textColor),
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: textColor),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         const SizedBox(height: 2),

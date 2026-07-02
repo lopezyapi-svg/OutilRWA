@@ -179,7 +179,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                                 flex: 2,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text('${AppFormatters.formatAmountValue(expScaled)} ${AppFormatters.formatAmountSuffix(expScaled)}'.trim(), textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: c.ink, fontFeatures: Dash.tabular)),
+                                  child: Text('${AppFormatters.formatAmountValue(expScaled)}${AppFormatters.formatAmountSuffix(expScaled)}'.trim(), textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: c.ink, fontFeatures: Dash.tabular)),
                                 ),
                               ),
                               vDiv(),
@@ -187,7 +187,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                                 flex: 2,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text('${AppFormatters.formatAmountValue(netScaled)} ${AppFormatters.formatAmountSuffix(netScaled)}'.trim(), textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: c.ink, fontFeatures: Dash.tabular)),
+                                  child: Text('${AppFormatters.formatAmountValue(netScaled)}${AppFormatters.formatAmountSuffix(netScaled)}'.trim(), textAlign: TextAlign.right, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: c.ink, fontFeatures: Dash.tabular)),
                                 ),
                               ),
                               vDiv(),

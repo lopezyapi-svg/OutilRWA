@@ -56,9 +56,12 @@ class AppFormatters {
     return _number(maxDecimals).format(value);
   }
 
-  static String formatAmountValue(double value, [double? ignoredDivisor]) {
+  static String formatAmountValue(double value, [double? divisor]) {
     final absolute = value.abs();
     if (absolute == 0) return '0';
+    if (divisor != null && divisor > 0) {
+      return decimalNumber(value / divisor, maxDecimals: 2);
+    }
     if (absolute < 1000000) {
       return decimalNumber(value, maxDecimals: 2);
     } else if (absolute < 1000000000) {
@@ -68,7 +71,10 @@ class AppFormatters {
     }
   }
 
-  static String formatAmountSuffix(double value, [String? ignoredUnit, String? ignoredCurrency]) {
+  static String formatAmountSuffix(double value, [String? unitLabel]) {
+    if (unitLabel != null) {
+      return unitLabel;
+    }
     final absolute = value.abs();
     if (absolute == 0) return '';
     if (absolute < 1000000) {
@@ -88,7 +94,7 @@ class AppFormatters {
       return NumberFormat.decimalPercentPattern(
           locale: locale, decimalDigits: 1);
     });
-    return formatter.format(value);
+    return formatter.format(value).replaceAll(RegExp(r'\s+%'), '%');
   }
 
   static String shortDate(DateTime value) {

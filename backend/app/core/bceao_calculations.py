@@ -1,4 +1,4 @@
-﻿"\"\"Module de calcul des ratios réglementaires stricts (Dispositif Prudentiel BCEAO)."""
+"\"\"Module de calcul des ratios réglementaires stricts (Dispositif Prudentiel BCEAO)."""
 
 from typing import Any
 
@@ -88,7 +88,7 @@ def calculate_risque_marche(marche_data: dict[str, float]) -> dict[str, float]:
     """
     position_nette = marche_data.get("position_nette_change", 0.0)
     
-    exigence = abs(position_nette) * 0.08
+    exigence = abs(position_nette) * 0.09
     
     rwa_marche = exigence * 12.5
     

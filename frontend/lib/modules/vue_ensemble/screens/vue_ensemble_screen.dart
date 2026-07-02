@@ -65,7 +65,7 @@ class _VueEnsembleScreenState extends State<VueEnsembleScreen> {
 
   void _refresh() {
     setState(() {
-      _future = _loadDashboard();
+      _future = widget.api.fetchDashboard(forceRefresh: true);
     });
   }
 

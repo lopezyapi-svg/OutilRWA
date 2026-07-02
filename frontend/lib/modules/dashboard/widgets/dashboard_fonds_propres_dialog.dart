@@ -80,34 +80,46 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
   bool _isLoading = false;
   late String _selectedCurrency;
 
+  bool _initialized = false;
+  late PortfolioAmountUnit _unit;
+
   @override
   void initState() {
     super.initState();
     _selectedCurrency = 'XOF';
-    final fp = widget.fondsPropres;
-    
-    _capOrdinaireCtrl = _ctrl(fp?.capitalOrdinaire);
-    _reservesCtrl = _ctrl(fp?.reserves);
-    _reportCtrl = _ctrl(fp?.resultatsReport);
-    _eligibleCtrl = _ctrl(fp?.resultatEligible);
-    _deducCet1Ctrl = _ctrl(fp?.deductionsPrudCet1);
+  }
 
-    _instAt1Ctrl = _ctrl(fp?.instrumentsAt1);
-    _primesAt1Ctrl = _ctrl(fp?.primesEmissionAt1);
-    _deducAt1Ctrl = _ctrl(fp?.deductionsPrudAt1);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _unit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+      final fp = widget.fondsPropres;
+      
+      _capOrdinaireCtrl = _ctrl(fp?.capitalOrdinaire);
+      _reservesCtrl = _ctrl(fp?.reserves);
+      _reportCtrl = _ctrl(fp?.resultatsReport);
+      _eligibleCtrl = _ctrl(fp?.resultatEligible);
+      _deducCet1Ctrl = _ctrl(fp?.deductionsPrudCet1);
 
-    _subordT2Ctrl = _ctrl(fp?.dettesSubordonneesT2);
-    _provGenT2Ctrl = _ctrl(fp?.provisionsGeneralesT2);
-    _deducT2Ctrl = _ctrl(fp?.deductionsPrudT2);
+      _instAt1Ctrl = _ctrl(fp?.instrumentsAt1);
+      _primesAt1Ctrl = _ctrl(fp?.primesEmissionAt1);
+      _deducAt1Ctrl = _ctrl(fp?.deductionsPrudAt1);
 
-    // Listeners for live computations
-    final controllers = [
-      _capOrdinaireCtrl, _reservesCtrl, _reportCtrl, _eligibleCtrl, _deducCet1Ctrl,
-      _instAt1Ctrl, _primesAt1Ctrl, _deducAt1Ctrl,
-      _subordT2Ctrl, _provGenT2Ctrl, _deducT2Ctrl
-    ];
-    for (final ctrl in controllers) {
-      ctrl.addListener(_onFieldChanged);
+      _subordT2Ctrl = _ctrl(fp?.dettesSubordonneesT2);
+      _provGenT2Ctrl = _ctrl(fp?.provisionsGeneralesT2);
+      _deducT2Ctrl = _ctrl(fp?.deductionsPrudT2);
+
+      // Listeners for live computations
+      final controllers = [
+        _capOrdinaireCtrl, _reservesCtrl, _reportCtrl, _eligibleCtrl, _deducCet1Ctrl,
+        _instAt1Ctrl, _primesAt1Ctrl, _deducAt1Ctrl,
+        _subordT2Ctrl, _provGenT2Ctrl, _deducT2Ctrl
+      ];
+      for (final ctrl in controllers) {
+        ctrl.addListener(_onFieldChanged);
+      }
+      _initialized = true;
     }
   }
 
@@ -447,8 +459,8 @@ class _DashboardFondsPropresDialogState extends State<DashboardFondsPropresDialo
   }
 
   Widget _buildSummaryItem(String label, double val, PortfolioAmountUnit unit, String currency, Color color, bool isDark, {bool isTotal = false}) {
-    final textVal = AppFormatters.formatAmountValue(val);
-    final suffixStr = AppFormatters.formatAmountSuffix(val);
+    final textVal = AppFormatters.formatAmountValue(val, unit.divisor);
+    final suffixStr = AppFormatters.formatAmountSuffix(val, unit.label);
     final valueColor = isTotal
         ? color
         : (isDark ? const Color(0xFFF2F6FF) : const Color(0xFF1E293B));

@@ -603,27 +603,31 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
 
   Widget _buildHeader() => Row(
         children: [
-          Icon(Icons.upload_file_outlined, color: _accent, size: 22),
-          const SizedBox(width: 3),
-          Text(
-            'Importer des pertes opérationnelles',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: _text,
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2F6EEA), Color(0xFF12A7B4)],
+              ),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
+            ),
+            child: const Icon(
+              Icons.cloud_upload,
+              color: Colors.white,
+              size: 20,
             ),
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: _accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
+          const SizedBox(width: 4),
+          Expanded(
             child: Text(
-              'Excel .xlsx',
+              'Importation de données (Risque Opérationnel)',
               style: TextStyle(
-                  fontSize: 10, color: _accent, fontWeight: FontWeight.w600),
+                color: _text,
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+              ),
             ),
           ),
           const Spacer(),

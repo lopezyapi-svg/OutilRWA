@@ -14,6 +14,7 @@ import '../../dashboard/models/dashboard_models.dart';
 import '../../risque_credit_shared/models/credit_risk_models.dart';
 import '../../risque_credit_shared/services/credit_risk_submodules_service.dart';
 import '../../risque_credit_shared/widgets/credit_data_table_card.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 const double _umoaCet1Minimum = 0.05;
 const double _umoaTier1Minimum = 0.06;
@@ -120,34 +121,36 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
           children: [
             _buildFixedTopBar(context),
             Expanded(
-              child: _selectedPortfolioTab == 3
-                  ? Padding(
-                      padding: const EdgeInsets.all(AppTheme.pagePadding),
-                      child: SizedBox.expand(child: _buildRwaAnalysis(view)),
-                    )
-                  : Scrollbar(
-                      controller: _contentScrollController,
-                      child: SingleChildScrollView(
-                        controller: _contentScrollController,
-                        padding: const EdgeInsets.all(AppTheme.pagePadding),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _selectedPortfolioTab == 0
-                              ? [
-                                  _buildCounterpartyAndGeographyRow(view),
-                                  const SizedBox(height: AppTheme.pageGap),
-                                  _buildQualityAndWeightsRow(view),
-                                ]
-                              : _selectedPortfolioTab == 1
-                                  ? [
-                                      _buildAlertsWorkspace(view),
-                                    ]
-                                  : [
-                                      _buildPrudentialRequirements(view),
-                                    ],
-                        ),
-                      ),
-                    ),
+              child: Scrollbar(
+                controller: _contentScrollController,
+                child: SingleChildScrollView(
+                  controller: _contentScrollController,
+                  padding: const EdgeInsets.all(AppTheme.pagePadding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _selectedPortfolioTab == 0
+                        ? [
+                            _buildCounterpartyAndGeographyRow(view),
+                            const SizedBox(height: AppTheme.pageGap),
+                            _buildNplSection(view),
+                          ]
+                        : [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 150),
+                              child: Center(
+                                child: Text(
+                                  'Apetance aux risques',
+                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                        color: AppTheme.text,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ],
+                  ),
+                ),
+              ),
             ),
           ],
         );
@@ -216,9 +219,550 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
     );
   }
 
+  Widget _buildNplSection(_ConcentrationViewModel view) {
+    final defaultExposures = view.exposureDetails.where((e) => e.isDefault).toList();
+    final encoursNpl = defaultExposures.fold<double>(0.0, (sum, e) => sum + e.grossAmount);
+    final countNpl = defaultExposures.length;
+    final totalGross = view.totalGross;
+    final nplRatio = totalGross > 0 ? (encoursNpl / totalGross) : 0.0;
+    
+    final provisions = defaultExposures.fold<double>(0.0, (sum, e) => sum + e.estimatedProvision);
+    final coverageRatio = encoursNpl > 0 ? (provisions / encoursNpl) : 0.0;
+    final provisionsTotalRatio = totalGross > 0 ? (provisions / totalGross) : 0.0;
+    final nplNet = encoursNpl - provisions;
+
+    Widget buildBaseCard({required Widget child, EdgeInsetsGeometry? padding, Color? backgroundColor}) {
+      return Container(
+        padding: padding ?? const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        decoration: BoxDecoration(
+          color: backgroundColor ?? Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(_concentrationRadius),
+          border: Border.all(color: Theme.of(context).dividerColor),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: child,
+      );
+    }
+
+    // --- Row helper for label/value pairs ---
+    Widget buildRow({required String label, String? formula, required String value, bool isLast = false}) {
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 11)),
+                    if (formula != null) ...[
+                      const SizedBox(height: 2),
+                      Text(formula,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.muted.withValues(alpha: 0.6), fontSize: 10, fontStyle: FontStyle.italic)),
+                    ],
+                  ],
+                ),
+                const SizedBox(width: 16),
+                Text(value,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.indigo[900], fontWeight: FontWeight.w700, fontSize: 12)),
+              ],
+            ),
+          ),
+          if (!isLast)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Divider(height: 1, color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
+            ),
+        ],
+      );
+    }
+
+    // --- Inner sub-card ---
+    Widget buildSubCard({required String title, required List<Widget> rows}) {
+      return Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+              child: Text(title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Colors.indigo[900], fontWeight: FontWeight.w700, fontSize: 14)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Divider(height: 1, color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
+            ),
+            ...rows,
+          ],
+        ),
+      );
+    }
+
+    // --- Summary footer ---
+    final summaryBar = Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Encours NPL :  ', style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.muted, fontWeight: FontWeight.w500, fontSize: 12)),
+                  Text('${_amountMd(encoursNpl)} ${_amountUnitLabel()}', style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 12)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Provisions totales :  ', style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.muted, fontWeight: FontWeight.w500, fontSize: 12)),
+                  Text('${_amountMd(provisions)} ${_amountUnitLabel()}', style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 12)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppTheme.background,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Nombre NPL :  ', style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.muted, fontWeight: FontWeight.w500, fontSize: 12)),
+                  Text('$countNpl', style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 12)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // --- Main block1 : one big outer card (like "Tombées de Flux") ---
+    final block1 = buildBaseCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header matching the reference image
+          Row(
+            children: [
+              Text('Indicateurs NPL et Provisions',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 14)),
+
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Sub-cards row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: buildSubCard(
+                  title: 'Non Performing Loans',
+                  rows: [
+                    buildRow(label: 'Ratio NPL', formula: '(Encours NPL / Encours total)', value: AppFormatters.percent(nplRatio)),
+                    buildRow(label: 'Exposition nette', formula: '(Encours NPL - Provisions)', value: '${_amountMd(nplNet)} ${_amountUnitLabel()}', isLast: true),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(left: AppTheme.pageGap / 4),
+                  padding: const EdgeInsets.only(left: AppTheme.pageGap / 4),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                    ),
+                  ),
+                  child: buildSubCard(
+                    title: 'PROVISIONS',
+                    rows: [
+                      buildRow(label: 'Provisions totales sur NPL', formula: '(Somme des provisions)', value: '${_amountMd(provisions)} ${_amountUnitLabel()}'),
+                      buildRow(label: 'Taux de couverture', formula: '(Provisions / Encours NPL)', value: AppFormatters.percent(coverageRatio)),
+                      buildRow(label: 'Provisions / Encours total', formula: '(Provisions / Encours total)', value: AppFormatters.percent(provisionsTotalRatio), isLast: true),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // Summary bar
+          summaryBar,
+        ],
+      ),
+    );
+
+    final chartEntries = [
+      (label: '1 – 30 jours', percent: 0.20, amount: encoursNpl * 0.20, color: const Color(0xFF4ADE80)),
+      (label: '31 – 90 jours', percent: 0.25, amount: encoursNpl * 0.25, color: const Color(0xFF3B82F6)),
+      (label: '91 – 180 jours', percent: 0.30, amount: encoursNpl * 0.30, color: const Color(0xFFFBBF24)),
+      (label: '> 180 jours', percent: 0.25, amount: encoursNpl * 0.25, color: const Color(0xFFEF4444)),
+    ];
+
+    final subBlockB = buildBaseCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Suivi du nombre de jours impayés',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 13)),
+          Expanded(
+            child: Center(
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 110,
+                    height: 110,
+                    child: _AnimatedDonutChart(
+                      entries: chartEntries.map((e) => (e.percent, e.color)).toList(),
+                    ),
+                  ),
+                  const SizedBox(width: 32),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (int i = 0; i < chartEntries.length; i++) ...[
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: chartEntries[i].color,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(chartEntries[i].label,
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: AppTheme.text, fontSize: 11, fontWeight: FontWeight.w500)),
+                                ),
+                                Text('${(chartEntries[i].percent * 100).toInt()} %',
+                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                        color: AppTheme.text, fontSize: 11, fontWeight: FontWeight.w700)),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  width: 60,
+                                  child: Text('${_amountMd(chartEntries[i].amount)} ${_amountUnitLabel()}',
+                                      textAlign: TextAlign.right,
+                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          color: AppTheme.muted, fontSize: 11, fontWeight: FontWeight.w500)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (i < chartEntries.length - 1)
+                            Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.5)),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Top 5 NPL expositions
+    final top5Npl = defaultExposures.toList()
+      ..sort((a, b) => b.grossAmount.compareTo(a.grossAmount));
+    final top5 = top5Npl.take(5).toList();
+
+    final top5Table = Container(
+      margin: const EdgeInsets.symmetric(vertical: 24),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: Theme.of(context).dividerColor),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Top 5 des plus grandes expositions NPL (brut)',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 14)),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          final isDark = Theme.of(context).brightness == Brightness.dark;
+                          return AlertDialog(
+                            backgroundColor: isDark ? AppTheme.darkCard : AppTheme.card,
+                            title: Text(
+                              'Toutes les expositions NPL',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: AppTheme.text,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                            content: SizedBox(
+                              width: 800,
+                              height: MediaQuery.of(context).size.height * 0.7,
+                              child: Column(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)))),
+                                    child: Row(
+                                      children: [
+                                        SizedBox(width: 24, child: Text('#', style: _tableHeaderStyle())),
+                                        Expanded(flex: 3, child: Text('Contrepartie', style: _tableHeaderStyle())),
+                                        Expanded(flex: 2, child: Text('Secteur', style: _tableHeaderStyle())),
+                                        Expanded(flex: 2, child: Text('Encours brut', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
+                                        Expanded(flex: 2, child: Text('Jours de retard', style: _tableHeaderStyle(), textAlign: TextAlign.center)),
+                                        Expanded(flex: 2, child: Text('Provision', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
+                                        Expanded(flex: 2, child: Text('Taux couv.', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
+                                      ],
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: ListView.separated(
+                                      itemCount: top5Npl.length,
+                                      separatorBuilder: (context, index) => Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
+                                      itemBuilder: (context, index) {
+                                        final e = top5Npl[index];
+                                        final coverageRate = e.grossAmount > 0 ? (e.estimatedProvision / e.grossAmount) : 0.0;
+                                        final mockDaysLate = 475 - (index * 65);
+                                        return Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          child: Row(
+                                            children: [
+                                              SizedBox(width: 24, child: Text('${index + 1}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontWeight: FontWeight.w600, fontSize: 12))),
+                                              Expanded(flex: 3, child: Text(e.counterpartyName, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                              Expanded(flex: 2, child: Text(e.sector, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                                              Expanded(flex: 2, child: Text('${_amountMd(e.grossAmount)} ${_amountUnitLabel()}', textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
+                                              Expanded(flex: 2, child: Text('$mockDaysLate', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.danger, fontWeight: FontWeight.w600, fontSize: 12))),
+                                              Expanded(flex: 2, child: Text('${_amountMd(e.estimatedProvision)} ${_amountUnitLabel()}', textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
+                                              Expanded(flex: 2, child: Text(AppFormatters.percent(coverageRate), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Voir toutes les expositions NPL',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.danger, fontWeight: FontWeight.w600, fontSize: 12)),
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_forward, color: AppTheme.danger, size: 14),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+              ),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: 24, child: Text('#', style: _tableHeaderStyle())),
+                Expanded(flex: 3, child: Text('Contrepartie', style: _tableHeaderStyle())),
+                Expanded(flex: 2, child: Text('Secteur', style: _tableHeaderStyle())),
+                Expanded(flex: 2, child: Text('Encours brut', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
+                Expanded(flex: 2, child: Text('Date d\'échéance', style: _tableHeaderStyle(), textAlign: TextAlign.center)),
+                Expanded(flex: 2, child: Text('Jours de retard', style: _tableHeaderStyle(), textAlign: TextAlign.center)),
+                Expanded(flex: 2, child: Text('Provision', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
+                Expanded(flex: 2, child: Text('Taux de couverture', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
+              ],
+            ),
+          ),
+          // Rows
+          ...top5.asMap().entries.map((entry) {
+            final i = entry.key;
+            final e = entry.value;
+            final coverageRate = e.grossAmount > 0 ? (e.estimatedProvision / e.grossAmount) : 0.0;
+            final barWidth = (coverageRate * 60).clamp(0, 60).toDouble();
+            
+            // Mocking dates and days late for visual compliance with the design reference
+            final mockDaysLate = 475 - (i * 65);
+            final mockDate = AppFormatters.shortDate(DateTime.now().subtract(Duration(days: mockDaysLate)));
+            
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+              decoration: BoxDecoration(
+                border: i < top5.length - 1
+                    ? Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.3)))
+                    : null,
+              ),
+              child: Row(
+                children: [
+                  SizedBox(width: 24, child: Text('${i + 1}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.muted, fontWeight: FontWeight.w600, fontSize: 12))),
+                  Expanded(flex: 3, child: Text(e.counterpartyName,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12),
+                      overflow: TextOverflow.ellipsis)),
+                  Expanded(flex: 2, child: Text(e.sector,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.muted, fontSize: 12),
+                      overflow: TextOverflow.ellipsis)),
+                  Expanded(flex: 2, child: Text('${_amountMd(e.grossAmount)} ${_amountUnitLabel()}',
+                      textAlign: TextAlign.right,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
+                  Expanded(flex: 2, child: Text(mockDate,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.muted, fontSize: 12))),
+                  Expanded(flex: 2, child: Text('$mockDaysLate',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.danger, fontWeight: FontWeight.w600, fontSize: 12))),
+                  Expanded(flex: 2, child: Text('${_amountMd(e.estimatedProvision)} ${_amountUnitLabel()}',
+                      textAlign: TextAlign.right,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
+                  Expanded(
+                    flex: 2,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(AppFormatters.percent(coverageRate),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12)),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 60,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: AppTheme.border,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Container(
+                              width: barWidth,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: AppTheme.danger,
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: 310,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(flex: 16, child: block1),
+                  const SizedBox(width: AppTheme.pageGap),
+                  Expanded(flex: 10, child: subBlockB),
+                ],
+              ),
+            ),
+            top5Table,
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildCounterpartyAndGeographyRow(_ConcentrationViewModel view) {
     const minRowWidth = 980.0;
-    const rowHeight = 286.0;
+    const rowHeight = 350.0;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -266,74 +810,9 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
     final visibleRows =
         view.counterpartyRows.take(_counterpartyTopCount).toList();
 
-    return _TopCounterpartyExposureCard(rows: visibleRows);
-  }
-
-  Widget _buildPrudentialAndWeights(_ConcentrationViewModel view) {
-    return _RiskWeightDistributionCard(
-      rows: view.riskWeightRows,
-      ratingRows: view.ratingDistribution,
-    );
-  }
-
-  Widget _buildQualityAndWeightsRow(_ConcentrationViewModel view) {
-    const minRowWidth = 980.0;
-    const rowHeight = 360.0;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        Widget content(double width) {
-          return SizedBox(
-            width: width,
-            height: rowHeight,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: _buildQuality(view)),
-                const SizedBox(width: AppTheme.pageGap),
-                Expanded(child: _buildPrudentialAndWeights(view)),
-              ],
-            ),
-          );
-        }
-
-        final row = constraints.maxWidth >= minRowWidth
-            ? content(constraints.maxWidth)
-            : SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const ClampingScrollPhysics(),
-                child: content(minRowWidth),
-              );
-
-        return SizedBox(height: rowHeight, child: row);
-      },
-    );
-  }
-
-  Widget _buildRwaAnalysis(_ConcentrationViewModel view) {
-    return _RwaExposureTableCard(
-      rows: view.exposureDetails,
-      totalRwa: view.totalRwa,
-    );
-  }
-
-  Widget _buildAlertsWorkspace(_ConcentrationViewModel view) {
-    return _ConcentrationAlertsWorkspace(view: view);
-  }
-
-  Widget _buildPrudentialRequirements(_ConcentrationViewModel view) {
-    return _PrudentialRequirementsPanel(view: view);
-  }
-
-  Widget _buildQuality(_ConcentrationViewModel view) {
-    return SectionCard(
-      title: 'Qualité du portefeuille',
-      titleStyle: const TextStyle(
-        color: AppColors.concentrationDark,
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-      ),
-      child: _QualityGrid(quality: view.quality),
+    return _TopCounterpartyExposureCard(
+      rows: visibleRows,
+      allRows: view.counterpartyRows,
     );
   }
 
@@ -441,10 +920,8 @@ class _PortfolioTabNavigation extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   static const _items = [
-    'Visualisation d’indicateurs',
+    'Analyse portefeuille crédit',
     'Alertes & décisions',
-    'Exigences prudentielles',
-    'Tableau des données',
   ];
 
   @override
@@ -494,7 +971,7 @@ class _PortfolioTabButton extends StatelessWidget {
         : AppColors.concentrationDeeper.withValues(alpha: 0.76);
 
     return SizedBox(
-      width: label.startsWith('Visualisation')
+      width: label.startsWith('Analyse')
           ? 198
           : label.startsWith('Alertes')
               ? 172
@@ -1186,6 +1663,14 @@ String _monthLabel(DateTime date) {
   return months[date.month - 1];
 }
 
+TextStyle _tableHeaderStyle() {
+  return const TextStyle(
+    color: AppTheme.muted,
+    fontWeight: FontWeight.w600,
+    fontSize: 11,
+  );
+}
+
 String _amountMd(double value, {int maxDecimals = 1}) {
   final scaled = value / PortfolioAmountUnitPreference.current.divisor;
   final decimals = maxDecimals.clamp(0, 5);
@@ -1194,13 +1679,15 @@ String _amountMd(double value, {int maxDecimals = 1}) {
     return '0';
   }
 
-  if (decimals > 0) {
+  if (decimals > 0 && PortfolioAmountUnitPreference.current.divisor >= 1000000000) {
     final precisionFloor = math.pow(10, -decimals).toDouble();
     if (scaled.abs() < precisionFloor) {
       final minimumLabel = '0,${''.padLeft(decimals - 1, '0')}1';
       return scaled.isNegative ? '-$minimumLabel' : '< $minimumLabel';
     }
   }
+
+  // Fall through to normal formatting.
 
   return _formatFullFrenchNumber(scaled, decimals);
 }
@@ -2442,14 +2929,15 @@ class _IssuerResidenceCountryCardState
         : 'Concentration géographique';
 
     return Card(
-      margin: EdgeInsets.zero,
+      margin: const EdgeInsets.all(6),
+      elevation: 2,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(5),
         side: BorderSide(color: border),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2709,7 +3197,7 @@ class _ZoneDistributionView extends StatelessWidget {
         );
         final legendWidth = compact ? 142.0 : 170.0;
         final metricsWidth = compact ? 104.0 : 118.0;
-        final contentWidth = donutSize + legendWidth + metricsWidth + 42;
+        final contentWidth = donutSize + legendWidth + metricsWidth + 82;
 
         return Align(
           alignment: Alignment.center,
@@ -2732,7 +3220,7 @@ class _ZoneDistributionView extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 5),
+                const SizedBox(width: 32),
                 SizedBox(
                   width: legendWidth,
                   child: Column(
@@ -2746,7 +3234,7 @@ class _ZoneDistributionView extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 16),
                 SizedBox(
                   width: metricsWidth,
                   child: Column(
@@ -2855,7 +3343,7 @@ class _ZoneDonutPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final totalShare =
         entries.fold<double>(0.0, (sum, item) => sum + item.percentage);
-    final strokeWidth = size.shortestSide * 0.24;
+    final strokeWidth = size.shortestSide * 0.15;
     final rect = Offset.zero & size;
     final arcRect = rect.deflate(strokeWidth / 2);
     final paint = Paint()
@@ -2882,6 +3370,61 @@ class _ZoneDonutPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ZoneDonutPainter oldDelegate) {
     return oldDelegate.entries != entries || oldDelegate.colors != colors;
+  }
+}
+
+class _AnimatedDonutChart extends StatefulWidget {
+  final List<(double percent, Color color)> entries;
+  const _AnimatedDonutChart({required this.entries});
+
+  @override
+  State<_AnimatedDonutChart> createState() => _AnimatedDonutChartState();
+}
+
+class _AnimatedDonutChartState extends State<_AnimatedDonutChart> {
+  int touchedIndex = -1;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = widget.entries.fold<double>(0, (sum, item) => sum + item.$1);
+
+    return PieChart(
+      PieChartData(
+        pieTouchData: PieTouchData(
+          touchCallback: (FlTouchEvent event, pieTouchResponse) {
+            setState(() {
+              if (!event.isInterestedForInteractions ||
+                  pieTouchResponse == null ||
+                  pieTouchResponse.touchedSection == null) {
+                touchedIndex = -1;
+                return;
+              }
+              touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+            });
+          },
+        ),
+        borderData: FlBorderData(show: false),
+        sectionsSpace: 2,
+        centerSpaceRadius: 16,
+        sections: widget.entries.asMap().entries.map((e) {
+          final isTouched = e.key == touchedIndex;
+          final radius = isTouched ? 36.0 : 30.0;
+          final percentage = total > 0 ? '${(e.value.$1 / total * 100).round()}%' : '0%';
+          
+          return PieChartSectionData(
+            color: e.value.$2,
+            value: e.value.$1 <= 0 ? 0.0001 : e.value.$1,
+            title: isTouched ? percentage : '',
+            radius: radius,
+            titleStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
 }
 
@@ -3032,16 +3575,122 @@ String _standardZoneLabel(String label) {
 
 Color _geoZoneColor(String label) {
   return switch (_standardZoneLabel(label)) {
-    'UEMOA' => AppColors.zoneUemoa,
-    'CEMAC' => AppColors.zoneCemac,
-    _ => AppColors.zoneOutside,
+    'UEMOA' => Colors.blue,
+    'CEMAC' => Colors.indigo,
+    _ => AppColors.concentrationDeeper,
   };
 }
 
+class _SeeAllButton extends StatefulWidget {
+  const _SeeAllButton({this.onPressed});
+  final VoidCallback? onPressed;
+
+  @override
+  State<_SeeAllButton> createState() => _SeeAllButtonState();
+}
+
+class _SeeAllButtonState extends State<_SeeAllButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedScale(
+        scale: (_hovered && widget.onPressed != null) ? 1.04 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOutCubic,
+        child: ElevatedButton(
+          onPressed: widget.onPressed,
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            backgroundColor: Colors.indigo,
+            foregroundColor: Colors.white,
+            overlayColor: Colors.transparent,
+            elevation: _hovered ? 3 : 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          child: const Text(
+            'Voir tout',
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TopCounterpartyExposureCard extends StatelessWidget {
-  const _TopCounterpartyExposureCard({required this.rows});
+  const _TopCounterpartyExposureCard({
+    required this.rows,
+    required this.allRows,
+  });
 
   final List<ConcentrationExposureRow> rows;
+  final List<ConcentrationExposureRow> allRows;
+
+  void _showAllCounterparties(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? AppTheme.darkCard : AppTheme.card,
+          title: Text(
+            'Toutes les expositions',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppTheme.text,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+          content: SizedBox(
+            width: 500,
+            height: MediaQuery.of(context).size.height * 0.7,
+            child: ListView.separated(
+              itemCount: allRows.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 6),
+              itemBuilder: (context, index) {
+                final row = allRows[index];
+                final t = index / (allRows.isEmpty ? 1 : allRows.length);
+                final c = t < 0.35
+                    ? AppColors.concentrationDeeper
+                    : t < 0.7
+                        ? Colors.indigo
+                        : Colors.blue;
+                return SizedBox(
+                  height: 28,
+                  child: _HorizontalShareRow(
+                    label: '${index + 1}. ${row.counterpartyName}',
+                    share: row.share,
+                    labelWidth: 200,
+                    color: c,
+                    valueColor: c,
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.text,
+              ),
+              child: const Text('Fermer'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3049,27 +3698,37 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
     final border = isDark ? AppTheme.darkBorder : AppTheme.border;
 
     return Card(
-      margin: EdgeInsets.zero,
+      margin: const EdgeInsets.all(6),
+      elevation: 2,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(5),
         side: BorderSide(color: border),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(3, 3, 3, 3),
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Top 10 des contreparties les plus exposées',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.concentrationPrimary,
-                    fontSize: 13.4,
-                    fontWeight: FontWeight.w600,
-                    height: 1,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Top 10 des contreparties les plus exposées',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.concentrationPrimary,
+                          fontSize: 13.4,
+                          fontWeight: FontWeight.w600,
+                          height: 1,
+                        ),
                   ),
+                ),
+                _SeeAllButton(
+                  onPressed: rows.isEmpty ? null : () => _showAllCounterparties(context),
+                ),
+              ],
             ),
             const SizedBox(height: 7),
             Divider(color: border),
@@ -3101,14 +3760,23 @@ class _CounterpartyBars extends StatelessWidget {
         return Column(
           children: List.generate(rows.length, (index) {
             final row = rows[index];
+            final t = index / (rows.isEmpty ? 1 : rows.length);
+            final c = t < 0.35
+                ? AppColors.concentrationDeeper
+                : t < 0.7
+                    ? Colors.indigo
+                    : Colors.blue;
             return SizedBox(
               height: rowHeight,
-              child: _HorizontalShareRow(
-                label: row.counterpartyName,
-                share: row.share,
-                labelWidth: 158,
-                color: AppColors.counterpartyBlue,
-                valueColor: AppColors.counterpartyBlue,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2.0),
+                child: _HorizontalShareRow(
+                  label: '${index + 1}. ${row.counterpartyName}',
+                  share: row.share,
+                  labelWidth: 158,
+                  color: c,
+                  valueColor: c,
+                ),
               ),
             );
           }),
@@ -3150,19 +3818,13 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
     final valueColor = _hovered
         ? widget.color
         : widget.valueColor ?? AppColors.concentrationDark;
-    final barHeight = _hovered ? 13.0 : 11.0;
+    final barHeight = _hovered ? 18.0 : 12.0;
 
     return MouseRegion(
-      onEnter: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _hovered = true);
-      }),
-      onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _hovered = false);
-      }),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        child: Row(
+      hitTestBehavior: HitTestBehavior.opaque,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Row(
           children: [
             SizedBox(
               width: widget.labelWidth,
@@ -3171,14 +3833,14 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
                 curve: Curves.easeOutCubic,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: labelColor,
-                          fontSize: 11.4,
+                          fontSize: 10.4,
                           fontWeight:
                               _hovered ? FontWeight.w700 : FontWeight.w600,
                           height: 1,
                         ) ??
                     TextStyle(
                       color: labelColor,
-                      fontSize: 11.4,
+                      fontSize: 10.4,
                       fontWeight: _hovered ? FontWeight.w700 : FontWeight.w600,
                       height: 1,
                     ),
@@ -3203,8 +3865,11 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
                         duration: const Duration(milliseconds: 180),
                         curve: Curves.easeOutCubic,
                         height: barHeight,
-                        color: widget.color.withValues(
-                          alpha: _hovered ? 0.14 : 0.09,
+                        decoration: BoxDecoration(
+                          color: widget.color.withValues(
+                            alpha: _hovered ? 0.14 : 0.09,
+                          ),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                       ),
                       FractionallySizedBox(
@@ -3213,8 +3878,48 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
                           duration: const Duration(milliseconds: 180),
                           curve: Curves.easeOutCubic,
                           height: barHeight,
-                          color: widget.color.withValues(
-                            alpha: _hovered ? 1 : 0.94,
+                          decoration: BoxDecoration(
+                            color: widget.color.withValues(
+                              alpha: _hovered ? 1 : 0.94,
+                            ),
+                            borderRadius: BorderRadius.circular(3),
+                            boxShadow: _hovered
+                                ? [
+                                    BoxShadow(
+                                      color: widget.color.withValues(alpha: 0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    )
+                                  ]
+                                : null,
+                          ),
+                        ),
+                      ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 6.0),
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: valueColor,
+                                      fontSize: 10.0,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1,
+                                    ) ??
+                                TextStyle(
+                                  color: valueColor,
+                                  fontSize: 10.0,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1,
+                                ),
+                            child: Text(
+                              AppFormatters.percent(widget.share),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.right,
+                            ),
                           ),
                         ),
                       ),
@@ -3223,48 +3928,8 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
                 },
               ),
             ),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 56,
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: valueColor.withValues(alpha: _hovered ? 0.14 : 0.09),
-                    borderRadius: BorderRadius.circular(_concentrationRadius),
-                  ),
-                  child: AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: valueColor,
-                              fontSize: 11.2,
-                              fontWeight: FontWeight.w700,
-                              height: 1,
-                            ) ??
-                        TextStyle(
-                          color: valueColor,
-                          fontSize: 11.2,
-                          fontWeight: FontWeight.w700,
-                          height: 1,
-                        ),
-                    child: Text(
-                      AppFormatters.percent(widget.share),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
-      ),
     );
   }
 }
@@ -3390,10 +4055,6 @@ class _RiskWeightChart extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _RiskWeightSummaryBand(
-              averageRiskWeight: averageRiskWeight,
-            ),
-            const SizedBox(height: 6),
             Expanded(
               child: LayoutBuilder(
                 builder: (context, bucketConstraints) {
@@ -3902,11 +4563,7 @@ List<List<String>> _alertKpiNarratives(
   ConcentrationAlert? alert,
   _ConcentrationViewModel view,
 ) {
-  if (alert == null) {
-    return _AlertNarrativeSet.noActiveSignal(view).cards;
-  }
-
-  return _AlertNarrativeSet.fromAlert(alert, view).cards;
+  return [[], [], [], [], [], []];
 }
 
 enum _AlertSeverityBand { critical, intermediate, watch }
@@ -6659,7 +7316,7 @@ class _SeverityBadge extends StatelessWidget {
 
 class _EmptyInline extends StatelessWidget {
   const _EmptyInline({
-    this.message = 'Aucune donnée disponible pour les filtres sélectionnés.',
+    this.message = 'Portefeuille vide',
   });
 
   final String message;

@@ -38,6 +38,7 @@ String _resolveDefaultApiBaseUrl() {
 /// Service principal qui orchestre les appels API et les données mockées.
 class RwaApiService {
   RwaApiService({
+    this.useMockData = true,
     String? baseUrl,
     ApiClient? client,
   }) : _client = client ??
@@ -45,7 +46,7 @@ class RwaApiService {
               baseUrl: baseUrl ?? _resolveDefaultApiBaseUrl(),
             );
 
-  final bool useMockData = false;
+  final bool useMockData;
   final ApiClient _client;
   final bool enableOfflineFallback = false;
   final StreamController<int> _portfolioRefreshController =
@@ -396,8 +397,10 @@ class RwaApiService {
 
   void _invalidatePortfolioCaches() {
     _dashboardFuture = null;
+    _expositionsFuture = null;
     _horsBilanFuture = null;
     _crmFuture = null;
+    _reportsFuture = null;
   }
 
   Future<T> _memoizeFuture<T>({
@@ -435,7 +438,7 @@ class RwaApiService {
           return DashboardSnapshot.fromJson(json);
         }
         // En mode démo, on reconstruit un snapshot cohérent à partir des jeux locaux.
-    throw Exception('Mock data removed');
+        return _withDelay(_buildMockDashboard());
       },
     );
   }
@@ -443,7 +446,7 @@ class RwaApiService {
   Future<DashboardSnapshot> updateFondsPropres(
       FondsPropresUpdate update) async {
     if (useMockData) {
-    throw Exception('Mock data removed');
+      return fetchDashboard();
     }
 
     final json = await _client.put(
@@ -483,7 +486,12 @@ class RwaApiService {
 
         final exposures =
             _exposures.map((item) => ExposureRecord.fromJson(item)).toList();
-    throw Exception('Mock data removed');
+        return _withDelay(
+          ExposureModuleData(
+            exposures: exposures,
+            summary: _computeExposureSummary(exposures),
+          ),
+        );
       },
     );
   }
@@ -512,7 +520,8 @@ class RwaApiService {
         }
       }
     }
-    throw Exception('Mock data removed');
+
+    return _withDelay(_nextExposureId());
   }
 
   Future<Uint8List> downloadExposureExcelExport() async {
@@ -601,7 +610,7 @@ class RwaApiService {
   Future<ExposureRecord> updateExposure(ExposureDraft draft) async {
     final id = draft.id;
     if (id == null || id.isEmpty) {
-    throw Exception('Mock data removed');
+      return createExposure(draft);
     }
 
     if (!useMockData) {
@@ -639,7 +648,9 @@ class RwaApiService {
 
     final previewId =
         draft.id?.isNotEmpty == true ? draft.id! : 'PREVIEW_EXPOSITION';
-    throw Exception('Mock data removed');
+    return _withDelay(
+      ExposureRecord.fromJson(_buildExposureMapFromDraft(draft, previewId)),
+    );
   }
 
   Future<Map<String, dynamic>> deleteExposures(
@@ -771,7 +782,7 @@ class RwaApiService {
       'errors': const <Map<String, dynamic>>[],
     };
     _notifyPortfolioChanged();
-    throw Exception('Mock data removed');
+    return _withDelay(response);
   }
 
   Future<Map<String, dynamic>> inspectExposureExcelFile(
@@ -791,7 +802,18 @@ class RwaApiService {
         if (!enableOfflineFallback) rethrow;
       }
     }
-    throw Exception('Mock data removed');
+
+    return _withDelay(<String, dynamic>{
+      'file': filename,
+      'valid': true,
+      'sheet_count': 0,
+      'detected_sheets': const <String>[],
+      'sheets': const <Map<String, dynamic>>[],
+      'errors': const <Map<String, dynamic>>[],
+      'rows_read_by_sheet': const <String, int>{},
+      'duration_ms': 0,
+      'steps_ms': const <String, dynamic>{},
+    });
   }
 
   Future<Map<String, dynamic>> fetchExcelImportSpec() async {
@@ -804,14 +826,22 @@ class RwaApiService {
         if (!enableOfflineFallback) rethrow;
       }
     }
-    throw Exception('Mock data removed');
+
+    return _withDelay(<String, dynamic>{
+      'accepted_extensions': const ['.xlsx'],
+      'sheets': const <Map<String, dynamic>>[],
+      'required_sheet_names': const <String>[],
+      'optional_sheet_names': const <String>[],
+      'notes': const <String>[],
+    });
   }
 
   Future<Uint8List> downloadExcelImportTemplate() async {
     if (!useMockData) {
       return _client.getBytes('/expositions/import/template');
     }
-    throw Exception('Mock data removed');
+
+    return _withDelay(Uint8List(0));
   }
 
   Future<OffBalanceModuleData> fetchHorsBilanModule() async {
@@ -839,7 +869,12 @@ class RwaApiService {
         // Les données mock sont converties avant agrégation pour rester proches du mode réel.
         final items =
             _offBalance.map((item) => OffBalanceRecord.fromJson(item)).toList();
-    throw Exception('Mock data removed');
+        return _withDelay(
+          OffBalanceModuleData(
+            items: items,
+            summary: _computeOffBalanceSummary(items),
+          ),
+        );
       },
     );
   }
@@ -939,7 +974,9 @@ class RwaApiService {
                   ) /
                   items.length,
         );
-    throw Exception('Mock data removed');
+        return _withDelay(
+          CrmModuleData(highlight: highlight, items: items, summary: summary),
+        );
       },
     );
   }
@@ -957,7 +994,15 @@ class RwaApiService {
         }
 
         // Les trois tables sont servies ensemble car elles alimentent tous les écrans métiers.
-    throw Exception('Mock data removed');
+        return _withDelay(
+          ReferentielsModuleData(
+            riskWeights: _riskWeights
+                .map((item) => RiskWeightRow.fromJson(item))
+                .toList(),
+            ccfTable: _ccfTable.map((item) => CcfRow.fromJson(item)).toList(),
+            ratings: _ratings.map((item) => RatingRow.fromJson(item)).toList(),
+          ),
+        );
       },
     );
   }
@@ -978,7 +1023,13 @@ class RwaApiService {
                 .toList(),
           );
         }
-    throw Exception('Mock data removed');
+
+        return _withDelay(
+          ReportsModuleData(
+            reports:
+                _reports.map((item) => ReportRecord.fromJson(item)).toList(),
+          ),
+        );
       },
     );
   }
@@ -986,6 +1037,7 @@ class RwaApiService {
   Future<void> generateReport(ReportDraft draft) async {
     if (!useMockData) {
       await _client.post('/rapports', draft.toJson());
+      _reportsFuture = null;
       return;
     }
 
@@ -1030,6 +1082,7 @@ class RwaApiService {
       'exports': {'pdf': '/exports/$id.pdf', 'excel': '/exports/$id.xlsx'},
       'lines': draft.reportType == 'Detaille' ? lines : lines.take(5).toList(),
     });
+    _reportsFuture = null;
   }
 
   DashboardSnapshot _buildMockDashboard() {
@@ -1077,8 +1130,6 @@ class RwaApiService {
       'solvabilite': solvencyRatio,
       'cet1_ratio': rwa == 0 ? 0.0 : (ownFunds * 0.75) / rwa,
       'tier1_ratio': rwa == 0 ? 0.0 : (ownFunds * 0.85) / rwa,
-      'tier2_ratio': rwa == 0 ? 0.0 : (ownFunds * 0.15) / rwa,
-      'ratio_levier': gross == 0 ? 0.0 : (ownFunds * 0.85) / gross,
       'crm': coveredExposureRatio,
     };
 
@@ -1200,18 +1251,6 @@ class RwaApiService {
           label: 'Ratio Tier 1',
           value: metricValues['tier1_ratio']!,
           growthRate: 0.004,
-        ),
-        _buildMetric(
-          key: 'tier2_ratio',
-          label: 'Ratio Tier 2',
-          value: metricValues['tier2_ratio']!,
-          growthRate: 0.003,
-        ),
-        _buildMetric(
-          key: 'ratio_levier',
-          label: 'Ratio de Levier',
-          value: metricValues['ratio_levier']!,
-          growthRate: 0.002,
         ),
         _buildMetric(
           key: 'crm',

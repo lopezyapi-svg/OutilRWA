@@ -14,6 +14,7 @@ class DashboardTopMetricsGrid extends StatelessWidget {
     required this.capitalMetric,
     required this.residualRiskMetric,
     required this.defaultRateMetric,
+    required this.exposuresCount,
   });
 
   final DashboardMetric grossMetric;
@@ -21,6 +22,7 @@ class DashboardTopMetricsGrid extends StatelessWidget {
   final DashboardMetric capitalMetric;
   final DashboardMetric residualRiskMetric;
   final DashboardMetric defaultRateMetric;
+  final int exposuresCount;
 
   @override
   Widget build(BuildContext context) {
@@ -29,10 +31,10 @@ class DashboardTopMetricsGrid extends StatelessWidget {
         label: 'Exposition brute',
         value: grossMetric.value,
         isCurrency: true,
-        subtitle: 'Nombre d\'expositions : 18',
+        subtitle: 'Nombre d\'expositions : $exposuresCount',
       ),
       _MinimalMetricCard(
-        label: 'RWA Total',
+        label: 'RWA Crédit',
         value: rwaMetric.value,
         isCurrency: true,
         subtitle: 'EAD × RW (Taux de pondération)',
@@ -41,7 +43,7 @@ class DashboardTopMetricsGrid extends StatelessWidget {
         label: 'Capital requis',
         value: capitalMetric.value,
         isCurrency: true,
-        subtitle: 'RWA × Taux minimum (ex: 8%)',
+        subtitle: 'RWA × Taux minimum (ex: 9%)',
       ),
       _MinimalMetricCard(
         label: 'Risque résiduel',
@@ -155,7 +157,6 @@ class _MinimalMetricCardState extends State<_MinimalMetricCard> {
                 style: DashText.hero(c, size: 20),
               ),
               if (suffix.isNotEmpty) ...[
-                const SizedBox(width: 4),
                 Text(
                   suffix,
                   style: DashText.caption(c, color: c.muted).copyWith(fontWeight: FontWeight.w600, fontSize: 12),
@@ -167,7 +168,7 @@ class _MinimalMetricCardState extends State<_MinimalMetricCard> {
             const Spacer(),
             Text(
               widget.subtitle!,
-              style: DashText.caption(c, color: Colors.indigo.shade900).copyWith(
+              style: DashText.caption(c, color: c.muted).copyWith(
                 fontSize: 10,
               ),
               maxLines: 1,

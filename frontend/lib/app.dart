@@ -23,6 +23,7 @@ import 'modules/garanties/screens/garanties_screen.dart';
 import 'modules/hors_bilan/screens/hors_bilan_screen.dart';
 import 'modules/icap/screens/icap_screen.dart';
 import 'modules/icap/screens/icap_uemoa_cemac_screen.dart';
+import 'modules/importations/screens/importations_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/reporting_credit/screens/reporting_credit_screen.dart';
 import 'modules/risque_credit_shared/models/credit_risk_models.dart';
@@ -47,7 +48,7 @@ class RwaApp extends StatefulWidget {
 
 /// Etat interne qui mémorise le module courant et le mode de thème.
 class _RwaAppState extends State<RwaApp> {
-  final RwaApiService _api = RwaApiService(useMockData: false);
+  final RwaApiService _api = RwaApiService();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final ValueNotifier<String> _portfolioDisplayCurrency = ValueNotifier<String>(
     'XOF',
@@ -220,6 +221,7 @@ class _RwaAppState extends State<RwaApp> {
 
   Widget _screenFor(AppModule module) {
     return switch (module) {
+      AppModule.importations => ImportationsScreen(api: _api),
       AppModule.vueEnsemble => VueEnsembleScreen(
           api: _api,
           onNavigateToModule: _selectModule,
