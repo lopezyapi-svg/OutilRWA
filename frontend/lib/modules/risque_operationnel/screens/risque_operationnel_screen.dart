@@ -67,6 +67,17 @@ String _roAmount(BuildContext context, double value) {
   return '$sign${AppFormatters.decimalNumber(abs, maxDecimals: 0)} FCFA';
 }
 
+/// Formate un pourcentage avec 1 décimale, sauf si celle-ci est un 0 : dans ce
+/// cas on repasse à 2 décimales pour ne pas masquer une petite valeur non nulle
+/// (ex. "0.0 %" devient "0.04 %").
+String _roPct(double value) {
+  final oneDecimal = value.toStringAsFixed(1);
+  if (oneDecimal.endsWith('.0')) {
+    return value.toStringAsFixed(2);
+  }
+  return oneDecimal;
+}
+
 /// Assombrit une couleur de statut trop claire (ex. l'orange d'alerte) pour
 /// que les chiffres des cartes du dashboard restent bien lisibles sur fond
 /// clair — la teinte est conservée, seule la luminosité est réduite.
@@ -1088,7 +1099,7 @@ class _RoDashSummaryItemState extends State<_RoDashSummaryItem> {
                 color: widget.accentColor == _kSuccess ||
                         widget.accentColor == _kWarning ||
                         widget.accentColor == _kDanger
-                    ? _roReadable(widget.accentColor)
+                    ? widget.accentColor
                     : c.ink,
               ),
               maxLines: 1,
@@ -1097,7 +1108,7 @@ class _RoDashSummaryItemState extends State<_RoDashSummaryItem> {
             const SizedBox(height: 6),
             Text(
               widget.label,
-              style: DashText.caption(c, color: _roReadable(c.muted)),
+              style: DashText.caption(c, color: c.muted),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1258,7 +1269,7 @@ class _RoHeroStatCardState extends State<_RoHeroStatCard> {
               const Spacer(),
               Text(
                 widget.subtitle!,
-                style: DashText.caption(c, color: _roReadable(c.muted)),
+                style: DashText.caption(c, color: c.muted),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -4215,7 +4226,7 @@ class _RisqueListItem extends StatelessWidget {
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: lc, height: 1.0)),
               ),
               const SizedBox(height: 3),
-              Text('P×I', style: TextStyle(fontSize: 8, color: lc.withValues(alpha: 0.7),
+              Text('P×I', style: TextStyle(fontSize: 8, color: lc.withValues(alpha: 1.0),
                 fontWeight: FontWeight.w700)),
             ]),
           ),
@@ -4245,11 +4256,11 @@ class _RisqueListItem extends StatelessWidget {
                     _metricTile('P', '${r.probabilite}', _kWarning),
                     Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
                       child: Text('×', style: TextStyle(fontSize: 12,
-                        color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 0.7)))),
+                        color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 1.0)))),
                     _metricTile('I', '${r.impact}', const Color(0xFFF97316)),
                     Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
                       child: Text('=', style: TextStyle(fontSize: 12,
-                        color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 0.7)))),
+                        color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 1.0)))),
                     _metricTile('Score', '$score', lc),
                     const SizedBox(width: 14),
                     Icon(Icons.arrow_forward_ios_rounded, size: 9, color: _kMuted.withValues(alpha: 0.4)),
@@ -4308,7 +4319,7 @@ class _RisqueListItem extends StatelessWidget {
     ),
     child: RichText(
       text: TextSpan(children: [
-        TextSpan(text: '$lbl:', style: TextStyle(fontSize: 9, color: color.withValues(alpha: 0.65),
+        TextSpan(text: '$lbl:', style: TextStyle(fontSize: 9, color: color.withValues(alpha: 1.0),
           fontWeight: FontWeight.w500)),
         TextSpan(text: val, style: TextStyle(fontSize: 11.5, color: color, fontWeight: FontWeight.w800)),
       ]),
@@ -7942,7 +7953,7 @@ class _RegistreViewState extends State<_RegistreView> {
           const SizedBox(height: 6),
           Text(subtitle, style: TextStyle(color: muted, fontSize: 11)),
           const SizedBox(height: 10),
-          Text('Section en cours de développement', style: TextStyle(color: muted.withValues(alpha: 0.6), fontSize: 11, fontStyle: FontStyle.italic)),
+          Text('Section en cours de développement', style: TextStyle(color: muted.withValues(alpha: 1.0), fontSize: 11, fontStyle: FontStyle.italic)),
         ],
       ),
     );
@@ -9024,7 +9035,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
                 'Entrez le PNB (Produit Net Bancaire) pour chacune des 3 années. '
                 'Le système appliquera les règles CRR3 (ILDC, SC, FC, BI, BIC) et la méthode BIA (15 % × PNB moyen). '
                 'Pour saisir le détail des composantes, utilisez l\'onglet CCR3.',
-                style: TextStyle(fontSize: 11, color: const Color(0xFF0891B2).withValues(alpha: 0.85)),
+                style: TextStyle(fontSize: 11, color: const Color(0xFF0891B2).withValues(alpha: 1.0)),
               ),
             ),
           ]),
@@ -9969,7 +9980,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
   Color get _card   => _dk ? const Color(0xFF101C32) : const Color(0xFFF6F9FF);
   Color get _surf   => _dk ? const Color(0xFF0D1A2E) : Colors.white;
   Color get _txt    => _dk ? Colors.white : const Color(0xFF1F2937);
-  Color get _muted  => _dk ? const Color(0xFFC3D3EB) : const Color(0xFF374151);
+  Color get _muted  => _dk ? const Color(0xFFC7D5EA) : const Color(0xFF3F4C5E);
 
   static const _kAccent = Color(0xFF2563EB);
   static const _kGreen  = Color(0xFF14A44D);
@@ -10103,20 +10114,6 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             tab(3, Icons.tune_outlined, 'Paramètres'),
           ],
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: Colors.orange.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
-            ),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.info_outline, size: 11, color: Colors.orange),
-              SizedBox(width: 4),
-              Text('Pilotage interne — pas de seuils BCEAO publiés',
-                style: TextStyle(fontSize: 10, color: Colors.orange, fontWeight: FontWeight.w600)),
-            ]),
-          ),
         ],
       ),
     );
@@ -10505,12 +10502,12 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               SizedBox(width: side, child: _buildComparBarCard(
                 'OFR — CRR3 vs BIA',
-                [('OFR CRR3', r.ofrCrr3, _kAccent), ('OFR BIA', r.ofrBia, const Color(0xFF94A3B8))],
+                [('OFR CRR3', r.ofrCrr3, _kAccent), ('OFR BIA', r.ofrBia, const Color(0xFF475569))],
               )),
               const SizedBox(width: 12),
               SizedBox(width: side, child: _buildComparBarCard(
                 'REA — CRR3 vs BIA',
-                [('REA CRR3', r.reaCrr3, _kAccent), ('REA BIA', r.reaBia, const Color(0xFF94A3B8))],
+                [('REA CRR3', r.reaCrr3, _kAccent), ('REA BIA', r.reaBia, const Color(0xFF475569))],
               )),
             ]);
           }),
@@ -10635,7 +10632,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                     TextSpan(text: lbl,
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c)),
                     TextSpan(
-                        text: '  ${_roAmount(context, v)}  (${(v / total * 100).toStringAsFixed(1)} %)',
+                        text: '  ${_roAmount(context, v)}  (${_roPct(v / total * 100)} %)',
                         style: TextStyle(fontSize: 10.5, color: _muted)),
                   ])),
                 ),
@@ -10807,13 +10804,13 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                 left: (s1Rel * w - 12).clamp(0, w - 24),
                 child: Text('S1', style: TextStyle(
                     fontSize: 9.5, fontWeight: FontWeight.w700,
-                    color: Colors.orange.shade800)),
+                    color: Colors.orange.withValues(alpha: 1.0))),
               ),
               Positioned(
                 left: (s2Rel * w - 12).clamp(0, w - 24),
                 child: Text('S2', style: TextStyle(
                     fontSize: 9.5, fontWeight: FontWeight.w700,
-                    color: _kRed)),
+                    color: _kRed.withValues(alpha: 1.0))),
               ),
             ]);
           }),
@@ -10826,7 +10823,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             RichText(text: TextSpan(children: [
               TextSpan(text: 'BI = ${_roAmount(context, bi)}',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: biColor)),
-              TextSpan(text: '  —  Tranche $t  (${(biRel / (t == 1 ? s1Rel : t == 2 ? s2Rel : 1) * 100).toStringAsFixed(1)} % du seuil)',
+              TextSpan(text: '  —  Tranche $t  (${_roPct(biRel / (t == 1 ? s1Rel : t == 2 ? s2Rel : 1) * 100)} % du seuil)',
                   style: TextStyle(fontSize: 11, color: _muted)),
             ])),
           ]),
@@ -11048,7 +11045,7 @@ class _BicBarPainter extends CustomPainter {
       final tickVal = maxV * i / 4;
       _paintLabel(canvas, _shortNum(tickVal),
           Offset(0, y - 6), chartL - 4, TextAlign.right,
-          mutedColor, 8.5);
+          mutedColor.withValues(alpha: 1.0), 8.5);
     }
 
     // Barres
@@ -11076,7 +11073,7 @@ class _BicBarPainter extends CustomPainter {
       _paintLabel(canvas, lbl,
           Offset(centerX - groupW * 0.45, chartB + 6),
           groupW * 0.9, TextAlign.center,
-          mutedColor, 9.0);
+          mutedColor.withValues(alpha: 1.0), 9.0);
     }
   }
 
@@ -11727,12 +11724,12 @@ class _RoRiskMatrix extends StatelessWidget {
                                       color: c, height: 1.0)),
                                   Text('risque${cnt > 1 ? 's' : ''}',
                                     style: TextStyle(fontSize: 7,
-                                      color: c.withValues(alpha: 0.72),
+                                      color: c.withValues(alpha: 1.0),
                                       fontWeight: FontWeight.w700, letterSpacing: -0.2)),
                                 ])
                               : Text('$score',
                                   style: TextStyle(fontSize: 10,
-                                    color: c.withValues(alpha: isDark ? 0.40 : 0.25),
+                                    color: c.withValues(alpha: 1.0),
                                     fontWeight: FontWeight.w700)),
                         ),
                       ),
