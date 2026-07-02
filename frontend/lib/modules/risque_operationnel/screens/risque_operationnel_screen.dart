@@ -11,6 +11,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
@@ -50,21 +51,14 @@ const _kWarning = AppTheme.warning;
 const _kDanger = AppTheme.danger;
 const _kMuted = AppTheme.muted;
 
-/// Formate un montant FCFA avec les mêmes unités que le Dashboard Crédit
-/// (M / Md), choisies automatiquement selon l'ordre de grandeur du chiffre :
-/// un montant en millions s'affiche en M, un montant en milliards en Md.
+/// Formate un montant FCFA avec la même unité (M / Md) que le sélecteur
+/// global du Dashboard Crédit (en haut à droite de l'application) : l'unité
+/// n'est pas déduite automatiquement, elle suit le choix de l'utilisateur.
 String _roAmount(BuildContext context, double value) {
-  final abs = value.abs();
+  final unit = PortfolioAmountUnitScope.maybeOf(context);
   final sign = value < 0 ? '-' : '';
-  if (abs >= PortfolioAmountUnit.billion.divisor) {
-    return '$sign${AppFormatters.decimalNumber(abs / PortfolioAmountUnit.billion.divisor, maxDecimals: 2)} '
-        '${PortfolioAmountUnit.billion.label}';
-  }
-  if (abs >= PortfolioAmountUnit.million.divisor) {
-    return '$sign${AppFormatters.decimalNumber(abs / PortfolioAmountUnit.million.divisor, maxDecimals: 2)} '
-        '${PortfolioAmountUnit.million.label}';
-  }
-  return '$sign${AppFormatters.decimalNumber(abs, maxDecimals: 0)} FCFA';
+  final scaled = value.abs() / unit.divisor;
+  return '$sign${AppFormatters.decimalNumber(scaled, maxDecimals: 2)} ${unit.label}';
 }
 
 /// Formate un pourcentage avec 1 décimale, sauf si celle-ci est un 0 : dans ce
@@ -10788,6 +10782,50 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     // Couleur de la position selon la tranche active
     final biColor = t == 1 ? _kGreen : t == 2 ? Colors.orange : _kRed;
 
+    Widget trancheRow(String label, double pct, Color color, double zoneStart, double zoneEnd) {
+      final start = zoneStart.clamp(0.0, 1.0);
+      final end = zoneEnd.clamp(0.0, 1.0);
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Row(children: [
+          SizedBox(
+            width: 64,
+            child: Text('$label (${pct.toStringAsFixed(0)} %)',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          ),
+          Expanded(
+            child: LayoutBuilder(builder: (_, bc) {
+              final w = bc.maxWidth;
+              return SizedBox(
+                height: 16,
+                child: Stack(clipBehavior: Clip.none, children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: Container(color: _border.withValues(alpha: 0.5)),
+                  ),
+                  if (end > start)
+                    Positioned(
+                      left: start * w,
+                      width: (end - start) * w,
+                      top: 0, bottom: 0,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: Container(color: color),
+                      ),
+                    ),
+                  Positioned(
+                    left: (biRel * w - 1).clamp(0.0, w - 2),
+                    top: 0, bottom: 0,
+                    child: Container(width: 2, color: _kRed),
+                  ),
+                ]),
+              );
+            }),
+          ),
+        ]),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -10797,102 +10835,34 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Position du BI dans la grille de tranches',
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _txt)),
-          const SizedBox(height: 12),
-          // Barre de position
-          LayoutBuilder(builder: (_, bc) {
-            final w = bc.maxWidth;
-            return Stack(clipBehavior: Clip.none, children: [
-              // Fond 3 zones colorées
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: SizedBox(
-                  height: 18,
-                  child: Row(children: [
-                    Expanded(
-                      flex: (s1Rel * 10000).round().clamp(1, 10000),
-                      child: Container(color: _kGreen.withValues(alpha: 0.18)),
-                    ),
-                    Expanded(
-                      flex: ((s2Rel - s1Rel) * 10000).round().clamp(1, 10000),
-                      child: Container(color: Colors.orange.withValues(alpha: 0.18)),
-                    ),
-                    Expanded(
-                      flex: ((1 - s2Rel) * 10000).round().clamp(1, 10000),
-                      child: Container(color: _kRed.withValues(alpha: 0.18)),
-                    ),
-                  ]),
-                ),
-              ),
-              // Marqueur S1
-              Positioned(
-                left: s1Rel * w - 1,
-                top: 0, height: 18,
-                child: Container(width: 2, color: Colors.orange.withValues(alpha: 0.7)),
-              ),
-              // Marqueur S2
-              Positioned(
-                left: s2Rel * w - 1,
-                top: 0, height: 18,
-                child: Container(width: 2, color: _kRed.withValues(alpha: 0.7)),
-              ),
-              // Position BI
-              Positioned(
-                left: (biRel * w - 8).clamp(0, w - 16),
-                top: -5,
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Container(
-                    width: 16, height: 16,
-                    decoration: BoxDecoration(
-                      color: biColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [BoxShadow(
-                        color: biColor.withValues(alpha: 0.4),
-                        blurRadius: 4, spreadRadius: 1,
-                      )],
-                    ),
-                  ),
-                ]),
-              ),
-            ]);
-          }),
-          const SizedBox(height: 18),
-          // Étiquettes S1, S2
-          LayoutBuilder(builder: (_, bc) {
-            final w = bc.maxWidth;
-            return Stack(children: [
-              SizedBox(width: w, height: 14),
-              Positioned(
-                left: (s1Rel * w - 12).clamp(0, w - 24),
-                child: Text('S1', style: TextStyle(
-                    fontSize: 9.5, fontWeight: FontWeight.w700,
-                    color: Colors.orange.withValues(alpha: 1.0))),
-              ),
-              Positioned(
-                left: (s2Rel * w - 12).clamp(0, w - 24),
-                child: Text('S2', style: TextStyle(
-                    fontSize: 9.5, fontWeight: FontWeight.w700,
-                    color: _kRed.withValues(alpha: 1.0))),
-              ),
-            ]);
-          }),
-          const SizedBox(height: 10),
-          // Texte récapitulatif
           Row(children: [
-            Container(width: 10, height: 10,
-                decoration: BoxDecoration(color: biColor, shape: BoxShape.circle)),
+            Expanded(child: Text('Position Tranche BIC',
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _txt))),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: biColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text('Tranche $t active',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: biColor)),
+            ),
+          ]),
+          const SizedBox(height: 4),
+          Text('BI = ${_roAmount(context, bi)}  •  Seuils : ${_roAmount(context, s1)} / ${_roAmount(context, s2)}',
+              style: TextStyle(fontSize: 11, color: _muted)),
+          const SizedBox(height: 16),
+          trancheRow('T1', r.params.coefTranche1 * 100, _kGreen, 0, s1Rel),
+          trancheRow('T2', r.params.coefTranche2 * 100, Colors.orange, s1Rel, s2Rel),
+          trancheRow('T3', r.params.coefTranche3 * 100, _kRed, s2Rel, 1.0),
+          const SizedBox(height: 6),
+          Row(children: [
+            Container(width: 10, height: 10, color: _kRed),
             const SizedBox(width: 6),
-            RichText(text: TextSpan(children: [
-              TextSpan(text: 'BI = ${_roAmount(context, bi)}',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: biColor)),
-              TextSpan(text: '  —  Tranche $t  (${_roPct(biRel / (t == 1 ? s1Rel : t == 2 ? s2Rel : 1) * 100)} % du seuil)',
-                  style: TextStyle(fontSize: 11, color: _muted)),
-            ])),
+            Text('Position BI actuelle', style: TextStyle(fontSize: 10.5, color: _muted)),
           ]),
           if (marge != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Row(children: [
               Icon(Icons.arrow_forward_outlined, size: 12, color: _muted),
               const SizedBox(width: 5),
@@ -10900,7 +10870,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                   style: TextStyle(fontSize: 11, color: _muted)),
             ]),
           ] else ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             const Row(children: [
               Icon(Icons.warning_amber_rounded, size: 12, color: _kRed),
               SizedBox(width: 5),
@@ -10908,23 +10878,12 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                   style: TextStyle(fontSize: 11, color: _kRed, fontWeight: FontWeight.w600)),
             ]),
           ],
-          const SizedBox(height: 8),
-          // Légende zones
-          Row(children: [
-            _arDot(_kGreen), const SizedBox(width: 4),
-            Text('Tranche 1  (≤ S1)', style: TextStyle(fontSize: 10.5, color: _muted)),
-            const SizedBox(width: 12),
-            _arDot(Colors.orange), const SizedBox(width: 4),
-            Text('Tranche 2  (S1–S2)', style: TextStyle(fontSize: 10.5, color: _muted)),
-            const SizedBox(width: 12),
-            _arDot(_kRed), const SizedBox(width: 4),
-            Text('Tranche 3  (> S2)', style: TextStyle(fontSize: 10.5, color: _muted)),
-          ]),
         ],
       ),
     );
   }
 
+  // ignore: unused_element
   Widget _arDot(Color c) => Container(
     width: 8, height: 8,
     decoration: BoxDecoration(color: c, shape: BoxShape.circle),
