@@ -881,7 +881,7 @@ class ExcelRepository:
             )
         )
         capital = 0.0 if is_off_balance else (
-            capital_amount if capital_amount is not None else round(rwa * 0.08, 2)
+            capital_amount if capital_amount is not None else round(rwa * 0.09, 2)
         )
         crm_coverage_percent = _as_float(metadata.get("crm_coverage_percent"))
         crm_mode = _crm_mode_from_type(crm_type)
@@ -1039,7 +1039,7 @@ class ExcelRepository:
             )
             if rwa <= 0:
                 rwa = round(ead * risk_weight, 2)
-            capital = round(rwa * 0.08, 2)
+            capital = round(rwa * 0.09, 2)
             commitment_id = f"HB{index:03d}"
             rows.append(
                 {
@@ -1113,8 +1113,8 @@ class ExcelRepository:
                 )
             rwa_before = round(ead * borrower_rw, 2)
             rwa_after = round(ead * final_rw, 2)
-            capital_before = round(rwa_before * 0.08, 2)
-            capital_after = round(rwa_after * 0.08, 2)
+            capital_before = round(rwa_before * 0.09, 2)
+            capital_after = round(rwa_after * 0.09, 2)
 
             items.append(
                 {

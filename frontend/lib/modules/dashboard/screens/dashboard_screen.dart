@@ -7,10 +7,8 @@ import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/currency_conversion.dart';
 import '../models/dashboard_models.dart';
 import '../widgets/dashboard_header.dart';
-import '../../../shared/widgets/kpi_metric_card.dart';
 import '../widgets/dashboard_charts_section.dart';
 import '../widgets/dashboard_crr3_key_expectations.dart';
 import '../widgets/dashboard_top_metrics_grid.dart';
@@ -32,7 +30,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   late Future<DashboardSnapshot> _future;
   StreamSubscription<int>? _portfolioRefreshSubscription;
-  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -59,20 +56,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return widget.api.fetchDashboard();
   }
 
-  Future<void> _pickReferenceDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
-      helpText: context.tr('Choisir une date de reférence'),
-    );
-
-    if (picked != null) {
-      setState(() => _selectedDate = picked);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<DashboardSnapshot>(
@@ -94,25 +77,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final metrics = {
           for (final metric in data.metrics) metric.key: metric,
         };
-        final rwaMetric = _metric(metrics, 'rwa');
+        final double rwaCredit = data.portfolioOverview.fold(0.0, (sum, row) => sum + row.rwa);
+        final rwaMetric = DashboardMetric(key: 'rwa', label: 'RWA Total', value: rwaCredit, variation: '', trend: []);
         final grossMetric = _metric(metrics, 'encours');
         final defaultRateMetric = _metric(metrics, 'taux_defaut');
-        final capitalMetric = _metric(metrics, 'capital');
+        final capitalMetric = DashboardMetric(key: 'capital', label: 'Capital', value: rwaMetric.value * 0.09, variation: '', trend: []);
         final residualRiskMetric = _metric(metrics, 'risque_residuel');
-        final solvMetric = _metric(metrics, 'solvabilite');
         final crmMetric = _metric(metrics, 'crm');
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
                 AppTheme.pagePadding,
                 AppTheme.pagePadding,
                 AppTheme.pagePadding,
                 0,
               ),
-              child: DashboardHeader(),
+              child: DashboardHeader(
+                onReload: () {
+                  setState(() {
+                    _future = widget.api.fetchDashboard(forceRefresh: true);
+                  });
+                },
+              ),
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -131,6 +120,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       capitalMetric: capitalMetric,
                       residualRiskMetric: residualRiskMetric,
                       defaultRateMetric: defaultRateMetric,
+                      exposuresCount: data.portfolioOverview.length,
                     ),
                     const SizedBox(height: AppTheme.pageGap),
                     DashboardCrr3KeyExpectations(
@@ -214,16 +204,6 @@ DashboardMetric _metric(Map<String, DashboardMetric> metrics, String key) {
         variation: '+0.0%',
         trend: const [0, 0, 0, 0],
       );
-}
-
-String _dashboardKpiCurrencyValue(double value, String displayCurrency) {
-  final converted = convertCurrencyAmount(
-    value,
-    fromCurrency: 'XOF',
-    toCurrency: displayCurrency,
-  );
-  final amountUnit = PortfolioAmountUnitPreference.current;
-  return '${_dashboardScaledNumber(converted / amountUnit.divisor)}${amountUnit.label == "" ? "" : " ${amountUnit.label}"}';
 }
 
 String _dashboardScaledNumber(double value) {

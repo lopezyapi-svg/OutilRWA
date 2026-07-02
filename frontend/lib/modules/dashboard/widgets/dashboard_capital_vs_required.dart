@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/state/portfolio_amount_unit_scope.dart';
+import '../../../core/utils/formatters.dart';
 import 'dashboard_design.dart';
 
 /// Capital détenu vs capital requis, par strate de fonds propres.
@@ -12,11 +14,12 @@ class DashboardCapitalVsRequired extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
 
     return DashPanel(
       height: 300,
       title: 'Capital détenu vs capital requis',
-      unit: 'En milliards FCFA',
+      unit: 'En ${amountUnit.label} FCFA',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -28,11 +31,11 @@ class DashboardCapitalVsRequired extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          _row(c, 'CET1', held: 120, requiredAmt: 80),
+          _row(c, 'CET1', held: 120 * 1e9, requiredAmt: 80 * 1e9, unit: amountUnit),
           const SizedBox(height: 16),
-          _row(c, 'Tier 1', held: 135, requiredAmt: 95),
+          _row(c, 'Tier 1', held: 135 * 1e9, requiredAmt: 95 * 1e9, unit: amountUnit),
           const SizedBox(height: 16),
-          _row(c, 'Total FP', held: 180, requiredAmt: 120),
+          _row(c, 'Total FP', held: 180 * 1e9, requiredAmt: 120 * 1e9, unit: amountUnit),
           const Spacer(),
         ],
       ),
@@ -59,10 +62,16 @@ class DashboardCapitalVsRequired extends StatelessWidget {
     String label, {
     required double held,
     required double requiredAmt,
+    required PortfolioAmountUnit unit,
   }) {
-    const maxVal = 200.0;
-    final surplus = held - requiredAmt;
-    final surplusPct = requiredAmt > 0 ? surplus / requiredAmt * 100 : 0;
+    // Determine a reasonable max relative to the unit, scaled to 200B for the mock 
+    final maxValRaw = 200.0 * 1e9;
+    final maxVal = maxValRaw / unit.divisor;
+    final heldVal = held / unit.divisor;
+    final reqVal = requiredAmt / unit.divisor;
+
+    final surplus = heldVal - reqVal;
+    final surplusPct = reqVal > 0 ? surplus / reqVal * 100 : 0;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -82,9 +91,9 @@ class DashboardCapitalVsRequired extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _bar(c, c.navy, held, maxVal, track),
+                  _bar(c, c.navy, heldVal, maxVal, track),
                   const SizedBox(height: 5),
-                  _bar(c, c.ramp[3], requiredAmt, maxVal, track),
+                  _bar(c, c.ramp[3], reqVal, maxVal, track),
                 ],
               );
             },
@@ -98,17 +107,17 @@ class DashboardCapitalVsRequired extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '+${surplus.toInt()} Md',
+                '+${AppFormatters.compactNumber(surplus)} ${unit.label}',
                 style: DashText.value(c, color: c.conforme),
               ),
               const SizedBox(height: 2),
               Text(
-                '+${surplusPct.toStringAsFixed(0)}%',
+                '+${surplusPct.toStringAsFixed(1)}%',
                 style: TextStyle(
                   fontSize: 10.5,
                   color: c.muted,
                   fontWeight: FontWeight.w500,
-                  fontFeatures: Dash.tabular,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ],
@@ -125,7 +134,7 @@ class DashboardCapitalVsRequired extends StatelessWidget {
     double maxVal,
     double track,
   ) {
-    final w = (value / maxVal) * track;
+    final w = maxVal > 0 ? (value / maxVal) * track : 0.0;
     return Row(
       children: [
         if (w > 0)
@@ -142,10 +151,11 @@ class DashboardCapitalVsRequired extends StatelessWidget {
           ),
         const SizedBox(width: 8),
         Text(
-          value.toInt().toString(),
+          AppFormatters.compactNumber(value),
           style: DashText.value(c, color: c.ink, weight: FontWeight.w600),
         ),
       ],
     );
   }
 }
+

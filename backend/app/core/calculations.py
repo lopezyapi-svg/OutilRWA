@@ -18,7 +18,7 @@ MIN_SOLVENCY_RATIO = 0.09  # 9% - Ratio de solvabilité total (CAR)
 MIN_LEVERAGE_RATIO = 0.03  # 3% - Ratio de levier
 
 # Ratio de capital par défaut (8% Bâle standard)
-DEFAULT_CAPITAL_RATIO = 0.08
+DEFAULT_CAPITAL_RATIO = 0.09
 
 # Seuils de concentration (HHI - Herfindahl-Hirschman Index)
 HHI_LOW_CONCENTRATION = 0.15  # Concentration faible
@@ -247,7 +247,7 @@ def calculate_cet1_ratio(cet1_capital: float, rwa: float) -> float:
         rwa: total des actifs pondérés par les risques.
 
     Sortie:
-        Le ratio CET1 exprimé en décimal (ex: 0.08 pour 8%).
+        Le ratio CET1 exprimé en décimal (ex: 0.09 pour 9%).
         Retourne 0.0 si RWA est nul.
 
     Exemple:

@@ -37,7 +37,7 @@ class Settings:
 
     app_name: str = "Risk management API"
     app_version: str = "0.1.0"
-    capital_ratio: float = 0.08
+    capital_ratio: float = 0.09
     yield_curve_ai_endpoint: str = os.getenv("YIELD_CURVE_AI_ENDPOINT", "")
     yield_curve_ai_api_key: str = os.getenv(
         "YIELD_CURVE_AI_API_KEY",

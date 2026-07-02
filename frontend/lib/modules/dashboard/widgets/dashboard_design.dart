@@ -284,8 +284,8 @@ class DashPanel extends StatelessWidget {
                       style: DashText.eyebrow(
                         c,
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFF818CF8)
-                            : const Color(0xFF3730A3),
+                            ? Colors.blue.shade400
+                            : c.navy,
                       ),
                     ),
                   ),

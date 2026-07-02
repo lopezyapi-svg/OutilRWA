@@ -55,14 +55,15 @@ extension _MarketImportScopeX on _MarketImportScope {
       };
 }
 
-Future<void> showMarketDataImportDialog(BuildContext context) async {
+Future<bool> showMarketDataImportDialog(BuildContext context) async {
   final successResult = await showDialog<_MarketImportSuccessPayload>(
     context: context,
     barrierDismissible: false,
     builder: (context) => const _MarketDataImportDialog(),
   );
-  if (successResult == null || !context.mounted) return;
+  if (successResult == null || !context.mounted) return false;
   await _showMarketDataImportSuccessDialog(context, successResult);
+  return true;
 }
 
 Future<void> _showMarketDataImportSuccessDialog(

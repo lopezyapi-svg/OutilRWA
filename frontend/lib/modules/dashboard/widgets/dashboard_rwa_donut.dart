@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
+
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -17,7 +17,6 @@ class DashboardRwaDonut extends StatefulWidget {
 }
 
 class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
-  int touchedIndex = -1;
 
   DashboardMetric _metric(String key) {
     return widget.data.metrics.firstWhere((m) => m.key == key, orElse: () => DashboardMetric(key: key, label: '', value: 0.0, variation: '', trend: []));
@@ -30,9 +29,9 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
     final scale = 1.0 / amountUnit.divisor;
 
     // RWA Data from explicit metrics
-    final creditRawXof = _metric('rwa_credit').value > 0 ? _metric('rwa_credit').value : 2450.0 * 1000000000;
-    final operationnelRawXof = _metric('rwa_op').value > 0 ? _metric('rwa_op').value : 410.0 * 1000000000;
-    final marcheRawXof = _metric('rwa_market').value > 0 ? _metric('rwa_market').value : 320.0 * 1000000000;
+    final creditRawXof = _metric('rwa_credit').value;
+    final operationnelRawXof = _metric('rwa_op').value;
+    final marcheRawXof = _metric('rwa_market').value;
 
     // Convert to requested currency, then scale to the display unit (M/Md).
     final credit = convertCurrencyAmount(creditRawXof, fromCurrency: 'XOF', toCurrency: widget.currency) * scale;
@@ -41,131 +40,76 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
     
     final total = credit + operationnel + marche;
 
-    final sectors = [
-      _SectorData('RWA Crédit', credit, total > 0 ? (credit/total)*100 : 0, c.navy),
-      _SectorData('RWA Opérationnel', operationnel, total > 0 ? (operationnel/total)*100 : 0, c.accent),
-      _SectorData('RWA Marché', marche, total > 0 ? (marche/total)*100 : 0, const Color(0xFF38BDF8)), // Light Sky Blue
-    ];
-
     return DashPanel(
-      title: 'STRUCTURE DES RWA',
+      title: 'RWA TOTAL ET CAPITAL REQUIS',
       unit: 'En ${amountUnit.label} (${widget.currency})',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 160,
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      PieChart(
-                        PieChartData(
-                          pieTouchData: PieTouchData(
-                            touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                              setState(() {
-                                if (!event.isInterestedForInteractions ||
-                                    pieTouchResponse == null ||
-                                    pieTouchResponse.touchedSection == null) {
-                                  touchedIndex = -1;
-                                  return;
-                                }
-                                touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                              });
-                            },
-                          ),
-                          borderData: FlBorderData(show: false),
-                          sectionsSpace: 2,
-                          centerSpaceRadius: 40,
-                          sections: sectors.asMap().entries.map((entry) {
-                            final isTouched = entry.key == touchedIndex;
-                            final sector = entry.value;
-                            final radius = isTouched ? 35.0 : 30.0;
-                            final fontSize = isTouched ? 14.0 : 12.0;
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'RWA TOTAL',
+                style: DashText.eyebrow(c, color: Colors.indigo.shade500).copyWith(fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
 
-                            return PieChartSectionData(
-                              color: sector.color,
-                              value: sector.percentage,
-                              title: sector.percentage >= 5 ? '${sector.percentage.toStringAsFixed(0)}%' : '',
-                              radius: radius,
-                              titleStyle: TextStyle(
-                                fontSize: fontSize,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      // Inner text
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('Total', style: TextStyle(fontSize: 9, color: c.muted)),
-                          Text(AppFormatters.compactNumber(total), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: c.ink)),
-                          Text('${amountUnit.label} (${widget.currency})', style: TextStyle(fontSize: 8, color: c.muted)),
-                        ],
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: Text.rich(
+                  TextSpan(
+                    text: '${AppFormatters.compactNumber(total)}',
+                    children: [
+                      TextSpan(
+                        text: amountUnit.label,
+                        style: TextStyle(fontSize: 16, color: c.muted, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
-                ),
-                Expanded(
-                  flex: 6,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: sectors.map((s) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Container(width: 10, height: 10, color: s.color),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    s.label,
-                                    style: TextStyle(fontSize: 12, color: c.muted),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Text(
-                                  '${AppFormatters.compactNumber(s.amount)} ${amountUnit.label}',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: c.ink),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    )).toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Divider(height: 1, thickness: Dash.hairline, color: c.divider),
-          const SizedBox(height: 12),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  'Capital minimum requis = ${AppFormatters.compactNumber(total)} × 8%', 
-                  style: TextStyle(fontSize: 12, color: c.muted, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: c.ink),
+                  textAlign: TextAlign.center,
                 ),
               ),
-              const SizedBox(width: 8),
+            ],
+          ),
+          const SizedBox(height: 32),
+          Divider(height: 1, thickness: Dash.hairline, color: c.divider),
+          const SizedBox(height: 32),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Text(
-                '${AppFormatters.compactNumber(total * 0.08)} ${amountUnit.label}',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: c.ink),
+                'CAPITAL MINIMUM REQUIS (9%)',
+                style: DashText.eyebrow(c, color: Colors.indigo.shade500).copyWith(fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.indigo.withOpacity(0.04),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: Text.rich(
+                  TextSpan(
+                    text: '${AppFormatters.compactNumber(total * 0.09)}',
+                    children: [
+                      TextSpan(
+                        text: amountUnit.label,
+                        style: TextStyle(fontSize: 16, color: c.muted, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: c.ink),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ],
           ),
@@ -173,12 +117,4 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
       ),
     );
   }
-}
-
-class _SectorData {
-  const _SectorData(this.label, this.amount, this.percentage, this.color);
-  final String label;
-  final double amount;
-  final double percentage;
-  final Color color;
 }

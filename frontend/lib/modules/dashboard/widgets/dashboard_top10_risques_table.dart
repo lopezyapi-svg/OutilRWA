@@ -248,7 +248,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8),
                                     child: Text(
-                                      '${AppFormatters.formatAmountValue(expScaled)} ${AppFormatters.formatAmountSuffix(expScaled)}'.trim(),
+                                      '${AppFormatters.formatAmountValue(expScaled)}${AppFormatters.formatAmountSuffix(expScaled)}'.trim(),
                                       textAlign: TextAlign.right,
                                       style: TextStyle(
                                         fontSize: 11,
@@ -266,7 +266,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(horizontal: 8),
                                     child: Text(
-                                      '${AppFormatters.formatAmountValue(netScaled)} ${AppFormatters.formatAmountSuffix(netScaled)}'.trim(),
+                                      '${AppFormatters.formatAmountValue(netScaled)}${AppFormatters.formatAmountSuffix(netScaled)}'.trim(),
                                       textAlign: TextAlign.right,
                                       style: TextStyle(
                                         fontSize: 11,
@@ -289,7 +289,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
-                                        color: e.fpRatio > 25 ? c.sousMinimum : e.fpRatio > 15 ? c.sousCible : c.ink,
+                                        color: e.fpRatio > 25 ? c.sousMinimum : e.fpRatio >= 20 ? c.sousCible : c.ink,
                                         fontFeatures: Dash.tabular,
                                       ),
                                     ),
@@ -344,7 +344,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               child: Text(
-                                '${AppFormatters.compactNumber(totalGrossScaled)} ${amountUnit.label}',
+                                '${AppFormatters.formatAmountValue(totalGrossScaled)}${amountUnit.label}',
                                 textAlign: TextAlign.right,
                                 style: const TextStyle(
                                   fontSize: 11.5,
@@ -361,7 +361,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 8),
                               child: Text(
-                                '${AppFormatters.compactNumber(totalNetScaled)} ${amountUnit.label}',
+                                '${AppFormatters.formatAmountValue(totalNetScaled)}${amountUnit.label}',
                                 textAlign: TextAlign.right,
                                 style: const TextStyle(
                                   fontSize: 11.5,
@@ -455,36 +455,35 @@ class _StatutBadge extends StatelessWidget {
     Color bgColor;
 
     switch (status) {
-      case 'Alerte':
+      case 'Dépassement':
         dotColor = colors.sousMinimum;
         textColor = colors.sousMinimum;
         bgColor = const Color(0xFFFEF2F2);
         break;
-      case 'Sous cible':
-        dotColor = colors.sousCible;
-        textColor = colors.sousCible;
-        bgColor = const Color(0xFFFFFBEB);
-        break;
-      default: // Conforme
+
+      default: // Dans la norme
         dotColor = colors.conforme;
         textColor = colors.conforme;
         bgColor = const Color(0xFFF0FDF4);
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(
-        status,
-        maxLines: 1,
-        style: TextStyle(
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          color: textColor,
-          letterSpacing: 0.2,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          status,
+          maxLines: 1,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            color: textColor,
+            letterSpacing: 0.2,
+          ),
         ),
       ),
     );

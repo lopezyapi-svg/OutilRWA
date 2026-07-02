@@ -44,6 +44,7 @@ flutter:
     - assets/images/manage_money_bro.svg
     - assets/flags/
     - assets/lotties/import_loader.json
+    - assets/lotties/Success.json
     - assets/lotties/rwa_dashboard.json
     - assets/lotties/yield_curve_no_data.json
   fonts:

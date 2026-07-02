@@ -88,6 +88,7 @@ class DashboardSnapshot(BaseModel):
     valuation_date: str
     category_distribution: list[DistributionEntry]
     rwa_category_distribution: list[DistributionEntry]
+    rwa_type_distribution: list[DistributionEntry]
     country_distribution: list[DistributionEntry]
     crm_distribution: list[DistributionEntry]
     rating_distribution: list[DistributionEntry]

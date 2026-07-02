@@ -564,7 +564,7 @@ class ExcelImportService:
                         "ead": ead,
                         "risk_weight": risk_weight,
                         "rwa": rwa,
-                        "capital": round(rwa * 0.08, 2),
+                        "capital": round(rwa * 0.09, 2),
                         "comment": f"Import Excel {exposure_id}",
                     }
                 )

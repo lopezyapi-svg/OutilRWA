@@ -108,7 +108,7 @@ class DashboardRwaStructure extends StatelessWidget {
                 Text(p.label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink)),
               ],
             ),
-            Text('${AppFormatters.integer(p.amount)} $unitLabel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink)),
+            Text('${AppFormatters.integer(p.amount)}$unitLabel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink)),
           ],
         ),
         const SizedBox(height: 6),

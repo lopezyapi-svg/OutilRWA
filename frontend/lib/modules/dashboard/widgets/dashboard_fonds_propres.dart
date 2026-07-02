@@ -23,15 +23,15 @@ class DashboardFondsPropres extends StatelessWidget {
   final VoidCallback? onEdit;
 
   String _formatAmount(double value, PortfolioAmountUnit unit) {
-    return AppFormatters.formatAmountValue(value);
+    return AppFormatters.formatAmountValue(value, unit.divisor);
   }
 
   String _formatTotalAmount(double value, PortfolioAmountUnit unit) {
-    return AppFormatters.formatAmountValue(value);
+    return AppFormatters.formatAmountValue(value, unit.divisor);
   }
 
   String _formatTotalUnit(double value, PortfolioAmountUnit unit) {
-    return AppFormatters.formatAmountSuffix(value);
+    return AppFormatters.formatAmountSuffix(value, unit.label);
   }
 
   @override
@@ -48,12 +48,20 @@ class DashboardFondsPropres extends StatelessWidget {
     return DashPanel(
       title: 'Fonds propres réglementaires',
       trailing: onEdit != null
-          ? IconButton(
-              icon: Icon(Icons.edit_outlined, size: 16, color: c.muted),
-              tooltip: 'Modifier les fonds propres',
+          ? ElevatedButton.icon(
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: const Text('Mettre à jour'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.indigo,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+              ),
               onPressed: onEdit,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
             )
           : null,
       child: Column(
@@ -188,7 +196,7 @@ class DashboardFondsPropres extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(title, style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.w900)),
-              Text(_formatAmount(amount, amountUnit), style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.w900)),
+              Text(_formatAmountWithUnit(amount, amountUnit), style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.w900)),
             ],
           ),
           const SizedBox(height: 2),
@@ -213,8 +221,8 @@ class DashboardFondsPropres extends StatelessWidget {
   }
 
   String _formatAmountWithUnit(double value, PortfolioAmountUnit unit) {
-    final amountVal = AppFormatters.formatAmountValue(value);
-    final amountSuffix = AppFormatters.formatAmountSuffix(value);
+    final amountVal = AppFormatters.formatAmountValue(value, unit.divisor);
+    final amountSuffix = AppFormatters.formatAmountSuffix(value, unit.label);
     return '$amountVal $amountSuffix'.trim();
   }
 

@@ -44,7 +44,9 @@ class ApiClient {
   final http.Client _client;
 
   Future<dynamic> get(String path) async {
-    final response = await _client.get(Uri.parse('$baseUrl$path'));
+    final separator = path.contains('?') ? '&' : '?';
+    final cacheBuster = '${separator}_t=${DateTime.now().millisecondsSinceEpoch}';
+    final response = await _client.get(Uri.parse('$baseUrl$path$cacheBuster'));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         method: 'GET',
@@ -57,7 +59,9 @@ class ApiClient {
   }
 
   Future<Uint8List> getBytes(String path) async {
-    final response = await _client.get(Uri.parse('$baseUrl$path'));
+    final separator = path.contains('?') ? '&' : '?';
+    final cacheBuster = '${separator}_t=${DateTime.now().millisecondsSinceEpoch}';
+    final response = await _client.get(Uri.parse('$baseUrl$path$cacheBuster'));
     _ensureSuccess(method: 'GET', path: path, response: response);
     return response.bodyBytes;
   }

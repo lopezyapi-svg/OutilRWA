@@ -18,19 +18,21 @@ class DashboardRatiosRow extends StatelessWidget {
     final cet1Metric = data.metrics.firstWhere((m) => m.key == 'cet1_ratio', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
     final t1Metric = data.metrics.firstWhere((m) => m.key == 'tier1_ratio', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
     final solvMetric = data.metrics.firstWhere((m) => m.key == 'solvabilite', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
+    final levierMetric = data.metrics.firstWhere((m) => m.key == 'ratio_levier', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 750) {
+        if (constraints.maxWidth < 900) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _RatioTile(label: 'Ratio CET1', value: cet1Metric.value * 100, pilier1: 5.00, coussin: 2.50),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               _RatioTile(label: 'Ratio Tier 1', value: t1Metric.value * 100, pilier1: 6.00, coussin: 2.50),
-              const SizedBox(height: 12),
-              _RatioTile(
-                  label: 'Ratio de solvabilité', value: solvMetric.value * 100, pilier1: 9.00, coussin: 2.50),
+              const SizedBox(height: 8),
+              _RatioTile(label: 'Ratio de solvabilité', value: solvMetric.value * 100, pilier1: 9.00, coussin: 2.50),
+              const SizedBox(height: 8),
+              _RatioTile(label: 'Ratio de Levier', value: levierMetric.value * 100, pilier1: 3.00, coussin: 0.00),
             ],
           );
         }
@@ -39,21 +41,19 @@ class DashboardRatiosRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child:
-                    _RatioTile(label: 'Ratio CET1', value: cet1Metric.value * 100, pilier1: 5.00, coussin: 2.50),
+                child: _RatioTile(label: 'Ratio CET1', value: cet1Metric.value * 100, pilier1: 5.00, coussin: 2.50),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
               Expanded(
-                child: _RatioTile(
-                    label: 'Ratio Tier 1', value: t1Metric.value * 100, pilier1: 6.00, coussin: 2.50),
+                child: _RatioTile(label: 'Ratio Tier 1', value: t1Metric.value * 100, pilier1: 6.00, coussin: 2.50),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 8),
               Expanded(
-                child: _RatioTile(
-                    label: 'Ratio de solvabilité',
-                    value: solvMetric.value * 100,
-                    pilier1: 9.00,
-                    coussin: 2.50),
+                child: _RatioTile(label: 'Ratio de solvabilité', value: solvMetric.value * 100, pilier1: 9.00, coussin: 2.50),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _RatioTile(label: 'Ratio de Levier (MAJ)', value: levierMetric.value * 100, pilier1: 3.00, coussin: 0.00),
               ),
             ],
           ),
@@ -114,7 +114,7 @@ class _RatioTile extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(Dash.radius),
@@ -124,43 +124,58 @@ class _RatioTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label.toUpperCase(),
-            style: DashText.eyebrow(
-              c,
-              color: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              label.toUpperCase(),
+              style: DashText.eyebrow(
+                c,
+                color: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
+              ),
             ),
           ),
-          const SizedBox(height: 14),
-          Text('${_fr(value)} %', style: DashText.hero(c, size: 32)),
-          const SizedBox(height: 8),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              Text(
-                'Seuil réglementaire :',
-                style: DashText.caption(c, color: c.ink).copyWith(fontWeight: FontWeight.w600),
-              ),
-              Text(
-                'Pilier 1 (${_fr(pilier1)} %)',
-                style: DashText.caption(c, color: c.muted),
-              ),
-              Container(width: 1, height: 10, color: c.divider),
-              Text(
-                'Coussin (${_fr(coussin)} %)',
-                style: DashText.caption(c, color: c.muted),
-              ),
-            ],
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text('${_fr(value)}%', style: DashText.hero(c, size: 18)),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'Seuil réglementaire :',
+                  style: DashText.caption(c, color: c.ink).copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Pilier 1 (${_fr(pilier1)}%)',
+                  style: DashText.caption(c, color: c.muted),
+                ),
+                if (coussin > 0) ...[
+                  const SizedBox(width: 6),
+                  Container(width: 1, height: 10, color: c.divider),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Coussin (${_fr(coussin)}%)',
+                    style: DashText.caption(c, color: c.muted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
           Divider(height: 1, thickness: Dash.hairline, color: c.divider),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: bgColor,
                   borderRadius: BorderRadius.circular(3),
@@ -171,24 +186,24 @@ class _RatioTile extends StatelessWidget {
                   style: DashText.caption(
                     c,
                     color: textColor,
-                  ).copyWith(fontWeight: FontWeight.w600),
+                  ).copyWith(fontWeight: FontWeight.w600, fontSize: 10),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 6),
               Expanded(
                 child: CustomPaint(
                   painter: _DottedLinePainter(c.muted.withValues(alpha: 0.15)),
                   size: const Size(double.infinity, 1),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 6),
               Text(
                 '${ecart >= 0 ? "+" : ""}${_fr(ecart)} pts',
                 style: DashText.value(
                   c,
                   color: c.status(status),
                   weight: FontWeight.w700,
-                ),
+                ).copyWith(fontSize: 12),
               ),
             ],
           ),

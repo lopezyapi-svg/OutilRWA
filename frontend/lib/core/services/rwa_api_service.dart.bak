@@ -1,4 +1,4 @@
-﻿// Ce fichier centralise l'acces aux donnees et le mode mock.
+// Ce fichier centralise l'acces aux donnees et le mode mock.
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -9,7 +9,6 @@ import '../../modules/hors_bilan/models/hors_bilan_models.dart';
 import '../../modules/rapports/models/report_models.dart';
 import '../../modules/referentiels/models/referentiels_models.dart';
 import '../../modules/risque_operationnel/models/ro_models.dart';
-import '../../modules/icap/models/pieafp_models.dart';
 import 'api_client.dart';
 import 'api_runtime_environment.dart' as runtime_environment;
 
@@ -32,13 +31,14 @@ String _resolveDefaultApiBaseUrl() {
   final host =
       runtimeHost == null || runtimeHost.isEmpty ? '127.0.0.1' : runtimeHost;
   final port =
-      runtimePort == null || runtimePort.isEmpty ? '8000' : runtimePort;
+      runtimePort == null || runtimePort.isEmpty ? '8001' : runtimePort;
   return 'http://$host:$port';
 }
 
 /// Service principal qui orchestre les appels API et les données mockées.
 class RwaApiService {
   RwaApiService({
+    this.useMockData = true,
     String? baseUrl,
     ApiClient? client,
   }) : _client = client ??
@@ -46,7 +46,7 @@ class RwaApiService {
               baseUrl: baseUrl ?? _resolveDefaultApiBaseUrl(),
             );
 
-  final bool useMockData = false;
+  final bool useMockData;
   final ApiClient _client;
   final bool enableOfflineFallback = false;
   final StreamController<int> _portfolioRefreshController =
@@ -245,9 +245,8 @@ class RwaApiService {
     var path = '/risque-operationnel/incidents';
     final params = <String>[];
     if (statut != null) params.add('statut=${Uri.encodeComponent(statut)}');
-    if (ligneMetier != null) {
+    if (ligneMetier != null)
       params.add('ligne_metier=${Uri.encodeComponent(ligneMetier)}');
-    }
     if (params.isNotEmpty) path = '$path?${params.join('&')}';
     final json = await _client.get(path) as List<dynamic>;
     return json
@@ -398,8 +397,10 @@ class RwaApiService {
 
   void _invalidatePortfolioCaches() {
     _dashboardFuture = null;
+    _expositionsFuture = null;
     _horsBilanFuture = null;
     _crmFuture = null;
+    _reportsFuture = null;
   }
 
   Future<T> _memoizeFuture<T>({
@@ -437,7 +438,7 @@ class RwaApiService {
           return DashboardSnapshot.fromJson(json);
         }
         // En mode démo, on reconstruit un snapshot cohérent à partir des jeux locaux.
-    throw Exception('Mock data removed');
+        return _withDelay(_buildMockDashboard());
       },
     );
   }
@@ -445,7 +446,7 @@ class RwaApiService {
   Future<DashboardSnapshot> updateFondsPropres(
       FondsPropresUpdate update) async {
     if (useMockData) {
-    throw Exception('Mock data removed');
+      return fetchDashboard();
     }
 
     final json = await _client.put(
@@ -485,7 +486,12 @@ class RwaApiService {
 
         final exposures =
             _exposures.map((item) => ExposureRecord.fromJson(item)).toList();
-    throw Exception('Mock data removed');
+        return _withDelay(
+          ExposureModuleData(
+            exposures: exposures,
+            summary: _computeExposureSummary(exposures),
+          ),
+        );
       },
     );
   }
@@ -514,7 +520,8 @@ class RwaApiService {
         }
       }
     }
-    throw Exception('Mock data removed');
+
+    return _withDelay(_nextExposureId());
   }
 
   Future<Uint8List> downloadExposureExcelExport() async {
@@ -603,7 +610,7 @@ class RwaApiService {
   Future<ExposureRecord> updateExposure(ExposureDraft draft) async {
     final id = draft.id;
     if (id == null || id.isEmpty) {
-    throw Exception('Mock data removed');
+      return createExposure(draft);
     }
 
     if (!useMockData) {
@@ -641,7 +648,9 @@ class RwaApiService {
 
     final previewId =
         draft.id?.isNotEmpty == true ? draft.id! : 'PREVIEW_EXPOSITION';
-    throw Exception('Mock data removed');
+    return _withDelay(
+      ExposureRecord.fromJson(_buildExposureMapFromDraft(draft, previewId)),
+    );
   }
 
   Future<Map<String, dynamic>> deleteExposures(
@@ -773,7 +782,7 @@ class RwaApiService {
       'errors': const <Map<String, dynamic>>[],
     };
     _notifyPortfolioChanged();
-    throw Exception('Mock data removed');
+    return _withDelay(response);
   }
 
   Future<Map<String, dynamic>> inspectExposureExcelFile(
@@ -793,7 +802,18 @@ class RwaApiService {
         if (!enableOfflineFallback) rethrow;
       }
     }
-    throw Exception('Mock data removed');
+
+    return _withDelay(<String, dynamic>{
+      'file': filename,
+      'valid': true,
+      'sheet_count': 0,
+      'detected_sheets': const <String>[],
+      'sheets': const <Map<String, dynamic>>[],
+      'errors': const <Map<String, dynamic>>[],
+      'rows_read_by_sheet': const <String, int>{},
+      'duration_ms': 0,
+      'steps_ms': const <String, dynamic>{},
+    });
   }
 
   Future<Map<String, dynamic>> fetchExcelImportSpec() async {
@@ -806,14 +826,22 @@ class RwaApiService {
         if (!enableOfflineFallback) rethrow;
       }
     }
-    throw Exception('Mock data removed');
+
+    return _withDelay(<String, dynamic>{
+      'accepted_extensions': const ['.xlsx'],
+      'sheets': const <Map<String, dynamic>>[],
+      'required_sheet_names': const <String>[],
+      'optional_sheet_names': const <String>[],
+      'notes': const <String>[],
+    });
   }
 
   Future<Uint8List> downloadExcelImportTemplate() async {
     if (!useMockData) {
       return _client.getBytes('/expositions/import/template');
     }
-    throw Exception('Mock data removed');
+
+    return _withDelay(Uint8List(0));
   }
 
   Future<OffBalanceModuleData> fetchHorsBilanModule() async {
@@ -841,7 +869,12 @@ class RwaApiService {
         // Les données mock sont converties avant agrégation pour rester proches du mode réel.
         final items =
             _offBalance.map((item) => OffBalanceRecord.fromJson(item)).toList();
-    throw Exception('Mock data removed');
+        return _withDelay(
+          OffBalanceModuleData(
+            items: items,
+            summary: _computeOffBalanceSummary(items),
+          ),
+        );
       },
     );
   }
@@ -941,7 +974,9 @@ class RwaApiService {
                   ) /
                   items.length,
         );
-    throw Exception('Mock data removed');
+        return _withDelay(
+          CrmModuleData(highlight: highlight, items: items, summary: summary),
+        );
       },
     );
   }
@@ -959,7 +994,15 @@ class RwaApiService {
         }
 
         // Les trois tables sont servies ensemble car elles alimentent tous les écrans métiers.
-    throw Exception('Mock data removed');
+        return _withDelay(
+          ReferentielsModuleData(
+            riskWeights: _riskWeights
+                .map((item) => RiskWeightRow.fromJson(item))
+                .toList(),
+            ccfTable: _ccfTable.map((item) => CcfRow.fromJson(item)).toList(),
+            ratings: _ratings.map((item) => RatingRow.fromJson(item)).toList(),
+          ),
+        );
       },
     );
   }
@@ -980,7 +1023,13 @@ class RwaApiService {
                 .toList(),
           );
         }
-    throw Exception('Mock data removed');
+
+        return _withDelay(
+          ReportsModuleData(
+            reports:
+                _reports.map((item) => ReportRecord.fromJson(item)).toList(),
+          ),
+        );
       },
     );
   }
@@ -988,6 +1037,7 @@ class RwaApiService {
   Future<void> generateReport(ReportDraft draft) async {
     if (!useMockData) {
       await _client.post('/rapports', draft.toJson());
+      _reportsFuture = null;
       return;
     }
 
@@ -1032,6 +1082,7 @@ class RwaApiService {
       'exports': {'pdf': '/exports/$id.pdf', 'excel': '/exports/$id.xlsx'},
       'lines': draft.reportType == 'Detaille' ? lines : lines.take(5).toList(),
     });
+    _reportsFuture = null;
   }
 
   DashboardSnapshot _buildMockDashboard() {
@@ -1079,8 +1130,6 @@ class RwaApiService {
       'solvabilite': solvencyRatio,
       'cet1_ratio': rwa == 0 ? 0.0 : (ownFunds * 0.75) / rwa,
       'tier1_ratio': rwa == 0 ? 0.0 : (ownFunds * 0.85) / rwa,
-      'tier2_ratio': rwa == 0 ? 0.0 : (ownFunds * 0.15) / rwa,
-      'ratio_levier': gross == 0 ? 0.0 : (ownFunds * 0.85) / gross,
       'crm': coveredExposureRatio,
     };
 
@@ -1202,18 +1251,6 @@ class RwaApiService {
           label: 'Ratio Tier 1',
           value: metricValues['tier1_ratio']!,
           growthRate: 0.004,
-        ),
-        _buildMetric(
-          key: 'tier2_ratio',
-          label: 'Ratio Tier 2',
-          value: metricValues['tier2_ratio']!,
-          growthRate: 0.003,
-        ),
-        _buildMetric(
-          key: 'ratio_levier',
-          label: 'Ratio de Levier',
-          value: metricValues['ratio_levier']!,
-          growthRate: 0.002,
         ),
         _buildMetric(
           key: 'crm',
@@ -1800,237 +1837,5 @@ class RwaApiService {
   Future<T> _withDelay<T>(T value) {
     // Ce petit délai simule une latence réseau et évite un rendu trop brutal en mode mock.
     return Future<T>.delayed(const Duration(milliseconds: 220), () => value);
-  }
-
-  // ── BIC — Approche Standard CRR3 ────────────────────────────────────────────
-
-  Future<OpRiskInput> fetchBicInput(int annee) async {
-    final json = await _client.get('/risque-operationnel/bic/inputs/$annee')
-        as Map<String, dynamic>;
-    return OpRiskInput.fromJson(json);
-  }
-
-  Future<OpRiskInput> upsertBicInput(int annee, Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/bic/inputs/$annee', data)
-        as Map<String, dynamic>;
-    return OpRiskInput.fromJson(json);
-  }
-
-  Future<OpRiskParametres> fetchBicParametres() async {
-    final json = await _client.get('/risque-operationnel/bic/parametres')
-        as Map<String, dynamic>;
-    return OpRiskParametres.fromJson(json);
-  }
-
-  Future<OpRiskParametres> updateBicParametres(Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/bic/parametres', data)
-        as Map<String, dynamic>;
-    return OpRiskParametres.fromJson(json);
-  }
-
-  Future<OpRiskCalculResult> calculeOpRiskBic({int? anneeN}) async {
-    final path = anneeN != null
-        ? '/risque-operationnel/bic/calcul?annee_n=$anneeN'
-        : '/risque-operationnel/bic/calcul';
-    final json = await _client.get(path) as Map<String, dynamic>;
-    return OpRiskCalculResult.fromJson(json);
-  }
-
-  // ── UEMOI — AIB (Approche Indicateur de Base) ────────────────────────────────
-
-  Future<List<PnbAnnuelView>> fetchPnbAnnuel() async {
-    final list = await _client.get('/risque-operationnel/aib/pnb') as List<dynamic>;
-    return list.map((e) => PnbAnnuelView.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<PnbAnnuelView> upsertPnbAnnuel(int annee, Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/aib/pnb/$annee', data) as Map<String, dynamic>;
-    return PnbAnnuelView.fromJson(json);
-  }
-
-  Future<void> deletePnbAnnuel(int annee) async {
-    await _client.delete('/risque-operationnel/aib/pnb/$annee');
-  }
-
-  Future<ParametresAib> fetchAibParametres() async {
-    final json = await _client.get('/risque-operationnel/aib/parametres') as Map<String, dynamic>;
-    return ParametresAib.fromJson(json);
-  }
-
-  Future<ParametresAib> updateAibParametres(Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/aib/parametres', data) as Map<String, dynamic>;
-    return ParametresAib.fromJson(json);
-  }
-
-  Future<AibCalculResult> calculeAib() async {
-    final json = await _client.get('/risque-operationnel/aib/calcul') as Map<String, dynamic>;
-    return AibCalculResult.fromJson(json);
-  }
-
-  Future<DecisionPilotageResult> fetchDecisionAib() async {
-    final json = await _client.get('/risque-operationnel/aib/decision') as Map<String, dynamic>;
-    return DecisionPilotageResult.fromJson(json);
-  }
-
-  // ── UEMOI — AS (Approche Standard) ───────────────────────────────────────────
-
-  Future<List<BetaLigneView>> fetchBetaLignes() async {
-    final list = await _client.get('/risque-operationnel/as/beta-lignes') as List<dynamic>;
-    return list.map((e) => BetaLigneView.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<BetaLigneView> updateBetaLigne(String ligneMetier, double beta) async {
-    final json = await _client.put(
-      '/risque-operationnel/as/beta-lignes/${Uri.encodeComponent(ligneMetier)}',
-      {'beta': beta},
-    ) as Map<String, dynamic>;
-    return BetaLigneView.fromJson(json);
-  }
-
-  Future<List<PnbParLigneView>> fetchPnbLignes(int annee) async {
-    final list = await _client.get('/risque-operationnel/as/pnb-lignes/$annee') as List<dynamic>;
-    return list.map((e) => PnbParLigneView.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<PnbParLigneView> upsertPnbLigne(int annee, String ligneMetier, double pnb) async {
-    final json = await _client.put(
-      '/risque-operationnel/as/pnb-lignes/$annee/${Uri.encodeComponent(ligneMetier)}',
-      {'produit_brut_ligne': pnb},
-    ) as Map<String, dynamic>;
-    return PnbParLigneView.fromJson(json);
-  }
-
-  Future<ParametresAs> fetchAsParametres() async {
-    final json = await _client.get('/risque-operationnel/as/parametres') as Map<String, dynamic>;
-    return ParametresAs.fromJson(json);
-  }
-
-  Future<ParametresAs> updateAsParametres(Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/as/parametres', data) as Map<String, dynamic>;
-    return ParametresAs.fromJson(json);
-  }
-
-  Future<AsCalculResult> calculeAs() async {
-    final json = await _client.get('/risque-operationnel/as/calcul') as Map<String, dynamic>;
-    return AsCalculResult.fromJson(json);
-  }
-
-  Future<DecisionPilotageResult> fetchDecisionAs() async {
-    final json = await _client.get('/risque-operationnel/as/decision') as Map<String, dynamic>;
-    return DecisionPilotageResult.fromJson(json);
-  }
-
-  // ── UEMOI — Seuils + Synthèse ─────────────────────────────────────────────────
-
-  Future<ParametresSeuils> fetchPertesSeuils() async {
-    final json = await _client.get('/risque-operationnel/pertes/seuils') as Map<String, dynamic>;
-    return ParametresSeuils.fromJson(json);
-  }
-
-  Future<ParametresSeuils> updatePertesSeuils(Map<String, dynamic> data) async {
-    final json = await _client.put('/risque-operationnel/pertes/seuils', data) as Map<String, dynamic>;
-    return ParametresSeuils.fromJson(json);
-  }
-
-  Future<SyntheseResult> fetchSynthese() async {
-    final json = await _client.get('/risque-operationnel/synthese') as Map<String, dynamic>;
-    return SyntheseResult.fromJson(json);
-  }
-
-  Future<DecisionPilotageResult> fetchDecisionPilotage() async {
-    final json = await _client.get('/risque-operationnel/pilotage/decision') as Map<String, dynamic>;
-    return DecisionPilotageResult.fromJson(json);
-  }
-
-  // ── PIEAFP (Pilier 2 / ICAAP) ───────────────────────────────────────────────
-
-  Future<PieafpDashboard> fetchPieafpDashboard() async {
-    final json = await _client.get('/pieafp/dashboard') as Map<String, dynamic>;
-    return PieafpDashboard.fromJson(json);
-  }
-
-  Future<ConcentrationResult> fetchConcentration() async {
-    final json = await _client.get('/pieafp/concentration') as Map<String, dynamic>;
-    return ConcentrationResult.fromJson(json);
-  }
-
-  Future<IrrbbResult> fetchIrrbb({int chocBp = 200}) async {
-    final json = await _client.get('/pieafp/irrbb?choc_bp=$chocBp') as Map<String, dynamic>;
-    return IrrbbResult.fromJson(json);
-  }
-
-  Future<IrrbbTrancheResult> updateIrrbbTranche(
-      String tranche, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/irrbb/$tranche', data) as Map<String, dynamic>;
-    return IrrbbTrancheResult.fromJson(json);
-  }
-
-  Future<List<AutreRisque>> fetchAutresRisques() async {
-    final list = await _client.get('/pieafp/autres-risques') as List<dynamic>;
-    return list.map((e) => AutreRisque.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<AutreRisque> createAutreRisque(Map<String, dynamic> data) async {
-    final json = await _client.post('/pieafp/autres-risques', data) as Map<String, dynamic>;
-    return AutreRisque.fromJson(json);
-  }
-
-  Future<AutreRisque> updateAutreRisque(int id, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/autres-risques/$id', data) as Map<String, dynamic>;
-    return AutreRisque.fromJson(json);
-  }
-
-  Future<void> deleteAutreRisque(int id) async {
-    await _client.delete('/pieafp/autres-risques/$id');
-  }
-
-  Future<PlanificationResult> fetchPlanification() async {
-    final json = await _client.get('/pieafp/planification') as Map<String, dynamic>;
-    return PlanificationResult.fromJson(json);
-  }
-
-  Future<PlanificationAnnee> upsertPlanificationAnnee(
-      int annee, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/planification/$annee', data) as Map<String, dynamic>;
-    return PlanificationAnnee.fromJson(json);
-  }
-
-  Future<List<ScenarioStress>> fetchScenarios() async {
-    final list = await _client.get('/pieafp/scenarios') as List<dynamic>;
-    return list.map((e) => ScenarioStress.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<ScenarioStress> createScenario(Map<String, dynamic> data) async {
-    final json = await _client.post('/pieafp/scenarios', data) as Map<String, dynamic>;
-    return ScenarioStress.fromJson(json);
-  }
-
-  Future<ScenarioStress> updateScenario(int id, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/scenarios/$id', data) as Map<String, dynamic>;
-    return ScenarioStress.fromJson(json);
-  }
-
-  Future<void> deleteScenario(int id) async {
-    await _client.delete('/pieafp/scenarios/$id');
-  }
-
-  Future<StressImpact> calculStress(int scenarioId) async {
-    final json = await _client.get('/pieafp/scenarios/$scenarioId/calcul') as Map<String, dynamic>;
-    return StressImpact.fromJson(json);
-  }
-
-  Future<GouvernanceResult> fetchGouvernance() async {
-    final json = await _client.get('/pieafp/gouvernance') as Map<String, dynamic>;
-    return GouvernanceResult.fromJson(json);
-  }
-
-  Future<ChecklistItem> updateChecklistItem(int id, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/gouvernance/$id', data) as Map<String, dynamic>;
-    return ChecklistItem.fromJson(json);
-  }
-
-  Future<PieafpRapport> fetchPieafpRapport() async {
-    final json = await _client.get('/pieafp/rapport') as Map<String, dynamic>;
-    return PieafpRapport.fromJson(json);
   }
 }

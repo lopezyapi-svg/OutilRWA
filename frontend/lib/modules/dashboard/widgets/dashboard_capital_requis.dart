@@ -127,7 +127,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
           [
             _TooltipRow('Seuil minimum strict', basePct),
             const _TooltipRow.divider(),
-            _TooltipRow('Montant équivalent', '$baseMd $unitLabel', isHighlight: true),
+            _TooltipRow('Montant équivalent', '$baseMd$unitLabel', isHighlight: true),
           ],
           pos,
           formula: '(Seuil minimum × Actifs pondérés au risque)',
@@ -146,7 +146,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
             const _TooltipRow.divider(),
             _TooltipRow('Taux global exigé', exigPct, isHighlight: true),
             const _TooltipRow.divider(),
-            _TooltipRow('Montant requis', '$requisMd $unitLabel', isHighlight: true),
+            _TooltipRow('Montant requis', '$requisMd$unitLabel', isHighlight: true),
           ],
           pos,
           formula: '(Taux global exigé × Actifs pondérés au risque)',
@@ -161,13 +161,13 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
         found = _TooltipData(
           '${l.label} : Fonds propres détenus (en $unitLabel)',
           [
-            _TooltipRow('Montant détenu', '$detenuMd $unitLabel'),
+            _TooltipRow('Montant détenu', '$detenuMd$unitLabel'),
             _TooltipRow('Ratio effectif', actPct, isHighlight: true),
             const _TooltipRow.divider(),
-            _TooltipRow('Montant exigé', '$requisMd $unitLabel'),
+            _TooltipRow('Montant exigé', '$requisMd$unitLabel'),
             _TooltipRow(
               l.surplus(rwaVal) >= 0 ? 'Excédent de capital' : 'Déficit de capital',
-              '$sign$surplusMd $unitLabel',
+              '$sign$surplusMd$unitLabel',
               isHighlight: true,
             ),
           ],
@@ -621,7 +621,7 @@ class _DotPlotPainter extends CustomPainter {
       
       _text(
         canvas,
-        '$signStr${AppFormatters.compactNumber(surplusVal.abs())} $unitLabel',
+        '$signStr${AppFormatters.compactNumber(surplusVal.abs())}$unitLabel',
         Offset(rightMostX + 11, y),
         color: pointColor,
         size: 10,

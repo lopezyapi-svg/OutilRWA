@@ -79,7 +79,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    '${AppFormatters.compactNumber(rwa)} $unitLabel',
+                    '${AppFormatters.compactNumber(rwa)}$unitLabel',
                     style: TextStyle(
                       color: c.ink,
                       fontWeight: FontWeight.w600,
@@ -92,12 +92,12 @@ class DashboardRwaSecteurChart extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'Capital Requis (8% x RWA)',
+                    'Capital Requis',
                     style: TextStyle(color: c.muted, fontSize: 9),
                   ),
                   const SizedBox(height: 1),
                   Text(
-                    '${AppFormatters.compactNumber(capital)} $unitLabel',
+                    '${AppFormatters.compactNumber(capital)}$unitLabel',
                     style: TextStyle(
                       color: c.ink,
                       fontWeight: FontWeight.bold,
@@ -111,12 +111,12 @@ class DashboardRwaSecteurChart extends StatelessWidget {
           const SizedBox(height: 6),
           // Progress bar
           ClipRRect(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(3),
             child: LinearProgressIndicator(
               value: percentage,
               backgroundColor: c.divider.withValues(alpha: 0.55),
               valueColor: AlwaysStoppedAnimation<Color>(color),
-              minHeight: 4,
+              minHeight: 6,
             ),
           ),
         ],
@@ -135,19 +135,19 @@ class DashboardRwaSecteurChart extends StatelessWidget {
     final creditMetric = metrics != null && metrics.isNotEmpty
         ? metrics.firstWhere((m) => m.key == 'rwa_credit', orElse: () => const DashboardMetric(key: 'rwa_credit', label: '', value: 0.0, variation: '', trend: []))
         : null;
-    final rwaCreditXof = creditMetric != null && creditMetric.value > 0 ? creditMetric.value : 38592890.0 * 1000000;
+    final rwaCreditXof = creditMetric != null ? creditMetric.value : 0.0;
 
     // Get RWA Market
     final marketMetric = metrics != null && metrics.isNotEmpty
         ? metrics.firstWhere((m) => m.key == 'rwa_market', orElse: () => const DashboardMetric(key: 'rwa_market', label: '', value: 0.0, variation: '', trend: []))
         : null;
-    final rwaMarketXof = marketMetric != null && marketMetric.value > 0 ? marketMetric.value : 320000.0 * 1000000;
+    final rwaMarketXof = marketMetric != null ? marketMetric.value : 0.0;
 
     // Get RWA Op
     final opMetric = metrics != null && metrics.isNotEmpty
         ? metrics.firstWhere((m) => m.key == 'rwa_op', orElse: () => const DashboardMetric(key: 'rwa_op', label: '', value: 0.0, variation: '', trend: []))
         : null;
-    final rwaOpXof = opMetric != null && opMetric.value > 0 ? opMetric.value : 410000.0 * 1000000;
+    final rwaOpXof = opMetric != null ? opMetric.value : 0.0;
 
     // Total RWA
     final rwaTotalXof = rwaCreditXof + rwaMarketXof + rwaOpXof;
@@ -157,9 +157,9 @@ class DashboardRwaSecteurChart extends StatelessWidget {
     final rwaMarket = convertCurrencyAmount(rwaMarketXof, fromCurrency: 'XOF', toCurrency: currency) / amountUnit.divisor;
     final rwaOp = convertCurrencyAmount(rwaOpXof, fromCurrency: 'XOF', toCurrency: currency) / amountUnit.divisor;
     
-    final capCredit = rwaCredit * 0.08;
-    final capMarket = rwaMarket * 0.08;
-    final capOp = rwaOp * 0.08;
+    final capCredit = rwaCredit * 0.09;
+    final capMarket = rwaMarket * 0.09;
+    final capOp = rwaOp * 0.09;
 
     // Percentages
     final pctCredit = rwaTotalXof > 0 ? (rwaCreditXof / rwaTotalXof) : 0.0;
@@ -184,7 +184,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
             percentage: pctCredit,
             color: creditColor,
             currency: currency,
-            unitLabel: '${amountUnit.label} ($currency)',
+            unitLabel: amountUnit.label,
             c: c,
             bottomMargin: 8,
           ),
@@ -195,7 +195,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
             percentage: pctOp,
             color: opColor,
             currency: currency,
-            unitLabel: '${amountUnit.label} ($currency)',
+            unitLabel: amountUnit.label,
             c: c,
             bottomMargin: 8,
           ),
@@ -206,7 +206,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
             percentage: pctMarket,
             color: marcheColor,
             currency: currency,
-            unitLabel: '${amountUnit.label} ($currency)',
+            unitLabel: amountUnit.label,
             c: c,
             bottomMargin: 0,
           ),

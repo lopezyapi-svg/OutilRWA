@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 // Ce fichier decrit les modules disponibles dans l'interface.
 /// Enumération des modules disponibles dans l'application.
 enum AppModule {
+  importations,
   vueEnsemble,
   dashboardCredit,
   expositions,
@@ -48,6 +49,8 @@ enum AppModule {
 extension AppModuleLabel on AppModule {
   String get title {
     switch (this) {
+      case AppModule.importations:
+        return 'Gestion des imports';
       case AppModule.vueEnsemble:
         return 'Vue d\'ensemble';
       case AppModule.dashboardCredit:
@@ -129,6 +132,8 @@ extension AppModuleLabel on AppModule {
 
   String get subtitle {
     switch (this) {
+      case AppModule.importations:
+        return 'Centre unifié pour toutes les importations de données de l\'outil.';
       case AppModule.vueEnsemble:
         return 'Synthèse du module risque de crédit.';
       case AppModule.dashboardCredit:
@@ -210,6 +215,8 @@ extension AppModuleLabel on AppModule {
 
   IconData get icon {
     switch (this) {
+      case AppModule.importations:
+        return Icons.cloud_upload_outlined;
       case AppModule.vueEnsemble:
         return Icons.pie_chart_rounded;
       case AppModule.dashboardCredit:

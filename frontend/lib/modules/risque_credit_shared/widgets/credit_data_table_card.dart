@@ -11,8 +11,7 @@ class CreditDataTableCard extends StatelessWidget {
     required this.rows,
     this.toolbar,
     this.trailing,
-    this.emptyMessage =
-        'Aucune donnée disponible pour les filtres sélectionnés.',
+    this.emptyMessage = 'Portefeuille vide',
   });
 
   final String title;

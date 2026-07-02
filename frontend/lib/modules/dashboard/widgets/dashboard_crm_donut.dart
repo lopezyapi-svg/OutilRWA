@@ -60,12 +60,12 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
     return DashPanel(
       title: 'Répartition totale par type de CRM',
       height: 360,
-      child: Row(
+      child: Column(
         children: [
           Expanded(
             flex: 5,
             child: SizedBox(
-              height: 240,
+              width: double.infinity,
               child: Stack(
                 children: [
                   PieChart(
@@ -85,12 +85,12 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
                       ),
                       borderData: FlBorderData(show: false),
                       sectionsSpace: 4,
-                      centerSpaceRadius: 65,
+                      centerSpaceRadius: 45,
                       sections: sectors.asMap().entries.map((entry) {
                         final i = entry.key;
                         final s = entry.value;
                         final isTouched = i == touchedIndex;
-                        final radius = isTouched ? 28.0 : 20.0;
+                        final radius = isTouched ? 22.0 : 16.0;
                         
                         return PieChartSectionData(
                           color: s.color,
@@ -126,22 +126,28 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
                   ),
                   if (dominantSector != null && touchedIndex == -1)
                     Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${AppFormatters.decimalNumber(dominantSector.percentage, maxDecimals: 1)}%',
-                            style: DashText.hero(c, size: 28),
-                          ),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              dominantSector.label,
-                              style: DashText.caption(c, color: c.muted),
-                              maxLines: 1,
+                      child: SizedBox(
+                        width: 70,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '${AppFormatters.decimalNumber(dominantSector.percentage, maxDecimals: 1)}%',
+                                style: DashText.hero(c, size: 18),
+                              ),
                             ),
-                          ),
-                        ],
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                dominantSector.label,
+                                style: DashText.caption(c, color: c.muted).copyWith(fontSize: 10),
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                 ],
@@ -149,14 +155,25 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
             ),
           ),
           Expanded(
-            flex: 4,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: sectors.map((s) => Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: _LegendItem(sector: s),
-              )).toList(),
+            flex: 5,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: sectors.asMap().entries.map((entry) {
+                  final isLast = entry.key == sectors.length - 1;
+                  return Column(
+                    children: [
+                      _LegendItem(sector: entry.value),
+                      if (!isLast) ...[
+                        const SizedBox(height: 4),
+                        Divider(color: c.border, thickness: Dash.hairline, height: 1),
+                        const SizedBox(height: 4),
+                      ]
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ],
@@ -185,30 +202,21 @@ class _LegendItem extends StatelessWidget {
     final countText = '${sector.count} exposition${sector.count > 1 ? 's' : ''}';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: c.border.withValues(alpha: 0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: c.ink.withValues(alpha: 0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
       ),
       child: Row(
         children: [
           Container(
             width: 4,
-            height: 36,
+            height: 24,
             decoration: BoxDecoration(
               color: sector.color,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,26 +224,26 @@ class _LegendItem extends StatelessWidget {
               children: [
                 Text(
                   sector.label, 
-                  style: DashText.caption(c, color: c.muted).copyWith(fontWeight: FontWeight.w700, fontSize: 11, letterSpacing: 0.5),
+                  style: DashText.caption(c, color: c.muted).copyWith(fontWeight: FontWeight.w700, fontSize: 9),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 1),
                 Text(
                   countText,
-                  style: DashText.caption(c, color: c.ink).copyWith(fontSize: 12, fontWeight: FontWeight.w500),
+                  style: DashText.caption(c, color: c.ink).copyWith(fontSize: 10, fontWeight: FontWeight.w500),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
               '${AppFormatters.decimalNumber(sector.percentage, maxDecimals: 1)}%',
-              style: DashText.hero(c, size: 18).copyWith(
+              style: DashText.hero(c, size: 14).copyWith(
                 color: Colors.indigo.shade900,
                 fontWeight: FontWeight.w700,
               ),

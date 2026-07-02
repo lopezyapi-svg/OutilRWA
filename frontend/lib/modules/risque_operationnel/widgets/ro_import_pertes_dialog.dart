@@ -605,52 +605,34 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
   Widget _buildHeader() => Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Registre des pertes opérationnelles',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: _text,
-                    height: 1.05,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'Import Excel contrôlé avant insertion: dates, lignes métier, pertes et statuts sont relus ici.',
-                  style: TextStyle(fontSize: 12.5, color: _muted, height: 1.35),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 18),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
-              color: _soft,
-              border: Border.all(color: _border),
-              borderRadius: BorderRadius.circular(4),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2F6EEA), Color(0xFF12A7B4)],
+              ),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.article_outlined, size: 14, color: _accent),
-                const SizedBox(width: 6),
-                Text(
-                  'Art. 89 / 313.b',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: _accent,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
+            child: const Icon(
+              Icons.cloud_upload,
+              color: Colors.white,
+              size: 20,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              'Importation de données (Risque Opérationnel)',
+              style: TextStyle(
+                color: _text,
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+          const Spacer(),
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.pop(context, false),

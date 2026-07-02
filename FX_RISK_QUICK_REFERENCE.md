@@ -216,7 +216,7 @@ ELSE                    THEN Stable (⚪)
 ### BCEAO Capital Requirement
 ```
 GlobalNetPosition = MAX(TotalLong, TotalShort)
-CapitalRequirement = GlobalNetPosition × 0.08
+CapitalRequirement = GlobalNetPosition × 0.09
 RWAChange = CapitalRequirement × 12.5
 ```
 

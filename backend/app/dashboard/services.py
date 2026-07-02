@@ -47,11 +47,11 @@ _CRM_BUCKET_ORDER = ("CRM financee", "CRM non financee", "Aucune")
 _DISPLAY_CURRENCY = "XOF"
 
 def _build_metric(key: str, label: str, value: float) -> DashboardMetric:
-    trend = [round(value, 2) for _ in range(7)]
+    trend = [value for _ in range(7)]
     return DashboardMetric(
         key=key,
         label=label,
-        value=round(value, 2),
+        value=value,
         variation="+0.0% M/M",
         trend=trend,
     )
@@ -271,7 +271,7 @@ def _portfolio_value_at_risk(
         max(
             math.sqrt(density_variance) * 0.45
             + average_density * 0.035
-            + concentration_share * 0.08,
+            + concentration_share * 0.09,
             0.006,
         ),
         0.16,
@@ -441,9 +441,13 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         crm_buckets[crm_mode] += float(item["gross_amount"])
         rating_buckets[rating] += float(item["gross_amount"])
 
-    # ADD RWA TYPES (Credit, Market, Op) to buckets
-    rwa_category_buckets["Risque de Marché"] += rm_calc["rwa_marche"]
-    rwa_category_buckets["Risque Opérationnel"] += ro_calc["rwa_operationnel"]
+    # Create RWA Type distribution
+    total_all_risks = rwa_credit + rm_calc["rwa_marche"] + ro_calc["rwa_operationnel"]
+    rwa_type_distribution = [
+        DistributionEntry(label="Crédit", amount=rwa_credit, percentage=(rwa_credit/total_all_risks*100) if total_all_risks > 0 else 0.0),
+        DistributionEntry(label="Opérationnel", amount=ro_calc["rwa_operationnel"], percentage=(ro_calc["rwa_operationnel"]/total_all_risks*100) if total_all_risks > 0 else 0.0),
+        DistributionEntry(label="Marché", amount=rm_calc["rwa_marche"], percentage=(rm_calc["rwa_marche"]/total_all_risks*100) if total_all_risks > 0 else 0.0),
+    ]
 
     category_distribution = _build_distribution_from_buckets(category_buckets)
     rwa_category_distribution = _build_distribution_from_buckets(rwa_category_buckets)
@@ -481,6 +485,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         _build_metric("solvabilite", "Ratio Solvabilite Globale", ratios["solvency"]["value"] / 100.0),
         _build_metric("cet1_ratio", "Ratio CET1", ratios["cet1"]["value"] / 100.0),
         _build_metric("tier1_ratio", "Ratio Tier 1", ratios["tier1"]["value"] / 100.0),
+        _build_metric("ratio_levier", "Ratio de Levier", ratios["leverage"]["value"] / 100.0),
         _build_metric("rwa_credit", "RWA Crédit", rwa_credit),
         _build_metric("rwa_market", "RWA Marché", rm_calc["rwa_marche"]),
         _build_metric("rwa_op", "RWA Opérationnel", ro_calc["rwa_operationnel"]),
@@ -523,12 +528,15 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         rwa_agg = agg["rwa_amount"]
         ratio_fp = (net / own_funds * 100.0) if own_funds > 0 else 0.0
 
+        # Les expositions souveraines ne sont pas considérées comme des grands risques
+        category_norm = str(agg["category"]).lower().replace('é', 'e').replace('è', 'e')
+        if "souverain" in category_norm:
+            continue
+
         if ratio_fp >= 10.0:
-            status = "Conforme"
+            status = "Dans la norme"
             if ratio_fp > 25.0:
-                status = "Alerte"
-            elif ratio_fp >= 20.0:
-                status = "Sous cible"
+                status = "Dépassement"
 
             actual_top10.append(TopExposure(
                 counterparty=group_name,
@@ -552,6 +560,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         valuation_date=valuation_date.isoformat(),
         category_distribution=category_distribution,
         rwa_category_distribution=rwa_category_distribution,
+        rwa_type_distribution=rwa_type_distribution,
         country_distribution=_build_country_distribution(country_buckets),
         crm_distribution=crm_distribution,
         rating_distribution=rating_distribution,
