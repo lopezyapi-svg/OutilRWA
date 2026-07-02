@@ -41,7 +41,7 @@ class DashboardTopMetricsGrid extends StatelessWidget {
         label: 'Capital requis',
         value: capitalMetric.value,
         isCurrency: true,
-        subtitle: 'RWA × Taux minimum (ex: 8%)',
+        subtitle: 'RWA x exigences CET1, Tier 1 et FPE',
       ),
       _MinimalMetricCard(
         label: 'Risque résiduel',
@@ -54,7 +54,7 @@ class DashboardTopMetricsGrid extends StatelessWidget {
         label: 'Non-Performing Loans (NPL)',
         value: defaultRateMetric.value * 100,
         isCurrency: false,
-        subtitle: 'Prêts en défaut / Total des prêts',
+        subtitle: 'Prets en defaut / total portefeuille',
       ),
     ];
 

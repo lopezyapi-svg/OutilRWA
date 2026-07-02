@@ -2586,6 +2586,7 @@ class _ModeSwitchButton extends StatelessWidget {
         : AppColors.concentrationPrimary.withValues(alpha: 0.065);
 
     return Tooltip(
+      excludeFromSemantics: true,
       message: item.label,
       waitDuration: const Duration(milliseconds: 300),
       child: InkWell(
@@ -3690,6 +3691,7 @@ class _RiskWeightShareMeterState extends State<_RiskWeightShareMeter> {
     final heightFactor = widget.share.clamp(0.0, 1.0).toDouble();
 
     return Tooltip(
+      excludeFromSemantics: true,
       message: [
         widget.label,
         '${widget.shareLabel.replaceFirst('Part ', '')} : ${AppFormatters.percent(widget.share)}',
@@ -5141,6 +5143,7 @@ class _KpiAlertSelectorChip extends StatelessWidget {
         selected ? const Color(0xFFF43113) : _severityColor(alert.severity);
 
     return Tooltip(
+      excludeFromSemantics: true,
       richMessage: _alertSelectorTooltipMessage(alert, index, color),
       waitDuration: const Duration(milliseconds: 220),
       showDuration: const Duration(seconds: 6),
@@ -6468,6 +6471,7 @@ class _QualityMetricCardState extends State<_QualityMetricCard> {
             Row(
               children: [
                 Tooltip(
+                  excludeFromSemantics: true,
                   richMessage: _tooltipMessage(item),
                   waitDuration: const Duration(milliseconds: 220),
                   showDuration: const Duration(seconds: 6),

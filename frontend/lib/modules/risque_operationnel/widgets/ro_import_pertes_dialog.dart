@@ -1098,6 +1098,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
               ? const Icon(Icons.check_circle_outline,
                   size: 14, color: AppTheme.success)
               : Tooltip(
+                  excludeFromSemantics: true,
                   message: r.errors.join('\n'),
                   child: const Icon(Icons.error_outline,
                       size: 14, color: AppTheme.danger),
@@ -1576,6 +1577,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
   ) {
     final selected = _mode == value;
     return Tooltip(
+      excludeFromSemantics: true,
       message: tooltip,
       child: GestureDetector(
         onTap: () => setState(() => _mode = value),

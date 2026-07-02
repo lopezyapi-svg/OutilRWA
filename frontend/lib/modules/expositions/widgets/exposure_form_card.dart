@@ -1355,6 +1355,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     required Widget child,
   }) {
     return Tooltip(
+      excludeFromSemantics: true,
       richMessage: _buildBankInstitutionTooltipContent(title, message),
       constraints: const BoxConstraints(maxWidth: 350),
       waitDuration: const Duration(milliseconds: 140),
@@ -4788,6 +4789,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     bool compact = false,
   }) {
     return Tooltip(
+      excludeFromSemantics: true,
       message: message,
       preferBelow: false,
       textAlign: TextAlign.start,
@@ -6516,6 +6518,7 @@ class _CompactFieldCard extends StatelessWidget {
     required Widget child,
   }) {
     return Tooltip(
+      excludeFromSemantics: true,
       richMessage: _buildTooltipContent(title, message),
       constraints: BoxConstraints(maxWidth: tooltipMaxWidth),
       waitDuration: const Duration(milliseconds: 140),
@@ -7120,6 +7123,7 @@ class _StepSurface extends StatelessWidget {
                             inlineTooltip!.trim().isNotEmpty) ...[
                           const SizedBox(width: 6),
                           Tooltip(
+                            excludeFromSemantics: true,
                             richMessage: _buildModernTooltipContent(
                               tooltipTitle,
                               inlineTooltip!,

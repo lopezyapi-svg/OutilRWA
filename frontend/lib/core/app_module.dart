@@ -91,7 +91,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.risqueOperationnelIncidents:
         return 'Incidents';
       case AppModule.risqueOperationnelPertes:
-        return 'Pertes opérationnelles';
+        return 'Pilotage interne';
       case AppModule.risqueOperationnelHistorique:
         return 'Historique événements';
       case AppModule.risqueOperationnelReporting:

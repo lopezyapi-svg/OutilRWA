@@ -2225,6 +2225,7 @@ class _SidebarToggleButton extends StatelessWidget {
         width: _sidebarToggleHitArea,
         height: _sidebarToggleHitArea,
         child: Tooltip(
+          excludeFromSemantics: true,
           message: 'Ouvrir le menu',
           waitDuration: const Duration(milliseconds: 160),
           showDuration: const Duration(milliseconds: 1500),

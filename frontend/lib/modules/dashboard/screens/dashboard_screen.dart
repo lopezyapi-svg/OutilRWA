@@ -12,6 +12,7 @@ import '../models/dashboard_models.dart';
 import '../widgets/dashboard_header.dart';
 import '../../../shared/widgets/kpi_metric_card.dart';
 import '../widgets/dashboard_charts_section.dart';
+import '../widgets/dashboard_crr3_key_expectations.dart';
 import '../widgets/dashboard_top_metrics_grid.dart';
 
 /// Ecran principal de pilotage des RWA et du capital.
@@ -104,14 +105,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
                 AppTheme.pagePadding,
                 AppTheme.pagePadding,
                 AppTheme.pagePadding,
                 0,
               ),
-              child: const DashboardHeader(),
+              child: DashboardHeader(),
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -130,6 +131,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       capitalMetric: capitalMetric,
                       residualRiskMetric: residualRiskMetric,
                       defaultRateMetric: defaultRateMetric,
+                    ),
+                    const SizedBox(height: AppTheme.pageGap),
+                    DashboardCrr3KeyExpectations(
+                      data: data,
+                      displayCurrency: displayCurrency,
                     ),
                     const SizedBox(height: AppTheme.pageGap),
                     Builder(

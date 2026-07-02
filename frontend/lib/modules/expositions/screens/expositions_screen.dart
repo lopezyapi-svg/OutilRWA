@@ -851,6 +851,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     required Color color,
   }) {
     return Tooltip(
+      excludeFromSemantics: true,
       message: detail.tr(context),
       waitDuration: const Duration(milliseconds: 350),
       child: Container(
@@ -1227,6 +1228,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       child: tooltip == null || tooltip.trim().isEmpty
           ? content
           : Tooltip(
+              excludeFromSemantics: true,
               message: tooltip,
               waitDuration: const Duration(milliseconds: 180),
               showDuration: const Duration(seconds: 4),
@@ -1809,6 +1811,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               children: [
                 Expanded(
                   child: Tooltip(
+                    excludeFromSemantics: true,
                     message: label,
                     child: Align(
                       alignment: alignment,
@@ -2444,6 +2447,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       width: width,
       height: _optionControlHeight,
       child: Tooltip(
+        excludeFromSemantics: true,
         message: 'Choisir les colonnes à afficher'.tr(context),
         child: OutlinedButton.icon(
           onPressed: _openColumnChooser,
@@ -2518,6 +2522,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     return SizedBox(
       height: _optionControlHeight,
       child: Tooltip(
+        excludeFromSemantics: true,
         message: 'Créer une exposition'.tr(context),
         child: FilledButton.icon(
           onPressed: onPressed,
@@ -2570,6 +2575,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       height: _optionControlHeight,
       width: _optionControlHeight,
       child: Tooltip(
+        excludeFromSemantics: true,
         message: tooltip.tr(context),
         child: OutlinedButton(
           onPressed: onPressed,

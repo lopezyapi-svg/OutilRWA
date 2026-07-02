@@ -160,6 +160,7 @@ class _IconButtonBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
+      excludeFromSemantics: true,
       message: tooltip,
       child: Material(
         color: Colors.transparent,

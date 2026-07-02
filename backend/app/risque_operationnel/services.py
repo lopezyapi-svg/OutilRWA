@@ -18,6 +18,8 @@ from .models import (
     ControleUpdate,
     ControleView,
     DashboardData,
+    DecisionCritere,
+    DecisionPilotageResult,
     DashboardWidget1,
     DashboardWidget2,
     DashboardWidget3,
@@ -1454,3 +1456,656 @@ def get_synthese() -> SyntheseResult:
         pass
 
     return SyntheseResult(lignes=lignes, ecart_bic_vs_aib=ecart, ratio_couverture=ratio)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Décision de pilotage — Analyse et reporting (dispositif réglementaire UEMOA)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_decision_pilotage() -> DecisionPilotageResult:
+    """
+    Moteur de décision du pilotage interne du risque opérationnel.
+
+    Agrège les signaux déjà mesurés par le module (BIC/CRR3, pertes
+    opérationnelles, incidents, cartographie des risques, contrôles internes,
+    KRI, plans d'action) pour produire :
+      - un verdict global (Maîtrisé / Sous surveillance / Vigilance renforcée / Critique)
+      - l'organe auquel le reporting doit être escaladé (seuils Pilier 2)
+      - des recommandations argumentées, rattachées aux articles du dispositif
+        réglementaire UEMOA déjà utilisés dans l'outil (Art. 89, 301/307, 313,
+        313.b, 313.c, 314, 546).
+
+    Chaque critère est noté 0 (conforme), 1 (attention) ou 2 (critique).
+    Le score global (0 à 16) détermine le niveau de pilotage retenu.
+    """
+    criteres: list[DecisionCritere] = []
+
+    # ── C1 — Disponibilité des données réglementaires (Art. 89) ───────────────
+    try:
+        bic = calcul_bic()
+        bic_erreur = False
+    except Exception:
+        bic = None
+        bic_erreur = True
+
+    if bic_erreur or bic.donnees_insuffisantes:
+        criteres.append(DecisionCritere(
+            code="C1", libelle="Disponibilité des données de calcul (BIC/AIB)",
+            reference_reglementaire="Art. 89",
+            statut="critique", poids=2,
+            valeur_observee="Données insuffisantes",
+            seuil_reference="3 exercices de PNB requis",
+            commentaire="Le calcul de l'exigence de fonds propres pour risque opérationnel "
+                        "ne peut être finalisé faute de données suffisantes sur 3 exercices.",
+        ))
+    else:
+        criteres.append(DecisionCritere(
+            code="C1", libelle="Disponibilité des données de calcul (BIC/AIB)",
+            reference_reglementaire="Art. 89",
+            statut="conforme", poids=0,
+            valeur_observee="Données complètes",
+            seuil_reference="3 exercices de PNB requis",
+            commentaire="Les données financières nécessaires au calcul réglementaire sont disponibles.",
+        ))
+
+    # ── C2 — Exposition en capital réglementaire (tranche BIC) ────────────────
+    if not bic_erreur and not bic.donnees_insuffisantes:
+        tranche = bic.bi_detail.tranche_active
+        ecart_pct = (bic.ecart / bic.ofr_bia * 100) if bic.ofr_bia else 0.0
+        if tranche == 3 or ecart_pct > 30:
+            statut, poids = "critique", 2
+        elif tranche == 2 or ecart_pct > 10:
+            statut, poids = "attention", 1
+        else:
+            statut, poids = "conforme", 0
+        criteres.append(DecisionCritere(
+            code="C2", libelle="Exposition en capital réglementaire (BIC)",
+            reference_reglementaire="Art. 315-321 / Art. 89",
+            statut=statut, poids=poids,
+            valeur_observee=f"Tranche {tranche} — écart CRR3/BIA {ecart_pct:+.1f} %",
+            seuil_reference="Tranche 1 attendue, écart ≤ 10 %",
+            commentaire=(
+                f"Le niveau du Business Indicator place l'établissement en tranche {tranche} "
+                "du dispositif ; un écart significatif avec la méthode indicateur de base doit "
+                "être justifié auprès de la Commission Bancaire."
+                if ecart_pct > 10 or tranche > 1 else
+                f"Le niveau du Business Indicator place l'établissement en tranche {tranche} ; "
+                "l'écart avec la méthode indicateur de base reste maîtrisé."
+            ),
+        ))
+    else:
+        criteres.append(DecisionCritere(
+            code="C2", libelle="Exposition en capital réglementaire (BIC)",
+            reference_reglementaire="Art. 315-321 / Art. 89",
+            statut="critique", poids=2,
+            valeur_observee="Non calculable",
+            seuil_reference="Tranche 1 attendue",
+            commentaire="Impossible d'évaluer l'exposition en capital faute de calcul BIC disponible.",
+        ))
+
+    # ── C3 — Pertes opérationnelles vs seuils de reporting Pilier 2 ───────────
+    dashboard = get_dashboard()
+    seuils = get_pertes_seuils()
+    pertes_mois = dashboard.widget2.pertes_nettes_mois
+
+    if pertes_mois >= seuils.seuil_reporting_conseil:
+        statut, poids = "critique", 2
+        organe = "Conseil d'administration"
+        motif = (
+            f"Pertes nettes du mois ({pertes_mois:,.0f} FCFA) supérieures au seuil de "
+            f"reporting au Conseil ({seuils.seuil_reporting_conseil:,.0f} FCFA)."
+        )
+    elif pertes_mois >= seuils.seuil_reporting_direction:
+        statut, poids = "attention", 1
+        organe = "Direction Générale"
+        motif = (
+            f"Pertes nettes du mois ({pertes_mois:,.0f} FCFA) supérieures au seuil de "
+            f"reporting à la Direction ({seuils.seuil_reporting_direction:,.0f} FCFA)."
+        )
+    elif pertes_mois >= seuils.seuil_reporting_interne:
+        statut, poids = "attention", 1
+        organe = "Comité des risques"
+        motif = (
+            f"Pertes nettes du mois ({pertes_mois:,.0f} FCFA) supérieures au seuil de "
+            f"reporting interne ({seuils.seuil_reporting_interne:,.0f} FCFA)."
+        )
+    else:
+        statut, poids = "conforme", 0
+        organe = "Reporting interne standard"
+        motif = "Les pertes nettes du mois restent inférieures aux seuils d'escalade Pilier 2."
+
+    criteres.append(DecisionCritere(
+        code="C3", libelle="Pertes opérationnelles vs seuils Pilier 2",
+        reference_reglementaire="Art. 313.b",
+        statut=statut, poids=poids,
+        valeur_observee=f"{pertes_mois:,.0f} FCFA (mois en cours)",
+        seuil_reference=(
+            f"Interne {seuils.seuil_reporting_interne:,.0f} / "
+            f"Direction {seuils.seuil_reporting_direction:,.0f} / "
+            f"Conseil {seuils.seuil_reporting_conseil:,.0f} FCFA"
+        ),
+        commentaire=motif,
+    ))
+
+    # ── C4 — Incidents ouverts et tendance des pertes ─────────────────────────
+    non_clos = dashboard.widget2.incidents_non_clos
+    evolution = dashboard.widget2.evolution_pertes_pct or 0.0
+    if non_clos > 5 or evolution > 50:
+        statut, poids = "critique", 2
+    elif non_clos >= 3 or evolution > 15:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    criteres.append(DecisionCritere(
+        code="C4", libelle="Incidents ouverts et tendance des pertes",
+        reference_reglementaire="Art. 313.b",
+        statut=statut, poids=poids,
+        valeur_observee=f"{non_clos} incident(s) non clôturé(s), évolution {evolution:+.1f} %",
+        seuil_reference="≤ 2 incidents non clôturés, évolution ≤ 15 %",
+        commentaire=(
+            "Le volume d'incidents ouverts et/ou la tendance des pertes nécessite un suivi "
+            "renforcé et une accélération des clôtures."
+            if statut != "conforme" else
+            "Le flux d'incidents et son évolution restent maîtrisés."
+        ),
+    ))
+
+    # ── C5 — Cartographie des risques ──────────────────────────────────────────
+    risques = list_risques()
+    nb_critique_risque = sum(1 for r in risques if r.niveau_label == "Critique")
+    nb_eleve_risque = sum(1 for r in risques if r.niveau_label == "Élevé")
+    if nb_critique_risque > 0:
+        statut, poids = "critique", 2
+    elif nb_eleve_risque > 0:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    criteres.append(DecisionCritere(
+        code="C5", libelle="Cartographie des risques",
+        reference_reglementaire="Art. 313",
+        statut=statut, poids=poids,
+        valeur_observee=f"{nb_critique_risque} risque(s) critique(s), {nb_eleve_risque} élevé(s)",
+        seuil_reference="Aucun risque en zone critique",
+        commentaire=(
+            "Des risques en zone critique ou élevée doivent être couverts par un plan "
+            "d'action documenté et suivi."
+            if statut != "conforme" else
+            "Aucun risque en zone critique dans la cartographie actuelle."
+        ),
+    ))
+
+    # ── C6 — Contrôles internes non conformes ─────────────────────────────────
+    controles = list_controles()
+    nb_non_conf = sum(1 for c in controles if c.resultat == "Non-conforme")
+    if nb_non_conf > 2:
+        statut, poids = "critique", 2
+    elif nb_non_conf > 0:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    criteres.append(DecisionCritere(
+        code="C6", libelle="Efficacité du dispositif de contrôle interne",
+        reference_reglementaire="Art. 314",
+        statut=statut, poids=poids,
+        valeur_observee=f"{nb_non_conf} contrôle(s) non conforme(s) sur {len(controles)}",
+        seuil_reference="0 contrôle non conforme",
+        commentaire=(
+            "Des non-conformités de contrôle doivent être corrigées et documentées "
+            "(conservation ≥ 7 ans, Art. 314)."
+            if statut != "conforme" else
+            "Le dispositif de contrôle interne ne présente pas de non-conformité ouverte."
+        ),
+    ))
+
+    # ── C7 — Indicateurs clés de risque (KRI) hors seuil ──────────────────────
+    kri = get_kri_module()
+    if kri.kri_hors_seuil >= 2:
+        statut, poids = "critique", 2
+    elif kri.kri_hors_seuil == 1:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    criteres.append(DecisionCritere(
+        code="C7", libelle="Indicateurs clés de risque (KRI)",
+        reference_reglementaire="Art. 313",
+        statut=statut, poids=poids,
+        valeur_observee=f"{kri.kri_hors_seuil} KRI hors seuil sur {len(kri.kri_list)}",
+        seuil_reference="0 KRI en zone alerte/critique",
+        commentaire=(
+            "Un ou plusieurs indicateurs clés de risque dépassent leur seuil d'alerte et "
+            "doivent faire l'objet d'un suivi rapproché."
+            if statut != "conforme" else
+            "L'ensemble des indicateurs clés de risque reste dans les seuils normaux."
+        ),
+    ))
+
+    # ── C8 — Plans d'action en retard ──────────────────────────────────────────
+    plans = list_plans()
+    en_retard = sum(1 for p in plans if p.en_retard)
+    if en_retard > 2:
+        statut, poids = "critique", 2
+    elif en_retard > 0:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    criteres.append(DecisionCritere(
+        code="C8", libelle="Avancement des plans d'action correctifs",
+        reference_reglementaire="Art. 313.c",
+        statut=statut, poids=poids,
+        valeur_observee=f"{en_retard} plan(s) en retard sur {len(plans)}",
+        seuil_reference="0 plan en retard",
+        commentaire=(
+            "Des plans d'action en retard exposent l'établissement à une récurrence des "
+            "incidents ou risques déjà identifiés."
+            if statut != "conforme" else
+            "Les plans d'action correctifs et préventifs sont à jour."
+        ),
+    ))
+
+    # ── Agrégation ──────────────────────────────────────────────────────────────
+    score = sum(c.poids for c in criteres)
+    score_max = 2 * len(criteres)
+
+    if score <= 2:
+        niveau = "Maîtrisé"
+    elif score <= 6:
+        niveau = "Sous surveillance"
+    elif score <= 10:
+        niveau = "Vigilance renforcée"
+    else:
+        niveau = "Critique"
+
+    recommandations = [
+        f"[{c.reference_reglementaire}] {c.commentaire}"
+        for c in criteres if c.statut != "conforme"
+    ]
+    if not recommandations:
+        recommandations = [
+            "Aucune action corrective requise à ce stade — maintenir la surveillance "
+            "courante du dispositif conformément à l'Art. 546 (reporting annuel à la "
+            "Commission Bancaire de l'UMOA)."
+        ]
+
+    nb_attention = sum(1 for c in criteres if c.statut == "attention")
+    nb_critique_total = sum(1 for c in criteres if c.statut == "critique")
+    nb_conforme = len(criteres) - nb_attention - nb_critique_total
+
+    synthese = (
+        f"Sur {len(criteres)} critères analysés au titre du dispositif réglementaire UEMOA "
+        f"de gestion et de surveillance du risque opérationnel, {nb_conforme} sont conformes, "
+        f"{nb_attention} nécessitent une attention particulière et {nb_critique_total} "
+        f"présentent un niveau critique. Le niveau de pilotage global retenu est « {niveau} » "
+        f"(score {score}/{score_max}). Organe de reporting recommandé : {organe}."
+    )
+
+    return DecisionPilotageResult(
+        date_analyse=utcnow_iso(),
+        niveau_global=niveau,
+        score_global=score,
+        score_max=score_max,
+        organe_reporting=organe,
+        organe_reporting_motif=motif,
+        criteres=criteres,
+        recommandations=recommandations,
+        synthese=synthese,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Critères transverses partagés — utilisés par les décisions AIB (A1) et AS (A2)
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# Ces critères couvrent les signaux de risque opérationnel qui ne dépendent pas
+# de la méthode de calcul du capital réglementaire (pertes, incidents,
+# cartographie, contrôles, KRI, plans d'action). Ils sont dupliqués — et non
+# extraits depuis get_decision_pilotage() — afin de ne pas modifier le moteur
+# de décision BIC déjà validé.
+
+def _critere_pertes_pilier2(code: str) -> tuple[DecisionCritere, str, str]:
+    dashboard = get_dashboard()
+    seuils = get_pertes_seuils()
+    pertes_mois = dashboard.widget2.pertes_nettes_mois
+
+    if pertes_mois >= seuils.seuil_reporting_conseil:
+        statut, poids = "critique", 2
+        organe = "Conseil d'administration"
+        motif = (
+            f"Pertes nettes du mois ({pertes_mois:,.0f} FCFA) supérieures au seuil de "
+            f"reporting au Conseil ({seuils.seuil_reporting_conseil:,.0f} FCFA)."
+        )
+    elif pertes_mois >= seuils.seuil_reporting_direction:
+        statut, poids = "attention", 1
+        organe = "Direction Générale"
+        motif = (
+            f"Pertes nettes du mois ({pertes_mois:,.0f} FCFA) supérieures au seuil de "
+            f"reporting à la Direction ({seuils.seuil_reporting_direction:,.0f} FCFA)."
+        )
+    elif pertes_mois >= seuils.seuil_reporting_interne:
+        statut, poids = "attention", 1
+        organe = "Comité des risques"
+        motif = (
+            f"Pertes nettes du mois ({pertes_mois:,.0f} FCFA) supérieures au seuil de "
+            f"reporting interne ({seuils.seuil_reporting_interne:,.0f} FCFA)."
+        )
+    else:
+        statut, poids = "conforme", 0
+        organe = "Reporting interne standard"
+        motif = "Les pertes nettes du mois restent inférieures aux seuils d'escalade Pilier 2."
+
+    critere = DecisionCritere(
+        code=code, libelle="Pertes opérationnelles vs seuils Pilier 2",
+        reference_reglementaire="Art. 313.b",
+        statut=statut, poids=poids,
+        valeur_observee=f"{pertes_mois:,.0f} FCFA (mois en cours)",
+        seuil_reference=(
+            f"Interne {seuils.seuil_reporting_interne:,.0f} / "
+            f"Direction {seuils.seuil_reporting_direction:,.0f} / "
+            f"Conseil {seuils.seuil_reporting_conseil:,.0f} FCFA"
+        ),
+        commentaire=motif,
+    )
+    return critere, organe, motif
+
+
+def _critere_incidents_tendance(code: str) -> DecisionCritere:
+    dashboard = get_dashboard()
+    non_clos = dashboard.widget2.incidents_non_clos
+    evolution = dashboard.widget2.evolution_pertes_pct or 0.0
+    if non_clos > 5 or evolution > 50:
+        statut, poids = "critique", 2
+    elif non_clos >= 3 or evolution > 15:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    return DecisionCritere(
+        code=code, libelle="Incidents ouverts et tendance des pertes",
+        reference_reglementaire="Art. 313.b",
+        statut=statut, poids=poids,
+        valeur_observee=f"{non_clos} incident(s) non clôturé(s), évolution {evolution:+.1f} %",
+        seuil_reference="≤ 2 incidents non clôturés, évolution ≤ 15 %",
+        commentaire=(
+            "Le volume d'incidents ouverts et/ou la tendance des pertes nécessite un suivi "
+            "renforcé et une accélération des clôtures."
+            if statut != "conforme" else
+            "Le flux d'incidents et son évolution restent maîtrisés."
+        ),
+    )
+
+
+def _critere_cartographie_risques(code: str) -> DecisionCritere:
+    risques = list_risques()
+    nb_critique_risque = sum(1 for r in risques if r.niveau_label == "Critique")
+    nb_eleve_risque = sum(1 for r in risques if r.niveau_label == "Élevé")
+    if nb_critique_risque > 0:
+        statut, poids = "critique", 2
+    elif nb_eleve_risque > 0:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    return DecisionCritere(
+        code=code, libelle="Cartographie des risques",
+        reference_reglementaire="Art. 313",
+        statut=statut, poids=poids,
+        valeur_observee=f"{nb_critique_risque} risque(s) critique(s), {nb_eleve_risque} élevé(s)",
+        seuil_reference="Aucun risque en zone critique",
+        commentaire=(
+            "Des risques en zone critique ou élevée doivent être couverts par un plan "
+            "d'action documenté et suivi."
+            if statut != "conforme" else
+            "Aucun risque en zone critique dans la cartographie actuelle."
+        ),
+    )
+
+
+def _critere_controles_internes(code: str) -> DecisionCritere:
+    controles = list_controles()
+    nb_non_conf = sum(1 for c in controles if c.resultat == "Non-conforme")
+    if nb_non_conf > 2:
+        statut, poids = "critique", 2
+    elif nb_non_conf > 0:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    return DecisionCritere(
+        code=code, libelle="Efficacité du dispositif de contrôle interne",
+        reference_reglementaire="Art. 314",
+        statut=statut, poids=poids,
+        valeur_observee=f"{nb_non_conf} contrôle(s) non conforme(s) sur {len(controles)}",
+        seuil_reference="0 contrôle non conforme",
+        commentaire=(
+            "Des non-conformités de contrôle doivent être corrigées et documentées "
+            "(conservation ≥ 7 ans, Art. 314)."
+            if statut != "conforme" else
+            "Le dispositif de contrôle interne ne présente pas de non-conformité ouverte."
+        ),
+    )
+
+
+def _critere_kri_hors_seuil(code: str) -> DecisionCritere:
+    kri = get_kri_module()
+    if kri.kri_hors_seuil >= 2:
+        statut, poids = "critique", 2
+    elif kri.kri_hors_seuil == 1:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    return DecisionCritere(
+        code=code, libelle="Indicateurs clés de risque (KRI)",
+        reference_reglementaire="Art. 313",
+        statut=statut, poids=poids,
+        valeur_observee=f"{kri.kri_hors_seuil} KRI hors seuil sur {len(kri.kri_list)}",
+        seuil_reference="0 KRI en zone alerte/critique",
+        commentaire=(
+            "Un ou plusieurs indicateurs clés de risque dépassent leur seuil d'alerte et "
+            "doivent faire l'objet d'un suivi rapproché."
+            if statut != "conforme" else
+            "L'ensemble des indicateurs clés de risque reste dans les seuils normaux."
+        ),
+    )
+
+
+def _critere_plans_action(code: str) -> DecisionCritere:
+    plans = list_plans()
+    en_retard = sum(1 for p in plans if p.en_retard)
+    if en_retard > 2:
+        statut, poids = "critique", 2
+    elif en_retard > 0:
+        statut, poids = "attention", 1
+    else:
+        statut, poids = "conforme", 0
+    return DecisionCritere(
+        code=code, libelle="Avancement des plans d'action correctifs",
+        reference_reglementaire="Art. 313.c",
+        statut=statut, poids=poids,
+        valeur_observee=f"{en_retard} plan(s) en retard sur {len(plans)}",
+        seuil_reference="0 plan en retard",
+        commentaire=(
+            "Des plans d'action en retard exposent l'établissement à une récurrence des "
+            "incidents ou risques déjà identifiés."
+            if statut != "conforme" else
+            "Les plans d'action correctifs et préventifs sont à jour."
+        ),
+    )
+
+
+def _finaliser_decision(
+    criteres: list[DecisionCritere], organe: str, motif: str,
+) -> DecisionPilotageResult:
+    score = sum(c.poids for c in criteres)
+    score_max = 2 * len(criteres)
+
+    if score <= 2:
+        niveau = "Maîtrisé"
+    elif score <= 6:
+        niveau = "Sous surveillance"
+    elif score <= 10:
+        niveau = "Vigilance renforcée"
+    else:
+        niveau = "Critique"
+
+    recommandations = [
+        f"[{c.reference_reglementaire}] {c.commentaire}"
+        for c in criteres if c.statut != "conforme"
+    ]
+    if not recommandations:
+        recommandations = [
+            "Aucune action corrective requise à ce stade — maintenir la surveillance "
+            "courante du dispositif conformément à l'Art. 546 (reporting annuel à la "
+            "Commission Bancaire de l'UMOA)."
+        ]
+
+    nb_attention = sum(1 for c in criteres if c.statut == "attention")
+    nb_critique_total = sum(1 for c in criteres if c.statut == "critique")
+    nb_conforme = len(criteres) - nb_attention - nb_critique_total
+
+    synthese = (
+        f"Sur {len(criteres)} critères analysés au titre du dispositif réglementaire UEMOA "
+        f"de gestion et de surveillance du risque opérationnel, {nb_conforme} sont conformes, "
+        f"{nb_attention} nécessitent une attention particulière et {nb_critique_total} "
+        f"présentent un niveau critique. Le niveau de pilotage global retenu est « {niveau} » "
+        f"(score {score}/{score_max}). Organe de reporting recommandé : {organe}."
+    )
+
+    return DecisionPilotageResult(
+        date_analyse=utcnow_iso(),
+        niveau_global=niveau,
+        score_global=score,
+        score_max=score_max,
+        organe_reporting=organe,
+        organe_reporting_motif=motif,
+        criteres=criteres,
+        recommandations=recommandations,
+        synthese=synthese,
+    )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Décision de pilotage — AIB (Approche Indicateur de Base, Art. 301)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_decision_aib() -> DecisionPilotageResult:
+    """
+    Moteur de décision pour l'onglet A1 — AIB.
+    Combine la robustesse des données PNB retenues pour le calcul déclaratoire
+    avec les signaux transverses de risque opérationnel.
+    """
+    criteres: list[DecisionCritere] = []
+
+    try:
+        aib = calcul_aib()
+        aib_erreur = False
+    except Exception:
+        aib = None
+        aib_erreur = True
+
+    if aib_erreur or aib.donnees_insuffisantes:
+        criteres.append(DecisionCritere(
+            code="C1", libelle="Disponibilité des données PNB (AIB)",
+            reference_reglementaire="Art. 301",
+            statut="critique", poids=2,
+            valeur_observee="Aucun exercice de PNB positif exploitable",
+            seuil_reference="≥ 1 exercice de PNB positif sur 3",
+            commentaire="Le calcul déclaratoire de l'Indicateur de Base ne peut être établi "
+                        "faute de PNB positif saisi sur les 3 derniers exercices.",
+        ))
+    elif aib.n < 3:
+        criteres.append(DecisionCritere(
+            code="C1", libelle="Disponibilité des données PNB (AIB)",
+            reference_reglementaire="Art. 301",
+            statut="attention", poids=1,
+            valeur_observee=f"{aib.n} exercice(s) de PNB positif sur 3",
+            seuil_reference="3 exercices de PNB positif",
+            commentaire="La moyenne du PNB retenue repose sur moins de 3 exercices positifs, "
+                        "ce qui peut fragiliser la robustesse de l'exigence de fonds propres.",
+        ))
+    else:
+        criteres.append(DecisionCritere(
+            code="C1", libelle="Disponibilité des données PNB (AIB)",
+            reference_reglementaire="Art. 301",
+            statut="conforme", poids=0,
+            valeur_observee=f"{aib.n} exercices de PNB positif sur 3",
+            seuil_reference="3 exercices de PNB positif",
+            commentaire="La moyenne triennale du PNB repose sur des données complètes.",
+        ))
+
+    critere_pertes, organe, motif = _critere_pertes_pilier2("C2")
+    criteres.append(critere_pertes)
+    criteres.append(_critere_incidents_tendance("C3"))
+    criteres.append(_critere_cartographie_risques("C4"))
+    criteres.append(_critere_controles_internes("C5"))
+    criteres.append(_critere_kri_hors_seuil("C6"))
+    criteres.append(_critere_plans_action("C7"))
+
+    return _finaliser_decision(criteres, organe, motif)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Décision de pilotage — AS (Approche Standard, Art. 305-311)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def get_decision_as() -> DecisionPilotageResult:
+    """
+    Moteur de décision pour l'onglet A2 — AS.
+    Vérifie en priorité l'autorisation réglementaire préalable de la Commission
+    Bancaire (art. 300 UEMOA), puis applique les signaux transverses de risque
+    opérationnel.
+    """
+    criteres: list[DecisionCritere] = []
+
+    try:
+        as_res = calcul_as()
+        as_erreur = False
+    except Exception:
+        as_res = None
+        as_erreur = True
+
+    if as_erreur:
+        criteres.append(DecisionCritere(
+            code="C1", libelle="Autorisation et disponibilité des données (AS)",
+            reference_reglementaire="Art. 300",
+            statut="critique", poids=2,
+            valeur_observee="Non calculable",
+            seuil_reference="Autorisation CB + données par ligne de métier",
+            commentaire="Impossible d'évaluer l'Approche Standard faute de calcul disponible.",
+        ))
+    elif not as_res.as_autorisee:
+        criteres.append(DecisionCritere(
+            code="C1", libelle="Autorisation et disponibilité des données (AS)",
+            reference_reglementaire="Art. 300",
+            statut="critique", poids=2,
+            valeur_observee="Approche Standard non autorisée",
+            seuil_reference="Autorisation préalable de la Commission Bancaire requise",
+            commentaire="L'établissement n'est pas autorisé par la Commission Bancaire de "
+                        "l'UMOA à utiliser l'Approche Standard ; les montants affichés sont "
+                        "indicatifs et ne peuvent être retenus pour le reporting réglementaire.",
+        ))
+    elif as_res.donnees_insuffisantes:
+        criteres.append(DecisionCritere(
+            code="C1", libelle="Autorisation et disponibilité des données (AS)",
+            reference_reglementaire="Art. 305-311",
+            statut="attention", poids=1,
+            valeur_observee="Autorisée — données par ligne de métier incomplètes",
+            seuil_reference="PNB des 8 lignes de métier sur 3 exercices",
+            commentaire="L'Approche Standard est autorisée mais les données de PNB par ligne "
+                        "de métier restent incomplètes sur les exercices requis.",
+        ))
+    else:
+        criteres.append(DecisionCritere(
+            code="C1", libelle="Autorisation et disponibilité des données (AS)",
+            reference_reglementaire="Art. 305-311",
+            statut="conforme", poids=0,
+            valeur_observee="Autorisée — données complètes",
+            seuil_reference="PNB des 8 lignes de métier sur 3 exercices",
+            commentaire="L'Approche Standard est autorisée et les données par ligne de "
+                        "métier sont complètes.",
+        ))
+
+    critere_pertes, organe, motif = _critere_pertes_pilier2("C2")
+    criteres.append(critere_pertes)
+    criteres.append(_critere_incidents_tendance("C3"))
+    criteres.append(_critere_cartographie_risques("C4"))
+    criteres.append(_critere_controles_internes("C5"))
+    criteres.append(_critere_kri_hors_seuil("C6"))
+    criteres.append(_critere_plans_action("C7"))
+
+    return _finaliser_decision(criteres, organe, motif)

@@ -1888,6 +1888,11 @@ class RwaApiService {
     return AibCalculResult.fromJson(json);
   }
 
+  Future<DecisionPilotageResult> fetchDecisionAib() async {
+    final json = await _client.get('/risque-operationnel/aib/decision') as Map<String, dynamic>;
+    return DecisionPilotageResult.fromJson(json);
+  }
+
   // ── UEMOI — AS (Approche Standard) ───────────────────────────────────────────
 
   Future<List<BetaLigneView>> fetchBetaLignes() async {
@@ -1931,6 +1936,11 @@ class RwaApiService {
     return AsCalculResult.fromJson(json);
   }
 
+  Future<DecisionPilotageResult> fetchDecisionAs() async {
+    final json = await _client.get('/risque-operationnel/as/decision') as Map<String, dynamic>;
+    return DecisionPilotageResult.fromJson(json);
+  }
+
   // ── UEMOI — Seuils + Synthèse ─────────────────────────────────────────────────
 
   Future<ParametresSeuils> fetchPertesSeuils() async {
@@ -1946,6 +1956,11 @@ class RwaApiService {
   Future<SyntheseResult> fetchSynthese() async {
     final json = await _client.get('/risque-operationnel/synthese') as Map<String, dynamic>;
     return SyntheseResult.fromJson(json);
+  }
+
+  Future<DecisionPilotageResult> fetchDecisionPilotage() async {
+    final json = await _client.get('/risque-operationnel/pilotage/decision') as Map<String, dynamic>;
+    return DecisionPilotageResult.fromJson(json);
   }
 
   // ── PIEAFP (Pilier 2 / ICAAP) ───────────────────────────────────────────────

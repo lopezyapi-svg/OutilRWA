@@ -261,7 +261,7 @@ const List<_MenuEntry> _operationalRiskChildren = [
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnelPertes,
     icon: Icons.monetization_on_outlined,
-    label: 'Pertes opérationnelles',
+    label: 'Pilotage interne',
   ),
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnelHistorique,

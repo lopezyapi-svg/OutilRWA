@@ -177,7 +177,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                 Expanded(
                   child: Row(
                     children: [
-                      Flexible(
+                      const Flexible(
                         child: Text(
                           'Titres exposés au risque de change',
                           maxLines: 1,
@@ -185,7 +185,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A237E),
+                            color: Color(0xFF1A237E),
                           ),
                         ),
                       ),
@@ -302,10 +302,11 @@ class _FxInfoButton extends StatelessWidget {
         context: context,
         builder: (_) => _FxMethodologyDialog(result: result),
       ),
-      child: Tooltip(
+      child: const Tooltip(
+        excludeFromSemantics: true,
         message: 'Méthodologie et formules',
         child: Padding(
-          padding: const EdgeInsets.all(1),
+          padding: EdgeInsets.all(1),
           child: Icon(CupertinoIcons.info_circle, size: 17, color: _fxPrimary),
         ),
       ),
@@ -1581,6 +1582,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                             if (widget.tooltipMessage != null) ...[
                               const SizedBox(width: 1),
                               Tooltip(
+                                excludeFromSemantics: true,
                                 message: widget.tooltipMessage!,
                                 preferBelow: false,
                                 decoration: BoxDecoration(

@@ -66,7 +66,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Avertissement réglementaire permanent
-          _NoticeBanner(
+          const _NoticeBanner(
             color: AppTheme.warning,
             icon: Icons.info_outline,
             text: 'AIB et AS sont des approches déclaratoires BCEAO (Pilier 1). '

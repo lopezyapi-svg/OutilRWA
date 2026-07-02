@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/utils/currency_conversion.dart';

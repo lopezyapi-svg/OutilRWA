@@ -8,6 +8,7 @@ import '../../../core/utils/formatters.dart' show AppFormatters;
 import '../../../shared/widgets/kpi_metric_card.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../models/ro_models.dart';
+import 'decision_panel.dart';
 
 class UemoiAsScreen extends StatefulWidget {
   const UemoiAsScreen({super.key, required this.api});
@@ -132,7 +133,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
         children: [
           // Bannière autorisation Commission Bancaire
           if (!p.asAutorisee)
-            _NoticeBanner(
+            const _NoticeBanner(
               color: AppTheme.danger,
               icon: Icons.lock_outlined,
               text: 'L\'Approche Standard nécessite l\'autorisation préalable de la Commission Bancaire'
@@ -178,7 +179,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
           ],
 
           if (r.donneesInsuffisantes) ...[
-            _NoticeBanner(
+            const _NoticeBanner(
               color: AppTheme.warning,
               icon: Icons.warning_amber_outlined,
               text: 'Aucune donnée PNB par ligne de métier saisie.'
@@ -299,12 +300,15 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
           ),
           AppSpacing.gapSm,
 
-          _FormulaBox(
+          const _FormulaBox(
             'Formule AS (art. 305-311) :'
             '  K_annee = MAX(Σ(PNB_ligne × β), 0)'
             '  →  K_AS = MOYENNE(K_N-2, K_N-1, K_N)'
             '  →  APR = K_AS × 12,5',
           ),
+          AppSpacing.gapSm,
+
+          DecisionPanel(loader: widget.api.fetchDecisionAs),
         ],
       ),
     );

@@ -218,6 +218,7 @@ class _IndicatorTooltip extends StatelessWidget {
     const mutedColor = Color(0xFFAFC0DA);
 
     return Tooltip(
+      excludeFromSemantics: true,
       richMessage: TextSpan(
         children: [
           TextSpan(

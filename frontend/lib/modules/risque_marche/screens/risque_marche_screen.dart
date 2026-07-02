@@ -583,6 +583,7 @@ class _YieldCurveRefreshButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
+      excludeFromSemantics: true,
       message: 'Actualiser depuis les sources officielles',
       child: Semantics(
         label: 'Actualiser'.tr(context),
@@ -632,6 +633,7 @@ class _YieldCurveInfoBanner extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Tooltip(
+        excludeFromSemantics: true,
         message: tooltip,
         waitDuration: const Duration(milliseconds: 350),
         showDuration: const Duration(seconds: 5),
@@ -1087,6 +1089,7 @@ class _YieldCurveInterpretationButtonState
     return CompositedTransformTarget(
       link: _layerLink,
       child: Tooltip(
+        excludeFromSemantics: true,
         message: 'Afficher l’interprétation de la courbe'.tr(context),
         waitDuration: const Duration(milliseconds: 300),
         child: Semantics(
@@ -1491,6 +1494,7 @@ class _YieldCurveSourceInfoButton extends StatelessWidget {
     ].join('\n').tr(context);
 
     return Tooltip(
+      excludeFromSemantics: true,
       message: tooltip,
       waitDuration: const Duration(milliseconds: 350),
       showDuration: const Duration(seconds: 5),
@@ -1708,6 +1712,7 @@ class _YieldCurveSeriesControlChip extends StatelessWidget {
     if (tooltipText == null || tooltipText.isEmpty) return control;
 
     return Tooltip(
+      excludeFromSemantics: true,
       message: tooltipText.tr(context),
       waitDuration: const Duration(milliseconds: 300),
       child: control,
@@ -12136,10 +12141,11 @@ class _BondProfileBreakdownPieState extends State<_BondProfileBreakdownPie> {
             _isHovering = true;
           }),
           onExit: (_) => WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted)
+            if (mounted) {
               setState(() {
                 _isHovering = false;
               });
+            }
           }),
           child: SizedBox.square(
             dimension: chartSize,
@@ -12649,6 +12655,7 @@ class _BondDistributionBarRowState extends State<_BondDistributionBarRow> {
         : (widget.entry.amount / widget.maxAmount).clamp(0.025, 1.0);
     final baseAlpha = widget.emphasized ? 0.86 : 0.58;
     return Tooltip(
+      excludeFromSemantics: true,
       message:
           '${widget.entry.label}\n${AppFormatters.percent(widget.entry.share)} du portefeuille\n${_marketReadableMoney(widget.entry.amount)}',
       waitDuration: const Duration(milliseconds: 220),
@@ -12843,6 +12850,7 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
         : (widget.entry.share / widget.maxShare).clamp(0.025, 1.0);
     final baseAlpha = widget.emphasized ? 0.88 : 0.58;
     return Tooltip(
+      excludeFromSemantics: true,
       message:
           '#${widget.rank} ${widget.entry.label}\n${AppFormatters.percent(widget.entry.share)} du portefeuille\n${_marketReadableMoney(widget.entry.amount)}',
       waitDuration: const Duration(milliseconds: 220),
@@ -14734,6 +14742,7 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
             children: [
               for (final entry in widget.entries) ...[
                 Tooltip(
+                  excludeFromSemantics: true,
                   message:
                       '${entry.label}\n${AppFormatters.percent(entry.share)}\n${_marketReadableMoney(entry.amount)}',
                   waitDuration: const Duration(milliseconds: 220),
@@ -18632,6 +18641,7 @@ class _MarketPortfolioActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
+      excludeFromSemantics: true,
       message: tooltip.tr(context),
       waitDuration: const Duration(milliseconds: 350),
       child: InkResponse(
@@ -20570,6 +20580,7 @@ class _VarResetDefaultsButtonState extends State<_VarResetDefaultsButton> {
     final muted = _marketMutedFor(context);
 
     return Tooltip(
+      excludeFromSemantics: true,
       message: 'Réinitialiser les paramètres par défaut'.tr(context),
       waitDuration: const Duration(milliseconds: 350),
       child: MouseRegion(
@@ -26408,17 +26419,22 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
 
   double _positionValue(MarketPortfolioRecord r) {
     if (r.maturityDate != null &&
-        !r.maturityDate!.isAfter(r.resolvedAnalysisDate)) return 0;
-    if (r.presentValue > 0)
+        !r.maturityDate!.isAfter(r.resolvedAnalysisDate)) {
+      return 0;
+    }
+    if (r.presentValue > 0) {
       return convertCurrencyAmount(r.presentValue,
           fromCurrency: r.currency, toCurrency: 'XOF');
-    if (r.quantity > 0 && r.marketPrice > 0)
+    }
+    if (r.quantity > 0 && r.marketPrice > 0) {
       return convertCurrencyAmount(r.quantity * r.marketPrice,
           fromCurrency: r.currency, toCurrency: 'XOF');
+    }
     final explicit = math.max(0.0, r.valuationAmount);
-    if (explicit > 0)
+    if (explicit > 0) {
       return convertCurrencyAmount(explicit,
           fromCurrency: r.currency, toCurrency: 'XOF');
+    }
     final crd = r.capitalRemainingDue > 0
         ? r.capitalRemainingDue
         : (r.capitalInitial > 0 ? r.capitalInitial : r.exposureAmount);
@@ -26436,8 +26452,9 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
     if (v == 0) return '0';
     final unit = PortfolioAmountUnitPreference.current;
     final scaled = v / unit.divisor;
-    if (scaled == scaled.roundToDouble())
+    if (scaled == scaled.roundToDouble()) {
       return '${scaled.toInt()} ${unit.label}';
+    }
     return '${scaled.toStringAsFixed(1)} ${unit.label}';
   }
 
@@ -26789,17 +26806,17 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                           fontSize: 12, fontWeight: FontWeight.w500))),
               Expanded(
                   flex: flexes[5],
-                  child: Text('${_fmt(exigence)}',
+                  child: Text(_fmt(exigence),
                       textAlign: TextAlign.right,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.accent))),
               Expanded(
                   flex: flexes[6],
-                  child: Text('${_fmt(rwa)}',
+                  child: Text(_fmt(rwa),
                       textAlign: TextAlign.right,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.accent))),
@@ -26878,17 +26895,17 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                           fontSize: 12, fontWeight: FontWeight.w500))),
               Expanded(
                   flex: flexes[4],
-                  child: Text('${_fmt(exigence)}',
+                  child: Text(_fmt(exigence),
                       textAlign: TextAlign.right,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.accent))),
               Expanded(
                   flex: flexes[5],
-                  child: Text('${_fmt(rwa)}',
+                  child: Text(_fmt(rwa),
                       textAlign: TextAlign.right,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.accent))),
@@ -27010,8 +27027,7 @@ class _TauxSummaryRow extends StatelessWidget {
     this.generalRisk = '21 000 000 FCFA',
     this.exigenceFP = '40 000 000 FCFA',
     this.rwa = '500 000 000 FCFA',
-    this.contribution = '45.2 %',
-  });
+  }) : contribution = '45.2 %';
   final Color textColor, muted, border, surface;
   final String specificRisk, generalRisk, exigenceFP, rwa, contribution;
 
@@ -27107,6 +27123,7 @@ class _SummaryInfoButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
+      excludeFromSemantics: true,
       message: message,
       preferBelow: false,
       decoration: BoxDecoration(
@@ -27128,7 +27145,7 @@ class _SummaryInfoButton extends StatelessWidget {
             color: const Color(0xFF4F46E5).withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(20)),
         child:
-            Icon(Icons.info_outline, size: 12, color: const Color(0xFF4F46E5)),
+            const Icon(Icons.info_outline, size: 12, color: Color(0xFF4F46E5)),
       ),
     );
   }
@@ -27511,7 +27528,7 @@ class _TauxTotalRow extends StatelessWidget {
                 color: _marketTextFor(context))),
         const Spacer(),
         Text(value,
-            style: TextStyle(
+            style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,
                 color: AppColors.accent)),
@@ -27534,8 +27551,7 @@ class _RwaContributionSegment {
 class _RwaContributionBar extends StatelessWidget {
   const _RwaContributionBar({
     required this.segments,
-    this.title = 'Contribution au RWA Marché',
-  });
+  }) : title = 'Contribution au RWA Marché';
   final List<_RwaContributionSegment> segments;
   final String title;
 
@@ -27546,7 +27562,7 @@ class _RwaContributionBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Row(children: [
-          Icon(Icons.donut_small_rounded, size: 14, color: _marketPrimary),
+          const Icon(Icons.donut_small_rounded, size: 14, color: _marketPrimary),
           const SizedBox(width: 6),
           Text(title,
               style: TextStyle(
@@ -27644,7 +27660,7 @@ class _TauxAuditLine extends StatelessWidget {
                       color: _marketMutedFor(context)))),
           Expanded(
               child: Text(value,
-                  style: TextStyle(fontSize: 12, color: AppColors.accent))),
+                  style: const TextStyle(fontSize: 12, color: AppColors.accent))),
         ],
       ),
     );
@@ -27967,7 +27983,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                 children: [
                   GestureDetector(
                     onTap: () => _showMethodologyDialog(context),
-                    child: Icon(Icons.info_outline_rounded,
+                    child: const Icon(Icons.info_outline_rounded,
                         size: 20, color: AppColors.accent),
                   ),
                   const SizedBox(width: 8),
@@ -28370,7 +28386,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                             fontWeight: FontWeight.bold,
                             color: _marketTextFor(context))),
                     Text(_fmt(result.totalMarketRwa),
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             color: AppColors.accent)),
@@ -28384,7 +28400,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                         style: TextStyle(
                             fontSize: 11, color: _marketMutedFor(context))),
                     Text('${result.fxContributionPercent.toStringAsFixed(2)} %',
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: AppColors.accent)),
@@ -28536,8 +28552,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$imported positions importées' +
-                (skipped > 0 ? ' ($skipped lignes ignorées)' : '')),
+            content: Text('$imported positions importées${skipped > 0 ? ' ($skipped lignes ignorées)' : ''}'),
           ),
         );
       }
@@ -28681,8 +28696,9 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
     if (v == 0) return '0';
     final unit = PortfolioAmountUnitPreference.current;
     final scaled = v / unit.divisor;
-    if (scaled == scaled.roundToDouble())
+    if (scaled == scaled.roundToDouble()) {
       return '${scaled.toInt()} ${unit.label}';
+    }
     return '${scaled.toStringAsFixed(1)} ${unit.label}';
   }
 }
@@ -28920,7 +28936,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(
+          const _TauxBlockHeader(
               title: 'Portefeuille Actions', icon: Icons.show_chart_rounded),
           const SizedBox(height: 3),
           _TauxTable(
@@ -28976,7 +28992,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(
+          const _TauxBlockHeader(
               title: 'Indicateurs de Concentration',
               icon: Icons.analytics_rounded),
           const SizedBox(height: 3),
@@ -29004,9 +29020,9 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
             decoration: BoxDecoration(
                 color: AppColors.accent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppTheme.radius)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.info_outline, size: 16, color: AppColors.accent),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                     'HHI = Σ(poids_i)² × 10 000 — au-delà de 2 500, concentration élevée',
@@ -29035,7 +29051,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(
+          const _TauxBlockHeader(
               title: 'Résultat Prudentiel', icon: Icons.calculate_rounded),
           const SizedBox(height: 4),
           _TauxResultLine(label: 'Position Brute Actions', value: _fcfa(gross)),
@@ -29057,9 +29073,9 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
             decoration: BoxDecoration(
                 color: AppColors.accent.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppTheme.radius)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.info_outline, size: 16, color: AppColors.accent),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                     'Exigence Actions = (Position brute + |Position nette|) × 8 % — Approche standard BCEAO (Art. 45)',
@@ -29087,7 +29103,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(title: 'Audit', icon: Icons.description_outlined),
+          const _TauxBlockHeader(title: 'Audit', icon: Icons.description_outlined),
           const SizedBox(height: 3),
           _TauxAuditLine(
               label: 'Données utilisées',
@@ -29095,12 +29111,12 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
           _TauxAuditLine(label: 'Fichier source', value: ds?.fileName ?? '—'),
           _TauxAuditLine(
               label: 'Date d\'import', value: _frDate(ds?.importedAt)),
-          _TauxAuditLine(
+          const _TauxAuditLine(
               label: 'Méthode de calcul',
               value: 'Approche standard (Bâle II / BCEAO Art. 45)'),
-          _TauxAuditLine(label: 'Devise de référence', value: 'FCFA (XOF)'),
+          const _TauxAuditLine(label: 'Devise de référence', value: 'FCFA (XOF)'),
           const SizedBox(height: 3),
-          _TauxTableHeader('Journal détaillé des calculs'),
+          const _TauxTableHeader('Journal détaillé des calculs'),
           const SizedBox(height: 8),
           _TauxTable(
             columns: const ['Étape', 'Description', 'Valeur'],
@@ -29271,7 +29287,7 @@ RWA Marché = Exigence FP Marché × 12,5 (DISPRUD UMOA, Art. 318-319)''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(
+          const _TauxBlockHeader(
               title: 'Synthèse par Type de Risque',
               icon: Icons.pie_chart_rounded),
           const SizedBox(height: 3),
@@ -29302,16 +29318,16 @@ RWA Marché = Exigence FP Marché × 12,5 (DISPRUD UMOA, Art. 318-319)''',
             decoration: BoxDecoration(
                 color: const Color(0xFF4F46E5).withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppTheme.radius)),
-            child: Row(children: [
+            child: const Row(children: [
               Icon(Icons.info_outline,
-                  size: 16, color: const Color(0xFF4F46E5)),
-              const SizedBox(width: 8),
+                  size: 16, color: Color(0xFF4F46E5)),
+              SizedBox(width: 8),
               Expanded(
                 child: Text(
                     'RWA Marché = Exigence FP Marché × 12,5 (DISPRUD UMOA, Art. 318-319)',
                     style: TextStyle(
                         fontSize: 12,
-                        color: const Color(0xFF4F46E5),
+                        color: Color(0xFF4F46E5),
                         fontWeight: FontWeight.w500)),
               ),
             ]),
@@ -29480,7 +29496,7 @@ Le multiplicateur 12,5 est l'inverse du ratio de solvabilité minimal (8 %).''',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _TauxBlockHeader(
+          const _TauxBlockHeader(
               title: 'RWA par Type de Risque', icon: Icons.pie_chart_rounded),
           const SizedBox(height: 3),
           _TauxTable(

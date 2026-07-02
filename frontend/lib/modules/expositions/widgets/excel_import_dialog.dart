@@ -1058,6 +1058,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
   }) {
     final sheetName = sheet['name']?.toString() ?? '';
     return Tooltip(
+      excludeFromSemantics: true,
       message: 'Cliquer pour copier le nom de la feuille',
       child: Material(
         color: Colors.transparent,
@@ -1345,6 +1346,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
     required Color color,
   }) {
     return Tooltip(
+      excludeFromSemantics: true,
       message: 'Cliquer pour copier le nom de la colonne',
       child: Material(
         color: Colors.transparent,

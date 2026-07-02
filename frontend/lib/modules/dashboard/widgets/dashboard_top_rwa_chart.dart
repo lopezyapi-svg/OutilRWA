@@ -117,7 +117,6 @@ class DashboardTopRwaChart extends StatelessWidget {
 
 class _VerticalBarItem extends StatefulWidget {
   const _VerticalBarItem({
-    super.key,
     required this.entry,
     required this.maxAmount,
     required this.color,
@@ -162,7 +161,7 @@ class _VerticalBarItemState extends State<_VerticalBarItem> {
                       width: 32,
                       height: maxHeight,
                       decoration: BoxDecoration(
-                        color: widget.color.withOpacity(0.05),
+                        color: widget.color.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -174,7 +173,7 @@ class _VerticalBarItemState extends State<_VerticalBarItem> {
                       decoration: BoxDecoration(
                         color: widget.color,
                         borderRadius: BorderRadius.circular(2),
-                        boxShadow: _isHovered ? [BoxShadow(color: widget.color.withOpacity(0.4), blurRadius: 4, offset: const Offset(0, -2))] : [],
+                        boxShadow: _isHovered ? [BoxShadow(color: widget.color.withValues(alpha: 0.4), blurRadius: 4, offset: const Offset(0, -2))] : [],
                       ),
                     ),
                 Positioned(

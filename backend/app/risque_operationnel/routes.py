@@ -12,6 +12,7 @@ from .models import (
     ControleUpdate,
     ControleView,
     DashboardData,
+    DecisionPilotageResult,
     HistoriqueView,
     IncidentBulkImportRequest,
     IncidentCreate,
@@ -246,6 +247,11 @@ def calcul_aib() -> AibCalculResult:
     return services.calcul_aib()
 
 
+@router.get("/aib/decision", response_model=DecisionPilotageResult)
+def get_decision_aib() -> DecisionPilotageResult:
+    return services.get_decision_aib()
+
+
 # ─── BLOC A2 — AS (Approche Standard) ────────────────────────────────────────
 
 @router.get("/as/beta-lignes", response_model=list[BetaLigneView])
@@ -283,6 +289,11 @@ def calcul_as() -> AsCalculResult:
     return services.calcul_as()
 
 
+@router.get("/as/decision", response_model=DecisionPilotageResult)
+def get_decision_as() -> DecisionPilotageResult:
+    return services.get_decision_as()
+
+
 # ─── Seuils de reporting Pilier 2 ────────────────────────────────────────────
 
 @router.get("/pertes/seuils", response_model=ParametresSeuils)
@@ -300,3 +311,10 @@ def update_pertes_seuils(data: ParametresSeuilsUpdate) -> ParametresSeuils:
 @router.get("/synthese", response_model=SyntheseResult)
 def get_synthese() -> SyntheseResult:
     return services.get_synthese()
+
+
+# ─── Décision de pilotage — Analyse et reporting (dispositif UEMOA) ──────────
+
+@router.get("/pilotage/decision", response_model=DecisionPilotageResult)
+def get_decision_pilotage() -> DecisionPilotageResult:
+    return services.get_decision_pilotage()

@@ -923,3 +923,76 @@ class SyntheseResult {
         ratioCouverture: j['ratio_couverture'] != null ? (j['ratio_couverture'] as num).toDouble() : null,
       );
 }
+
+// ─── Décision de pilotage — Analyse et reporting (dispositif UEMOA) ─────────
+
+class DecisionCritere {
+  const DecisionCritere({
+    required this.code,
+    required this.libelle,
+    required this.referenceReglementaire,
+    required this.statut,
+    required this.poids,
+    required this.valeurObservee,
+    required this.seuilReference,
+    required this.commentaire,
+  });
+
+  final String code;
+  final String libelle;
+  final String referenceReglementaire;
+  final String statut; // "conforme" | "attention" | "critique"
+  final int poids;
+  final String valeurObservee;
+  final String seuilReference;
+  final String commentaire;
+
+  factory DecisionCritere.fromJson(Map<String, dynamic> j) => DecisionCritere(
+        code: j['code'] as String,
+        libelle: j['libelle'] as String,
+        referenceReglementaire: j['reference_reglementaire'] as String,
+        statut: j['statut'] as String,
+        poids: (j['poids'] as num).toInt(),
+        valeurObservee: j['valeur_observee'] as String,
+        seuilReference: j['seuil_reference'] as String,
+        commentaire: j['commentaire'] as String,
+      );
+}
+
+class DecisionPilotageResult {
+  const DecisionPilotageResult({
+    required this.dateAnalyse,
+    required this.niveauGlobal,
+    required this.scoreGlobal,
+    required this.scoreMax,
+    required this.organeReporting,
+    required this.organeReportingMotif,
+    required this.criteres,
+    required this.recommandations,
+    required this.synthese,
+  });
+
+  final String dateAnalyse;
+  final String niveauGlobal;
+  final int scoreGlobal;
+  final int scoreMax;
+  final String organeReporting;
+  final String organeReportingMotif;
+  final List<DecisionCritere> criteres;
+  final List<String> recommandations;
+  final String synthese;
+
+  factory DecisionPilotageResult.fromJson(Map<String, dynamic> j) => DecisionPilotageResult(
+        dateAnalyse: j['date_analyse'] as String,
+        niveauGlobal: j['niveau_global'] as String,
+        scoreGlobal: (j['score_global'] as num).toInt(),
+        scoreMax: (j['score_max'] as num).toInt(),
+        organeReporting: j['organe_reporting'] as String,
+        organeReportingMotif: j['organe_reporting_motif'] as String,
+        criteres: (j['criteres'] as List<dynamic>)
+            .map((e) => DecisionCritere.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        recommandations: (j['recommandations'] as List<dynamic>).cast<String>(),
+        synthese: j['synthese'] as String,
+      );
+}

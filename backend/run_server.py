@@ -6,8 +6,14 @@ import argparse
 import logging
 import os
 from pathlib import Path
+import sys
 
 import uvicorn
+
+
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.runtime_paths import logs_dir
 from app.main import app
@@ -51,6 +57,7 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
+    os.chdir(BACKEND_DIR)
     _configure_logging()
     log_level = os.environ.get("RWA_API_LOG_LEVEL", "warning")
     uvicorn.run(
@@ -60,6 +67,7 @@ def main() -> None:
         log_level=log_level,
         access_log=False,
         reload=args.reload,
+        app_dir=str(BACKEND_DIR),
     )
 
 

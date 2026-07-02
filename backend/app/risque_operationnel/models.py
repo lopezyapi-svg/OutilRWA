@@ -536,3 +536,28 @@ class SyntheseResult(BaseModel):
     lignes: list[SyntheseLigne]
     ecart_bic_vs_aib: float | None
     ratio_couverture: float | None
+
+
+# ─── Décision de pilotage — Analyse et reporting (dispositif UEMOA) ──────────
+
+class DecisionCritere(BaseModel):
+    code: str
+    libelle: str
+    reference_reglementaire: str
+    statut: str  # "conforme" | "attention" | "critique"
+    poids: int
+    valeur_observee: str
+    seuil_reference: str
+    commentaire: str
+
+
+class DecisionPilotageResult(BaseModel):
+    date_analyse: str
+    niveau_global: str  # "Maîtrisé" | "Sous surveillance" | "Vigilance renforcée" | "Critique"
+    score_global: int
+    score_max: int
+    organe_reporting: str
+    organe_reporting_motif: str
+    criteres: list[DecisionCritere]
+    recommandations: list[str]
+    synthese: str

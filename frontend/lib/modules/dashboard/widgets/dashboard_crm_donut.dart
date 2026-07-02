@@ -105,7 +105,7 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
                                     borderRadius: BorderRadius.circular(4),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: c.ink.withOpacity(0.1),
+                                        color: c.ink.withValues(alpha: 0.1),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       )
@@ -189,10 +189,10 @@ class _LegendItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: c.border.withOpacity(0.5)),
+        border: Border.all(color: c.border.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
-            color: c.ink.withOpacity(0.02),
+            color: c.ink.withValues(alpha: 0.02),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

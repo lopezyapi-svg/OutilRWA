@@ -8,6 +8,7 @@ import '../../../core/utils/formatters.dart' show AppFormatters;
 import '../../../shared/widgets/kpi_metric_card.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../models/ro_models.dart';
+import 'decision_panel.dart';
 
 class UemoiAibScreen extends StatefulWidget {
   const UemoiAibScreen({super.key, required this.api});
@@ -172,7 +173,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
           ],
 
           if (r != null && r.donneesInsuffisantes) ...[
-            _NoticeBanner(
+            const _NoticeBanner(
               color: AppTheme.warning,
               icon: Icons.warning_amber_outlined,
               text: 'Aucune donnée PNB saisie. Renseignez au moins 1 exercice pour lancer le calcul.',
@@ -207,7 +208,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
                         DataColumn(label: Text('Source')),
                         DataColumn(label: Text('')),
                       ],
-                      rows: r!.anneesSaisies.map((a) => DataRow(cells: [
+                      rows: r.anneesSaisies.map((a) => DataRow(cells: [
                         DataCell(Text('${a.annee}',
                             style: const TextStyle(fontWeight: FontWeight.w600))),
                         DataCell(Text(AppFormatters.currency(a.produitBrutTotal))),
@@ -293,10 +294,13 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
           ),
           AppSpacing.gapSm,
 
-          _FormulaBox(
+          const _FormulaBox(
             'K_IB = Σ(PNB positifs) / n × α    |    APR = K_IB × 12,5    |    Capital = APR × 8 %\n'
             'n = années avec PNB > 0 sur 3 exercices (art. 301 UEMOA)',
           ),
+          AppSpacing.gapSm,
+
+          DecisionPanel(loader: widget.api.fetchDecisionAib),
         ],
       ),
     );
