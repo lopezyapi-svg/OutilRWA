@@ -9,7 +9,7 @@ import '../../modules/hors_bilan/models/hors_bilan_models.dart';
 import '../../modules/rapports/models/report_models.dart';
 import '../../modules/referentiels/models/referentiels_models.dart';
 import '../../modules/risque_operationnel/models/ro_models.dart';
-import '../../modules/icap/models/pieafp_models.dart';
+// 
 import '../../modules/rwa_engine/models/rwa_credit_analysis.dart';
 import 'api_client.dart';
 import 'api_runtime_environment.dart' as runtime_environment;
@@ -1908,96 +1908,5 @@ class RwaApiService {
     return DecisionPilotageResult.fromJson(json);
   }
 
-  // ── PIEAFP (Pilier 2 / ICAAP) ───────────────────────────────────────────────
-
-  Future<PieafpDashboard> fetchPieafpDashboard() async {
-    final json = await _client.get('/pieafp/dashboard') as Map<String, dynamic>;
-    return PieafpDashboard.fromJson(json);
-  }
-
-  Future<ConcentrationResult> fetchConcentration() async {
-    final json = await _client.get('/pieafp/concentration') as Map<String, dynamic>;
-    return ConcentrationResult.fromJson(json);
-  }
-
-  Future<IrrbbResult> fetchIrrbb({int chocBp = 200}) async {
-    final json = await _client.get('/pieafp/irrbb?choc_bp=$chocBp') as Map<String, dynamic>;
-    return IrrbbResult.fromJson(json);
-  }
-
-  Future<IrrbbTrancheResult> updateIrrbbTranche(
-      String tranche, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/irrbb/$tranche', data) as Map<String, dynamic>;
-    return IrrbbTrancheResult.fromJson(json);
-  }
-
-  Future<List<AutreRisque>> fetchAutresRisques() async {
-    final list = await _client.get('/pieafp/autres-risques') as List<dynamic>;
-    return list.map((e) => AutreRisque.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<AutreRisque> createAutreRisque(Map<String, dynamic> data) async {
-    final json = await _client.post('/pieafp/autres-risques', data) as Map<String, dynamic>;
-    return AutreRisque.fromJson(json);
-  }
-
-  Future<AutreRisque> updateAutreRisque(int id, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/autres-risques/$id', data) as Map<String, dynamic>;
-    return AutreRisque.fromJson(json);
-  }
-
-  Future<void> deleteAutreRisque(int id) async {
-    await _client.delete('/pieafp/autres-risques/$id');
-  }
-
-  Future<PlanificationResult> fetchPlanification() async {
-    final json = await _client.get('/pieafp/planification') as Map<String, dynamic>;
-    return PlanificationResult.fromJson(json);
-  }
-
-  Future<PlanificationAnnee> upsertPlanificationAnnee(
-      int annee, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/planification/$annee', data) as Map<String, dynamic>;
-    return PlanificationAnnee.fromJson(json);
-  }
-
-  Future<List<ScenarioStress>> fetchScenarios() async {
-    final list = await _client.get('/pieafp/scenarios') as List<dynamic>;
-    return list.map((e) => ScenarioStress.fromJson(e as Map<String, dynamic>)).toList();
-  }
-
-  Future<ScenarioStress> createScenario(Map<String, dynamic> data) async {
-    final json = await _client.post('/pieafp/scenarios', data) as Map<String, dynamic>;
-    return ScenarioStress.fromJson(json);
-  }
-
-  Future<ScenarioStress> updateScenario(int id, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/scenarios/$id', data) as Map<String, dynamic>;
-    return ScenarioStress.fromJson(json);
-  }
-
-  Future<void> deleteScenario(int id) async {
-    await _client.delete('/pieafp/scenarios/$id');
-  }
-
-  Future<StressImpact> calculStress(int scenarioId) async {
-    final json = await _client.get('/pieafp/scenarios/$scenarioId/calcul') as Map<String, dynamic>;
-    return StressImpact.fromJson(json);
-  }
-
-  Future<GouvernanceResult> fetchGouvernance() async {
-    final json = await _client.get('/pieafp/gouvernance') as Map<String, dynamic>;
-    return GouvernanceResult.fromJson(json);
-  }
-
-  Future<ChecklistItem> updateChecklistItem(int id, Map<String, dynamic> data) async {
-    final json = await _client.put('/pieafp/gouvernance/$id', data) as Map<String, dynamic>;
-    return ChecklistItem.fromJson(json);
-  }
-
-  Future<PieafpRapport> fetchPieafpRapport() async {
-    final json = await _client.get('/pieafp/rapport') as Map<String, dynamic>;
-    return PieafpRapport.fromJson(json);
-  }
-
+  
 }
