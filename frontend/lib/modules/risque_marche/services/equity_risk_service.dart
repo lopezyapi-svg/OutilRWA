@@ -125,7 +125,7 @@ EquityRiskResult calculateEquityRisk({
       byIssuer.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
 
   final grossPosition = totalValue;
-  final capitalReq = grossPosition * 0.08;
+  final capitalReq = grossPosition * 0.09;
 
   journal.add({
     'etape': 'Indicateurs synthétiques',
@@ -141,10 +141,10 @@ EquityRiskResult calculateEquityRisk({
   journal.add({
     'etape': 'Capital requis',
     'description':
-        'Risque spécifique + général actions = 8% de la position brute',
+        'Risque spécifique + général actions = 9% de la position brute',
     'grossPosition': grossPosition,
     'capitalRequirement': capitalReq,
-    'formule': 'Exigence FP Actions = Position_brute × 8%',
+    'formule': 'Exigence FP Actions = Position_brute × 9%',
   });
 
   final details = {
@@ -152,7 +152,7 @@ EquityRiskResult calculateEquityRisk({
     'formule_volatilite': 'σ_portefeuille = Σ(σ_i × poids_i) (approximation)',
     'formule_beta': 'β_portefeuille = Σ(β_i × poids_i)',
     'formule_concentration': 'Ratio = max(Emetteur) / Total',
-    'formule_capital': 'Exigence = Position_brute × 8% (Bâle II standard)',
+    'formule_capital': 'Exigence = Position_brute × 9% (Bâle II standard)',
   };
 
   return EquityRiskResult(

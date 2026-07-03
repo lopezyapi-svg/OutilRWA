@@ -49,7 +49,7 @@ class DashboardTreemapConcentration extends StatelessWidget {
                       children: [
                         Expanded(flex: 92, child: box(4, 'Groupe E', '9,2%')),
                         const SizedBox(width: 2),
-                        Expanded(flex: 38, child: box(5, 'Autres', '3,8%')),
+                        Expanded(flex: 38, child: box(5, 'Autres', '3,9%')),
                       ],
                     ),
                   ),

@@ -327,7 +327,7 @@ class _DefautsImpayesScreenState extends State<DefautsImpayesScreen> {
         title: Text('Historique des incidents - ${record.exposureId}'),
         content: SizedBox(
           width: 540,
-          child: ListView.separated(
+          child: ListView.separated(addSemanticIndexes: false,
             shrinkWrap: true,
             itemCount: record.incidents.length,
             separatorBuilder: (_, __) => const Divider(height: 20),

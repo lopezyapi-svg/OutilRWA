@@ -310,6 +310,9 @@ class ConcentrationExposureDetail {
     required this.status,
     required this.hasGuarantee,
     required this.isDefault,
+    required this.authorizationAmount,
+    required this.onBalanceAmount,
+    required this.offBalanceAmount,
     required this.grossAmount,
     required this.ead,
     required this.rwa,
@@ -335,6 +338,9 @@ class ConcentrationExposureDetail {
   final String status;
   final bool hasGuarantee;
   final bool isDefault;
+  final double authorizationAmount;
+  final double onBalanceAmount;
+  final double offBalanceAmount;
   final double grossAmount;
   final double ead;
   final double rwa;

@@ -426,7 +426,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   static const String _automaticHaircutsTooltip =
       "He : [[BREAK]]Décote appliquée à l'exposition. Elle peut varier selon la nature de l'opération ou de l'exposition.\n"
       'Hc : [[BREAK]]Décote appliquée à la sûreté selon le type, la note, l émetteur et la maturité.\n'
-      'Hfx : [[BREAK]]Décote de change. 0 % si même devise ou paire FCFA/EUR, sinon 8 %.';
+      'Hfx : [[BREAK]]Décote de change. 0 % si même devise ou paire FCFA/EUR, sinon 9 %.';
   static const String _convertibleMainIndexTooltip =
       "Choisissez Oui si l'obligation convertible reçue en garantie est incluse dans un indice principal reconnu.\n"
       'Choisissez Non dans le cas contraire.\n'
@@ -508,6 +508,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   final ScrollController _rightPanelScrollController = ScrollController();
   late final TextEditingController _amountController;
   late final TextEditingController _onBalanceAmountController;
+  late final TextEditingController _provisionsAmountController;
   late final TextEditingController _commentController;
   late final TextEditingController _collateralController;
   late final TextEditingController _fxHaircutController;
@@ -600,6 +601,11 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               draft!.onBalanceExposureAmount <= 0
           ? ''
           : draft.onBalanceExposureAmount.toStringAsFixed(0),
+    );
+    _provisionsAmountController = TextEditingController(
+      text: draft?.provisionsAmount == null || draft!.provisionsAmount! <= 0
+          ? ''
+          : draft.provisionsAmount!.toStringAsFixed(0),
     );
     _commentController = TextEditingController(text: draft?.comment ?? '');
     _collateralController = TextEditingController(
@@ -813,6 +819,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     _rightPanelScrollController.dispose();
     _amountController.dispose();
     _onBalanceAmountController.dispose();
+    _provisionsAmountController.dispose();
     _commentController.dispose();
     _collateralController.dispose();
     _fxHaircutController.dispose();
@@ -899,6 +906,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
 
   double? get _onBalanceExposureAmountInput =>
       _parseDecimal(_onBalanceAmountController.text);
+
+  double? get _provisionsAmountInput =>
+      _parseDecimal(_provisionsAmountController.text);
 
   bool get _hasInvalidOnBalanceAmount {
     final loanTotalAmount = _loanTotalAmountInput;
@@ -1040,6 +1050,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _draftFromValues(
         loanTotalAmount: loanTotalAmount,
         onBalanceExposureAmount: onBalanceExposureAmount,
+        provisionsAmount: _provisionsAmountInput,
         collateralValue: collateral,
         fxHaircut: 0.0,
         comment: _commentController.text,
@@ -2377,6 +2388,22 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
                 validator: _onBalanceAmountValidator,
+                onChanged: _handleFinancialAmountsChanged,
+              ),
+            ),
+            _buildFieldCard(
+              context: context,
+              title: 'Provisions',
+              subtitle: 'Montant des provisions (optionnel)',
+              icon: Icons.money_off_csred_outlined,
+              child: TextFormField(
+                controller: _provisionsAmountController,
+                decoration: _fieldDecoration(
+                  context,
+                  hint: context.tr('Provisions'),
+                ),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: _handleFinancialAmountsChanged,
               ),
             ),
@@ -5858,6 +5885,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       _draftFromValues(
         loanTotalAmount: loanTotalAmount,
         onBalanceExposureAmount: onBalanceExposureAmount,
+        provisionsAmount: _provisionsAmountInput,
         collateralValue: collateral,
         fxHaircut: 0.0,
         comment: _commentController.text,
@@ -5883,6 +5911,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
     return _draftFromValues(
       loanTotalAmount: loanTotalAmount,
       onBalanceExposureAmount: onBalanceExposureAmount,
+      provisionsAmount: _provisionsAmountInput,
       collateralValue: collateralValue,
       fxHaircut: 0.0,
       comment: _commentController.text.trim(),
@@ -5942,6 +5971,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       final draft = _draftFromValues(
         loanTotalAmount: loanTotalAmount,
         onBalanceExposureAmount: onBalanceExposureAmount,
+        provisionsAmount: _provisionsAmountInput,
         collateralValue: collateralValue,
         fxHaircut: 0.0,
         comment: _commentController.text.trim(),
@@ -6131,6 +6161,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   ExposureDraft _draftFromValues({
     required double loanTotalAmount,
     required double onBalanceExposureAmount,
+    double? provisionsAmount,
     required double collateralValue,
     required double fxHaircut,
     required String comment,
@@ -6162,6 +6193,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       grossAmount: grossAmount,
       loanTotalAmount: loanTotalAmount,
       onBalanceExposureAmount: onBalanceExposureAmount,
+      provisionsAmount: provisionsAmount,
       currency: _currency,
       status: _status,
       crmMode: _crmMode,

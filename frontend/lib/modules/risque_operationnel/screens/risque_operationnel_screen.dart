@@ -130,12 +130,12 @@ const _artExplanations = <String, String>{
           '  Capital minimal = α × PNBmoy₃\n'
           '  α = 15 %   (coefficient réglementaire BCEAO)\n'
           '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
-          '  RWA_opérationnel = Capital minimal ÷ 8 %   (facteur 12,5)',
+          '  RWA_opérationnel = Capital minimal ÷ 9 %   (facteur 12,5)',
   'Art. 301/307':
       'Exigences minimales en fonds propres (dispositif prudentiel BCEAO).\n\n'
           'Ratios réglementaires :\n'
           '  Ratio Tier 1 = Fonds propres de base / RWA total  ≥ 5 %\n'
-          '  Ratio global = Fonds propres totaux / RWA total   ≥ 8 %\n'
+          '  Ratio global = Fonds propres totaux / RWA total   ≥ 9 %\n'
           '  RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
           '  Coussin de conservation : + 2,5 % des RWA (si applicable)',
   'Art. 545': 'Stress testing — simulations de scénarios de crise pour évaluer\n'
@@ -1040,7 +1040,7 @@ class _RoDashSummaryRow extends StatelessWidget {
             message: 'Dashboard Opérationnel — Art. 313 & 89 UMOA\n\n'
                 'Capital minimum = 15 % × Pertes nettes (BIA — Art. 89)\n'
                 'RWA = Capital minimum × 12,5 (facteur prudentiel)\n'
-                'Statut : Conforme si Tier 1 ≥ 5 % et ratio global ≥ 8 %',
+                'Statut : Conforme si Tier 1 ≥ 5 % et ratio global ≥ 9 %',
             preferBelow: false,
             decoration: BoxDecoration(
               color: const Color(0xFF1E293B),
@@ -1360,7 +1360,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                                       Text('4 %',
                                           style: TextStyle(
                                               fontSize: 10, color: _kMuted)),
-                                      Text('BCEAO : 8 %',
+                                      Text('BCEAO : 9 %',
                                           style: TextStyle(
                                               fontSize: 10, color: _kMuted)),
                                       Text('25 %',
@@ -4248,7 +4248,7 @@ class _CartographieViewState extends State<_CartographieView> {
                               ]),
                               const SizedBox(height: 3),
                               Expanded(
-                                child: ListView.separated(
+                                child: ListView.separated(addSemanticIndexes: false,
                                   itemCount: items.length,
                                   separatorBuilder: (_, __) =>
                                       const SizedBox(height: 8),

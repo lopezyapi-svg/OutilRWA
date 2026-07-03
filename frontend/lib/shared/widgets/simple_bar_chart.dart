@@ -39,7 +39,7 @@ class SimpleBarChart extends StatelessWidget {
                 const SizedBox(height: 3),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 400),
-                  height: 160.0 * (entry.percentage.clamp(0.08, 1.0)),
+                  height: 160.0 * (entry.percentage.clamp(0.09, 1.0)),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppTheme.radius),
                     gradient: LinearGradient(

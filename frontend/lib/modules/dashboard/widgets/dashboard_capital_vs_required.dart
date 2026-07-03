@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/currency_conversion.dart';
 import 'dashboard_design.dart';
 
 /// Capital détenu vs capital requis, par strate de fonds propres.

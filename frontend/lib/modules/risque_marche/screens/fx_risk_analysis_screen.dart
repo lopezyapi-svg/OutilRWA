@@ -383,7 +383,7 @@ class _FxMethodologyDialog extends StatelessWidget {
               _formulaBlock(context, const [
                 'Position nette / devise = Σ(longues) − Σ(courtes)   [en XOF]',
                 'Position nette globale  = MAX( Σ longues ; Σ courtes )',
-                'Exigence de fonds propres = Position nette globale × 8 %',
+                'Exigence de fonds propres = Position nette globale × 9 %',
                 'RWA Change = Exigence FP × 12,5',
               ]),
               const SizedBox(height: 3),
@@ -1368,7 +1368,7 @@ class _FxKpiSection extends StatelessWidget {
         '• Σ Positions longues : ${formatLargeNumber(result.totalLongPositions)} XOF (somme des positions nettes > 0)\n'
         '• Σ Positions courtes : ${formatLargeNumber(result.totalShortPositions)} XOF (somme des |positions nettes < 0|)\n'
         '• Position nette globale : ${formatLargeNumber(result.globalNetPosition)} XOF (MAX(longues ; courtes))\n'
-        '• Exigence de fonds propres : ${formatLargeNumber(result.capitalRequirement)} XOF (position nette globale × 8 %)\n'
+        '• Exigence de fonds propres : ${formatLargeNumber(result.capitalRequirement)} XOF (position nette globale × 9 %)\n'
         '• RWA Change : ${formatLargeNumber(result.rwaChange)} XOF (exigence FP × 12,5)';
   }
 
@@ -1912,7 +1912,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                       Scrollbar(
                         controller: _bodyVSC,
                         thumbVisibility: true,
-                        child: ListView.builder(
+                        child: ListView.builder(addSemanticIndexes: false,
                           controller: _bodyVSC,
                           itemExtent: rowH,
                           itemCount: securities.length,

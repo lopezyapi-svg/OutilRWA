@@ -77,7 +77,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           for (final metric in data.metrics) metric.key: metric,
         };
         final double rwaCredit = data.portfolioOverview.fold(0.0, (sum, row) => sum + row.rwa);
-        final rwaMetric = DashboardMetric(key: 'rwa', label: 'RWA Total', value: rwaCredit, variation: '', trend: []);
+        final rwaMetric = DashboardMetric(key: 'rwa', label: 'RWA crédit', value: rwaCredit, variation: '', trend: []);
         final grossMetric = _metric(metrics, 'encours');
         final defaultRateMetric = _metric(metrics, 'taux_defaut');
         final capitalMetric = DashboardMetric(key: 'capital', label: 'Capital', value: rwaMetric.value * 0.09, variation: '', trend: []);

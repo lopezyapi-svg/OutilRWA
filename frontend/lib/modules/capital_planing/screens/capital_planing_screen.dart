@@ -653,7 +653,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
     final growthRate = switch (_selectedScenario) {
       'optimistic' => 0.05,
       'pessimistic' => 0.15,
-      _ => 0.08,
+      _ => 0.09,
     };
 
     final projections = <_ProjectionYear>[];

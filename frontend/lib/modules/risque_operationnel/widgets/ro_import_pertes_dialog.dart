@@ -1443,7 +1443,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Capital minimal = 15 % × Pertes nettes   |   APR = Capital minimal ÷ 8 % = Capital minimal × 12,5',
+            'Capital minimal = 15 % × Pertes nettes   |   APR = Capital minimal ÷ 9 % = Capital minimal × 12,5',
             style: TextStyle(
                 fontSize: 10, color: _muted, fontStyle: FontStyle.italic),
           ),

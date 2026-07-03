@@ -2848,7 +2848,7 @@ class _NotificationsPanel extends StatelessWidget {
             else
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 470),
-                child: ListView.separated(
+                child: ListView.separated(addSemanticIndexes: false,
                   shrinkWrap: true,
                   physics: const ClampingScrollPhysics(),
                   itemCount: notifications.length,

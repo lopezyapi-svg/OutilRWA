@@ -72,21 +72,21 @@ UemoaCapitalRequirement calculateUemoaMarketCapitalRequirement({
 
   journal.add({
     'etape': 'Risque actions',
-    'description': 'Spécifique (8% par émetteur) + Général (8% par marché)',
+    'description': 'Spécifique (9% par émetteur) + Général (9% par marché)',
     'specific': prudentialResult.equitySpecificRisk,
     'general': prudentialResult.equityGeneralRisk,
     'total': equityRisk,
     'formule':
-        'Exigence Actions = 8%×Σ|net émetteur| + 8%×Σ|net marché| (Art. 398-401)',
+        'Exigence Actions = 9%×Σ|net émetteur| + 9%×Σ|net marché| (Art. 398-401)',
   });
 
   journal.add({
     'etape': 'Risque de change',
-    'description': '8% de la position nette globale',
+    'description': '9% de la position nette globale',
     'netPosition': prudentialResult.foreignExchangeGlobalNetPosition,
     'total': fxRisk,
     'formule':
-        'Exigence Change = max(Σ longues, Σ courtes) × 8% (Art. 416-417)',
+        'Exigence Change = max(Σ longues, Σ courtes) × 9% (Art. 416-417)',
   });
 
   journal.add({
@@ -125,7 +125,7 @@ UemoaCapitalRequirement calculateUemoaMarketCapitalRequirement({
 UemoaLimitCheck checkUemoaCapitalLimit({
   required double actualCapital,
   required double marketRwa,
-  // Seuil minimum de solvabilité dans l'UMOA (8,5 %). Le 8 % ne sert qu'au
+  // Seuil minimum de solvabilité dans l'UMOA (8,5 %). Le 9 % ne sert qu'au
   // facteur de conversion RWA (12,5 = 1/0,08), pas au seuil de conformité.
   double minimumRatio = 0.085,
 }) {

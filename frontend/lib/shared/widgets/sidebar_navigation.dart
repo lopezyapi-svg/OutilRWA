@@ -606,7 +606,7 @@ class _CompactSidebar extends StatelessWidget {
             const SizedBox(height: 6),
           ],
           Expanded(
-            child: ListView.separated(
+            child: ListView.separated(addSemanticIndexes: false,
               padding: EdgeInsets.zero,
               physics: const ClampingScrollPhysics(),
               itemCount: items.length,
@@ -982,7 +982,7 @@ class _ExpandedSidebar extends StatelessWidget {
                 const SizedBox(height: 3),
               ],
               Expanded(
-                child: ListView.separated(
+                child: ListView.separated(addSemanticIndexes: false,
                   padding: EdgeInsets.zero,
                   physics: const ClampingScrollPhysics(),
                   itemCount: items.length,

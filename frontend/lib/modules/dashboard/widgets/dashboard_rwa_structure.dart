@@ -18,7 +18,7 @@ class DashboardRwaStructure extends StatelessWidget {
     final scale = 1000000000 / amountUnit.divisor;
 
     final rwaTotal = 3180.0 * scale;
-    final capMin = rwaTotal * 0.08;
+    final capMin = rwaTotal * 0.09;
 
     final parts = <_RwaPart>[
       _RwaPart('Crédit (Approche Standard)', 2450 * scale, 77, c.ramp[0]),
@@ -70,7 +70,7 @@ class DashboardRwaStructure extends StatelessWidget {
           
           const SizedBox(height: 24),
           Text(
-            'Contribution aux exigences minimales (8%)',
+            'Contribution aux exigences minimales (9%)',
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink),
           ),
           const SizedBox(height: 12),
@@ -82,7 +82,7 @@ class DashboardRwaStructure extends StatelessWidget {
                 children: [
                   Text(p.label.split(' ').first, style: TextStyle(fontSize: 13, color: c.muted)),
                   Text(
-                    '${AppFormatters.integer(p.amount * 0.08)} ${amountUnit.label}',
+                    '${AppFormatters.integer(p.amount * 0.09)} ${amountUnit.label}',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink),
                   ),
                 ],

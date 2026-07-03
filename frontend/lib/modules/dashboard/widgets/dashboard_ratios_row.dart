@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
 
@@ -15,10 +16,7 @@ class DashboardRatiosRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cet1Metric = data.metrics.firstWhere((m) => m.key == 'cet1_ratio', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
-    final t1Metric = data.metrics.firstWhere((m) => m.key == 'tier1_ratio', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
-    final solvMetric = data.metrics.firstWhere((m) => m.key == 'solvabilite', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
-    final levierMetric = data.metrics.firstWhere((m) => m.key == 'ratio_levier', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
+    final ratios = _DashboardRatios.from(data);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -26,13 +24,29 @@ class DashboardRatiosRow extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _RatioTile(label: 'Ratio CET1', value: cet1Metric.value * 100, pilier1: 5.00, coussin: 2.50),
+              _RatioTile(
+                  label: 'Ratio CET1',
+                  value: ratios.cet1,
+                  pilier1: 5.00,
+                  coussin: 2.50),
               const SizedBox(height: 8),
-              _RatioTile(label: 'Ratio Tier 1', value: t1Metric.value * 100, pilier1: 6.00, coussin: 2.50),
+              _RatioTile(
+                  label: 'Ratio Tier 1',
+                  value: ratios.tier1,
+                  pilier1: 6.00,
+                  coussin: 2.50),
               const SizedBox(height: 8),
-              _RatioTile(label: 'Ratio de solvabilité', value: solvMetric.value * 100, pilier1: 9.00, coussin: 2.50),
+              _RatioTile(
+                  label: 'Ratio de solvabilité',
+                  value: ratios.solvabilite,
+                  pilier1: 9.00,
+                  coussin: 2.50),
               const SizedBox(height: 8),
-              _RatioTile(label: 'Ratio de Levier', value: levierMetric.value * 100, pilier1: 3.00, coussin: 0.00),
+              _RatioTile(
+                  label: 'Ratio de Levier',
+                  value: ratios.levier,
+                  pilier1: 3.00,
+                  coussin: 0.00),
             ],
           );
         }
@@ -41,25 +55,108 @@ class DashboardRatiosRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: _RatioTile(label: 'Ratio CET1', value: cet1Metric.value * 100, pilier1: 5.00, coussin: 2.50),
+                child: _RatioTile(
+                    label: 'Ratio CET1',
+                    value: ratios.cet1,
+                    pilier1: 5.00,
+                    coussin: 2.50),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _RatioTile(label: 'Ratio Tier 1', value: t1Metric.value * 100, pilier1: 6.00, coussin: 2.50),
+                child: _RatioTile(
+                    label: 'Ratio Tier 1',
+                    value: ratios.tier1,
+                    pilier1: 6.00,
+                    coussin: 2.50),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _RatioTile(label: 'Ratio de solvabilité', value: solvMetric.value * 100, pilier1: 9.00, coussin: 2.50),
+                child: _RatioTile(
+                    label: 'Ratio de solvabilité',
+                    value: ratios.solvabilite,
+                    pilier1: 9.00,
+                    coussin: 2.50),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _RatioTile(label: 'Ratio de Levier (MAJ)', value: levierMetric.value * 100, pilier1: 3.00, coussin: 0.00),
+                child: _RatioTile(
+                    label: 'Ratio de Levier (MAJ)',
+                    value: ratios.levier,
+                    pilier1: 3.00,
+                    coussin: 0.00),
               ),
             ],
           ),
         );
       },
     );
+  }
+}
+
+class _DashboardRatios {
+  const _DashboardRatios({
+    required this.cet1,
+    required this.tier1,
+    required this.solvabilite,
+    required this.levier,
+  });
+
+  final double cet1;
+  final double tier1;
+  final double solvabilite;
+  final double levier;
+
+  factory _DashboardRatios.from(DashboardSnapshot data) {
+    final metrics = {for (final metric in data.metrics) metric.key: metric};
+    final fp = data.fondsPropres;
+    final rwaBase = _positiveMetric(metrics, 'rwa') ??
+        data.portfolioOverview.fold<double>(0.0, (sum, row) => sum + row.rwa);
+    final exposureBase = _positiveMetric(metrics, 'encours') ??
+        data.portfolioOverview
+            .fold<double>(0.0, (sum, row) => sum + row.grossAmount);
+
+    return _DashboardRatios(
+      cet1: _ratioPercent(
+        numerator: fp?.cet1,
+        denominator: rwaBase,
+        fallback: metrics['cet1_ratio']?.value,
+      ),
+      tier1: _ratioPercent(
+        numerator: fp?.tier1,
+        denominator: rwaBase,
+        fallback: metrics['tier1_ratio']?.value,
+      ),
+      solvabilite: _ratioPercent(
+        numerator: fp?.totalFp,
+        denominator: rwaBase,
+        fallback: metrics['solvabilite']?.value,
+      ),
+      levier: _ratioPercent(
+        numerator: fp?.tier1,
+        denominator: exposureBase,
+        fallback: metrics['ratio_levier']?.value,
+      ),
+    );
+  }
+
+  static double? _positiveMetric(
+      Map<String, DashboardMetric> metrics, String key) {
+    final value = metrics[key]?.value;
+    if (value == null || value <= 0) {
+      return null;
+    }
+    return value;
+  }
+
+  static double _ratioPercent({
+    required double? numerator,
+    required double denominator,
+    required double? fallback,
+  }) {
+    if (numerator != null && numerator > 0 && denominator > 0) {
+      return numerator / denominator * 100;
+    }
+    return (fallback ?? 0.0) * 100;
   }
 }
 
@@ -100,15 +197,21 @@ class _RatioTile extends StatelessWidget {
     Color textColor;
 
     if (status == DashStatus.conforme) {
-      bgColor = isDark ? const Color(0xFF064E3B).withOpacity(0.5) : const Color(0xFFECFDF5);
+      bgColor = isDark
+          ? const Color(0xFF064E3B).withValues(alpha: 0.5)
+          : const Color(0xFFECFDF5);
       borderColor = isDark ? const Color(0xFF059669) : const Color(0xFF6EE7B7);
       textColor = isDark ? const Color(0xFF34D399) : const Color(0xFF065F46);
     } else if (status == DashStatus.sousCible) {
-      bgColor = isDark ? const Color(0xFF78350F).withOpacity(0.5) : const Color(0xFFFFFBEB);
+      bgColor = isDark
+          ? const Color(0xFF78350F).withValues(alpha: 0.5)
+          : const Color(0xFFFFFBEB);
       borderColor = isDark ? const Color(0xFFD97706) : const Color(0xFFFCD34D);
       textColor = isDark ? const Color(0xFFFCD34D) : const Color(0xFF92400E);
     } else {
-      bgColor = isDark ? const Color(0xFF7F1D1D).withOpacity(0.5) : const Color(0xFFFEF2F2);
+      bgColor = isDark
+          ? const Color(0xFF7F1D1D).withValues(alpha: 0.5)
+          : const Color(0xFFFEF2F2);
       borderColor = isDark ? const Color(0xFFDC2626) : const Color(0xFFFCA5A5);
       textColor = isDark ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B);
     }
@@ -131,7 +234,8 @@ class _RatioTile extends StatelessWidget {
               label.toUpperCase(),
               style: DashText.eyebrow(
                 c,
-                color: isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
+                color:
+                    isDark ? const Color(0xFF818CF8) : const Color(0xFF4F46E5),
               ),
             ),
           ),
@@ -150,7 +254,8 @@ class _RatioTile extends StatelessWidget {
               children: [
                 Text(
                   'Seuil réglementaire :',
-                  style: DashText.caption(c, color: c.ink).copyWith(fontWeight: FontWeight.w600),
+                  style: DashText.caption(c, color: c.ink)
+                      .copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -192,7 +297,7 @@ class _RatioTile extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: CustomPaint(
-                  painter: _DottedLinePainter(c.muted.withOpacity(0.15)),
+                  painter: _DottedLinePainter(c.muted.withValues(alpha: 0.15)),
                   size: const Size(double.infinity, 1),
                 ),
               ),
@@ -213,7 +318,7 @@ class _RatioTile extends StatelessWidget {
   }
 
   static String _fr(double v) =>
-      v.toStringAsFixed(2).replaceAll('.', ',');
+      AppFormatters.usefulDecimalNumber(v, decimals: 3);
 }
 
 class _DottedLinePainter extends CustomPainter {

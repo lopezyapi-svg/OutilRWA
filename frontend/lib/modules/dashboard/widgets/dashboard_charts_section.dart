@@ -54,7 +54,7 @@ class _DashboardChartsSectionState extends State<DashboardChartsSection> {
         );
 
         final rwaPanel = DashPanel(
-          title: 'Top 5 du RWA total par catégorie',
+          title: 'Top 5 du RWA crédit par catégorie',
           height: 360,
           child: rwaContent,
         );

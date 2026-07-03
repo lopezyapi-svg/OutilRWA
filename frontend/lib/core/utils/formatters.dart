@@ -48,12 +48,25 @@ class AppFormatters {
     } else {
       decimals = 4;
     }
-    
+
     return _number(decimals).format(amount);
   }
 
   static String decimalNumber(num value, {int maxDecimals = 2}) {
     return _number(maxDecimals).format(value);
+  }
+
+  static String fixedDecimalNumber(num value, {int decimals = 2}) {
+    return _fixedNumber(decimals).format(value);
+  }
+
+  static String usefulDecimalNumber(num value, {int decimals = 3}) {
+    final rounded = value.toDouble().toStringAsFixed(decimals);
+    final fractional = rounded.split('.').last;
+    if (RegExp(r'^0+$').hasMatch(fractional)) {
+      return _number(0).format(value);
+    }
+    return _fixedNumber(decimals).format(value);
   }
 
   static String formatAmountValue(double value, [double? divisor]) {
@@ -88,13 +101,19 @@ class AppFormatters {
 
   static String integer(num value) => _plainNumber().format(value.round());
 
+  /// Formate un montant (exprime dans l'unite de base, ex. XOF) en millions
+  /// avec separateur de milliers, ex. 1934000000 -> "1 934 M".
+  static String millions(num value) {
+    return '${decimalNumber(value / 1000000, maxDecimals: 0)} M';
+  }
+
   static String percent(num value) {
     final locale = AppLocalizations.currentLanguage.intlLocale;
     final formatter = _percentFormatCache.putIfAbsent(locale, () {
       return NumberFormat.decimalPercentPattern(
-          locale: locale, decimalDigits: 1);
+          locale: locale, decimalDigits: 2);
     });
-    return formatter.format(value).replaceAll(RegExp(r'\s+%'), '%');
+    return formatter.format(value).replaceAll(RegExp(r'\s+'), '');
   }
 
   static String shortDate(DateTime value) {
@@ -137,6 +156,16 @@ class AppFormatters {
     return _numberFormatCache.putIfAbsent(key, () {
       return NumberFormat.decimalPattern(locale)
         ..minimumFractionDigits = 0
+        ..maximumFractionDigits = decimalDigits;
+    });
+  }
+
+  static NumberFormat _fixedNumber(int decimalDigits) {
+    final locale = AppLocalizations.currentLanguage.intlLocale;
+    final key = '$locale:fixed:$decimalDigits';
+    return _numberFormatCache.putIfAbsent(key, () {
+      return NumberFormat.decimalPattern(locale)
+        ..minimumFractionDigits = decimalDigits
         ..maximumFractionDigits = decimalDigits;
     });
   }

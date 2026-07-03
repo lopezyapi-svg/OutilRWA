@@ -251,7 +251,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
             width: 620,
             child: errors.isEmpty
                 ? const Text('Aucune erreur.')
-                : ListView.separated(
+                : ListView.separated(addSemanticIndexes: false,
                     shrinkWrap: true,
                     itemCount: errors.length,
                     separatorBuilder: (_, __) => const Divider(height: 16),
@@ -542,7 +542,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               decoration: BoxDecoration(
                 color: _isDragging
-                    ? Color.lerp(zoneBackground, _accent, 0.08)
+                    ? Color.lerp(zoneBackground, _accent, 0.09)
                     : zoneBackground,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(

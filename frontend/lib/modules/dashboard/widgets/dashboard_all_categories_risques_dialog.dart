@@ -108,7 +108,7 @@ class DashboardAllCategoriesRisquesDialog extends StatelessWidget {
                   ),
                   // Liste scrollable
                   Flexible(
-                    child: ListView.builder(
+                    child: ListView.builder(addSemanticIndexes: false,
                       shrinkWrap: true,
                       padding: EdgeInsets.zero,
                       itemCount: categories.length,

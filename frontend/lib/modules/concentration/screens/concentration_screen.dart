@@ -29,6 +29,7 @@ const int _counterpartyTopCount = 10;
 const int _issuerResidenceCountryTopCount = 10;
 const int _concentrationViewModelVersion = 5;
 const double _concentrationRadius = 2;
+const double _excelLargeExposureTableWidth = 1750;
 const List<String> _counterpartyRatingOrder = [
   'AAA',
   'AA+',
@@ -139,8 +140,11 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                               padding: const EdgeInsets.only(top: 150),
                               child: Center(
                                 child: Text(
-                                  'Apetance aux risques',
-                                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  'Appétence aux risques de la banque',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineMedium
+                                      ?.copyWith(
                                         color: AppTheme.text,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -220,18 +224,25 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
   }
 
   Widget _buildNplSection(_ConcentrationViewModel view) {
-    final defaultExposures = view.exposureDetails.where((e) => e.isDefault).toList();
-    final encoursNpl = defaultExposures.fold<double>(0.0, (sum, e) => sum + e.grossAmount);
+    final defaultExposures =
+        view.exposureDetails.where((e) => e.isDefault).toList();
+    final encoursNpl =
+        defaultExposures.fold<double>(0.0, (sum, e) => sum + e.grossAmount);
     final countNpl = defaultExposures.length;
     final totalGross = view.totalGross;
     final nplRatio = totalGross > 0 ? (encoursNpl / totalGross) : 0.0;
-    
-    final provisions = defaultExposures.fold<double>(0.0, (sum, e) => sum + e.estimatedProvision);
+
+    final provisions = defaultExposures.fold<double>(
+        0.0, (sum, e) => sum + e.estimatedProvision);
     final coverageRatio = encoursNpl > 0 ? (provisions / encoursNpl) : 0.0;
-    final provisionsTotalRatio = totalGross > 0 ? (provisions / totalGross) : 0.0;
+    final provisionsTotalRatio =
+        totalGross > 0 ? (provisions / totalGross) : 0.0;
     final nplNet = encoursNpl - provisions;
 
-    Widget buildBaseCard({required Widget child, EdgeInsetsGeometry? padding, Color? backgroundColor}) {
+    Widget buildBaseCard(
+        {required Widget child,
+        EdgeInsetsGeometry? padding,
+        Color? backgroundColor}) {
       return Container(
         padding: padding ?? const EdgeInsets.fromLTRB(16, 16, 16, 12),
         decoration: BoxDecoration(
@@ -251,7 +262,11 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
     }
 
     // --- Row helper for label/value pairs ---
-    Widget buildRow({required String label, String? formula, required String value, bool isLast = false}) {
+    Widget buildRow(
+        {required String label,
+        String? formula,
+        required String value,
+        bool isLast = false}) {
       return Column(
         children: [
           Container(
@@ -265,26 +280,37 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                   children: [
                     Text(label,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 11)),
+                            color: AppTheme.text,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11)),
                     if (formula != null) ...[
                       const SizedBox(height: 2),
                       Text(formula,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppTheme.muted.withValues(alpha: 0.6), fontSize: 10, fontStyle: FontStyle.italic)),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: AppTheme.muted.withValues(alpha: 0.6),
+                                  fontSize: 10,
+                                  fontStyle: FontStyle.italic)),
                     ],
                   ],
                 ),
                 const SizedBox(width: 16),
                 Text(value,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.indigo[900], fontWeight: FontWeight.w700, fontSize: 12)),
+                        color: Colors.indigo[900],
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12)),
               ],
             ),
           ),
           if (!isLast)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Divider(height: 1, color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
+              child: Divider(
+                  height: 1,
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
             ),
         ],
       );
@@ -303,11 +329,15 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
               child: Text(title,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Colors.indigo[900], fontWeight: FontWeight.w700, fontSize: 14)),
+                      color: Colors.indigo[900],
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14)),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Divider(height: 1, color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
+              child: Divider(
+                  height: 1,
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
             ),
             ...rows,
           ],
@@ -330,10 +360,16 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Encours NPL :  ', style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.muted, fontWeight: FontWeight.w500, fontSize: 12)),
-                  Text('${_amountMd(encoursNpl)} ${_amountUnitLabel()}', style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 12)),
+                  Text('Encours NPL :  ',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.muted,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12)),
+                  Text('${_amountMd(encoursNpl)} ${_amountUnitLabel()}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.text,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12)),
                 ],
               ),
             ),
@@ -349,10 +385,16 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Provisions totales :  ', style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.muted, fontWeight: FontWeight.w500, fontSize: 12)),
-                  Text('${_amountMd(provisions)} ${_amountUnitLabel()}', style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 12)),
+                  Text('Provisions totales :  ',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.muted,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12)),
+                  Text('${_amountMd(provisions)} ${_amountUnitLabel()}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.text,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12)),
                 ],
               ),
             ),
@@ -368,10 +410,16 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('Nombre NPL :  ', style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.muted, fontWeight: FontWeight.w500, fontSize: 12)),
-                  Text('$countNpl', style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 12)),
+                  Text('Nombre NPL :  ',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.muted,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12)),
+                  Text('$countNpl',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.text,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12)),
                 ],
               ),
             ),
@@ -392,8 +440,9 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
             children: [
               Text('Indicateurs NPL et Provisions',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 14)),
-
+                      color: AppTheme.text,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14)),
             ],
           ),
           const SizedBox(height: 16),
@@ -405,8 +454,15 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                 child: buildSubCard(
                   title: 'Non Performing Loans',
                   rows: [
-                    buildRow(label: 'Ratio NPL', formula: '(Encours NPL / Encours total)', value: AppFormatters.percent(nplRatio)),
-                    buildRow(label: 'Exposition nette', formula: '(Encours NPL - Provisions)', value: '${_amountMd(nplNet)} ${_amountUnitLabel()}', isLast: true),
+                    buildRow(
+                        label: 'Ratio NPL',
+                        formula: '(Encours NPL / Encours total)',
+                        value: AppFormatters.percent(nplRatio)),
+                    buildRow(
+                        label: 'Exposition nette',
+                        formula: '(Encours NPL - Provisions)',
+                        value: '${_amountMd(nplNet)} ${_amountUnitLabel()}',
+                        isLast: true),
                   ],
                 ),
               ),
@@ -416,15 +472,29 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                   padding: const EdgeInsets.only(left: AppTheme.pageGap / 4),
                   decoration: BoxDecoration(
                     border: Border(
-                      left: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                      left: BorderSide(
+                          color: Theme.of(context)
+                              .dividerColor
+                              .withValues(alpha: 0.5)),
                     ),
                   ),
                   child: buildSubCard(
                     title: 'PROVISIONS',
                     rows: [
-                      buildRow(label: 'Provisions totales sur NPL', formula: '(Somme des provisions)', value: '${_amountMd(provisions)} ${_amountUnitLabel()}'),
-                      buildRow(label: 'Taux de couverture', formula: '(Provisions / Encours NPL)', value: AppFormatters.percent(coverageRatio)),
-                      buildRow(label: 'Provisions / Encours total', formula: '(Provisions / Encours total)', value: AppFormatters.percent(provisionsTotalRatio), isLast: true),
+                      buildRow(
+                          label: 'Provisions totales sur NPL',
+                          formula: '(Somme des provisions)',
+                          value:
+                              '${_amountMd(provisions)} ${_amountUnitLabel()}'),
+                      buildRow(
+                          label: 'Taux de couverture',
+                          formula: '(Provisions / Encours NPL)',
+                          value: AppFormatters.percent(coverageRatio)),
+                      buildRow(
+                          label: 'Provisions / Encours total',
+                          formula: '(Provisions / Encours total)',
+                          value: AppFormatters.percent(provisionsTotalRatio),
+                          isLast: true),
                     ],
                   ),
                 ),
@@ -438,10 +508,30 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
     );
 
     final chartEntries = [
-      (label: '1 – 30 jours', percent: 0.20, amount: encoursNpl * 0.20, color: const Color(0xFF4ADE80)),
-      (label: '31 – 90 jours', percent: 0.25, amount: encoursNpl * 0.25, color: const Color(0xFF3B82F6)),
-      (label: '91 – 180 jours', percent: 0.30, amount: encoursNpl * 0.30, color: const Color(0xFFFBBF24)),
-      (label: '> 180 jours', percent: 0.25, amount: encoursNpl * 0.25, color: const Color(0xFFEF4444)),
+      (
+        label: '1 – 30 jours',
+        percent: 0.20,
+        amount: encoursNpl * 0.20,
+        color: const Color(0xFF4ADE80)
+      ),
+      (
+        label: '31 – 90 jours',
+        percent: 0.25,
+        amount: encoursNpl * 0.25,
+        color: const Color(0xFF3B82F6)
+      ),
+      (
+        label: '91 – 180 jours',
+        percent: 0.30,
+        amount: encoursNpl * 0.30,
+        color: const Color(0xFFFBBF24)
+      ),
+      (
+        label: '> 180 jours',
+        percent: 0.25,
+        amount: encoursNpl * 0.25,
+        color: const Color(0xFFEF4444)
+      ),
     ];
 
     final subBlockB = buildBaseCard(
@@ -450,7 +540,9 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
         children: [
           Text('Suivi du nombre de jours impayés',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 13)),
+                  color: AppTheme.text,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13)),
           Expanded(
             child: Center(
               child: Row(
@@ -459,7 +551,9 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     width: 110,
                     height: 110,
                     child: _AnimatedDonutChart(
-                      entries: chartEntries.map((e) => (e.percent, e.color)).toList(),
+                      entries: chartEntries
+                          .map((e) => (e.percent, e.color))
+                          .toList(),
                     ),
                   ),
                   const SizedBox(width: 32),
@@ -484,25 +578,46 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(chartEntries[i].label,
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          color: AppTheme.text, fontSize: 11, fontWeight: FontWeight.w500)),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                              color: AppTheme.text,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500)),
                                 ),
-                                Text('${(chartEntries[i].percent * 100).toInt()} %',
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                        color: AppTheme.text, fontSize: 11, fontWeight: FontWeight.w700)),
+                                Text(
+                                    '${(chartEntries[i].percent * 100).toInt()} %',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                            color: AppTheme.text,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700)),
                                 const SizedBox(width: 12),
                                 SizedBox(
                                   width: 60,
-                                  child: Text('${_amountMd(chartEntries[i].amount)} ${_amountUnitLabel()}',
+                                  child: Text(
+                                      '${_amountMd(chartEntries[i].amount)} ${_amountUnitLabel()}',
                                       textAlign: TextAlign.right,
-                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          color: AppTheme.muted, fontSize: 11, fontWeight: FontWeight.w500)),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                              color: AppTheme.muted,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w500)),
                                 ),
                               ],
                             ),
                           ),
                           if (i < chartEntries.length - 1)
-                            Divider(height: 1, color: Theme.of(context).dividerColor.withOpacity(0.5)),
+                            Divider(
+                                height: 1,
+                                color: Theme.of(context)
+                                    .dividerColor
+                                    .withOpacity(0.5)),
                         ],
                       ],
                     ),
@@ -544,7 +659,9 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               children: [
                 Text('Top 5 des plus grandes expositions NPL (brut)',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: AppTheme.text, fontWeight: FontWeight.w700, fontSize: 14)),
+                        color: AppTheme.text,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14)),
                 MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: GestureDetector(
@@ -552,12 +669,17 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                       showDialog(
                         context: context,
                         builder: (context) {
-                          final isDark = Theme.of(context).brightness == Brightness.dark;
+                          final isDark =
+                              Theme.of(context).brightness == Brightness.dark;
                           return AlertDialog(
-                            backgroundColor: isDark ? AppTheme.darkCard : AppTheme.card,
+                            backgroundColor:
+                                isDark ? AppTheme.darkCard : AppTheme.card,
                             title: Text(
                               'Toutes les expositions NPL',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
                                     color: AppTheme.text,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -568,39 +690,176 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                               child: Column(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)))),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
+                                    decoration: BoxDecoration(
+                                        border: Border(
+                                            bottom: BorderSide(
+                                                color: Theme.of(context)
+                                                    .dividerColor
+                                                    .withValues(alpha: 0.5)))),
                                     child: Row(
                                       children: [
-                                        SizedBox(width: 24, child: Text('#', style: _tableHeaderStyle())),
-                                        Expanded(flex: 3, child: Text('Contrepartie', style: _tableHeaderStyle())),
-                                        Expanded(flex: 2, child: Text('Secteur', style: _tableHeaderStyle())),
-                                        Expanded(flex: 2, child: Text('Encours brut', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
-                                        Expanded(flex: 2, child: Text('Jours de retard', style: _tableHeaderStyle(), textAlign: TextAlign.center)),
-                                        Expanded(flex: 2, child: Text('Provision', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
-                                        Expanded(flex: 2, child: Text('Taux couv.', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
+                                        SizedBox(
+                                            width: 24,
+                                            child: Text('#',
+                                                style: _tableHeaderStyle())),
+                                        Expanded(
+                                            flex: 3,
+                                            child: Text('Contrepartie',
+                                                style: _tableHeaderStyle())),
+                                        Expanded(
+                                            flex: 2,
+                                            child: Text('Secteur',
+                                                style: _tableHeaderStyle())),
+                                        Expanded(
+                                            flex: 2,
+                                            child: Text('Encours brut',
+                                                style: _tableHeaderStyle(),
+                                                textAlign: TextAlign.right)),
+                                        Expanded(
+                                            flex: 2,
+                                            child: Text('Jours de retard',
+                                                style: _tableHeaderStyle(),
+                                                textAlign: TextAlign.center)),
+                                        Expanded(
+                                            flex: 2,
+                                            child: Text('Provision',
+                                                style: _tableHeaderStyle(),
+                                                textAlign: TextAlign.right)),
+                                        Expanded(
+                                            flex: 2,
+                                            child: Text('Taux couv.',
+                                                style: _tableHeaderStyle(),
+                                                textAlign: TextAlign.right)),
                                       ],
                                     ),
                                   ),
                                   Expanded(
-                                    child: ListView.separated(
+                                    child: ListView.separated(addSemanticIndexes: false,
                                       itemCount: top5Npl.length,
-                                      separatorBuilder: (context, index) => Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
+                                      separatorBuilder: (context, index) =>
+                                          Divider(
+                                              color: Theme.of(context)
+                                                  .dividerColor
+                                                  .withValues(alpha: 0.3)),
                                       itemBuilder: (context, index) {
                                         final e = top5Npl[index];
-                                        final coverageRate = e.grossAmount > 0 ? (e.estimatedProvision / e.grossAmount) : 0.0;
+                                        final coverageRate = e.grossAmount > 0
+                                            ? (e.estimatedProvision /
+                                                e.grossAmount)
+                                            : 0.0;
                                         final mockDaysLate = 475 - (index * 65);
                                         return Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 12),
                                           child: Row(
                                             children: [
-                                              SizedBox(width: 24, child: Text('${index + 1}', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontWeight: FontWeight.w600, fontSize: 12))),
-                                              Expanded(flex: 3, child: Text(e.counterpartyName, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12), overflow: TextOverflow.ellipsis)),
-                                              Expanded(flex: 2, child: Text(e.sector, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted, fontSize: 12), overflow: TextOverflow.ellipsis)),
-                                              Expanded(flex: 2, child: Text('${_amountMd(e.grossAmount)} ${_amountUnitLabel()}', textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
-                                              Expanded(flex: 2, child: Text('$mockDaysLate', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.danger, fontWeight: FontWeight.w600, fontSize: 12))),
-                                              Expanded(flex: 2, child: Text('${_amountMd(e.estimatedProvision)} ${_amountUnitLabel()}', textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
-                                              Expanded(flex: 2, child: Text(AppFormatters.percent(coverageRate), textAlign: TextAlign.right, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
+                                              SizedBox(
+                                                  width: 24,
+                                                  child: Text('${index + 1}',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                              color: AppTheme
+                                                                  .muted,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 12))),
+                                              Expanded(
+                                                  flex: 3,
+                                                  child: Text(
+                                                      e.counterpartyName,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                              color:
+                                                                  AppTheme.text,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 12),
+                                                      overflow: TextOverflow
+                                                          .ellipsis)),
+                                              Expanded(
+                                                  flex: 2,
+                                                  child: Text(e.sector,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                              color: AppTheme
+                                                                  .muted,
+                                                              fontSize: 12),
+                                                      overflow: TextOverflow
+                                                          .ellipsis)),
+                                              Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                      '${_amountMd(e.grossAmount)} ${_amountUnitLabel()}',
+                                                      textAlign:
+                                                          TextAlign.right,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                              color:
+                                                                  AppTheme.text,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 12))),
+                                              Expanded(
+                                                  flex: 2,
+                                                  child: Text('$mockDaysLate',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                              color: AppTheme
+                                                                  .danger,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 12))),
+                                              Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                      '${_amountMd(e.estimatedProvision)} ${_amountUnitLabel()}',
+                                                      textAlign:
+                                                          TextAlign.right,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                              color:
+                                                                  AppTheme.text,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 12))),
+                                              Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                      AppFormatters.percent(
+                                                          coverageRate),
+                                                      textAlign:
+                                                          TextAlign.right,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                              color:
+                                                                  AppTheme.text,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 12))),
                                             ],
                                           ),
                                         );
@@ -618,10 +877,16 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('Voir toutes les expositions NPL',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.danger, fontWeight: FontWeight.w600, fontSize: 12)),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                    color: AppTheme.danger,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12)),
                         const SizedBox(width: 4),
-                        Icon(Icons.arrow_forward, color: AppTheme.danger, size: 14),
+                        Icon(Icons.arrow_forward,
+                            color: AppTheme.danger, size: 14),
                       ],
                     ),
                   ),
@@ -634,19 +899,46 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                bottom: BorderSide(
+                    color:
+                        Theme.of(context).dividerColor.withValues(alpha: 0.5)),
               ),
             ),
             child: Row(
               children: [
-                SizedBox(width: 24, child: Text('#', style: _tableHeaderStyle())),
-                Expanded(flex: 3, child: Text('Contrepartie', style: _tableHeaderStyle())),
-                Expanded(flex: 2, child: Text('Secteur', style: _tableHeaderStyle())),
-                Expanded(flex: 2, child: Text('Encours brut', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
-                Expanded(flex: 2, child: Text('Date d\'échéance', style: _tableHeaderStyle(), textAlign: TextAlign.center)),
-                Expanded(flex: 2, child: Text('Jours de retard', style: _tableHeaderStyle(), textAlign: TextAlign.center)),
-                Expanded(flex: 2, child: Text('Provision', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
-                Expanded(flex: 2, child: Text('Taux de couverture', style: _tableHeaderStyle(), textAlign: TextAlign.right)),
+                SizedBox(
+                    width: 24, child: Text('#', style: _tableHeaderStyle())),
+                Expanded(
+                    flex: 3,
+                    child: Text('Contrepartie', style: _tableHeaderStyle())),
+                Expanded(
+                    flex: 2,
+                    child: Text('Secteur', style: _tableHeaderStyle())),
+                Expanded(
+                    flex: 2,
+                    child: Text('Encours brut',
+                        style: _tableHeaderStyle(),
+                        textAlign: TextAlign.right)),
+                Expanded(
+                    flex: 2,
+                    child: Text('Date d\'échéance',
+                        style: _tableHeaderStyle(),
+                        textAlign: TextAlign.center)),
+                Expanded(
+                    flex: 2,
+                    child: Text('Jours de retard',
+                        style: _tableHeaderStyle(),
+                        textAlign: TextAlign.center)),
+                Expanded(
+                    flex: 2,
+                    child: Text('Provision',
+                        style: _tableHeaderStyle(),
+                        textAlign: TextAlign.right)),
+                Expanded(
+                    flex: 2,
+                    child: Text('Taux de couverture',
+                        style: _tableHeaderStyle(),
+                        textAlign: TextAlign.right)),
               ],
             ),
           ),
@@ -654,57 +946,114 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
           ...top5.asMap().entries.map((entry) {
             final i = entry.key;
             final e = entry.value;
-            final coverageRate = e.grossAmount > 0 ? (e.estimatedProvision / e.grossAmount) : 0.0;
+            final coverageRate = e.grossAmount > 0
+                ? (e.estimatedProvision / e.grossAmount)
+                : 0.0;
             final barWidth = (coverageRate * 60).clamp(0, 60).toDouble();
-            
+
             // Mocking dates and days late for visual compliance with the design reference
             final mockDaysLate = 475 - (i * 65);
-            final mockDate = AppFormatters.shortDate(DateTime.now().subtract(Duration(days: mockDaysLate)));
-            
+            final mockDate = AppFormatters.shortDate(
+                DateTime.now().subtract(Duration(days: mockDaysLate)));
+
             return Container(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
               decoration: BoxDecoration(
                 border: i < top5.length - 1
-                    ? Border(bottom: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.3)))
+                    ? Border(
+                        bottom: BorderSide(
+                            color: Theme.of(context)
+                                .dividerColor
+                                .withValues(alpha: 0.3)))
                     : null,
               ),
               child: Row(
                 children: [
-                  SizedBox(width: 24, child: Text('${i + 1}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.muted, fontWeight: FontWeight.w600, fontSize: 12))),
-                  Expanded(flex: 3, child: Text(e.counterpartyName,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12),
-                      overflow: TextOverflow.ellipsis)),
-                  Expanded(flex: 2, child: Text(e.sector,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.muted, fontSize: 12),
-                      overflow: TextOverflow.ellipsis)),
-                  Expanded(flex: 2, child: Text('${_amountMd(e.grossAmount)} ${_amountUnitLabel()}',
-                      textAlign: TextAlign.right,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
-                  Expanded(flex: 2, child: Text(mockDate,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.muted, fontSize: 12))),
-                  Expanded(flex: 2, child: Text('$mockDaysLate',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.danger, fontWeight: FontWeight.w600, fontSize: 12))),
-                  Expanded(flex: 2, child: Text('${_amountMd(e.estimatedProvision)} ${_amountUnitLabel()}',
-                      textAlign: TextAlign.right,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12))),
+                  SizedBox(
+                      width: 24,
+                      child: Text('${i + 1}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: AppTheme.muted,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12))),
+                  Expanded(
+                      flex: 3,
+                      child: Text(e.counterpartyName,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: AppTheme.text,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12),
+                          overflow: TextOverflow.ellipsis)),
+                  Expanded(
+                      flex: 2,
+                      child: Text(e.sector,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: AppTheme.muted, fontSize: 12),
+                          overflow: TextOverflow.ellipsis)),
+                  Expanded(
+                      flex: 2,
+                      child: Text(
+                          '${_amountMd(e.grossAmount)} ${_amountUnitLabel()}',
+                          textAlign: TextAlign.right,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: AppTheme.text,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12))),
+                  Expanded(
+                      flex: 2,
+                      child: Text(mockDate,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: AppTheme.muted, fontSize: 12))),
+                  Expanded(
+                      flex: 2,
+                      child: Text('$mockDaysLate',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: AppTheme.danger,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12))),
+                  Expanded(
+                      flex: 2,
+                      child: Text(
+                          '${_amountMd(e.estimatedProvision)} ${_amountUnitLabel()}',
+                          textAlign: TextAlign.right,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: AppTheme.text,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12))),
                   Expanded(
                     flex: 2,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(AppFormatters.percent(coverageRate),
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.text, fontWeight: FontWeight.w600, fontSize: 12)),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                    color: AppTheme.text,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12)),
                         const SizedBox(width: 8),
                         Container(
                           width: 60,
@@ -973,11 +1322,13 @@ class _PortfolioTabButton extends StatelessWidget {
     return SizedBox(
       width: label.startsWith('Analyse')
           ? 198
-          : label.startsWith('Alertes')
-              ? 172
-              : label.startsWith('Tableau')
+          : label.startsWith('Grands')
+              ? 142
+              : label.startsWith('Alertes')
                   ? 172
-                  : 190,
+                  : label.startsWith('Tableau')
+                      ? 172
+                      : 190,
       height: double.infinity,
       child: InkWell(
         onTap: onTap,
@@ -1015,6 +1366,2254 @@ class _PortfolioTabButton extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ExcelLargeExposureWorkspace extends StatelessWidget {
+  const _ExcelLargeExposureWorkspace({required this.view});
+
+  final _ConcentrationViewModel view;
+
+  @override
+  Widget build(BuildContext context) {
+    final analysis = _ExcelLargeExposureAnalysis.from(view);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ExcelLargeExposureSummary(analysis: analysis),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 1120) {
+              return Column(
+                children: [
+                  _ExcelLargeExposureChart(analysis: analysis),
+                  const SizedBox(height: 12),
+                  _ExcelLargeExposureControlBox(analysis: analysis),
+                ],
+              );
+            }
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    flex: 58,
+                    child: _ExcelLargeExposureChart(analysis: analysis),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 42,
+                    child: _ExcelLargeExposureControlBox(analysis: analysis),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        _ExcelLargeExposureGrid(analysis: analysis),
+      ],
+    );
+  }
+}
+
+class _ExcelLargeExposureAnalysis {
+  const _ExcelLargeExposureAnalysis({
+    required this.rows,
+    required this.ownFunds,
+    required this.threshold10,
+    required this.threshold25,
+    required this.totalAuthorization,
+    required this.totalGrossRisk,
+    required this.totalOnBalance,
+    required this.totalOffBalance,
+    required this.totalGuarantee,
+    required this.totalNetRisk,
+    required this.topFiveGross,
+    required this.topFiveNet,
+  });
+
+  factory _ExcelLargeExposureAnalysis.from(_ConcentrationViewModel view) {
+    final ownFunds = _largeExposureOwnFunds(view);
+    final groups = <String, _ExcelLargeExposureAccumulator>{};
+
+    for (final detail in view.exposureDetails) {
+      groups
+          .putIfAbsent(
+            detail.counterpartyName,
+            () => _ExcelLargeExposureAccumulator(detail.counterpartyName),
+          )
+          .add(detail);
+    }
+
+    final rows = groups.values
+        .map((item) => item.toRow(ownFunds, view.totalGross))
+        .toList(growable: false)
+      ..sort((left, right) => right.grossRisk.compareTo(left.grossRisk));
+    final topFive = rows.take(5).toList(growable: false);
+
+    return _ExcelLargeExposureAnalysis(
+      rows: rows,
+      ownFunds: ownFunds,
+      threshold10: ownFunds * 0.10,
+      threshold25: ownFunds * 0.25,
+      totalAuthorization:
+          rows.fold<double>(0.0, (sum, row) => sum + row.authorization),
+      totalGrossRisk: rows.fold<double>(0.0, (sum, row) => sum + row.grossRisk),
+      totalOnBalance: rows.fold<double>(0.0, (sum, row) => sum + row.onBalance),
+      totalOffBalance:
+          rows.fold<double>(0.0, (sum, row) => sum + row.offBalance),
+      totalGuarantee: rows.fold<double>(0.0, (sum, row) => sum + row.guarantee),
+      totalNetRisk: rows.fold<double>(0.0, (sum, row) => sum + row.netRisk),
+      topFiveGross:
+          topFive.fold<double>(0.0, (sum, row) => sum + row.grossRisk),
+      topFiveNet: topFive.fold<double>(0.0, (sum, row) => sum + row.netRisk),
+    );
+  }
+
+  final List<_ExcelLargeExposureRow> rows;
+  final double ownFunds;
+  final double threshold10;
+  final double threshold25;
+  final double totalAuthorization;
+  final double totalGrossRisk;
+  final double totalOnBalance;
+  final double totalOffBalance;
+  final double totalGuarantee;
+  final double totalNetRisk;
+  final double topFiveGross;
+  final double topFiveNet;
+
+  _ExcelLargeExposureRow? get leader => rows.isEmpty ? null : rows.first;
+  double get topFiveGrossOwnFundsRatio =>
+      ownFunds <= 0 ? 0.0 : topFiveGross / ownFunds;
+  double get topFiveNetOwnFundsRatio =>
+      ownFunds <= 0 ? 0.0 : topFiveNet / ownFunds;
+  double get topFiveGrossPortfolioRatio =>
+      totalGrossRisk <= 0 ? 0.0 : topFiveGross / totalGrossRisk;
+  double get topFiveNetPortfolioRatio =>
+      totalNetRisk <= 0 ? 0.0 : topFiveNet / totalNetRisk;
+  double get leaderGrossOwnFundsRatio => leader?.grossOwnFundsRatio ?? 0.0;
+  double get leaderNetOwnFundsRatio => leader?.netOwnFundsRatio ?? 0.0;
+  double get leaderGrossPortfolioRatio =>
+      totalGrossRisk <= 0 ? 0.0 : (leader?.grossRisk ?? 0.0) / totalGrossRisk;
+  double get leaderNetPortfolioRatio =>
+      totalNetRisk <= 0 ? 0.0 : (leader?.netRisk ?? 0.0) / totalNetRisk;
+  double get utilizationRate =>
+      totalAuthorization <= 0 ? 0.0 : totalGrossRisk / totalAuthorization;
+  double get coverageRate =>
+      totalGrossRisk <= 0 ? 0.0 : totalGuarantee / totalGrossRisk;
+  int get warningCount =>
+      rows.where((row) => row.grossOwnFundsRatio >= 0.10).length;
+  int get breachCount =>
+      rows.where((row) => row.netOwnFundsRatio >= 0.25).length;
+}
+
+class _ExcelLargeExposureAccumulator {
+  _ExcelLargeExposureAccumulator(this.counterparty);
+
+  final String counterparty;
+  final ids = <String>[];
+  final countries = <String, int>{};
+  final sectors = <String, int>{};
+  final ratings = <String, int>{};
+  var authorization = 0.0;
+  var onBalance = 0.0;
+  var offBalance = 0.0;
+  var grossRisk = 0.0;
+  var netRisk = 0.0;
+  var rwa = 0.0;
+
+  void add(ConcentrationExposureDetail detail) {
+    ids.add(detail.id);
+    _count(countries, detail.country);
+    _count(sectors, detail.sector);
+    _count(ratings, detail.rating);
+    authorization +=
+        _positiveOr(detail.authorizationAmount, detail.grossAmount);
+    final resolvedOnBalance =
+        _positiveOr(detail.onBalanceAmount, detail.grossAmount);
+    final resolvedOffBalance = math.max(0.0, detail.offBalanceAmount);
+    final resolvedGross = resolvedOnBalance + resolvedOffBalance;
+    onBalance += resolvedOnBalance;
+    offBalance += resolvedOffBalance;
+    grossRisk += resolvedGross <= 0 ? detail.grossAmount : resolvedGross;
+    netRisk += detail.ead;
+    rwa += detail.rwa;
+  }
+
+  _ExcelLargeExposureRow toRow(double ownFunds, double portfolioGross) {
+    final guarantee = math.max(0.0, grossRisk - netRisk);
+    return _ExcelLargeExposureRow(
+      refs: _refsLabel(ids),
+      counterparty: counterparty,
+      rating: _dominantLabel(ratings),
+      country: _dominantLabel(countries),
+      sector: _dominantLabel(sectors),
+      authorization: authorization,
+      grossRisk: grossRisk,
+      grossBalanceRisk: onBalance,
+      onBalance: onBalance,
+      offBalance: offBalance,
+      guarantee: guarantee,
+      netRisk: netRisk,
+      rwa: rwa,
+      grossOwnFundsRatio: ownFunds <= 0 ? 0.0 : grossRisk / ownFunds,
+      netOwnFundsRatio: ownFunds <= 0 ? 0.0 : netRisk / ownFunds,
+      portfolioRatio: portfolioGross <= 0 ? 0.0 : grossRisk / portfolioGross,
+      utilizationRate: authorization <= 0 ? 0.0 : grossRisk / authorization,
+    );
+  }
+
+  static void _count(Map<String, int> values, String raw) {
+    final value = raw.trim().isEmpty ? 'Non renseigné' : raw.trim();
+    values.update(value, (count) => count + 1, ifAbsent: () => 1);
+  }
+}
+
+class _ExcelLargeExposureRow {
+  const _ExcelLargeExposureRow({
+    required this.refs,
+    required this.counterparty,
+    required this.rating,
+    required this.country,
+    required this.sector,
+    required this.authorization,
+    required this.grossRisk,
+    required this.grossBalanceRisk,
+    required this.onBalance,
+    required this.offBalance,
+    required this.guarantee,
+    required this.netRisk,
+    required this.rwa,
+    required this.grossOwnFundsRatio,
+    required this.netOwnFundsRatio,
+    required this.portfolioRatio,
+    required this.utilizationRate,
+  });
+
+  final String refs;
+  final String counterparty;
+  final String rating;
+  final String country;
+  final String sector;
+  final double authorization;
+  final double grossRisk;
+  final double grossBalanceRisk;
+  final double onBalance;
+  final double offBalance;
+  final double guarantee;
+  final double netRisk;
+  final double rwa;
+  final double grossOwnFundsRatio;
+  final double netOwnFundsRatio;
+  final double portfolioRatio;
+  final double utilizationRate;
+
+  String get status {
+    if (netOwnFundsRatio >= 0.25) return 'Limite 25%';
+    if (grossOwnFundsRatio >= 0.10) return 'Vigilance 10%';
+    return 'OK';
+  }
+
+  Color get statusColor => _ratioColor(
+        math.max(grossOwnFundsRatio, netOwnFundsRatio),
+      );
+}
+
+double _positiveOr(double value, double fallback) {
+  return value > 0 ? value : fallback;
+}
+
+String _dominantLabel(Map<String, int> values) {
+  if (values.isEmpty) return 'Non renseigné';
+  final sorted = values.entries.toList()
+    ..sort((left, right) => right.value.compareTo(left.value));
+  if (sorted.length == 1) return sorted.first.key;
+  return '${sorted.first.key} +${sorted.length - 1}';
+}
+
+String _refsLabel(List<String> ids) {
+  if (ids.isEmpty) return '-';
+  final compact = ids.take(3).join('/');
+  return ids.length > 3 ? '$compact/…' : compact;
+}
+
+class _ExcelLargeExposureSummary extends StatelessWidget {
+  const _ExcelLargeExposureSummary({required this.analysis});
+
+  final _ExcelLargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    final border = Theme.of(context).dividerColor.withValues(alpha: 0.45);
+    return Container(
+      decoration: _excelPanelDecoration(context),
+      child: Column(
+        children: [
+          _ExcelTitleBand(
+            title: 'RATIOS FONDS PROPRES REGLEMENTAIRES',
+            right: 'Synthèse Top 5 et 1er groupe',
+          ),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  flex: 42,
+                  child: _ExcelRegulatoryRatiosTable(analysis: analysis),
+                ),
+                Container(width: 1, color: border),
+                Expanded(
+                  flex: 58,
+                  child: _ExcelTopFiveTable(analysis: analysis),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExcelTitleBand extends StatelessWidget {
+  const _ExcelTitleBand({
+    required this.title,
+    required this.right,
+  });
+
+  final String title;
+  final String right;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: AppColors.concentrationDeeper,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+          Text(
+            right,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.84),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExcelRegulatoryRatiosTable extends StatelessWidget {
+  const _ExcelRegulatoryRatiosTable({required this.analysis});
+
+  final _ExcelLargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _ExcelRow(
+          cells: [
+            const _ExcelCell('Période active', flex: 3, header: true),
+            _ExcelCell('En ${_amountUnitLabel()}', flex: 2, header: true),
+            const _ExcelCell('Seuil', flex: 2, header: true),
+            const _ExcelCell('Montant',
+                flex: 2, header: true, align: TextAlign.right),
+          ],
+        ),
+        _ExcelRow(
+          cells: [
+            const _ExcelCell('FP réglementaires', flex: 3, strong: true),
+            _ExcelCell(_amountUnitLabel(), flex: 2),
+            const _ExcelCell('Base', flex: 2),
+            _ExcelCell(_fmtAmount(analysis.ownFunds),
+                flex: 2, align: TextAlign.right, strong: true),
+          ],
+        ),
+        _ExcelRow(
+          cells: [
+            const _ExcelCell('Seuil notification', flex: 3),
+            const _ExcelCell('10%', flex: 2),
+            const _ExcelCell('FP × 10%', flex: 2),
+            _ExcelCell(_fmtAmount(analysis.threshold10),
+                flex: 2, align: TextAlign.right),
+          ],
+        ),
+        _ExcelRow(
+          last: true,
+          cells: [
+            const _ExcelCell('Limite grande exposition', flex: 3),
+            const _ExcelCell('25%', flex: 2),
+            const _ExcelCell('FP × 25%', flex: 2),
+            _ExcelCell(_fmtAmount(analysis.threshold25),
+                flex: 2, align: TextAlign.right),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ExcelTopFiveTable extends StatelessWidget {
+  const _ExcelTopFiveTable({required this.analysis});
+
+  final _ExcelLargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const _ExcelRow(
+          cells: [
+            _ExcelCell('Top 5', flex: 2, header: true),
+            _ExcelCell('Montant',
+                flex: 2, header: true, align: TextAlign.right),
+            _ExcelCell('Top5 / FP',
+                flex: 2, header: true, align: TextAlign.right),
+            _ExcelCell('Top5 / portefeuille',
+                flex: 3, header: true, align: TextAlign.right),
+            _ExcelCell('1er groupe', flex: 3, header: true),
+            _ExcelCell('1er groupe / FP',
+                flex: 2, header: true, align: TextAlign.right),
+            _ExcelCell('1er groupe / port.',
+                flex: 2, header: true, align: TextAlign.right),
+          ],
+        ),
+        _ExcelRow(
+          cells: [
+            const _ExcelCell('Brut', flex: 2, strong: true),
+            _ExcelCell(_fmtAmount(analysis.topFiveGross),
+                flex: 2, align: TextAlign.right, strong: true),
+            _ExcelCell(
+                AppFormatters.percent(analysis.topFiveGrossOwnFundsRatio),
+                flex: 2,
+                align: TextAlign.right,
+                color: _ratioColor(analysis.topFiveGrossOwnFundsRatio)),
+            _ExcelCell(
+                AppFormatters.percent(analysis.topFiveGrossPortfolioRatio),
+                flex: 3,
+                align: TextAlign.right),
+            _ExcelCell(analysis.leader?.counterparty ?? '-',
+                flex: 3, strong: true),
+            _ExcelCell(AppFormatters.percent(analysis.leaderGrossOwnFundsRatio),
+                flex: 2,
+                align: TextAlign.right,
+                color: _ratioColor(analysis.leaderGrossOwnFundsRatio)),
+            _ExcelCell(
+                AppFormatters.percent(analysis.leaderGrossPortfolioRatio),
+                flex: 2,
+                align: TextAlign.right),
+          ],
+        ),
+        _ExcelRow(
+          last: true,
+          cells: [
+            const _ExcelCell('Net', flex: 2, strong: true),
+            _ExcelCell(_fmtAmount(analysis.topFiveNet),
+                flex: 2, align: TextAlign.right, strong: true),
+            _ExcelCell(AppFormatters.percent(analysis.topFiveNetOwnFundsRatio),
+                flex: 2,
+                align: TextAlign.right,
+                color: _ratioColor(analysis.topFiveNetOwnFundsRatio)),
+            _ExcelCell(AppFormatters.percent(analysis.topFiveNetPortfolioRatio),
+                flex: 3, align: TextAlign.right),
+            _ExcelCell(analysis.leader?.counterparty ?? '-', flex: 3),
+            _ExcelCell(AppFormatters.percent(analysis.leaderNetOwnFundsRatio),
+                flex: 2,
+                align: TextAlign.right,
+                color: _ratioColor(analysis.leaderNetOwnFundsRatio)),
+            _ExcelCell(AppFormatters.percent(analysis.leaderNetPortfolioRatio),
+                flex: 2, align: TextAlign.right),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ExcelLargeExposureChart extends StatelessWidget {
+  const _ExcelLargeExposureChart({required this.analysis});
+
+  final _ExcelLargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 310,
+      decoration: _excelPanelDecoration(context),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _ExcelSectionHeader(
+            icon: CupertinoIcons.chart_pie_fill,
+            title: 'Clients L.E. en chiffres au T3-2025',
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: _LargeExposurePieChart(analysis: analysis),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposurePieChart extends StatelessWidget {
+  const _LargeExposurePieChart({required this.analysis});
+
+  final _ExcelLargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    final slices = [
+      _LargeExposurePieSlice(
+        label: 'Autorisations',
+        value: analysis.totalAuthorization,
+        color: const Color(0xFF4F81BD),
+      ),
+      _LargeExposurePieSlice(
+        label: 'Risque brut',
+        value: analysis.totalGrossRisk,
+        color: const Color(0xFFC0504D),
+      ),
+      _LargeExposurePieSlice(
+        label: 'Garanties',
+        value: analysis.totalGuarantee,
+        color: const Color(0xFF9BBB59),
+      ),
+      _LargeExposurePieSlice(
+        label: 'Risque net',
+        value: analysis.totalNetRisk,
+        color: const Color(0xFF8064A2),
+      ),
+    ].where((slice) => slice.value > 0).toList(growable: false);
+
+    if (slices.isEmpty) {
+      return const _EmptyInline();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 680;
+        if (compact) {
+          return Row(
+            children: [
+              Expanded(child: _LargeExposurePie(slices: slices)),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: 190,
+                child: _LargeExposurePieLegend(slices: slices),
+              ),
+            ],
+          );
+        }
+
+        return Stack(
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: SizedBox(
+                width: 210,
+                height: 210,
+                child: _LargeExposurePie(slices: slices),
+              ),
+            ),
+            Positioned(
+              top: 34,
+              right: 16,
+              child: _LargeExposureCallout(slice: slices[0], width: 245),
+            ),
+            Positioned(
+              bottom: 22,
+              left: 250,
+              child: _LargeExposureCallout(slice: slices[1], width: 210),
+            ),
+            Positioned(
+              top: 66,
+              left: 22,
+              child: _LargeExposureCallout(slice: slices[2], width: 210),
+            ),
+            Positioned(
+              top: 4,
+              left: 250,
+              child: _LargeExposureCallout(slice: slices[3], width: 170),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LargeExposurePie extends StatelessWidget {
+  const _LargeExposurePie({required this.slices});
+
+  final List<_LargeExposurePieSlice> slices;
+
+  @override
+  Widget build(BuildContext context) {
+    return PieChart(
+      PieChartData(
+        centerSpaceRadius: 0,
+        sectionsSpace: 5,
+        startDegreeOffset: -90,
+        pieTouchData: PieTouchData(
+          enabled: true,
+          touchCallback: (_, __) {},
+        ),
+        sections: [
+          for (final slice in slices)
+            PieChartSectionData(
+              value: slice.value,
+              color: slice.color,
+              radius: 84,
+              title: '',
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposurePieLegend extends StatelessWidget {
+  const _LargeExposurePieLegend({required this.slices});
+
+  final List<_LargeExposurePieSlice> slices;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final slice in slices) ...[
+          _LargeExposureCallout(slice: slice),
+          const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
+class _LargeExposureCallout extends StatelessWidget {
+  const _LargeExposureCallout({
+    required this.slice,
+    this.width,
+  });
+
+  final _LargeExposurePieSlice slice;
+  final double? width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFB8B8B8)),
+      ),
+      child: Row(
+        mainAxisSize: width == null ? MainAxisSize.min : MainAxisSize.max,
+        children: [
+          Container(width: 8, height: 8, color: slice.color),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              '${slice.label}; ${_fmtAmount(slice.value)}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF4B5563),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposurePieSlice {
+  const _LargeExposurePieSlice({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final double value;
+  final Color color;
+}
+
+class _ExcelLargeExposureControlBox extends StatelessWidget {
+  const _ExcelLargeExposureControlBox({required this.analysis});
+
+  final _ExcelLargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: _excelPanelDecoration(context),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _ExcelSectionHeader(
+            icon: CupertinoIcons.doc_text_fill,
+            title: 'Contrôle total portefeuille',
+          ),
+          const SizedBox(height: 12),
+          _ExcelControlLine(
+              'Autorisations', _fmtAmount(analysis.totalAuthorization)),
+          _ExcelControlLine('Risque brut', _fmtAmount(analysis.totalGrossRisk)),
+          _ExcelControlLine(
+              'Risque brut bilan', _fmtAmount(analysis.totalOnBalance)),
+          _ExcelControlLine('Hors bilan', _fmtAmount(analysis.totalOffBalance)),
+          _ExcelControlLine(
+              'GBPD + DN', '-${_fmtAmount(analysis.totalGuarantee)}'),
+          _ExcelControlLine('Risque net', _fmtAmount(analysis.totalNetRisk),
+              strong: true),
+          const Divider(height: 18),
+          _ExcelControlLine('Tx d’utilisation',
+              AppFormatters.percent(analysis.utilizationRate)),
+          _ExcelControlLine(
+              'Tx couverture', AppFormatters.percent(analysis.coverageRate)),
+          const Divider(height: 18),
+          _ExcelControlLine('Groupes >= 10% FP', '${analysis.warningCount}',
+              color: const Color(0xFFB54708)),
+          _ExcelControlLine('Groupes >= 25% FP net', '${analysis.breachCount}',
+              color: const Color(0xFFB42318)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExcelControlLine extends StatelessWidget {
+  const _ExcelControlLine(
+    this.label,
+    this.value, {
+    this.strong = false,
+    this.color,
+  });
+
+  final String label;
+  final String value;
+  final bool strong;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: AppTheme.muted,
+                fontSize: 11,
+                fontWeight: strong ? FontWeight.w800 : FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: color ?? AppTheme.text,
+              fontSize: 11.5,
+              fontWeight: strong ? FontWeight.w900 : FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExcelLargeExposureGrid extends StatelessWidget {
+  const _ExcelLargeExposureGrid({required this.analysis});
+
+  final _ExcelLargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: _excelPanelDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _ExcelTitleBand(
+            title:
+                'CLIENTS LARGE EXPOSURE - ${_amountUnitLabel()}  (25% FP = ${_fmtAmount(analysis.threshold25)} ${_amountUnitLabel()})',
+            right: 'Tri décroissant par risque brut',
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: _excelLargeExposureTableWidth,
+              child: Column(
+                children: [
+                  const _ExcelLargeExposureHeaderRow(),
+                  for (var index = 0;
+                      index < math.min(analysis.rows.length, 16);
+                      index++)
+                    _ExcelLargeExposureDataRow(
+                      index: index,
+                      row: analysis.rows[index],
+                    ),
+                  _ExcelLargeExposureTotalRow(analysis: analysis),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExcelLargeExposureHeaderRow extends StatelessWidget {
+  const _ExcelLargeExposureHeaderRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ExcelWideRow(
+      header: true,
+      cells: [
+        _ExcelWideCell('Réf.', width: 118, align: TextAlign.center),
+        _ExcelWideCell('Contrepartie', width: 210),
+        _ExcelWideCell('Cotation*', width: 94, align: TextAlign.center),
+        _ExcelWideCell('Pays de risque', width: 132),
+        _ExcelWideCell('Autorisation', width: 118, align: TextAlign.right),
+        _ExcelWideCell('Risque brut', width: 118, align: TextAlign.right),
+        _ExcelWideCell('Risque brut (bilan)',
+            width: 132, align: TextAlign.right),
+        _ExcelWideCell('Bilan', width: 106, align: TextAlign.right),
+        _ExcelWideCell('Hors bilan', width: 106, align: TextAlign.right),
+        _ExcelWideCell('GBPD+DN', width: 106, align: TextAlign.right),
+        _ExcelWideCell('Risque net', width: 118, align: TextAlign.right),
+        _ExcelWideCell('RB/FP 10%', width: 94, align: TextAlign.right),
+        _ExcelWideCell('RN/FP 25%', width: 94, align: TextAlign.right),
+        _ExcelWideCell('Tx util.', width: 86, align: TextAlign.right),
+        _ExcelWideCell('Statut', width: 118),
+      ],
+    );
+  }
+}
+
+class _ExcelLargeExposureDataRow extends StatelessWidget {
+  const _ExcelLargeExposureDataRow({
+    required this.index,
+    required this.row,
+  });
+
+  final int index;
+  final _ExcelLargeExposureRow row;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ExcelWideRow(
+      shaded: index.isOdd,
+      cells: [
+        _ExcelWideCell(row.refs, width: 118, align: TextAlign.center),
+        _ExcelWideCell(row.counterparty, width: 210, strong: index == 0),
+        _ExcelWideCell(row.rating, width: 94, align: TextAlign.center),
+        _ExcelWideCell(row.country, width: 132),
+        _ExcelWideCell(_fmtAmount(row.authorization),
+            width: 118, align: TextAlign.right),
+        _ExcelWideCell(_fmtAmount(row.grossRisk),
+            width: 118, align: TextAlign.right, strong: true),
+        _ExcelWideCell(_fmtAmount(row.grossBalanceRisk),
+            width: 132, align: TextAlign.right),
+        _ExcelWideCell(_fmtAmount(row.onBalance),
+            width: 106, align: TextAlign.right),
+        _ExcelWideCell(_fmtAmount(row.offBalance),
+            width: 106, align: TextAlign.right),
+        _ExcelWideCell('-${_fmtAmount(row.guarantee)}',
+            width: 106, align: TextAlign.right),
+        _ExcelWideCell(_fmtAmount(row.netRisk),
+            width: 118, align: TextAlign.right, strong: true),
+        _ExcelWideCell(AppFormatters.percent(row.grossOwnFundsRatio),
+            width: 94,
+            align: TextAlign.right,
+            color: _ratioColor(row.grossOwnFundsRatio)),
+        _ExcelWideCell(AppFormatters.percent(row.netOwnFundsRatio),
+            width: 94,
+            align: TextAlign.right,
+            color: _ratioColor(row.netOwnFundsRatio)),
+        _ExcelWideCell(AppFormatters.percent(row.utilizationRate),
+            width: 86, align: TextAlign.right),
+        _ExcelWideCell(row.status,
+            width: 118, color: row.statusColor, strong: true),
+      ],
+    );
+  }
+}
+
+class _ExcelLargeExposureTotalRow extends StatelessWidget {
+  const _ExcelLargeExposureTotalRow({required this.analysis});
+
+  final _ExcelLargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ExcelWideRow(
+      total: true,
+      cells: [
+        const _ExcelWideCell('', width: 118),
+        const _ExcelWideCell('TOTAL', width: 210, strong: true),
+        const _ExcelWideCell('', width: 94),
+        const _ExcelWideCell('', width: 132),
+        _ExcelWideCell(_fmtAmount(analysis.totalAuthorization),
+            width: 118, align: TextAlign.right, strong: true),
+        _ExcelWideCell(_fmtAmount(analysis.totalGrossRisk),
+            width: 118, align: TextAlign.right, strong: true),
+        _ExcelWideCell(_fmtAmount(analysis.totalOnBalance),
+            width: 132, align: TextAlign.right, strong: true),
+        _ExcelWideCell(_fmtAmount(analysis.totalOnBalance),
+            width: 106, align: TextAlign.right),
+        _ExcelWideCell(_fmtAmount(analysis.totalOffBalance),
+            width: 106, align: TextAlign.right),
+        _ExcelWideCell('-${_fmtAmount(analysis.totalGuarantee)}',
+            width: 106, align: TextAlign.right),
+        _ExcelWideCell(_fmtAmount(analysis.totalNetRisk),
+            width: 118, align: TextAlign.right, strong: true),
+        _ExcelWideCell(
+            AppFormatters.percent(analysis.ownFunds <= 0
+                ? 0.0
+                : analysis.totalGrossRisk / analysis.ownFunds),
+            width: 94,
+            align: TextAlign.right),
+        _ExcelWideCell(
+            AppFormatters.percent(analysis.ownFunds <= 0
+                ? 0.0
+                : analysis.totalNetRisk / analysis.ownFunds),
+            width: 94,
+            align: TextAlign.right),
+        _ExcelWideCell(AppFormatters.percent(analysis.utilizationRate),
+            width: 86, align: TextAlign.right),
+        const _ExcelWideCell('', width: 118),
+      ],
+    );
+  }
+}
+
+class _ExcelSectionHeader extends StatelessWidget {
+  const _ExcelSectionHeader({
+    required this.icon,
+    required this.title,
+  });
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.concentrationDeeper, size: 17),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.text,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ExcelRow extends StatelessWidget {
+  const _ExcelRow({
+    required this.cells,
+    this.last = false,
+  });
+
+  final List<_ExcelCell> cells;
+  final bool last;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 38,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: last
+                ? Colors.transparent
+                : Theme.of(context).dividerColor.withValues(alpha: 0.40),
+          ),
+        ),
+      ),
+      child: Row(children: cells),
+    );
+  }
+}
+
+class _ExcelCell extends StatelessWidget {
+  const _ExcelCell(
+    this.text, {
+    required this.flex,
+    this.header = false,
+    this.strong = false,
+    this.align = TextAlign.left,
+    this.color,
+  });
+
+  final String text;
+  final int flex;
+  final bool header;
+  final bool strong;
+  final TextAlign align;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Text(
+          text,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: align,
+          style: TextStyle(
+            color: color ?? (header ? AppTheme.muted : AppTheme.text),
+            fontSize: header ? 10 : 11,
+            fontWeight: header
+                ? FontWeight.w800
+                : strong
+                    ? FontWeight.w800
+                    : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExcelWideRow extends StatelessWidget {
+  const _ExcelWideRow({
+    required this.cells,
+    this.header = false,
+    this.shaded = false,
+    this.total = false,
+  });
+
+  final List<_ExcelWideCell> cells;
+  final bool header;
+  final bool shaded;
+  final bool total;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: header ? 38 : 42,
+      decoration: BoxDecoration(
+        color: total
+            ? AppColors.concentrationDeeper.withValues(alpha: 0.08)
+            : header
+                ? const Color(0xFFF1F5F9)
+                : shaded
+                    ? const Color(0xFFF8FAFC)
+                    : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).dividerColor.withValues(alpha: 0.45),
+          ),
+        ),
+      ),
+      child: Row(children: cells),
+    );
+  }
+}
+
+class _ExcelWideCell extends StatelessWidget {
+  const _ExcelWideCell(
+    this.text, {
+    required this.width,
+    this.align = TextAlign.left,
+    this.strong = false,
+    this.color,
+  });
+
+  final String text;
+  final double width;
+  final TextAlign align;
+  final bool strong;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 7),
+        child: Text(
+          text,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: align,
+          style: TextStyle(
+            color: color ?? AppTheme.text,
+            fontSize: 10.7,
+            height: 1.05,
+            fontWeight: strong ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+BoxDecoration _excelPanelDecoration(BuildContext context) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return BoxDecoration(
+    color: isDark ? AppTheme.darkCard : Colors.white,
+    borderRadius: BorderRadius.circular(4),
+    border: Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.border),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.035),
+        blurRadius: 12,
+        offset: const Offset(0, 6),
+      ),
+    ],
+  );
+}
+
+String _fmtAmount(double value) => _amountMd(value, maxDecimals: 1);
+
+class _LargeExposureWorkspace extends StatelessWidget {
+  const _LargeExposureWorkspace({required this.view});
+
+  final _ConcentrationViewModel view;
+
+  @override
+  Widget build(BuildContext context) {
+    final analysis = _LargeExposureAnalysis.from(view);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _LargeExposureKpiGrid(analysis: analysis),
+        const SizedBox(height: AppTheme.pageGap),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 1050) {
+              return Column(
+                children: [
+                  _LargeExposureChartCard(analysis: analysis),
+                  const SizedBox(height: AppTheme.pageGap),
+                  _LargeExposureLimitCard(analysis: analysis),
+                ],
+              );
+            }
+            return IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                      flex: 62,
+                      child: _LargeExposureChartCard(analysis: analysis)),
+                  const SizedBox(width: AppTheme.pageGap),
+                  Expanded(
+                      flex: 38,
+                      child: _LargeExposureLimitCard(analysis: analysis)),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: AppTheme.pageGap),
+        _LargeExposureTableCard(analysis: analysis),
+      ],
+    );
+  }
+}
+
+class _LargeExposureAnalysis {
+  const _LargeExposureAnalysis({
+    required this.rows,
+    required this.ownFunds,
+    required this.totalGross,
+    required this.totalNet,
+    required this.topFiveGross,
+    required this.topFiveNet,
+    required this.firstGroupGross,
+    required this.firstGroupNet,
+    required this.alertCount,
+    required this.limitCount,
+  });
+
+  factory _LargeExposureAnalysis.from(_ConcentrationViewModel view) {
+    final ownFunds = _largeExposureOwnFunds(view);
+    final rows = view.counterpartyRows
+        .map((row) => _LargeExposureRow.from(row, ownFunds, view.totalGross))
+        .toList(growable: false)
+      ..sort((left, right) => right.grossAmount.compareTo(left.grossAmount));
+    final topFive = rows.take(5).toList(growable: false);
+
+    return _LargeExposureAnalysis(
+      rows: rows,
+      ownFunds: ownFunds,
+      totalGross: view.totalGross,
+      totalNet: view.totalEad,
+      topFiveGross:
+          topFive.fold<double>(0.0, (sum, row) => sum + row.grossAmount),
+      topFiveNet: topFive.fold<double>(0.0, (sum, row) => sum + row.netAmount),
+      firstGroupGross: rows.isEmpty ? 0.0 : rows.first.grossAmount,
+      firstGroupNet: rows.isEmpty ? 0.0 : rows.first.netAmount,
+      alertCount: rows.where((row) => row.grossOwnFundsRatio >= 0.10).length,
+      limitCount: rows.where((row) => row.netOwnFundsRatio >= 0.25).length,
+    );
+  }
+
+  final List<_LargeExposureRow> rows;
+  final double ownFunds;
+  final double totalGross;
+  final double totalNet;
+  final double topFiveGross;
+  final double topFiveNet;
+  final double firstGroupGross;
+  final double firstGroupNet;
+  final int alertCount;
+  final int limitCount;
+
+  double get topFiveGrossOwnFundsRatio =>
+      ownFunds <= 0 ? 0.0 : topFiveGross / ownFunds;
+  double get topFiveNetOwnFundsRatio =>
+      ownFunds <= 0 ? 0.0 : topFiveNet / ownFunds;
+  double get topFiveGrossPortfolioRatio =>
+      totalGross <= 0 ? 0.0 : topFiveGross / totalGross;
+  double get firstGroupGrossOwnFundsRatio =>
+      ownFunds <= 0 ? 0.0 : firstGroupGross / ownFunds;
+  _LargeExposureRow? get leader => rows.isEmpty ? null : rows.first;
+}
+
+class _LargeExposureRow {
+  const _LargeExposureRow({
+    required this.counterparty,
+    required this.country,
+    required this.sector,
+    required this.fileCount,
+    required this.grossAmount,
+    required this.netAmount,
+    required this.rwa,
+    required this.grossOwnFundsRatio,
+    required this.netOwnFundsRatio,
+    required this.portfolioShare,
+  });
+
+  factory _LargeExposureRow.from(
+    ConcentrationExposureRow row,
+    double ownFunds,
+    double totalGross,
+  ) {
+    return _LargeExposureRow(
+      counterparty: row.counterpartyName,
+      country: row.country,
+      sector: row.sector,
+      fileCount: row.exposureId,
+      grossAmount: row.grossAmount,
+      netAmount: row.ead,
+      rwa: row.rwa,
+      grossOwnFundsRatio: ownFunds <= 0 ? 0.0 : row.grossAmount / ownFunds,
+      netOwnFundsRatio: ownFunds <= 0 ? 0.0 : row.ead / ownFunds,
+      portfolioShare: totalGross <= 0 ? 0.0 : row.grossAmount / totalGross,
+    );
+  }
+
+  final String counterparty;
+  final String country;
+  final String sector;
+  final String fileCount;
+  final double grossAmount;
+  final double netAmount;
+  final double rwa;
+  final double grossOwnFundsRatio;
+  final double netOwnFundsRatio;
+  final double portfolioShare;
+
+  String get status {
+    if (netOwnFundsRatio >= 0.25) {
+      return 'Limite 25%';
+    }
+    if (grossOwnFundsRatio >= 0.10) {
+      return 'Vigilance 10%';
+    }
+    return 'Suivi normal';
+  }
+
+  Color get statusColor {
+    if (netOwnFundsRatio >= 0.25) {
+      return const Color(0xFFB42318);
+    }
+    if (grossOwnFundsRatio >= 0.10) {
+      return const Color(0xFFB54708);
+    }
+    return const Color(0xFF047857);
+  }
+}
+
+double _largeExposureOwnFunds(_ConcentrationViewModel view) {
+  final estimated = view.totalRwa * 0.09 * 1.42;
+  if (estimated > 0) {
+    return estimated;
+  }
+  return view.totalCapital > 0 ? view.totalCapital * 1.42 : 0.0;
+}
+
+class _LargeExposureHeader extends StatelessWidget {
+  const _LargeExposureHeader({required this.analysis});
+
+  final _LargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    final leader = analysis.leader?.counterparty ?? 'N/D';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkCard : AppTheme.card,
+        borderRadius: BorderRadius.circular(6),
+        border:
+            Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.concentrationDeeper.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Icon(
+              CupertinoIcons.chart_bar_alt_fill,
+              color: AppColors.concentrationDeeper,
+              size: 21,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Grands risques',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppTheme.text,
+                        fontWeight: FontWeight.w700,
+                        height: 1,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Suivi des contreparties significatives, seuils 10% / 25% FP et concentration Top 5. Premier groupe : $leader.',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.muted,
+                        height: 1.25,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          _LargeExposureThresholdPill(
+            label: 'FP estimés',
+            value: '${_amountMd(analysis.ownFunds)} ${_amountUnitFcfaLabel()}',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposureThresholdPill extends StatelessWidget {
+  const _LargeExposureThresholdPill({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.concentrationDeeper.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+            color: AppColors.concentrationDeeper.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            label.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.concentrationDeeper,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
+                ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppTheme.text,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposureKpiGrid extends StatelessWidget {
+  const _LargeExposureKpiGrid({required this.analysis});
+
+  final _LargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth < 760 ? 2 : 4;
+        return GridView.count(
+          crossAxisCount: columns,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: constraints.maxWidth < 760 ? 2.25 : 2.65,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _LargeExposureKpiTile(
+              icon: CupertinoIcons.square_stack_3d_up_fill,
+              label: 'Top 5 brut / FP',
+              value: AppFormatters.percent(analysis.topFiveGrossOwnFundsRatio),
+              detail:
+                  '${_amountMd(analysis.topFiveGross)} ${_amountUnitLabel()}',
+              color: AppColors.concentrationDeeper,
+            ),
+            _LargeExposureKpiTile(
+              icon: CupertinoIcons.arrow_down_right_square_fill,
+              label: 'Top 5 net / FP',
+              value: AppFormatters.percent(analysis.topFiveNetOwnFundsRatio),
+              detail: '${_amountMd(analysis.topFiveNet)} ${_amountUnitLabel()}',
+              color: const Color(0xFF2563EB),
+            ),
+            _LargeExposureKpiTile(
+              icon: CupertinoIcons.person_2_fill,
+              label: 'Premier groupe / FP',
+              value:
+                  AppFormatters.percent(analysis.firstGroupGrossOwnFundsRatio),
+              detail:
+                  '${_amountMd(analysis.firstGroupGross)} ${_amountUnitLabel()}',
+              color: const Color(0xFF7C3AED),
+            ),
+            _LargeExposureKpiTile(
+              icon: CupertinoIcons.exclamationmark_triangle_fill,
+              label: 'Dossiers sous seuil',
+              value: '${analysis.alertCount}',
+              detail: '${analysis.limitCount} au-dessus de 25%',
+              color: analysis.limitCount > 0
+                  ? const Color(0xFFB42318)
+                  : const Color(0xFFB54708),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _LargeExposureKpiTile extends StatelessWidget {
+  const _LargeExposureKpiTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final String detail;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? AppTheme.darkCard : AppTheme.card,
+        borderRadius: BorderRadius.circular(6),
+        border:
+            Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: AppTheme.muted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppTheme.text,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  detail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposureChartCard extends StatelessWidget {
+  const _LargeExposureChartCard({required this.analysis});
+
+  final _LargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = analysis.rows.take(8).toList(growable: false);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.border;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 1.5,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+        side: BorderSide(color: border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _LargeExposureSectionTitle(
+              icon: CupertinoIcons.chart_bar_square_fill,
+              title: 'Analyse des limites par groupe',
+              subtitle:
+                  'Lecture comparée du brut et du net rapportés aux fonds propres.',
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 292,
+              child: rows.isEmpty
+                  ? const _EmptyInline()
+                  : _LargeExposureRatioChart(rows: rows),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LargeExposureRatioChart extends StatelessWidget {
+  const _LargeExposureRatioChart({required this.rows});
+
+  final List<_LargeExposureRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxRatio = rows.fold<double>(
+      0.25,
+      (maxValue, row) => math.max(
+        maxValue,
+        math.max(row.grossOwnFundsRatio, row.netOwnFundsRatio),
+      ),
+    );
+    final maxY = math.max(0.30, (maxRatio * 1.18));
+
+    return BarChart(
+      BarChartData(
+        maxY: maxY,
+        minY: 0,
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: maxY / 4,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: AppTheme.border.withValues(alpha: 0.65),
+            strokeWidth: 0.8,
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        barTouchData: BarTouchData(
+          enabled: true,
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => const Color(0xFF111827),
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              final row = rows[group.x.toInt()];
+              final label = rodIndex == 0 ? 'Brut / FP' : 'Net / FP';
+              return BarTooltipItem(
+                '${row.counterparty}\n$label : ${AppFormatters.percent(rod.toY)}',
+                const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 11),
+              );
+            },
+          ),
+        ),
+        extraLinesData: ExtraLinesData(
+          horizontalLines: [
+            HorizontalLine(
+              y: 0.10,
+              color: const Color(0xFFB54708).withValues(alpha: 0.72),
+              strokeWidth: 1.4,
+              dashArray: [6, 4],
+            ),
+            HorizontalLine(
+              y: 0.25,
+              color: const Color(0xFFB42318).withValues(alpha: 0.72),
+              strokeWidth: 1.4,
+              dashArray: [6, 4],
+            ),
+          ],
+        ),
+        titlesData: FlTitlesData(
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 38,
+              interval: maxY / 4,
+              getTitlesWidget: (value, meta) => Text(
+                AppFormatters.percent(value),
+                style: const TextStyle(
+                  color: AppTheme.muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 48,
+              getTitlesWidget: (value, meta) {
+                final index = value.toInt();
+                if (index < 0 || index >= rows.length) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    '${index + 1}',
+                    style: const TextStyle(
+                      color: AppTheme.muted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        barGroups: [
+          for (var index = 0; index < rows.length; index++)
+            BarChartGroupData(
+              x: index,
+              barsSpace: 4,
+              barRods: [
+                BarChartRodData(
+                  toY: rows[index].grossOwnFundsRatio,
+                  width: 9,
+                  color: AppColors.concentrationDeeper,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                BarChartRodData(
+                  toY: rows[index].netOwnFundsRatio,
+                  width: 9,
+                  color: const Color(0xFF2563EB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposureLimitCard extends StatelessWidget {
+  const _LargeExposureLimitCard({required this.analysis});
+
+  final _LargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    final leader = analysis.leader;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.border;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 1.5,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+        side: BorderSide(color: border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _LargeExposureSectionTitle(
+              icon: CupertinoIcons.shield_lefthalf_fill,
+              title: 'Synthèse prudentielle',
+              subtitle:
+                  'Seuils inspirés du fichier de suivi des large exposures.',
+            ),
+            const SizedBox(height: 14),
+            _LargeExposureLimitRow(
+              label: 'Seuil de vigilance',
+              value: '10% FP',
+              detail: '${analysis.alertCount} groupe(s) concerné(s)',
+              color: const Color(0xFFB54708),
+            ),
+            _LargeExposureLimitRow(
+              label: 'Limite single-name',
+              value: '25% FP',
+              detail: '${analysis.limitCount} dépassement(s) net(s)',
+              color: const Color(0xFFB42318),
+            ),
+            _LargeExposureLimitRow(
+              label: 'Top 5 / portefeuille',
+              value: AppFormatters.percent(analysis.topFiveGrossPortfolioRatio),
+              detail:
+                  '${_amountMd(analysis.topFiveGross)} ${_amountUnitLabel()} brut',
+              color: AppColors.concentrationDeeper,
+            ),
+            const SizedBox(height: 8),
+            Divider(color: border),
+            const SizedBox(height: 10),
+            Text(
+              'Premier groupe',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: AppTheme.muted,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              leader?.counterparty ?? 'N/D',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTheme.text,
+                    fontWeight: FontWeight.w800,
+                    height: 1.1,
+                  ),
+            ),
+            const SizedBox(height: 9),
+            _LargeExposureMiniMetric(
+              label: 'Brut / FP',
+              value: AppFormatters.percent(leader?.grossOwnFundsRatio ?? 0.0),
+            ),
+            const SizedBox(height: 6),
+            _LargeExposureMiniMetric(
+              label: 'Net / FP',
+              value: AppFormatters.percent(leader?.netOwnFundsRatio ?? 0.0),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LargeExposureSectionTitle extends StatelessWidget {
+  const _LargeExposureSectionTitle({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.concentrationDeeper, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppTheme.text,
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.muted,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LargeExposureLimitRow extends StatelessWidget {
+  const _LargeExposureLimitRow({
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final String detail;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 34,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.text,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.muted,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposureMiniMetric extends StatelessWidget {
+  const _LargeExposureMiniMetric({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.muted,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppTheme.text,
+                fontWeight: FontWeight.w800,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LargeExposureTableCard extends StatelessWidget {
+  const _LargeExposureTableCard({required this.analysis});
+
+  final _LargeExposureAnalysis analysis;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.border;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 1.5,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(6),
+        side: BorderSide(color: border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _LargeExposureSectionTitle(
+              icon: CupertinoIcons.table_fill,
+              title: 'Détail des groupes grands risques',
+              subtitle:
+                  'Vue structurée brut, net, RWA, ratios FP et statut de limite.',
+            ),
+            const SizedBox(height: 12),
+            if (analysis.rows.isEmpty)
+              const SizedBox(height: 180, child: Center(child: _EmptyInline()))
+            else
+              _LargeExposureDataTable(
+                  rows: analysis.rows.take(14).toList(growable: false)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LargeExposureDataTable extends StatelessWidget {
+  const _LargeExposureDataTable({required this.rows});
+
+  final List<_LargeExposureRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.border;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: _excelLargeExposureTableWidth,
+        child: Column(
+          children: [
+            _LargeExposureTableHeader(border: border),
+            for (var index = 0; index < rows.length; index++)
+              _LargeExposureTableRow(
+                index: index,
+                row: rows[index],
+                border: border,
+                shaded: index.isOdd,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LargeExposureTableHeader extends StatelessWidget {
+  const _LargeExposureTableHeader({required this.border});
+
+  final Color border;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 38,
+      decoration: BoxDecoration(
+        color: AppColors.concentrationDeeper.withValues(alpha: 0.07),
+        border: Border(bottom: BorderSide(color: border)),
+      ),
+      child: const Row(
+        children: [
+          _LargeExposureCell('Rang',
+              width: 52, header: true, align: TextAlign.center),
+          _LargeExposureCell('Contrepartie', width: 220, header: true),
+          _LargeExposureCell('Pays', width: 132, header: true),
+          _LargeExposureCell('Secteur', width: 148, header: true),
+          _LargeExposureCell('Dossiers', width: 110, header: true),
+          _LargeExposureCell('Risque brut',
+              width: 112, header: true, align: TextAlign.right),
+          _LargeExposureCell('Risque net',
+              width: 112, header: true, align: TextAlign.right),
+          _LargeExposureCell('RWA',
+              width: 104, header: true, align: TextAlign.right),
+          _LargeExposureCell('RB/FP',
+              width: 82, header: true, align: TextAlign.right),
+          _LargeExposureCell('RN/FP',
+              width: 82, header: true, align: TextAlign.right),
+          _LargeExposureCell('Statut', width: 166, header: true),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposureTableRow extends StatelessWidget {
+  const _LargeExposureTableRow({
+    required this.index,
+    required this.row,
+    required this.border,
+    required this.shaded,
+  });
+
+  final int index;
+  final _LargeExposureRow row;
+  final Color border;
+  final bool shaded;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 44),
+      decoration: BoxDecoration(
+        color: shaded
+            ? AppTheme.background.withValues(alpha: 0.42)
+            : Colors.transparent,
+        border:
+            Border(bottom: BorderSide(color: border.withValues(alpha: 0.65))),
+      ),
+      child: Row(
+        children: [
+          _LargeExposureCell('${index + 1}',
+              width: 52, align: TextAlign.center),
+          _LargeExposureCell(row.counterparty, width: 220, strong: index == 0),
+          _LargeExposureCell(row.country, width: 132),
+          _LargeExposureCell(row.sector, width: 148),
+          _LargeExposureCell(row.fileCount, width: 110),
+          _LargeExposureCell(
+              '${_amountMd(row.grossAmount)} ${_amountUnitLabel()}',
+              width: 112,
+              align: TextAlign.right,
+              strong: true),
+          _LargeExposureCell(
+              '${_amountMd(row.netAmount)} ${_amountUnitLabel()}',
+              width: 112,
+              align: TextAlign.right),
+          _LargeExposureCell('${_amountMd(row.rwa)} ${_amountUnitLabel()}',
+              width: 104, align: TextAlign.right),
+          _LargeExposureCell(AppFormatters.percent(row.grossOwnFundsRatio),
+              width: 82,
+              align: TextAlign.right,
+              color: _ratioColor(row.grossOwnFundsRatio)),
+          _LargeExposureCell(AppFormatters.percent(row.netOwnFundsRatio),
+              width: 82,
+              align: TextAlign.right,
+              color: _ratioColor(row.netOwnFundsRatio)),
+          SizedBox(
+            width: 166,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: row.statusColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(3),
+                  border: Border.all(
+                      color: row.statusColor.withValues(alpha: 0.22)),
+                ),
+                child: Text(
+                  row.status,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: row.statusColor,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LargeExposureCell extends StatelessWidget {
+  const _LargeExposureCell(
+    this.text, {
+    required this.width,
+    this.header = false,
+    this.strong = false,
+    this.align = TextAlign.left,
+    this.color,
+  });
+
+  final String text;
+  final double width;
+  final bool header;
+  final bool strong;
+  final TextAlign align;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Text(
+          text,
+          maxLines: header ? 1 : 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: align,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: color ?? (header ? AppTheme.muted : AppTheme.text),
+                fontSize: header ? 10.5 : 11,
+                fontWeight: header
+                    ? FontWeight.w800
+                    : strong
+                        ? FontWeight.w800
+                        : FontWeight.w600,
+                height: 1.1,
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _ratioColor(double ratio) {
+  if (ratio >= 0.25) {
+    return const Color(0xFFB42318);
+  }
+  if (ratio >= 0.10) {
+    return const Color(0xFFB54708);
+  }
+  return const Color(0xFF047857);
 }
 
 class _ConcentrationViewModel {
@@ -1420,7 +4019,7 @@ List<ConcentrationAlert> _alerts({
   required List<ConcentrationTrendPoint> trends,
 }) {
   final alerts = <ConcentrationAlert>[];
-  final ownFundsEstimate = totalRwa * 0.08 * 1.42;
+  final ownFundsEstimate = totalRwa * 0.09 * 1.42;
 
   if (sectorRows.isNotEmpty && sectorRows.first.share > 0.25) {
     alerts.add(
@@ -1679,7 +4278,8 @@ String _amountMd(double value, {int maxDecimals = 1}) {
     return '0';
   }
 
-  if (decimals > 0 && PortfolioAmountUnitPreference.current.divisor >= 1000000000) {
+  if (decimals > 0 &&
+      PortfolioAmountUnitPreference.current.divisor >= 1000000000) {
     final precisionFloor = math.pow(10, -decimals).toDouble();
     if (scaled.abs() < precisionFloor) {
       final minimumLabel = '0,${''.padLeft(decimals - 1, '0')}1';
@@ -1985,7 +4585,7 @@ class _RwaExposureTableCardState extends State<_RwaExposureTableCard> {
                               thumbVisibility: rows.length > 7,
                               notificationPredicate: (notification) =>
                                   notification.metrics.axis == Axis.vertical,
-                              child: ListView.builder(
+                              child: ListView.builder(addSemanticIndexes: false,
                                 controller: _verticalController,
                                 physics: const ClampingScrollPhysics(),
                                 itemExtent: rowHeight,
@@ -2042,7 +4642,7 @@ class _RwaExposureSummaryStrip extends StatelessWidget {
     final defaultCount = rows.where((item) => item.isDefault).length;
     final tiles = [
       _RwaSummaryTile(
-        label: 'RWA total',
+        label: 'RWA crédit',
         value: _amountMd(totalRwa),
         caption: 'capital consommé',
         color: AppTheme.accent,
@@ -3399,7 +5999,8 @@ class _AnimatedDonutChartState extends State<_AnimatedDonutChart> {
                 touchedIndex = -1;
                 return;
               }
-              touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+              touchedIndex =
+                  pieTouchResponse.touchedSection!.touchedSectionIndex;
             });
           },
         ),
@@ -3409,8 +6010,9 @@ class _AnimatedDonutChartState extends State<_AnimatedDonutChart> {
         sections: widget.entries.asMap().entries.map((e) {
           final isTouched = e.key == touchedIndex;
           final radius = isTouched ? 36.0 : 30.0;
-          final percentage = total > 0 ? '${(e.value.$1 / total * 100).round()}%' : '0%';
-          
+          final percentage =
+              total > 0 ? '${(e.value.$1 / total * 100).round()}%' : '0%';
+
           return PieChartSectionData(
             color: e.value.$2,
             value: e.value.$1 <= 0 ? 0.0001 : e.value.$1,
@@ -3654,7 +6256,7 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
           content: SizedBox(
             width: 500,
             height: MediaQuery.of(context).size.height * 0.7,
-            child: ListView.separated(
+            child: ListView.separated(addSemanticIndexes: false,
               itemCount: allRows.length,
               separatorBuilder: (context, index) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
@@ -3726,7 +6328,9 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
                   ),
                 ),
                 _SeeAllButton(
-                  onPressed: rows.isEmpty ? null : () => _showAllCounterparties(context),
+                  onPressed: rows.isEmpty
+                      ? null
+                      : () => _showAllCounterparties(context),
                 ),
               ],
             ),
@@ -3825,111 +6429,112 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: Row(
-          children: [
-            SizedBox(
-              width: widget.labelWidth,
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOutCubic,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: labelColor,
-                          fontSize: 10.4,
-                          fontWeight:
-                              _hovered ? FontWeight.w700 : FontWeight.w600,
-                          height: 1,
-                        ) ??
-                    TextStyle(
-                      color: labelColor,
-                      fontSize: 10.4,
-                      fontWeight: _hovered ? FontWeight.w700 : FontWeight.w600,
-                      height: 1,
-                    ),
-                child: Text(
-                  widget.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+        children: [
+          SizedBox(
+            width: widget.labelWidth,
+            child: AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: labelColor,
+                        fontSize: 10.4,
+                        fontWeight:
+                            _hovered ? FontWeight.w700 : FontWeight.w600,
+                        height: 1,
+                      ) ??
+                  TextStyle(
+                    color: labelColor,
+                    fontSize: 10.4,
+                    fontWeight: _hovered ? FontWeight.w700 : FontWeight.w600,
+                    height: 1,
+                  ),
+              child: Text(
+                widget.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(end: animatedShare),
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutCubic,
-                builder: (context, widthFactor, _) {
-                  return Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      AnimatedContainer(
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: animatedShare),
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              builder: (context, widthFactor, _) {
+                return Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      height: barHeight,
+                      decoration: BoxDecoration(
+                        color: widget.color.withValues(
+                          alpha: _hovered ? 0.14 : 0.09,
+                        ),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: widthFactor,
+                      child: AnimatedContainer(
                         duration: const Duration(milliseconds: 180),
                         curve: Curves.easeOutCubic,
                         height: barHeight,
                         decoration: BoxDecoration(
                           color: widget.color.withValues(
-                            alpha: _hovered ? 0.14 : 0.09,
+                            alpha: _hovered ? 1 : 0.94,
                           ),
                           borderRadius: BorderRadius.circular(3),
+                          boxShadow: _hovered
+                              ? [
+                                  BoxShadow(
+                                    color: widget.color.withValues(alpha: 0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : null,
                         ),
                       ),
-                      FractionallySizedBox(
-                        widthFactor: widthFactor,
-                        child: AnimatedContainer(
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 6.0),
+                        child: AnimatedDefaultTextStyle(
                           duration: const Duration(milliseconds: 180),
                           curve: Curves.easeOutCubic,
-                          height: barHeight,
-                          decoration: BoxDecoration(
-                            color: widget.color.withValues(
-                              alpha: _hovered ? 1 : 0.94,
-                            ),
-                            borderRadius: BorderRadius.circular(3),
-                            boxShadow: _hovered
-                                ? [
-                                    BoxShadow(
-                                      color: widget.color.withValues(alpha: 0.3),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    )
-                                  ]
-                                : null,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: valueColor,
+                                        fontSize: 10.0,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1,
+                                      ) ??
+                                  TextStyle(
+                                    color: valueColor,
+                                    fontSize: 10.0,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1,
+                                  ),
+                          child: Text(
+                            AppFormatters.percent(widget.share),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
                           ),
                         ),
                       ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 6.0),
-                          child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOutCubic,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                      color: valueColor,
-                                      fontSize: 10.0,
-                                      fontWeight: FontWeight.w700,
-                                      height: 1,
-                                    ) ??
-                                TextStyle(
-                                  color: valueColor,
-                                  fontSize: 10.0,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1,
-                                ),
-                            child: Text(
-                              AppFormatters.percent(widget.share),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.right,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+                    ),
+                  ],
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -4479,7 +7084,6 @@ class _RiskWeightShareMeterState extends State<_RiskWeightShareMeter> {
   }
 }
 
-
 Color _riskWeightColor(double weight) {
   if (weight <= 0.001) {
     return const Color(0xFF0F9F6E);
@@ -4580,7 +7184,7 @@ String _alertSeverityBandLabel(_AlertSeverityBand band) {
   return switch (band) {
     _AlertSeverityBand.critical => 'critique',
     _AlertSeverityBand.intermediate => 'intermédiaire',
-    _AlertSeverityBand.watch => 'sous surveillance',
+    _ => 'sous surveillance',
   };
 }
 
@@ -4764,7 +7368,7 @@ _AlertNarrativeSet _clientNarrative(
       (view.counterpartyRows.isEmpty ? null : view.counterpartyRows.first);
   final name = row?.counterpartyName ?? _alertSignalSubject(alert);
   final details = _detailsForCounterparty(view, name);
-  final ownFundsEstimate = view.totalRwa * 0.08 * 1.42;
+  final ownFundsEstimate = view.totalRwa * 0.09 * 1.42;
   final ownFundsRatio = row == null || ownFundsEstimate <= 0
       ? 0.0
       : row.grossAmount / ownFundsEstimate;
@@ -4785,7 +7389,7 @@ _AlertNarrativeSet _clientNarrative(
     ],
     impact: [
       'La perte potentielle : une défaillance de $name affaiblirait directement la granularité du portefeuille.',
-      'L’impact sur le capital : cette exposition mobilise environ ${_amountMdFcfa((row?.rwa ?? 0) * 0.08)} de capital indicatif.',
+      'L’impact sur le capital : cette exposition mobilise environ ${_amountMdFcfa((row?.rwa ?? 0) * 0.09)} de capital indicatif.',
       'L’effet portefeuille : la marge de diversification dépendra de la réduction nette ou du renforcement des sûretés.',
     ],
     decision: [
@@ -4828,7 +7432,7 @@ _AlertNarrativeSet _sectorNarrative(
     ],
     impact: [
       'Le choc métier : une dégradation du secteur toucherait plusieurs contreparties liées.',
-      'L’impact sur le capital : environ ${_amountMdFcfa((row?.rwa ?? 0) * 0.08)} de capital indicatif dépend de ce secteur.',
+      'L’impact sur le capital : environ ${_amountMdFcfa((row?.rwa ?? 0) * 0.09)} de capital indicatif dépend de ce secteur.',
       'L’effet portefeuille : la diversification réelle baissera si les nouvelles entrées restent corrélées.',
     ],
     decision: [
@@ -4871,7 +7475,7 @@ _AlertNarrativeSet _countryNarrative(
     ],
     impact: [
       'Le scénario pays : un choc souverain ou macroéconomique pourrait se transmettre aux contreparties locales.',
-      'L’impact sur le capital : environ ${_amountMdFcfa((row?.rwa ?? 0) * 0.08)} de capital indicatif est exposé à ce pays.',
+      'L’impact sur le capital : environ ${_amountMdFcfa((row?.rwa ?? 0) * 0.09)} de capital indicatif est exposé à ce pays.',
       'L’effet portefeuille : la diversification baissera si la croissance reste concentrée sur $country.',
     ],
     decision: [
@@ -4904,17 +7508,17 @@ _AlertNarrativeSet _rwaNarrative(
 
   return _AlertNarrativeSet(
     signal: [
-      'Le RWA concentré : les ${rows.length} premières contreparties portent ${AppFormatters.percent(share)} du RWA total.',
+      'Le RWA concentré : les ${rows.length} premières contreparties portent ${AppFormatters.percent(share)} du RWA crédit.',
       'L’exposition dominante : ${leader?.counterpartyName ?? 'N/D'} porte à elle seule ${_amountMdFcfa(leader?.rwa ?? 0)} de RWA.',
       'L’origine du signal : le capital réglementaire est concentré sur un nombre réduit d’expositions.',
     ],
     risk: [
       'La gravité observée : le niveau est ${_alertSeverityBandLabel(band)} parce que la consommation de capital dépend de peu d’expositions.',
       'La lecture prudentielle : les RWA doivent rester traçables par exposition et par facteur de risque.',
-      'La sensibilité mesurée : le top 5 porte ${_amountMdFcfa(topFiveRwa)} sur un RWA total de ${_amountMdFcfa(view.totalRwa)}.',
+      'La sensibilité mesurée : le top 5 porte ${_amountMdFcfa(topFiveRwa)} sur un RWA crédit de ${_amountMdFcfa(view.totalRwa)}.',
     ],
     impact: [
-      'L’impact sur le capital : environ ${_amountMdFcfa(topFiveRwa * 0.08)} de capital indicatif dépend du top 5.',
+      'L’impact sur le capital : environ ${_amountMdFcfa(topFiveRwa * 0.09)} de capital indicatif dépend du top 5.',
       'L’effet portefeuille : une erreur de rating, de pondération ou de garantie pèserait fortement sur le ratio.',
       'La résilience attendue : l’effet de diversification restera faible si les expositions RWA restent dominantes.',
     ],
@@ -4954,7 +7558,7 @@ _AlertNarrativeSet _hhiNarrative(
     ],
     impact: [
       'L’effet portefeuille : la résilience baisse si plusieurs grands débiteurs se dégradent en même temps.',
-      'L’impact sur le capital : le RWA total de ${_amountMdFcfa(view.totalRwa)} dépend d’une base peu dispersée.',
+      'L’impact sur le capital : le RWA crédit de ${_amountMdFcfa(view.totalRwa)} dépend d’une base peu dispersée.',
       'Le pilotage attendu : une limite de concentration complète doit compléter le suivi du RWA.',
     ],
     decision: [
@@ -6902,7 +9506,7 @@ class _QualityGrid extends StatelessWidget {
         caption: 'défauts observés',
         icon: CupertinoIcons.xmark_shield_fill,
         color: AppColors.qualityGood,
-        progress: (quality.defaultRate / 0.08).clamp(0.02, 1.0),
+        progress: (quality.defaultRate / 0.09).clamp(0.02, 1.0),
         role: 'Mesure la fréquence des expositions marquées en défaut.',
         formula:
             'Taux de défaut = nombre d’expositions en défaut / nombre total d’expositions.',

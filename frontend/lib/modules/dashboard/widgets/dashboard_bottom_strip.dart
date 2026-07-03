@@ -18,7 +18,7 @@ class DashboardBottomStrip extends StatelessWidget {
       _Cell(
         c: c,
         label: 'Consommation des FP',
-        value: '70,8%',
+        value: '70,9%',
         progress: 0.708,
       ),
       _Cell(c: c, label: 'Nombre de grands risques', value: '54'),

@@ -394,7 +394,7 @@ class _KpiIndicatorInfo {
         summary:
             'Estime le montant de fonds propres réglementaires à immobiliser pour couvrir les actifs pondérés.',
         formula:
-            'Capital minimum = RWA total x taux réglementaire cible. Le taux standard utilisé dans l’outil est 8 %.',
+            'Capital minimum = RWA total x taux réglementaire cible. Le taux standard utilisé dans l’outil est 9 %.',
         references:
             'Cadre Bâle III et dispositif prudentiel BCEAO/UMOA : exigence de fonds propres et pilotage des coussins.',
         reading:

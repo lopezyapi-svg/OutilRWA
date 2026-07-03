@@ -40,7 +40,7 @@ class DashboardCapitalConsumption extends StatelessWidget {
     final excedent = capitalDetenu - capitalRequis;
     
     // Status color
-    final isSafe = solvabilite >= 0.08;
+    final isSafe = solvabilite >= 0.09;
     final statusColor = isSafe ? c.conforme : c.sousMinimum;
 
     return DashPanel(
@@ -52,7 +52,7 @@ class DashboardCapitalConsumption extends StatelessWidget {
           const SizedBox(height: 8),
           _buildMetricRow('Fonds propres (Capital détenu)', capitalDetenu, c.navy, c, amountUnit.label),
           const SizedBox(height: 12),
-          _buildMetricRow('Exigence minimale (8%)', capitalRequis, c.ink, c, amountUnit.label),
+          _buildMetricRow('Exigence minimale (9%)', capitalRequis, c.ink, c, amountUnit.label),
           const SizedBox(height: 12),
           _buildMetricRow('Coussin de sécurité (Excédent)', excedent, excedent >= 0 ? c.conforme : c.sousMinimum, c, amountUnit.label, showPlus: true),
           const SizedBox(height: 16),
@@ -70,7 +70,7 @@ class DashboardCapitalConsumption extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Jauge de Solvabilité (Target: 8%, Max displayed: 20%)
+          // Jauge de Solvabilité (Target: 9%, Max displayed: 20%)
           Stack(
             children: [
               // Fond
@@ -92,19 +92,19 @@ class DashboardCapitalConsumption extends StatelessWidget {
                   ),
                 ),
               ),
-              // Ligne de l'exigence minimale (8%)
+              // Ligne de l'exigence minimale (9%)
               Positioned(
                 left: 0,
                 right: 0,
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
-                  widthFactor: (0.08 / 0.20).clamp(0.0, 1.0),
+                  widthFactor: (0.09 / 0.20).clamp(0.0, 1.0),
                   child: Container(
                     alignment: Alignment.centerRight,
                     child: Container(
                       width: 2,
                       height: 12,
-                      color: c.ink, // Black tick mark for the 8% target
+                      color: c.ink, // Black tick mark for the 9% target
                     ),
                   ),
                 ),
@@ -116,7 +116,7 @@ class DashboardCapitalConsumption extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('0%', style: TextStyle(fontSize: 11, color: c.muted)),
-              Text('Min: 8%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.ink)),
+              Text('Min: 9%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.ink)),
               Text('20%+', style: TextStyle(fontSize: 11, color: c.muted)),
             ],
           ),

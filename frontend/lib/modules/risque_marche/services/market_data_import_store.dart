@@ -166,7 +166,7 @@ class MarketPrudentialCapitalResult {
 MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
   required Iterable<MarketPortfolioRecord> records,
   Iterable<MarketCommodityPosition> commodityPositions = const [],
-  // Art. 399 : risque spécifique actions ramené à 4 % (au lieu de 8 %) lorsque
+  // Art. 399 : risque spécifique actions ramené à 4 % (au lieu de 9 %) lorsque
   // le portefeuille est jugé liquide et bien diversifié (approbation Commission
   // Bancaire requise). Désactivé par défaut.
   bool equityPortfolioLiquidAndDiversified = false,
@@ -193,15 +193,15 @@ MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
   );
   final equityPosition = _marketEquityRiskMeasure(equityRecords);
   final commodityMeasure = _marketCommodityPositionMeasure(commodityPositions);
-  final equitySpecificRate = equityPortfolioLiquidAndDiversified ? 0.04 : 0.08;
+  final equitySpecificRate = equityPortfolioLiquidAndDiversified ? 0.04 : 0.09;
 
   return MarketPrudentialCapitalResult(
     interestRateSpecificRisk: interestSpecific,
     interestRateGeneralRisk: interestGeneral,
-    // Risque spécifique : (8% ou 4%) × Σ|net par émetteur| (Art. 398-399)
+    // Risque spécifique : (9% ou 4%) × Σ|net par émetteur| (Art. 398-399)
     equitySpecificRisk: equityPosition.specificRiskBase * equitySpecificRate,
-    // Risque général : 8% × Σ|net par marché national/régional| (Art. 400-401)
-    equityGeneralRisk: equityPosition.generalRiskBase * 0.08,
+    // Risque général : 9% × Σ|net par marché national/régional| (Art. 400-401)
+    equityGeneralRisk: equityPosition.generalRiskBase * 0.09,
     foreignExchangeRisk: _marketForeignExchangeRisk(marketRecords),
     commodityDirectionalRisk: commodityMeasure.netPosition.abs() * 0.15,
     commodityBasisRisk: commodityMeasure.grossPosition * 0.03,
@@ -551,7 +551,7 @@ _MarketPositionMeasure _marketCommodityPositionMeasure(
 }
 
 double _marketForeignExchangeRisk(List<MarketPortfolioRecord> records) {
-  return _marketForeignExchangeGlobalNetPosition(records) * 0.08;
+  return _marketForeignExchangeGlobalNetPosition(records) * 0.09;
 }
 
 double _marketForeignExchangeGlobalNetPosition(
@@ -664,15 +664,15 @@ double _getSpecificRiskWeight(
                 ? 0.0100
                 : // 6 à 24 mois = 1%
                 0.0160, // > 24 mois = 1.6%
-        _MarketCreditQuality.bbToB => 0.0800, // BB+ à B- = 8%
+        _MarketCreditQuality.bbToB => 0.0800, // BB+ à B- = 9%
         _MarketCreditQuality.belowB => 0.1200, // < B- = 12%
-        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 8%
+        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 9%
       };
 
     case _MarketSpecificCategory.eligibleDebt:
       // Tableau 16: Titres éligibles (cf infra)
       if (quality == _MarketCreditQuality.bbToB) {
-        return 0.0800; // BB+ à BB- = 8%
+        return 0.0800; // BB+ à BB- = 9%
       }
       // Tous autres (AAA-BBB- + multilatéraux sans notation)
       return residualYears < 0.5
@@ -686,13 +686,13 @@ double _getSpecificRiskWeight(
     case _MarketSpecificCategory.otherDebt:
       // Autres émetteurs (ni souverains, ni éligibles) : traités comme les
       // entreprises de qualité inférieure selon l'approche standard crédit
-      // (Art. 357, Titre IV). Pondération conservatrice de 8 %.
+      // (Art. 357, Titre IV). Pondération conservatrice de 9 %.
       return switch (quality) {
         _MarketCreditQuality.aaaToAa => 0.0000, // AAA à A- = 0%
-        _MarketCreditQuality.aToBbb => 0.0800, // A+ à BBB- = 8% (Art. 357)
-        _MarketCreditQuality.bbToB => 0.0800, // BB+ à BB- = 8%
+        _MarketCreditQuality.aToBbb => 0.0800, // A+ à BBB- = 9% (Art. 357)
+        _MarketCreditQuality.bbToB => 0.0800, // BB+ à BB- = 9%
         _MarketCreditQuality.belowB => 0.1200, // Sous BB- = 12%
-        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 8%
+        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 9%
       };
   }
 }

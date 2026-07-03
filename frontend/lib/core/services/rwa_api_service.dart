@@ -9,6 +9,7 @@ import '../../modules/hors_bilan/models/hors_bilan_models.dart';
 import '../../modules/rapports/models/report_models.dart';
 import '../../modules/referentiels/models/referentiels_models.dart';
 import '../../modules/risque_operationnel/models/ro_models.dart';
+import '../../modules/rwa_engine/models/rwa_credit_analysis.dart';
 import 'api_client.dart';
 import 'api_runtime_environment.dart' as runtime_environment;
 
@@ -45,7 +46,6 @@ class RwaApiService {
               baseUrl: baseUrl ?? _resolveDefaultApiBaseUrl(),
             );
 
-  final bool useMockData = false;
   final ApiClient _client;
   final bool enableOfflineFallback = false;
   final StreamController<int> _portfolioRefreshController =
@@ -429,11 +429,9 @@ class RwaApiService {
       getCache: () => _dashboardFuture,
       setCache: (value) => _dashboardFuture = value,
       load: () async {
-        if (!useMockData) {
-          // En mode réel, on délègue entièrement l'assemblage au backend.
-          final json = await _client.get('/dashboard') as Map<String, dynamic>;
-          return DashboardSnapshot.fromJson(json);
-        }
+      // En mode réel, on délègue entièrement l'assemblage au backend.
+      final json = await _client.get('/dashboard') as Map<String, dynamic>;
+      return DashboardSnapshot.fromJson(json);
         // En mode démo, on reconstruit un snapshot cohérent à partir des jeux locaux.
     throw Exception('Mock data removed');
       },
@@ -442,9 +440,6 @@ class RwaApiService {
 
   Future<DashboardSnapshot> updateFondsPropres(
       FondsPropresUpdate update) async {
-    if (useMockData) {
-    throw Exception('Mock data removed');
-    }
 
     final json = await _client.put(
       '/dashboard/fonds-propres',
@@ -461,25 +456,23 @@ class RwaApiService {
       getCache: () => _expositionsFuture,
       setCache: (value) => _expositionsFuture = value,
       load: () async {
-        if (!useMockData) {
-          try {
-            final exposuresJson =
-                await _client.get('/expositions') as List<dynamic>;
-            final summaryJson = await _client.get('/expositions/summary')
-                as Map<String, dynamic>;
-            return ExposureModuleData(
-              exposures: exposuresJson
-                  .map(
-                    (item) =>
-                        ExposureRecord.fromJson(item as Map<String, dynamic>),
-                  )
-                  .toList(),
-              summary: ExposureSummary.fromJson(summaryJson),
-            );
-          } catch (_) {
-            if (!enableOfflineFallback) rethrow;
-          }
-        }
+      try {
+        final exposuresJson =
+            await _client.get('/expositions') as List<dynamic>;
+        final summaryJson = await _client.get('/expositions/summary')
+            as Map<String, dynamic>;
+        return ExposureModuleData(
+          exposures: exposuresJson
+              .map(
+                (item) =>
+                    ExposureRecord.fromJson(item as Map<String, dynamic>),
+              )
+              .toList(),
+          summary: ExposureSummary.fromJson(summaryJson),
+        );
+      } catch (_) {
+        if (!enableOfflineFallback) rethrow;
+      }
 
         final exposures =
             _exposures.map((item) => ExposureRecord.fromJson(item)).toList();
@@ -488,37 +481,39 @@ class RwaApiService {
     );
   }
 
+  Future<RwaCreditAnalysis> fetchRwaCreditAnalysis() async {
+    final json =
+        await _client.get('/rwa-credit/analyse') as Map<String, dynamic>;
+    return RwaCreditAnalysis.fromJson(json);
+  }
+
   Future<String> fetchNextExposureId() async {
-    if (!useMockData) {
-      try {
-        final response = Map<String, dynamic>.from(
-          await _client.get('/expositions/next-id') as Map,
-        );
-        final identifier = (response['id'] ?? '').toString().trim();
-        if (identifier.isNotEmpty) {
-          return identifier;
-        }
-      } catch (error) {
-        try {
-          final module = await fetchExpositionsModule();
-          return _nextExposureIdFromIdentifiers(
-            module.exposures.map((item) => item.id),
-          );
-        } catch (_) {
-          if (!enableOfflineFallback) rethrow;
-          if (error is Error) {
-            rethrow;
-          }
-        }
+  try {
+    final response = Map<String, dynamic>.from(
+      await _client.get('/expositions/next-id') as Map,
+    );
+    final identifier = (response['id'] ?? '').toString().trim();
+    if (identifier.isNotEmpty) {
+      return identifier;
+    }
+  } catch (error) {
+    try {
+      final module = await fetchExpositionsModule();
+      return _nextExposureIdFromIdentifiers(
+        module.exposures.map((item) => item.id),
+      );
+    } catch (_) {
+      if (!enableOfflineFallback) rethrow;
+      if (error is Error) {
+        rethrow;
       }
     }
+  }
     throw Exception('Mock data removed');
   }
 
   Future<Uint8List> downloadExposureExcelExport() async {
-    if (!useMockData) {
-      return _client.getBytes('/expositions/export/excel/download');
-    }
+  return _client.getBytes('/expositions/export/excel/download');
 
     throw UnsupportedError('L export Excel n est pas disponible en mode demo.');
   }
@@ -538,6 +533,7 @@ class RwaApiService {
       'loan_total_amount': draft.loanTotalAmount,
       'on_balance_exposure_amount': draft.onBalanceExposureAmount,
       'off_balance_exposure_amount': draft.offBalanceExposureAmount,
+      'provisions_amount': draft.provisionsAmount,
       'currency': draft.currency,
       'status': draft.status,
       'sovereign_special_case': draft.sovereignSpecialCase,
@@ -578,18 +574,16 @@ class RwaApiService {
   }
 
   Future<ExposureRecord> createExposure(ExposureDraft draft) async {
-    if (!useMockData) {
-      try {
-        final response = Map<String, dynamic>.from(
-          await _client.post('/expositions', _buildExposurePayload(draft))
-              as Map,
-        );
-        _notifyPortfolioChanged();
-        return ExposureRecord.fromJson(response);
-      } catch (_) {
-        if (!enableOfflineFallback) rethrow;
-      }
-    }
+  try {
+    final response = Map<String, dynamic>.from(
+      await _client.post('/expositions', _buildExposurePayload(draft))
+          as Map,
+    );
+    _notifyPortfolioChanged();
+    return ExposureRecord.fromJson(response);
+  } catch (_) {
+    if (!enableOfflineFallback) rethrow;
+  }
 
     final id = _nextExposureId();
     final created = _buildExposureMapFromDraft(draft, id);
@@ -604,18 +598,16 @@ class RwaApiService {
     throw Exception('Mock data removed');
     }
 
-    if (!useMockData) {
-      try {
-        final response = Map<String, dynamic>.from(
-          await _client.put('/expositions/$id', _buildExposurePayload(draft))
-              as Map,
-        );
-        _notifyPortfolioChanged();
-        return ExposureRecord.fromJson(response);
-      } catch (_) {
-        if (!enableOfflineFallback) rethrow;
-      }
-    }
+  try {
+    final response = Map<String, dynamic>.from(
+      await _client.put('/expositions/$id', _buildExposurePayload(draft))
+          as Map,
+    );
+    _notifyPortfolioChanged();
+    return ExposureRecord.fromJson(response);
+  } catch (_) {
+    if (!enableOfflineFallback) rethrow;
+  }
 
     final index = _exposures.indexWhere((item) => item['id'] == id);
     final replacement = _buildExposureMapFromDraft(draft, id);
@@ -629,13 +621,11 @@ class RwaApiService {
   }
 
   Future<ExposureRecord> previewExposure(ExposureDraft draft) async {
-    if (!useMockData) {
-      final response = Map<String, dynamic>.from(
-        await _client.post('/expositions/preview', _buildExposurePayload(draft))
-            as Map,
-      );
-      return ExposureRecord.fromJson(response);
-    }
+  final response = Map<String, dynamic>.from(
+    await _client.post('/expositions/preview', _buildExposurePayload(draft))
+        as Map,
+  );
+  return ExposureRecord.fromJson(response);
 
     final previewId =
         draft.id?.isNotEmpty == true ? draft.id! : 'PREVIEW_EXPOSITION';
@@ -662,20 +652,18 @@ class RwaApiService {
       };
     }
 
-    if (!useMockData) {
-      try {
-        final response = Map<String, dynamic>.from(
-          await _client.post('/expositions/delete', {
-            'ids': normalizedIds,
-            'reindex_ids': reindexIds,
-          }) as Map,
-        );
-        _notifyPortfolioChanged();
-        return response;
-      } catch (_) {
-        if (!enableOfflineFallback) rethrow;
-      }
-    }
+  try {
+    final response = Map<String, dynamic>.from(
+      await _client.post('/expositions/delete', {
+        'ids': normalizedIds,
+        'reindex_ids': reindexIds,
+      }) as Map,
+    );
+    _notifyPortfolioChanged();
+    return response;
+  } catch (_) {
+    if (!enableOfflineFallback) rethrow;
+  }
 
     final deletedIds = _exposures
         .where((item) => normalizedIds.contains((item['id'] ?? '').toString()))
@@ -707,18 +695,16 @@ class RwaApiService {
   Future<Map<String, dynamic>> importExposureCsvContent(
     String csvContent,
   ) async {
-    if (!useMockData) {
-      try {
-        final response = Map<String, dynamic>.from(
-          await _client.post('/expositions/import/csv', {'content': csvContent})
-              as Map<String, dynamic>,
-        );
-        _notifyPortfolioChanged();
-        return response;
-      } catch (_) {
-        if (!enableOfflineFallback) rethrow;
-      }
-    }
+  try {
+    final response = Map<String, dynamic>.from(
+      await _client.post('/expositions/import/csv', {'content': csvContent})
+          as Map<String, dynamic>,
+    );
+    _notifyPortfolioChanged();
+    return response;
+  } catch (_) {
+    if (!enableOfflineFallback) rethrow;
+  }
 
     final importedLines = csvContent
         .split(RegExp(r'\r?\n'))
@@ -742,22 +728,20 @@ class RwaApiService {
     String filename, {
     String mode = 'merge',
   }) async {
-    if (!useMockData) {
-      try {
-        final response = Map<String, dynamic>.from(
-          await _client.uploadBytes(
-            '/expositions/import/upload',
-            bytes,
-            filename,
-            fields: {'mode': mode},
-          ) as Map<String, dynamic>,
-        );
-        _notifyPortfolioChanged();
-        return response;
-      } catch (_) {
-        if (!enableOfflineFallback) rethrow;
-      }
-    }
+  try {
+    final response = Map<String, dynamic>.from(
+      await _client.uploadBytes(
+        '/expositions/import/upload',
+        bytes,
+        filename,
+        fields: {'mode': mode},
+      ) as Map<String, dynamic>,
+    );
+    _notifyPortfolioChanged();
+    return response;
+  } catch (_) {
+    if (!enableOfflineFallback) rethrow;
+  }
 
     final response = {
       'status': 'success',
@@ -778,39 +762,33 @@ class RwaApiService {
     Uint8List bytes,
     String filename,
   ) async {
-    if (!useMockData) {
-      try {
-        return Map<String, dynamic>.from(
-          await _client.uploadBytes(
-            '/expositions/import/upload/inspect',
-            bytes,
-            filename,
-          ) as Map,
-        );
-      } catch (_) {
-        if (!enableOfflineFallback) rethrow;
-      }
-    }
+  try {
+    return Map<String, dynamic>.from(
+      await _client.uploadBytes(
+        '/expositions/import/upload/inspect',
+        bytes,
+        filename,
+      ) as Map,
+    );
+  } catch (_) {
+    if (!enableOfflineFallback) rethrow;
+  }
     throw Exception('Mock data removed');
   }
 
   Future<Map<String, dynamic>> fetchExcelImportSpec() async {
-    if (!useMockData) {
-      try {
-        return Map<String, dynamic>.from(
-          await _client.get('/expositions/import/spec') as Map,
-        );
-      } catch (_) {
-        if (!enableOfflineFallback) rethrow;
-      }
-    }
+  try {
+    return Map<String, dynamic>.from(
+      await _client.get('/expositions/import/spec') as Map,
+    );
+  } catch (_) {
+    if (!enableOfflineFallback) rethrow;
+  }
     throw Exception('Mock data removed');
   }
 
   Future<Uint8List> downloadExcelImportTemplate() async {
-    if (!useMockData) {
-      return _client.getBytes('/expositions/import/template');
-    }
+  return _client.getBytes('/expositions/import/template');
     throw Exception('Mock data removed');
   }
 
@@ -820,21 +798,19 @@ class RwaApiService {
       getCache: () => _horsBilanFuture,
       setCache: (value) => _horsBilanFuture = value,
       load: () async {
-        if (!useMockData) {
-          // Le hors bilan suit le même découpage détail + synthèse.
-          final itemsJson = await _client.get('/hors-bilan') as List<dynamic>;
-          final summaryJson =
-              await _client.get('/hors-bilan/summary') as Map<String, dynamic>;
-          return OffBalanceModuleData(
-            items: itemsJson
-                .map(
-                  (item) =>
-                      OffBalanceRecord.fromJson(item as Map<String, dynamic>),
-                )
-                .toList(),
-            summary: OffBalanceSummary.fromJson(summaryJson),
-          );
-        }
+      // Le hors bilan suit le même découpage détail + synthèse.
+      final itemsJson = await _client.get('/hors-bilan') as List<dynamic>;
+      final summaryJson =
+          await _client.get('/hors-bilan/summary') as Map<String, dynamic>;
+      return OffBalanceModuleData(
+        items: itemsJson
+            .map(
+              (item) =>
+                  OffBalanceRecord.fromJson(item as Map<String, dynamic>),
+            )
+            .toList(),
+        summary: OffBalanceSummary.fromJson(summaryJson),
+      );
 
         // Les données mock sont converties avant agrégation pour rester proches du mode réel.
         final items =
@@ -845,17 +821,15 @@ class RwaApiService {
   }
 
   Future<void> createOffBalance(OffBalanceDraft draft) async {
-    if (!useMockData) {
-      await _client.post('/hors-bilan', {
-        'analysis_date': draft.analysisDate.toIso8601String().split('T').first,
-        'counterparty_id': draft.counterpartyId,
-        'engagement_type': draft.engagementType,
-        'nominal_amount': draft.nominalAmount,
-        'comment': draft.comment,
-      });
-      _notifyPortfolioChanged();
-      return;
-    }
+  await _client.post('/hors-bilan', {
+    'analysis_date': draft.analysisDate.toIso8601String().split('T').first,
+    'counterparty_id': draft.counterpartyId,
+    'engagement_type': draft.engagementType,
+    'nominal_amount': draft.nominalAmount,
+    'comment': draft.comment,
+  });
+  _notifyPortfolioChanged();
+  return;
 
     // Quelques règles simples suffisent ici pour produire un scénario crédible côté UI.
     final ccf = _lookupCcf(draft.engagementType);
@@ -882,7 +856,7 @@ class RwaApiService {
       'ead': ead,
       'risk_weight': rw,
       'rwa': ead * rw,
-      'capital': ead * rw * 0.08,
+      'capital': ead * rw * 0.09,
       'comment': draft.comment,
     });
     _notifyPortfolioChanged();
@@ -894,10 +868,8 @@ class RwaApiService {
       getCache: () => _crmFuture,
       setCache: (value) => _crmFuture = value,
       load: () async {
-        if (!useMockData) {
-          final json = await _client.get('/crm') as Map<String, dynamic>;
-          return CrmModuleData.fromJson(json);
-        }
+      final json = await _client.get('/crm') as Map<String, dynamic>;
+      return CrmModuleData.fromJson(json);
 
         final items =
             _crmItems.map((item) => CrmRecord.fromJson(item)).toList();
@@ -950,11 +922,9 @@ class RwaApiService {
       getCache: () => _referentielsFuture,
       setCache: (value) => _referentielsFuture = value,
       load: () async {
-        if (!useMockData) {
-          final json =
-              await _client.get('/referentiels') as Map<String, dynamic>;
-          return ReferentielsModuleData.fromJson(json);
-        }
+      final json =
+          await _client.get('/referentiels') as Map<String, dynamic>;
+      return ReferentielsModuleData.fromJson(json);
 
         // Les trois tables sont servies ensemble car elles alimentent tous les écrans métiers.
     throw Exception('Mock data removed');
@@ -968,26 +938,22 @@ class RwaApiService {
       getCache: () => _reportsFuture,
       setCache: (value) => _reportsFuture = value,
       load: () async {
-        if (!useMockData) {
-          final json = await _client.get('/rapports') as List<dynamic>;
-          return ReportsModuleData(
-            reports: json
-                .map(
-                  (item) => ReportRecord.fromJson(item as Map<String, dynamic>),
-                )
-                .toList(),
-          );
-        }
+      final json = await _client.get('/rapports') as List<dynamic>;
+      return ReportsModuleData(
+        reports: json
+            .map(
+              (item) => ReportRecord.fromJson(item as Map<String, dynamic>),
+            )
+            .toList(),
+      );
     throw Exception('Mock data removed');
       },
     );
   }
 
   Future<void> generateReport(ReportDraft draft) async {
-    if (!useMockData) {
-      await _client.post('/rapports', draft.toJson());
-      return;
-    }
+  await _client.post('/rapports', draft.toJson());
+  return;
 
     // Le rapport mock fusionne les lignes bilan et hors bilan dans une même sortie.
     final lines = [
@@ -1047,7 +1013,7 @@ class RwaApiService {
       (sum, item) => sum + item.ead,
     );
     final rwa = exposureModels.fold<double>(0.0, (sum, item) => sum + item.rwa);
-    final capital = rwa * 0.08;
+    final capital = rwa * 0.09;
     final coveredGross = exposureModels
         .where((item) => item.crmModeLabel != 'Aucune')
         .fold<double>(
@@ -1353,6 +1319,7 @@ class RwaApiService {
       'loan_total_amount': draft.loanTotalAmount,
       'on_balance_exposure_amount': draft.onBalanceExposureAmount,
       'off_balance_exposure_amount': draft.offBalanceExposureAmount,
+      'provisions_amount': draft.provisionsAmount,
       'currency': draft.currency,
       'status': draft.status,
       'sovereign_special_case': draft.sovereignSpecialCase,

@@ -247,7 +247,7 @@ const Map<String, String> _englishTranslations = {
   'Exposition totale brute': 'Gross exposure',
   'Risque residuel': 'Residual risk',
   'Exposition brute - Garanties': 'Gross exposure - Guarantees',
-  'RWA total': 'Total RWA',
+  'RWA crédit': 'Total RWA',
   'Capital minimum requis': 'Minimum capital required',
   'Ratio de solvabilite': 'Solvency ratio',
   'Densité RWA': 'RWA density',
@@ -255,7 +255,7 @@ const Map<String, String> _englishTranslations = {
   'Encours de défaut / Exposition brute':
       'Defaulted outstanding / Gross exposure',
   'Densité RWA du portefeuille': 'Portfolio RWA density',
-  'RWA total / Exposition totale brute': 'Total RWA / Gross exposure',
+  'RWA crédit / Exposition totale brute': 'Total RWA / Gross exposure',
   'RWA / Exposition brute': 'RWA / Gross exposure',
   'Risque faible': 'Low risk',
   'Risque moyen': 'Medium risk',
@@ -267,7 +267,7 @@ const Map<String, String> _englishTranslations = {
   'milliards {{currency}}': 'billions {{currency}}',
   'millions {{currency}}': 'millions {{currency}}',
   'milliers {{currency}}': 'thousands {{currency}}',
-  'Top 5 du RWA total par catégorie': 'Top 5 total RWA by category',
+  'Top 5 du RWA crédit par catégorie': 'Top 5 total RWA by category',
   'Top 5 de l\'exposition totale brute': 'Top 5 gross exposures',
   "Repartition de l'exposition par catégorie": 'Exposure breakdown by category',
   "Lecture directe de l'exposition brute et du RWA par segment d'exposition.":

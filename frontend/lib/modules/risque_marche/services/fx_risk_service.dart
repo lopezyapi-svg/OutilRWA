@@ -130,18 +130,18 @@ FxRiskResult calculateFxRisk({
     grossTotal += pos.grossPosition;
   }
   final maxLeg = math.max(longTotal, shortTotal);
-  final capitalReq = maxLeg * 0.08;
+  final capitalReq = maxLeg * 0.09;
 
   journal.add({
     'etape': 'Capital requis',
     'description':
-        'Risque de change = 8% de la position nette globale maximale',
+        'Risque de change = 9% de la position nette globale maximale',
     'longTotal': longTotal,
     'shortTotal': shortTotal,
     'maxLeg': maxLeg,
     'capitalRequirement': capitalReq,
     'formule':
-        'Exigence FP Change = max(Positions_longues, Positions_courtes) × 8%',
+        'Exigence FP Change = max(Positions_longues, Positions_courtes) × 9%',
   });
 
   final shocks = shockScenarios.map((percent) {

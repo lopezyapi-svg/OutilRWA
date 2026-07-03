@@ -179,7 +179,7 @@ class FxRiskAnalysisResult {
   final double
       globalNetPosition; // Position nette globale = MAX(longues, courtes)
   final double
-      capitalRequirement; // Exigence FP Change = globalNetPosition × 8%
+      capitalRequirement; // Exigence FP Change = globalNetPosition × 9%
   final double rwaChange; // RWA Change = capitalRequirement × 12.5
   final double marketRiskContribution; // Contribution au risque de marché (%)
   final DateTime analysisDate;

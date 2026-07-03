@@ -43,7 +43,7 @@ class DashboardTopMetricsGrid extends StatelessWidget {
         label: 'Capital requis',
         value: capitalMetric.value,
         isCurrency: true,
-        subtitle: 'RWA × Taux minimum (ex: 9%)',
+        subtitle: 'RWA × 9%',
       ),
       _MinimalMetricCard(
         label: 'Risque résiduel',
@@ -110,7 +110,7 @@ class _MinimalMetricCardState extends State<_MinimalMetricCard> {
       formattedValue = AppFormatters.decimalNumber(widget.value / amountUnit.divisor, maxDecimals: 2);
       suffix = amountUnit.label;
     } else {
-      formattedValue = AppFormatters.decimalNumber(widget.value, maxDecimals: 1);
+      formattedValue = AppFormatters.fixedDecimalNumber(widget.value, decimals: 2);
       suffix = '%';
     }
 

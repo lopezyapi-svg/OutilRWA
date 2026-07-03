@@ -257,7 +257,7 @@ class _IcapScreenState extends State<IcapScreen> {
               AppSpacing.hGapMd,
               Expanded(
                 child: _buildCapitalMetricCard(
-                  label: 'RWA total',
+                  label: 'RWA crédit',
                   value: data.totalRwa,
                   icon: CupertinoIcons.chart_bar_square_fill,
                   color: AppColors.accent,
@@ -291,7 +291,7 @@ class _IcapScreenState extends State<IcapScreen> {
           _buildRequirementRow(
             label: 'Pilier 1: Risque de marché',
             required: requirements.marketRiskCapital,
-            available: data.totalCapital * 0.08,
+            available: data.totalCapital * 0.09,
             percentage: requirements.marketRiskCapital / data.totalRwa,
             isDark: isDark,
           ),
@@ -307,10 +307,10 @@ class _IcapScreenState extends State<IcapScreen> {
           Divider(color: isDark ? AppColors.borderDark : AppColors.borderLight),
           AppSpacing.vGapMd,
           _buildRequirementRow(
-            label: 'Capital minimum (8%)',
-            required: data.totalRwa * 0.08,
+            label: 'Capital minimum (9%)',
+            required: data.totalRwa * 0.09,
             available: data.totalCapital,
-            percentage: 0.08,
+            percentage: 0.09,
             isDark: isDark,
             isTotal: true,
           ),
@@ -318,7 +318,7 @@ class _IcapScreenState extends State<IcapScreen> {
           _buildRequirementRow(
             label: 'Coussin de conservation (2.5%)',
             required: data.totalRwa * 0.025,
-            available: data.totalCapital - (data.totalRwa * 0.08),
+            available: data.totalCapital - (data.totalRwa * 0.09),
             percentage: 0.025,
             isDark: isDark,
           ),
@@ -383,10 +383,10 @@ class _IcapScreenState extends State<IcapScreen> {
                 child: _buildRatioGauge(
                   label: 'Ratio de solvabilité global',
                   value: ratios.totalCapitalRatio,
-                  minimum: 0.08,
+                  minimum: 0.09,
                   target: 0.105,
                   isDark: isDark,
-                  helper: 'Minimum: 8% | Cible: 10.5%+',
+                  helper: 'Minimum: 9% | Cible: 10.5%+',
                 ),
               ),
             ],
@@ -1256,7 +1256,7 @@ class _IcapScreenState extends State<IcapScreen> {
     return [
       _StressScenario(
         name: 'Récession modérée',
-        description: 'Croissance -2%, hausse NPL à 8%, baisse marchés 15%',
+        description: 'Croissance -2%, hausse NPL à 9%, baisse marchés 15%',
         cet1Impact: 28.5e9,
         cet1PostStress: baseData.cet1Capital - 28.5e9,
         ratioPostStress: (baseData.cet1Capital - 28.5e9) / baseData.totalRwa,
@@ -1277,7 +1277,7 @@ class _IcapScreenState extends State<IcapScreen> {
       ),
       _StressScenario(
         name: 'Crise systémique',
-        description: 'Croissance -6%, NPL à 18%, krach -50%, crise liquidité',
+        description: 'Croissance -6%, NPL à 19%, krach -50%, crise liquidité',
         cet1Impact: 115.8e9,
         cet1PostStress: baseData.cet1Capital - 115.8e9,
         ratioPostStress: (baseData.cet1Capital - 115.8e9) / baseData.totalRwa,

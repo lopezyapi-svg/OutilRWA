@@ -645,7 +645,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
           description: 'Effondrement d\'un secteur clé (immobilier, énergie)',
           severity: 'high',
           rwaImpact: 0.35,
-          nplIncrease: 0.08,
+          nplIncrease: 0.09,
           gdpImpact: -0.035,
           spreadIncrease: 150,
         );

@@ -916,7 +916,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
           if (hasDrawableData)
             SizedBox(
               height: visibleSeries.length > 1 ? 50 : 44,
-              child: ListView.separated(
+              child: ListView.separated(addSemanticIndexes: false,
                 scrollDirection: Axis.horizontal,
                 itemBuilder: (context, index) {
                   final item = stripItems[index];
@@ -1100,7 +1100,7 @@ class _YieldCurveInterpretationButtonState
               style: TextButton.styleFrom(
                 backgroundColor: color.withValues(
                   alpha:
-                      _isOpen ? (isDark ? 0.22 : 0.13) : (isDark ? 0.16 : 0.08),
+                      _isOpen ? (isDark ? 0.22 : 0.13) : (isDark ? 0.16 : 0.09),
                 ),
                 foregroundColor: color,
                 padding: const EdgeInsets.symmetric(horizontal: 7),
@@ -4555,7 +4555,7 @@ class _MarketCrdEvolutionKpis extends StatelessWidget {
     ];
     return SizedBox(
       height: 54,
-      child: ListView.separated(
+      child: ListView.separated(addSemanticIndexes: false,
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: items.length,
@@ -5844,7 +5844,7 @@ class _BondKeyIndicatorSpec {
         color: _marketDanger,
         formula: r'RWA_{marché}=K_{marché}\times12{,}5',
         detail:
-            'Conversion de l’exigence de fonds propres marché en actifs pondérés, avec l’inverse du ratio minimal de 8 %.',
+            'Conversion de l’exigence de fonds propres marché en actifs pondérés, avec l’inverse du ratio minimal de 9 %.',
         caption: 'Actifs pondérés marché',
         category: 'Prudentiel',
         method: 'Exigence multipliée par 12,5',
@@ -7349,7 +7349,7 @@ class _BondTitleIndicatorsTableState extends State<_BondTitleIndicatorsTable> {
                               ),
                             ),
                           )
-                        : ListView.builder(
+                        : ListView.builder(addSemanticIndexes: false,
                             controller: _dataRowsScrollController,
                             primary: false,
                             itemExtent: _BondTitleIndicatorsTable._rowHeight,
@@ -7410,7 +7410,7 @@ class _BondTitleIndicatorsTableState extends State<_BondTitleIndicatorsTable> {
                                             ),
                                             child: _withoutDesktopScrollbars(
                                               context,
-                                              ListView.builder(
+                                              ListView.builder(addSemanticIndexes: false,
                                                 controller:
                                                     _pinnedRowsScrollController,
                                                 primary: false,
@@ -15301,7 +15301,7 @@ class _MarketEquityRiskReturnProfile extends StatelessWidget {
       ),
     );
     final hasTrueDispersion =
-        usableRecords.length >= 5 && betaSpread >= 0.08 && returnSpread >= 0.01;
+        usableRecords.length >= 5 && betaSpread >= 0.09 && returnSpread >= 0.01;
 
     if (!hasTrueDispersion) {
       return _MarketEquityAggregateProfile(dataset: dataset);
@@ -17401,7 +17401,7 @@ class _MarketPortfolioDetailsTableState
                                 )
                               else
                                 Expanded(
-                                  child: ListView.builder(
+                                  child: ListView.builder(addSemanticIndexes: false,
                                     controller: _dataScrollController,
                                     primary: false,
                                     itemExtent:
@@ -18267,7 +18267,7 @@ class _MarketPortfolioPinnedColumn extends StatelessWidget {
                   ),
                   child: _withoutDesktopScrollbars(
                     context,
-                    ListView.builder(
+                    ListView.builder(addSemanticIndexes: false,
                       controller: controller,
                       primary: false,
                       physics: const NeverScrollableScrollPhysics(),
@@ -18346,7 +18346,7 @@ class _MarketPortfolioActionsColumn extends StatelessWidget {
                 ),
                 child: _withoutDesktopScrollbars(
                   context,
-                  ListView.builder(
+                  ListView.builder(addSemanticIndexes: false,
                     controller: controller,
                     primary: false,
                     physics: const NeverScrollableScrollPhysics(),
@@ -24591,7 +24591,7 @@ void _drawMonteCarloHistogram(
         (hover?.kind == _MonteCarloHoverKind.bin ||
             hover?.kind == _MonteCarloHoverKind.extremeTail);
     final baseColor = isEs
-        ? Color.lerp(_marketDanger, _marketWarning, 0.08)!
+        ? Color.lerp(_marketDanger, _marketWarning, 0.09)!
         : isCritical
             ? Color.lerp(_marketDanger, _marketWarning, 0.16)!
             : Color.lerp(_marketPrimary, _marketCyan, 0.28)!;
@@ -24985,7 +24985,7 @@ double _monteCarloPrecision(_MonteCarloVarResult result) {
   final n = math.max(1, result.losses.length);
   final tailProbability = math.max(0.0001, 1 - result.confidence);
   final standardError =
-      math.sqrt(result.confidence * tailProbability / n).clamp(0.0, 0.08);
+      math.sqrt(result.confidence * tailProbability / n).clamp(0.0, 0.09);
   return (1 - standardError * 4.2).clamp(0.90, 0.999).toDouble();
 }
 
@@ -26176,7 +26176,7 @@ extension on _MonteCarloDistribution {
       _MonteCarloDistribution.student =>
         _gaussian(random) / math.sqrt(math.max(0.3, _chiSquare(random, 5) / 5)),
       _MonteCarloDistribution.empirical => _gaussian(random) +
-          (random.nextDouble() < 0.08 ? _gaussian(random) * 1.4 : 0),
+          (random.nextDouble() < 0.09 ? _gaussian(random) * 1.4 : 0),
     };
   }
 }
@@ -27962,7 +27962,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: const Text(
-                  'Position_Nette_Globale = MAX(Total_Longues ; Total_Courtes)\n\nExigence_FP_Change = Position_Nette_Globale × 8 %\n\nRWA_Change = Exigence_FP_Change × 12,5',
+                  'Position_Nette_Globale = MAX(Total_Longues ; Total_Courtes)\n\nExigence_FP_Change = Position_Nette_Globale × 9 %\n\nRWA_Change = Exigence_FP_Change × 12,5',
                   style: TextStyle(fontFamily: 'monospace', fontSize: 12),
                 ),
               ),
@@ -28333,7 +28333,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
           _buildCalculationLine(
             context,
             label: 'Exigence FP Change',
-            formula: 'PNG (${_fmt(fx.globalNetPosition)}) × 8 %',
+            formula: 'PNG (${_fmt(fx.globalNetPosition)}) × 9 %',
             value: _fmt(fx.capitalRequirement),
             valueColor: Colors.orange[700],
             isBold: true,
@@ -28875,8 +28875,8 @@ Le risque actions capture l'impact des variations des cours des actions et titre
 Position brute = Σ |valeur de marché| de chaque ligne
 Position nette = Σ valeur signée (longues − courtes)
 
-Risque Spécifique = Position brute × 8 %
-Risque Général    = |Position nette| × 8 %
+Risque Spécifique = Position brute × 9 %
+Risque Général    = |Position nette| × 9 %
 
 Exigence FP Actions = Risque Spécifique + Risque Général
 RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
@@ -29069,10 +29069,10 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
           const SizedBox(height: 4),
           _TauxResultLine(label: 'Position Brute Actions', value: _fcfa(gross)),
           _TauxResultLine(
-              label: 'Risque Spécifique (8 % du brut)', value: _fcfa(specific)),
+              label: 'Risque Spécifique (9 % du brut)', value: _fcfa(specific)),
           _TauxResultLine(label: 'Position Nette Actions', value: _fcfa(net)),
           _TauxResultLine(
-              label: 'Risque Général (8 % du net)', value: _fcfa(general)),
+              label: 'Risque Général (9 % du net)', value: _fcfa(general)),
           const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(height: 1)),
@@ -29091,7 +29091,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                    'Exigence Actions = (Position brute + |Position nette|) × 8 % — Approche standard BCEAO (Art. 45)',
+                    'Exigence Actions = (Position brute + |Position nette|) × 9 % — Approche standard BCEAO (Art. 45)',
                     style: TextStyle(
                         fontSize: 12,
                         color: AppColors.accent,
@@ -29136,7 +29136,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
             rows: [
               ['1', 'Extraction des lignes actions', '$count lignes'],
               ['2', 'Valorisation brute des positions', _fcfa(gross)],
-              ['3', 'Application du taux (8 %)', _fcfa(exigence)],
+              ['3', 'Application du taux (9 %)', _fcfa(exigence)],
               ['4', 'RWA Actions = Exigence × 12,5', _fcfa(rwa)],
             ],
             alignments: const [
@@ -29206,8 +29206,8 @@ Exigence Fonds Propres Marché — Dispositif prudentiel UEMOA
 L'exigence de fonds propres pour risque de marché est la somme des exigences par type de risque :
 
 • Risque de Taux   : Spécifique + Général (obligations)
-• Risque Actions   : 8 % position brute + 8 % position nette
-• Risque de Change : 8 % de la position nette globale (max longues/courtes)
+• Risque Actions   : 9 % position brute + 9 % position nette
+• Risque de Change : 9 % de la position nette globale (max longues/courtes)
 
 Exigence FP Marché = Σ exigences par risque
 RWA Marché = Exigence FP Marché × 12,5 (DISPRUD UMOA, Art. 318-319)''',
@@ -29416,7 +29416,7 @@ RWA par type :
 • RWA Change  = Exigence FP Change × 12,5
 
 RWA Marché Total = Σ(RWA par type)
-Le multiplicateur 12,5 est l'inverse du ratio de solvabilité minimal (8 %).''',
+Le multiplicateur 12,5 est l'inverse du ratio de solvabilité minimal (9 %).''',
             items: [
               _SummaryItemData(
                   label: 'RWA Taux',

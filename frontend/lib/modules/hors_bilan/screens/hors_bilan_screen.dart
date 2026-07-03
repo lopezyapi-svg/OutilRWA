@@ -182,7 +182,7 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
                                 child: MetricCard(
                                   label: 'Capital HB',
                                   value: data.summary.totalCapital,
-                                  variation: 'Ratio 8%',
+                                  variation: 'Ratio 9%',
                                   color: AppTheme.success,
                                   icon: Icons.account_balance_outlined,
                                   trend: const [0.42, 0.56, 0.61, 0.72, 0.83],

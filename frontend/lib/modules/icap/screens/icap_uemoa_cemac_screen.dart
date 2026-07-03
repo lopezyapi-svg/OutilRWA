@@ -571,7 +571,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
             ref: 'Art. 91(c) + Art. 92',
             uemoaMin: 0.09,
             uemoaTarget: 0.115,
-            cemacMin: 0.08,
+            cemacMin: 0.09,
             cemacTarget: 0.105,
             isDark: isDark,
           ),
@@ -907,7 +907,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
             name: 'Approche standard (SA)',
             ref: 'Art. 305-314',
             formula:
-                'K = (Σ max(Σ PBᵢ × βᵢ, 0)) / 3\n8 lignes de métier • β ∈ {12 %, 15 %, 18 %}',
+                'K = (Σ max(Σ PBᵢ × βᵢ, 0)) / 3\n8 lignes de métier • β ∈ {12 %, 15 %, 19 %}',
             available: true,
             isDark: isDark,
           ),
@@ -1029,11 +1029,11 @@ class IcapUemoaCemacScreen extends StatelessWidget {
 
   Widget _buildBetaTable(bool isDark) {
     const betas = [
-      ('Financement d\'entreprise', '18 %'),
-      ('Activités de marchés', '18 %'),
+      ('Financement d\'entreprise', '19 %'),
+      ('Activités de marchés', '19 %'),
       ('Banque de détail', '12 %'),
       ('Banque commerciale', '15 %'),
-      ('Paiements et règlements', '18 %'),
+      ('Paiements et règlements', '19 %'),
       ('Services d\'agence', '15 %'),
       ('Gestion d\'actifs', '12 %'),
       ('Courtage de détail', '12 %'),
@@ -1149,7 +1149,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
       (
         title: 'Approche standard risque opérationnel (Art. 305-314)',
         icon: Icons.settings_applications_rounded,
-        desc: '8 lignes de métier avec des β spécifiques (12 % à 18 %) '
+        desc: '8 lignes de métier avec des β spécifiques (12 % à 19 %) '
             'sous conditions d\'agrément BCEAO. Approche non disponible en CEMAC.',
       ),
       (

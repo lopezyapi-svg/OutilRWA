@@ -1744,7 +1744,7 @@ void _showVerificationErrors(BuildContext context, List<String> errors) {
         title: const Text('Erreurs détectées'),
         content: SizedBox(
           width: 520,
-          child: ListView.separated(
+          child: ListView.separated(addSemanticIndexes: false,
             shrinkWrap: true,
             itemCount: errors.length,
             separatorBuilder: (_, __) => const Divider(height: 14),

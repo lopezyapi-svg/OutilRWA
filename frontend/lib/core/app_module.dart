@@ -59,7 +59,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.expositions:
         return 'Risque de crédit';
       case AppModule.rwaEngine:
-        return 'RWA Engine';
+        return 'Pilotage RWA Crédit';
       case AppModule.crm:
         return 'CRM';
       case AppModule.horsBilan:
@@ -136,7 +136,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.expositions:
         return 'Saisie, import, edition et suivi detaille des expositions du portefeuille.';
       case AppModule.rwaEngine:
-        return 'Calcul, explication, contrôle et simulation du capital réglementaire.';
+        return 'Suivi des expositions pondérées et du capital réglementaire.';
       case AppModule.crm:
         return 'Techniques de réduction du risque de crédit, couvertures et scénarios CRM.';
       case AppModule.horsBilan:
@@ -213,7 +213,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.expositions:
         return Icons.credit_card_rounded;
       case AppModule.rwaEngine:
-        return Icons.functions_rounded;
+        return Icons.account_balance_rounded;
       case AppModule.crm:
         return Icons.verified_user_rounded;
       case AppModule.horsBilan:

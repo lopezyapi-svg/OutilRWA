@@ -261,7 +261,7 @@ const List<double> financedCrmOpcvmHaircutLevels = [
   0.03,
   0.04,
   0.06,
-  0.08,
+  0.09,
   0.12,
   0.15,
   0.20,
@@ -1851,6 +1851,7 @@ class ExposureRecord {
     this.loanTotalAmount,
     this.onBalanceExposureAmount,
     this.offBalanceExposureAmount,
+    this.provisionsAmount,
     this.exposureMaturityMonths,
     this.residualMaturityMonths,
     this.countryRiskWeight,
@@ -1904,6 +1905,7 @@ class ExposureRecord {
   final double? loanTotalAmount;
   final double? onBalanceExposureAmount;
   final double? offBalanceExposureAmount;
+  final double? provisionsAmount;
   final int? exposureMaturityMonths;
   final int? residualMaturityMonths;
   final double? countryRiskWeight;
@@ -1962,7 +1964,7 @@ class ExposureRecord {
   String get ratingLabel => bucketizeRating(counterparty.rating);
   String get crmModeLabel => crmDetails.mode;
   String get zone => computeZone(counterparty.country);
-  bool get isDefaultLike => status == 'En defaut' || categoryCode == 'i';
+  bool get isDefaultLike => status == 'En defaut' || categoryCode == 'i' || (provisionsAmount != null && provisionsAmount! > 0);
 
   factory ExposureRecord.fromJson(Map<String, dynamic> json) {
     final counterparty = CounterpartyModel.fromJson(
@@ -2012,6 +2014,7 @@ class ExposureRecord {
           (json['on_balance_exposure_amount'] as num?)?.toDouble(),
       offBalanceExposureAmount:
           (json['off_balance_exposure_amount'] as num?)?.toDouble(),
+      provisionsAmount: (json['provisions_amount'] as num?)?.toDouble(),
       exposureMaturityMonths:
           (json['exposure_maturity_months'] as num?)?.toInt(),
       residualMaturityMonths:
@@ -2105,6 +2108,7 @@ class ExposureRecord {
       grossAmount: grossAmount,
       loanTotalAmount: resolvedLoanTotalAmount,
       onBalanceExposureAmount: resolvedOnBalanceExposureAmount,
+      provisionsAmount: provisionsAmount,
       currency: currency,
       status: status,
       crmMode: crmDetails.mode == 'Aucune' ? 'Aucune' : crmDetails.mode,
@@ -2205,6 +2209,7 @@ class ExposureDraft {
     required this.grossAmount,
     required this.loanTotalAmount,
     required this.onBalanceExposureAmount,
+    this.provisionsAmount,
     required this.currency,
     required this.status,
     required this.crmMode,
@@ -2262,6 +2267,7 @@ class ExposureDraft {
   final double grossAmount;
   final double loanTotalAmount;
   final double onBalanceExposureAmount;
+  final double? provisionsAmount;
   final String currency;
   final String status;
   final String crmMode;
@@ -2507,7 +2513,7 @@ double lookupFinancedCrmHfx({
   }
   final isFcfaEuroPair = (exposure == 'FCFA' && collateral == 'EUR') ||
       (exposure == 'EUR' && collateral == 'FCFA');
-  return isFcfaEuroPair ? 0.0 : 0.08;
+  return isFcfaEuroPair ? 0.0 : 0.09;
 }
 
 String _normalizeFinancedCrmMaturityBucket(String value) {
@@ -2857,7 +2863,7 @@ ExposureComputation computeDraftMetrics(ExposureDraft draft) {
       finalRw: fcec,
       ead: ead,
       rwa: rwa,
-      capital: rwa * 0.08,
+      capital: rwa * 0.09,
       effectiveCoverage: 0.0,
       haircut: 0.0,
     );
@@ -2891,7 +2897,7 @@ ExposureComputation computeDraftMetrics(ExposureDraft draft) {
     finalRw: finalRw,
     ead: ead,
     rwa: rwa,
-    capital: rwa * 0.08,
+    capital: rwa * 0.09,
     effectiveCoverage: effectiveCoverage,
     haircut: haircut,
   );

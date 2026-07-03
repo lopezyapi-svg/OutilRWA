@@ -664,7 +664,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     return Scrollbar(
       controller: _tableVerticalController,
       thumbVisibility: true,
-      child: ListView.builder(
+      child: ListView.builder(addSemanticIndexes: false,
         controller: _tableVerticalController,
         physics: const ClampingScrollPhysics(),
         itemCount: rows.length,
@@ -691,7 +691,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   ) {
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-      child: ListView.builder(
+      child: ListView.builder(addSemanticIndexes: false,
         controller: controller,
         physics: const ClampingScrollPhysics(),
         itemCount: rows.length,
@@ -760,7 +760,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     height: cardHeight,
                     child: _buildCompactSummaryCard(
                       context,
-                      label: 'RWA total',
+                      label: 'RWA crédit',
                       value: _formatDisplayAmount(summary.totalRwa),
                       detail: 'RW ${rwAverage.toStringAsFixed(0)}%',
                       color: AppTheme.success,
@@ -820,7 +820,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               height: cardHeight,
               child: _buildCompactSummaryCard(
                 context,
-                label: 'RWA total',
+                label: 'RWA crédit',
                 value: _formatDisplayAmount(summary.totalRwa),
                 detail: 'RW ${rwAverage.toStringAsFixed(0)}%',
                 color: AppTheme.success,
@@ -2717,7 +2717,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                               BorderRadius.circular(_screenBorderRadius),
                           border: Border.all(color: borderColor),
                         ),
-                        child: ListView.separated(
+                        child: ListView.separated(addSemanticIndexes: false,
                           padding: const EdgeInsets.symmetric(vertical: 6),
                           itemCount: _fullTableColumnKeys.length,
                           separatorBuilder: (_, __) => Divider(

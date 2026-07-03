@@ -220,7 +220,8 @@ class CreditRiskSubmodulesService {
           : item.categoryLabel.trim();
       final riskWeightBucket = _riskWeightBucket(item.finalRw);
       final activeCoverage = _crmCoverageRatio(item);
-      final provisionRate = _estimatedProvisionRateForExposure(item);
+      final estimatedProvision = _estimatedProvisionAmountForExposure(item);
+      final provisionRate = item.ead > 0 ? estimatedProvision / item.ead : 0.0;
 
       sectorGroups
           .putIfAbsent(sector, () => _ConcentrationAccumulator(label: sector))
@@ -270,6 +271,9 @@ class CreditRiskSubmodulesService {
           status: item.status,
           hasGuarantee: item.crmModeLabel != 'Aucune' || activeCoverage > 0,
           isDefault: item.isDefaultLike,
+          authorizationAmount: item.loanTotalAmount ?? item.grossAmount,
+          onBalanceAmount: item.onBalanceExposureAmount ?? item.grossAmount,
+          offBalanceAmount: item.offBalanceExposureAmount ?? 0.0,
           grossAmount: item.grossAmount,
           ead: item.ead,
           rwa: item.rwa,
@@ -279,7 +283,7 @@ class CreditRiskSubmodulesService {
           crmCoverageRatio: activeCoverage,
           pd: _pdFromRating(item.ratingLabel),
           lgd: _lgdFromCrm(item),
-          estimatedProvision: item.ead * provisionRate,
+          estimatedProvision: estimatedProvision,
           provisionRate: provisionRate,
         ),
       );
@@ -537,7 +541,7 @@ class CreditRiskSubmodulesService {
     );
     final estimatedProvision = defaultRows.fold<double>(
       0.0,
-      (sum, item) => sum + item.ead * _estimatedProvisionRateForExposure(item),
+      (sum, item) => sum + _estimatedProvisionAmountForExposure(item),
     );
     final nplTrend = trends.length < 2
         ? 0.0
@@ -749,13 +753,17 @@ class CreditRiskSubmodulesService {
     return normalized.clamp(0.0, 1.0).toDouble();
   }
 
-  double _estimatedProvisionRateForExposure(ExposureRecord exposure) {
+  double _estimatedProvisionAmountForExposure(ExposureRecord exposure) {
+    if (exposure.provisionsAmount != null) {
+      return exposure.provisionsAmount!;
+    }
     if (!exposure.isDefaultLike) {
       return 0.0;
     }
-    return exposure.defaultedExposureProvisionAtLeastTwentyPercent == true
+    final rate = exposure.defaultedExposureProvisionAtLeastTwentyPercent == true
         ? 0.20
         : 0.0;
+    return exposure.ead * rate;
   }
 
   double _nplRatio(List<ExposureRecord> exposures) {
@@ -1038,11 +1046,11 @@ class CreditRiskSubmodulesService {
       'Defaut prudentiel' => 0.38,
       'Sous surveillance renforcee' => 0.24,
       'Surveillance' => 0.15,
-      _ => 0.08,
+      _ => 0.09,
     };
-    final provisionRate = (rawProvisionRate - (activeCoverage * 0.10))
-        .clamp(0.05, 0.45)
-        .toDouble();
+    final estimatedProvision = _estimatedProvisionAmountForExposure(exposure);
+    final provisionRate =
+        exposure.ead > 0 ? estimatedProvision / exposure.ead : 0.0;
     final incidents = _incidentHistory(
       exposure: exposure,
       daysPastDue: daysPastDue,
@@ -1061,7 +1069,7 @@ class CreditRiskSubmodulesService {
       capital: exposure.capital,
       daysPastDue: daysPastDue,
       prudentialStatus: prudentialStatus,
-      estimatedProvision: exposure.ead * provisionRate,
+      estimatedProvision: estimatedProvision,
       provisionRate: provisionRate,
       incidents: incidents,
     );
@@ -1209,7 +1217,7 @@ class CreditRiskSubmodulesService {
   }
 
   String _number(double value) => value.toStringAsFixed(0);
-  String _percent(double value) => '${(value * 100).toStringAsFixed(1)} %';
+  String _percent(double value) => '${(value * 100).toStringAsFixed(2)}%';
 }
 
 class _ConcentrationAccumulator {

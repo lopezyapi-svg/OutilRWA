@@ -210,8 +210,8 @@ class AnalyseService {
       if (topSector != null)
         'Hausse et concentration des RWA de credit sur ${topSector.label} (${_pct(topSector.percentage)} du RWA credit).',
       'Le risque de credit represente ${_pct(_safeRatio(creditRwa, allRwa))} des RWA totaux estimes.',
-      if (operationalShare > 0.08)
-        'Le risque operationnel pese ${_pct(operationalShare)}, au-dessus du repere de gestion de 8%.',
+      if (operationalShare > 0.09)
+        'Le risque operationnel pese ${_pct(operationalShare)}, au-dessus du repere de gestion de 9%.',
       if (dashboard.rwaProjection.length >= 2)
         'La projection RWA montre une variation de ${_pct(_safeRatio(dashboard.rwaProjection.last.value - dashboard.rwaProjection.first.value, dashboard.rwaProjection.first.value))}.',
       if (largeRisks.isNotEmpty)
@@ -350,7 +350,7 @@ class AnalyseService {
         ruleReference: 'Art. 522-525',
         status: capitalGap < 0
             ? RegulatoryStatus.critical
-            : capitalGap < requiredCapital * 0.08
+            : capitalGap < requiredCapital * 0.09
                 ? RegulatoryStatus.warning
                 : RegulatoryStatus.green,
         keyValue: formatCurrencyCompact(capitalGap),
@@ -794,15 +794,15 @@ class AnalyseService {
 
   double _estimateOperationalRwa(double creditRwa, CrmSummary crmSummary) {
     final base = crmSummary.totalCapitalAfter > 0
-        ? crmSummary.totalCapitalAfter / 0.08 * 0.18
-        : creditRwa * 0.08;
+        ? crmSummary.totalCapitalAfter / 0.09 * 0.18
+        : creditRwa * 0.09;
     return base.clamp(creditRwa * 0.04, creditRwa * 0.14).toDouble();
   }
 
   double _estimateIrrbbShockRatio(DashboardSnapshot dashboard) {
     final topCountry = _topDistribution(dashboard.countryDistribution);
     final concentration = topCountry?.percentage ?? 0.0;
-    return (0.055 + concentration * 0.08).clamp(0.0, 0.24).toDouble();
+    return (0.055 + concentration * 0.09).clamp(0.0, 0.24).toDouble();
   }
 
   PortfolioRow? _largestExposure(List<PortfolioRow> rows) {
