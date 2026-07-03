@@ -9,6 +9,7 @@ import '../../modules/hors_bilan/models/hors_bilan_models.dart';
 import '../../modules/rapports/models/report_models.dart';
 import '../../modules/referentiels/models/referentiels_models.dart';
 import '../../modules/risque_operationnel/models/ro_models.dart';
+import '../../modules/icap/models/pieafp_models.dart';
 import '../../modules/rwa_engine/models/rwa_credit_analysis.dart';
 import 'api_client.dart';
 import 'api_runtime_environment.dart' as runtime_environment;
