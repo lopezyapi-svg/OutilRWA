@@ -37,7 +37,18 @@ class Settings:
 
     app_name: str = "Risk management API"
     app_version: str = "0.1.0"
-    capital_ratio: float = 0.09
+    # Taux minimum de capital reglementaire UMOA (Bale III adapte) : 11,5 %
+    # incluant le coussin de conservation. Parametrable via l'environnement.
+    capital_ratio: float = float(os.getenv("MINIMUM_CAPITAL_RATIO", "0.115"))
+    # Seuil de tolerance pour le controle de reconciliation du tableau RWA.
+    rwa_reconciliation_threshold: float = float(
+        os.getenv("RWA_RECONCILIATION_THRESHOLD", "0.005")
+    )
+    # Libelle de perimetre affiche dans le bandeau de contexte.
+    rwa_analysis_scope_label: str = os.getenv(
+        "RWA_ANALYSIS_SCOPE_LABEL",
+        "Portefeuille consolidé — risque de crédit",
+    )
     yield_curve_ai_endpoint: str = os.getenv("YIELD_CURVE_AI_ENDPOINT", "")
     yield_curve_ai_api_key: str = os.getenv(
         "YIELD_CURVE_AI_API_KEY",
@@ -50,3 +61,22 @@ class Settings:
 
 
 settings = Settings()
+
+
+# Plages de pondération moyenne attendues par agent économique (code -> (min, max),
+# en ratio). Sert à mettre en évidence une pondération moyenne hors norme dans le
+# tableau. Paramètre backend centralisé (modifiable ici sans toucher au frontend).
+RWA_EXPECTED_WEIGHT_RANGES: dict[str, tuple[float, float]] = {
+    "a": (0.0, 0.5),   # Souverains
+    "b": (0.0, 1.0),   # Organismes publics
+    "c": (0.0, 0.5),   # BMD
+    "d": (0.2, 1.0),   # Institutions financières
+    "e": (0.2, 1.5),   # Entreprises
+    "f": (0.5, 1.0),   # Clientèle de détail
+    "g": (0.0, 0.5),   # Immobilier résidentiel (attendu ~0,35 ; alerte > 0,50)
+    "h": (0.5, 1.0),   # Immobilier commercial (attendu ~0,75)
+    "i": (1.0, 1.5),   # Créances en souffrance
+    "j": (1.0, 1.5),   # Créances à risque élevé
+    "k": (0.0, 1.0),   # Autres actifs
+    "l": (0.0, 1.5),   # Hors-bilan
+}

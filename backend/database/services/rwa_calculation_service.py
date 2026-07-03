@@ -1259,6 +1259,7 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
         "loan_total_amount": exposure_components["loan_total_amount"],
         "on_balance_exposure_amount": exposure_components["on_balance_exposure_amount"],
         "off_balance_exposure_amount": exposure_components["off_balance_exposure_amount"],
+        "provisions_amount": payload.provisions_amount,
         "exposure_maturity_months": exposure_maturity_months,
         "residual_maturity_months": residual_maturity_months,
         "country_risk_weight": country_risk_weight,
@@ -1369,6 +1370,7 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
         loan_total_amount=record.get("loan_total_amount"),
         on_balance_exposure_amount=record.get("on_balance_exposure_amount"),
         off_balance_exposure_amount=record.get("off_balance_exposure_amount"),
+        provisions_amount=record.get("provisions_amount"),
         exposure_maturity_months=record.get("exposure_maturity_months"),
         residual_maturity_months=record.get("residual_maturity_months"),
         country_risk_weight=record.get("country_risk_weight"),
@@ -1440,7 +1442,9 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
         final_rw=record["final_rw"],
         ead=record["ead"],
         rwa=record["rwa"],
-        capital=record["capital"],
+        # Recalcule au taux minimum courant (settings.capital_ratio) pour que le
+        # changement de taux s'applique aussi aux expositions déjà persistées.
+        capital=calculate_capital(record["rwa"]),
         comment=record.get("comment"),
     )
 
@@ -1452,6 +1456,7 @@ def view_to_exposure_record(view: ExposureView) -> dict[str, Any]:
         "loan_total_amount": view.loan_total_amount,
         "on_balance_exposure_amount": view.on_balance_exposure_amount,
         "off_balance_exposure_amount": view.off_balance_exposure_amount,
+        "provisions_amount": view.provisions_amount,
         "exposure_maturity_months": view.exposure_maturity_months,
         "residual_maturity_months": view.residual_maturity_months,
         "country_risk_weight": view.country_risk_weight,

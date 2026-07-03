@@ -92,6 +92,10 @@ class ExposureCreate(BaseModel):
         default=None,
         description="Montant de l'exposition hors bilan.",
     )
+    provisions_amount: float | None = Field(
+        default=None,
+        description="Montant exact des provisions.",
+    )
     currency: str = Field(default="XOF", description="Devise source de l'exposition.")
     status: str = Field(default="Active", description="Statut de gestion de l'exposition.")
     sovereign_special_case: str = Field(
@@ -200,6 +204,7 @@ class ExposureView(BaseModel):
     loan_total_amount: float | None = None
     on_balance_exposure_amount: float | None = None
     off_balance_exposure_amount: float | None = None
+    provisions_amount: float | None = None
     exposure_maturity_months: int | None = None
     residual_maturity_months: int | None = None
     country_risk_weight: float | None = None

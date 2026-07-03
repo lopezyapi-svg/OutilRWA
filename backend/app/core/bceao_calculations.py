@@ -126,9 +126,9 @@ def evaluate_ratios(rwa_total: float, fonds_propres: dict[str, float], total_exp
         if threshold <= ratio < (threshold + CONSERVATION_BUFFER):
             status = "Sous cible"
         return {
-            "value": round(ratio * 100, 2),
-            "threshold": round(threshold * 100, 2),
-            "diff_points": round(diff, 2),
+            "value": round(ratio * 100, 3),
+            "threshold": round(threshold * 100, 3),
+            "diff_points": round(diff, 3),
             "status": status
         }
 

@@ -130,6 +130,7 @@ EXPECTED_COLUMNS_BY_SHEET: dict[str, tuple[str, ...]] = {
 OPTIONAL_COLUMNS_BY_SHEET: dict[str, tuple[str, ...]] = {
     "Template données": (
         "Commentaire",
+        "Provisions",
     ),
 }
 EXPECTED_INDICATORS_BY_SHEET: dict[str, tuple[str, ...]] = {
@@ -474,6 +475,7 @@ class ExcelRepository:
                 "maturity_date": _as_optional_date(row.get("Date d'échéance")),
                 "country_rating": _as_clean_text(row.get("Notation_externe_pays"))
                 or "Non noté",
+                "provisions_amount": _as_optional_float(row.get("Provisions")),
             }
         return indexed
 

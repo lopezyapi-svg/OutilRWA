@@ -17,8 +17,9 @@ MIN_TIER1_RATIO = 0.06  # 6% - Tier 1 Capital
 MIN_SOLVENCY_RATIO = 0.09  # 9% - Ratio de solvabilité total (CAR)
 MIN_LEVERAGE_RATIO = 0.03  # 3% - Ratio de levier
 
-# Ratio de capital par défaut (8% Bâle standard)
-DEFAULT_CAPITAL_RATIO = 0.09
+# Ratio de capital minimum réglementaire UMOA par défaut (11,5 %, coussin
+# de conservation inclus). Paramétrable via settings.capital_ratio.
+DEFAULT_CAPITAL_RATIO = settings.capital_ratio
 
 # Seuils de concentration (HHI - Herfindahl-Hirschman Index)
 HHI_LOW_CONCENTRATION = 0.15  # Concentration faible

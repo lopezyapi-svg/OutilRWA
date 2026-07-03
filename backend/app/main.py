@@ -15,6 +15,7 @@ from app.market.routes import router as market_router
 from app.rapports.routes import router as rapports_router
 from app.referentiels.routes import router as referentiels_router
 from app.risque_operationnel.routes import router as risque_operationnel_router
+from app.rwa_credit.routes import router as rwa_credit_router
 from database.connection import database_manager
 from database.services.exposure_sync_service import exposure_sync_service
 
@@ -55,6 +56,7 @@ app.include_router(referentiels_router)
 app.include_router(rapports_router)
 app.include_router(market_router)
 app.include_router(risque_operationnel_router)
+app.include_router(rwa_credit_router)
 
 
 @app.get("/")
