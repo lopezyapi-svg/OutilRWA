@@ -1766,4 +1766,237 @@ class RwaApiService {
     // Ce petit délai simule une latence réseau et évite un rendu trop brutal en mode mock.
     return Future<T>.delayed(const Duration(milliseconds: 220), () => value);
   }
+
+  // ── BIC — Approche Standard CRR3 ────────────────────────────────────────────
+
+  Future<OpRiskInput> fetchBicInput(int annee) async {
+    final json = await _client.get('/risque-operationnel/bic/inputs/$annee')
+        as Map<String, dynamic>;
+    return OpRiskInput.fromJson(json);
+  }
+
+  Future<OpRiskInput> upsertBicInput(int annee, Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/bic/inputs/$annee', data)
+        as Map<String, dynamic>;
+    return OpRiskInput.fromJson(json);
+  }
+
+  Future<OpRiskParametres> fetchBicParametres() async {
+    final json = await _client.get('/risque-operationnel/bic/parametres')
+        as Map<String, dynamic>;
+    return OpRiskParametres.fromJson(json);
+  }
+
+  Future<OpRiskParametres> updateBicParametres(Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/bic/parametres', data)
+        as Map<String, dynamic>;
+    return OpRiskParametres.fromJson(json);
+  }
+
+  Future<OpRiskCalculResult> calculeOpRiskBic({int? anneeN}) async {
+    final path = anneeN != null
+        ? '/risque-operationnel/bic/calcul?annee_n=$anneeN'
+        : '/risque-operationnel/bic/calcul';
+    final json = await _client.get(path) as Map<String, dynamic>;
+    return OpRiskCalculResult.fromJson(json);
+  }
+
+  // ── UEMOI — AIB (Approche Indicateur de Base) ────────────────────────────────
+
+  Future<List<PnbAnnuelView>> fetchPnbAnnuel() async {
+    final list = await _client.get('/risque-operationnel/aib/pnb') as List<dynamic>;
+    return list.map((e) => PnbAnnuelView.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<PnbAnnuelView> upsertPnbAnnuel(int annee, Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/aib/pnb/$annee', data) as Map<String, dynamic>;
+    return PnbAnnuelView.fromJson(json);
+  }
+
+  Future<void> deletePnbAnnuel(int annee) async {
+    await _client.delete('/risque-operationnel/aib/pnb/$annee');
+  }
+
+  Future<ParametresAib> fetchAibParametres() async {
+    final json = await _client.get('/risque-operationnel/aib/parametres') as Map<String, dynamic>;
+    return ParametresAib.fromJson(json);
+  }
+
+  Future<ParametresAib> updateAibParametres(Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/aib/parametres', data) as Map<String, dynamic>;
+    return ParametresAib.fromJson(json);
+  }
+
+  Future<AibCalculResult> calculeAib() async {
+    final json = await _client.get('/risque-operationnel/aib/calcul') as Map<String, dynamic>;
+    return AibCalculResult.fromJson(json);
+  }
+
+  Future<DecisionPilotageResult> fetchDecisionAib() async {
+    final json = await _client.get('/risque-operationnel/aib/decision') as Map<String, dynamic>;
+    return DecisionPilotageResult.fromJson(json);
+  }
+
+  // ── UEMOI — AS (Approche Standard) ───────────────────────────────────────────
+
+  Future<List<BetaLigneView>> fetchBetaLignes() async {
+    final list = await _client.get('/risque-operationnel/as/beta-lignes') as List<dynamic>;
+    return list.map((e) => BetaLigneView.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<BetaLigneView> updateBetaLigne(String ligneMetier, double beta) async {
+    final json = await _client.put(
+      '/risque-operationnel/as/beta-lignes/${Uri.encodeComponent(ligneMetier)}',
+      {'beta': beta},
+    ) as Map<String, dynamic>;
+    return BetaLigneView.fromJson(json);
+  }
+
+  Future<List<PnbParLigneView>> fetchPnbLignes(int annee) async {
+    final list = await _client.get('/risque-operationnel/as/pnb-lignes/$annee') as List<dynamic>;
+    return list.map((e) => PnbParLigneView.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<PnbParLigneView> upsertPnbLigne(int annee, String ligneMetier, double pnb) async {
+    final json = await _client.put(
+      '/risque-operationnel/as/pnb-lignes/$annee/${Uri.encodeComponent(ligneMetier)}',
+      {'produit_brut_ligne': pnb},
+    ) as Map<String, dynamic>;
+    return PnbParLigneView.fromJson(json);
+  }
+
+  Future<ParametresAs> fetchAsParametres() async {
+    final json = await _client.get('/risque-operationnel/as/parametres') as Map<String, dynamic>;
+    return ParametresAs.fromJson(json);
+  }
+
+  Future<ParametresAs> updateAsParametres(Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/as/parametres', data) as Map<String, dynamic>;
+    return ParametresAs.fromJson(json);
+  }
+
+  Future<AsCalculResult> calculeAs() async {
+    final json = await _client.get('/risque-operationnel/as/calcul') as Map<String, dynamic>;
+    return AsCalculResult.fromJson(json);
+  }
+
+  Future<DecisionPilotageResult> fetchDecisionAs() async {
+    final json = await _client.get('/risque-operationnel/as/decision') as Map<String, dynamic>;
+    return DecisionPilotageResult.fromJson(json);
+  }
+
+  // ── UEMOI — Seuils + Synthèse ─────────────────────────────────────────────────
+
+  Future<ParametresSeuils> fetchPertesSeuils() async {
+    final json = await _client.get('/risque-operationnel/pertes/seuils') as Map<String, dynamic>;
+    return ParametresSeuils.fromJson(json);
+  }
+
+  Future<ParametresSeuils> updatePertesSeuils(Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/pertes/seuils', data) as Map<String, dynamic>;
+    return ParametresSeuils.fromJson(json);
+  }
+
+  Future<SyntheseResult> fetchSynthese() async {
+    final json = await _client.get('/risque-operationnel/synthese') as Map<String, dynamic>;
+    return SyntheseResult.fromJson(json);
+  }
+
+  Future<DecisionPilotageResult> fetchDecisionPilotage() async {
+    final json = await _client.get('/risque-operationnel/pilotage/decision') as Map<String, dynamic>;
+    return DecisionPilotageResult.fromJson(json);
+  }
+
+  // ── PIEAFP (Pilier 2 / ICAAP) ───────────────────────────────────────────────
+
+  Future<PieafpDashboard> fetchPieafpDashboard() async {
+    final json = await _client.get('/pieafp/dashboard') as Map<String, dynamic>;
+    return PieafpDashboard.fromJson(json);
+  }
+
+  Future<ConcentrationResult> fetchConcentration() async {
+    final json = await _client.get('/pieafp/concentration') as Map<String, dynamic>;
+    return ConcentrationResult.fromJson(json);
+  }
+
+  Future<IrrbbResult> fetchIrrbb({int chocBp = 200}) async {
+    final json = await _client.get('/pieafp/irrbb?choc_bp=$chocBp') as Map<String, dynamic>;
+    return IrrbbResult.fromJson(json);
+  }
+
+  Future<IrrbbTrancheResult> updateIrrbbTranche(
+      String tranche, Map<String, dynamic> data) async {
+    final json = await _client.put('/pieafp/irrbb/$tranche', data) as Map<String, dynamic>;
+    return IrrbbTrancheResult.fromJson(json);
+  }
+
+  Future<List<AutreRisque>> fetchAutresRisques() async {
+    final list = await _client.get('/pieafp/autres-risques') as List<dynamic>;
+    return list.map((e) => AutreRisque.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<AutreRisque> createAutreRisque(Map<String, dynamic> data) async {
+    final json = await _client.post('/pieafp/autres-risques', data) as Map<String, dynamic>;
+    return AutreRisque.fromJson(json);
+  }
+
+  Future<AutreRisque> updateAutreRisque(int id, Map<String, dynamic> data) async {
+    final json = await _client.put('/pieafp/autres-risques/$id', data) as Map<String, dynamic>;
+    return AutreRisque.fromJson(json);
+  }
+
+  Future<void> deleteAutreRisque(int id) async {
+    await _client.delete('/pieafp/autres-risques/$id');
+  }
+
+  Future<PlanificationResult> fetchPlanification() async {
+    final json = await _client.get('/pieafp/planification') as Map<String, dynamic>;
+    return PlanificationResult.fromJson(json);
+  }
+
+  Future<PlanificationAnnee> upsertPlanificationAnnee(
+      int annee, Map<String, dynamic> data) async {
+    final json = await _client.put('/pieafp/planification/$annee', data) as Map<String, dynamic>;
+    return PlanificationAnnee.fromJson(json);
+  }
+
+  Future<List<ScenarioStress>> fetchScenarios() async {
+    final list = await _client.get('/pieafp/scenarios') as List<dynamic>;
+    return list.map((e) => ScenarioStress.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<ScenarioStress> createScenario(Map<String, dynamic> data) async {
+    final json = await _client.post('/pieafp/scenarios', data) as Map<String, dynamic>;
+    return ScenarioStress.fromJson(json);
+  }
+
+  Future<ScenarioStress> updateScenario(int id, Map<String, dynamic> data) async {
+    final json = await _client.put('/pieafp/scenarios/$id', data) as Map<String, dynamic>;
+    return ScenarioStress.fromJson(json);
+  }
+
+  Future<void> deleteScenario(int id) async {
+    await _client.delete('/pieafp/scenarios/$id');
+  }
+
+  Future<StressImpact> calculStress(int scenarioId) async {
+    final json = await _client.get('/pieafp/scenarios/$scenarioId/calcul') as Map<String, dynamic>;
+    return StressImpact.fromJson(json);
+  }
+
+  Future<GouvernanceResult> fetchGouvernance() async {
+    final json = await _client.get('/pieafp/gouvernance') as Map<String, dynamic>;
+    return GouvernanceResult.fromJson(json);
+  }
+
+  Future<ChecklistItem> updateChecklistItem(int id, Map<String, dynamic> data) async {
+    final json = await _client.put('/pieafp/gouvernance/$id', data) as Map<String, dynamic>;
+    return ChecklistItem.fromJson(json);
+  }
+
+  Future<PieafpRapport> fetchPieafpRapport() async {
+    final json = await _client.get('/pieafp/rapport') as Map<String, dynamic>;
+    return PieafpRapport.fromJson(json);
+  }
+
 }
