@@ -296,3 +296,268 @@ class DashboardData(BaseModel):
     evolution_pertes: list[EvolutionPoint]
     repartition_ligne_metier: list[RepartitionItem]
     repartition_type: list[RepartitionItem]
+
+
+# ─── BIC — Approche Standard CRR3 (Art. 315-321) ─────────────────────────────
+
+class OpRiskInput(BaseModel):
+    annee: int
+    interets_percus: float = 0.0
+    interets_verses: float = 0.0
+    revenus_leasing: float = 0.0
+    dividendes_percus: float = 0.0
+    autres_produits_exploitation: float = 0.0
+    autres_charges_exploitation: float = 0.0
+    commissions_percues: float = 0.0
+    commissions_versees: float = 0.0
+    resultat_portefeuille_negociation: float = 0.0
+    resultat_portefeuille_bancaire: float = 0.0
+    tresorerie_et_banques_centrales: float = 0.0
+    creances_etablissements_credit: float = 0.0
+    creances_clientele: float = 0.0
+    provisions: float = 0.0
+    pnb: float = 0.0
+
+
+class OpRiskInputUpdate(BaseModel):
+    interets_percus: float | None = None
+    interets_verses: float | None = None
+    revenus_leasing: float | None = None
+    dividendes_percus: float | None = None
+    autres_produits_exploitation: float | None = None
+    autres_charges_exploitation: float | None = None
+    commissions_percues: float | None = None
+    commissions_versees: float | None = None
+    resultat_portefeuille_negociation: float | None = None
+    resultat_portefeuille_bancaire: float | None = None
+    tresorerie_et_banques_centrales: float | None = None
+    creances_etablissements_credit: float | None = None
+    creances_clientele: float | None = None
+    provisions: float | None = None
+    pnb: float | None = None
+
+
+class OpRiskParametres(BaseModel):
+    seuil_ildc: float
+    coef_tranche1: float
+    coef_tranche2: float
+    coef_tranche3: float
+    seuil1_fcfa: float
+    seuil2_fcfa: float
+    multiplicateur_rea: float
+    taux_conversion_eur_fcfa: float
+
+
+class OpRiskParametresUpdate(BaseModel):
+    seuil_ildc: float | None = None
+    coef_tranche1: float | None = None
+    coef_tranche2: float | None = None
+    coef_tranche3: float | None = None
+    seuil1_fcfa: float | None = None
+    seuil2_fcfa: float | None = None
+    multiplicateur_rea: float | None = None
+    taux_conversion_eur_fcfa: float | None = None
+
+
+class OpRiskIldcDetail(BaseModel):
+    ic: float
+    ac: float
+    plafond_ildc: float
+    plafond_actif: bool
+    dividendes: float
+    ildc: float
+
+
+class OpRiskScDetail(BaseModel):
+    oi: float
+    oe: float
+    fi: float
+    fe: float
+    sc: float
+
+
+class OpRiskFcDetail(BaseModel):
+    tc: float
+    bc: float
+    fc: float
+
+
+class OpRiskBiDetail(BaseModel):
+    bi: float
+    tranche_active: int
+    bic: float
+    marge_avant_tranche_suivante: float | None
+
+
+class OpRiskCalculResult(BaseModel):
+    annees: list[int]
+    inputs: list[OpRiskInput]
+    params: OpRiskParametres
+    ildc_detail: OpRiskIldcDetail
+    sc_detail: OpRiskScDetail
+    fc_detail: OpRiskFcDetail
+    bi_detail: OpRiskBiDetail
+    ofr_crr3: float
+    rea_crr3: float
+    ofr_bia: float
+    rea_bia: float
+    ecart: float
+    donnees_insuffisantes: bool
+
+
+# ─── BLOC A1 — AIB (Approche Indicateur de Base) ─────────────────────────────
+
+class PnbAnnuelCreate(BaseModel):
+    produit_brut_total: float
+    source_document: str = ""
+
+
+class PnbAnnuelView(BaseModel):
+    annee: int
+    produit_brut_total: float
+    pnb_positif: bool
+    pnb_retenu_aib: float
+    source_document: str
+    modifie_le: str
+
+
+class ParametresAib(BaseModel):
+    alpha: float
+    multiplicateur_rwa: float
+    ratio_solvabilite_min: float
+
+
+class ParametresAibUpdate(BaseModel):
+    alpha: float | None = None
+    multiplicateur_rwa: float | None = None
+    ratio_solvabilite_min: float | None = None
+
+
+class AibCalculResult(BaseModel):
+    annees_saisies: list[PnbAnnuelView]
+    n: int
+    somme_pnb_positifs: float
+    pnb_moyen: float
+    alpha: float
+    k_ib: float
+    apr_aib: float
+    capital_min_aib: float
+    donnees_insuffisantes: bool
+
+
+# ─── BLOC A2 — AS (Approche Standard) ────────────────────────────────────────
+
+class PnbParLigneCreate(BaseModel):
+    produit_brut_ligne: float
+
+
+class PnbParLigneView(BaseModel):
+    annee: int
+    ligne_metier: str
+    produit_brut_ligne: float
+    beta: float
+    k_ligne: float
+
+
+class BetaLigneView(BaseModel):
+    ligne_metier: str
+    beta: float
+    description: str
+
+
+class BetaLigneUpdate(BaseModel):
+    beta: float
+
+
+class ParametresAs(BaseModel):
+    as_autorisee: bool
+    date_autorisation: str
+    reference_autorisation: str
+    multiplicateur_rwa: float
+    ratio_solvabilite_min: float
+
+
+class ParametresAsUpdate(BaseModel):
+    as_autorisee: bool | None = None
+    date_autorisation: str | None = None
+    reference_autorisation: str | None = None
+    multiplicateur_rwa: float | None = None
+    ratio_solvabilite_min: float | None = None
+
+
+class AsLigneDetail(BaseModel):
+    ligne_metier: str
+    pnb: float
+    beta: float
+    k_ligne: float
+
+
+class AsAnneeDetail(BaseModel):
+    annee: int
+    lignes: list[AsLigneDetail]
+    k_total: float
+    k_retenu: float
+
+
+class AsCalculResult(BaseModel):
+    as_autorisee: bool
+    detail_par_annee: list[AsAnneeDetail]
+    k_as: float
+    apr_as: float
+    capital_min_as: float
+    donnees_insuffisantes: bool
+
+
+# ─── Seuils de reporting Pilier 2 ────────────────────────────────────────────
+
+class ParametresSeuils(BaseModel):
+    seuil_reporting_interne: float
+    seuil_reporting_direction: float
+    seuil_reporting_conseil: float
+
+
+class ParametresSeuilsUpdate(BaseModel):
+    seuil_reporting_interne: float | None = None
+    seuil_reporting_direction: float | None = None
+    seuil_reporting_conseil: float | None = None
+
+
+# ─── Synthèse comparative ─────────────────────────────────────────────────────
+
+class SyntheseLigne(BaseModel):
+    methode: str
+    k: float
+    apr: float
+    capital_min: float
+    disponible: bool
+
+
+class SyntheseResult(BaseModel):
+    lignes: list[SyntheseLigne]
+    ecart_bic_vs_aib: float | None
+    ratio_couverture: float | None
+
+
+# ─── Décision de pilotage — Analyse et reporting (dispositif UEMOA) ──────────
+
+class DecisionCritere(BaseModel):
+    code: str
+    libelle: str
+    reference_reglementaire: str
+    statut: str  # "conforme" | "attention" | "critique"
+    poids: int
+    valeur_observee: str
+    seuil_reference: str
+    commentaire: str
+
+
+class DecisionPilotageResult(BaseModel):
+    date_analyse: str
+    niveau_global: str  # "Maîtrisé" | "Sous surveillance" | "Vigilance renforcée" | "Critique"
+    score_global: int
+    score_max: int
+    organe_reporting: str
+    organe_reporting_motif: str
+    criteres: list[DecisionCritere]
+    recommandations: list[str]
+    synthese: str

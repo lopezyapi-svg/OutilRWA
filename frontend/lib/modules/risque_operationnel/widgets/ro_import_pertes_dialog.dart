@@ -386,8 +386,9 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
         }
       }
     }
-    if (sheet == null)
+    if (sheet == null) {
       throw Exception('Aucune feuille lisible dans le fichier.');
+    }
 
     final allRows = sheet.rows;
     if (allRows.isEmpty) throw Exception('Feuille vide.');
@@ -579,18 +580,18 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: _bg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 960, maxHeight: 760),
+        constraints: const BoxConstraints(maxWidth: 1040, maxHeight: 780),
         child: Padding(
-          padding: const EdgeInsets.all(6),
+          padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-              const SizedBox(height: 5),
+              const SizedBox(height: 16),
               Expanded(child: _buildBody()),
-              const SizedBox(height: 4),
+              const SizedBox(height: 14),
               _buildFooter(),
             ],
           ),
@@ -602,6 +603,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
   // ─── Header ───────────────────────────────────────────────────────────────
 
   Widget _buildHeader() => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 42,
@@ -634,6 +636,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.pop(context, false),
+            tooltip: 'Fermer',
           ),
         ],
       );
@@ -649,13 +652,24 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
   // ─── Écran 1 : Drop zone ──────────────────────────────────────────────────
 
   Widget _buildDropZoneScreen() {
-    return Column(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(child: _buildDropZone()),
-        const SizedBox(height: 3),
-        _buildModeSelector(),
-        const SizedBox(height: 3),
-        _buildFormatCard(),
+        Expanded(
+          flex: 7,
+          child: Column(
+            children: [
+              Expanded(child: _buildDropZone()),
+              const SizedBox(height: 12),
+              _buildModeSelector(),
+            ],
+          ),
+        ),
+        const SizedBox(width: 14),
+        SizedBox(
+          width: 330,
+          child: _buildFormatCard(),
+        ),
       ],
     );
   }
@@ -672,12 +686,12 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
         duration: const Duration(milliseconds: 180),
         width: double.infinity,
         decoration: BoxDecoration(
-          color: _isDragging ? _accent.withValues(alpha: 0.07) : _soft,
+          color: _isDragging ? _accent.withValues(alpha: 0.06) : _bg,
           border: Border.all(
             color: _isDragging ? _accent : _border,
-            width: _isDragging ? 2 : 1.5,
+            width: _isDragging ? 1.4 : 1,
           ),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(4),
         ),
         child: _isParsing
             ? const Center(
@@ -685,8 +699,8 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircularProgressIndicator(),
-                    SizedBox(height: 4),
-                    Text('Analyse du fichier…',
+                    SizedBox(height: 10),
+                    Text('Lecture du fichier...',
                         style: TextStyle(color: AppTheme.muted)),
                   ],
                 ),
@@ -698,45 +712,65 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     );
   }
 
-  Widget _buildDropContent() => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: Icon(
+  Widget _buildDropContent() => Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
               _isDragging
                   ? Icons.file_download_done_rounded
-                  : Icons.cloud_upload_outlined,
-              key: ValueKey(_isDragging),
-              size: 52,
+                  : Icons.upload_file_outlined,
+              size: 38,
               color: _isDragging ? _accent : _muted,
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _isDragging
-                ? 'Relâcher pour analyser'
-                : 'Glissez votre fichier Excel ici',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: _isDragging ? _accent : _text,
+            const SizedBox(height: 18),
+            Text(
+              _isDragging
+                  ? 'Déposez le fichier pour lancer le contrôle'
+                  : 'Déposez le fichier de pertes ici',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: _isDragging ? _accent : _text,
+                height: 1.05,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text('ou', style: TextStyle(color: _muted, fontSize: 12)),
-          const SizedBox(height: 3),
-          FilledButton.icon(
-            onPressed: _pickFile,
-            icon: const Icon(Icons.folder_open_outlined, size: 18),
-            label: const Text('Choisir un fichier .xlsx'),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            'Format .xlsx uniquement — première ligne = en-têtes',
-            style: TextStyle(fontSize: 11, color: _muted),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Le classeur est lu localement avant import. Vous pourrez corriger ou retirer les lignes sensibles avant validation.',
+              style: TextStyle(fontSize: 13, color: _muted, height: 1.45),
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                FilledButton.icon(
+                  onPressed: _pickFile,
+                  icon: const Icon(Icons.folder_open_outlined, size: 17),
+                  label: const Text('Choisir un fichier'),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
+                  icon: _isDownloadingTemplate
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.download_outlined, size: 16),
+                  label: const Text('Modèle Excel'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Fichier accepté: .xlsx. En-têtes en première ligne ou ligne 2 du modèle.',
+              style: TextStyle(fontSize: 11.5, color: _muted),
+            ),
+          ],
+        ),
       );
 
   Widget _buildParseErrorContent() => Column(
@@ -766,113 +800,97 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
 
   Widget _buildFormatCard() {
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _soft,
+        color: _bg,
         border: Border.all(color: _border),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.table_rows_outlined, size: 14, color: _accent),
-              const SizedBox(width: 6),
-              Text(
-                'Colonnes attendues dans le fichier Excel',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: _text,
+              Expanded(
+                child: Text(
+                  'Contrôles avant import',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: _text,
+                  ),
                 ),
               ),
-              const Spacer(),
-              Text(
-                '● Obligatoire   ○ Optionnel',
-                style: TextStyle(fontSize: 10, color: _muted),
-              ),
-              const SizedBox(width: 3),
-              TextButton.icon(
-                onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
-                icon: _isDownloadingTemplate
-                    ? const SizedBox(
-                        width: 13,
-                        height: 13,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download_outlined, size: 15),
-                label: const Text('Télécharger le modèle',
-                    style: TextStyle(fontSize: 12)),
-              ),
+              Icon(Icons.rule_outlined, size: 16, color: _accent),
             ],
           ),
-          const SizedBox(height: 3),
-          Wrap(
-            spacing: 6,
-            runSpacing: 5,
-            children: [
-              _colChip('Date occurrence',
-                  required: true, hint: 'AAAA-MM-JJ ou JJ/MM/AAAA'),
-              _colChip('Description', required: true),
-              _colChip('Ligne de métier',
-                  required: true,
-                  hint: '8 valeurs : Banque de détail, Activités de marché…'),
-              _colChip("Type d'événement",
-                  required: true,
-                  hint:
-                      'Interne | Externe | Processus | Système | Personnel | Juridique'),
-              _colChip('Perte brute',
-                  required: true, hint: 'Montant en FCFA (nombre)'),
-              _colChip('Cause racine',
-                  required: false,
-                  hint: 'Optionnel — ex : Erreur humaine, Fraude interne…'),
-              _colChip('Perte récupérée',
-                  required: false, hint: 'Optionnel, défaut 0'),
-              _colChip('Statut',
-                  required: false,
-                  hint: 'Optionnel : Ouvert | En cours | Résolu | Clôturé'),
-            ],
+          const SizedBox(height: 8),
+          Text(
+            'Le fichier peut venir du modèle ou d’un export interne, tant que les champs essentiels sont présents.',
+            style: TextStyle(fontSize: 12, color: _muted, height: 1.35),
+          ),
+          const SizedBox(height: 14),
+          _formatCheck('Date d’occurrence', 'AAAA-MM-JJ ou JJ/MM/AAAA', true),
+          _formatCheck('Description', 'Libellé lisible de l’incident', true),
+          _formatCheck('Ligne de métier', 'Référentiel BCEAO attendu', true),
+          _formatCheck('Type d’événement', 'Interne, Externe, Processus...', true),
+          _formatCheck('Perte brute', 'Montant en FCFA', true),
+          _formatCheck('Cause, récupéré, statut', 'Champs acceptés si présents', false),
+          const Spacer(),
+          Divider(height: 18, color: _border),
+          TextButton.icon(
+            onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
+            icon: _isDownloadingTemplate
+                ? const SizedBox(
+                    width: 13,
+                    height: 13,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.download_outlined, size: 15),
+            label: const Text('Télécharger le modèle'),
           ),
         ],
       ),
     );
   }
 
-  Widget _colChip(String label, {required bool required, String? hint}) {
-    return Tooltip(
-      message: hint ?? '',
-      waitDuration: const Duration(milliseconds: 300),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(
-          color: required
-              ? _accent.withValues(alpha: 0.1)
-              : _border.withValues(alpha: 0.2),
-          border: Border.all(
-            color: required ? _accent.withValues(alpha: 0.35) : _border,
+  Widget _formatCheck(String label, String detail, bool required) {
+    final color = required ? _accent : _muted;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              required ? Icons.check_circle_outline : Icons.info_outline,
+              size: 15,
+              color: color,
+            ),
           ),
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              required ? Icons.circle : Icons.radio_button_unchecked,
-              size: 6,
-              color: required ? _accent : _muted,
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _text,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  style: TextStyle(fontSize: 11, color: _muted, height: 1.25),
+                ),
+              ],
             ),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                color: required ? _accent : _muted,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -888,7 +906,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildFileInfoBar(rows, valid, errors),
-        const SizedBox(height: 3),
+        const SizedBox(height: 12),
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -896,16 +914,16 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
               children: [
                 _buildPreviewTable(rows),
                 if (errors.isNotEmpty) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 10),
                   _buildErrorPanel(errors),
                 ],
-                const SizedBox(height: 3),
+                const SizedBox(height: 10),
                 _buildBiaNotice(valid),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 3),
+        const SizedBox(height: 12),
         _buildModeSelector(),
       ],
     );
@@ -917,26 +935,28 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     List<_ParsedRow> errors,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: _soft,
-        borderRadius: BorderRadius.circular(8),
+        color: _bg,
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: _border),
       ),
       child: Row(
         children: [
-          const Icon(Icons.table_chart_outlined,
-              size: 18, color: AppTheme.accent),
-          const SizedBox(width: 8),
-          Text(
-            _selectedFile!.name,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: _text,
-              fontSize: 13,
+          Icon(Icons.table_chart_outlined, size: 18, color: _accent),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _selectedFile!.name,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: _text,
+                fontSize: 13,
+              ),
             ),
           ),
-          const SizedBox(width: 3),
+          const SizedBox(width: 10),
           _badge('${rows.length} lignes', const Color(0xFF1D4ED8)),
           const SizedBox(width: 6),
           _badge('${valid.length} valides', AppTheme.success),
@@ -944,14 +964,13 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
             const SizedBox(width: 6),
             _badge('${errors.length} erreur(s)', AppTheme.danger),
           ],
-          const Spacer(),
           TextButton.icon(
             onPressed: () => setState(() {
               _parsedRows = null;
               _selectedFile = null;
             }),
             icon: const Icon(Icons.swap_horiz, size: 15),
-            label: const Text('Changer', style: TextStyle(fontSize: 12)),
+            label: const Text('Changer'),
           ),
         ],
       ),
@@ -964,11 +983,11 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Aperçu — ${previewEntries.length} ligne(s) sur ${rows.length}',
+          'Aperçu des premières lignes (${previewEntries.length}/${rows.length})',
           style: TextStyle(
             fontSize: 12,
             color: _muted,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 6),
@@ -977,7 +996,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
             color: _isDark ? const Color(0xFF13233E) : Colors.white,
             border: Border.all(
                 color: _isDark ? const Color(0xFF304764) : AppTheme.border),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
           ),
           clipBehavior: Clip.antiAlias,
           child: Table(
@@ -1061,6 +1080,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
               ? const Icon(Icons.check_circle_outline,
                   size: 14, color: AppTheme.success)
               : Tooltip(
+                  excludeFromSemantics: true,
                   message: r.errors.join('\n'),
                   child: const Icon(Icons.error_outline,
                       size: 14, color: AppTheme.danger),
@@ -1309,8 +1329,9 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
       final desc = descCtrl.text.trim();
       if (desc.isEmpty) errors.add('description manquante');
       if (!_lignesMetier.contains(ligne)) errors.add('ligne_metier invalide');
-      if (!_typesEvenement.contains(type))
+      if (!_typesEvenement.contains(type)) {
         errors.add('type_evenement invalide');
+      }
       final perteBrute =
           double.tryParse(bruteCtrl.text.replaceAll(' ', '')) ?? 0;
       if (perteBrute <= 0) errors.add('perte_brute doit être > 0');
@@ -1406,91 +1427,126 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     final kBia = totalNette * 0.15;
     final apr = kBia * 12.5;
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: _accent.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _accent.withValues(alpha: 0.2)),
+        color: _bg,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: _border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.calculate_outlined, size: 14, color: _accent),
-              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Impact BIA estimé après import',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: _text,
+                  ),
+                ),
+              ),
               Text(
-                'Estimation BIA après import (Art. 89)',
+                'Art. 89',
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
                   color: _accent,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             children: [
-              _biaKpi('Perte brute totale', _fmtCurrency(totalBrute)),
-              const SizedBox(width: 5),
-              _biaKpi('Perte nette totale', _fmtCurrency(totalNette)),
-              const SizedBox(width: 5),
-              _biaKpi('Capital minimal (15 %)', _fmtCurrency(kBia)),
-              const SizedBox(width: 5),
-              _biaKpi('APR estimé (×12,5)', _fmtCurrency(apr)),
+              Expanded(child: _biaKpi('Perte brute', _fmtCurrency(totalBrute))),
+              const SizedBox(width: 10),
+              Expanded(child: _biaKpi('Perte nette', _fmtCurrency(totalNette))),
+              const SizedBox(width: 10),
+              Expanded(child: _biaKpi('Capital 15 %', _fmtCurrency(kBia))),
+              const SizedBox(width: 10),
+              Expanded(child: _biaKpi('APR x12,5', _fmtCurrency(apr))),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 10),
           Text(
-            'Capital minimal = 15 % × Pertes nettes   |   APR = Capital minimal ÷ 9 % = Capital minimal × 12,5',
+            'Calcul indicatif sur les lignes valides: capital minimal = 15 % des pertes nettes, APR = capital minimal x 12,5.',
             style: TextStyle(
-                fontSize: 10, color: _muted, fontStyle: FontStyle.italic),
+              fontSize: 10.5,
+              color: _muted,
+              height: 1.25,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _biaKpi(String label, String value) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: TextStyle(fontSize: 10, color: _muted)),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: _text,
+  Widget _biaKpi(String label, String value) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: _soft,
+          border: Border.all(color: _border),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: TextStyle(fontSize: 10, color: _muted)),
+            const SizedBox(height: 3),
+            Text(
+              value,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: _text,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
 
   Widget _buildModeSelector() {
-    return Row(
-      children: [
-        Icon(Icons.merge_type_outlined, size: 15, color: _muted),
-        const SizedBox(width: 6),
-        Text('Mode d\'import :', style: TextStyle(fontSize: 12, color: _muted)),
-        const SizedBox(width: 3),
-        _modeChip(
-          'merge',
-          'Ajout',
-          Icons.playlist_add_check_circle_outlined,
-          const Color(0xFF1D4ED8),
-          'Conserve les incidents existants et ajoute les nouveaux',
-        ),
-        const SizedBox(width: 8),
-        _modeChip(
-          'replace',
-          'Remplacement',
-          Icons.restart_alt_rounded,
-          AppTheme.danger,
-          'Supprime TOUS les incidents existants avant l\'import',
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _bg,
+        border: Border.all(color: _border),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.merge_type_outlined, size: 16, color: _muted),
+          const SizedBox(width: 8),
+          Text(
+            'Mode d\'import',
+            style: TextStyle(
+              fontSize: 12,
+              color: _text,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(width: 12),
+          _modeChip(
+            'merge',
+            'Ajouter au registre',
+            Icons.playlist_add_check_circle_outlined,
+            const Color(0xFF1D4ED8),
+            'Conserve les incidents existants et ajoute les nouveaux',
+          ),
+          const SizedBox(width: 8),
+          _modeChip(
+            'replace',
+            'Remplacer le registre',
+            Icons.restart_alt_rounded,
+            AppTheme.danger,
+            'Supprime TOUS les incidents existants avant l\'import',
+          ),
+        ],
+      ),
     );
   }
 
@@ -1503,19 +1559,20 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
   ) {
     final selected = _mode == value;
     return Tooltip(
+      excludeFromSemantics: true,
       message: tooltip,
       child: GestureDetector(
         onTap: () => setState(() => _mode = value),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
             color: selected ? color.withValues(alpha: 0.1) : _soft,
             border: Border.all(
               color: selected ? color : _border,
               width: selected ? 1.5 : 1,
             ),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -1545,54 +1602,65 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     final importErrors = (r['errors'] as List?)?.cast<String>() ?? [];
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 76,
-            height: 76,
-            decoration: BoxDecoration(
-              color: AppTheme.success.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+      child: Container(
+        width: 430,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _bg,
+          border: Border.all(color: _border),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.check_circle_outline,
+                    size: 28, color: AppTheme.success),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Import terminé',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: _text,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            child: const Icon(Icons.check_circle_outline,
-                size: 38, color: AppTheme.success),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            'Import réussi',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: _text,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '$imported incident(s) importé(s) avec succès',
-            style: TextStyle(fontSize: 14, color: _muted),
-          ),
-          if (importErrors.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 14),
             Text(
-              '${importErrors.length} ligne(s) ignorée(s) côté serveur',
-              style: const TextStyle(fontSize: 12, color: AppTheme.danger),
+              '$imported incident(s) ajouté(s) au registre.',
+              style: TextStyle(fontSize: 14, color: _text),
+            ),
+            if (importErrors.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${importErrors.length} ligne(s) ignorée(s) côté serveur.',
+                style: const TextStyle(fontSize: 12, color: AppTheme.danger),
+              ),
+            ],
+            const SizedBox(height: 10),
+            Text(
+              _mode == 'replace'
+                  ? 'Mode utilisé: remplacement du registre.'
+                  : 'Mode utilisé: ajout aux données existantes.',
+              style: TextStyle(fontSize: 12, color: _muted),
+            ),
+            const SizedBox(height: 18),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton.icon(
+                onPressed: () => Navigator.pop(context, true),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Actualiser le registre'),
+              ),
             ),
           ],
-          const SizedBox(height: 8),
-          Text(
-            _mode == 'replace'
-                ? 'Mode : remplacement total'
-                : 'Mode : ajout aux données existantes',
-            style: TextStyle(fontSize: 11, color: _muted),
-          ),
-          const SizedBox(height: 6),
-          FilledButton.icon(
-            onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text('Fermer et actualiser'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1605,47 +1673,61 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     final canImport =
         _parsedRows != null && _validRows.isNotEmpty && !_isImporting;
 
-    return Row(
-      children: [
-        if (_isImporting) ...[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(_importStage,
-                    style: TextStyle(fontSize: 11, color: _muted)),
-                const SizedBox(height: 4),
-                const LinearProgressIndicator(),
-              ],
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: _border)),
+      ),
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          if (_isImporting) ...[
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_importStage,
+                      style: TextStyle(fontSize: 11, color: _muted)),
+                  const SizedBox(height: 4),
+                  const LinearProgressIndicator(),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+          ] else
+            Expanded(
+              child: Text(
+                _parsedRows == null
+                    ? 'Sélectionnez un fichier pour lancer le contrôle.'
+                    : '${_validRows.length} ligne(s) prête(s), ${_errorRows.length} à corriger ou ignorer.',
+                style: TextStyle(fontSize: 11.5, color: _muted),
+              ),
+            ),
+          TextButton(
+            onPressed:
+                _isImporting ? null : () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          const SizedBox(width: 8),
+          FilledButton.icon(
+            onPressed: canImport ? _runImport : null,
+            icon: _isImporting
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.upload_rounded, size: 18),
+            label: Text(
+              _parsedRows == null
+                  ? 'Importer'
+                  : 'Importer ${_validRows.length} incident(s)',
             ),
           ),
-          const SizedBox(width: 3),
-        ] else
-          const Spacer(),
-        TextButton(
-          onPressed: _isImporting ? null : () => Navigator.pop(context, false),
-          child: const Text('Annuler'),
-        ),
-        const SizedBox(width: 8),
-        FilledButton.icon(
-          onPressed: canImport ? _runImport : null,
-          icon: _isImporting
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.upload_rounded, size: 18),
-          label: Text(
-            _parsedRows == null
-                ? 'Importer'
-                : 'Importer ${_validRows.length} incident(s)',
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1655,7 +1737,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
           label,

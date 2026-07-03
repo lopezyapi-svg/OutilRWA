@@ -1,5 +1,8 @@
 // Modèles Dart du module Risque Opérationnel.
 
+// SQLite stocke les booléens en INTEGER (0/1) ou parfois REAL (0.0/1.0)
+bool _jBool(dynamic v) => v is bool ? v : (v is num ? v != 0 : false);
+
 // ─── Incidents ────────────────────────────────────────────────────────────────
 
 class RoIncident {
@@ -47,7 +50,7 @@ class RoIncident {
         perteRecuperee: (j['perte_recuperee'] as num?)?.toDouble() ?? 0,
         perteNette: (j['perte_nette'] as num?)?.toDouble() ?? 0,
         statut: j['statut'] as String,
-        significatif: j['significatif'] as bool? ?? false,
+        significatif: _jBool(j['significatif']),
         creeLe: j['cree_le'] as String? ?? '',
         modifieLe: j['modifie_le'] as String? ?? '',
       );
@@ -321,7 +324,7 @@ class RoPlan {
         priorite: j['priorite'] as String,
         statut: j['statut'] as String,
         avancement: j['avancement'] as int? ?? 0,
-        enRetard: j['en_retard'] as bool? ?? false,
+        enRetard: _jBool(j['en_retard']),
         creeLe: j['cree_le'] as String? ?? '',
         modifieLe: j['modifie_le'] as String? ?? '',
       );
@@ -491,5 +494,505 @@ class RoDashboardData {
         repartitionType: (j['repartition_type'] as List<dynamic>)
             .map((e) => RoRepartitionItem.fromJson(e as Map<String, dynamic>))
             .toList(),
+      );
+}
+
+// ─── BIC — Approche Standard CRR3 ────────────────────────────────────────────
+
+class OpRiskInput {
+  const OpRiskInput({
+    required this.annee,
+    this.interetsPercus = 0,
+    this.interetsVerses = 0,
+    this.revenuLeasing = 0,
+    this.dividendesPercus = 0,
+    this.autresProduits = 0,
+    this.autresCharges = 0,
+    this.commissionsPercues = 0,
+    this.commissionsVersees = 0,
+    this.resPfNegociation = 0,
+    this.resPfBancaire = 0,
+    this.tresorerie = 0,
+    this.creancesEtabCredit = 0,
+    this.creancesClientele = 0,
+    this.provisions = 0,
+    this.pnb = 0,
+  });
+
+  final int annee;
+  final double interetsPercus;
+  final double interetsVerses;
+  final double revenuLeasing;
+  final double dividendesPercus;
+  final double autresProduits;
+  final double autresCharges;
+  final double commissionsPercues;
+  final double commissionsVersees;
+  final double resPfNegociation;
+  final double resPfBancaire;
+  final double tresorerie;
+  final double creancesEtabCredit;
+  final double creancesClientele;
+  final double provisions;
+  final double pnb;
+
+  factory OpRiskInput.fromJson(Map<String, dynamic> j) => OpRiskInput(
+        annee: j['annee'] as int,
+        interetsPercus: (j['interets_percus'] as num? ?? 0).toDouble(),
+        interetsVerses: (j['interets_verses'] as num? ?? 0).toDouble(),
+        revenuLeasing: (j['revenus_leasing'] as num? ?? 0).toDouble(),
+        dividendesPercus: (j['dividendes_percus'] as num? ?? 0).toDouble(),
+        autresProduits: (j['autres_produits_exploitation'] as num? ?? 0).toDouble(),
+        autresCharges: (j['autres_charges_exploitation'] as num? ?? 0).toDouble(),
+        commissionsPercues: (j['commissions_percues'] as num? ?? 0).toDouble(),
+        commissionsVersees: (j['commissions_versees'] as num? ?? 0).toDouble(),
+        resPfNegociation: (j['resultat_portefeuille_negociation'] as num? ?? 0).toDouble(),
+        resPfBancaire: (j['resultat_portefeuille_bancaire'] as num? ?? 0).toDouble(),
+        tresorerie: (j['tresorerie_et_banques_centrales'] as num? ?? 0).toDouble(),
+        creancesEtabCredit: (j['creances_etablissements_credit'] as num? ?? 0).toDouble(),
+        creancesClientele: (j['creances_clientele'] as num? ?? 0).toDouble(),
+        provisions: (j['provisions'] as num? ?? 0).toDouble(),
+        pnb: (j['pnb'] as num? ?? 0).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'interets_percus': interetsPercus,
+        'interets_verses': interetsVerses,
+        'revenus_leasing': revenuLeasing,
+        'dividendes_percus': dividendesPercus,
+        'autres_produits_exploitation': autresProduits,
+        'autres_charges_exploitation': autresCharges,
+        'commissions_percues': commissionsPercues,
+        'commissions_versees': commissionsVersees,
+        'resultat_portefeuille_negociation': resPfNegociation,
+        'resultat_portefeuille_bancaire': resPfBancaire,
+        'tresorerie_et_banques_centrales': tresorerie,
+        'creances_etablissements_credit': creancesEtabCredit,
+        'creances_clientele': creancesClientele,
+        'provisions': provisions,
+        'pnb': pnb,
+      };
+}
+
+class OpRiskParametres {
+  const OpRiskParametres({
+    required this.seuilIldc,
+    required this.coefTranche1,
+    required this.coefTranche2,
+    required this.coefTranche3,
+    required this.seuil1Fcfa,
+    required this.seuil2Fcfa,
+    required this.multiplicateurRea,
+    required this.tauxConversionEurFcfa,
+  });
+
+  final double seuilIldc;
+  final double coefTranche1;
+  final double coefTranche2;
+  final double coefTranche3;
+  final double seuil1Fcfa;
+  final double seuil2Fcfa;
+  final double multiplicateurRea;
+  final double tauxConversionEurFcfa;
+
+  factory OpRiskParametres.fromJson(Map<String, dynamic> j) => OpRiskParametres(
+        seuilIldc: (j['seuil_ildc'] as num).toDouble(),
+        coefTranche1: (j['coef_tranche1'] as num).toDouble(),
+        coefTranche2: (j['coef_tranche2'] as num).toDouble(),
+        coefTranche3: (j['coef_tranche3'] as num).toDouble(),
+        seuil1Fcfa: (j['seuil1_fcfa'] as num).toDouble(),
+        seuil2Fcfa: (j['seuil2_fcfa'] as num).toDouble(),
+        multiplicateurRea: (j['multiplicateur_rea'] as num).toDouble(),
+        tauxConversionEurFcfa: (j['taux_conversion_eur_fcfa'] as num).toDouble(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'seuil_ildc': seuilIldc,
+        'coef_tranche1': coefTranche1,
+        'coef_tranche2': coefTranche2,
+        'coef_tranche3': coefTranche3,
+        'seuil1_fcfa': seuil1Fcfa,
+        'seuil2_fcfa': seuil2Fcfa,
+        'multiplicateur_rea': multiplicateurRea,
+        'taux_conversion_eur_fcfa': tauxConversionEurFcfa,
+      };
+}
+
+class OpRiskIldcDetail {
+  const OpRiskIldcDetail({
+    required this.ic, required this.ac, required this.plafondIldc,
+    required this.plafondActif, required this.dividendes, required this.ildc,
+  });
+  final double ic, ac, plafondIldc, dividendes, ildc;
+  final bool plafondActif;
+  factory OpRiskIldcDetail.fromJson(Map<String, dynamic> j) => OpRiskIldcDetail(
+        ic: (j['ic'] as num).toDouble(),
+        ac: (j['ac'] as num).toDouble(),
+        plafondIldc: (j['plafond_ildc'] as num).toDouble(),
+        plafondActif: _jBool(j['plafond_actif']),
+        dividendes: (j['dividendes'] as num).toDouble(),
+        ildc: (j['ildc'] as num).toDouble(),
+      );
+}
+
+class OpRiskScDetail {
+  const OpRiskScDetail({required this.oi, required this.oe,
+      required this.fi, required this.fe, required this.sc});
+  final double oi, oe, fi, fe, sc;
+  factory OpRiskScDetail.fromJson(Map<String, dynamic> j) => OpRiskScDetail(
+        oi: (j['oi'] as num).toDouble(), oe: (j['oe'] as num).toDouble(),
+        fi: (j['fi'] as num).toDouble(), fe: (j['fe'] as num).toDouble(),
+        sc: (j['sc'] as num).toDouble(),
+      );
+}
+
+class OpRiskFcDetail {
+  const OpRiskFcDetail({required this.tc, required this.bc, required this.fc});
+  final double tc, bc, fc;
+  factory OpRiskFcDetail.fromJson(Map<String, dynamic> j) => OpRiskFcDetail(
+        tc: (j['tc'] as num).toDouble(), bc: (j['bc'] as num).toDouble(),
+        fc: (j['fc'] as num).toDouble(),
+      );
+}
+
+class OpRiskBiDetail {
+  const OpRiskBiDetail({required this.bi, required this.trancheActive,
+      required this.bic, required this.margeAvantTrancheSuivante});
+  final double bi, bic;
+  final int trancheActive;
+  final double? margeAvantTrancheSuivante;
+  factory OpRiskBiDetail.fromJson(Map<String, dynamic> j) => OpRiskBiDetail(
+        bi: (j['bi'] as num).toDouble(),
+        trancheActive: j['tranche_active'] as int,
+        bic: (j['bic'] as num).toDouble(),
+        margeAvantTrancheSuivante: j['marge_avant_tranche_suivante'] == null
+            ? null
+            : (j['marge_avant_tranche_suivante'] as num).toDouble(),
+      );
+}
+
+class OpRiskCalculResult {
+  const OpRiskCalculResult({
+    required this.annees, required this.inputs, required this.params,
+    required this.ildcDetail, required this.scDetail, required this.fcDetail,
+    required this.biDetail, required this.ofrCrr3, required this.reaCrr3,
+    required this.ofrBia, required this.reaBia, required this.ecart,
+    required this.donneesInsuffisantes,
+  });
+
+  final List<int> annees;
+  final List<OpRiskInput> inputs;
+  final OpRiskParametres params;
+  final OpRiskIldcDetail ildcDetail;
+  final OpRiskScDetail scDetail;
+  final OpRiskFcDetail fcDetail;
+  final OpRiskBiDetail biDetail;
+  final double ofrCrr3, reaCrr3, ofrBia, reaBia, ecart;
+  final bool donneesInsuffisantes;
+
+  factory OpRiskCalculResult.fromJson(Map<String, dynamic> j) =>
+      OpRiskCalculResult(
+        annees: (j['annees'] as List<dynamic>).map((e) => e as int).toList(),
+        inputs: (j['inputs'] as List<dynamic>)
+            .map((e) => OpRiskInput.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        params: OpRiskParametres.fromJson(j['params'] as Map<String, dynamic>),
+        ildcDetail: OpRiskIldcDetail.fromJson(
+            j['ildc_detail'] as Map<String, dynamic>),
+        scDetail:
+            OpRiskScDetail.fromJson(j['sc_detail'] as Map<String, dynamic>),
+        fcDetail:
+            OpRiskFcDetail.fromJson(j['fc_detail'] as Map<String, dynamic>),
+        biDetail:
+            OpRiskBiDetail.fromJson(j['bi_detail'] as Map<String, dynamic>),
+        ofrCrr3: (j['ofr_crr3'] as num).toDouble(),
+        reaCrr3: (j['rea_crr3'] as num).toDouble(),
+        ofrBia: (j['ofr_bia'] as num).toDouble(),
+        reaBia: (j['rea_bia'] as num).toDouble(),
+        ecart: (j['ecart'] as num).toDouble(),
+        donneesInsuffisantes: _jBool(j['donnees_insuffisantes']),
+      );
+}
+
+// ─── BLOC A1 — AIB ────────────────────────────────────────────────────────────
+
+class PnbAnnuelView {
+  const PnbAnnuelView({
+    required this.annee, required this.produitBrutTotal, required this.pnbPositif,
+    required this.pnbRetenuAib, required this.sourceDocument, required this.modifieLe,
+  });
+  final int annee;
+  final double produitBrutTotal;
+  final bool pnbPositif;
+  final double pnbRetenuAib;
+  final String sourceDocument;
+  final String modifieLe;
+
+  factory PnbAnnuelView.fromJson(Map<String, dynamic> j) => PnbAnnuelView(
+        annee: j['annee'] as int,
+        produitBrutTotal: (j['produit_brut_total'] as num).toDouble(),
+        pnbPositif: _jBool(j['pnb_positif']),
+        pnbRetenuAib: (j['pnb_retenu_aib'] as num).toDouble(),
+        sourceDocument: j['source_document'] as String? ?? '',
+        modifieLe: j['modifie_le'] as String? ?? '',
+      );
+}
+
+class ParametresAib {
+  const ParametresAib({required this.alpha, required this.multiplicateurRwa, required this.ratioSolvabiliteMin});
+  final double alpha;
+  final double multiplicateurRwa;
+  final double ratioSolvabiliteMin;
+
+  factory ParametresAib.fromJson(Map<String, dynamic> j) => ParametresAib(
+        alpha: (j['alpha'] as num).toDouble(),
+        multiplicateurRwa: (j['multiplicateur_rwa'] as num).toDouble(),
+        ratioSolvabiliteMin: (j['ratio_solvabilite_min'] as num).toDouble(),
+      );
+}
+
+class AibCalculResult {
+  const AibCalculResult({
+    required this.anneesSaisies, required this.n, required this.sommePnbPositifs,
+    required this.pnbMoyen, required this.alpha, required this.kIb,
+    required this.aprAib, required this.capitalMinAib, required this.donneesInsuffisantes,
+  });
+  final List<PnbAnnuelView> anneesSaisies;
+  final int n;
+  final double sommePnbPositifs, pnbMoyen, alpha, kIb, aprAib, capitalMinAib;
+  final bool donneesInsuffisantes;
+
+  factory AibCalculResult.fromJson(Map<String, dynamic> j) => AibCalculResult(
+        anneesSaisies: (j['annees_saisies'] as List<dynamic>)
+            .map((e) => PnbAnnuelView.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        n: j['n'] as int,
+        sommePnbPositifs: (j['somme_pnb_positifs'] as num).toDouble(),
+        pnbMoyen: (j['pnb_moyen'] as num).toDouble(),
+        alpha: (j['alpha'] as num).toDouble(),
+        kIb: (j['k_ib'] as num).toDouble(),
+        aprAib: (j['apr_aib'] as num).toDouble(),
+        capitalMinAib: (j['capital_min_aib'] as num).toDouble(),
+        donneesInsuffisantes: _jBool(j['donnees_insuffisantes']),
+      );
+}
+
+// ─── BLOC A2 — AS ─────────────────────────────────────────────────────────────
+
+class BetaLigneView {
+  const BetaLigneView({required this.ligneMetier, required this.beta, required this.description});
+  final String ligneMetier;
+  final double beta;
+  final String description;
+
+  factory BetaLigneView.fromJson(Map<String, dynamic> j) => BetaLigneView(
+        ligneMetier: j['ligne_metier'] as String,
+        beta: (j['beta'] as num).toDouble(),
+        description: j['description'] as String? ?? '',
+      );
+}
+
+class PnbParLigneView {
+  const PnbParLigneView({
+    required this.annee, required this.ligneMetier,
+    required this.produitBrutLigne, required this.beta, required this.kLigne,
+  });
+  final int annee;
+  final String ligneMetier;
+  final double produitBrutLigne, beta, kLigne;
+
+  factory PnbParLigneView.fromJson(Map<String, dynamic> j) => PnbParLigneView(
+        annee: j['annee'] as int,
+        ligneMetier: j['ligne_metier'] as String,
+        produitBrutLigne: (j['produit_brut_ligne'] as num).toDouble(),
+        beta: (j['beta'] as num).toDouble(),
+        kLigne: (j['k_ligne'] as num).toDouble(),
+      );
+}
+
+class ParametresAs {
+  const ParametresAs({
+    required this.asAutorisee, required this.dateAutorisation,
+    required this.referenceAutorisation, required this.multiplicateurRwa,
+    required this.ratioSolvabiliteMin,
+  });
+  final bool asAutorisee;
+  final String dateAutorisation, referenceAutorisation;
+  final double multiplicateurRwa, ratioSolvabiliteMin;
+
+  factory ParametresAs.fromJson(Map<String, dynamic> j) => ParametresAs(
+        asAutorisee: _jBool(j['as_autorisee']),
+        dateAutorisation: j['date_autorisation'] as String? ?? '',
+        referenceAutorisation: j['reference_autorisation'] as String? ?? '',
+        multiplicateurRwa: (j['multiplicateur_rwa'] as num).toDouble(),
+        ratioSolvabiliteMin: (j['ratio_solvabilite_min'] as num).toDouble(),
+      );
+}
+
+class AsLigneDetail {
+  const AsLigneDetail({required this.ligneMetier, required this.pnb, required this.beta, required this.kLigne});
+  final String ligneMetier;
+  final double pnb, beta, kLigne;
+
+  factory AsLigneDetail.fromJson(Map<String, dynamic> j) => AsLigneDetail(
+        ligneMetier: j['ligne_metier'] as String,
+        pnb: (j['pnb'] as num).toDouble(),
+        beta: (j['beta'] as num).toDouble(),
+        kLigne: (j['k_ligne'] as num).toDouble(),
+      );
+}
+
+class AsAnneeDetail {
+  const AsAnneeDetail({required this.annee, required this.lignes, required this.kTotal, required this.kRetenu});
+  final int annee;
+  final List<AsLigneDetail> lignes;
+  final double kTotal, kRetenu;
+
+  factory AsAnneeDetail.fromJson(Map<String, dynamic> j) => AsAnneeDetail(
+        annee: j['annee'] as int,
+        lignes: (j['lignes'] as List<dynamic>)
+            .map((e) => AsLigneDetail.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        kTotal: (j['k_total'] as num).toDouble(),
+        kRetenu: (j['k_retenu'] as num).toDouble(),
+      );
+}
+
+class AsCalculResult {
+  const AsCalculResult({
+    required this.asAutorisee, required this.detailParAnnee,
+    required this.kAs, required this.aprAs, required this.capitalMinAs,
+    required this.donneesInsuffisantes,
+  });
+  final bool asAutorisee;
+  final List<AsAnneeDetail> detailParAnnee;
+  final double kAs, aprAs, capitalMinAs;
+  final bool donneesInsuffisantes;
+
+  factory AsCalculResult.fromJson(Map<String, dynamic> j) => AsCalculResult(
+        asAutorisee: _jBool(j['as_autorisee']),
+        detailParAnnee: (j['detail_par_annee'] as List<dynamic>)
+            .map((e) => AsAnneeDetail.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        kAs: (j['k_as'] as num).toDouble(),
+        aprAs: (j['apr_as'] as num).toDouble(),
+        capitalMinAs: (j['capital_min_as'] as num).toDouble(),
+        donneesInsuffisantes: _jBool(j['donnees_insuffisantes']),
+      );
+}
+
+// ─── Seuils + Synthèse ────────────────────────────────────────────────────────
+
+class ParametresSeuils {
+  const ParametresSeuils({required this.seuilInterne, required this.seuilDirection, required this.seuilConseil});
+  final double seuilInterne, seuilDirection, seuilConseil;
+
+  factory ParametresSeuils.fromJson(Map<String, dynamic> j) => ParametresSeuils(
+        seuilInterne: (j['seuil_reporting_interne'] as num).toDouble(),
+        seuilDirection: (j['seuil_reporting_direction'] as num).toDouble(),
+        seuilConseil: (j['seuil_reporting_conseil'] as num).toDouble(),
+      );
+}
+
+class SyntheseLigne {
+  const SyntheseLigne({required this.methode, required this.k, required this.apr, required this.capitalMin, required this.disponible});
+  final String methode;
+  final double k, apr, capitalMin;
+  final bool disponible;
+
+  factory SyntheseLigne.fromJson(Map<String, dynamic> j) => SyntheseLigne(
+        methode: j['methode'] as String,
+        k: (j['k'] as num).toDouble(),
+        apr: (j['apr'] as num).toDouble(),
+        capitalMin: (j['capital_min'] as num).toDouble(),
+        disponible: _jBool(j['disponible']),
+      );
+}
+
+class SyntheseResult {
+  const SyntheseResult({required this.lignes, required this.ecartBicVsAib, required this.ratioCouverture});
+  final List<SyntheseLigne> lignes;
+  final double? ecartBicVsAib;
+  final double? ratioCouverture;
+
+  factory SyntheseResult.fromJson(Map<String, dynamic> j) => SyntheseResult(
+        lignes: (j['lignes'] as List<dynamic>)
+            .map((e) => SyntheseLigne.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        ecartBicVsAib: j['ecart_bic_vs_aib'] != null ? (j['ecart_bic_vs_aib'] as num).toDouble() : null,
+        ratioCouverture: j['ratio_couverture'] != null ? (j['ratio_couverture'] as num).toDouble() : null,
+      );
+}
+
+// ─── Décision de pilotage — Analyse et reporting (dispositif UEMOA) ─────────
+
+class DecisionCritere {
+  const DecisionCritere({
+    required this.code,
+    required this.libelle,
+    required this.referenceReglementaire,
+    required this.statut,
+    required this.poids,
+    required this.valeurObservee,
+    required this.seuilReference,
+    required this.commentaire,
+  });
+
+  final String code;
+  final String libelle;
+  final String referenceReglementaire;
+  final String statut; // "conforme" | "attention" | "critique"
+  final int poids;
+  final String valeurObservee;
+  final String seuilReference;
+  final String commentaire;
+
+  factory DecisionCritere.fromJson(Map<String, dynamic> j) => DecisionCritere(
+        code: j['code'] as String,
+        libelle: j['libelle'] as String,
+        referenceReglementaire: j['reference_reglementaire'] as String,
+        statut: j['statut'] as String,
+        poids: (j['poids'] as num).toInt(),
+        valeurObservee: j['valeur_observee'] as String,
+        seuilReference: j['seuil_reference'] as String,
+        commentaire: j['commentaire'] as String,
+      );
+}
+
+class DecisionPilotageResult {
+  const DecisionPilotageResult({
+    required this.dateAnalyse,
+    required this.niveauGlobal,
+    required this.scoreGlobal,
+    required this.scoreMax,
+    required this.organeReporting,
+    required this.organeReportingMotif,
+    required this.criteres,
+    required this.recommandations,
+    required this.synthese,
+  });
+
+  final String dateAnalyse;
+  final String niveauGlobal;
+  final int scoreGlobal;
+  final int scoreMax;
+  final String organeReporting;
+  final String organeReportingMotif;
+  final List<DecisionCritere> criteres;
+  final List<String> recommandations;
+  final String synthese;
+
+  factory DecisionPilotageResult.fromJson(Map<String, dynamic> j) => DecisionPilotageResult(
+        dateAnalyse: j['date_analyse'] as String,
+        niveauGlobal: j['niveau_global'] as String,
+        scoreGlobal: (j['score_global'] as num).toInt(),
+        scoreMax: (j['score_max'] as num).toInt(),
+        organeReporting: j['organe_reporting'] as String,
+        organeReportingMotif: j['organe_reporting_motif'] as String,
+        criteres: (j['criteres'] as List<dynamic>)
+            .map((e) => DecisionCritere.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        recommandations: (j['recommandations'] as List<dynamic>).cast<String>(),
+        synthese: j['synthese'] as String,
       );
 }
