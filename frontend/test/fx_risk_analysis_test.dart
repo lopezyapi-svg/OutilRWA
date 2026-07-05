@@ -156,10 +156,10 @@ void main() {
       expect(usd.currentValueInXof, 62500.0);
       expect(usd.fxGainLoss, closeTo(4500.0, 0.0001));
 
-      // Position nette globale = 62 500 (long USD) ; FP = ×9 % ; RWA = ×12,5
+      // Position nette globale = 62 500 (long USD) ; FP = ×9 % ; RWA = ÷9 % (×11,11)
       expect(result.globalNetPosition, closeTo(62500.0, 0.0001));
       expect(result.capitalRequirement, closeTo(5625.0, 0.0001));
-      expect(result.rwaChange, closeTo(70312.5, 0.0001));
+      expect(result.rwaChange, closeTo(62500.0, 0.0001));
     });
 
     test(
@@ -184,7 +184,7 @@ void main() {
       expect(usd.currencyVariationPercent, 0.0);
       expect(usd.fxGainLoss, 0.0);
       // L'exposition (et donc le RWA) reste bien calculée.
-      expect(result.rwaChange, closeTo(70312.5, 0.0001));
+      expect(result.rwaChange, closeTo(62500.0, 0.0001));
     });
   });
 }

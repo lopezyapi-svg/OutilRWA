@@ -321,7 +321,7 @@ void main() {
       );
       expect(
         result.marketRwa,
-        moreOrLessEquals(406250000, epsilon: 0.01),
+        moreOrLessEquals(361111111.11, epsilon: 0.01),
       );
     });
 
@@ -344,7 +344,7 @@ void main() {
       expect(result.equitySpecificRisk, 9000000);
       expect(result.equityGeneralRisk, 9000000);
       expect(result.capitalRequirement, 18000000);
-      expect(result.marketRwa, 225000000);
+      expect(result.marketRwa, moreOrLessEquals(200000000, epsilon: 0.01));
     });
 
     test('measures non-XOF open currency positions at spot-equivalent value',
