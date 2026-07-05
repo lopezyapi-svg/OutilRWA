@@ -9791,24 +9791,6 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         detailRow('IC = moy(IP − IV)', _fcfa(ildc.ic)),
         detailRow('AC = moy(Tréso + Créances − Provisions)', _fcfa(ildc.ac)),
         detailRow('Plafond ILDC  (AC × ${_roTrim(r.params.seuilIldc * 100)} %)', _fcfa(ildc.plafondIldc)),
-        if (ildc.plafondActif)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
-              ),
-              child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.warning_amber_rounded, size: 12, color: Colors.orange),
-                SizedBox(width: 5),
-                Text('Plafond ILDC actif (ABS(IC) > AC×seuil)',
-                  style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.w600)),
-              ]),
-            ),
-          ),
         detailRow('Dividendes perçus (moy)', _fcfa(ildc.dividendes)),
         Divider(height: 1, color: _border),
         detailRow('ILDC retenu', _fcfa(ildc.ildc), bold: true),
