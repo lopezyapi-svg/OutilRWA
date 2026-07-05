@@ -1410,9 +1410,9 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Container(
                 width: 1200,
+                height: 700,
                 padding: const EdgeInsets.all(24),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
@@ -1447,7 +1447,8 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Builder(
+                    Expanded(
+                      child: Builder(
                       builder: (context) {
                         if (allCounterparties.isEmpty) {
                           return Container(
@@ -1689,10 +1690,11 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                   ],
                 );
                 return showAll ? Expanded(child: rowContent) : IntrinsicHeight(child: rowContent);
-                  },
-                ),
-              ],
+              },
             ),
+          ),
+        ],
+      ),
           ),
         );
           },
@@ -3210,7 +3212,7 @@ class _TopExposuresChart extends StatelessWidget {
                   }
                   return const SizedBox();
                 },
-                reservedSize: 80,
+                reservedSize: 140,
               ),
             ),
             leftTitles: AxisTitles(
