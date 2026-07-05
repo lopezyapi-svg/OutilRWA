@@ -2599,12 +2599,14 @@ class _RegulatoryDiagram extends StatelessWidget {
         borderRadius: BorderRadius.circular(_pageRadius),
       ),
       child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _MethodPhaseLabel('Phase 1 : Classification et mesure de l’exposition'),
           _MethodStep(
             index: '1',
             title: 'Catégorisation des expositions',
             description:
-                'Affectation de chaque exposition (bilan et hors bilan) à l’une des 11 catégories réglementaires.',
+                'Affectation de chaque exposition (bilan et hors bilan) à l’une des 11 catégories réglementaires. La catégorie détermine la grille de pondération applicable.',
           ),
           _MethodStep(
             index: '2',
@@ -2612,18 +2614,20 @@ class _RegulatoryDiagram extends StatelessWidget {
             description:
                 'Bilan : valeur comptable nette de provisions.\nHors bilan : ERC = Nominal × FCEC.\nEAD avant ARC = Exposition bilan + ERC hors bilan.',
           ),
+          SizedBox(height: 6),
+          _MethodPhaseLabel('Phase 2 : Pondération et atténuation du risque'),
           _MethodStep(
             index: '3',
             title: 'Détermination de la pondération applicable',
             description:
-                'Selon la catégorie d’exposition et la qualité de crédit de la contrepartie.',
+                'La pondération dépend uniquement de la catégorie d’exposition (étape 1) et de la qualité de crédit de la contrepartie — jamais du montant exposé.',
             child: _WeightSourceGrid(),
           ),
           _MethodStep(
             index: '4',
             title: 'Atténuation du risque de crédit (ARC)',
             description:
-                'Ajustement selon la protection de crédit dont bénéficie l’exposition.',
+                'Ajustement selon la protection de crédit dont bénéficie l’exposition : le collatéral réduit l’EAD, la garantie substitue la pondération.',
             child: _CrmCaseList(),
           ),
           _MethodStep(
@@ -2632,11 +2636,13 @@ class _RegulatoryDiagram extends StatelessWidget {
             description:
                 'APR = EAD × Pondération finale, après atténuation du risque de crédit.',
           ),
+          SizedBox(height: 6),
+          _MethodPhaseLabel('Phase 3 : Exigences prudentielles'),
           _MethodStep(
             index: '6',
             title: 'Exigences minimales de fonds propres',
             description:
-                'Capital requis = APR × ratio minimal réglementaire (11,5 % coussin de conservation inclus).',
+                'Capital requis = APR × ratio minimal réglementaire (11,5 % coussin de conservation de 2,5 % inclus).',
           ),
           _MethodStep(
             index: '7',
@@ -2647,6 +2653,28 @@ class _RegulatoryDiagram extends StatelessWidget {
             isLast: true,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MethodPhaseLabel extends StatelessWidget {
+  const _MethodPhaseLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 44, bottom: 10),
+      child: Text(
+        label.toUpperCase(),
+        style: const TextStyle(
+          color: _muted,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.6,
+        ),
       ),
     );
   }
@@ -2805,8 +2833,8 @@ class _WeightSourceGrid extends StatelessWidget {
             SizedBox(width: 10),
             Expanded(
               child: _WeightSourceTile(
-                'Techniques d’ARC',
-                'Approche simple ou globale',
+                'Évaluations multiples',
+                'Deux notations : la plus élevée ; plus de deux : la plus élevée des deux plus basses',
               ),
             ),
           ],
