@@ -1224,8 +1224,26 @@ def calcul_bic(annee_n: int | None = None) -> OpRiskCalculResult:
     ofr_crr3 = bic
     rea_crr3 = ofr_crr3 * mult
 
-    pnb_moy = moy("pnb")
-    ofr_bia = pnb_moy * 0.15
+    def pnb_effectif(inp: OpRiskInput) -> float:
+        """PNB de l'exercice : valeur saisie/importée si renseignée, sinon
+        reconstitué à partir des postes ILDC/SC/FC (marge d'intérêts +
+        dividendes + commissions nettes + résultats nets de négociation et
+        bancaire + autres produits/charges nets) — sans quoi le champ PNB
+        reste à 0 par défaut après un import CCR3 et l'OFR BIA ne se calcule
+        jamais.
+        """
+        if inp.pnb:
+            return inp.pnb
+        return (
+            (inp.interets_percus - inp.interets_verses)
+            + inp.dividendes_percus
+            + (inp.commissions_percues - inp.commissions_versees)
+            + (inp.resultat_portefeuille_negociation + inp.resultat_portefeuille_bancaire)
+            + (inp.autres_produits_exploitation - inp.autres_charges_exploitation)
+        )
+
+    pnb_moy = sum(pnb_effectif(inp) for inp in inputs) / 3
+    ofr_bia = max(pnb_moy, 0.0) * 0.15
     rea_bia = ofr_bia * mult
     ecart = ofr_crr3 - ofr_bia
 
