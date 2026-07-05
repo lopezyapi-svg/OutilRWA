@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../../core/state/portfolio_amount_unit_scope.dart';
-import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
@@ -105,7 +103,7 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
                                     borderRadius: BorderRadius.circular(4),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: c.ink.withOpacity(0.1),
+                                        color: c.ink.withValues(alpha: 0.1),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       )

@@ -12,6 +12,8 @@ class CreditDataTableCard extends StatelessWidget {
     this.toolbar,
     this.trailing,
     this.emptyMessage = 'Portefeuille vide',
+    this.headingRowColor,
+    this.headingTextStyle,
   });
 
   final String title;
@@ -20,6 +22,12 @@ class CreditDataTableCard extends StatelessWidget {
   final Widget? toolbar;
   final Widget? trailing;
   final String emptyMessage;
+  // Permet aux écrans qui le souhaitent (ex. Registre des pertes
+  // opérationnelles) de reprendre le style d'en-tête du tableau du module
+  // Expositions (fond marine, texte blanc) sans changer l'apparence par
+  // défaut des autres tableaux qui utilisent cette carte.
+  final WidgetStateProperty<Color?>? headingRowColor;
+  final TextStyle? headingTextStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +68,8 @@ class CreditDataTableCard extends StatelessWidget {
                 dataRowMinHeight: 44,
                 dataRowMaxHeight: 52,
                 dividerThickness: 0.35,
-                headingTextStyle:
+                headingRowColor: headingRowColor,
+                headingTextStyle: headingTextStyle ??
                     Theme.of(context).textTheme.labelMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),

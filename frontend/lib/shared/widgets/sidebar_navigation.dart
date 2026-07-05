@@ -92,6 +92,7 @@ class _MenuEntry {
     required this.label,
     this.selectable = true,
     this.settingsSectionId,
+    this.disabled = false,
   }) : children = const [];
 
   const _MenuEntry.group({
@@ -100,7 +101,8 @@ class _MenuEntry {
     required this.children,
   })  : module = null,
         selectable = false,
-        settingsSectionId = null;
+        settingsSectionId = null,
+        disabled = false;
 
   final AppModule? module;
   final IconData icon;
@@ -108,6 +110,9 @@ class _MenuEntry {
   final List<_MenuEntry> children;
   final bool selectable;
   final String? settingsSectionId;
+  /// Quand true, l'entrée est grisée et non cliquable (temporairement
+  /// désactivée) — elle reste visible dans le menu mais n'a aucun effet.
+  final bool disabled;
 
   bool get hasChildren => children.isNotEmpty;
 
@@ -238,6 +243,9 @@ const List<_MenuEntry> _riskCreditChildren = [
 
 ];
 
+// "Import données" et "Simulation de crise" ont été déplacés à l'intérieur
+// du hub "CCR3 / Dispositif UEMOI" (onglets supplémentaires) — ils ne sont
+// plus des entrées séparées de ce sous-menu.
 const List<_MenuEntry> _operationalRiskChildren = [
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnel,
@@ -245,24 +253,21 @@ const List<_MenuEntry> _operationalRiskChildren = [
     label: 'Dashboard Opérationnel',
   ),
   _MenuEntry.leaf(
-    module: AppModule.risqueOperationnelImport,
-    icon: Icons.upload_file_outlined,
-    label: 'Import données',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueOperationnelIncidents,
-    icon: Icons.science_rounded,
-    label: 'Simulation de crise',
+    module: AppModule.risqueOperationnelUemoiCcr3,
+    icon: Icons.policy_outlined,
+    label: 'CCR3 / Dispositif UEMOI',
   ),
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnelPertes,
     icon: Icons.monetization_on_outlined,
     label: 'Pertes opérationnelles',
+    disabled: true,
   ),
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnelHistorique,
     icon: Icons.schedule_rounded,
     label: 'Historique événements',
+    disabled: true,
   ),
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnelReporting,
@@ -710,6 +715,7 @@ Future<_MenuEntry?> _showNestedMenuForEntry(
       for (final child in menuEntry.children)
         PopupMenuItem<_MenuEntry>(
           value: child,
+          enabled: !child.disabled,
           height: 38,
           padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
           child: _CompactFloatingMenuItem(
@@ -797,26 +803,32 @@ class _CompactFloatingMenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final selectedBlue = _selectedNavColor(isDark);
-    final iconColor = selected ? Colors.white : const Color(0xFF71829F);
-    final textColor = selected
-        ? Colors.white
-        : (isDark ? const Color(0xFFB8C8E8) : const Color(0xFF60708B));
+    final disabled = entry.disabled;
+    final mutedColor = isDark ? const Color(0xFF465577) : const Color(0xFFC2CBDA);
+    final iconColor = disabled
+        ? mutedColor
+        : (selected ? Colors.white : const Color(0xFF71829F));
+    final textColor = disabled
+        ? mutedColor
+        : selected
+            ? Colors.white
+            : (isDark ? const Color(0xFFB8C8E8) : const Color(0xFF60708B));
 
     return Container(
       height: 32,
       padding: const EdgeInsets.symmetric(horizontal: 3),
       decoration: BoxDecoration(
-        color: selected ? selectedBlue : Colors.transparent,
+        color: selected && !disabled ? selectedBlue : Colors.transparent,
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Row(
         children: [
           Icon(
-            entry.iconFor(selected),
+            entry.iconFor(selected && !disabled),
             size: 16,
-            color: selected
-                ? Colors.white
-                : (isDark ? const Color(0xFF9FB2D6) : iconColor),
+            color: disabled
+                ? mutedColor
+                : (selected ? Colors.white : (isDark ? const Color(0xFF9FB2D6) : iconColor)),
           ),
           const SizedBox(width: 3),
           Expanded(
@@ -827,11 +839,14 @@ class _CompactFloatingMenuItem extends StatelessWidget {
               style: TextStyle(
                 color: textColor,
                 fontSize: 10.4,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                fontWeight: selected && !disabled ? FontWeight.w700 : FontWeight.w600,
               ),
             ),
           ),
-          if (selected) ...[
+          if (disabled) ...[
+            const SizedBox(width: 6),
+            Icon(Icons.lock_outline, size: 13, color: mutedColor),
+          ] else if (selected) ...[
             const SizedBox(width: 6),
             const Icon(
               Icons.check_rounded,

@@ -1,6 +1,6 @@
 """Routes API du module CRM."""
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.crm.models import CRMOverview, GuaranteeCreate, GuaranteeView
 from app.crm.services import create_guarantee, get_crm_overview, list_guarantees
@@ -29,4 +29,7 @@ def get_crm_items(
 def post_crm(payload: GuaranteeCreate) -> GuaranteeView:
     """Cree une garantie CRM."""
 
-    return create_guarantee(payload)
+    try:
+        return create_guarantee(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

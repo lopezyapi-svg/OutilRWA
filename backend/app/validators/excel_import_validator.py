@@ -508,14 +508,3 @@ def inspect_workbook_structure(workbook) -> dict[str, Any]:
         "sheets": sheet_reports,
         "errors": errors,
     }
-
-
-def ensure_valid_workbook(workbook) -> dict[str, Any]:
-    report = inspect_workbook_structure(workbook)
-    if not report["valid"]:
-        payload = {
-            "message": "Le fichier Excel ne respecte pas le format d'import attendu.",
-            **report,
-        }
-        raise ExcelImportValidationError(payload)
-    return report

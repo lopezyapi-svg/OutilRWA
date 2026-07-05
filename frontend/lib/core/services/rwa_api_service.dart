@@ -32,7 +32,7 @@ String _resolveDefaultApiBaseUrl() {
   final host =
       runtimeHost == null || runtimeHost.isEmpty ? '127.0.0.1' : runtimeHost;
   final port =
-      runtimePort == null || runtimePort.isEmpty ? '8001' : runtimePort;
+      runtimePort == null || runtimePort.isEmpty ? '8000' : runtimePort;
   return 'http://$host:$port';
 }
 
@@ -244,8 +244,9 @@ class RwaApiService {
     var path = '/risque-operationnel/incidents';
     final params = <String>[];
     if (statut != null) params.add('statut=${Uri.encodeComponent(statut)}');
-    if (ligneMetier != null)
+    if (ligneMetier != null) {
       params.add('ligne_metier=${Uri.encodeComponent(ligneMetier)}');
+    }
     if (params.isNotEmpty) path = '$path?${params.join('&')}';
     final json = await _client.get(path) as List<dynamic>;
     return json
@@ -382,6 +383,111 @@ class RwaApiService {
         .toList();
   }
 
+  // ─── CCR3-COREP (BIC) ────────────────────────────────────────────────────
+
+  Future<OpRiskCalculResult> calculeOpRiskBic({int? anneeN}) async {
+    var path = '/risque-operationnel/bic/calcul';
+    if (anneeN != null) path = '$path?annee_n=$anneeN';
+    final json = await _client.get(path) as Map<String, dynamic>;
+    return OpRiskCalculResult.fromJson(json);
+  }
+
+  Future<OpRiskInput> upsertBicInput(int annee, Map<String, dynamic> data) async {
+    final json = await _client.put(
+        '/risque-operationnel/bic/inputs/$annee', data) as Map<String, dynamic>;
+    return OpRiskInput.fromJson(json);
+  }
+
+  /// Toutes les années ayant des postes BIC/CCR3 enregistrés (saisie ou
+  /// import Excel), sans se limiter à la fenêtre N-2/N-1/N par défaut de
+  /// [calculeOpRiskBic]. Utilisé par l'onglet "Données importées" pour
+  /// retrouver un exercice importé même hors des 3 derniers exercices.
+  Future<List<OpRiskInput>> listBicInputs() async {
+    final json = await _client.get('/risque-operationnel/bic/inputs') as List<dynamic>;
+    return json.map((e) => OpRiskInput.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<Uint8List> downloadBicImportTemplate() async {
+    return _client.getBytes('/risque-operationnel/bic/import/template');
+  }
+
+  Future<OpRiskParametres> updateBicParametres(Map<String, dynamic> data) async {
+    final json = await _client.put('/risque-operationnel/bic/parametres', data)
+        as Map<String, dynamic>;
+    return OpRiskParametres.fromJson(json);
+  }
+
+  Future<DecisionPilotageResult> fetchDecisionPilotage() async {
+    final json = await _client.get('/risque-operationnel/pilotage/decision')
+        as Map<String, dynamic>;
+    return DecisionPilotageResult.fromJson(json);
+  }
+
+  // ─── Dispositif UEMOI — Indicateur de Base (AIB) ────────────────────────
+
+  Future<AibCalculResult> calculeAib() async {
+    final json = await _client.get('/risque-operationnel/aib/calcul')
+        as Map<String, dynamic>;
+    return AibCalculResult.fromJson(json);
+  }
+
+  Future<PnbAnnuelView> upsertPnbAnnuel(int annee, Map<String, dynamic> data) async {
+    final json = await _client.put(
+        '/risque-operationnel/aib/pnb/$annee', data) as Map<String, dynamic>;
+    return PnbAnnuelView.fromJson(json);
+  }
+
+  Future<void> deletePnbAnnuel(int annee) async {
+    await _client.delete('/risque-operationnel/aib/pnb/$annee');
+  }
+
+  // ─── Dispositif UEMOI — Approche Standard (AS) ──────────────────────────
+
+  Future<AsCalculResult> calculeAs() async {
+    final json = await _client.get('/risque-operationnel/as/calcul')
+        as Map<String, dynamic>;
+    return AsCalculResult.fromJson(json);
+  }
+
+  Future<ParametresAs> fetchAsParametres() async {
+    final json = await _client.get('/risque-operationnel/as/parametres')
+        as Map<String, dynamic>;
+    return ParametresAs.fromJson(json);
+  }
+
+  Future<List<BetaLigneView>> fetchBetaLignes() async {
+    final json =
+        await _client.get('/risque-operationnel/as/beta-lignes') as List<dynamic>;
+    return json
+        .map((e) => BetaLigneView.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<List<PnbParLigneView>> fetchPnbLignes(int annee) async {
+    final json = await _client.get('/risque-operationnel/as/pnb-lignes/$annee')
+        as List<dynamic>;
+    return json
+        .map((e) => PnbParLigneView.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<PnbParLigneView> upsertPnbLigne(
+      int annee, String ligneMetier, double produitBrutLigne) async {
+    final json = await _client.put(
+      '/risque-operationnel/as/pnb-lignes/$annee/${Uri.encodeComponent(ligneMetier)}',
+      {'produit_brut_ligne': produitBrutLigne},
+    ) as Map<String, dynamic>;
+    return PnbParLigneView.fromJson(json);
+  }
+
+  // ─── Synthèse comparative AIB / AS / BIC ─────────────────────────────────
+
+  Future<SyntheseResult> fetchSynthese() async {
+    final json = await _client.get('/risque-operationnel/synthese')
+        as Map<String, dynamic>;
+    return SyntheseResult.fromJson(json);
+  }
+
   void dispose() {
     _portfolioRefreshController.close();
   }
@@ -398,6 +504,7 @@ class RwaApiService {
     _dashboardFuture = null;
     _horsBilanFuture = null;
     _crmFuture = null;
+    _expositionsFuture = null;
   }
 
   Future<T> _memoizeFuture<T>({
@@ -953,6 +1060,7 @@ class RwaApiService {
 
   Future<void> generateReport(ReportDraft draft) async {
   await _client.post('/rapports', draft.toJson());
+  _reportsFuture = null;
   return;
 
     // Le rapport mock fusionne les lignes bilan et hors bilan dans une même sortie.

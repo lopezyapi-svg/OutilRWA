@@ -9,27 +9,26 @@ Rendu : coller chaque bloc @startuml...@enduml sur plantuml.com
 INTRODUCTION GENERALE AUX DIAGRAMMES
 ================================================================================
 
-Ce document regroupe sept (7) diagrammes UML 2.5 produits dans le cadre de la
+Ce document regroupe trois (3) diagrammes UML 2.5 produits dans le cadre de la
 conception de l'OutilRWA, application de calcul des actifs ponderes par le
 risque (RWA - Risk-Weighted Assets) selon le referentiel prudentiel BCEAO /
-Bale II. Ces diagrammes forment ensemble la documentation architecturale
-complete du systeme, chacun eclairant un aspect different : structure des
-donnees, architecture logicielle, cas d'utilisation, flux de traitement,
-interactions entre composants, organisation interne des agregats metier et
-structure du code source.
+Bale II pour le risque de credit, et selon l'approche standard UEMOA/BCEAO
+pour le risque de marche. Le choix s'est porte sur trois diagrammes, pas plus,
+parce qu'ils suffisent a repondre aux trois questions qui comptent pour ce
+memoire : quelles donnees sont stockees, que peut faire l'utilisateur, et
+comment le calcul est execute.
 
-Les sept diagrammes se completent selon la logique suivante :
+Les trois diagrammes se completent selon la logique suivante :
 
-  3.6.1 Diagramme de classes    -> Quoi est stocke (modele de donnees)
-  3.6.2 Diagramme de composants -> Comment le systeme est organise (architecture)
-  3.6.3 Cas d'utilisation       -> Qui fait quoi (fonctionnalites utilisateur)
-  3.6.4 Diagramme d'activite    -> Comment le calcul RWA est execute (algorithme)
-  3.6.5 Diagramme de sequence   -> Dans quel ordre les composants dialoguent
-  3.6.6 Structure composite     -> Comment une fiche exposition est reconstruite
-  3.6.7 Diagramme de paquetage  -> Comment le code source est organise
+  3.6.1 Diagramme de classes       -> Quoi est stocke (modele de donnees, risque de credit)
+  3.6.2 Cas d'utilisation           -> Qui fait quoi (risque de credit ET risque de marche)
+  3.6.3 Diagramme d'activite        -> Comment le calcul RWA credit est execute (algorithme)
 
 Tous les noms de tables et colonnes sont en francais, conformement au schema
-SQL de la base de donnees locale (SQLite, fichier rwa_data.db).
+SQL de la base de donnees locale (SQLite, fichier rwa_data.db). Le risque de
+marche n'a pas de schema relationnel dedie : ses donnees sont persistees en
+JSON (voir 3.6.1) parce que ses calculs s'executent entierement cote frontend,
+un choix d'architecture explique au chapitre 4.
 
 
 ================================================================================
@@ -86,8 +85,13 @@ ORGANISATION DES TABLES (6 groupes - 35 tables au total)
      de couverture partielle ou de paniers de garants.
 
 4. REFERENTIELS REGLEMENTAIRES (4 tables) :
-   Ces tables sont pre-chargees avec les valeurs du referentiel BCEAO et ne
-   changent pas pendant l'utilisation courante.
+   Ces tables sont censees porter les valeurs du referentiel BCEAO
+   (ponderations, CCF, notations), mais ne sont pre-chargees par aucun
+   script : elles ne sont peuplees que si quelqu'un les configure via la
+   route PUT /referentiels. Une regression du frontend (ecran Referentiels
+   retire, voir memoire 4.3.13/4.4) les laisse aujourd'hui vides ; le
+   moteur de calcul echoue desormais explicitement plutot que d'appliquer
+   silencieusement une ponderation ou un CCF de repli a 100 %.
    - baremes_ponderation      : correspondance segment x notation -> ponderation (%)
    - baremes_ccf              : facteurs de conversion credit par type d'engagement
    - references_notation      : nomenclature officielle des echelons de notation
@@ -121,6 +125,28 @@ dans exposition_entreprise, ce qui serait une incoh'erence metier grave. Avec
 ce discriminant, le code applicatif garantit qu'une seule sous-table est
 alimentee par exposition, et le diagramme le documente explicitement avec le
 stereotype <<discriminant>>.
+
+COMMENT UNE EXPOSITION COMPLETE EST RECONSTITUEE
+---------------------------------------------------
+Aucune de ces tables ne contient a elle seule une "fiche exposition complete".
+Le backend la reconstruit a la lecture, via ExposureRepository, en joignant en
+une seule requete SQL la table expositions, la table contreparties, l'unique
+sous-table de type prudentiel active (parmi les douze) et, le cas echeant, la
+table crm_financee ou crm_non_financee, soit une quinzaine de jointures
+exterieures gauches. Le resultat est serialise en un seul objet JSON envoye
+au frontend, qui n'a donc jamais besoin de faire plusieurs requetes pour
+afficher une exposition.
+
+POURQUOI LE RISQUE DE MARCHE N'APPARAIT PAS ICI
+----------------------------------------------------
+Ce diagramme documente uniquement le risque de credit. Le risque de marche
+(portefeuille obligataire et actions, resultats de VaR, scenarios de stress)
+n'a pas de tables dediees : il est persiste tel quel, en JSON, dans la table
+generique metadonnees_app. Ce n'est pas un oubli mais un choix coherent avec
+l'architecture du module (detaillee au chapitre 4) : le risque de credit est
+interroge, filtre et agrege de multiples facons cote serveur, ce qui justifie
+un schema relationnel riche, alors que le risque de marche est charge une
+fois par session et recalcule integralement cote client.
 
 @startuml DiagrammeDeClasses
 
@@ -550,187 +576,7 @@ ro_kri_definitions "1" --> "0..*" ro_kri_valeurs : kri_id
 
 
 ================================================================================
-3.6.2 - DIAGRAMME DE COMPOSANTS
-================================================================================
-
-DESCRIPTION ET ROLE
--------------------
-Le diagramme de composants decrit l'architecture physique et logicielle du
-systeme, c'est-a-dire comment les grandes parties du logiciel sont organisees,
-quelles sont leurs responsabilites et comment elles communiquent entre elles.
-Il repond a la question : "Comment le systeme est-il construit ?".
-
-L'OutilRWA suit une architecture client-serveur locale a 4 couches, chaque
-couche ayant une responsabilite unique (principe de separation des
-responsabilites) :
-
-COUCHE 1 - FRONTEND FLUTTER (Windows Desktop)
-----------------------------------------------
-C'est l'interface graphique que voit et utilise l'analyste prudentiel.
-Developpe avec le framework Flutter pour Windows, il communique exclusivement
-avec le backend via des requetes HTTP/JSON. Il ne contient aucune logique
-de calcul : son seul role est d'afficher les donnees et de transmettre
-les actions de l'utilisateur. Il est compose de 8 ecrans specialises
-(Expositions, CRM, Hors Bilan, Analyse, Dashboard, Capital Planning,
-Referentiels, Rapports) et d'un service HTTP centralise (RwaApiService)
-qui encapsule tous les appels API.
-
-COUCHE 2 - ROUTES FASTAPI (Backend localhost:8000)
----------------------------------------------------
-C'est la porte d'entree du backend. Les routes (RouterExpositions,
-RouterCRM, etc.) recoivent les requetes HTTP, valident les donnees
-d'entree via Pydantic (typage strict, plages de valeurs, champs requis)
-et deleguent le traitement aux services metier. Elles ne contiennent
-aucune logique metier propre.
-
-COUCHE 3 - SERVICES METIER ET CALCUL PRUDENTIEL
-------------------------------------------------
-C'est le coeur fonctionnel de l'application. Les services orchestrent
-les operations : ils appellent le moteur de calcul RWA (RwaCalculationService,
-~1536 lignes implementant les formules BCEAO/Bale II) pour determiner
-EAD, ponderation et RWA, puis font appel aux repositories pour la
-persistance. Cette couche contient aussi les validateurs d'import
-(Excel, CSV) qui verifient la conformite des fichiers avant integration.
-
-COUCHE 4 - REPOSITORIES ET BASE SQLITE
----------------------------------------
-Les repositories (ExposureRepository, CrmRepository, etc.) sont les seuls
-composants autorises a interagir avec la base de donnees. Ils executent
-les requetes SQL (SELECT avec JOIN, INSERT OR REPLACE, DELETE) et
-retournent des objets Python structures. La base SQLite locale (fichier
-rwa_data.db) stocke toutes les donnees de maniere persistante, sans
-necessite de connexion reseau externe, ce qui garantit la disponibilite
-de l'outil meme hors connexion.
-
-POURQUOI CETTE ARCHITECTURE ?
-------------------------------
-Cette separation en 4 couches permet de modifier l'interface graphique
-(ex: remplacer Flutter par une application web) sans toucher au calcul
-prudentiel, ou de changer la base de donnees (ex: migrer vers PostgreSQL)
-sans toucher aux services metier. Chaque couche est independante et
-testable separement.
-
-@startuml DiagrammeDeComposants
-
-skinparam componentStyle rectangle
-skinparam component {
-  BackgroundColor White
-  BorderColor #333333
-  FontSize 11
-}
-skinparam packageStyle rectangle
-
-title Diagramme de Composants - Architecture client-serveur local
-
-package "Frontend Flutter (Windows Desktop)" {
-  package "Modules (Ecrans)" {
-    [EcranDashboard]
-    [EcranExpositions]
-    [EcranHorsBilan]
-    [EcranCRM]
-    [EcranAnalyse]
-    [EcranCapitalPlanning]
-    [EcranReferentiels]
-    [EcranRapports]
-  }
-  [RwaApiService] <<Client HTTP centralise>>
-}
-
-package "Backend FastAPI (localhost:8000)" {
-
-  package "Couche Routes (API REST)" {
-    [RouterExpositions]   <<GET/POST/PUT/DELETE /expositions>>
-    [RouterHorsBilan]     <<GET/POST /hors-bilan>>
-    [RouterCRM]           <<GET/POST /crm>>
-    [RouterReferentiels]  <<GET/PUT /referentiels>>
-    [RouterRapports]      <<GET /rapports>>
-    [RouterDashboard]     <<GET /dashboard>>
-  }
-
-  package "Couche Services Metier (app/)" {
-    [ServiceExpositions]
-    [ServiceHorsBilan]
-    [ServiceCRM]
-    [ServiceReferentiels]
-    [ServiceRapports]
-    [CoreCalculations]   <<Fonctions partagees>>
-  }
-
-  package "Couche Calcul Prudentiel (database/services/)" {
-    [RwaCalculationService]  <<1536 lignes - moteur RWA>>
-    [ExcelImportService]
-    [ExportService]
-  }
-
-  package "Couche Repositories (database/repositories/)" {
-    [ExposureRepository]
-    [CrmRepository]
-    [OffBalanceRepository]
-    [ReferentialRepository]
-    [ReportRepository]
-    [ImportRepository]
-  }
-
-  [PydanticValidation] <<Validation entree/sortie>>
-}
-
-database "SQLite rwa_data.db" {
-  [35 Tables]
-  [22 Migrations versionnees]
-}
-
-' Flux Frontend -> Backend
-[RwaApiService] --> [RouterExpositions]   : HTTP/JSON
-[RwaApiService] --> [RouterHorsBilan]     : HTTP/JSON
-[RwaApiService] --> [RouterCRM]           : HTTP/JSON
-[RwaApiService] --> [RouterReferentiels]  : HTTP/JSON
-[RwaApiService] --> [RouterRapports]      : HTTP/JSON
-[RwaApiService] --> [RouterDashboard]     : HTTP/JSON
-
-' Flux Routes -> Services
-[RouterExpositions] --> [ServiceExpositions]
-[RouterHorsBilan]   --> [ServiceHorsBilan]
-[RouterCRM]         --> [ServiceCRM]
-[RouterReferentiels]--> [ServiceReferentiels]
-[RouterRapports]    --> [ServiceRapports]
-
-' Flux Services -> Calcul
-[ServiceExpositions] --> [RwaCalculationService]
-[ServiceCRM]         --> [RwaCalculationService]
-[ServiceExpositions] --> [CoreCalculations]
-
-' Flux Services -> Repositories
-[ServiceExpositions] --> [ExposureRepository]
-[ServiceExpositions] --> [CrmRepository]
-[ServiceExpositions] --> [ImportRepository]
-[ServiceHorsBilan]   --> [OffBalanceRepository]
-[ServiceReferentiels]--> [ReferentialRepository]
-[ServiceRapports]    --> [ReportRepository]
-[RwaCalculationService] --> [ExposureRepository]
-
-' Flux Repositories -> Base
-[ExposureRepository]    --> [29 Tables]
-[CrmRepository]         --> [29 Tables]
-[OffBalanceRepository]  --> [29 Tables]
-[ReferentialRepository] --> [29 Tables]
-[ReportRepository]      --> [29 Tables]
-[ImportRepository]      --> [29 Tables]
-
-' Flux Ecrans -> ApiService
-[EcranExpositions]    --> [RwaApiService]
-[EcranHorsBilan]      --> [RwaApiService]
-[EcranCRM]            --> [RwaApiService]
-[EcranAnalyse]        --> [RwaApiService]
-[EcranReferentiels]   --> [RwaApiService]
-[EcranRapports]       --> [RwaApiService]
-[EcranDashboard]      --> [RwaApiService]
-[EcranCapitalPlanning]--> [RwaApiService]
-
-@enduml
-
-
-================================================================================
-3.6.3 - DIAGRAMME DE CAS D'UTILISATION
+3.6.2 - DIAGRAMME DE CAS D'UTILISATION
 ================================================================================
 
 DESCRIPTION ET ROLE
@@ -741,14 +587,30 @@ l'utilisateur avec ce systeme ?". Contrairement aux autres diagrammes qui
 s'adressent aux developpeurs, celui-ci est comprehensible par les parties
 prenantes non techniques (direction, auditeurs, responsables conformite).
 
-Il identifie deux acteurs et dix-huit cas d'utilisation regroupes en cinq
-domaines fonctionnels.
+Il identifie deux acteurs et trente-trois cas d'utilisation regroupes en six
+domaines fonctionnels : cinq pour le risque de credit, un pour le risque de
+marche. Sept de ces cas d'utilisation (UC26 a UC32) ont ete ajoutes lors
+d'une revue du perimetre reellement livre, decrite ecran par ecran au
+chapitre 4.3 du memoire : ils correspondent a des ecrans de suivi et
+d'analyse construits sur les donnees deja modelisees ci-dessus (aucune
+nouvelle table n'a ete necessaire, voir 3.6.1). Un dernier (UC33) a ete
+ajoute a la suite d'une regression identifiee sur le module referentiels
+(voir DOMAINE 4 ci-dessous et memoire, 4.3.13/4.4) : une route de
+configuration des baremes a ete restauree cote API pour compenser la
+disparition de l'ecran Flutter correspondant. Trois ecrans supplementaires
+existent par ailleurs dans l'application (ICAAP, simulation de crise
+transversale, planification de capital) mais n'apparaissent pas dans ce
+diagramme : ce sont des maquettes d'interface pour le Pilier 2, sans moteur
+de calcul connecte a ce stade (detail au chapitre 4.3 et 4.4 du memoire), et
+un diagramme de cas d'utilisation ne doit documenter que des capacites
+reellement implementees, pas des intentions.
 
 ACTEURS
 --------
 - Analyste Prudentiel : utilisateur principal du systeme. C'est le charge
   d'etudes ou l'auditeur interne qui saisit les expositions, configure les
-  garanties, lance les calculs et produit les rapports reglementaires.
+  garanties, lance les calculs et produit les rapports reglementaires. C'est
+  le meme acteur qui pilote le risque de credit et le risque de marche.
 - Systeme d'Import : acteur secondaire representant un fichier Excel ou CSV
   fourni de maniere automatisee (export d'un systeme core banking, par
   exemple). Il declenche le cas "Importer expositions" sans intervention
@@ -778,19 +640,56 @@ lignes de credit confirmees). L'application d'un facteur de conversion credit
 (CCF, selon 5 niveaux de risque) convertit le montant nominal en EAD
 equivalent bilan, qui entre ensuite dans le calcul RWA.
 
-DOMAINE 4 - REFERENTIELS REGLEMENTAIRES (UC13 a UC15)
--------------------------------------------------------
-Consultation en lecture seule des tables de reference pre-chargees avec les
-valeurs du referentiel BCEAO : baremes de ponderation par segment et notation,
-nomenclature des echelons de notation (AAA a < B-), et facteurs CCF par type
-d'engagement hors bilan.
+DOMAINE 4 - REFERENTIELS REGLEMENTAIRES (UC13 a UC15, UC33)
+-------------------------------------------------------------
+Ces cas d'utilisation portent sur les tables de reference (baremes de
+ponderation par segment et notation, nomenclature des echelons de notation
+AAA a < B-, facteurs CCF par type d'engagement hors bilan), pas sur des
+valeurs pre-chargees par defaut : la consultation (UC13-UC15) et la
+configuration (UC33, ajoutee lors de la correction documentee au chapitre 4)
+sont aujourd'hui possibles uniquement via l'API (route GET puis PUT
+/referentiels), pas via un ecran Flutter dedie. L'ecran qui exposait
+autrefois UC13-UC15 a l'analyste a ete retire lors d'un refactor anterieur
+et remplace par l'ecran Parametres (voir memoire, 4.3.13 et 4.4) ; tant
+qu'aucun ecran de remplacement n'est reconstruit, un analyste ne peut plus
+executer ces trois cas d'utilisation depuis l'application elle-meme, et le
+module hors bilan (UC11-UC12) qui depend de ces baremes echoue explicitement
+si UC33 n'a pas ete execute au prealable.
 
-DOMAINE 5 - REPORTING ET ANALYSE (UC16 a UC18)
-------------------------------------------------
+DOMAINE 5 - REPORTING, ANALYSE ET PILOTAGE (UC16 a UC18, UC26 a UC31)
+-----------------------------------------------------------------------
 Generation des rapports reglementaires en formats Excel et PDF, et
 consultation du tableau de bord synthetique affichant les KPIs prudentiels :
 RWA total, capital minimum, EAD par categorie prudentielle, distribution
-des ponderation.
+des ponderation. Ce domaine regroupe egalement six cas d'utilisation qui
+etendent la simple consultation du tableau de bord (UC18) par des vues
+d'analyse plus specialisees, toutes construites sur les memes donnees
+d'exposition sans persistance supplementaire : le suivi operationnel des
+garanties actives (echeances de renouvellement, taux de couverture moyen),
+l'analyse de concentration des grands risques (repartition secteur / pays /
+region, indice HHI, seuils d'alerte reglementaires), le suivi des defauts et
+impayes (score de risque calcule a partir du RWA, de la notation et de la
+couverture CRM reels), le diagnostic reglementaire automatise qui compare
+chaque ratio aux seuils UEMOA/CEMAC et genere des recommandations, la
+decomposition du RWA credit par agent economique avec sa jauge de densite,
+et un reporting credit specifique conservant un historique des exports deja
+generes.
+
+DOMAINE 6 - RISQUE DE MARCHE (UC19 a UC25, UC32)
+----------------------------------------------------
+Domaine independant des cinq precedents, qui ne partage aucun cas
+d'utilisation avec le risque de credit (aucune relation <<include>> ou
+<<extend>> ne traverse la frontiere entre les deux domaines), ce qui reflete
+leur separation architecturale (calcul cote serveur pour le credit, cote
+client pour le marche, cf. chapitre 4). L'analyste constitue un portefeuille
+de titres (obligations, actions), puis declenche independamment le calcul du
+risque de taux, du risque actions et change (approche standard 9%/9%), le
+calcul de la VaR (au choix, methode historique, parametrique ou Monte-Carlo),
+un stress test sur 8 scenarios reglementaires, ou le backtesting du modele de
+VaR (zones vertes/orange/rouge Bale II/III). Un cas d'utilisation permet
+d'actualiser les courbes de taux souverains CEMAC publiees par la BEAC, et un
+dernier etend le calcul du risque de change par une analyse titre par titre
+(taux d'acquisition contre taux courant, gain ou perte latent).
 
 @startuml DiagrammeCasUtilisation
 
@@ -834,12 +733,38 @@ rectangle "OutilRWA - Perimetre fonctionnel" {
     usecase "Consulter baremes\nde ponderation" as UC13
     usecase "Consulter notations\n(AAA a < B-)" as UC14
     usecase "Consulter CCF\npar type d engagement" as UC15
+    usecase "Configurer les baremes\nprudentiels (PUT)" as UC33
   }
 
-  package "Reporting et analyse" {
+  note bottom of UC13
+    UC13, UC14, UC15, UC33 :
+    accessibles uniquement via l'API
+    (/referentiels), aucun ecran Flutter
+    dedie depuis le retrait de l'ancien
+    ecran Referentiels (voir memoire 4.3.13)
+  end note
+
+  package "Reporting, analyse et pilotage" {
     usecase "Generer rapport Excel" as UC16
     usecase "Generer rapport PDF" as UC17
     usecase "Consulter tableau\nde bord (KPIs)" as UC18
+    usecase "Suivre le portefeuille\nde garanties" as UC26
+    usecase "Analyser la concentration\ndes grands risques (HHI)" as UC27
+    usecase "Suivre les defauts\net impayes" as UC28
+    usecase "Executer le diagnostic\nreglementaire automatise" as UC29
+    usecase "Piloter le RWA credit\npar agent economique" as UC30
+    usecase "Generer le reporting\ncredit (historique)" as UC31
+  }
+
+  package "Risque de marche (independant, calcul cote client)" {
+    usecase "Constituer le portefeuille\n(obligations / actions)" as UC19
+    usecase "Calculer le risque de taux\n(duration, sensibilite, convexite)" as UC20
+    usecase "Calculer risque actions/change\n(approche standard 9%/9%)" as UC21
+    usecase "Calculer la VaR\n(historique / parametrique / Monte-Carlo)" as UC22
+    usecase "Lancer un stress test\n(8 scenarios reglementaires)" as UC23
+    usecase "Backtester le modele de VaR\n(zones Bale II/III)" as UC24
+    usecase "Actualiser les courbes\nde taux CEMAC (BEAC)" as UC25
+    usecase "Analyser le risque de change\ntitre par titre (FX)" as UC32
   }
 }
 
@@ -854,9 +779,24 @@ AP --> UC11
 AP --> UC13
 AP --> UC14
 AP --> UC15
+AP --> UC33
 AP --> UC16
 AP --> UC17
 AP --> UC18
+AP --> UC19
+AP --> UC20
+AP --> UC21
+AP --> UC22
+AP --> UC23
+AP --> UC24
+AP --> UC25
+AP --> UC26
+AP --> UC27
+AP --> UC28
+AP --> UC29
+AP --> UC30
+AP --> UC31
+AP --> UC32
 
 SI --> UC2
 
@@ -867,12 +807,23 @@ UC9  ..> UC10 : <<include>>
 UC7  ..> UC9  : <<extend>>
 UC8  ..> UC9  : <<extend>>
 UC11 ..> UC12 : <<include>>
+UC19 ..> UC20 : <<extend>>
+UC19 ..> UC21 : <<extend>>
+UC19 ..> UC22 : <<extend>>
+UC22 ..> UC24 : <<extend>>
+UC7  ..> UC26 : <<extend>>
+UC8  ..> UC26 : <<extend>>
+UC18 ..> UC27 : <<extend>>
+UC18 ..> UC28 : <<extend>>
+UC18 ..> UC29 : <<extend>>
+UC18 ..> UC30 : <<extend>>
+UC21 ..> UC32 : <<extend>>
 
 @enduml
 
 
 ================================================================================
-3.6.4 - DIAGRAMME D'ACTIVITE
+3.6.3 - DIAGRAMME D'ACTIVITE
 ================================================================================
 
 DESCRIPTION ET ROLE
@@ -1021,514 +972,29 @@ stop
 
 @enduml
 
+POURQUOI IL N'Y A PAS DE SECOND DIAGRAMME POUR LE RISQUE DE MARCHE
+-----------------------------------------------------------------------
+Le risque de marche suit un flux d'activite analogue sans necessiter un
+second diagramme : reception du portefeuille, identification du sous-risque
+(taux, actions, change), application de la formule de charge correspondante,
+agregation en une exigence de capital, puis calcul en parallele de la VaR et
+de son backtesting. La seule difference structurelle est l'endroit ou ce flux
+s'execute, le frontend Flutter plutot que le backend Python (cf. chapitre 4),
+ce qui ne change pas la nature de l'algorithme.
 
 ================================================================================
-3.6.5 - DIAGRAMME DE SEQUENCE
+FIN DES DIAGRAMMES RETENUS (3.6.1 A 3.6.3)
 ================================================================================
 
-DESCRIPTION ET ROLE
--------------------
-Le diagramme de sequence modelise les interactions chronologiques entre les
-differents composants du systeme pour realiser une operation specifique. Il
-repond a la question : "Dans quel ordre les composants dialoguent-ils et que
-s'echangent-ils ?". A la difference du diagramme d'activite qui montre le flux
-algorithmique, le diagramme de sequence montre qui appelle qui, avec quels
-parametres et dans quel ordre.
-
-L'operation choisie pour l'illustration est l'import d'un fichier Excel
-d'expositions, car c'est l'operation la plus complexe du systeme : elle
-implique 8 composants differents, une validation en 2 temps, une transaction
-SQL et plusieurs etapes de persistance enchainees.
-
-PROTOCOLE DE VALIDATION EN 2 TEMPS
-------------------------------------
-L'import suit deliberement un protocole en deux phases pour eviter les imports
-partiels silencieux (situation ou une partie des lignes est inseree et une
-autre rejetee sans que l'utilisateur s'en rende compte).
-
-Phase 1 - INSPECTION (confirm=false) :
-L'analyste selectionne le fichier. Le backend recoit le fichier, l'analyse
-(colonnes detectees, apercu des 5 premieres lignes, mapping sugere) mais ne
-persiste rien en base. Il retourne uniquement un rapport d'inspection que
-l'interface affiche pour que l'analyste puisse verifier le mapping des colonnes.
-Cette phase est sans effet de bord : elle peut etre relancee autant de fois
-que necessaire.
-
-Phase 2 - IMPORT REEL (confirm=true) :
-Apres confirmation de l'analyste, le backend effectue la validation complete
-ligne par ligne. Si des erreurs sont detectees (valeur hors plage, type
-incorrect, colonne manquante), le traitement s'arrete et retourne la liste
-des erreurs par ligne (code HTTP 422) sans inserer quoi que ce soit en base.
-Si toutes les lignes sont valides, l'import est execute dans une transaction
-SQL atomique : toutes les insertions reussissent ensemble, ou aucune n'est
-executee (garantie ACID).
-
-SEQUENCE D'INSERTION DANS LA TRANSACTION
-------------------------------------------
-L'ordre des insertions est contraint par les cles etrangeres :
-1. INSERT OR REPLACE INTO contreparties (doit exister avant les expositions)
-2. INSERT OR REPLACE INTO expositions (reference contreparties.id)
-3. INSERT INTO exposition_<type_prudentiel> (reference expositions.id)
-4. INSERT OR REPLACE INTO crm_financee ou crm_non_financee (reference expositions.id)
-5. COMMIT (valide l'ensemble de la transaction)
-6. INSERT INTO historique_imports (traçabilite de l'operation d'import)
-
-La notation "OR REPLACE" permet de gerer a la fois l'insertion de nouvelles
-expositions et la mise a jour d'expositions existantes (upsert), identifiees
-par leur cle primaire.
-
-PARTICIPANTS ET RESPONSABILITES
----------------------------------
-- EcranExpositions (Flutter) : interface utilisateur, ne contient aucune logique
-- RwaApiService    : client HTTP centralise du frontend, serialise/deserialise JSON
-- RouterExpositions: point d'entree FastAPI, valide les types via Pydantic
-- ExcelImportValidator : extrait et valide le contenu du fichier Excel
-- ServiceExpositions   : orchestre l'import, cree les objets metier
-- ExposureRepository   : execute les requetes SQL sur la table expositions
-- CrmRepository        : execute les requetes SQL sur les tables CRM
-- SQLite rwa_data.db   : base de donnees locale, garantit la persistance
-
-@startuml DiagrammeSequence
-
-skinparam sequence {
-  ArrowColor #333333
-  ActorBorderColor #333333
-  LifeLineBorderColor #333333
-  ParticipantBackgroundColor White
-  ParticipantBorderColor #333333
-  BoxBackgroundColor #f5f5f5
-  FontSize 11
-}
-
-title Diagramme de Sequence - Import d'un fichier Excel d'expositions\n(validation en 2 temps : inspection puis confirmation)
-
-actor "Analyste" as A
-participant "EcranExpositions\n(Flutter)" as UI
-participant "RwaApiService\n(HTTP Client)" as API
-participant "RouterExpositions\n(FastAPI)" as R
-participant "ExcelImportValidator" as V
-participant "ServiceExpositions" as S
-participant "ExposureRepository" as ER
-participant "CrmRepository" as CR
-database "SQLite\nrwa_data.db" as DB
-
-== Etape 1 : Inspection du fichier (sans enregistrement) ==
-
-A -> UI : Selectionner fichier Excel
-UI -> API : fichier selectionne
-API -> R : POST /expositions/import-workbook\n(multipart/form-data, confirm=false)
-R -> V : inspect_uploaded_workbook(file)
-V --> R : WorkbookInspectionResult\n(colonnes detectees, apercu 5 lignes)
-R --> API : 200 OK + apercu
-API --> UI : Afficher mapping colonnes
-UI -> A : "Verifiez le mapping - confirmer ?"
-
-== Etape 2 : Import reel (apres confirmation) ==
-
-A -> UI : Confirmer import
-UI -> API : Confirmer
-API -> R : POST /expositions/import-workbook\n(confirm=true)
-R -> V : validate_workbook(file)
-
-V --> R : [Liste ExposureCreate validees] ou erreurs ligne par ligne
-
-alt Erreurs de validation detectees
-  R --> API : 422 Unprocessable Entity\n+ detail erreurs par ligne
-  API --> UI : Afficher erreurs (colonne, ligne, motif)
-  UI -> A : "X erreurs - corrigez le fichier"
-else Toutes les lignes valides
-  R -> S : import_uploaded_workbook(records)
-  S -> ER : upsert_exposures(records)
-  ER -> DB : BEGIN TRANSACTION
-  ER -> DB : INSERT OR REPLACE INTO contreparties
-  ER -> DB : INSERT OR REPLACE INTO expositions
-  ER -> DB : INSERT INTO exposition_<type_prudentiel>
-  ER -> CR : sync_exposures_crm(records)
-  CR -> DB : INSERT OR REPLACE INTO crm_financee\nou crm_non_financee
-  DB --> ER : COMMIT
-  ER --> S : records persistes
-  S -> ER : log_import_run(stats)
-  ER -> DB : INSERT INTO historique_imports
-  S --> R : ImportResult\n(total=N, imported=N, rejected=0)
-  R --> API : 200 OK + bilan
-  API --> UI : Afficher bilan import
-  UI -> A : "N expositions importees\nY rejets"
-end
-
-@enduml
-
-
-================================================================================
-3.6.6 - DIAGRAMME DE STRUCTURE COMPOSITE
-================================================================================
-
-DESCRIPTION ET ROLE
--------------------
-Le diagramme de structure composite modelise la structure interne d'un
-composant complexe, en montrant ses sous-parties et leurs interconnexions.
-Ici, il decrit comment l'agregat metier "ExpositionComplete" est reconstruit
-par le repository a partir de la base de donnees. Il repond a la question :
-"De quelles parties est constituee une fiche exposition complete, et comment
-ces parties s'assemblent-elles ?".
-
-NOTION D'AGREGAT METIER
-------------------------
-Dans l'application, le frontend recoit toujours une fiche exposition complete
-(ExpositionComplete), jamais des donnees partielles en plusieurs requetes.
-Cette fiche unique est le resultat de la fusion de 13 tables differentes
-en une seule requete SQL utilisant des LEFT JOIN. C'est le repository
-(ExposureRepository) qui est responsable de cette reconstruction, via la
-methode _row_to_record() qui transforme la ligne SQL fusionnee en objet
-Python structure (ExposureView), serialise ensuite en JSON vers le frontend.
-
-AVANTAGE : le frontend fait 1 seule requete HTTP pour obtenir toutes les
-informations d'une exposition (donnees de base + contrepartie + details du
-type prudentiel + CRM), ce qui simplifie considerablement le code Flutter
-et evite les problemes de synchronisation entre requetes paralleles.
-
-DESCRIPTION DES 4 BLOCS
--------------------------
-BLOC 1 - BASE (table : expositions)
-  Contient les donnees fondamentales de l'exposition : identifiant, reference
-  a la contrepartie, type prudentiel (discriminant), montant brut, devise,
-  statut (Active/Soldee/Contentieux), mode CRM, et les resultats de calcul
-  (EAD, RWA, capital, ponderation initiale et finale). Ce bloc est toujours
-  present, quel que soit le type d'exposition.
-
-BLOC 2 - CONTREPARTIE (table : contreparties)
-  Contient les informations sur l'entite emprunteuse : nom, categorie
-  prudentielle officielle, notation externe et notation du pays de domicile.
-  Ces donnees sont jointes via contrepartie_id (INNER JOIN obligatoire car
-  une exposition sans contrepartie n'a pas de sens).
-
-BLOC 3 - DETAILS DE TYPE [1 parmi 12] (sous-tables de specialisation)
-  C'est le bloc le plus important pour la comprehension du modele MERISE.
-  Exactement UNE des 12 sous-tables est presente par exposition, determinee
-  par le discriminant type_prudentiel. Les 11 autres sous-tables renvoient
-  NULL sur les colonnes concernees (LEFT JOIN). Par exemple :
-  - Pour type_prudentiel = 'a' : seul le bloc exposition_souveraine est
-    renseigne (cas_particulier, ponderation_zero_preferentiel, oce_etabli, oce_note)
-  - Pour type_prudentiel = 'e' : seul exposition_entreprise est renseigne
-    (depasse_seuil_degradation_bceao, procedure_prudentielle, sfi_hors_loi_bancaire)
-  Cela permet au frontend de n'afficher que les champs pertinents selon le
-  type, sans logique conditionnelle complexe cote serveur.
-
-BLOC 4 - DETAILS CRM [0..1] (tables crm_financee et crm_non_financee)
-  Ce bloc est optionnel : il n'est present que si l'exposition est associee
-  a une garantie (crm_existe = 1). Selon le mode de garantie (crm_mode) :
-  - crm_financee  : contient les parametres du collateral (type, valeur,
-    devise, decotes He/Hc/Hfx, EVA, CVA, EAD apres CRM, gain CRM)
-  - crm_non_financee : contient les informations du garant (nom, categorie,
-    notation, ponderation, taux de couverture)
-  Les deux sous-blocs sont mutuellement exclusifs pour une exposition donnee.
-
-CONNEXIONS ENTRE BLOCS (LEFT JOIN)
-------------------------------------
-Les fleches entre blocs representent les jointures SQL :
-  - BASE -> CP   : contrepartie_id = contreparties.id  (INNER JOIN)
-  - BASE -> TYPE : exposition_id = <sous-table>.exposition_id (12 LEFT JOIN)
-  - BASE -> CRM  : exposition_id = crm_financee.exposition_id (2 LEFT JOIN)
-La requete SQL complete comprend donc 1 + 12 + 2 = 15 jointures simultanees,
-ce qui illustre la puissance du modele relationnel pour reconstruire des
-agregats complexes en une seule operation.
-
-@startuml DiagrammeStructureComposite
-
-skinparam component {
-  BackgroundColor White
-  BorderColor #333333
-  FontSize 11
-}
-
-title Diagramme de Structure Composite - ExpositionComplete\n(agregat metier reconstruit par ExposureRepository via 13+ LEFT JOIN)
-
-component "ExpositionComplete (agregat metier)" {
-
-  component "Bloc 1 : Base\n(table : expositions)" as BASE {
-    port id
-    port contrepartie_id
-    port type_prudentiel
-    port montant_brut
-    port devise
-    port statut
-    port crm_existe / crm_mode
-    port ead
-    port rwa
-    port capital
-    port ponderation_initiale / ponderation_finale
-  }
-
-  component "Bloc 2 : Contrepartie\n(table : contreparties)" as CP {
-    port nom
-    port categorie_prudentielle
-    port notation
-    port notation_pays
-  }
-
-  component "Bloc 3 : Details de type [1 parmi 12]\n(1 seule sous-table selon type_prudentiel)" as TYPE {
-    component "[exposition_souveraine]         cat. a" as T1
-    component "[exposition_organisme_public]   cat. b" as T2
-    component "[exposition_bmd]                cat. c" as T3
-    component "[exposition_banque]             cat. d" as T4
-    component "[exposition_entreprise]         cat. e" as T5
-    component "[exposition_clientele_detail]   cat. f" as T6
-    component "[exposition_immo_residentiel]   cat. g" as T7
-    component "[exposition_immo_commercial]    cat. h" as T8
-    component "[exposition_souffrance]         cat. i" as T9
-    component "[exposition_risque_eleve]       cat. j" as T10
-    component "[exposition_autre_actif]        cat. k" as T11
-    component "[exposition_hors_bilan_detail]  cat. l" as T12
-  }
-
-  component "Bloc 4 : Details CRM [0..1]\n(optionnel selon crm_mode)" as CRM {
-    component "[crm_financee]\nCollateral, He/Hc/Hfx\nEVA, CVA, ead_apres_crm_financee\nrwa_final, gain_crm" as CF
-    component "[crm_non_financee]\nnom_garant, categorie_garant, notation_garant\nponderation_garant, taux_couverture" as CNF
-  }
-
-  BASE --> CP   : contrepartie_id (LEFT JOIN)
-  BASE --> TYPE : exposition_id (12 LEFT JOIN)
-  BASE --> CRM  : exposition_id (2 LEFT JOIN)
-}
-
-note bottom
-  Construit par ExposureRepository._row_to_record()
-  via requete SQL avec 13+ LEFT JOIN simultanees.
-  Serialise en ExposureView (Pydantic) -> JSON -> Frontend.
-  Le frontend recoit une fiche unique, sans requetes multiples.
-end note
-
-@enduml
-
-
-================================================================================
-3.6.7 - DIAGRAMME DE PAQUETAGE
-================================================================================
-
-DESCRIPTION ET ROLE
--------------------
-Le diagramme de paquetage (Package Diagram) represente l'organisation physique
-du code source en modules, packages et fichiers. Il repond a la question :
-"Comment le code source est-il structure, et quelles sont les dependances entre
-les differentes parties du projet ?". C'est la vue la plus proche de
-l'arborescence de fichiers reelle du projet.
-
-Ce diagramme est utile pour comprendre la maintenance et l'evolutivite du
-systeme : en voyant les dependances, on peut identifier quels composants sont
-isoles (faciles a remplacer) et lesquels sont tres couples (a modifier avec
-precaution).
-
-PACKAGE BACKEND
----------------
-Le backend est organise en deux grands sous-packages :
-
-app/ (logique applicative)
-  Ce package contient tout ce qui concerne la logique metier et l'API REST,
-  independamment de la base de donnees. Il est subdivise par domaine
-  fonctionnel (expositions, hors_bilan, crm, referentiels, rapports, dashboard),
-  chaque domaine ayant ses propres routes (endpoints FastAPI), services
-  (logique metier) et modeles Pydantic (schemas de validation et serialisation).
-  Le sous-package core contient la configuration globale, les fonctions de
-  calcul partages et la gestion des chemins de fichiers au runtime.
-  Le sous-package validators contient les logiques de validation et
-  transformation des fichiers d'import (Excel, CSV).
-
-database/ (persistance et calcul)
-  Ce package contient tout ce qui touche a la base de donnees et au calcul
-  prudentiel intensif. Il est egalement subdivise :
-  - repositories/ : un fichier par domaine de persistance, chacun encapsulant
-    les requetes SQL du domaine correspondant. Les repositories ne connaissent
-    pas les services et les services ne connaissent pas SQL.
-  - services/ : le moteur de calcul RWA (rwa_calculation_service, ~1536 lignes
-    implementant les formules BCEAO), le service d'import Excel et le service
-    d'export PDF/Excel.
-  - migrations/ : 22 fichiers SQL numerotes (001 a 022) appliques
-    sequentiellement par connection.py a chaque demarrage. Ce systeme de
-    migrations versionnees garantit que toute base existante est mise a niveau
-    automatiquement, sans perte de donnees.
-  - connection.py : gestionnaire de connexion SQLite, gestion des migrations,
-    des transactions ACID et de la compatibilite runtime.
-  - schema.sql : definition du schema de base (28 tables) en SQL, completee
-    par les migrations (migration 022 ajoute 7 tables risque operationnel),
-    pour un total de 35 tables sur les nouvelles installations.
-
-PACKAGE FRONTEND
-----------------
-Le frontend Flutter est organise selon la meme logique de separation :
-  - core/ : service HTTP centralise (rwa_api_service), configuration,
-    modeles de donnees partages et localisation.
-  - modules/ : un dossier par ecran applicatif (8 ecrans). Chaque module
-    est autonome et communique uniquement via le rwa_api_service.
-  - shared/ : composants visuels reutilises entre modules (shell de navigation,
-    sidebar, theme graphique).
-
-DEPENDANCES CLES
------------------
-Les fleches pointillees montrent les dependances de compilation ou d'appel :
-  - Les routes appellent les services, jamais l'inverse
-  - Les services appellent les repositories et le moteur de calcul
-  - Les repositories appellent uniquement connection.py (acces SQL)
-  - connection.py initialise le schema.sql et applique les migrations
-  - Le frontend ne connait que le rwa_api_service (pas les repositories)
-Cette structure en oignon garantit qu'aucune couche ne depend d'une couche
-superieure, ce qui rend le systeme testable et evolutif.
-
-SYSTEME DE MIGRATIONS VERSIONNEES (001 a 022)
-----------------------------------------------
-Chaque fichier de migration est un script SQL numerote. Au demarrage de
-l'application, connection.py verifie la table schema_migrations pour savoir
-quelles migrations ont deja ete appliquees, et n'execute que les nouvelles.
-Ce mecanisme permet de deployer des mises a jour de schema (ajout de colonnes,
-renommage de tables, creation de nouvelles tables) sur des bases existantes
-sans recreer la base depuis zero ni perdre les donnees des utilisateurs.
-La migration 021 (021_renommage_francais.sql) renomme toutes les tables et
-colonnes de l'anglais vers le francais. La migration 022 (022_risque_operationnel.sql)
-ajoute les 7 tables du module de gestion du risque operationnel.
-
-@startuml DiagrammePaquetage
-
-skinparam packageStyle rectangle
-skinparam package {
-  BackgroundColor White
-  BorderColor #333333
-  FontSize 11
-}
-skinparam component {
-  BackgroundColor #f8f8f8
-  BorderColor #666666
-  FontSize 10
-}
-
-title Diagramme de Paquetage - Structure du projet OutilRWA
-
-package "OutilRWA" {
-
-  package "backend" {
-
-    package "app (logique applicative)" {
-      package "core" {
-        [main.py]
-        [config.py]
-        [calculations.py]
-        [runtime_paths.py]
-      }
-      package "expositions" {
-        [routes_exp]   as RE
-        [services_exp] as SE
-        [models_exp]   as ME
-      }
-      package "hors_bilan" {
-        [routes_hb]
-        [services_hb]
-        [models_hb]
-      }
-      package "crm" {
-        [routes_crm]
-        [services_crm]
-        [models_crm]
-      }
-      package "referentiels" {
-        [routes_ref]
-        [services_ref]
-        [models_ref]
-      }
-      package "rapports" {
-        [routes_rap]
-        [services_rap]
-        [models_rap]
-      }
-      package "dashboard" {
-        [routes_dash]
-        [services_dash]
-        [models_dash]
-      }
-      package "validators" {
-        [excel_import_validator]
-        [csv_import_validator]
-      }
-    }
-
-    package "database (persistance et calcul)" {
-      package "repositories" {
-        [exposure_repository]  <<996 lignes>>
-        [crm_repository]       <<306 lignes>>
-        [off_balance_repository]
-        [referential_repository]
-        [report_repository]
-        [import_repository]
-      }
-      package "services (moteur de calcul)" {
-        [rwa_calculation_service]  <<1536 lignes>>
-        [excel_import_service]
-        [export_service]
-      }
-      package "migrations" {
-        [001_initial]
-        [002_reports]
-        [003_exposure_dates]
-        [...]
-        [019_exposure_type_tables]
-        [020_prudential_type_discriminant]
-        [021_renommage_francais]
-        [022_risque_operationnel]
-      }
-      [connection.py]
-      [schema.sql]
-    }
-
-  }
-
-  package "frontend (Flutter Windows)" {
-    package "lib" {
-      package "core" {
-        [rwa_api_service]
-        [app_config]
-        [models_core]
-        [localization]
-      }
-      package "modules" {
-        [dashboard_screen]
-        [expositions_screen]
-        [hors_bilan_screen]
-        [crm_screen]
-        [analyse_screen]
-        [capital_planning_screen]
-        [referentiels_screen]
-        [rapports_screen]
-        [risque_operationnel_screen]
-      }
-      package "shared" {
-        [app_shell]
-        [sidebar_navigation]
-        [theme]
-      }
-    }
-  }
-
-}
-
-' Dependances Backend
-RE ..> SE                         : "appelle"
-SE ..> [rwa_calculation_service]  : "calcul RWA"
-SE ..> [exposure_repository]      : "persistance"
-SE ..> [crm_repository]           : "persistance CRM"
-SE ..> [excel_import_validator]   : "validation import"
-[exposure_repository]  ..> [connection.py] : "sqlite3"
-[crm_repository]       ..> [connection.py] : "sqlite3"
-[connection.py]        ..> [schema.sql]    : "init"
-[connection.py]        ..> [001_initial]   : "migrations"
-
-' Dependances Frontend -> Backend
-[rwa_api_service] ..> RE : "HTTP REST\nlocalhost:8000"
-[expositions_screen]   ..> [rwa_api_service]
-[hors_bilan_screen]    ..> [rwa_api_service]
-[crm_screen]           ..> [rwa_api_service]
-[analyse_screen]       ..> [rwa_api_service]
-[capital_planning_screen] ..> [rwa_api_service]
-[dashboard_screen]     ..> [rwa_api_service]
-[rapports_screen]      ..> [rwa_api_service]
-
-@enduml
-
+Les diagrammes de composants, de sequence, de structure composite et de
+paquetage produits lors des versions precedentes de ce document ont ete
+retires de la version deposee, pour ne garder que les trois diagrammes qui
+repondent directement aux questions posees par le memoire (quelles donnees,
+quelles fonctions, quel algorithme). Le contenu utile qu'ils documentaient a
+ete integre en prose : l'architecture en couches est resumee au chapitre 4,
+la reconstruction d'une exposition complete par jointures est expliquee dans
+la section 3.6.1 ci-dessus, et l'organisation des dossiers du code source
+n'est pas indispensable a la comprehension fonctionnelle du memoire.
 
 ================================================================================
 NOTE D'UTILISATION

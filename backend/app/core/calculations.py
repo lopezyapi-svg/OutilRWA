@@ -14,11 +14,13 @@ from app.core.config import settings
 # Ratios minimaux réglementaires UMOA (Bâle III adapté)
 MIN_CET1_RATIO = 0.05  # 5% - Common Equity Tier 1
 MIN_TIER1_RATIO = 0.06  # 6% - Tier 1 Capital
-MIN_SOLVENCY_RATIO = 0.09  # 9% - Ratio de solvabilité total (CAR)
+MIN_SOLVENCY_RATIO = 0.09  # 9% - Ratio de solvabilité total minimum, SANS coussin (CAR)
 MIN_LEVERAGE_RATIO = 0.03  # 3% - Ratio de levier
 
-# Ratio de capital minimum réglementaire UMOA par défaut (11,5 %, coussin
-# de conservation inclus). Paramétrable via settings.capital_ratio.
+# Ratio de capital minimum réglementaire UMOA par défaut (9 %, ratio de
+# solvabilité total minimum, sans coussin). Paramétrable via
+# settings.capital_ratio. Le ratio CIBLE avec coussin de conservation
+# (2,5 %) est de 11,5 % — géré séparément côté écran ICAAP UEMOA/CEMAC.
 DEFAULT_CAPITAL_RATIO = settings.capital_ratio
 
 # Seuils de concentration (HHI - Herfindahl-Hirschman Index)
@@ -92,6 +94,10 @@ def bucketize_rating(rating: str) -> str:
 
     # La notation libre est normalisee avant d'etre comparee aux buckets internes.
     normalized = rating.strip().upper()
+    if normalized == "AAA/AA":
+        return "AAA/AA"
+    if normalized == "BB/B":
+        return "BB/B"
     if normalized in {"AAA", "AA+", "AA", "AA-"}:
         return "AAA/AA"
     if normalized in {"A+", "A", "A-"}:
@@ -100,6 +106,8 @@ def bucketize_rating(rating: str) -> str:
         return "BBB"
     if normalized in {"BB+", "BB", "BB-", "B+", "B", "B-"}:
         return "BB/B"
+    if normalized == "< B-":
+        return "< B-"
     return "Non noté"
 
 
@@ -114,29 +122,6 @@ def calculate_ead(nominal_amount: float, ccf: float = 1.0) -> float:
     """
 
     return round(nominal_amount * ccf, 2)
-
-
-def apply_crm_substitution(
-    original_risk_weight: float,
-    guarantor_risk_weight: float,
-    coverage_ratio: float,
-) -> float:
-    """Applique une substitution simple de ponderation liee a la CRM.
-
-    Entrees:
-        original_risk_weight: ponderation avant garantie.
-        guarantor_risk_weight: ponderation du garant.
-        coverage_ratio: part de l'exposition couverte entre 0 et 1.
-    Sortie:
-        La ponderation finale apres CRM.
-    """
-
-    # La couverture est bornee pour rester entre absence totale et couverture complete.
-    bounded_ratio = max(0.0, min(coverage_ratio, 1.0))
-    # CRM non financee: seule la part couverte bénéficie du RW du garant.
-    covered_part = bounded_ratio * guarantor_risk_weight
-    uncovered_part = (1 - bounded_ratio) * original_risk_weight
-    return round(covered_part + uncovered_part, 4)
 
 
 def calculate_rwa(ead: float, risk_weight: float) -> float:

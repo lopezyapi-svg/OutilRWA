@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localization.dart';
-import '../../../core/theme/app_theme.dart';
-import 'dashboard_theme.dart';
 import 'dashboard_design.dart';
 
 /// En-tête du dashboard avec date de référence et valorisation.

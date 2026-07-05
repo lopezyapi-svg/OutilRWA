@@ -84,6 +84,9 @@ class CreditRiskSubmodulesService {
     final exposureModule = await api.fetchExpositionsModule();
     final exposure = exposureModule.exposures.firstWhere(
       (item) => item.id == draft.exposureId,
+      orElse: () => throw Exception(
+        'Exposition introuvable (${draft.exposureId}) : elle a peut-être été supprimée depuis.',
+      ),
     );
 
     final id = draft.id ?? _nextGuaranteeId();

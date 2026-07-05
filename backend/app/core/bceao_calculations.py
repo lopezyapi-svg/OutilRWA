@@ -7,11 +7,14 @@ from typing import Any
 # ============================================================================
 MIN_CET1_RATIO = 0.05       # 5%
 MIN_TIER1_RATIO = 0.06      # 6%
-MIN_SOLVENCY_RATIO = 0.09   # 9%
+MIN_SOLVENCY_RATIO = 0.09   # 9% — minimum SANS coussin (cible avec coussin = 11,5 %, cf. CONSERVATION_BUFFER)
 MIN_LEVERAGE_RATIO = 0.03   # 3%
 
 # Coussin de conservation (Titre III, section IV, Paragraphe 92)
 CONSERVATION_BUFFER = 0.025 # 2.5%
+
+# Multiplicateur RWA = 1 / ratio de solvabilité minimum (9% => 11.111111...)
+RWA_MULTIPLIER = 1 / MIN_SOLVENCY_RATIO
 
 
 def calculate_fonds_propres(fp_data: dict[str, float]) -> dict[str, float]:
@@ -74,7 +77,7 @@ def calculate_risque_operationnel(pb_data: dict[str, float]) -> dict[str, float]
         moyenne_pb = sum(pb_positifs) / len(pb_positifs)
         exigence = moyenne_pb * alpha
         
-    rwa_op = exigence * 12.5
+    rwa_op = exigence * RWA_MULTIPLIER
     
     return {
         "exigence_fonds_propres": round(exigence, 2),
@@ -88,9 +91,9 @@ def calculate_risque_marche(marche_data: dict[str, float]) -> dict[str, float]:
     """
     position_nette = marche_data.get("position_nette_change", 0.0)
     
-    exigence = abs(position_nette) * 0.09
-    
-    rwa_marche = exigence * 12.5
+    exigence = abs(position_nette) * MIN_SOLVENCY_RATIO
+
+    rwa_marche = exigence * RWA_MULTIPLIER
     
     return {
         "exigence_fonds_propres": round(exigence, 2),

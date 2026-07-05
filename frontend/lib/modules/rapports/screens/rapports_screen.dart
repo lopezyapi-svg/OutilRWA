@@ -70,11 +70,24 @@ class _RapportsScreenState extends State<RapportsScreen> {
   }
 
   Future<void> _handleGenerate(ReportDraft draft) async {
-    await widget.api.generateReport(draft);
-    setState(() => _future = widget.api.fetchReports());
-    if (mounted) {
+    try {
+      await widget.api.generateReport(draft);
+      if (!mounted) {
+        return;
+      }
+      setState(() => _future = widget.api.fetchReports());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Rapport genere.')),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.danger,
+          content: Text('Échec de la génération du rapport : $error'),
+        ),
       );
     }
   }

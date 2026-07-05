@@ -40,7 +40,7 @@ class TestPrudentialRatios:
     def test_calculate_cet1_ratio_above_minimum(self):
         """Test CET1 ratio au-dessus du minimum réglementaire."""
         result = calculate_cet1_ratio(cet1_capital=800_000, rwa=10_000_000)
-        assert result == 0.09  # 9%
+        assert result == 0.08  # 8%
         assert result > MIN_CET1_RATIO
 
     def test_calculate_cet1_ratio_zero_rwa(self):
@@ -362,7 +362,7 @@ class TestIntegrationScenarios:
         tier1 = 6_000_000
         total_capital = 10_000_000
         rwa = 100_000_000
-        total_exposures = 250_000_000
+        total_exposures = 150_000_000
 
         # Calcul des ratios
         cet1_ratio = calculate_cet1_ratio(cet1, rwa)

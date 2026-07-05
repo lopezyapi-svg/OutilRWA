@@ -1,4 +1,5 @@
 // Dialog d'import Excel pour les pertes opérationnelles.
+import 'dart:io' show PathAccessException;
 import 'dart:math' as math;
 
 import 'package:desktop_drop/desktop_drop.dart';
@@ -211,6 +212,15 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
       if (location == null) return;
       await saveBytesAtLocation(location, bytes, requiredExtension: '.xlsx');
       if (mounted) _showMsg('Modèle enregistré.');
+    } on PathAccessException {
+      if (mounted) {
+        _showMsg(
+          'Impossible d\'enregistrer : le fichier est probablement déjà ouvert '
+          '(par exemple dans Excel). Fermez-le puis réessayez, ou choisissez '
+          'un autre emplacement.',
+          error: true,
+        );
+      }
     } catch (e) {
       if (mounted) _showMsg('Téléchargement impossible: $e', error: true);
     } finally {
@@ -1425,7 +1435,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     final totalNette =
         valid.fold(0.0, (s, r) => s + r.perteBrute - r.perteRecuperee);
     final kBia = totalNette * 0.15;
-    final apr = kBia * 12.5;
+    final apr = kBia * (1 / 0.09);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1467,12 +1477,12 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
               const SizedBox(width: 10),
               Expanded(child: _biaKpi('Capital 15 %', _fmtCurrency(kBia))),
               const SizedBox(width: 10),
-              Expanded(child: _biaKpi('APR x12,5', _fmtCurrency(apr))),
+              Expanded(child: _biaKpi('APR x11,111111', _fmtCurrency(apr))),
             ],
           ),
           const SizedBox(height: 10),
           Text(
-            'Calcul indicatif sur les lignes valides: capital minimal = 15 % des pertes nettes, APR = capital minimal x 12,5.',
+            'Calcul indicatif sur les lignes valides: capital minimal = 15 % des pertes nettes, APR = capital minimal x 11,111111.',
             style: TextStyle(
               fontSize: 10.5,
               color: _muted,

@@ -66,7 +66,7 @@ class DashboardCapitalVsRequired extends StatelessWidget {
     required PortfolioAmountUnit unit,
   }) {
     // Determine a reasonable max relative to the unit, scaled to 200B for the mock 
-    final maxValRaw = 200.0 * 1e9;
+    const maxValRaw = 200.0 * 1e9;
     final maxVal = maxValRaw / unit.divisor;
     final heldVal = held / unit.divisor;
     final reqVal = requiredAmt / unit.divisor;

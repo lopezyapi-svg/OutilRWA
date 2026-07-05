@@ -27,9 +27,6 @@ def _chunked(values: list[str], size: int = _SQLITE_CHUNK_SIZE):
 class CrmRepository:
     """Fournit les synchronisations et vues CRM depuis SQLite."""
 
-    def sync_exposure_crm(self, exposure_record: dict[str, Any], *, connection=None) -> None:
-        self.sync_exposures_crm([exposure_record], connection=connection)
-
     def sync_exposures_crm(
         self,
         exposure_records: list[dict[str, Any]],

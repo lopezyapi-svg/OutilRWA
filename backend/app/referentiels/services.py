@@ -3,25 +3,7 @@
 from __future__ import annotations
 
 from database.repositories.referential_repository import referential_repository
-from app.referentiels.models import CcfReference, RatingReference, ReferentialBundle, RiskWeightReference
-
-
-def list_risk_weight_references() -> list[RiskWeightReference]:
-    """Retourne les lignes de pondération RW depuis SQLite."""
-
-    return referential_repository.list_risk_weight_references()
-
-
-def list_ccf_references() -> list[CcfReference]:
-    """Retourne les lignes CCF depuis SQLite."""
-
-    return referential_repository.list_ccf_references()
-
-
-def list_rating_references() -> list[RatingReference]:
-    """Retourne la liste des notations disponibles."""
-
-    return referential_repository.list_rating_references()
+from app.referentiels.models import ReferentialBundle, ReferentialBundleUpdate
 
 
 def get_risk_weight(segment: str, rating: str) -> float:
@@ -39,4 +21,16 @@ def get_ccf(engagement_type: str) -> float:
 def get_referential_bundle() -> ReferentialBundle:
     """Construit le paquet complet de référentiels."""
 
+    return referential_repository.get_referential_bundle()
+
+
+def replace_referential_bundle(payload: ReferentialBundleUpdate) -> ReferentialBundle:
+    """Remplace integralement les baremes prudentiels configures."""
+
+    referential_repository.replace_all(
+        risk_weights=[item.model_dump() for item in payload.risk_weights],
+        ccf_table=[item.model_dump() for item in payload.ccf_table],
+        ratings=[item.model_dump() for item in payload.ratings],
+        country_ratings=[item.model_dump() for item in payload.country_ratings],
+    )
     return referential_repository.get_referential_bundle()

@@ -16,7 +16,6 @@ import '../../dashboard/widgets/dashboard_fonds_propres_dialog.dart';
 import '../../dashboard/widgets/dashboard_rwa_donut.dart';
 import '../../dashboard/widgets/dashboard_rwa_secteur_table.dart';
 import '../../dashboard/widgets/dashboard_grands_risques_summary.dart';
-import '../../dashboard/widgets/dashboard_top10_risques_chart.dart';
 import '../../dashboard/widgets/dashboard_top10_risques_table.dart';
 
 bool _isDashboardDark(BuildContext context) =>

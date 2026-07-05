@@ -5,10 +5,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart' show AppFormatters;
-import '../../../shared/widgets/kpi_metric_card.dart';
 import '../../../shared/widgets/section_card.dart';
+import '../../risque_credit_shared/widgets/credit_stat_card.dart';
 import '../models/ro_models.dart';
-import 'decision_panel.dart';
+import 'uemoi_form_style.dart';
 
 class UemoiAsScreen extends StatefulWidget {
   const UemoiAsScreen({super.key, required this.api});
@@ -122,7 +122,6 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
     }
 
     final r = _result!;
-    final p = _params!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final muted = isDark ? AppTheme.darkMuted : AppTheme.muted;
 
@@ -131,50 +130,9 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bannière autorisation Commission Bancaire
-          if (!p.asAutorisee)
-            const _NoticeBanner(
-              color: AppTheme.danger,
-              icon: Icons.lock_outlined,
-              text: 'L\'Approche Standard nécessite l\'autorisation préalable de la Commission Bancaire'
-                  ' (art. 300 UEMOA). Les calculs ci-dessous sont affichés à titre indicatif uniquement.',
-            )
-          else
-            _NoticeBanner(
-              color: AppTheme.success,
-              icon: Icons.verified_outlined,
-              text: 'Approche Standard — Art. 305-311 UEMOA · Autorisation CB obtenue'
-                  '${p.referenceAutorisation.isNotEmpty ? " · Réf. ${p.referenceAutorisation}" : ""}',
-            ),
-          AppSpacing.gapSm,
-
           // KPI résultats
           if (!r.donneesInsuffisantes) ...[
-            Row(children: [
-              Expanded(child: KpiMetricCard(
-                label: 'K_AS (Exigence)',
-                value: AppFormatters.currency(r.kAs),
-                helper: 'capital risque operationnel',
-                icon: Icons.shield_outlined,
-                color: AppTheme.accent,
-              )),
-              AppSpacing.hGapSm,
-              Expanded(child: KpiMetricCard(
-                label: 'APR Opérationnel',
-                value: AppFormatters.currency(r.aprAs),
-                helper: 'rwa risque operationnel',
-                icon: Icons.assessment_outlined,
-                color: AppColors.prudentialCapital,
-              )),
-              AppSpacing.hGapSm,
-              Expanded(child: KpiMetricCard(
-                label: 'Capital minimal (8 %)',
-                value: AppFormatters.currency(r.capitalMinAs),
-                helper: 'capital minimum requis',
-                icon: Icons.account_balance_outlined,
-                color: AppTheme.success,
-              )),
-            ]),
+            _buildStatGrid(r),
             AppSpacing.gapSm,
           ],
 
@@ -202,8 +160,10 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
           ],
 
           // Saisie PNB par ligne
-          SectionCard(
+          UemoiFormCard(
             title: 'PNB par ligne de métier',
+            subtitle: 'Approche Standard — saisie annuelle par ligne de métier BCEAO',
+            color: AppTheme.accent,
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               ...[DateTime.now().year - 2, DateTime.now().year - 1, DateTime.now().year].map((y) =>
                 Padding(
@@ -229,8 +189,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                 ),
               ),
             ]),
-            child: Column(
-              children: [
+            children: [
                 // En-tête
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -272,11 +231,38 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                       )),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    Expanded(flex: 2, child: TextFormField(
-                      controller: _pnbCtrls[b.ligneMetier],
-                      keyboardType: TextInputType.number,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                      decoration: const InputDecoration(hintText: '0'),
+                    Expanded(flex: 2, child: SizedBox(
+                      height: 32,
+                      child: TextFormField(
+                        controller: _pnbCtrls[b.ligneMetier],
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
+                        ),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                          hintText: '0',
+                          suffixText: ' FCFA',
+                          suffixStyle: const TextStyle(fontSize: 9.5, color: AppTheme.muted),
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+                          enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+                          focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(4),
+                              borderSide: const BorderSide(color: AppTheme.accent, width: 1.2)),
+                          filled: true,
+                          fillColor: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF1E293B)
+                              : const Color(0xFFF1F5F9),
+                        ),
+                      ),
                     )),
                   ]),
                 )),
@@ -296,21 +282,53 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                   ),
                 ),
               ],
-            ),
           ),
-          AppSpacing.gapSm,
-
-          const _FormulaBox(
-            'Formule AS (art. 305-311) :'
-            '  K_annee = MAX(Σ(PNB_ligne × β), 0)'
-            '  →  K_AS = MOYENNE(K_N-2, K_N-1, K_N)'
-            '  →  APR = K_AS × 12,5',
-          ),
-          AppSpacing.gapSm,
-
-          DecisionPanel(loader: widget.api.fetchDecisionAs),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatGrid(AsCalculResult r) {
+    final stats = [
+      CreditStatCard(
+        label: 'K_AS (Exigence)',
+        value: AppFormatters.currency(r.kAs),
+        helper: 'Capital risque opérationnel',
+        icon: Icons.shield_outlined,
+        color: AppTheme.accent,
+      ),
+      CreditStatCard(
+        label: 'APR Opérationnel',
+        value: AppFormatters.currency(r.aprAs),
+        helper: 'RWA risque opérationnel',
+        icon: Icons.assessment_outlined,
+        color: AppColors.prudentialCapital,
+      ),
+      CreditStatCard(
+        label: 'Capital minimal (9 %)',
+        value: AppFormatters.currency(r.capitalMinAs),
+        helper: 'Capital minimum requis',
+        icon: Icons.account_balance_outlined,
+        color: AppTheme.success,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth >= 960
+            ? 210.0
+            : constraints.maxWidth >= 620
+                ? ((constraints.maxWidth - AppTheme.spacing) / 2).clamp(0.0, 210.0).toDouble()
+                : constraints.maxWidth;
+
+        return Wrap(
+          spacing: AppTheme.spacing,
+          runSpacing: AppTheme.spacing,
+          children: [
+            for (final stat in stats) SizedBox(width: width, child: stat),
+          ],
+        );
+      },
     );
   }
 }
@@ -435,26 +453,3 @@ class _NoticeBanner extends StatelessWidget {
   }
 }
 
-class _FormulaBox extends StatelessWidget {
-  const _FormulaBox(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted = isDark ? AppTheme.darkMuted : AppTheme.muted;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCard : AppTheme.background,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(
-            color: isDark ? AppTheme.darkBorder : AppTheme.border),
-      ),
-      child: Text(text,
-          style:
-              Theme.of(context).textTheme.bodySmall?.copyWith(color: muted)),
-    );
-  }
-}

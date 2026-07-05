@@ -88,29 +88,44 @@ class DatabaseManager:
             int(row["version"])
             for row in connection.execute("SELECT version FROM schema_migrations")
         }
+
+        # Plusieurs fichiers peuvent partager le même préfixe numérique (collision
+        # de version, ex. 012_residential_mortgage_rules.sql et
+        # 012_retail_rules.sql). Regrouper par version avant d'itérer garantit
+        # qu'aucun script n'est plus jamais ignoré silencieusement : tous les
+        # fichiers d'une même version sont exécutés (dans l'ordre alphabétique)
+        # avant que la version ne soit marquée comme appliquée.
+        migrations_by_version: dict[int, list[Path]] = {}
         for migration_path in sorted(self.migrations_dir.glob("*.sql")):
             prefix = migration_path.stem.split("_", maxsplit=1)[0]
             try:
                 version = int(prefix)
             except ValueError:
                 continue
+            migrations_by_version.setdefault(version, []).append(migration_path)
+
+        for version in sorted(migrations_by_version):
             if version in applied_versions:
                 continue
-            sql = migration_path.read_text(encoding="utf-8")
-            if sql.strip():
-                for statement in self._iter_sql_statements(sql):
-                    try:
-                        connection.execute(statement)
-                    except sqlite3.OperationalError as exc:
-                        if self._can_ignore_migration_error(connection, statement, exc):
-                            continue
-                        raise
+            migration_paths = migrations_by_version[version]
+            names = []
+            for migration_path in migration_paths:
+                sql = migration_path.read_text(encoding="utf-8")
+                if sql.strip():
+                    for statement in self._iter_sql_statements(sql):
+                        try:
+                            connection.execute(statement)
+                        except sqlite3.OperationalError as exc:
+                            if self._can_ignore_migration_error(connection, statement, exc):
+                                continue
+                            raise
+                names.append(migration_path.stem)
             connection.execute(
                 """
                 INSERT INTO schema_migrations(version, name, applied_at)
                 VALUES (?, ?, ?)
                 """,
-                (version, migration_path.stem, utcnow_iso()),
+                (version, " + ".join(names), utcnow_iso()),
             )
             applied_versions.add(version)
 

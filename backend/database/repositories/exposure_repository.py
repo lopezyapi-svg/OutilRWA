@@ -210,11 +210,6 @@ class ExposureRepository:
             return None
         return self._row_to_record(dict(row))
 
-    def count_exposures(self) -> int:
-        with database_manager.read_connection() as connection:
-            row = connection.execute("SELECT COUNT(*) AS total FROM expositions").fetchone()
-        return int(row["total"]) if row is not None else 0
-
     def get_existing_ids(self, exposure_ids: list[str], *, connection=None) -> set[str]:
         normalized_ids = sorted({str(item).strip() for item in exposure_ids if str(item).strip()})
         if not normalized_ids:
@@ -545,13 +540,6 @@ class ExposureRepository:
                    ON CONFLICT(exposition_id) DO NOTHING""",
                 high_risk_rows,
             )
-
-    def replace_all(self, records: list[dict[str, Any]], *, connection=None) -> list[dict[str, Any]]:
-        manager = nullcontext(connection) if connection is not None else database_manager.transaction()
-        with manager as active_connection:
-            self.clear_portfolio(connection=active_connection)
-            self.upsert_exposures(records, connection=active_connection)
-        return [dict(record) for record in records]
 
     def clear_portfolio(self, *, connection=None) -> None:
         manager = nullcontext(connection) if connection is not None else database_manager.transaction()

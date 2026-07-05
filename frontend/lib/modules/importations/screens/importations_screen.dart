@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
@@ -8,6 +7,7 @@ import '../../../core/theme/app_theme.dart';
 
 import '../../expositions/widgets/excel_import_dialog.dart';
 import '../../risque_marche/screens/market_data_import_screen.dart';
+import '../../risque_operationnel/widgets/ro_import_bic_dialog.dart';
 import '../../risque_operationnel/widgets/ro_import_pertes_dialog.dart';
 
 class ImportationsScreen extends StatefulWidget {
@@ -154,12 +154,28 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                           borderColor: AppTheme.warning,
                                           textColor: Colors.white,
                                           onTap: () async {
-                                            final success = await showRoImportPertesDialog(context, api: widget.api);
-                                            if (!mounted) return;
-                                            if (success == true) {
-                                              setState(() {
-                                                successMessage = 'Données risque opérationnel chargées avec succès';
-                                              });
+                                            final choice = await _chooseRoImportType(context);
+                                            if (!mounted || choice == null) return;
+
+                                            if (choice == 'ccr3') {
+                                              final imported = await showRoImportBicDialog(
+                                                context,
+                                                api: widget.api,
+                                              );
+                                              if (!mounted) return;
+                                              if (imported == true) {
+                                                setState(() {
+                                                  successMessage = 'Données BIC / CCR3 chargées avec succès';
+                                                });
+                                              }
+                                            } else {
+                                              final success = await showRoImportPertesDialog(context, api: widget.api);
+                                              if (!mounted) return;
+                                              if (success == true) {
+                                                setState(() {
+                                                  successMessage = 'Données risque opérationnel chargées avec succès';
+                                                });
+                                              }
                                             }
                                           },
                                         ),
@@ -205,6 +221,106 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Demande à l'utilisateur quel type de fichier "Risque Opérationnel" il
+  /// souhaite importer : le registre des pertes (base prudentielle) ou le
+  /// formulaire d'activité BIC/CCR3. Retourne 'prudentielle', 'ccr3' ou null
+  /// si l'utilisateur annule.
+  Future<String?> _chooseRoImportType(BuildContext context) {
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        Widget option({
+          required IconData icon,
+          required String title,
+          required String subtitle,
+          required Color color,
+          required String value,
+        }) {
+          return InkWell(
+            onTap: () => Navigator.pop(ctx, value),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                border: Border.all(color: color.withValues(alpha: 0.35)),
+                borderRadius: BorderRadius.circular(8),
+                color: color.withValues(alpha: 0.06),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Icon(icon, color: color, size: 19),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                        const SizedBox(height: 2),
+                        Text(subtitle,
+                            style: TextStyle(fontSize: 11.5, color: AppTheme.muted, height: 1.3)),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: color, size: 18),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          title: const Text('Quel type de fichier importer ?'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Le module Risque Opérationnel accepte deux formats de fichier.',
+                  style: TextStyle(fontSize: 12.5, color: AppTheme.muted),
+                ),
+                const SizedBox(height: 14),
+                option(
+                  icon: Icons.description_outlined,
+                  title: 'Base prudentielle (pertes / incidents)',
+                  subtitle: 'Registre des incidents et pertes opérationnelles, ligne par ligne.',
+                  color: AppTheme.warning,
+                  value: 'prudentielle',
+                ),
+                const SizedBox(height: 10),
+                option(
+                  icon: Icons.account_balance_outlined,
+                  title: 'BIC / CCR3',
+                  subtitle:
+                      'Formulaire de saisie de l\'indicateur d\'activité — un onglet Excel par exercice.',
+                  color: AppTheme.accent,
+                  value: 'ccr3',
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('Annuler'),
+            ),
+          ],
+        );
+      },
     );
   }
 

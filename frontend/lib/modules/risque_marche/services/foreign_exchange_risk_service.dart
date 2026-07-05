@@ -53,7 +53,7 @@ class ForeignExchangeRiskResult {
       totalShortPositions; // Somme des positions négatives (valeur absolue)
   final double globalNetPosition; // MAX(longues, courtes)
   final double capitalRequirement; // Position_Nette_Globale × 9%
-  final double marketRwa; // Capital_Requirement × 12.5
+  final double marketRwa; // Capital_Requirement × 11,111111 (1 / 0,09)
 }
 
 /// Calcule le risque de change conformément à l'approche standard BCEAO
@@ -79,8 +79,8 @@ ForeignExchangeRiskResult calculateForeignExchangeRisk(
   // Exigence de fonds propres = Position_Nette_Globale × 9%
   final capitalRequirement = globalNetPosition * 0.09;
 
-  // RWA = Exigence_FP × 12.5
-  final marketRwa = capitalRequirement * 12.5;
+  // RWA = Exigence_FP × 11,111111 (1 / 0,09)
+  final marketRwa = capitalRequirement * (1 / 0.09);
 
   return ForeignExchangeRiskResult(
     positions: positions,

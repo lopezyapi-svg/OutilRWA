@@ -26,7 +26,6 @@ import 'modules/icap/screens/icap_uemoa_cemac_screen.dart';
 import 'modules/importations/screens/importations_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/reporting_credit/screens/reporting_credit_screen.dart';
-import 'modules/risque_credit_shared/models/credit_risk_models.dart';
 import 'modules/risque_credit_shared/services/credit_risk_submodules_service.dart';
 import 'modules/risque_marche/screens/market_data_import_screen.dart';
 import 'modules/risque_marche/screens/risque_marche_screen.dart';
@@ -285,6 +284,10 @@ class _RwaAppState extends State<RwaApp> {
       AppModule.risqueOperationnelReporting => RisqueOperationnelScreen(
           api: _api,
           view: OperationalRiskView.reporting,
+        ),
+      AppModule.risqueOperationnelUemoiCcr3 => RisqueOperationnelScreen(
+          api: _api,
+          view: OperationalRiskView.ccr3Uemoi,
         ),
       AppModule.analyse => AnalyseScreen(api: _api),
       AppModule.stressTest => StressTestScreen(api: _api),

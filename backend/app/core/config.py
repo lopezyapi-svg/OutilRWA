@@ -37,8 +37,11 @@ class Settings:
 
     app_name: str = "Risk management API"
     app_version: str = "0.1.0"
-    # Taux minimum de capital reglementaire UMOA (Bale III adapte) : 11,5 %
-    # incluant le coussin de conservation. Parametrable via l'environnement.
+    # Ratio de solvabilite minimum reglementaire UMOA (Capital / RWA total) :
+    # 11,5 %. Ne pas confondre avec le pourcentage RWA (9 %, cf.
+    # app/core/bceao_calculations.py) utilise pour convertir une exigence de
+    # fonds propres marche/operationnel en equivalent RWA — ce sont deux
+    # notions distinctes. Parametrable via l'environnement.
     capital_ratio: float = float(os.getenv("MINIMUM_CAPITAL_RATIO", "0.115"))
     # Seuil de tolerance pour le controle de reconciliation du tableau RWA.
     rwa_reconciliation_threshold: float = float(

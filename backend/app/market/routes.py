@@ -21,10 +21,6 @@ router = APIRouter(prefix="/market", tags=["Market"])
 _MARKET_PORTFOLIOS_PAYLOAD_KEY = "market_portfolios_payload_v1"
 _MARKET_PORTFOLIOS_SAVED_AT_KEY = "market_portfolios_saved_at"
 _BEAC_PAGE_URL = "https://www.beac.int/economie-stats/statistiques-titres-publics/"
-_BEAC_FALLBACK_PDF_URL = (
-    "https://www.beac.int/wp-content/uploads/2016/10/"
-    "Courbe-des-taux-de-rendement-des-titres-publics-CEMAC-mars-26.pdf"
-)
 _BEAC_COUNTRY_PDF_URLS = {
     "Cameroun": (
         "https://www.beac.int/wp-content/uploads/2016/10/"
@@ -264,26 +260,6 @@ def refresh_cemac_yield_curve() -> dict[str, Any]:
     result = _normalize_cemac_extraction(payload, source_url=_BEAC_PAGE_URL)
     result["warnings"] = [*result.get("warnings", []), *warnings]
     return result
-
-
-def _find_latest_beac_pdf_url() -> str:
-    try:
-        html = _download_text(_BEAC_PAGE_URL)
-    except HTTPException:
-        return _BEAC_FALLBACK_PDF_URL
-
-    candidates = re.findall(
-        r"""href=["']([^"']*Courbe[^"']*CEMAC[^"']*\.pdf)["']""",
-        html,
-        flags=re.IGNORECASE,
-    )
-    if not candidates:
-        return _BEAC_FALLBACK_PDF_URL
-
-    return urllib.parse.urljoin(
-        _BEAC_PAGE_URL,
-        candidates[0].replace("&amp;", "&"),
-    )
 
 
 def _find_latest_beac_country_pdf_urls() -> dict[str, str]:

@@ -23,7 +23,7 @@ Ce document décrit l'ensemble des fonctions de calcul disponibles dans `calcula
 ```python
 MIN_CET1_RATIO = 0.05        # 5% - Common Equity Tier 1
 MIN_TIER1_RATIO = 0.06       # 6% - Tier 1 Capital
-MIN_SOLVENCY_RATIO = 0.09    # 9% - Ratio de solvabilité total (CAR)
+MIN_SOLVENCY_RATIO = 0.09     # 9% - Ratio de solvabilité total minimum, sans coussin (CAR)
 MIN_LEVERAGE_RATIO = 0.03    # 3% - Ratio de levier
 ```
 

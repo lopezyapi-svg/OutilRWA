@@ -222,11 +222,24 @@ class _HorsBilanScreenState extends State<HorsBilanScreen> {
   }
 
   Future<void> _handleCreate(OffBalanceDraft draft) async {
-    await widget.api.createOffBalance(draft);
-    setState(() => _future = widget.api.fetchHorsBilanModule());
-    if (mounted) {
+    try {
+      await widget.api.createOffBalance(draft);
+      if (!mounted) {
+        return;
+      }
+      setState(() => _future = widget.api.fetchHorsBilanModule());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Engagement hors bilan ajoute.')),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.danger,
+          content: Text('Échec de l\'enregistrement : $error'),
+        ),
       );
     }
   }

@@ -36,3 +36,51 @@ class ReferentialBundle(BaseModel):
     risk_weights: list[RiskWeightReference]
     ccf_table: list[CcfReference]
     ratings: list[RatingReference]
+
+
+class RiskWeightReferenceInput(BaseModel):
+    """Ligne de bareme de ponderation a persister."""
+
+    id: str
+    segment: str
+    rating: str
+    risk_weight: float
+    approach: str
+
+
+class CcfReferenceInput(BaseModel):
+    """Ligne de bareme CCF a persister."""
+
+    id: str
+    engagement_type: str
+    ccf: float
+
+
+class RatingReferenceInput(BaseModel):
+    """Ligne de notation a persister."""
+
+    id: str
+    label: str
+    description: str
+    sort_order: int
+
+
+class CountryRatingReferenceInput(BaseModel):
+    """Ligne de notation souveraine par pays a persister."""
+
+    country: str
+    sovereign_rating: str
+    risk_weight: float
+
+
+class ReferentialBundleUpdate(BaseModel):
+    """Payload de remplacement complet des referentiels prudentiels.
+
+    Remplace integralement le contenu des 4 tables (delete puis insert),
+    conformement au comportement de ReferentialRepository.replace_all.
+    """
+
+    risk_weights: list[RiskWeightReferenceInput] = Field(default_factory=list)
+    ccf_table: list[CcfReferenceInput] = Field(default_factory=list)
+    ratings: list[RatingReferenceInput] = Field(default_factory=list)
+    country_ratings: list[CountryRatingReferenceInput] = Field(default_factory=list)

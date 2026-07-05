@@ -90,7 +90,7 @@ class _GaugeAnimation extends StatelessWidget {
                       border: Border.all(color: const Color(0xFFDCE4F2), width: 1.5),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: Colors.black.withValues(alpha: 0.03),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -105,11 +105,11 @@ class _GaugeAnimation extends StatelessWidget {
                               fontWeight: FontWeight.w800,
                               height: 1,
                             ),
-                        children: [
+                        children: const [
                           TextSpan(
                             text: ' %',
                             style: TextStyle(
-                              color: const Color(0xFF62708C),
+                              color: Color(0xFF62708C),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -145,7 +145,7 @@ class _SemiCircleGaugePainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
     
     // Background arc (Gradient from Green to Yellow to Red)
-    final sweepGradient = SweepGradient(
+    const sweepGradient = SweepGradient(
       startAngle: math.pi,
       endAngle: math.pi * 2,
       colors: const [
@@ -220,7 +220,7 @@ class _SemiCircleGaugePainter extends CustomPainter {
 
     // 25%, 50%, 75% indicators
     final indicatorPaint = Paint()
-      ..color = const Color(0xFF62708C).withOpacity(0.4)
+      ..color = const Color(0xFF62708C).withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 

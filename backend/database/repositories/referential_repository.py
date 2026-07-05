@@ -1,32 +1,32 @@
-"""Accès SQLite aux référentiels prudentiels."""
+"""Accès ORM (SQLAlchemy) aux référentiels prudentiels.
+
+Module pilote de la migration ORM : les 4 tables de référentiels
+(baremes_ponderation, baremes_ccf, references_notation,
+references_pays_souverains) sont lues/écrites via SQLAlchemy au lieu de SQL
+brut (voir database/orm.py et database/orm_models/referentiels.py). Les
+signatures publiques de ReferentialRepository sont inchangées : aucun appelant
+(services.py, routes.py, calculations.py) n'a besoin d'être modifié.
+
+Les autres repositories (exposure, crm, off_balance, report) restent en SQL
+brut pour l'instant ; ils seront migrés progressivement selon ce même pattern.
+"""
 
 from __future__ import annotations
 
-from contextlib import nullcontext
 import unicodedata
 from typing import Any
 
+from sqlalchemy import delete, func, select
+
 from app.core.calculations import bucketize_rating
 from app.referentiels.models import CcfReference, RatingReference, ReferentialBundle, RiskWeightReference
-from database.connection import database_manager
-
-
-def _as_float(value: Any) -> float:
-    if value is None:
-        return 0.0
-    if isinstance(value, (int, float)):
-        return float(value)
-    text = str(value).strip().replace("\u202f", "").replace(" ", "").replace(",", ".")
-    try:
-        return float(text)
-    except ValueError:
-        return 0.0
-
-
-def _as_text(value: Any) -> str:
-    if value is None:
-        return ""
-    return str(value).strip()
+from database.orm import orm_session
+from database.orm_models.referentiels import (
+    BaremeCcfOrm,
+    BaremePonderationOrm,
+    ReferenceNotationOrm,
+    ReferencePaysSouverainOrm,
+)
 
 
 def _normalize_key(value: str) -> str:
@@ -35,139 +35,68 @@ def _normalize_key(value: str) -> str:
     return " ".join(normalized.split())
 
 
-def _normalize_rating_label(value: str) -> str:
-    if not value:
-        return "Non noté"
-    lowered = value.lower().strip()
-    if lowered in {"non noté", "non note", "non_noté", "non_note"}:
-        return "Non noté"
-    return value.strip()
+class ReferentialDataMissingError(ValueError):
+    """Levee quand un bareme prudentiel requis n'a jamais ete configure.
 
-
-def _is_rating_label(value: str) -> bool:
-    allowed = {
-        "AAA",
-        "AA+",
-        "AA",
-        "AA-",
-        "A+",
-        "A",
-        "A-",
-        "BBB+",
-        "BBB",
-        "BBB-",
-        "BB+",
-        "BB",
-        "BB-",
-        "B+",
-        "B",
-        "B-",
-        "< B-",
-        "Non noté",
-    }
-    return value in allowed
-
-
-def build_referential_payload(ref_rows: list[list[Any]]) -> dict[str, list[dict[str, Any]]]:
-    risk_weights: list[dict[str, Any]] = []
-    ccf_rows: list[dict[str, Any]] = []
-    ratings: list[dict[str, Any]] = []
-    seen_ratings: set[str] = set()
-
-    sequence = 1
-    segment_columns = [
-        ("Souverains", 1, 2),
-        ("Organismes publics", 4, 5),
-        ("Entreprises", 7, 8),
-        ("Banques <=3m", 10, 11),
-        ("Banques >3m", 13, 14),
-    ]
-    for raw in ref_rows:
-        for segment, rating_col, rw_col in segment_columns:
-            rating = _normalize_rating_label(_as_text(raw[rating_col - 1]))
-            risk_weight = _as_float(raw[rw_col - 1])
-            if not _is_rating_label(rating):
-                continue
-            risk_weights.append(
-                {
-                    "id": f"RW{sequence:03d}",
-                    "segment": segment,
-                    "rating": rating,
-                    "risk_weight": risk_weight,
-                    "approach": "Standard",
-                }
-            )
-            lowered = rating.lower()
-            if lowered not in seen_ratings:
-                seen_ratings.add(lowered)
-                ratings.append(
-                    {
-                        "id": f"RT{len(ratings) + 1:03d}",
-                        "label": rating,
-                        "description": f"Notation {rating}",
-                        "sort_order": len(ratings) + 1,
-                    }
-                )
-            sequence += 1
-
-    ccf_sequence = 1
-    for raw in ref_rows:
-        engagement_type = _as_text(raw[15])
-        ccf = _as_float(raw[16])
-        if not engagement_type or engagement_type == "Type_HB":
-            continue
-        ccf_rows.append(
-            {
-                "id": f"CCF{ccf_sequence:03d}",
-                "engagement_type": engagement_type,
-                "ccf": ccf,
-            }
-        )
-        ccf_sequence += 1
-
-    return {
-        "risk_weights": risk_weights,
-        "ccf_table": ccf_rows,
-        "ratings": ratings,
-        "country_ratings": [],
-    }
+    Sous-classe de ValueError pour rester compatible avec la gestion
+    d'erreurs deja en place dans les routes (ValueError -> HTTP 400),
+    sans avoir a modifier chaque route appelante.
+    """
 
 
 class ReferentialRepository:
-    """Fournit les référentiels depuis SQLite."""
+    """Fournit les référentiels depuis SQLite via SQLAlchemy."""
 
     def list_risk_weight_references(self) -> list[RiskWeightReference]:
-        with database_manager.read_connection() as connection:
-            rows = connection.execute(
-                """
-                SELECT id, segment, notation AS rating, ponderation AS risk_weight, approche AS approach
-                FROM baremes_ponderation
-                ORDER BY segment, id
-                """
-            ).fetchall()
-        return [RiskWeightReference(**dict(row)) for row in rows]
+        with orm_session() as session:
+            rows = (
+                session.execute(
+                    select(BaremePonderationOrm).order_by(
+                        BaremePonderationOrm.segment, BaremePonderationOrm.id
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            return [
+                RiskWeightReference(
+                    id=row.id,
+                    segment=row.segment,
+                    rating=row.notation,
+                    risk_weight=row.ponderation,
+                    approach=row.approche,
+                )
+                for row in rows
+            ]
 
     def list_ccf_references(self) -> list[CcfReference]:
-        with database_manager.read_connection() as connection:
-            rows = connection.execute(
-                """
-                SELECT id, type_engagement AS engagement_type, ccf
-                FROM baremes_ccf
-                ORDER BY id
-                """
-            ).fetchall()
-        return [CcfReference(**dict(row)) for row in rows]
+        with orm_session() as session:
+            rows = session.execute(select(BaremeCcfOrm).order_by(BaremeCcfOrm.id)).scalars().all()
+            return [
+                CcfReference(id=row.id, engagement_type=row.type_engagement, ccf=row.ccf)
+                for row in rows
+            ]
 
     def list_rating_references(self) -> list[RatingReference]:
-        with database_manager.read_connection() as connection:
-            rows = connection.execute(
-                """
-                SELECT id, libelle AS label, description, ordre_tri AS sort_order
-                FROM references_notation
-                ORDER BY ordre_tri, id
-                """
-            ).fetchall()
-        return [RatingReference(**dict(row)) for row in rows]
+        with orm_session() as session:
+            rows = (
+                session.execute(
+                    select(ReferenceNotationOrm).order_by(
+                        ReferenceNotationOrm.ordre_tri, ReferenceNotationOrm.id
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            return [
+                RatingReference(
+                    id=row.id,
+                    label=row.libelle,
+                    description=row.description,
+                    sort_order=row.ordre_tri,
+                )
+                for row in rows
+            ]
 
     def get_referential_bundle(self) -> ReferentialBundle:
         return ReferentialBundle(
@@ -183,52 +112,73 @@ class ReferentialRepository:
         ccf_table: list[dict[str, Any]],
         ratings: list[dict[str, Any]],
         country_ratings: list[dict[str, Any]] | None = None,
-        connection=None,
+        connection=None,  # conservé pour compatibilité de signature (non utilisé, aucun appelant ORM externe)
     ) -> None:
-        manager = nullcontext(connection) if connection is not None else database_manager.transaction()
-        with manager as active_connection:
-            active_connection.execute("DELETE FROM references_pays_souverains")
-            active_connection.execute("DELETE FROM references_notation")
-            active_connection.execute("DELETE FROM baremes_ccf")
-            active_connection.execute("DELETE FROM baremes_ponderation")
+        with orm_session() as session:
+            session.execute(delete(ReferencePaysSouverainOrm))
+            session.execute(delete(ReferenceNotationOrm))
+            session.execute(delete(BaremeCcfOrm))
+            session.execute(delete(BaremePonderationOrm))
 
             if risk_weights:
-                active_connection.executemany(
-                    """
-                    INSERT INTO baremes_ponderation(id, segment, notation, ponderation, approche)
-                    VALUES (:id, :segment, :rating, :risk_weight, :approach)
-                    """,
-                    risk_weights,
+                session.add_all(
+                    [
+                        BaremePonderationOrm(
+                            id=item["id"],
+                            segment=item["segment"],
+                            notation=item["rating"],
+                            ponderation=item["risk_weight"],
+                            approche=item["approach"],
+                        )
+                        for item in risk_weights
+                    ]
                 )
             if ccf_table:
-                active_connection.executemany(
-                    """
-                    INSERT INTO baremes_ccf(id, type_engagement, ccf)
-                    VALUES (:id, :engagement_type, :ccf)
-                    """,
-                    ccf_table,
+                session.add_all(
+                    [
+                        BaremeCcfOrm(
+                            id=item["id"],
+                            type_engagement=item["engagement_type"],
+                            ccf=item["ccf"],
+                        )
+                        for item in ccf_table
+                    ]
                 )
             if ratings:
-                active_connection.executemany(
-                    """
-                    INSERT INTO references_notation(id, libelle, description, ordre_tri)
-                    VALUES (:id, :label, :description, :sort_order)
-                    """,
-                    ratings,
+                session.add_all(
+                    [
+                        ReferenceNotationOrm(
+                            id=item["id"],
+                            libelle=item["label"],
+                            description=item["description"],
+                            ordre_tri=item["sort_order"],
+                        )
+                        for item in ratings
+                    ]
                 )
             if country_ratings:
-                active_connection.executemany(
-                    """
-                    INSERT INTO references_pays_souverains(pays, notation_souveraine, ponderation)
-                    VALUES (:country, :sovereign_rating, :risk_weight)
-                    """,
-                    country_ratings,
+                session.add_all(
+                    [
+                        ReferencePaysSouverainOrm(
+                            pays=item["country"],
+                            notation_souveraine=item["sovereign_rating"],
+                            ponderation=item["risk_weight"],
+                        )
+                        for item in country_ratings
+                    ]
                 )
 
     def get_risk_weight(self, segment: str, rating: str) -> float:
+        references = self.list_risk_weight_references()
+        if not references:
+            raise ReferentialDataMissingError(
+                "Aucun bareme de ponderation n'est configure (table "
+                "baremes_ponderation vide) : impossible de determiner une "
+                "ponderation prudentielle fiable. Configurez les "
+                "referentiels avant de poursuivre."
+            )
         target_bucket = bucketize_rating(rating)
         target_candidates = {target_bucket, target_bucket.replace(" ", ""), rating}
-        references = self.list_risk_weight_references()
         exact = next(
             (
                 reference.risk_weight
@@ -277,16 +227,25 @@ class ReferentialRepository:
         return fallback if fallback is not None else 1.0
 
     def get_ccf(self, engagement_type: str) -> float:
+        references = self.list_ccf_references()
+        if not references:
+            raise ReferentialDataMissingError(
+                "Aucun bareme de CCF n'est configure (table baremes_ccf "
+                "vide) : impossible de determiner un facteur de conversion "
+                "fiable. Configurez les referentiels avant de poursuivre."
+            )
         lowered = _normalize_key(engagement_type)
-        for reference in self.list_ccf_references():
+        for reference in references:
             if _normalize_key(reference.engagement_type) == lowered:
                 return reference.ccf
         return 1.0
 
     def is_empty(self) -> bool:
-        with database_manager.read_connection() as connection:
-            row = connection.execute("SELECT COUNT(*) AS total FROM baremes_ponderation").fetchone()
-        return row is None or int(row["total"]) == 0
+        with orm_session() as session:
+            total = session.execute(
+                select(func.count()).select_from(BaremePonderationOrm)
+            ).scalar_one()
+        return total == 0
 
 
 referential_repository = ReferentialRepository()

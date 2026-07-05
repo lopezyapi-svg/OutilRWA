@@ -75,31 +75,31 @@ class DashboardAllCategoriesRisquesDialog extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
                     child: Row(
                       children: [
-                        SizedBox(
+                        const SizedBox(
                           width: 32,
                           child: Text('#', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                         ),
                         vDivHeader(),
-                        Expanded(
+                        const Expanded(
                           flex: 4,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text('Catégorie d\'exposition', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        Expanded(
+                        const Expanded(
                           flex: 3,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text('Risque Net', textAlign: TextAlign.right, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        Expanded(
+                        const Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: EdgeInsets.symmetric(horizontal: 8),
                             child: Text('Part (%)', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),

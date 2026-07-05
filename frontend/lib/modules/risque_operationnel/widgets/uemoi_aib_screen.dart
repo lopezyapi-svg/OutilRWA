@@ -5,10 +5,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart' show AppFormatters;
-import '../../../shared/widgets/kpi_metric_card.dart';
-import '../../../shared/widgets/section_card.dart';
+import '../../risque_credit_shared/widgets/credit_data_table_card.dart';
+import '../../risque_credit_shared/widgets/credit_module_toolbar.dart';
+import '../../risque_credit_shared/widgets/credit_stat_card.dart';
 import '../models/ro_models.dart';
-import 'decision_panel.dart';
+import 'uemoi_form_style.dart';
 
 class UemoiAibScreen extends StatefulWidget {
   const UemoiAibScreen({super.key, required this.api});
@@ -22,12 +23,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
   AibCalculResult? _result;
   bool _loading = true;
   String? _error;
-
-  final _anneeCtrl = TextEditingController();
-  final _pnbCtrl   = TextEditingController();
-  final _srcCtrl   = TextEditingController();
-  final _formKey   = GlobalKey<FormState>();
-  bool _saving = false;
+  final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -37,9 +33,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
 
   @override
   void dispose() {
-    _anneeCtrl.dispose();
-    _pnbCtrl.dispose();
-    _srcCtrl.dispose();
+    _searchCtrl.dispose();
     super.dispose();
   }
 
@@ -55,29 +49,115 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
     }
   }
 
-  Future<void> _savePnb() async {
-    if (!_formKey.currentState!.validate()) return;
-    final annee = int.tryParse(_anneeCtrl.text.trim());
-    final pnb   = double.tryParse(_pnbCtrl.text.trim().replaceAll(' ', ''));
-    if (annee == null || pnb == null) return;
-    setState(() => _saving = true);
-    try {
-      await widget.api.upsertPnbAnnuel(annee, {
-        'produit_brut_total': pnb,
-        'source_document': _srcCtrl.text.trim(),
-      });
-      _anneeCtrl.clear();
-      _pnbCtrl.clear();
-      _srcCtrl.clear();
+  Future<void> _openExerciceDialog({PnbAnnuelView? initial}) async {
+    final anneeCtrl = TextEditingController(text: initial == null ? '' : '${initial.annee}');
+    final pnbCtrl = TextEditingController(
+        text: initial == null ? '' : initial.produitBrutTotal.toStringAsFixed(0));
+    final srcCtrl = TextEditingController(text: initial?.sourceDocument ?? '');
+    final formKey = GlobalKey<FormState>();
+    var saving = false;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setD) => AlertDialog(
+          title: Text(initial == null ? 'Nouvel exercice PNB' : 'Modifier l\'exercice ${initial.annee}'),
+          content: SizedBox(
+            width: 420,
+            child: Form(
+              key: formKey,
+              child: UemoiFormCard(
+                title: initial == null ? 'Nouvel exercice' : 'Exercice ${initial.annee}',
+                subtitle: 'Indicateur de Base — BCEAO',
+                color: AppTheme.accent,
+                children: [
+                  UemoiFormField(
+                    label: 'Exercice',
+                    controller: anneeCtrl,
+                    enabled: initial == null,
+                    hint: '2024',
+                    numeric: true,
+                    required: true,
+                    validator: (v) => int.tryParse(v ?? '') == null ? 'Année invalide' : null,
+                  ),
+                  UemoiFormField(
+                    label: 'Produit Brut',
+                    controller: pnbCtrl,
+                    hint: 'ex. 500 000 000',
+                    suffixText: ' FCFA',
+                    numeric: true,
+                    required: true,
+                    validator: (v) => double.tryParse(v?.replaceAll(' ', '') ?? '') == null
+                        ? 'Montant invalide'
+                        : null,
+                  ),
+                  UemoiFormField(
+                    label: 'Référence documents',
+                    controller: srcCtrl,
+                    hint: 'Comptes audités 2024',
+                    numeric: false,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(dialogContext, false),
+              child: const Text('Annuler'),
+            ),
+            FilledButton.icon(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      final annee = int.tryParse(anneeCtrl.text.trim());
+                      final pnb = double.tryParse(pnbCtrl.text.trim().replaceAll(' ', ''));
+                      if (annee == null || pnb == null) return;
+                      setD(() => saving = true);
+                      try {
+                        await widget.api.upsertPnbAnnuel(annee, {
+                          'produit_brut_total': pnb,
+                          'source_document': srcCtrl.text.trim(),
+                        });
+                        if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+                      } catch (e) {
+                        setD(() => saving = false);
+                        if (dialogContext.mounted) {
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            SnackBar(content: Text('Erreur : $e'), backgroundColor: AppTheme.danger),
+                          );
+                        }
+                      }
+                    },
+              icon: saving
+                  ? const SizedBox(
+                      width: 14, height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save_outlined, size: 15),
+              label: Text(saving ? 'Enregistrement…' : 'Enregistrer'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    anneeCtrl.dispose();
+    pnbCtrl.dispose();
+    srcCtrl.dispose();
+
+    if (ok == true) {
       await _load();
-    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: AppTheme.danger),
+          SnackBar(
+            backgroundColor: AppTheme.success,
+            content: Text(initial == null
+                ? 'Exercice enregistré avec succès.'
+                : 'Exercice mis à jour avec succès.'),
+          ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -97,6 +177,11 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
     try {
       await widget.api.deletePnbAnnuel(annee);
       await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(backgroundColor: AppTheme.success, content: Text('Exercice supprimé.')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -121,273 +206,118 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
     }
 
     final r = _result;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted = isDark ? AppTheme.darkMuted : AppTheme.muted;
+    final query = _searchCtrl.text.trim().toLowerCase();
+    final annees = (r?.anneesSaisies ?? const <PnbAnnuelView>[]).where((a) {
+      if (query.isEmpty) return true;
+      return '${a.annee}'.contains(query) || a.sourceDocument.toLowerCase().contains(query);
+    }).toList(growable: false);
 
     return SingleChildScrollView(
       padding: AppSpacing.pageInsets,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _NoticeBanner(
-            color: AppTheme.accent,
-            icon: Icons.gavel_outlined,
-            text: 'Approche Indicateur de Base — Art. 301 UEMOA · Déclaratoire BCEAO'
-                ' · Coefficient α = ${r != null ? (r.alpha * 100).toStringAsFixed(0) : 15} %',
-          ),
-          AppSpacing.gapSm,
-
-          if (r != null && !r.donneesInsuffisantes) ...[
-            Row(children: [
-              Expanded(child: KpiMetricCard(
-                label: 'K_IB (Exigence)',
-                value: AppFormatters.currency(r.kIb),
-                helper: 'capital risque operationnel',
-                icon: Icons.shield_outlined,
-                color: AppTheme.accent,
-              )),
-              AppSpacing.hGapSm,
-              Expanded(child: KpiMetricCard(
-                label: 'APR Opérationnel',
-                value: AppFormatters.currency(r.aprAib),
-                helper: 'rwa risque operationnel',
-                icon: Icons.assessment_outlined,
-                color: AppColors.prudentialCapital,
-              )),
-              AppSpacing.hGapSm,
-              Expanded(child: KpiMetricCard(
-                label: 'Capital minimal (8 %)',
-                value: AppFormatters.currency(r.capitalMinAib),
-                helper: 'capital minimum requis',
-                icon: Icons.account_balance_outlined,
-                color: AppTheme.success,
-              )),
-            ]),
-            AppSpacing.gapXs,
-            Wrap(spacing: AppSpacing.sm, runSpacing: AppSpacing.xs, children: [
-              _InfoPill('n = ${r.n} ann. PNB positif', muted),
-              _InfoPill('PNB moyen = ${AppFormatters.currency(r.pnbMoyen)}', muted),
-              _InfoPill('Σ PNB = ${AppFormatters.currency(r.sommePnbPositifs)}', muted),
-            ]),
-            AppSpacing.gapSm,
-          ],
-
-          if (r != null && r.donneesInsuffisantes) ...[
-            const _NoticeBanner(
-              color: AppTheme.warning,
-              icon: Icons.warning_amber_outlined,
-              text: 'Aucune donnée PNB saisie. Renseignez au moins 1 exercice pour lancer le calcul.',
+          _buildStatGrid(r),
+          AppSpacing.gapMd,
+          CreditDataTableCard(
+            title: 'PNB annuel (N-2, N-1, N) — Indicateur de Base',
+            emptyMessage: 'Aucun exercice saisi. Ajoutez le PNB des 3 derniers exercices.',
+            toolbar: CreditModuleToolbar(
+              searchController: _searchCtrl,
+              searchHint: 'Rechercher un exercice ou une source',
+              onSearchChanged: (_) => setState(() {}),
+              actions: [
+                FilledButton.icon(
+                  onPressed: () => _openExerciceDialog(),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Nouvel exercice'),
+                ),
+              ],
             ),
-            AppSpacing.gapSm,
-          ],
-
-          SectionCard(
-            title: 'PNB annuel (N-2, N-1, N)',
-            child: r == null || r.anneesSaisies.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                    child: Center(child: Text('Aucun exercice saisi',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: muted))),
-                  )
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      columnSpacing: 18,
-                      horizontalMargin: 8,
-                      headingRowHeight: 36,
-                      dataRowMinHeight: 40,
-                      dataRowMaxHeight: 48,
-                      dividerThickness: 0.35,
-                      headingTextStyle: Theme.of(context).textTheme.labelMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                      dataTextStyle: Theme.of(context).textTheme.bodyMedium,
-                      columns: const [
-                        DataColumn(label: Text('Exercice')),
-                        DataColumn(label: Text('PNB total'), numeric: true),
-                        DataColumn(label: Text('Statut AIB')),
-                        DataColumn(label: Text('Source')),
-                        DataColumn(label: Text('')),
-                      ],
-                      rows: r.anneesSaisies.map((a) => DataRow(cells: [
-                        DataCell(Text('${a.annee}',
-                            style: const TextStyle(fontWeight: FontWeight.w600))),
-                        DataCell(Text(AppFormatters.currency(a.produitBrutTotal))),
-                        DataCell(a.pnbPositif
-                            ? Text(AppFormatters.currency(a.pnbRetenuAib),
-                                style: const TextStyle(
-                                    color: AppTheme.success, fontWeight: FontWeight.w500))
-                            : Text('Exclu (négatif)',
-                                style: TextStyle(color: muted))),
-                        DataCell(Text(a.sourceDocument.isEmpty ? '—' : a.sourceDocument)),
-                        DataCell(IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 16),
-                          color: AppTheme.danger,
-                          tooltip: 'Supprimer',
-                          onPressed: () => _confirmDelete(a.annee),
-                          padding: EdgeInsets.zero,
-                          constraints:
-                              const BoxConstraints(minWidth: 32, minHeight: 32),
-                        )),
-                      ])).toList(),
-                    ),
-                  ),
+            columns: const [
+              DataColumn(label: Text('Exercice')),
+              DataColumn(label: Text('PNB total'), numeric: true),
+              DataColumn(label: Text('Statut AIB')),
+              DataColumn(label: Text('Source')),
+              DataColumn(label: Text('Actions')),
+            ],
+            rows: annees
+                .map((a) => DataRow(cells: [
+                      DataCell(Text('${a.annee}',
+                          style: const TextStyle(fontWeight: FontWeight.w600))),
+                      DataCell(Text(AppFormatters.currency(a.produitBrutTotal))),
+                      DataCell(a.pnbPositif
+                          ? Text(AppFormatters.currency(a.pnbRetenuAib),
+                              style: const TextStyle(
+                                  color: AppTheme.success, fontWeight: FontWeight.w500))
+                          : const Text('Exclu (négatif)', style: TextStyle(color: AppTheme.muted))),
+                      DataCell(Text(a.sourceDocument.isEmpty ? '—' : a.sourceDocument)),
+                      DataCell(Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: 'Modifier',
+                            onPressed: () => _openExerciceDialog(initial: a),
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                          ),
+                          IconButton(
+                            tooltip: 'Supprimer',
+                            onPressed: () => _confirmDelete(a.annee),
+                            icon: const Icon(Icons.delete_outline_rounded,
+                                size: 18, color: AppTheme.danger),
+                          ),
+                        ],
+                      )),
+                    ]))
+                .toList(growable: false),
           ),
-          AppSpacing.gapSm,
-
-          SectionCard(
-            title: 'Saisir / mettre à jour un exercice',
-            child: Form(
-              key: _formKey,
-              child: Wrap(
-                spacing: AppSpacing.md,
-                runSpacing: AppSpacing.sm,
-                crossAxisAlignment: WrapCrossAlignment.end,
-                children: [
-                  SizedBox(
-                    width: 90,
-                    child: TextFormField(
-                      controller: _anneeCtrl,
-                      decoration: const InputDecoration(
-                          labelText: 'Exercice', hintText: '2024'),
-                      keyboardType: TextInputType.number,
-                      validator: (v) =>
-                          int.tryParse(v ?? '') == null ? 'Année invalide' : null,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 220,
-                    child: TextFormField(
-                      controller: _pnbCtrl,
-                      decoration: const InputDecoration(
-                          labelText: 'Produit Brut (FCFA)',
-                          hintText: 'ex. 500 000 000'),
-                      keyboardType: TextInputType.number,
-                      validator: (v) =>
-                          double.tryParse(v?.replaceAll(' ', '') ?? '') == null
-                              ? 'Montant invalide'
-                              : null,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 220,
-                    child: TextFormField(
-                      controller: _srcCtrl,
-                      decoration: const InputDecoration(
-                          labelText: 'Référence documents',
-                          hintText: 'Comptes audités 2024'),
-                    ),
-                  ),
-                  FilledButton.icon(
-                    icon: _saving
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.save_outlined, size: 15),
-                    label: Text(_saving ? 'Enregistrement…' : 'Enregistrer'),
-                    onPressed: _saving ? null : _savePnb,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          AppSpacing.gapSm,
-
-          const _FormulaBox(
-            'K_IB = Σ(PNB positifs) / n × α    |    APR = K_IB × 12,5    |    Capital = APR × 8 %\n'
-            'n = années avec PNB > 0 sur 3 exercices (art. 301 UEMOA)',
-          ),
-          AppSpacing.gapSm,
-
-          DecisionPanel(loader: widget.api.fetchDecisionAib),
         ],
       ),
     );
   }
-}
 
-// ─── Helpers privés ───────────────────────────────────────────────────────────
-
-class _NoticeBanner extends StatelessWidget {
-  const _NoticeBanner(
-      {required this.color, required this.icon, required this.text});
-  final Color color;
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.12 : 0.07),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(color: color.withValues(alpha: isDark ? 0.4 : 0.3)),
+  Widget _buildStatGrid(AibCalculResult? r) {
+    final insuffisant = r == null || r.donneesInsuffisantes;
+    final stats = [
+      CreditStatCard(
+        label: 'K_IB (Exigence)',
+        value: insuffisant ? '—' : AppFormatters.currency(r.kIb),
+        helper: 'Capital risque opérationnel',
+        icon: Icons.shield_outlined,
+        color: AppTheme.accent,
       ),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Icon(icon, color: color, size: 14),
-        AppSpacing.hGapMd,
-        Expanded(
-          child: Text(text,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: color)),
-        ),
-      ]),
-    );
-  }
-}
-
-class _InfoPill extends StatelessWidget {
-  const _InfoPill(this.label, this.color);
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
+      CreditStatCard(
+        label: 'APR Opérationnel',
+        value: insuffisant ? '—' : AppFormatters.currency(r.aprAib),
+        helper: 'RWA risque opérationnel',
+        icon: Icons.assessment_outlined,
+        color: AppColors.prudentialCapital,
       ),
-      child: Text(label,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: color, fontWeight: FontWeight.w500)),
-    );
-  }
-}
-
-class _FormulaBox extends StatelessWidget {
-  const _FormulaBox(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final muted = isDark ? AppTheme.darkMuted : AppTheme.muted;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCard : AppTheme.background,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(
-            color: isDark ? AppTheme.darkBorder : AppTheme.border),
+      CreditStatCard(
+        label: 'Capital minimal (9 %)',
+        value: insuffisant ? '—' : AppFormatters.currency(r.capitalMinAib),
+        helper: 'Capital minimum requis',
+        icon: Icons.account_balance_outlined,
+        color: AppTheme.success,
       ),
-      child: Text(text,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(color: muted)),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth >= 960
+            ? 210.0
+            : constraints.maxWidth >= 620
+                ? ((constraints.maxWidth - AppTheme.spacing) / 2).clamp(0.0, 210.0).toDouble()
+                : constraints.maxWidth;
+
+        return Wrap(
+          spacing: AppTheme.spacing,
+          runSpacing: AppTheme.spacing,
+          children: [
+            for (final stat in stats) SizedBox(width: width, child: stat),
+          ],
+        );
+      },
     );
   }
 }

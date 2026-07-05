@@ -339,21 +339,33 @@ class _GarantiesScreenState extends State<GarantiesScreen> {
       return;
     }
 
-    await _service.upsertGuarantee(draft);
-    if (!mounted) {
-      return;
-    }
-    setState(() => _future = _service.fetchGuaranteesModule());
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppTheme.success,
-        content: Text(
-          initial == null
-              ? 'Garantie ajoutée avec succès.'
-              : 'Garantie mise à jour avec succès.',
+    try {
+      await _service.upsertGuarantee(draft);
+      if (!mounted) {
+        return;
+      }
+      setState(() => _future = _service.fetchGuaranteesModule());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.success,
+          content: Text(
+            initial == null
+                ? 'Garantie ajoutée avec succès.'
+                : 'Garantie mise à jour avec succès.',
+          ),
         ),
-      ),
-    );
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.danger,
+          content: Text('Échec de l\'enregistrement : $error'),
+        ),
+      );
+    }
   }
 
   Future<void> _deleteGuarantee(CreditGuaranteeRecord record) async {
@@ -382,17 +394,29 @@ class _GarantiesScreenState extends State<GarantiesScreen> {
       return;
     }
 
-    await _service.deleteGuarantee(record.id);
-    if (!mounted) {
-      return;
+    try {
+      await _service.deleteGuarantee(record.id);
+      if (!mounted) {
+        return;
+      }
+      setState(() => _future = _service.fetchGuaranteesModule());
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: AppTheme.success,
+          content: Text('Garantie supprimée.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.danger,
+          content: Text('Échec de la suppression : $error'),
+        ),
+      );
     }
-    setState(() => _future = _service.fetchGuaranteesModule());
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        backgroundColor: AppTheme.success,
-        content: Text('Garantie supprimée.'),
-      ),
-    );
   }
 }
 

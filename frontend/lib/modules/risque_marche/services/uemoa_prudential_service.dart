@@ -94,7 +94,7 @@ UemoaCapitalRequirement calculateUemoaMarketCapitalRequirement({
     'description': 'Exigence globale et RWA Marché',
     'totalCapital': totalCapital,
     'marketRwa': rwa,
-    'formule': 'RWA Marché = Exigence_FP_Marché × 12,5 (= 1/0,08)',
+    'formule': 'RWA Marché = Exigence_FP_Marché × 11,111111 (= 1/0,09)',
     'article': 'Dispositif prudentiel UMOA, Art. 318-319',
   });
 
@@ -125,8 +125,9 @@ UemoaCapitalRequirement calculateUemoaMarketCapitalRequirement({
 UemoaLimitCheck checkUemoaCapitalLimit({
   required double actualCapital,
   required double marketRwa,
-  // Seuil minimum de solvabilité dans l'UMOA (8,5 %). Le 9 % ne sert qu'au
-  // facteur de conversion RWA (12,5 = 1/0,08), pas au seuil de conformité.
+  // Seuil minimum de solvabilité dans l'UMOA (8,5 %, Titre III). Distinct du
+  // pourcentage RWA (9 %, facteur 11,111111) utilisé pour convertir une
+  // exigence de fonds propres marché en équivalent RWA.
   double minimumRatio = 0.085,
 }) {
   final ratio = marketRwa > 0 ? actualCapital / marketRwa : 0.0;

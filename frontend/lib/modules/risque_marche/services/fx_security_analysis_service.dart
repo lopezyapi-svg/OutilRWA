@@ -362,8 +362,8 @@ class FxSecurityAnalysisService {
     // Exigence de fonds propres = Position_Nette_Globale × 9%
     final capitalRequirement = globalNetPosition * 0.09;
 
-    // RWA Change = Exigence_FP × 12.5
-    final rwaChange = capitalRequirement * 12.5;
+    // RWA Change = Exigence_FP × 11,111111 (1 / 0,09)
+    final rwaChange = capitalRequirement * (1 / 0.09);
 
     final marketRiskContribution =
         totalExposure > 0 ? (capitalRequirement / totalExposure) * 100 : 0.0;
@@ -527,7 +527,7 @@ class FxSecurityAnalysisService {
     final globalNetPosition =
         math.max(totalLongPositions, totalShortPositions).toDouble();
     final capitalRequirement = globalNetPosition * 0.09;
-    final rwaChange = capitalRequirement * 12.5;
+    final rwaChange = capitalRequirement * (1 / 0.09); // 11,111111
 
     final marketRiskContribution =
         totalExposure > 0 ? (capitalRequirement / totalExposure) * 100 : 0.0;

@@ -59,12 +59,12 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.withOpacity(0.04),
+                  color: Colors.indigo.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(2),
                 ),
                 child: Text.rich(
                   TextSpan(
-                    text: '${AppFormatters.compactNumber(total)}',
+                    text: AppFormatters.compactNumber(total),
                     children: [
                       TextSpan(
                         text: amountUnit.label,
@@ -94,12 +94,12 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.indigo.withOpacity(0.04),
+                  color: Colors.indigo.withValues(alpha: 0.04),
                   borderRadius: BorderRadius.circular(2),
                 ),
                 child: Text.rich(
                   TextSpan(
-                    text: '${AppFormatters.compactNumber(total * 0.09)}',
+                    text: AppFormatters.compactNumber(total * 0.09),
                     children: [
                       TextSpan(
                         text: amountUnit.label,

@@ -1,6 +1,6 @@
 """Routes FastAPI du module Risque Opérationnel."""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import Response
 
 from .models import (
@@ -74,7 +74,10 @@ def create_incident(data: IncidentCreate) -> IncidentView:
 
 @router.put("/incidents/{id_}", response_model=IncidentView)
 def update_incident(id_: str, data: IncidentUpdate) -> IncidentView:
-    return services.update_incident(id_, data)
+    try:
+        return services.update_incident(id_, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.delete("/incidents/{id_}", status_code=204)
@@ -190,6 +193,13 @@ def list_historique(limit: int = Query(default=200, le=1000)) -> list[Historique
 
 # ─── BIC — Approche Standard CRR3 ────────────────────────────────────────────
 
+@router.get("/bic/inputs", response_model=list[OpRiskInput])
+def list_bic_inputs() -> list[OpRiskInput]:
+    """Toutes les années ayant des postes BIC/CCR3 enregistrés (saisie ou
+    import Excel), sans se limiter à la fenêtre N-2/N-1/N par défaut."""
+    return services.list_op_risk_inputs()
+
+
 @router.get("/bic/inputs/{annee}", response_model=OpRiskInput)
 def get_bic_input(annee: int) -> OpRiskInput:
     return services.get_op_risk_input(annee)
@@ -213,6 +223,17 @@ def update_bic_parametres(data: OpRiskParametresUpdate) -> OpRiskParametres:
 @router.get("/bic/calcul", response_model=OpRiskCalculResult)
 def calcul_bic(annee_n: int | None = Query(default=None)) -> OpRiskCalculResult:
     return services.calcul_bic(annee_n=annee_n)
+
+
+@router.get("/bic/import/template")
+def download_bic_import_template() -> Response:
+    """Télécharge le modèle Excel d'import des postes BIC/CCR3."""
+    template_bytes = services.build_bic_import_template()
+    return Response(
+        content=template_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=modele_import_bic_ccr3.xlsx"},
+    )
 
 
 # ─── BLOC A1 — AIB (Approche Indicateur de Base) ─────────────────────────────

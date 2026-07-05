@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'lib/modules/dashboard/models/dashboard_models.dart';
 
 void main() {
@@ -15,5 +14,5 @@ void main() {
   };
   final snap = DashboardSnapshot.fromJson(json);
   print('Is Null? ${snap.top10Exposures == null}');
-  print('Length: ${snap.top10Exposures.length}');
+  print('Length: ${snap.top10Exposures?.length}');
 }

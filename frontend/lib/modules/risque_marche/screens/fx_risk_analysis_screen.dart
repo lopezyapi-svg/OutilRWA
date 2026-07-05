@@ -177,7 +177,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                 Expanded(
                   child: Row(
                     children: [
-                      Flexible(
+                      const Flexible(
                         child: Text(
                           'Titres exposés au risque de change',
                           maxLines: 1,
@@ -185,7 +185,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1A237E),
+                            color: Color(0xFF1A237E),
                           ),
                         ),
                       ),
@@ -302,10 +302,10 @@ class _FxInfoButton extends StatelessWidget {
         context: context,
         builder: (_) => _FxMethodologyDialog(result: result),
       ),
-      child: Tooltip(
+      child: const Tooltip(
         message: 'Méthodologie et formules',
         child: Padding(
-          padding: const EdgeInsets.all(1),
+          padding: EdgeInsets.all(1),
           child: Icon(CupertinoIcons.info_circle, size: 17, color: _fxPrimary),
         ),
       ),
@@ -384,7 +384,7 @@ class _FxMethodologyDialog extends StatelessWidget {
                 'Position nette / devise = Σ(longues) − Σ(courtes)   [en XOF]',
                 'Position nette globale  = MAX( Σ longues ; Σ courtes )',
                 'Exigence de fonds propres = Position nette globale × 9 %',
-                'RWA Change = Exigence FP × 12,5',
+                'RWA Change = Exigence FP × 11,111111',
               ]),
               const SizedBox(height: 3),
               _section(context, 'Par titre'),
@@ -1369,7 +1369,7 @@ class _FxKpiSection extends StatelessWidget {
         '• Σ Positions courtes : ${formatLargeNumber(result.totalShortPositions)} XOF (somme des |positions nettes < 0|)\n'
         '• Position nette globale : ${formatLargeNumber(result.globalNetPosition)} XOF (MAX(longues ; courtes))\n'
         '• Exigence de fonds propres : ${formatLargeNumber(result.capitalRequirement)} XOF (position nette globale × 9 %)\n'
-        '• RWA Change : ${formatLargeNumber(result.rwaChange)} XOF (exigence FP × 12,5)';
+        '• RWA Change : ${formatLargeNumber(result.rwaChange)} XOF (exigence FP × 11,111111)';
   }
 
   @override

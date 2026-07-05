@@ -71,8 +71,8 @@ class MarketRiskAggregationService {
     final capital = store.dataset?.prudentialCapital;
     if (capital == null) return 0.0;
     // interestRateRisk = interestRateSpecificRisk + interestRateGeneralRisk
-    // RWA = capital × 12.5
-    return capital.interestRateRisk * 12.5;
+    // RWA = capital × 11,111111 (1 / 0,09)
+    return capital.interestRateRisk * (1 / 0.09);
   }
 
   /// Récupère le RWA Actions du store
@@ -80,6 +80,6 @@ class MarketRiskAggregationService {
     final capital = store.dataset?.prudentialCapital;
     if (capital == null) return 0.0;
     // equityRisk = equitySpecificRisk + equityGeneralRisk
-    return capital.equityRisk * 12.5;
+    return capital.equityRisk * (1 / 0.09);
   }
 }

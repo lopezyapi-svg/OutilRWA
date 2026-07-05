@@ -676,12 +676,12 @@ class _SummaryCardState extends State<_SummaryCard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(3),
           border: Border.all(
-            color: _isHovered ? Colors.indigo.withOpacity(0.5) : _line,
+            color: _isHovered ? Colors.indigo.withValues(alpha: 0.5) : _line,
           ),
           boxShadow: _isHovered
               ? [
                   BoxShadow(
-                    color: Colors.indigo.withOpacity(0.05),
+                    color: Colors.indigo.withValues(alpha: 0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   )
@@ -706,7 +706,7 @@ class _SummaryCardState extends State<_SummaryCard> {
               ),
             ),
             const SizedBox(height: 10),
-            Divider(height: 1, thickness: 1, color: _line.withOpacity(0.6)),
+            Divider(height: 1, thickness: 1, color: _line.withValues(alpha: 0.6)),
             const SizedBox(height: 12),
             Builder(
               builder: (context) {
@@ -1518,7 +1518,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                         },
                                         child: Container(
                                           color: selectedIndex == i
-                                              ? Colors.green.withOpacity(0.15)
+                                              ? Colors.green.withValues(alpha: 0.15)
                                               : (i % 2 == 0 ? Colors.transparent : const Color(0xFFF1F5F9)), // Alternating row color
                                           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                                           child: Row(

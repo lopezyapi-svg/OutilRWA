@@ -93,9 +93,9 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
     if (maxAxis <= 0) maxAxis = tickStep;
 
     final plotW = _getWidth() - 85.0 - 60.0;
-    final plotLeft = 85.0;
-    final plotTop = 12.0;
-    final plotBottom = 158.0 - 26.0;
+    const plotLeft = 85.0;
+    const plotTop = 12.0;
+    const plotBottom = 158.0 - 26.0;
 
     double x(double v) => plotLeft + (v / maxAxis) * plotW;
 
@@ -126,7 +126,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
         found = _TooltipData(
           '${l.label} : Pilier 1 (en $unitLabel)',
           [
-            _TooltipRow('Seuil minimum strict', '$basePct'),
+            _TooltipRow('Seuil minimum strict', basePct),
             const _TooltipRow.divider(),
             _TooltipRow('Montant équivalent', '$baseMd$unitLabel', isHighlight: true),
           ],
@@ -142,10 +142,10 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
         found = _TooltipData(
           '${l.label} : Exigence globale (en $unitLabel)',
           [
-            _TooltipRow('Pilier 1', '$basePct'),
-            _TooltipRow('Coussin de conservation', '$coussinPct'),
+            _TooltipRow('Pilier 1', basePct),
+            _TooltipRow('Coussin de conservation', coussinPct),
             const _TooltipRow.divider(),
-            _TooltipRow('Taux global exigé', '$exigPct', isHighlight: true),
+            _TooltipRow('Taux global exigé', exigPct, isHighlight: true),
             const _TooltipRow.divider(),
             _TooltipRow('Montant requis', '$requisMd$unitLabel', isHighlight: true),
           ],
@@ -163,7 +163,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
           '${l.label} : Fonds propres détenus (en $unitLabel)',
           [
             _TooltipRow('Montant détenu', '$detenuMd$unitLabel'),
-            _TooltipRow('Ratio effectif', '$actPct', isHighlight: true),
+            _TooltipRow('Ratio effectif', actPct, isHighlight: true),
             const _TooltipRow.divider(),
             _TooltipRow('Montant exigé', '$requisMd$unitLabel'),
             _TooltipRow(
@@ -218,15 +218,15 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
         children: [
           Row(
             children: [
-              _LegendShape(type: 0),
+              const _LegendShape(type: 0),
               const SizedBox(width: 6),
               Text('Pilier 1', style: DashText.caption(c, color: c.muted)),
               const SizedBox(width: 14),
-              _LegendShape(type: 1),
+              const _LegendShape(type: 1),
               const SizedBox(width: 6),
               Text('Coussin', style: DashText.caption(c, color: c.muted)),
               const SizedBox(width: 14),
-              _LegendShape(type: 2),
+              const _LegendShape(type: 2),
               const SizedBox(width: 6),
               Text('Globale',
                   style: DashText.caption(c, color: c.muted)),
@@ -378,7 +378,7 @@ class _TooltipData {
 }
 
 class _TooltipRow {
-  const _TooltipRow(this.label, this.value, {this.isHighlight = false, this.isDivider = false});
+  const _TooltipRow(this.label, this.value, {this.isHighlight = false}) : isDivider = false;
   const _TooltipRow.divider() : label = '', value = '', isHighlight = false, isDivider = true;
   
   final String label;
@@ -508,10 +508,10 @@ class _DotPlotPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final plotLeft = _leftPad;
+    const plotLeft = _leftPad;
     final plotRight = size.width - _rightPad;
     final plotW = plotRight - plotLeft;
-    final plotTop = _topPad;
+    const plotTop = _topPad;
     final plotBottom = size.height - _bottomPad;
 
     double x(double v) => plotLeft + (v / maxAxis) * plotW;

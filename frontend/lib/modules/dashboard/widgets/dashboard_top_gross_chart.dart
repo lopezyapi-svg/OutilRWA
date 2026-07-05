@@ -57,7 +57,6 @@ class DashboardTopGrossChart extends StatelessWidget {
 
 class _HorizontalBarItem extends StatefulWidget {
   const _HorizontalBarItem({
-    super.key,
     required this.entry,
     required this.currency,
     required this.color,
@@ -127,7 +126,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
                     Container(
                       height: 16,
                       decoration: BoxDecoration(
-                        color: widget.color.withOpacity(0.1),
+                        color: widget.color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -139,7 +138,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
                       decoration: BoxDecoration(
                         color: widget.color,
                         borderRadius: BorderRadius.circular(2),
-                        boxShadow: _isHovered ? [BoxShadow(color: widget.color.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))] : [],
+                        boxShadow: _isHovered ? [BoxShadow(color: widget.color.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))] : [],
                       ),
                     ),
                     Positioned(

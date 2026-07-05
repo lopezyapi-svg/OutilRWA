@@ -1615,19 +1615,19 @@ class _SettingsCurrencyOptionList extends StatelessWidget {
           selected: true,
           onTap: () => onChanged('XOF'),
         ),
-        _SettingsCurrencyOptionRow(
+        const _SettingsCurrencyOptionRow(
           code: 'EUR',
           label: 'EUR - Euro (Indisponible)',
           symbol: '€',
-          color: const Color(0xFF2563EB),
+          color: Color(0xFF2563EB),
           selected: false,
           onTap: null,
         ),
-        _SettingsCurrencyOptionRow(
+        const _SettingsCurrencyOptionRow(
           code: 'USD',
           label: 'USD - Dollar américain (Indisponible)',
           symbol: r'$',
-          color: const Color(0xFF10B981),
+          color: Color(0xFF10B981),
           selected: false,
           onTap: null,
         ),
@@ -1658,8 +1658,8 @@ class _SettingsCurrencyOptionRow extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final disabled = onTap == null;
     final text = isDark
-        ? const Color(0xFFF2F6FF).withOpacity(disabled ? 0.35 : 1.0)
-        : AppTheme.text.withOpacity(disabled ? 0.35 : 1.0);
+        ? const Color(0xFFF2F6FF).withValues(alpha: disabled ? 0.35 : 1.0)
+        : AppTheme.text.withValues(alpha: disabled ? 0.35 : 1.0);
     final selectedBg =
         isDark ? const Color(0xFF16233A) : const Color(0xFFF4F6FA);
 
@@ -1683,14 +1683,14 @@ class _SettingsCurrencyOptionRow extends StatelessWidget {
                 height: 24,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: disabled ? color.withOpacity(0.3) : color,
+                  color: disabled ? color.withValues(alpha: 0.3) : color,
                   shape: BoxShape.circle,
                 ),
                 child: Text(
                   symbol,
                   maxLines: 1,
                   style: TextStyle(
-                    color: disabled ? Colors.white.withOpacity(0.5) : Colors.white,
+                    color: disabled ? Colors.white.withValues(alpha: 0.5) : Colors.white,
                     fontSize: symbol.length > 1 ? 7.9 : 12,
                     fontWeight: FontWeight.w900,
                     height: 1,
@@ -2496,8 +2496,8 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
                   'XOF',
                   style: TextStyle(
                     color: isDark
-                        ? const Color(0xFFF2F6FF).withOpacity(0.5)
-                        : AppTheme.text.withOpacity(0.5),
+                        ? const Color(0xFFF2F6FF).withValues(alpha: 0.5)
+                        : AppTheme.text.withValues(alpha: 0.5),
                     fontSize: 9.8,
                     fontWeight: FontWeight.w500,
                     height: 1,
@@ -2508,8 +2508,8 @@ class _PortfolioCurrencyPicker extends StatelessWidget {
                   Icons.lock_outline,
                   size: 10,
                   color: isDark
-                      ? const Color(0xFFD7E3FA).withOpacity(0.4)
-                      : AppTheme.muted.withOpacity(0.4),
+                      ? const Color(0xFFD7E3FA).withValues(alpha: 0.4)
+                      : AppTheme.muted.withValues(alpha: 0.4),
                 ),
               ],
             ),

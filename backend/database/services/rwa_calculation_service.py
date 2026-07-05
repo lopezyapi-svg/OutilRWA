@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from app.core.calculations import calculate_capital, convert_currency_amount
+from app.core.calculations import bucketize_rating, calculate_capital, convert_currency_amount
 from app.expositions.models import (
     Counterparty,
     ExposureCreate,
@@ -145,25 +145,6 @@ def resolve_category(category: str) -> dict[str, str]:
         if option["code"] == "j" and normalized == normalize_text("Risque eleve"):
             return option
     return CATEGORY_OPTIONS[4]
-
-
-def bucketize_rating(rating: str) -> str:
-    normalized = rating.strip().upper()
-    if normalized == "AAA/AA":
-        return "AAA/AA"
-    if normalized == "BB/B":
-        return "BB/B"
-    if normalized in {"AAA", "AA+", "AA", "AA-"}:
-        return "AAA/AA"
-    if normalized in {"A+", "A", "A-"}:
-        return "A"
-    if normalized in {"BBB+", "BBB", "BBB-"}:
-        return "BBB"
-    if normalized in {"BB+", "BB", "BB-", "B+", "B", "B-"}:
-        return "BB/B"
-    if normalized == "< B-":
-        return "< B-"
-    return "Non noté"
 
 
 def lookup_sovereign_oce_risk_weight(note: str) -> float:
@@ -1449,92 +1430,3 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
     )
 
 
-def view_to_exposure_record(view: ExposureView) -> dict[str, Any]:
-    category = resolve_category(view.counterparty.category)
-    crm_details = model_dump(view.crm_details)
-    source_fields = {
-        "loan_total_amount": view.loan_total_amount,
-        "on_balance_exposure_amount": view.on_balance_exposure_amount,
-        "off_balance_exposure_amount": view.off_balance_exposure_amount,
-        "provisions_amount": view.provisions_amount,
-        "exposure_maturity_months": view.exposure_maturity_months,
-        "residual_maturity_months": view.residual_maturity_months,
-        "country_risk_weight": view.country_risk_weight,
-        "ead_bilan_amount": view.ead_bilan_amount,
-        "ead_hb_amount": view.ead_hb_amount,
-        "ead_hb_ccf_amount": view.ead_hb_ccf_amount,
-        "ead_total_amount": view.ead_total_amount,
-        "rwa_eb_amount": view.rwa_eb_amount,
-        "rwa_hb_amount": view.rwa_hb_amount,
-    }
-    return {
-        "id": view.id,
-        "analysis_date": view.analysis_date,
-        "grant_date": view.grant_date,
-        "maturity_date": view.maturity_date,
-        "counterparty_name": view.counterparty.name,
-        "country": view.counterparty.country,
-        "country_rating": view.counterparty.country_rating,
-        "category_raw": category["prudential"],
-        "category_dashboard": category["legacy"],
-        "category_standard": category["legacy"],
-        "rating": view.counterparty.rating,
-        "gross_amount": view.gross_amount,
-        **source_fields,
-        "source_fields": source_fields,
-        "currency": view.currency,
-        "status": view.status,
-        "sovereign_special_case": view.sovereign_special_case,
-        "sovereign_preferential_zero_weight": view.sovereign_preferential_zero_weight,
-        "sovereign_oce_established": view.sovereign_oce_established,
-        "sovereign_oce_note": view.sovereign_oce_note,
-        "public_body_uemoa_fcfa_case": view.public_body_uemoa_fcfa_case,
-        "public_body_non_public_activity": view.public_body_non_public_activity,
-        "bmd_high_quality_case": view.bmd_high_quality_case,
-        "bmd_uemoa_fcfa_case": view.bmd_uemoa_fcfa_case,
-        "bmd_uemoa_criteria_satisfied": view.bmd_uemoa_criteria_satisfied,
-        "bmd_listed_institution_fcfa_case": view.bmd_listed_institution_fcfa_case,
-        "bank_institution_case": coerce_bank_institution_case(
-            view.bank_institution_case
-        ),
-        "other_asset_type": view.other_asset_type,
-        "off_balance_risk_level": coerce_off_balance_risk_level(
-            view.off_balance_risk_level,
-            fallback_to_very_high=category["code"] == "l",
-            factor_hint=view.final_rw,
-        ),
-        "retail_eligibility_criteria_satisfied":
-            view.retail_eligibility_criteria_satisfied,
-        "residential_mortgage_eligible": view.residential_mortgage_eligible,
-        "commercial_real_estate_eligible":
-            view.commercial_real_estate_eligible,
-        "defaulted_exposure_initial_risk_weight":
-            view.defaulted_exposure_initial_risk_weight,
-        "defaulted_exposure_residential_mortgage_in_default":
-            view.defaulted_exposure_residential_mortgage_in_default,
-        "defaulted_exposure_provision_at_least_twenty_percent":
-            view.defaulted_exposure_provision_at_least_twenty_percent,
-        "enterprise_exceeds_bceao_degradation_threshold":
-            view.enterprise_exceeds_bceao_degradation_threshold,
-        "enterprise_prudential_procedure": view.enterprise_prudential_procedure,
-        "enterprise_investment_firm_without_banking_law":
-            view.enterprise_investment_firm_without_banking_law,
-        "crm_exists": view.crm_coverage_percent > 0.0 or crm_details.get("mode") != "Aucune",
-        "crm_type": view.crm_type,
-        "crm_mode": crm_details.get("mode") or crm_mode_from_type(view.crm_type),
-        "crm_label": crm_details.get("label") or view.crm_type,
-        "crm_coverage_percent": view.crm_coverage_percent,
-        "crm_details": crm_details,
-        "guarantor_rw": lookup_prudential_risk_weight(
-            resolve_category(str(crm_details.get("guarantor_category") or "Souverains"))["code"],
-            str(crm_details.get("guarantor_rating") or view.counterparty.rating),
-        )
-        if crm_details.get("mode") == "CRM non financee"
-        else 0.0,
-        "original_rw": view.original_rw,
-        "final_rw": view.final_rw,
-        "ead": view.ead,
-        "rwa": view.rwa,
-        "capital": view.capital,
-        "comment": view.comment,
-    }

@@ -341,10 +341,10 @@ void main() {
 
       final result = calculateMarketPrudentialCapital(records: [record]);
 
-      expect(result.equitySpecificRisk, 8000000);
-      expect(result.equityGeneralRisk, 8000000);
-      expect(result.capitalRequirement, 16000000);
-      expect(result.marketRwa, 200000000);
+      expect(result.equitySpecificRisk, 9000000);
+      expect(result.equityGeneralRisk, 9000000);
+      expect(result.capitalRequirement, 18000000);
+      expect(result.marketRwa, 225000000);
     });
 
     test('measures non-XOF open currency positions at spot-equivalent value',
@@ -364,7 +364,7 @@ void main() {
       final result = calculateMarketPrudentialCapital(records: [record]);
 
       expect(result.foreignExchangeGlobalNetPosition, 600000);
-      expect(result.foreignExchangeRisk, 48000);
+      expect(result.foreignExchangeRisk, 54000);
     });
 
     test('excludes banking-book (HTM) bonds from interest rate risk (Art. 321)',
@@ -421,7 +421,7 @@ void main() {
       );
 
       expect(result.equitySpecificRisk, 4000000); // 4% × 100M (Art. 399)
-      expect(result.equityGeneralRisk, 8000000); // général reste à 8%
+      expect(result.equityGeneralRisk, 9000000); // général reste à 9%
     });
 
     test('nets equity positions per issuer (specific) and per market (general)',
@@ -446,8 +446,8 @@ void main() {
 
       final result = calculateMarketPrudentialCapital(records: [long, short]);
 
-      // Spécifique : Σ|net par émetteur| = 200M → 16M (Art. 399)
-      expect(result.equitySpecificRisk, 16000000);
+      // Spécifique : Σ|net par émetteur| = 200M → 18M (Art. 399)
+      expect(result.equitySpecificRisk, 18000000);
       // Général : net du marché XOF = +100M − 100M = 0 → 0 (Art. 401)
       expect(result.equityGeneralRisk, 0);
     });

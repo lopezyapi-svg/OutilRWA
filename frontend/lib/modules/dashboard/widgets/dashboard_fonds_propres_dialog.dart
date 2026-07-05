@@ -283,7 +283,7 @@ class _DashboardFondsPropresDialogState
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -684,7 +684,7 @@ class _DashboardFondsPropresDialogState
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(4),
                     borderSide:
-                        BorderSide(color: AppColors.sidebar, width: 1.2),
+                        const BorderSide(color: AppColors.sidebar, width: 1.2),
                   ),
                   filled: true,
                   fillColor: isDark

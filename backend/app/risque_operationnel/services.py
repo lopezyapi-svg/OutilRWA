@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import date, datetime, timedelta
 
 from database.connection import database_manager, utcnow_iso
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     AibCalculResult,
@@ -64,25 +67,10 @@ from .models import (
     SyntheseResult,
 )
 
-_LIGNES_METIER = [
-    "Financement d'entreprise",
-    "Activités de marché",
-    "Banque de détail",
-    "Banque commerciale",
-    "Paiements et règlements",
-    "Fonctions d'agent",
-    "Gestion d'actifs",
-    "Courtage de détail",
-]
-
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
 def _new_id() -> str:
     return str(uuid.uuid4())
-
-
-def _today() -> str:
-    return date.today().isoformat()
 
 
 def _seq_reference(prefix: str, conn) -> str:
@@ -198,6 +186,8 @@ def update_incident(id_: str, data: IncidentUpdate) -> IncidentView:
     if not updates:
         with database_manager.transaction() as conn:
             row = conn.execute("SELECT * FROM ro_incidents WHERE id = ?", (id_,)).fetchone()
+        if row is None:
+            raise ValueError(f"Incident {id_} introuvable.")
         return _row_to_incident(row)
     set_clause = ", ".join(f"{k} = ?" for k in updates)
     with database_manager.transaction() as conn:
@@ -209,6 +199,8 @@ def update_incident(id_: str, data: IncidentUpdate) -> IncidentView:
         _log(conn, "Incidents", "UPDATE", old["reference"] if old else id_)
     with database_manager.transaction() as conn:
         row = conn.execute("SELECT * FROM ro_incidents WHERE id = ?", (id_,)).fetchone()
+    if row is None:
+        raise ValueError(f"Incident {id_} introuvable.")
     return _row_to_incident(row)
 
 
@@ -371,17 +363,141 @@ def build_ro_import_template() -> bytes:
     return buf.getvalue()
 
 
-_LIGNES_METIER = [
-    "Financement d'entreprise", "Activités de marché", "Banque de détail",
-    "Banque commerciale", "Paiements et règlements", "Fonctions d'agent",
-    "Gestion d'actifs", "Courtage de détail",
-]
-_TYPES_EVENEMENT = ["Interne", "Externe", "Processus", "Système", "Personnel", "Juridique"]
-_CAUSES_RACINE = [
-    "Erreur humaine", "Défaillance système", "Processus inadéquat",
-    "Fraude interne", "Fraude externe", "Événement externe", "Non définie",
-]
-_STATUTS_INCIDENT = ["Ouvert", "En cours", "Résolu", "Clôturé"]
+# Libellés des 13 postes du formulaire de saisie BIC/CCR3, dans l'ordre attendu
+# par le formulaire (ILDC, SC, FC, BIA). Doit rester synchronisé avec _kFields /
+# _kLabels côté frontend (risque_operationnel_screen.dart).
+BIC_INPUT_FIELDS: tuple[tuple[str, str], ...] = (
+    ("interets_percus", "Intérêts perçus"),
+    ("interets_verses", "Intérêts versés"),
+    ("dividendes_percus", "Dividendes perçus"),
+    ("tresorerie_et_banques_centrales", "Trésorerie & Banques centrales"),
+    ("creances_etablissements_credit", "Créances sur Étab. de crédit"),
+    ("creances_clientele", "Créances clientèle (brut)"),
+    ("provisions", "Provisions sur créances"),
+    ("autres_produits_exploitation", "Autres produits d'exploitation"),
+    ("autres_charges_exploitation", "Autres charges d'exploitation"),
+    ("commissions_percues", "Commissions perçues"),
+    ("commissions_versees", "Commissions versées"),
+    ("resultat_portefeuille_negociation", "Résultat net Ptf négociation"),
+    ("resultat_portefeuille_bancaire", "Résultat net Ptf bancaire"),
+    ("pnb", "PNB (BIA — si non calculé automatiquement)"),
+)
+
+
+def build_bic_import_template() -> bytes:
+    """Génère un classeur Excel de modèle pour l'import des postes BIC/CCR3.
+
+    Format « un onglet par exercice » : chaque feuille du classeur porte comme
+    nom l'année concernée (ex : "2024") et contient deux colonnes, « Poste »
+    et « Valeur ». L'exercice est donc déterminé par l'onglet lui-même — il
+    n'y a jamais de mélange ni d'ambiguïté entre les années des différentes
+    feuilles. Pour ajouter un exercice, l'utilisateur duplique un onglet et le
+    renomme avec l'année voulue ; pour en retirer un, il supprime l'onglet.
+    """
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+    wb = Workbook()
+
+    BLUE_DARK = "1D4ED8"
+    BLUE_LIGHT = "DBEAFE"
+    BORDER_CLR = "CBD5E1"
+    thin = Side(style="thin", color=BORDER_CLR)
+    thin_b = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def fill(hex_color: str) -> PatternFill:
+        return PatternFill("solid", fgColor=hex_color)
+
+    def center(wrap: bool = False) -> Alignment:
+        return Alignment(horizontal="center", vertical="center", wrap_text=wrap)
+
+    def left(wrap: bool = False) -> Alignment:
+        return Alignment(horizontal="left", vertical="center", wrap_text=wrap)
+
+    annee_n = date.today().year - 1
+    annees = [annee_n - 2, annee_n - 1, annee_n]
+
+    # ── Feuille "Instructions" (créée par défaut par openpyxl, on la renomme) ──
+    ws_instr = wb.active
+    ws_instr.title = "Instructions"
+
+    # ── Une feuille par exercice ─────────────────────────────────────────────
+    for annee in annees:
+        ws = wb.create_sheet(title=str(annee))
+        ws.freeze_panes = "A3"
+
+        ws.row_dimensions[1].height = 30
+        ws.merge_cells("A1:B1")
+        title_cell = ws["A1"]
+        title_cell.value = f"Exercice {annee} — Indicateur d'activité BIC / CCR3"
+        title_cell.font = Font(bold=True, size=12, color="FFFFFF")
+        title_cell.fill = fill(BLUE_DARK)
+        title_cell.alignment = center()
+
+        headers = [("A", "Poste", 42), ("B", "Valeur (FCFA)", 20)]
+        ws.row_dimensions[2].height = 20
+        for col_letter, label, width in headers:
+            c = ws[f"{col_letter}2"]
+            c.value = label
+            c.font = Font(bold=True, size=10, color=BLUE_DARK)
+            c.fill = fill(BLUE_LIGHT)
+            c.border = thin_b
+            c.alignment = center()
+            ws.column_dimensions[col_letter].width = width
+
+        row_idx = 3
+        for _, label in BIC_INPUT_FIELDS:
+            row_fill = fill("FFFFFF") if row_idx % 2 == 1 else fill("F8FAFC")
+            c_label = ws.cell(row=row_idx, column=1, value=label)
+            c_label.font = Font(size=10)
+            c_label.fill = row_fill
+            c_label.border = thin_b
+            c_label.alignment = left(wrap=True)
+
+            c_val = ws.cell(row=row_idx, column=2, value=0)
+            c_val.font = Font(size=10)
+            c_val.fill = row_fill
+            c_val.border = thin_b
+            c_val.alignment = center()
+
+            row_idx += 1
+
+    # Excel ouvre directement sur le premier exercice (l'onglet "Instructions"
+    # reste le premier onglet visible, mais pas la vue active par défaut).
+    wb.active = 1
+
+    ws_instr.column_dimensions["A"].width = 80
+    ws_instr.merge_cells("A1:A1")
+    ws_instr["A1"].value = "Instructions — Import des postes BIC / CCR3"
+    ws_instr["A1"].font = Font(bold=True, size=13, color="FFFFFF")
+    ws_instr["A1"].fill = fill(BLUE_DARK)
+    ws_instr["A1"].alignment = center()
+
+    instructions = [
+        "Chaque ONGLET (feuille) représente UN exercice : le nom de l'onglet "
+        "est l'année concernée (ex : « 2024 »). L'exercice est donc déterminé "
+        "par l'onglet — il n'y a jamais de mélange entre les années.",
+        "Le modèle contient 3 onglets pré-remplis à titre d'exemple. Pour "
+        "ajouter un exercice : clic droit sur un onglet > Déplacer ou copier > "
+        "Créer une copie, puis renommez le nouvel onglet avec l'année voulue.",
+        "Pour retirer un exercice, supprimez simplement son onglet.",
+        "Sur chaque onglet, renseignez les montants (en FCFA) dans la colonne "
+        "« Valeur ». Ne pas modifier les libellés de la colonne « Poste ».",
+        "Les cases vides ou non numériques sont importées comme 0.",
+        "L'import met à jour uniquement les exercices dont l'onglet est "
+        "présent dans le fichier — les autres exercices déjà enregistrés ne "
+        "sont pas affectés.",
+    ]
+    for ri, text in enumerate(instructions, start=2):
+        c = ws_instr.cell(row=ri, column=1, value=text)
+        c.font = Font(size=10)
+        c.alignment = left(wrap=True)
+        ws_instr.row_dimensions[ri].height = 34
+
+    buf = BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
 
 
 def bulk_import_incidents(data: IncidentBulkImportRequest) -> IncidentImportResult:
@@ -803,7 +919,7 @@ def get_dashboard() -> DashboardData:
         ).fetchone()["total"] or 0
         # K_IB simplifié : 15% de la moyenne des pertes sur 3 ans (proxy)
         k_ib = total_pertes * 0.15
-        apr = k_ib * 12.5
+        apr = k_ib * (1 / 0.09)
 
         # Widget 2
         inc_mois = conn.execute(
@@ -951,6 +1067,20 @@ def get_op_risk_input(annee: int) -> OpRiskInput:
         if row is None:
             return OpRiskInput(annee=annee)
         return _row_to_input(row)
+
+
+def list_op_risk_inputs() -> list[OpRiskInput]:
+    """Renvoie TOUTES les années pour lesquelles des postes BIC/CCR3 ont été
+    enregistrés (saisie manuelle ou import Excel), triées par année — sans se
+    limiter à la fenêtre glissante N-2/N-1/N utilisée par calcul_bic(). Permet
+    à l'onglet "Données importées" de retrouver un exercice importé même s'il
+    ne fait pas partie des 3 derniers exercices calculés par défaut.
+    """
+    with database_manager.read_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM op_risk_financial_inputs ORDER BY annee"
+        ).fetchall()
+    return [_row_to_input(row) for row in rows]
 
 
 def upsert_op_risk_input(annee: int, data: OpRiskInputUpdate) -> OpRiskInput:
@@ -1432,7 +1562,7 @@ def get_synthese() -> SyntheseResult:
         bic = calcul_bic()
         lignes.append(SyntheseLigne(
             methode="BIC — CRR3 Pilotage interne",
-            k=bic.ofr_crr3, apr=bic.rea_crr3, capital_min=bic.rea_crr3 * 0.08,
+            k=bic.ofr_crr3, apr=bic.rea_crr3, capital_min=bic.rea_crr3 * 0.09,
             disponible=not bic.donnees_insuffisantes,
         ))
         ofr_bic = bic.ofr_crr3 if not bic.donnees_insuffisantes else None
@@ -1453,7 +1583,7 @@ def get_synthese() -> SyntheseResult:
         if pnm > 0 and k_ib is not None and k_ib > 0:
             ratio = k_ib / pnm
     except Exception:
-        pass
+        logger.exception("Échec du calcul du ratio de couverture (K_IB / pertes nettes moyennes).")
 
     return SyntheseResult(lignes=lignes, ecart_bic_vs_aib=ecart, ratio_couverture=ratio)
 

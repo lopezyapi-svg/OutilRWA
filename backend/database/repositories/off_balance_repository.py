@@ -145,12 +145,4 @@ class OffBalanceRepository:
             )
         return [dict(record) for record in records]
 
-    def replace_all(self, records: list[dict[str, Any]], *, connection=None) -> list[dict[str, Any]]:
-        manager = nullcontext(connection) if connection is not None else database_manager.transaction()
-        with manager as active_connection:
-            active_connection.execute("DELETE FROM engagements_hors_bilan")
-            self.upsert_commitments(records, connection=active_connection)
-        return [dict(record) for record in records]
-
-
 off_balance_repository = OffBalanceRepository()

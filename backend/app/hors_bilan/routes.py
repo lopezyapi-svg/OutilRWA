@@ -1,6 +1,6 @@
 """Routes API du module hors bilan."""
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.hors_bilan.models import (
     OffBalanceCommitmentCreate,
@@ -26,7 +26,10 @@ def get_hors_bilan(
 def post_hors_bilan(payload: OffBalanceCommitmentCreate) -> OffBalanceCommitmentView:
     """Cree un engagement hors bilan."""
 
-    return create_commitment(payload)
+    try:
+        return create_commitment(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.get("/summary", response_model=OffBalanceSummary)

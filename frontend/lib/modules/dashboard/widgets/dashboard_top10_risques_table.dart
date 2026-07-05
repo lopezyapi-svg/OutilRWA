@@ -77,8 +77,8 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                   );
                 },
                 borderRadius: BorderRadius.circular(4),
-                hoverColor: c.navy.withOpacity(0.08),
-                splashColor: c.navy.withOpacity(0.12),
+                hoverColor: c.navy.withValues(alpha: 0.08),
+                splashColor: c.navy.withValues(alpha: 0.12),
                 highlightColor: Colors.transparent,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -159,10 +159,10 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                                     child: Text(
                                       '${index + 1}',
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: const Color(0xFFC1C7D0),
+                                        color: Color(0xFFC1C7D0),
                                         fontFeatures: Dash.tabular,
                                       ),
                                     ),

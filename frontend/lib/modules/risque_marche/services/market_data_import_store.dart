@@ -160,7 +160,7 @@ class MarketPrudentialCapitalResult {
   double get commodityRisk => commodityDirectionalRisk + commodityBasisRisk;
   double get capitalRequirement =>
       interestRateRisk + equityRisk + foreignExchangeRisk + commodityRisk;
-  double get marketRwa => capitalRequirement * 12.5;
+  double get marketRwa => capitalRequirement * (1 / 0.09); // 11,111111
 }
 
 MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
@@ -1118,15 +1118,17 @@ class MarketPortfolioRecord {
     if (lower == 'nombre dactions') return 'Nombre d\'actions';
     if (lower == 'cours actuel') return 'Cours actuel';
     if (lower == 'valeur de marche') return 'Valeur de marché';
-    if (lower == 'volatilite annualisee (%)')
+    if (lower == 'volatilite annualisee (%)') {
       return 'Volatilité annualisée (%)';
+    }
     if (lower == 'prix dachat unitaire') return 'Prix d\'achat unitaire';
     if (lower == 'cout dacquisition') return 'Coût d\'acquisition';
     if (lower == 'date danalyse') return 'Date d\'analyse';
     if (lower == 'la pire notation externe') return 'La pire notation externe';
     if (lower == 'maturite (mois)') return 'Maturité (mois)';
-    if (lower == 'maturite residuelle (mois)')
+    if (lower == 'maturite residuelle (mois)') {
       return 'Maturité résiduelle (mois)';
+    }
 
     return key;
   }
@@ -1177,7 +1179,8 @@ class MarketPortfolioRecord {
   DateTime? get analysisDate => _dateValue(values['Date d\'analyse']);
   DateTime? get issueDate => _dateValue(values['Date d\'émission']);
   DateTime? get maturityDate => _dateValue(values['Date d\'échéance']);
-  DateTime get resolvedAnalysisDate => _marketDateOnly(_marketToday());
+  DateTime get resolvedAnalysisDate =>
+      _marketDateOnly(analysisDate ?? _marketToday());
   bool get isActiveAtAnalysisDate => _bondIsActiveAtAnalysisDate(this);
   bool get isMaturedAtAnalysisDate => _bondIsMaturedAtAnalysisDate(this);
 

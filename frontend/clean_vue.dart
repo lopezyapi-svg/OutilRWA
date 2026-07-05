@@ -52,5 +52,5 @@ void main() {
       'padding: const EdgeInsets.all(3),', 'padding: const EdgeInsets.all(1),');
 
   file.writeAsStringSync(content);
-  print("Done replacing spaces in vue_ensemble_screen");
+  print('Done replacing spaces in vue_ensemble_screen');
 }
