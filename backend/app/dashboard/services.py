@@ -10,10 +10,10 @@ import unicodedata
 from app.core.calculations import convert_currency_amount, safe_ratio
 from app.core.bceao_calculations import (
     calculate_fonds_propres,
-    calculate_risque_operationnel,
     calculate_risque_marche,
     evaluate_ratios
 )
+from app.risque_operationnel.services import calcul_bic as _calcul_bic_crr3
 from app.dashboard.models import (
     DashboardMetric,
     DashboardProjectionPoint,
@@ -336,11 +336,6 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         fp_row = cursor.fetchone()
         fp_data = dict(fp_row) if fp_row else {}
         
-        # Risque Op
-        cursor.execute("SELECT * FROM risque_operationnel ORDER BY date_analyse DESC LIMIT 1")
-        ro_row = cursor.fetchone()
-        ro_data = dict(ro_row) if ro_row else {}
-        
         # Risque Marché
         cursor.execute("SELECT * FROM risque_marche ORDER BY date_analyse DESC LIMIT 1")
         rm_row = cursor.fetchone()
@@ -348,8 +343,11 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
 
     # CALCULATIONS BCEAO
     fp_calc = calculate_fonds_propres(fp_data)
-    ro_calc = calculate_risque_operationnel(ro_data)
     rm_calc = calculate_risque_marche(rm_data)
+    # RWA Opérationnel = REA CRR3 (Approche Standard / BIC), issu de la saisie
+    # ou de l'import Excel BIC/CCR3 — remplace l'ancienne approche indicateur
+    # de base (AIB) simplifiée qui n'était plus représentative.
+    rwa_operationnel = _calcul_bic_crr3().rea_crr3
 
     fp_detail = FondsPropresDetail(
         capital_ordinaire=fp_data.get("capital_ordinaire", 0.0),
@@ -377,7 +375,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     rwa_credit = sum(float(row["rwa"]) for row in exposure_rows)
     
     # RWA Total = Crédit + Marché + Opérationnel
-    rwa_total = rwa_credit + ro_calc["rwa_operationnel"] + rm_calc["rwa_marche"]
+    rwa_total = rwa_credit + rwa_operationnel + rm_calc["rwa_marche"]
 
     capital_total = sum(float(row["capital"]) for row in exposure_rows)
     risk_ratio = safe_ratio(rwa_total, gross_total if gross_total > 0 else ead_total)
@@ -442,10 +440,10 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         rating_buckets[rating] += float(item["gross_amount"])
 
     # Create RWA Type distribution
-    total_all_risks = rwa_credit + rm_calc["rwa_marche"] + ro_calc["rwa_operationnel"]
+    total_all_risks = rwa_credit + rm_calc["rwa_marche"] + rwa_operationnel
     rwa_type_distribution = [
         DistributionEntry(label="Crédit", amount=rwa_credit, percentage=(rwa_credit/total_all_risks*100) if total_all_risks > 0 else 0.0),
-        DistributionEntry(label="Opérationnel", amount=ro_calc["rwa_operationnel"], percentage=(ro_calc["rwa_operationnel"]/total_all_risks*100) if total_all_risks > 0 else 0.0),
+        DistributionEntry(label="Opérationnel", amount=rwa_operationnel, percentage=(rwa_operationnel/total_all_risks*100) if total_all_risks > 0 else 0.0),
         DistributionEntry(label="Marché", amount=rm_calc["rwa_marche"], percentage=(rm_calc["rwa_marche"]/total_all_risks*100) if total_all_risks > 0 else 0.0),
     ]
 
@@ -488,7 +486,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         _build_metric("ratio_levier", "Ratio de Levier", ratios["leverage"]["value"] / 100.0),
         _build_metric("rwa_credit", "RWA Crédit", rwa_credit),
         _build_metric("rwa_market", "RWA Marché", rm_calc["rwa_marche"]),
-        _build_metric("rwa_op", "RWA Opérationnel", ro_calc["rwa_operationnel"]),
+        _build_metric("rwa_op", "RWA Opérationnel", rwa_operationnel),
         _build_metric("crm", "Couverture CRM", covered_ratio),
         _build_metric("value_at_risk", "VaR globale", value_at_risk),
         _build_metric(

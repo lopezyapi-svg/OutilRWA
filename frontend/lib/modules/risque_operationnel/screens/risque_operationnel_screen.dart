@@ -56,14 +56,15 @@ const _kWarning = AppTheme.warning;
 const _kDanger = AppTheme.danger;
 const _kMuted = AppTheme.muted;
 
-/// Formate un montant FCFA avec la même unité (M / Md) que le sélecteur
-/// global du Dashboard Crédit (en haut à droite de l'application) : l'unité
-/// n'est pas déduite automatiquement, elle suit le choix de l'utilisateur.
+/// Formate un montant FCFA avec la même unité (M / Md) ET la même écriture
+/// que les cartes du Dashboard Crédit ("913,5Md" : nombre compact à
+/// précision adaptative, sans espace avant l'unité) — voir
+/// `AppFormatters.compactNumber` utilisé par `DashboardRwaDonut`.
 String _roAmount(BuildContext context, double value) {
   final unit = PortfolioAmountUnitScope.maybeOf(context);
   final sign = value < 0 ? '-' : '';
   final scaled = value.abs() / unit.divisor;
-  return '$sign${AppFormatters.decimalNumber(scaled, maxDecimals: 2)} ${unit.label}';
+  return '$sign${AppFormatters.compactNumber(scaled)}${unit.label}';
 }
 
 /// Formate un pourcentage avec 1 décimale, sauf si celle-ci est un 0 : dans ce

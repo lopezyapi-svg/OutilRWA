@@ -49,7 +49,10 @@ const _bicLabels = [
   'Autres produits d\'exploitation', 'Autres charges d\'exploitation',
   'Commissions perçues', 'Commissions versées',
   'Résultat net Ptf négociation', 'Résultat net Ptf bancaire',
-  'PNB (Produit Net Bancaire)',
+  // Doit être identique au libellé généré par le modèle Excel
+  // (BIC_INPUT_FIELDS côté backend), sinon la colonne "Poste" ne matche
+  // jamais et le PNB reste systématiquement à 0 après import.
+  'PNB (BIA — si non calculé automatiquement)',
 ];
 
 // ─── Point d'entrée ───────────────────────────────────────────────────────────
@@ -863,6 +866,14 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
     );
   }
 
+  // Largeurs FIXES (plutôt que Flex) : avec beaucoup d'exercices, les
+  // colonnes ne doivent pas se comprimer jusqu'à devenir illisibles — le
+  // tableau devient plus large que le dialogue et défile horizontalement
+  // (voir SingleChildScrollView ci-dessous), en plus du défilement vertical
+  // déjà en place au niveau de l'écran de prévisualisation.
+  static const _posteColWidth = 220.0;
+  static const _yearColWidth = 108.0;
+
   Widget _buildEditableTable() {
     return Container(
       decoration: BoxDecoration(
@@ -874,15 +885,18 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Table(
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Table(
             columnWidths: {
-              0: const FlexColumnWidth(2.6),
-              for (var i = 0; i < _years.length; i++) i + 1: const FlexColumnWidth(1),
+              0: const FixedColumnWidth(_posteColWidth),
+              for (var i = 0; i < _years.length; i++) i + 1: const FixedColumnWidth(_yearColWidth),
             },
             children: [
               _tHeader(),
               for (var fi = 0; fi < _bicFields.length; fi++) _tRow(fi),
             ],
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(8),
@@ -898,48 +912,59 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
   }
 
   TableRow _tHeader() {
+    // Rétréci via FittedBox : avec beaucoup d'exercices, chaque colonne
+    // devient étroite (largeur flexible) et ce cluster de 3 boutons + année
+    // ne doit jamais déborder (cause du RenderFlex overflow observé) — on le
+    // laisse donc se redimensionner proportionnellement plutôt que de fixer
+    // des tailles qui ne rentrent plus.
     Widget yearCell(int yi) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  iconSize: 12,
-                  color: Colors.white70,
-                  icon: const Icon(Icons.remove),
-                  onPressed: () => _changeYear(yi, -1),
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 11,
+                    color: Colors.white70,
+                    icon: const Icon(Icons.remove),
+                    onPressed: () => _changeYear(yi, -1),
+                  ),
                 ),
-              ),
-              Text('${_years[yi]}',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  iconSize: 12,
-                  color: Colors.white70,
-                  icon: const Icon(Icons.add),
-                  onPressed: () => _changeYear(yi, 1),
+                const SizedBox(width: 2),
+                Text('${_years[yi]}',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                const SizedBox(width: 2),
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 11,
+                    color: Colors.white70,
+                    icon: const Icon(Icons.add),
+                    onPressed: () => _changeYear(yi, 1),
+                  ),
                 ),
-              ),
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  iconSize: 12,
-                  color: Colors.white70,
-                  icon: const Icon(Icons.close),
-                  tooltip: 'Retirer cet exercice',
-                  onPressed: () => _removeYear(yi),
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 11,
+                    color: Colors.white70,
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Retirer cet exercice',
+                    onPressed: () => _removeYear(yi),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
 
