@@ -872,15 +872,28 @@ class ExcelRepository:
                 else ead_bilan_amount
             )
         )
-        ead = 0.0 if is_off_balance else (computed_ead_total or 0.0)
-        rwa = 0.0 if is_off_balance else (
+        stored_rwa = (
             rwa_credit_amount
             if rwa_credit_amount is not None
             else (
-                ((rwa_eb_amount or 0.0) + (rwa_hb_amount or 0.0))
+                (rwa_eb_amount or 0.0) + (rwa_hb_amount or 0.0)
                 if rwa_eb_amount is not None or rwa_hb_amount is not None
-                else round((computed_ead_total or 0.0) * stored_rw, 2)
+                else None
             )
+        )
+        if computed_ead_total is None or computed_ead_total <= 0:
+            # Colonnes EAD absentes ou nulles dans le classeur : l'EAD est
+            # reconstituée via l'identité réglementaire RWA = EAD × RW, sinon
+            # depuis le montant au bilan (EAD bilan = valeur comptable).
+            if stored_rwa is not None and stored_rwa > 0 and stored_rw > 0:
+                computed_ead_total = round(stored_rwa / stored_rw, 2)
+            elif not is_off_balance:
+                computed_ead_total = on_balance_exposure_amount
+        ead = 0.0 if is_off_balance else (computed_ead_total or 0.0)
+        rwa = 0.0 if is_off_balance else (
+            stored_rwa
+            if stored_rwa is not None
+            else round((computed_ead_total or 0.0) * stored_rw, 2)
         )
         capital = 0.0 if is_off_balance else (
             capital_amount if capital_amount is not None else round(rwa * 0.09, 2)

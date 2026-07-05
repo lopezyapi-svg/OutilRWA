@@ -67,7 +67,6 @@ CATEGORY_OPTIONS: tuple[dict[str, str], ...] = (
     {"code": "i", "legacy": "Creances en souffrance", "prudential": "(i) créances en souffrance"},
     {"code": "j", "legacy": "Créances à risque élevé", "prudential": "(j) créances à risque élevé"},
     {"code": "k", "legacy": "Autres actifs", "prudential": "(k) autres actifs"},
-    {"code": "l", "legacy": "Hors bilan", "prudential": "(l) Hors bilan"},
 )
 
 _SOVEREIGN_OCE_RW_BY_NOTE: dict[str, float] = {
@@ -252,7 +251,7 @@ def lookup_country_rating_risk_weight(country_rating: str) -> float:
 
 
 def should_apply_unrated_counterparty_country_floor(category_code: str) -> bool:
-    return category_code not in {"a", "k", "l"}
+    return category_code not in {"a", "k"}
 
 
 def apply_unrated_counterparty_country_floor(
@@ -562,8 +561,6 @@ def lookup_prudential_risk_weight(
         return finalize(0.75)
     if category_code == "k":
         return finalize(lookup_other_asset_risk_weight(other_asset_type))
-    if category_code == "l":
-        return finalize(lookup_off_balance_fcec(off_balance_risk_level))
     if category_code == "g":
         return finalize(
             lookup_residential_mortgage_risk_weight(
@@ -1025,11 +1022,10 @@ def resolve_exposure_components(
         if payload.loan_total_amount is not None
         else gross_amount
     )
-    default_on_balance_amount = 0.0 if category_code == "l" else gross_amount
     on_balance_exposure_amount = (
         float(payload.on_balance_exposure_amount)
         if payload.on_balance_exposure_amount is not None
-        else default_on_balance_amount
+        else gross_amount
     )
     off_balance_exposure_amount = (
         float(payload.off_balance_exposure_amount)
@@ -1038,7 +1034,7 @@ def resolve_exposure_components(
     )
     resolved_off_balance_risk_level = coerce_off_balance_risk_level(
         payload.off_balance_risk_level,
-        fallback_to_very_high=category_code == "l" or off_balance_exposure_amount > 0,
+        fallback_to_very_high=off_balance_exposure_amount > 0,
     )
     off_balance_fcec = (
         lookup_off_balance_fcec(resolved_off_balance_risk_level)
@@ -1139,30 +1135,6 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
     effective_coverage = 0.0
     guarantor_rw = 0.0
     haircut = 0.0
-
-    if category_code == "l":
-        ead_bilan_amount = 0.0
-        ead_hb_ccf_amount = float(payload.gross_amount or 0.0) * final_rw
-        ead = ead_hb_ccf_amount
-        rwa_eb_amount = 0.0
-        rwa_hb_amount = ead
-        rwa = round(rwa_eb_amount + rwa_hb_amount, 2)
-        capital = calculate_capital(rwa)
-        return {
-            "original_rw": round(original_rw, 4),
-            "final_rw": round(final_rw, 4),
-            "ead": round(ead, 2),
-            "ead_bilan_amount": round(ead_bilan_amount, 2),
-            "ead_hb_ccf_amount": round(ead_hb_ccf_amount, 2),
-            "ead_total_amount": round(ead, 2),
-            "rwa_eb_amount": round(rwa_eb_amount, 2),
-            "rwa_hb_amount": round(rwa_hb_amount, 2),
-            "rwa": rwa,
-            "capital": capital,
-            "effective_coverage": 0.0,
-            "guarantor_rw": 0.0,
-            "haircut": 0.0,
-        }
 
     if crm_details["mode"] == "CRM financee":
         financed_details = compute_financed_crm_details(
@@ -1333,6 +1305,15 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
         record.get("category_raw") or record.get("category_standard") or "Entreprises"
     )
     category = resolve_category(str(category_label))
+    ead_value = float(record["ead"] or 0.0)
+    rwa_value = float(record["rwa"] or 0.0)
+    applied_rw = float(record.get("final_rw") or 0.0) or float(
+        record.get("original_rw") or 0.0
+    )
+    if ead_value <= 0 and rwa_value > 0 and applied_rw > 0:
+        # Données historiques importées sans colonnes EAD : reconstitution via
+        # l'identité réglementaire RWA = EAD × pondération.
+        ead_value = round(rwa_value / applied_rw, 2)
     counterparty = Counterparty(
         id=record["id"],
         name=record["counterparty_name"],
@@ -1386,7 +1367,6 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
         other_asset_type=record.get("other_asset_type"),
         off_balance_risk_level=coerce_off_balance_risk_level(
             record.get("off_balance_risk_level"),
-            fallback_to_very_high=category["code"] == "l",
             factor_hint=float(record.get("final_rw", 0.0) or 0.0),
         ),
         retail_eligibility_criteria_satisfied=record.get(
@@ -1421,8 +1401,8 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
         crm_details=ExposureCrmDetails(**crm_details),
         original_rw=record["original_rw"],
         final_rw=record["final_rw"],
-        ead=record["ead"],
-        rwa=record["rwa"],
+        ead=ead_value,
+        rwa=rwa_value,
         # Recalcule au taux minimum courant (settings.capital_ratio) pour que le
         # changement de taux s'applique aussi aux expositions déjà persistées.
         capital=calculate_capital(record["rwa"]),

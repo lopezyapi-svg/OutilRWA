@@ -38,7 +38,6 @@ FULL_AGENT_LABELS: dict[str, str] = {
     "i": "Créances en souffrance",
     "j": "Créances à risque élevé",
     "k": "Autres actifs",
-    "l": "Engagements de hors-bilan",
 }
 
 # Périodes de comparaison proposées (sans historique disponible pour l'instant).

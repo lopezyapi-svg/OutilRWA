@@ -431,102 +431,39 @@ class _WelcomeInsightMessage {
 
 const List<_WelcomeInsightMessage> _welcomeInsightMessages = [
   _WelcomeInsightMessage(
-    label: 'Heymann\'s Inc.',
-    title: 'Conseil, ALM & Risk',
+    label: 'Définition clé',
+    title: 'Risque de crédit',
     body:
-        'Cabinet fondé en 2017, spécialisé en management, stratégie, risques, réglementation et transformation des institutions financières.',
-    color: Color(0xFF123A73),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Heymann\'s Inc.',
-    title: 'Expertise Afrique',
-    body:
-        'Des équipes à Paris, Casablanca et Abidjan pour accompagner banques, assurances et acteurs financiers dans leurs enjeux prudentiels.',
-    color: Color(0xFFF59E0B),
+        "Le risque de crédit est le risque résultant de l'incertitude quant à la capacité ou la volonté d'une contrepartie de remplir ses obligations : il se matérialise lorsque le client ou la contrepartie ne respecte pas ses obligations financières, c'est-à-dire le défaut, ou plus généralement lorsque la qualité de crédit de cette contrepartie se détériore, même sans défaut avéré.",
+    color: Color(0xFF2563EB),
   ),
   _WelcomeInsightMessage(
     label: 'Définition clé',
-    title: 'ALM',
+    title: 'Risque de marché',
     body:
-        'Piloter les équilibres bilanciels, la liquidité, les marges et la sensibilité aux taux dans une lecture prospective.',
-    color: Color(0xFF2563EB),
+        "Le risque de marché est le risque de pertes sur les positions du bilan et du hors bilan à la suite des variations des prix de marché : il recouvre le risque relatif aux instruments liés aux taux d'intérêt et aux titres de propriété du portefeuille de négociation, ainsi que le risque de change et le risque sur produits de base encourus sur l'ensemble du bilan et du hors bilan.",
+    color: Color(0xFF0EA5E9),
+  ),
+  _WelcomeInsightMessage(
+    label: 'Définition clé',
+    title: 'Risque opérationnel',
+    body:
+        'Le risque opérationnel est le risque de pertes résultant de carences ou de défaillances attribuables à des procédures, au personnel et aux systèmes internes, ou à des événements extérieurs : il inclut le risque juridique, mais exclut le risque stratégique et le risque de réputation.',
+    color: Color(0xFF10B981),
   ),
   _WelcomeInsightMessage(
     label: 'Définition clé',
     title: 'RWA',
     body:
-        "Mesurer les actifs pondérés par les risques afin d'évaluer l'exigence en fonds propres réglementaires.",
-    color: Color(0xFF10B981),
+        'Les actifs pondérés des risques, en anglais Risk Weighted Assets (RWA), correspondent à la somme des expositions au bilan et hors bilan, pondérées selon leur niveau de risque, au titre du risque de crédit, du risque de marché et du risque opérationnel.',
+    color: Color(0xFF123A73),
   ),
   _WelcomeInsightMessage(
-    label: 'Mesure du risque',
-    title: 'VaR',
+    label: 'Définition clé',
+    title: 'Ratio de solvabilité',
     body:
-        'Estimer la perte maximale probable d\'un portefeuille sur un horizon donné, pour un niveau de confiance défini.',
+        "Le ratio de solvabilité est le rapport entre les fonds propres d'un établissement et ses actifs pondérés des risques : il mesure sa capacité à absorber les pertes, avec un minimum réglementaire de 8 %, porté à 10,5 % avec le coussin de conservation.",
     color: Color(0xFF7C3AED),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Risque financier',
-    title: 'Risque de crédit',
-    body:
-        "Risque de perte lorsque l'emprunteur, l'émetteur ou la contrepartie ne respecte pas ses engagements financiers.",
-    color: Color(0xFF2563EB),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Risque financier',
-    title: 'Risque de marché',
-    body:
-        'Risque de perte lié aux variations de taux, devises, actions, matières premières ou prix des instruments financiers.',
-    color: Color(0xFF0EA5E9),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Risque financier',
-    title: 'Risque opérationnel',
-    body:
-        "Risque de perte issu de processus internes défaillants, d'erreurs humaines, de systèmes ou d'événements externes.",
-    color: Color(0xFF10B981),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Risque financier',
-    title: 'Risque de liquidité',
-    body:
-        'Risque de ne pas pouvoir honorer ses sorties de trésorerie ou céder un actif sans décote significative.',
-    color: Color(0xFF14B8A6),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Risque financier',
-    title: 'Risque de taux',
-    body:
-        "Risque que la variation des taux d'intérêt affecte la valeur économique, la marge ou les flux futurs.",
-    color: Color(0xFF8B5CF6),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Risque financier',
-    title: 'Risque de change',
-    body:
-        'Risque de perte provoqué par l\'évolution défavorable d\'une devise sur les actifs, passifs ou revenus exposés.',
-    color: Color(0xFF0F766E),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Risque financier',
-    title: 'Risque de concentration',
-    body:
-        "Risque provenant d'une exposition trop forte à un émetteur, secteur, pays, devise, maturité ou classe d'actifs.",
-    color: Color(0xFFF59E0B),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Risque financier',
-    title: 'Risque de contrepartie',
-    body:
-        "Risque qu'une contrepartie de marché fasse défaut avant le règlement final d'une transaction ou d'un contrat.",
-    color: Color(0xFF2563EB),
-  ),
-  _WelcomeInsightMessage(
-    label: 'Risque financier',
-    title: 'Risque de conformité',
-    body:
-        'Risque de sanction, perte ou atteinte à la réputation en cas de non-respect des lois, normes ou règles internes.',
-    color: Color(0xFF64748B),
   ),
 ];
 
@@ -563,20 +500,18 @@ class _WelcomeInsightCarouselState extends State<_WelcomeInsightCarousel> {
         widget.isDark ? const Color(0xFFEAF1FF) : const Color(0xFF13203A);
     final mutedColor =
         widget.isDark ? const Color(0xFFAAB8D2) : const Color(0xFF5B6A84);
-    const headerAccent = Color(0xFF2563EB);
-
     return SizedBox(
       width: double.infinity,
       child: MouseRegion(
         onEnter: (_) => _setPaused(true),
         onExit: (_) => _setPaused(false),
         child: Container(
-          padding: const EdgeInsets.all(5),
+          padding: const EdgeInsets.fromLTRB(18, 12, 10, 10),
           decoration: BoxDecoration(
             color: widget.isDark
                 ? const Color(0xFF111F37).withValues(alpha: 0.82)
                 : Colors.white.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(AppTheme.radius),
+            borderRadius: BorderRadius.zero,
             boxShadow: [
               BoxShadow(
                 color: widget.isDark
@@ -590,43 +525,21 @@ class _WelcomeInsightCarouselState extends State<_WelcomeInsightCarousel> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: headerAccent.withValues(
-                        alpha: widget.isDark ? 0.16 : 0.10,
-                      ),
-                      borderRadius: BorderRadius.circular(AppTheme.radius),
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.book_fill,
-                      size: 17,
-                      color: headerAccent,
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  Expanded(
-                    child: Text(
-                      'Essentiels métier',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        height: 1,
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                'Essentiels métier',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 1,
+                ),
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 10),
               SizedBox(
-                height: 240,
+                height: 280,
                 child: _WelcomeInsightMessageView(
                   key: ValueKey(_index),
                   message: message,
@@ -867,10 +780,10 @@ class _WelcomeInsightMessageViewState extends State<_WelcomeInsightMessageView>
                   showCursor: showBodyCursor && cursorVisible,
                   cursorColor: widget.message.color,
                   color: const Color(0xFF123A73),
-                  fontSize: 19,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
                   height: 1.36,
-                  maxLines: 5,
+                  maxLines: 10,
                 ),
               ),
             ),
@@ -1044,7 +957,7 @@ class _WelcomeBrandAdStrip extends StatelessWidget {
         color: isDark
             ? const Color(0xFF15243D).withValues(alpha: 0.72)
             : const Color(0xFFF6F9FD),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        borderRadius: BorderRadius.zero,
       ),
       child: Row(
         children: [

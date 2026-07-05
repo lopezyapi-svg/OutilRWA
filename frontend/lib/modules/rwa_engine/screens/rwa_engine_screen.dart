@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -11,9 +12,9 @@ import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../../expositions/models/exposition_models.dart';
 import '../models/rwa_credit_analysis.dart';
-import '../widgets/densite_rwa_gauge_card.dart';
 
-const double _pageRadius = 8;
+
+const double _pageRadius = 3;
 const Color _deepBlue = Color(0xFF001F4E);
 const Color _blue700 = Color(0xFF0B4DBA);
 const Color _ink = Color(0xFF0F1B3D);
@@ -109,14 +110,20 @@ class _RwaEngineScreenState extends State<RwaEngineScreen> {
                 onChanged: (index) => setState(() => _selectedTab = index),
               ),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
-                  child: switch (_selectedTab) {
-                    0 => _AnalysisRwaTab(analysis: analysis, view: view),
-                    1 => const _RiskAppetiteTab(animation: AlwaysStoppedAnimation(1.0)),
-                    _ => const _RegulatoryWeightingTab(),
-                  },
-                ),
+                child: switch (_selectedTab) {
+                  0 => SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(10, 10, 10, 12),
+                      child: _AnalysisRwaTab(analysis: analysis, view: view),
+                    ),
+                  1 => const SingleChildScrollView(
+                      padding: EdgeInsets.fromLTRB(10, 10, 10, 12),
+                      child: _RiskAppetiteTab(animation: AlwaysStoppedAnimation(1.0)),
+                    ),
+                  _ => const Padding(
+                      padding: EdgeInsets.fromLTRB(10, 10, 10, 12),
+                      child: _RegulatoryWeightingTab(),
+                    ),
+                },
               ),
             ],
           ),
@@ -320,13 +327,15 @@ class _EntityAccumulator {
   final String name;
   String sector;
   var exposure = 0.0;
+  var ead = 0.0;
   var rwa = 0.0;
 
-  void add(ExposureRecord item) {
-    exposure += item.grossAmount;
-    rwa += item.rwa;
+  void add(ExposureRecord record) {
+    exposure += record.grossAmount;
+    ead += record.ead;
+    rwa += record.rwa;
     if (sector == 'Non renseigné') {
-      sector = _sectorForExposure(item);
+      sector = _sectorForExposure(record);
     }
   }
 
@@ -561,10 +570,14 @@ class _SectionPanel extends StatelessWidget {
   const _SectionPanel({
     required this.title,
     required this.child,
+    this.expandChild = false,
   });
 
   final String title;
   final Widget child;
+  // Étire le contenu sur la hauteur disponible (requis quand le contenu gère
+  // son propre défilement interne).
+  final bool expandChild;
 
   @override
   Widget build(BuildContext context) {
@@ -589,7 +602,7 @@ class _SectionPanel extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-          child,
+          if (expandChild) Expanded(child: child) else child,
         ],
       ),
     );
@@ -618,11 +631,6 @@ class _SummaryCardsRow extends StatelessWidget {
         subtitle: 'Actifs pondérés au risque',
       ),
       _SummaryCard(
-        title: 'DENSITÉ RWA',
-        value: AppFormatters.percent(analysis.densityRwa ?? 0),
-        subtitle: 'RWA/EAD',
-      ),
-      _SummaryCard(
         title: 'CAPITAL REQUIS',
         value: _formatMoney(totals.rwa * 0.09, maxDecimals: 2),
         subtitle: 'RWA × $ratioLabel',
@@ -638,8 +646,6 @@ class _SummaryCardsRow extends StatelessWidget {
           Expanded(child: cards[1]),
           const SizedBox(width: 12.0),
           Expanded(child: cards[2]),
-          const SizedBox(width: 12.0),
-          Expanded(child: cards[3]),
         ],
       ),
     );
@@ -892,15 +898,6 @@ class _AgentBreakdownSection extends StatelessWidget {
               view: view,
             ),
           ),
-          const SizedBox(width: 24),
-          Expanded(
-            flex: 40,
-            child: DensiteRwaGaugeCard(
-              density: analysis.densityRwa ?? 0.0,
-              totalExposure: analysis.totals.exposureTotal,
-              totalRwa: analysis.totals.rwa,
-            ),
-          ),
         ],
       ),
     );
@@ -1034,7 +1031,7 @@ class _AgentLegendItem extends StatelessWidget {
   }
 }
 
-enum _AgentSortKey { exposure, rwa, weight, capital, contribution, variation }
+enum _AgentSortKey { exposure, ead, rwa, weight, capital, contribution, variation }
 
 const double _agentNumWidth = 40;
 const Color _weightAlertBg = Color(0xFFFBE7D2);
@@ -1069,6 +1066,8 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
     switch (key) {
       case _AgentSortKey.exposure:
         return row.exposureTotal;
+      case _AgentSortKey.ead:
+        return row.ead;
       case _AgentSortKey.rwa:
         return row.rwa;
       case _AgentSortKey.weight:
@@ -1187,7 +1186,9 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
               ),
             ),
             _separator(),
-            _sortableHeader('Exposition totale', 14, _AgentSortKey.exposure,
+            _sortableHeader('Exposition totale', 14, _AgentSortKey.exposure),
+            _separator(),
+            _sortableHeader('EAD', 14, _AgentSortKey.ead,
                 tooltip:
                     'EAD : Exposure at Default, exposition en cas de défaut'),
             _separator(),
@@ -1283,6 +1284,9 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                   _numericCell(_formatMoney(row.exposureTotal, maxDecimals: 0), 14,
                       FontWeight.w700),
                   _separator(),
+                  _numericCell(_formatMoney(row.ead, maxDecimals: 0), 14,
+                      FontWeight.w700),
+                  _separator(),
                   _numericCell(
                       _formatMoney(row.rwa, maxDecimals: 0), 13, FontWeight.w900),
                   _separator(),
@@ -1354,23 +1358,8 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
     RwaCreditAgentRow row,
     List<RwaCreditTranche> tranches,
   ) {
-    // Extract real exposures for this agent
     final agentExposures = widget.view.currentRows
-        .where((e) {
-          String normalize(String s) {
-            return s.trim().toLowerCase()
-                .replaceAll(RegExp(r'[éèêë]'), 'e')
-                .replaceAll(RegExp(r'[àâä]'), 'a')
-                .replaceAll(RegExp(r'[îï]'), 'i')
-                .replaceAll(RegExp(r'[ôö]'), 'o')
-                .replaceAll(RegExp(r'[ùûü]'), 'u')
-                .replaceAll(RegExp(r'[ç]'), 'c')
-                .replaceAll(RegExp(r'\s+'), ' ');
-          }
-          final normalizedModelLabel = normalize(e.categoryOption.label);
-          final normalizedRowLabel = normalize(row.label);
-          return normalizedModelLabel == normalizedRowLabel;
-        })
+        .where((e) => e.categoryCode == row.code)
         .toList(growable: false);
 
     // Group by counterparty
@@ -1382,17 +1371,26 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
       counterpartyMap.putIfAbsent(cpName, () => _RealCounterpartyAccumulator(name: cpName)).add(exp);
     }
 
-    // Convert to _RealCounterparty and sort by exposure
+    // Convert to _RealCounterparty and sort by RWA
     final allCounterparties = counterpartyMap.values
-        .map((acc) => acc.toRealCounterparty(row.exposureTotal))
+        .map((acc) => acc.toRealCounterparty(row.rwa))
         .toList(growable: false)
-      ..sort((a, b) => b.exposure.compareTo(a.exposure));
+      ..sort((a, b) => b.rwa.compareTo(a.rwa));
 
     showDialog(
       context: context,
       builder: (context) {
         bool showAll = false;
         int? selectedIndex;
+        final leftTableCtrl = ScrollController();
+        final rightTableCtrl = ScrollController();
+        void syncTableScroll(ScrollController source, ScrollController target) {
+          if (!source.hasClients || !target.hasClients) return;
+          if ((target.offset - source.offset).abs() < 0.5) return;
+          target.jumpTo(source.offset);
+        }
+        leftTableCtrl.addListener(() => syncTableScroll(leftTableCtrl, rightTableCtrl));
+        rightTableCtrl.addListener(() => syncTableScroll(rightTableCtrl, leftTableCtrl));
         final headerStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -1400,17 +1398,14 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
         return StatefulBuilder(
           builder: (context, setState) {
             final top5 = showAll ? allCounterparties : allCounterparties.take(5).toList();
-            final totalEad = top5.fold<double>(0, (s, t) => s + t.exposure);
-            final totalRwa = top5.fold<double>(0, (s, t) => s + t.rwa);
-            final totalCap = top5.fold<double>(0, (s, t) => s + t.capitalRequired);
-            final totalPct = top5.fold<double>(0, (s, t) => s + t.percentage);
 
             return Dialog(
               backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              alignment: Alignment.bottomCenter,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
               child: Container(
                 width: 1200,
-                height: 700,
+                height: 500,
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1479,193 +1474,294 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                     Expanded(
-                      flex: 5,
+                      flex: 55,
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: _line, width: 1),
                           borderRadius: BorderRadius.circular(2),
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              decoration: const BoxDecoration(
-                                color: _deepBlue,
-                              ),
-                            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                            child: Row(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              const double pctColWidth = 96;
+                              const double headerHeight = 40;
+                              const double rowHeight = 52;
+                              const double totalHeight = 46;
+                              Color rowBg(int i) => selectedIndex == i
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : (i % 2 == 0 ? Colors.white : const Color(0xFFF1F5F9));
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: SizedBox(
+                            width: math.max(804.0, constraints.maxWidth - pctColWidth),
+                            child: Column(
                               children: [
-                                Expanded(flex: 3, child: Text('Contrepartie', style: headerStyle)),
-                                Expanded(flex: 2, child: Text('Exposition', style: headerStyle)),
-                                Expanded(flex: 2, child: Text('RWA', style: headerStyle)),
-                                Expanded(flex: 2, child: Text('Cap. Requis', style: headerStyle)),
-                                Expanded(flex: 2, child: Text('%', style: headerStyle, textAlign: TextAlign.right)),
-                              ],
-                            ),
-                          ),
-                          Builder(
-                            builder: (context) {
-                              final rows = <Widget>[
-                                for (var i = 0; i < top5.length; i++)
-                                  Column(
-                                    mainAxisSize: MainAxisSize.min,
+                                Container(
+                                  height: headerHeight,
+                                  color: _deepBlue,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  child: Row(
                                     children: [
-                                      InkWell(
-                                        onTap: () {
-                                          setState(() {
-                                            selectedIndex = selectedIndex == i ? null : i;
-                                          });
-                                        },
-                                        child: Container(
-                                          color: selectedIndex == i
-                                              ? Colors.green.withValues(alpha: 0.15)
-                                              : (i % 2 == 0 ? Colors.transparent : const Color(0xFFF1F5F9)), // Alternating row color
-                                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                                          child: Row(
-                                          children: [
-                                            Expanded(
-                                              flex: 3,
-                                              child: Text(
-                                                top5[i].name,
-                                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                      color: _ink,
-                                                      fontWeight: FontWeight.w800,
-                                                    ),
+                                      Expanded(flex: 4, child: Text('Contrepartie', style: headerStyle)),
+                                      Expanded(flex: 2, child: Text('Exposition', style: headerStyle)),
+                                      Expanded(flex: 2, child: Text('EAD', style: headerStyle)),
+                                      Expanded(flex: 2, child: Text('RWA', style: headerStyle)),
+                                      Expanded(flex: 2, child: Text('Cap. Requis', style: headerStyle)),
+                                    ],
+                                  ),
+                                ),
+                                Builder(
+                                  builder: (context) {
+                                    final rows = <Widget>[
+                                      for (var i = 0; i < top5.length; i++)
+                                        InkWell(
+                                          onTap: () {
+                                            setState(() {
+                                              selectedIndex = selectedIndex == i ? null : i;
+                                            });
+                                          },
+                                          child: Container(
+                                            height: rowHeight,
+                                            decoration: BoxDecoration(
+                                              color: rowBg(i),
+                                              border: const Border(
+                                                bottom: BorderSide(color: _line, width: 1),
                                               ),
                                             ),
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text(
-                                                _formatMoney(top5[i].exposure, maxDecimals: 0),
-                                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  flex: 4,
+                                                  child: Padding(
+                                                    padding: const EdgeInsets.only(right: 16.0),
+                                                    child: Text(
+                                                      top5[i].name,
+                                                      maxLines: 2,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: _ink,
+                                                        fontWeight: FontWeight.w800,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                    _formatMoney(top5[i].exposure, maxDecimals: 0),
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
                                                       color: _deepBlue,
                                                       fontWeight: FontWeight.w700,
                                                     ),
-                                              ),
-                                            ),
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text(
-                                                _formatMoney(top5[i].rwa, maxDecimals: 0),
-                                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                    _formatMoney(top5[i].ead, maxDecimals: 0),
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
                                                       color: _deepBlue,
                                                       fontWeight: FontWeight.w700,
                                                     ),
-                                              ),
-                                            ),
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text(
-                                                _formatMoney(top5[i].capitalRequired, maxDecimals: 0),
-                                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                    _formatMoney(top5[i].rwa, maxDecimals: 0),
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
+                                                      color: _deepBlue,
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Expanded(
+                                                  flex: 2,
+                                                  child: Text(
+                                                    _formatMoney(top5[i].capitalRequired, maxDecimals: 0),
+                                                    style: const TextStyle(
+                                                      fontSize: 12,
                                                       color: _muted,
                                                       fontWeight: FontWeight.w700,
                                                     ),
-                                              ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                            Expanded(
-                                              flex: 2,
-                                              child: Text(
-                                                AppFormatters.percent(top5[i].percentage),
-                                                textAlign: TextAlign.right,
-                                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                      color: _blue700,
-                                                      fontWeight: FontWeight.w900,
-                                                    ),
-                                              ),
-                                            ),
-                                          ],
+                                          ),
+                                        ),
+                                    ];
+                                    return Expanded(
+                                      child: SingleChildScrollView(
+                                        controller: leftTableCtrl,
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: rows,
                                         ),
                                       ),
+                                    );
+                                  },
+                                ),
+                                Container(
+                                  height: totalHeight,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF1E3A5F),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 4,
+                                        child: Text(
+                                          showAll ? 'TOTAL' : 'TOTAL TOP 5',
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(
+                                          _formatMoney(top5.fold<double>(0, (s, t) => s + t.exposure), maxDecimals: 0),
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(
+                                          _formatMoney(top5.fold<double>(0, (s, t) => s + t.ead), maxDecimals: 0),
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(
+                                          _formatMoney(top5.fold<double>(0, (s, t) => s + t.rwa), maxDecimals: 0),
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(
+                                          _formatMoney(top5.fold<double>(0, (s, t) => s + t.capitalRequired), maxDecimals: 0),
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                color: Colors.white70,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                        ),
                                       ),
                                     ],
-                                  ),
-                          ];
-                          return showAll
-                              ? Expanded(
-                                  child: SingleChildScrollView(
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: rows,
-                                    ),
-                                  ),
-                                )
-                              : Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: rows,
-                                );
-                            },
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF1E3A5F),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    showAll ? 'TOTAL' : 'TOTAL TOP 5',
-                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    _formatMoney(totalEad, maxDecimals: 0),
-                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    _formatMoney(totalRwa, maxDecimals: 0),
-                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    _formatMoney(totalCap, maxDecimals: 0),
-                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                          color: Colors.white70,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                  ),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: Text(
-                                    AppFormatters.percent(totalPct),
-                                    textAlign: TextAlign.right,
-                                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                        ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                                  ),
+                                  Container(
+                                    width: pctColWidth,
+                                    decoration: const BoxDecoration(
+                                      border: Border(
+                                        left: BorderSide(color: _line, width: 1),
+                                      ),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          height: headerHeight,
+                                          width: double.infinity,
+                                          color: _deepBlue,
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                                          child: Text('% RWA', style: headerStyle),
+                                        ),
+                                        Expanded(
+                                          child: SingleChildScrollView(
+                                            controller: rightTableCtrl,
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                for (var i = 0; i < top5.length; i++)
+                                                  InkWell(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        selectedIndex = selectedIndex == i ? null : i;
+                                                      });
+                                                    },
+                                                    child: Container(
+                                                      height: rowHeight,
+                                                      width: double.infinity,
+                                                      decoration: BoxDecoration(
+                                                        color: rowBg(i),
+                                                        border: const Border(
+                                                          bottom: BorderSide(color: _line, width: 1),
+                                                        ),
+                                                      ),
+                                                      alignment: Alignment.centerRight,
+                                                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                                                      child: Text(
+                                                        AppFormatters.percent(top5[i].percentage),
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: _blue700,
+                                                          fontWeight: FontWeight.w900,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        Container(
+                                          height: totalHeight,
+                                          width: double.infinity,
+                                          color: const Color(0xFF1E3A5F),
+                                          alignment: Alignment.centerRight,
+                                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                                          child: Text(
+                                            AppFormatters.percent(top5.fold<double>(0, (s, t) => s + t.percentage)),
+                                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
                     if (!showAll) const SizedBox(width: 32),
                     if (!showAll)
                       Expanded(
-                        flex: 5,
+                        flex: 45,
                         child: Container(
                           padding: const EdgeInsets.only(top: 24, left: 16, right: 16, bottom: 16),
                           decoration: BoxDecoration(
@@ -1689,7 +1785,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                       ),
                   ],
                 );
-                return showAll ? Expanded(child: rowContent) : IntrinsicHeight(child: rowContent);
+                return rowContent;
               },
             ),
           ),
@@ -1742,6 +1838,8 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
             _separator(),
             cell(14, _formatMoney(widget.totals.exposureTotal, maxDecimals: 0)),
             _separator(),
+            cell(14, _formatMoney(widget.totals.ead, maxDecimals: 0)),
+            _separator(),
             cell(13, _formatMoney(widget.totals.rwa, maxDecimals: 0)),
             _separator(),
             cell(14, _formatMoney(widget.totals.capitalRequired, maxDecimals: 0)),
@@ -1758,22 +1856,25 @@ class _RealCounterpartyAccumulator {
   _RealCounterpartyAccumulator({required this.name});
   final String name;
   double exposure = 0;
+  double ead = 0;
   double rwa = 0;
   double capital = 0;
 
   void add(ExposureRecord record) {
-    exposure += record.ead; // Using EAD for exposure like the rest of the engine
+    exposure += record.grossAmount;
+    ead += record.ead;
     rwa += record.rwa;
     capital += record.capital;
   }
 
-  _RealCounterparty toRealCounterparty(double totalAgentExposure) {
+  _RealCounterparty toRealCounterparty(double totalAgentRwa) {
     return _RealCounterparty(
       name,
       exposure,
+      ead,
       rwa,
       capital,
-      totalAgentExposure > 0 ? exposure / totalAgentExposure : 0,
+      totalAgentRwa > 0 ? rwa / totalAgentRwa : 0,
     );
   }
 }
@@ -1781,11 +1882,12 @@ class _RealCounterpartyAccumulator {
 class _RealCounterparty {
   final String name;
   final double exposure;
+  final double ead;
   final double rwa;
   final double capitalRequired;
   final double percentage;
 
-  _RealCounterparty(this.name, this.exposure, this.rwa, this.capitalRequired, this.percentage);
+  _RealCounterparty(this.name, this.exposure, this.ead, this.rwa, this.capitalRequired, this.percentage);
 }
 
 class _DominantAgentSection extends StatelessWidget {
@@ -2446,6 +2548,7 @@ class _RegulatoryWeightingTab extends StatelessWidget {
     return _SectionPanel(
       title:
           'ARCHITECTURE DE CALCUL DES RWA (CRÉDIT)',
+      expandChild: true,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final narrow = constraints.maxWidth < 1040;
@@ -2453,21 +2556,29 @@ class _RegulatoryWeightingTab extends StatelessWidget {
           const sidePanel = _RegulatorySidePanel();
 
           if (narrow) {
-            return const Column(
-              children: [
-                diagram,
-                SizedBox(height: 12),
-                sidePanel,
-              ],
+            return const SingleChildScrollView(
+              child: Column(
+                children: [
+                  diagram,
+                  SizedBox(height: 12),
+                  sidePanel,
+                ],
+              ),
             );
           }
 
+          // Chaque colonne défile indépendamment de l'autre.
           return const Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(child: diagram),
+              Expanded(
+                child: SingleChildScrollView(child: diagram),
+              ),
               SizedBox(width: 18),
-              SizedBox(width: 330, child: sidePanel),
+              SizedBox(
+                width: 330,
+                child: SingleChildScrollView(child: sidePanel),
+              ),
             ],
           );
         },
@@ -2482,48 +2593,58 @@ class _RegulatoryDiagram extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(_pageRadius),
-        border: Border.all(color: _line),
       ),
       child: const Column(
         children: [
-          _RegulationStepCard(
-            step: '1',
-            title: 'Exposition au risque de crédit (EAD)',
+          _MethodStep(
+            index: '1',
+            title: 'Catégorisation des expositions',
             description:
-                'Montant exposé après prise en compte des expositions au bilan et hors bilan.',
+                'Affectation de chaque exposition (bilan et hors bilan) à l’une des 11 catégories réglementaires.',
           ),
-          _DownArrow(),
-          _RegulationStepCard(
-            step: '2',
-            title: 'Pondération réglementaire (Risk Weight)',
+          _MethodStep(
+            index: '2',
+            title: 'Calcul de l’exposition en cas de défaut (EAD)',
             description:
-                'La pondération dépend de la catégorie d’exposition et des exigences prudentielles.',
+                'Bilan : valeur comptable nette de provisions.\nHors bilan : ERC = Nominal × FCEC.\nEAD avant ARC = Exposition bilan + ERC hors bilan.',
           ),
-          _DownArrow(),
-          _RegulatorySubSteps(),
-          _DownArrow(),
-          _RegulationStepCard(
-            step: '4',
-            title: 'Calcul du RWA Crédit',
-            description: 'RWA = EAD × Pondération réglementaire ± Ajustements',
+          _MethodStep(
+            index: '3',
+            title: 'Détermination de la pondération applicable',
+            description:
+                'Selon la catégorie d’exposition et la qualité de crédit de la contrepartie.',
+            child: _WeightSourceGrid(),
           ),
-          _DownArrow(),
-          _RegulationStepCard(
-            step: '5',
-            title: 'Taux réglementaire',
-            description: '9 %',
-            compactValue: true,
+          _MethodStep(
+            index: '4',
+            title: 'Atténuation du risque de crédit (ARC)',
+            description:
+                'Ajustement selon la protection de crédit dont bénéficie l’exposition.',
+            child: _CrmCaseList(),
           ),
-          _DownArrow(),
-          _RegulationStepCard(
-            step: '6',
-            title: 'Capital requis',
-            description: 'Capital requis = RWA Crédit × 9 %',
-            finalStep: true,
+          _MethodStep(
+            index: '5',
+            title: 'Calcul de l’APR de crédit',
+            description:
+                'APR = EAD × Pondération finale, après atténuation du risque de crédit.',
+          ),
+          _MethodStep(
+            index: '6',
+            title: 'Exigences minimales de fonds propres',
+            description:
+                'Capital requis = APR × ratio minimal réglementaire (11,5 % coussin de conservation inclus).',
+          ),
+          _MethodStep(
+            index: '7',
+            title: 'Ratio de solvabilité',
+            description:
+                'Fonds propres effectifs / (APR crédit + 12,5 × risque opérationnel + 12,5 × risque de marché)',
+            emphasized: true,
+            isLast: true,
           ),
         ],
       ),
@@ -2531,154 +2652,115 @@ class _RegulatoryDiagram extends StatelessWidget {
   }
 }
 
-class _RegulatorySubSteps extends StatelessWidget {
-  const _RegulatorySubSteps();
-
-  static const labels = [
-    'Approche Standard',
-    'Notations externes',
-    'Techniques ARC',
-    'Ajustements réglementaires',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 680;
-        final cards = [
-          for (final label in labels) _RegulatorySubCard(label: label),
-        ];
-        if (narrow) {
-          return Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            alignment: WrapAlignment.center,
-            children: cards,
-          );
-        }
-        return Row(
-          children: [
-            for (var index = 0; index < cards.length; index++) ...[
-              Expanded(child: cards[index]),
-              if (index < cards.length - 1) const SizedBox(width: 10),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _RegulatorySubCard extends StatelessWidget {
-  const _RegulatorySubCard({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      height: 78,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: _soft,
-        borderRadius: BorderRadius.circular(_pageRadius),
-        border: Border.all(color: _line),
-        boxShadow: _innerShadow,
-      ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: _deepBlue,
-              fontWeight: FontWeight.w900,
-              height: 1.2,
-            ),
-      ),
-    );
-  }
-}
-
-class _RegulationStepCard extends StatelessWidget {
-  const _RegulationStepCard({
-    required this.step,
+class _MethodStep extends StatelessWidget {
+  const _MethodStep({
+    required this.index,
     required this.title,
     required this.description,
-    this.compactValue = false,
-    this.finalStep = false,
+    this.child,
+    this.emphasized = false,
+    this.isLast = false,
   });
 
-  final String step;
+  final String index;
   final String title;
   final String description;
-  final bool compactValue;
-  final bool finalStep;
+  final Widget? child;
+  final bool emphasized;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
-    final color = finalStep ? AppColors.success : _deepBlue;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: double.infinity,
-      constraints: const BoxConstraints(maxWidth: 520),
-      padding: const EdgeInsets.fromLTRB(18, 15, 18, 15),
-      decoration: BoxDecoration(
-        color: finalStep ? AppColors.success : Colors.white,
-        borderRadius: BorderRadius.circular(_pageRadius),
-        border: Border.all(
-          color:
-              finalStep ? AppColors.success : _blue700.withValues(alpha: 0.48),
-        ),
-        boxShadow: _innerShadow,
-      ),
+    return IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color:
-                  finalStep ? Colors.white.withValues(alpha: 0.18) : _deepBlue,
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              step,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
+          SizedBox(
+            width: 30,
+            child: Column(
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: emphasized ? _deepBlue : Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _deepBlue, width: 1.4),
                   ),
+                  child: Text(
+                    index,
+                    style: TextStyle(
+                      color: emphasized ? Colors.white : _deepBlue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Center(
+                      child: Container(width: 1.2, color: _line),
+                    ),
+                  ),
+              ],
             ),
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: finalStep ? Colors.white : color,
-                        fontWeight: FontWeight.w900,
-                      ),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
+                decoration: BoxDecoration(
+                  color: emphasized ? _deepBlue : Colors.white,
+                  borderRadius: BorderRadius.circular(1),
+                  border: Border.all(
+                    color: emphasized ? _deepBlue : _line,
+                    width: 0.6,
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x120A2540),
+                      blurRadius: 10,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 7),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: finalStep
-                            ? Colors.white.withValues(alpha: 0.92)
-                            : compactValue
-                                ? _blue700
-                                : _deepBlue,
-                        fontSize: compactValue ? 20 : 12,
-                        fontWeight:
-                            compactValue ? FontWeight.w900 : FontWeight.w600,
-                        height: 1.35,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: emphasized ? Colors.white : _deepBlue,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        height: 1.3,
                       ),
+                    ),
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          color: emphasized
+                              ? Colors.white.withValues(alpha: 0.88)
+                              : _muted,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                    if (child != null) ...[
+                      const SizedBox(height: 12),
+                      child!,
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -2687,42 +2769,125 @@ class _RegulationStepCard extends StatelessWidget {
   }
 }
 
-class _DownArrow extends StatelessWidget {
-  const _DownArrow();
+class _WeightSourceGrid extends StatelessWidget {
+  const _WeightSourceGrid();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return const Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _WeightSourceTile(
+                'Coefficient forfaitaire',
+                'Pondération fixée par catégorie d’exposition',
+              ),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: _WeightSourceTile(
+                'Notations OEEC',
+                'S&P, Moody’s, Fitch, DBRS',
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _WeightSourceTile(
+                'Classification OCE',
+                'Consensus OCDE sur le risque pays',
+              ),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              child: _WeightSourceTile(
+                'Techniques d’ARC',
+                'Approche simple ou globale',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CrmCaseList extends StatelessWidget {
+  const _CrmCaseList();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _WeightSourceTile(
+          'Sans CRM',
+          'Aucun ajustement : RWA = EAD × pondération de la contrepartie.',
+        ),
+        SizedBox(height: 8),
+        _WeightSourceTile(
+          'CRM financée (approche globale)',
+          'Le collatéral décoté (HC, Hfx) réduit l’exposition : EAD ajustée = max(0 ; EVA − CVA).',
+        ),
+        SizedBox(height: 8),
+        _WeightSourceTile(
+          'CRM non financée (substitution)',
+          'RWA = part couverte × RW du garant + part non couverte × RW du débiteur.',
+        ),
+      ],
+    );
+  }
+}
+
+class _WeightSourceTile extends StatelessWidget {
+  const _WeightSourceTile(this.title, this.detail);
+
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 58,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: _soft,
+        borderRadius: BorderRadius.circular(1),
+        border: Border.all(color: _line, width: 0.6),
+      ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(width: 1.5, height: 20, color: _deepBlue),
-          CustomPaint(
-            size: const Size(12, 8),
-            painter: _ArrowHeadPainter(),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _deepBlue,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            detail,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: _muted,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
     );
   }
-}
-
-class _ArrowHeadPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = _deepBlue
-      ..style = PaintingStyle.fill;
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..close();
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _RegulatorySidePanel extends StatelessWidget {
@@ -2732,25 +2897,93 @@ class _RegulatorySidePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       children: [
-        _InfoListPanel(
-          title: 'ELEMENTS CLES',
-          items: [
-            'EAD',
-            'Pondération réglementaire',
-            'Techniques d’atténuation du risque de crédit',
-            'Garanties éligibles',
-            'Expositions hors bilan',
-            'Expositions en défaut',
+        _SideTableCard(
+          title: 'PONDÉRATIONS DU DISPOSITIF',
+          columnLabel: 'Catégorie d’exposition',
+          valueLabel: 'Pondération',
+          rows: [
+            _SideTableRow(
+              'Souverains',
+              '0 à 150 %',
+              note: '0 % en FCFA : États UMOA, BCEAO',
+            ),
+            _SideTableRow(
+              'Organismes publics',
+              '20 à 150 %',
+              note: '20 % si UMOA, en FCFA',
+            ),
+            _SideTableRow(
+              'BMD',
+              '0 à 150 %',
+              note: '0 % pour les BMD éligibles',
+            ),
+            _SideTableRow(
+              'Institutions financières',
+              '20 à 150 %',
+              note: 'Selon notation et maturité initiale',
+            ),
+            _SideTableRow(
+              'Entreprises',
+              '20 à 150 %',
+              note: 'Selon notation ; 100 % si non notée',
+            ),
+            _SideTableRow(
+              'Clientèle de détail',
+              '75 %',
+              note: 'Si critères d’éligibilité satisfaits',
+            ),
+            _SideTableRow(
+              'Immobilier résidentiel',
+              '35 %',
+              note: '100 % si non éligible',
+            ),
+            _SideTableRow(
+              'Immobilier commercial',
+              '75 %',
+              note: '100 % si non éligible',
+            ),
+            _SideTableRow(
+              'Créances en souffrance',
+              '100 à 150 %',
+              note: '150 % si provisions < 20 %',
+            ),
+            _SideTableRow('Créances à risque élevé', '≥ 150 %'),
+            _SideTableRow(
+              'Autres actifs',
+              '0 à 250 %',
+              note: 'Selon la nature de l’actif',
+            ),
           ],
         ),
         SizedBox(height: 14),
-        _InfoListPanel(
-          title: 'REFERENCES REGLEMENTAIRES',
-          items: [
-            'Dispositif prudentiel UMOA',
-            'CRR',
-            'CRR3',
-            'Accords de Bâle',
+        _SideReferenceCard(
+          title: 'RÉFÉRENCES RÉGLEMENTAIRES',
+          entries: [
+            _SideReferenceEntry(
+              'Dispositif prudentiel UMOA (2016)',
+              'Titre IV : exigences de fonds propres au titre du risque de crédit',
+              url:
+                  'https://www.bceao.int/sites/default/files/2017-11/_annexe_decision_013_24_06_2016-_bceao-dispositif_prudentiel_de_l_umoa-2016-1.pdf',
+              linkLabel: 'Télécharger',
+            ),
+            _SideReferenceEntry(
+              'Bâle II (BRI, juin 2006)',
+              'Convergence internationale de la mesure et des normes de fonds propres',
+              url: 'https://www.bis.org/publ/bcbs128.htm',
+              linkLabel: 'Consulter',
+            ),
+            _SideReferenceEntry(
+              'Bâle III (BRI, juin 2011)',
+              'Dispositif réglementaire mondial de renforcement des banques',
+              url: 'https://www.bis.org/publ/bcbs189.htm',
+              linkLabel: 'Consulter',
+            ),
+            _SideReferenceEntry(
+              'BCEAO et Commission Bancaire de l’UMOA',
+              'Instructions et circulaires d’application',
+              url: 'https://www.cb-umoa.org/fr/reglementation_prudentielle',
+              linkLabel: 'Consulter',
+            ),
           ],
         ),
       ],
@@ -2758,63 +2991,315 @@ class _RegulatorySidePanel extends StatelessWidget {
   }
 }
 
-class _InfoListPanel extends StatelessWidget {
-  const _InfoListPanel({
+class _SideTableRow {
+  const _SideTableRow(this.label, this.value, {this.note});
+
+  final String label;
+  final String value;
+  final String? note;
+}
+
+class _SideTableCard extends StatelessWidget {
+  const _SideTableCard({
     required this.title,
-    required this.items,
+    required this.columnLabel,
+    required this.valueLabel,
+    required this.rows,
   });
 
   final String title;
-  final List<String> items;
+  final String columnLabel;
+  final String valueLabel;
+  final List<_SideTableRow> rows;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _soft,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(_pageRadius),
-        border: Border.all(color: _blue700.withValues(alpha: 0.22)),
+        border: Border.all(color: _line),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: _blue700,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0,
-                ),
+          Container(
+            width: double.infinity,
+            color: _deepBlue,
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12.5,
+                    letterSpacing: 0.2,
+                  ),
+            ),
           ),
-          const SizedBox(height: 12),
-          for (final item in items)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 5,
-                    height: 5,
-                    margin: const EdgeInsets.only(top: 7),
-                    decoration: const BoxDecoration(
-                      color: _blue700,
-                      shape: BoxShape.circle,
+          Container(
+            height: 34,
+            color: _soft,
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: double.infinity,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      right: BorderSide(color: _line, width: 0.8),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  child: Text(
+                    'N°',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: _deepBlue,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10.5,
+                        ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        columnLabel,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: _deepBlue,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10.5,
+                            ),
+                      ),
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 112,
+                  height: double.infinity,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      left: BorderSide(color: _line, width: 0.8),
+                    ),
+                  ),
+                  child: Text(
+                    valueLabel,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: _deepBlue,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 10.5,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++)
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(minHeight: 48),
+              color: i.isEven ? Colors.white : const Color(0xFFF6F8FB),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      width: 36,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          right: BorderSide(color: _line, width: 0.8),
+                        ),
+                      ),
+                      child: Text(
+                        '${i + 1}',
+                        style: const TextStyle(
+                          color: _deepBlue,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              rows[i].label,
+                              style: const TextStyle(
+                                color: _ink,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                height: 1.3,
+                              ),
+                            ),
+                            if (rows[i].note != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  rows[i].note!,
+                                  style: const TextStyle(
+                                    color: _muted,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(
+                      width: 112,
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          left: BorderSide(color: _line, width: 0.8),
+                        ),
+                      ),
+                      child: Text(
+                        rows[i].value,
+                        style: const TextStyle(
+                          color: _deepBlue,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w900,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SideReferenceEntry {
+  const _SideReferenceEntry(
+    this.source,
+    this.detail, {
+    this.url,
+    this.linkLabel = 'Consulter',
+  });
+
+  final String source;
+  final String detail;
+  final String? url;
+  final String linkLabel;
+}
+
+class _SideReferenceCard extends StatelessWidget {
+  const _SideReferenceCard({
+    required this.title,
+    required this.entries,
+  });
+
+  final String title;
+  final List<_SideReferenceEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(_pageRadius),
+        border: Border.all(color: _line),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            color: _deepBlue,
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12.5,
+                    letterSpacing: 0.2,
+                  ),
+            ),
+          ),
+          for (var i = 0; i < entries.length; i++)
+            Container(
+              width: double.infinity,
+              height: 56,
+              color: i.isEven ? Colors.white : const Color(0xFFF6F8FB),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Row(
+                children: [
                   Expanded(
-                    child: Text(
-                      item,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: _deepBlue,
-                            fontWeight: FontWeight.w700,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          entries[i].source,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _ink,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          entries[i].detail,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: _muted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
                             height: 1.35,
                           ),
+                        ),
+                      ],
                     ),
                   ),
+                  if (entries[i].url != null) ...[
+                    const SizedBox(width: 10),
+                    InkWell(
+                      onTap: () {
+                        launchUrl(
+                          Uri.parse(entries[i].url!),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      },
+                      child: Text(
+                        entries[i].linkLabel,
+                        style: const TextStyle(
+                          color: _blue700,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          decoration: TextDecoration.underline,
+                          decorationColor: _blue700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -2978,14 +3463,6 @@ List<BoxShadow> get _cardShadow => [
         color: _deepBlue.withValues(alpha: 0.08),
         blurRadius: 18,
         offset: const Offset(0, 8),
-      ),
-    ];
-
-List<BoxShadow> get _innerShadow => [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.035),
-        blurRadius: 10,
-        offset: const Offset(0, 4),
       ),
     ];
 
@@ -3202,17 +3679,20 @@ class _TopExposuresChart extends StatelessWidget {
                       meta: meta,
                       space: 16,
                       angle: -math.pi / 8,
-                      child: Text(
-                        top5[index].name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: _muted, fontSize: 10, fontWeight: FontWeight.bold),
+                      child: SizedBox(
+                        width: 100,
+                        child: Text(
+                          top5[index].name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: _muted, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     );
                   }
                   return const SizedBox();
                 },
-                reservedSize: 140,
+                reservedSize: 80,
               ),
             ),
             leftTitles: AxisTitles(

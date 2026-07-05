@@ -81,5 +81,4 @@ RWA_EXPECTED_WEIGHT_RANGES: dict[str, tuple[float, float]] = {
     "i": (1.0, 1.5),   # Créances en souffrance
     "j": (1.0, 1.5),   # Créances à risque élevé
     "k": (0.0, 1.0),   # Autres actifs
-    "l": (0.0, 1.5),   # Hors-bilan
 }
