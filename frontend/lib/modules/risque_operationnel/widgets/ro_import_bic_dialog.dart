@@ -1075,8 +1075,22 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
             ),
             if (errors.isNotEmpty) ...[
               const SizedBox(height: 8),
-              ...errors.map((e) => Text('• $e',
-                  style: const TextStyle(fontSize: 12, color: AppTheme.danger))),
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 260),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final e in errors)
+                          Text('• $e',
+                              style: const TextStyle(
+                                  fontSize: 12, color: AppTheme.danger)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
             const SizedBox(height: 18),
             Align(

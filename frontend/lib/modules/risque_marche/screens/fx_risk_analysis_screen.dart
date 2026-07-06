@@ -164,13 +164,13 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                 AppTheme.pagePadding, AppTheme.pagePadding, 0),
             child: _FxKpiSection(result: _analysisResult),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 12),
           // Titre de section + barre des taux courants éditables sur la même
           // ligne (les taux ne sont affichés que s'il y a une exposition en
           // devise étrangère à valoriser).
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppTheme.pagePadding),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.pagePadding, vertical: 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -189,13 +189,13 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 6),
                       _FxInfoButton(result: _analysisResult),
                     ],
                   ),
                 ),
                 if (hasExposure) ...[
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 12),
                   _FxRatesBar(
                     rates: _currentRates,
                     meta: _rateMeta,
@@ -206,7 +206,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 8),
           // Tableau — occupe toute la hauteur restante (scroll interne + pied
           // figé) au lieu d'une hauteur fixe qui paraissait coincée en bas.
           Expanded(
@@ -1043,7 +1043,7 @@ class _FxRatesBar extends StatelessWidget {
       onTap: fixed ? null : () => onEdit(code),
       borderRadius: BorderRadius.circular(2),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(2, 1, 2, 1),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
           color: accent.withValues(alpha: fixed ? 0.04 : 0.07),
           borderRadius: BorderRadius.circular(6),
@@ -1054,27 +1054,27 @@ class _FxRatesBar extends StatelessWidget {
           children: [
             Text(code,
                 style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.4,
                     color: accent)),
-            const SizedBox(width: 2),
+            const SizedBox(width: 4),
             Text(formatDecimal(rate, 2),
                 style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.2,
                     color: _fxTextFor(context))),
-            const SizedBox(width: 1),
+            const SizedBox(width: 2),
             Text('XOF',
                 style: TextStyle(
-                    fontSize: 8,
+                    fontSize: 9,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.3,
                     color: _fxMutedFor(context))),
-            const SizedBox(width: 1),
+            const SizedBox(width: 4),
             Icon(statusIcon,
-                size: 11, color: accent.withValues(alpha: fixed ? 0.6 : 0.9)),
+                size: 12, color: accent.withValues(alpha: fixed ? 0.6 : 0.9)),
           ],
         ),
       ),
@@ -1374,113 +1374,71 @@ class _FxKpiSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final itemsPerRow = w < 600
-            ? 2
-            : w < 1000
-                ? 3
-                : 5;
+    final gain = result.globalFxGainLoss;
+    final tooltip = _buildCalculationTooltip(result);
 
-        final gain = result.globalFxGainLoss;
-        final gainPercent = result.totalExposure > 0
-            ? (gain / result.totalExposure) * 100
-            : 0.0;
-
-        final tooltip = _buildCalculationTooltip(result);
-
-        return GridView(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: itemsPerRow,
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            mainAxisExtent: 56,
-          ),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _FxKpiCard(
-              icon: CupertinoIcons.money_dollar_circle_fill,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _FxKpiCard(
               label: 'Exposition Totale',
               value: formatLargeNumber(result.totalExposure),
               unit: 'FCFA',
-              color: _fxPrimary,
             ),
-            _FxKpiCard(
-              icon: CupertinoIcons.chart_bar_alt_fill,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _FxKpiCard(
               label: 'Gain/Perte Global',
               value: formatLargeNumber(gain.abs()),
               unit: 'FCFA',
-              color: gain >= 0 ? _fxSuccess : _fxDanger,
-              isNegative: gain < 0,
-              trend: gain.abs() < 0.01
-                  ? null
-                  : _FxTrend(
-                      isPositive: gain >= 0,
-                      label:
-                          '${gain >= 0 ? '+' : '−'}${gainPercent.abs().toStringAsFixed(2)}%',
-                    ),
             ),
-            _FxKpiCard(
-              icon: CupertinoIcons.shield_lefthalf_fill,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _FxKpiCard(
               label: 'Exigence FP Change',
               value: formatLargeNumber(result.capitalRequirement),
               unit: 'FCFA',
-              color: _fxWarning,
               tooltipMessage: tooltip,
             ),
-            _FxKpiCard(
-              icon: CupertinoIcons.graph_circle_fill,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _FxKpiCard(
               label: 'RWA Change',
               value: formatLargeNumber(result.rwaChange),
               unit: 'FCFA',
-              color: _fxDanger,
               tooltipMessage: tooltip,
             ),
-            _FxKpiCard(
-              icon: CupertinoIcons.chart_pie_fill,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _FxKpiCard(
               label: 'Contribution Risque Marché',
               value: result.marketRiskContribution.toStringAsFixed(1),
               unit: '%',
-              color: _fxPrimary,
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// Indicateur de tendance affiché dans une puce sur la carte KPI.
-class _FxTrend {
-  const _FxTrend({required this.isPositive, required this.label});
-
-  final bool isPositive;
-  final String label;
-}
-
-/// Carte KPI moderne — badge dégradé, hiérarchie typographique soignée,
-/// sous-titre contextuel, puce de tendance et effet de survol.
 class _FxKpiCard extends StatefulWidget {
   const _FxKpiCard({
-    required this.icon,
     required this.label,
     required this.value,
     required this.unit,
-    required this.color,
-    this.trend,
-    this.isNegative = false,
     this.tooltipMessage,
   });
 
-  final IconData icon;
   final String label;
   final String value;
   final String unit;
-  final Color color;
-  final _FxTrend? trend;
-  final bool isNegative;
   final String? tooltipMessage;
 
   @override
@@ -1492,206 +1450,105 @@ class _FxKpiCardState extends State<_FxKpiCard> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = _isFxDark(context);
-    final surface = _fxSurfaceFor(context);
-    final color = widget.color;
-    // Fond légèrement teinté par l'accent pour un rendu riche et premium.
-    final tinted = Color.alphaBlend(
-      color.withValues(alpha: isDark ? 0.10 : 0.045),
-      surface,
-    );
+    const deepBlue = Color(0xFF0F172A);
+    const line = Color(0xFFE2E8F0);
+    const muted = Color(0xFF64748B);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        transform: Matrix4.translationValues(0, _hovered ? -3 : 0, 0),
-        padding: const EdgeInsets.fromLTRB(4, 2, 4, 2),
+        padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [surface, tinted],
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(
+            color: _hovered ? deepBlue.withValues(alpha: 0.30) : line,
           ),
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: _hovered ? 0.20 : 0.09),
-              blurRadius: _hovered ? 22 : 13,
-              offset: Offset(0, _hovered ? 10 : 5),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Badge d'icône en dégradé avec halo coloré.
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    color,
-                    Color.lerp(color, Colors.black, 0.22) ?? color,
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(AppTheme.radius),
-                boxShadow: [
+          boxShadow: _hovered
+              ? [
                   BoxShadow(
-                    color: color.withValues(alpha: 0.38),
-                    blurRadius: 12,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Icon(widget.icon, color: Colors.white, size: 19),
-            ),
-            const SizedBox(width: 3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
+                    color: deepBlue.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  )
+                ]
+              : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                widget.label.toUpperCase(),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.5,
-                                  color: _fxMutedFor(context),
-                                ),
-                              ),
-                            ),
-                            if (widget.tooltipMessage != null) ...[
-                              const SizedBox(width: 1),
-                              Tooltip(
-                                message: widget.tooltipMessage!,
-                                preferBelow: false,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E293B),
-                                  borderRadius:
-                                      BorderRadius.circular(AppTheme.radius),
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.white,
-                                  height: 1.4,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 3, vertical: 2),
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 5),
-                                child: Icon(
-                                  CupertinoIcons.info_circle,
-                                  size: 11,
-                                  color: _fxMutedFor(context),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                      if (widget.trend != null) ...[
-                        const SizedBox(width: 2),
-                        _FxTrendChip(trend: widget.trend!),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 1),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          widget.isNegative ? '−${widget.value}' : widget.value,
-                          style: TextStyle(
-                            fontSize: 17,
-                            height: 1,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                            color: _fxTextFor(context),
-                          ),
-                        ),
-                        const SizedBox(width: 1),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 1),
-                          child: Text(
-                            widget.unit,
-                            style: TextStyle(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                              color: _fxMutedFor(context),
-                            ),
-                          ),
-                        ),
-                      ],
+                  Text(
+                    widget.label.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: muted,
                     ),
                   ),
+                  if (widget.tooltipMessage != null) ...[
+                    const SizedBox(width: 4),
+                    Tooltip(
+                      message: widget.tooltipMessage!,
+                      preferBelow: false,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E293B),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white,
+                        height: 1.4,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: const Icon(
+                        CupertinoIcons.info_circle,
+                        size: 11,
+                        color: muted,
+                      ),
+                    ),
+                  ],
                 ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: widget.value,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: deepBlue,
+                      ),
+                    ),
+                    if (widget.unit.isNotEmpty)
+                      TextSpan(
+                        text: ' ${widget.unit}',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: deepBlue,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Puce de tendance (▲/▼) affichée en haut de carte.
-class _FxTrendChip extends StatelessWidget {
-  const _FxTrendChip({required this.trend});
-
-  final _FxTrend trend;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = trend.isPositive ? _fxSuccess : _fxDanger;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            trend.isPositive
-                ? CupertinoIcons.arrow_up_right
-                : CupertinoIcons.arrow_down_right,
-            size: 9,
-            color: color,
-          ),
-          const SizedBox(width: 1),
-          Text(
-            trend.label,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1770,13 +1627,13 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
     final securities = widget.securities;
 
     const rowH = 40.0;
-    final headerTextLight = TextStyle(
+    final headerTextLight = const TextStyle(
         fontSize: 10.5,
         fontWeight: FontWeight.w800,
-        color: _fxPrimary.withValues(alpha: 0.9),
+        color: Colors.white,
         letterSpacing: 0.5);
-    final cellText = TextStyle(
-        fontSize: 11, color: _fxTextFor(context), fontWeight: FontWeight.w500);
+    final cellText = const TextStyle(
+        fontSize: 11, color: Color(0xFF1A237E), fontWeight: FontWeight.w500);
 
     return LayoutBuilder(builder: (context, constraints) {
       // Largeurs naturelles des colonnes.
@@ -1868,11 +1725,8 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                 // Header row
                 Container(
                   height: rowH,
-                  decoration: BoxDecoration(
-                    color: _fxPrimary.withValues(alpha: 0.05),
-                    border: Border(
-                        bottom: BorderSide(
-                            color: _fxPrimary.withValues(alpha: 0.15))),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1A237E), // deepBlue
                   ),
                   child: Row(children: [
                     SizedBox(
@@ -1970,6 +1824,44 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                       ),
                     ],
                   ),
+                ),
+                // Pied de tableau (Footer row)
+                Builder(
+                  builder: (context) {
+                    final totalFxGainLoss = securities.fold<double>(0, (sum, s) => sum + s.fxGainLoss);
+                    return Container(
+                      height: rowH,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A237E).withValues(alpha: 0.05),
+                        border: Border(
+                            top: BorderSide(
+                                color: const Color(0xFF1A237E).withValues(alpha: 0.15))),
+                      ),
+                      child: Row(children: [
+                        SizedBox(
+                            width: colW[0]!,
+                            child: _HCell('TOTAL', TextAlign.left, headerTextLight.copyWith(color: const Color(0xFF1A237E), fontSize: 12))),
+                        Expanded(
+                          child: _syncedMiddle(
+                            middleWidth,
+                            Row(children: [
+                              SizedBox(width: middleWidths[0]), // DEVISE
+                              SizedBox(width: middleWidths[1]), // NOMINALE
+                              SizedBox(width: middleWidths[2]), // VARIATION
+                              SizedBox(width: middleWidths[3]), // GAIN/PERTE %
+                              SizedBox(width: middleWidths[4]), // POSITION
+                              SizedBox(
+                                  width: middleWidths[5], // RWA
+                                  child: _DCell(formatLargeNumber(securities.fold<double>(0, (sum, s) => sum + s.rwa)), cellText.copyWith(fontWeight: FontWeight.w700), align: TextAlign.right)),
+                            ]),
+                          ),
+                        ),
+                        SizedBox(
+                            width: colW[7]!,
+                            child: _DCell(formatLargeNumber(totalFxGainLoss), cellText.copyWith(fontWeight: FontWeight.w800, color: totalFxGainLoss >= 0 ? _fxSuccess : _fxDanger), align: TextAlign.right)),
+                      ]),
+                    );
+                  }
                 ),
               ]);
             },

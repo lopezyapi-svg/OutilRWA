@@ -15,20 +15,9 @@ class ReportTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columnSpacing: 18,
-        horizontalMargin: 8,
-        headingRowHeight: 38,
-        dataRowMinHeight: 40,
-        dataRowMaxHeight: 44,
-        dividerThickness: 0.4,
-        headingTextStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-        dataTextStyle: Theme.of(context).textTheme.bodyMedium,
-        columns: const [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = const [
           DataColumn(label: Text('ID')),
           DataColumn(label: Text('Date')),
           DataColumn(label: Text('Periode')),
@@ -37,8 +26,9 @@ class ReportTable extends StatelessWidget {
           DataColumn(label: Text('Portee')),
           DataColumn(label: Text('Export PDF')),
           DataColumn(label: Text('Export Excel')),
-        ],
-        rows: reports.map((report) {
+        ];
+
+        final dataRows = reports.map((report) {
           return DataRow(
             cells: [
               DataCell(Text(report.id)),
@@ -51,8 +41,65 @@ class ReportTable extends StatelessWidget {
               DataCell(Text(report.exports['excel'] ?? '-')),
             ],
           );
-        }).toList(),
-      ),
+        }).toList();
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                border: Border(
+                  right: BorderSide(
+                    color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                    width: 1.0,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 4,
+                    offset: const Offset(2, 0),
+                  ),
+                ],
+              ),
+              child: DataTable(
+                columnSpacing: 18,
+                horizontalMargin: 8,
+                headingRowHeight: 40,
+                dataRowMinHeight: 48,
+                dataRowMaxHeight: 48,
+                dividerThickness: 0.35,
+                headingTextStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                dataTextStyle: Theme.of(context).textTheme.bodyMedium,
+                columns: [columns.first],
+                rows: dataRows.map((r) => DataRow(cells: [r.cells.first])).toList(),
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 18,
+                  horizontalMargin: 8,
+                  headingRowHeight: 40,
+                  dataRowMinHeight: 48,
+                  dataRowMaxHeight: 48,
+                  dividerThickness: 0.35,
+                  headingTextStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                  dataTextStyle: Theme.of(context).textTheme.bodyMedium,
+                  columns: columns.sublist(1),
+                  rows: dataRows.map((r) => DataRow(cells: r.cells.sublist(1))).toList(),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

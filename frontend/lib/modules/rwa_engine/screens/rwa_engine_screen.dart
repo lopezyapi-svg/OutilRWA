@@ -2620,7 +2620,7 @@ class _RegulatoryDiagram extends StatelessWidget {
             index: '3',
             title: 'Détermination de la pondération applicable',
             description:
-                'La pondération dépend uniquement de la catégorie d’exposition (étape 1) et de la qualité de crédit de la contrepartie — jamais du montant exposé.',
+                'La pondération dépend uniquement de la catégorie d’exposition (étape 1) et de la qualité de crédit de la contrepartie, jamais du montant exposé.',
             child: _WeightSourceGrid(),
           ),
           _MethodStep(
@@ -2742,7 +2742,7 @@ class _MethodStep extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
                 decoration: BoxDecoration(
-                  color: emphasized ? _deepBlue : Colors.white,
+                  color: emphasized ? _deepBlue : _soft,
                   borderRadius: BorderRadius.circular(1),
                   border: Border.all(
                     color: emphasized ? _deepBlue : _line,
@@ -2804,40 +2804,46 @@ class _WeightSourceGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _WeightSourceTile(
-                'Coefficient forfaitaire',
-                'Pondération fixée par catégorie d’exposition',
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _WeightSourceTile(
+                  'Coefficient forfaitaire',
+                  'Pondération fixée par catégorie d’exposition',
+                ),
               ),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: _WeightSourceTile(
-                'Notations OEEC',
-                'S&P, Moody’s, Fitch, DBRS',
+              SizedBox(width: 10),
+              Expanded(
+                child: _WeightSourceTile(
+                  'Notations OEEC',
+                  'S&P, Moody’s, Fitch, DBRS',
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: _WeightSourceTile(
-                'Classification OCE',
-                'Consensus OCDE sur le risque pays',
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _WeightSourceTile(
+                  'Classification OCE',
+                  'Consensus OCDE sur le risque pays',
+                ),
               ),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: _WeightSourceTile(
-                'Évaluations multiples',
-                'Deux notations : la plus élevée ; plus de deux : la plus élevée des deux plus basses',
+              SizedBox(width: 10),
+              Expanded(
+                child: _WeightSourceTile(
+                  'Évaluations multiples',
+                  'Deux notations : la plus élevée ; plus de deux : la plus élevée des deux plus basses',
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -2880,10 +2886,10 @@ class _WeightSourceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      constraints: const BoxConstraints(minHeight: 58),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: _soft,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(1),
         border: Border.all(color: _line, width: 0.6),
       ),
@@ -2893,8 +2899,6 @@ class _WeightSourceTile extends StatelessWidget {
         children: [
           Text(
             title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: _deepBlue,
               fontSize: 12.5,
@@ -2904,12 +2908,11 @@ class _WeightSourceTile extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             detail,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: _muted,
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
+              height: 1.35,
             ),
           ),
         ],

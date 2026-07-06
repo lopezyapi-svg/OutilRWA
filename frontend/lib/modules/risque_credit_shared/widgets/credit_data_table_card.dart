@@ -59,24 +59,86 @@ class CreditDataTableCard extends StatelessWidget {
               ),
             )
           else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columnSpacing: 18,
-                horizontalMargin: 8,
-                headingRowHeight: 40,
-                dataRowMinHeight: 44,
-                dataRowMaxHeight: 52,
-                dividerThickness: 0.35,
-                headingRowColor: headingRowColor,
-                headingTextStyle: headingTextStyle ??
-                    Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (columns.isNotEmpty)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          border: Border(
+                            right: BorderSide(
+                              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+                              width: 1.0,
+                            ),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 4,
+                              offset: const Offset(2, 0),
+                            ),
+                          ],
                         ),
-                dataTextStyle: Theme.of(context).textTheme.bodyMedium,
-                columns: columns,
-                rows: rows,
-              ),
+                        child: DataTable(
+                          columnSpacing: 18,
+                          horizontalMargin: 8,
+                          headingRowHeight: 40,
+                          dataRowMinHeight: 48,
+                          dataRowMaxHeight: 48,
+                          dividerThickness: 0.35,
+                          headingRowColor: headingRowColor,
+                          headingTextStyle: headingTextStyle ??
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                          dataTextStyle: Theme.of(context).textTheme.bodyMedium,
+                          columns: [columns.first],
+                          rows: rows.map((r) {
+                            return DataRow(
+                              key: r.key,
+                              selected: r.selected,
+                              onSelectChanged: r.onSelectChanged,
+                              color: r.color,
+                              cells: [r.cells.first],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columnSpacing: 18,
+                          horizontalMargin: 8,
+                          headingRowHeight: 40,
+                          dataRowMinHeight: 48,
+                          dataRowMaxHeight: 48,
+                          dividerThickness: 0.35,
+                          headingRowColor: headingRowColor,
+                          headingTextStyle: headingTextStyle ??
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                          dataTextStyle: Theme.of(context).textTheme.bodyMedium,
+                          columns: columns.length > 1 ? columns.sublist(1) : [],
+                          rows: rows.map((r) {
+                            return DataRow(
+                              key: r.key,
+                              selected: r.selected,
+                              onSelectChanged: r.onSelectChanged,
+                              color: r.color,
+                              cells: r.cells.length > 1 ? r.cells.sublist(1) : [],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
         ],
       ),
