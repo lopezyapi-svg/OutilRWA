@@ -14,9 +14,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, status
 
 from app.core.config import settings
+from app.market.services import MARKET_CAPITAL_REQUIREMENT_KEY
 from database.connection import database_manager, utcnow_iso
 
 router = APIRouter(prefix="/market", tags=["Market"])
+
+_MARKET_FX_POSITIONS_KEY = "market_fx_positions_v1"
 
 _MARKET_PORTFOLIOS_PAYLOAD_KEY = "market_portfolios_payload_v1"
 _MARKET_PORTFOLIOS_SAVED_AT_KEY = "market_portfolios_saved_at"
@@ -206,6 +209,146 @@ def save_market_portfolios_compat(body: dict[str, Any]) -> dict[str, Any]:
     """Alias POST pour les clients qui n'exposent pas PUT."""
 
     return save_market_portfolios(body)
+
+
+@router.get("/fx-positions")
+def get_fx_positions() -> dict[str, Any]:
+    """Retourne les positions de change persistees (module Risque de Change)."""
+
+    with database_manager.read_connection() as connection:
+        row = connection.execute(
+            "SELECT valeur AS value FROM metadonnees_app WHERE cle = ?",
+            (_MARKET_FX_POSITIONS_KEY,),
+        ).fetchone()
+
+    if row is None or not str(row["value"] or "").strip():
+        return {"storage_backend": "sqlite", "empty": True, "payload": []}
+
+    try:
+        payload = json.loads(str(row["value"]))
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "MARKET_FX_POSITIONS_SQL_PAYLOAD_INVALID",
+                "message": "Les positions de change stockees en SQLite sont illisibles.",
+            },
+        ) from exc
+
+    if not isinstance(payload, list):
+        payload = []
+
+    return {"storage_backend": "sqlite", "empty": not payload, "payload": payload}
+
+
+@router.put("/fx-positions")
+def save_fx_positions(body: dict[str, Any]) -> dict[str, Any]:
+    """Persiste les positions de change dans SQLite local."""
+
+    payload = body.get("payload")
+    if not isinstance(payload, list):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "MARKET_FX_POSITIONS_PAYLOAD_INVALID",
+                "message": "Payload positions de change invalide.",
+            },
+        )
+
+    encoded_payload = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+    saved_at = utcnow_iso()
+
+    with database_manager.transaction() as connection:
+        connection.execute(
+            """
+            INSERT INTO metadonnees_app(cle, valeur)
+            VALUES (?, ?)
+            ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur
+            """,
+            (_MARKET_FX_POSITIONS_KEY, encoded_payload),
+        )
+
+    return {"status": "ok", "storage_backend": "sqlite", "saved_at": saved_at}
+
+
+@router.post("/fx-positions")
+def save_fx_positions_compat(body: dict[str, Any]) -> dict[str, Any]:
+    """Alias POST pour les clients qui n'exposent pas PUT."""
+
+    return save_fx_positions(body)
+
+
+@router.get("/capital-requirement")
+def get_capital_requirement() -> dict[str, Any]:
+    """Retourne le dernier resultat calcule (RWA + capital requis) du module Marche."""
+
+    with database_manager.read_connection() as connection:
+        row = connection.execute(
+            "SELECT valeur AS value FROM metadonnees_app WHERE cle = ?",
+            (MARKET_CAPITAL_REQUIREMENT_KEY,),
+        ).fetchone()
+
+    if row is None or not str(row["value"] or "").strip():
+        return {"empty": True, "rwa_marche": 0.0, "capital_requis": 0.0, "computed_at": None}
+
+    try:
+        payload = json.loads(str(row["value"]))
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "code": "MARKET_CAPITAL_REQUIREMENT_SQL_PAYLOAD_INVALID",
+                "message": "Le capital requis marche stocke en SQLite est illisible.",
+            },
+        ) from exc
+
+    return {
+        "empty": False,
+        "rwa_marche": float(payload.get("rwa_marche", 0.0)),
+        "capital_requis": float(payload.get("capital_requis", 0.0)),
+        "computed_at": payload.get("computed_at"),
+    }
+
+
+@router.put("/capital-requirement")
+def save_capital_requirement(body: dict[str, Any]) -> dict[str, Any]:
+    """Persiste le RWA/capital requis marche calcule cote client."""
+
+    rwa_marche = body.get("rwa_marche")
+    capital_requis = body.get("capital_requis")
+    if not isinstance(rwa_marche, (int, float)) or not isinstance(
+        capital_requis, (int, float)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "MARKET_CAPITAL_REQUIREMENT_PAYLOAD_INVALID",
+                "message": "rwa_marche et capital_requis doivent etre numeriques.",
+            },
+        )
+
+    saved_at = utcnow_iso()
+    encoded_payload = json.dumps(
+        {
+            "rwa_marche": float(rwa_marche),
+            "capital_requis": float(capital_requis),
+            "computed_at": saved_at,
+        },
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    with database_manager.transaction() as connection:
+        connection.execute(
+            """
+            INSERT INTO metadonnees_app(cle, valeur)
+            VALUES (?, ?)
+            ON CONFLICT(cle) DO UPDATE SET valeur = excluded.valeur
+            """,
+            (MARKET_CAPITAL_REQUIREMENT_KEY, encoded_payload),
+        )
+
+    return {"status": "ok", "saved_at": saved_at}
 
 
 @router.post("/yield-curves/cemac/refresh")

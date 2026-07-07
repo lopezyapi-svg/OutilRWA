@@ -27,8 +27,10 @@ import 'modules/importations/screens/importations_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/reporting_credit/screens/reporting_credit_screen.dart';
 import 'modules/risque_credit_shared/services/credit_risk_submodules_service.dart';
+import 'modules/risque_marche/repositories/foreign_exchange_repository.dart';
 import 'modules/risque_marche/screens/market_data_import_screen.dart';
 import 'modules/risque_marche/screens/risque_marche_screen.dart';
+import 'modules/risque_marche/services/market_capital_requirement_persister.dart';
 import 'modules/risque_marche/services/market_data_import_store.dart';
 import 'modules/risque_operationnel/screens/risque_operationnel_screen.dart';
 import 'modules/rwa_engine/screens/rwa_engine_screen.dart';
@@ -77,6 +79,8 @@ class _RwaAppState extends State<RwaApp> {
     _portfolioAmountUnit.addListener(_handleAmountUnitChanged);
     _appLanguage.addListener(_handleLanguageChanged);
     unawaited(MarketDataImportStore.instance.configureSqlBackend(_api));
+    unawaited(InMemoryForeignExchangeRepository().configureSqlBackend(_api));
+    unawaited(MarketCapitalRequirementPersister.instance.start());
   }
 
   @override

@@ -2544,6 +2544,11 @@ class MarketDataImportStore {
 
   Future<void> get initialized => _sqlBackendFuture ?? _restoreFuture;
 
+  /// Instance API partagée, réutilisable par d'autres services du module
+  /// Marché (ex. persistance du capital requis calculé) une fois le backend
+  /// SQL configuré via [configureSqlBackend].
+  RwaApiService? get sqlBackendApi => _sqlBackendApi;
+
   final ValueNotifier<MarketDataSnapshot> snapshotNotifier =
       ValueNotifier<MarketDataSnapshot>(MarketDataSnapshot.empty);
   final ValueNotifier<MarketPortfolioDataset?> datasetNotifier =

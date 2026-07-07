@@ -10,9 +10,9 @@ import unicodedata
 from app.core.calculations import convert_currency_amount, safe_ratio
 from app.core.bceao_calculations import (
     calculate_fonds_propres,
-    calculate_risque_marche,
     evaluate_ratios
 )
+from app.market.services import resolve_market_capital
 from app.risque_operationnel.services import calcul_bic as _calcul_bic_crr3
 from app.dashboard.models import (
     DashboardMetric,
@@ -343,7 +343,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
 
     # CALCULATIONS BCEAO
     fp_calc = calculate_fonds_propres(fp_data)
-    rm_calc = calculate_risque_marche(rm_data)
+    rm_calc = resolve_market_capital(rm_data)
     # RWA Opérationnel = REA CRR3 (Approche Standard / BIC), issu de la saisie
     # ou de l'import Excel BIC/CCR3 — remplace l'ancienne approche indicateur
     # de base (AIB) simplifiée qui n'était plus représentative.

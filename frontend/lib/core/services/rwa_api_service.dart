@@ -89,6 +89,32 @@ class RwaApiService {
     await _client.put('/market/portfolios', {'payload': payload});
   }
 
+  Future<List<Map<String, dynamic>>> fetchFxPositions() async {
+    final payload = await _client.get('/market/fx-positions');
+    if (payload is! Map) return [];
+    final map = Map<String, dynamic>.from(payload);
+    final data = map['payload'];
+    if (data is! List) return [];
+    return data
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+  }
+
+  Future<void> saveFxPositions(List<Map<String, Object?>> positions) async {
+    await _client.put('/market/fx-positions', {'payload': positions});
+  }
+
+  Future<void> saveMarketCapitalRequirement({
+    required double rwaMarche,
+    required double capitalRequis,
+  }) async {
+    await _client.put('/market/capital-requirement', {
+      'rwa_marche': rwaMarche,
+      'capital_requis': capitalRequis,
+    });
+  }
+
   final List<Map<String, dynamic>> _riskWeights = [
     {
       'id': 'RW001',

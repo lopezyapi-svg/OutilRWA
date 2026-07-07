@@ -22,6 +22,37 @@ class AggregatedMarketRiskResult {
   final double fxContributionPercent; // Contribution FX au RWA total (%)
 }
 
+/// Remplace le risque de change de [base] — approximation tirée de la
+/// colonne devise des titres obligations/actions importés — par le vrai
+/// risque de change calculé sur les positions saisies dans l'onglet Risque
+/// de Change (actifs/passifs/achats-ventes à terme, approche standard
+/// BCEAO). `capitalRequirement`/`marketRwa` (getters dérivés) reflètent donc
+/// automatiquement la correction.
+MarketPrudentialCapitalResult applyRealForeignExchangeRisk(
+  MarketPrudentialCapitalResult base,
+  List<ForeignExchangePosition> fxPositions,
+) {
+  final fx = calculateForeignExchangeRisk(fxPositions);
+  return MarketPrudentialCapitalResult(
+    interestRateSpecificRisk: base.interestRateSpecificRisk,
+    interestRateGeneralRisk: base.interestRateGeneralRisk,
+    equitySpecificRisk: base.equitySpecificRisk,
+    equityGeneralRisk: base.equityGeneralRisk,
+    foreignExchangeRisk: fx.capitalRequirement,
+    commodityDirectionalRisk: base.commodityDirectionalRisk,
+    commodityBasisRisk: base.commodityBasisRisk,
+    interestRateSpecificRiskWeightAverage:
+        base.interestRateSpecificRiskWeightAverage,
+    interestRateGeneralRiskWeightAverage:
+        base.interestRateGeneralRiskWeightAverage,
+    equityGrossPosition: base.equityGrossPosition,
+    equityNetPosition: base.equityNetPosition,
+    foreignExchangeGlobalNetPosition: fx.globalNetPosition,
+    commodityGrossPosition: base.commodityGrossPosition,
+    commodityNetPosition: base.commodityNetPosition,
+  );
+}
+
 /// Service pour calculer les KPI agrégés du risque de marché
 class MarketRiskAggregationService {
   static final MarketRiskAggregationService _instance =

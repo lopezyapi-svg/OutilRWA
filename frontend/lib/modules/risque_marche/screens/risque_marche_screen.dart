@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:excel/excel.dart' hide Border, TextSpan;
 import 'package:file_selector/file_selector.dart';
@@ -25912,7 +25911,46 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
   final ScrollController _tableBodyScroll = ScrollController();
   bool _syncingTableScroll = false;
 
+  // Résultat du calcul de risque, mis en cache : recalculé uniquement quand
+  // les données source changent (pas à chaque rebuild, ex. sélection d'une
+  // ligne), pour éviter de reconvertir/repondérer tout le portefeuille à
+  // chaque interaction.
+  List<({MarketPortfolioRecord record, double position, double weight})>
+      _specificData = const [];
+  List<({MarketPortfolioRecord record, double position})> _generalData =
+      const [];
+  double _totalSpecific = 0;
+  double _totalGeneral = 0;
+
+  void _recomputeRiskData() {
+    final bonds = _bonds;
+    _specificData = bonds
+        .map((r) => (
+              record: r,
+              position: _positionValue(r),
+              weight: _specificWeight(r)
+            ))
+        .where((d) => d.position > 0)
+        .toList();
+    _totalSpecific =
+        _specificData.fold(0.0, (s, d) => s + d.position * d.weight);
+
+    _generalData = bonds
+        .map((r) => (record: r, position: _positionValue(r)))
+        .where((d) => d.position > 0)
+        .toList();
+    _totalGeneral = _generalData.fold(0.0, (s, d) {
+      final years = d.record.residualMaturityMonths / 12;
+      final weight = marketGeneralRiskWeight(years, d.record.coupon);
+      return s + d.position * weight;
+    });
+  }
+
   static const _views = ['Spécifique', 'Général'];
+  // Hauteur de ligne fixe : permet la virtualisation (ListView.builder) tout
+  // en gardant la colonne ID figée et le corps défilant parfaitement
+  // synchronisés (même itemExtent × même nombre de lignes des deux côtés).
+  static const double _kTauxRowHeight = 32.0;
 
   void _syncScroll(ScrollController source, ScrollController target) {
     if (_syncingTableScroll) return;
@@ -25946,11 +25984,14 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
   Future<void> _loadMarketData() async {
     await MarketDataImportStore.instance.initialized;
     if (!mounted) return;
+    _recomputeRiskData();
     setState(() => _loadingMarketData = false);
   }
 
   void _onDataChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    _recomputeRiskData();
+    setState(() {});
   }
 
   @override
@@ -26011,27 +26052,10 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
     final border = _marketBorderFor(context);
     final surface = _marketSurfaceFor(context);
 
-    final bonds = _bonds;
-    final specificData = bonds
-        .map((r) => (
-              record: r,
-              position: _positionValue(r),
-              weight: _specificWeight(r)
-            ))
-        .where((d) => d.position > 0)
-        .toList();
-    final totalSpecific =
-        specificData.fold(0.0, (s, d) => s + d.position * d.weight);
-
-    final generalData = bonds
-        .map((r) => (record: r, position: _positionValue(r)))
-        .where((d) => d.position > 0)
-        .toList();
-    final totalGeneral = generalData.fold(0.0, (s, d) {
-      final years = d.record.residualMaturityMonths / 12;
-      final weight = marketGeneralRiskWeight(years, d.record.coupon);
-      return s + d.position * weight;
-    });
+    final specificData = _specificData;
+    final totalSpecific = _totalSpecific;
+    final generalData = _generalData;
+    final totalGeneral = _totalGeneral;
 
     final exigenceFP = totalSpecific + totalGeneral;
     final rwa = exigenceFP * (1 / 0.09); // 11,111111
@@ -26438,12 +26462,13 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                               children: [
                                 _buildTableHeader(isFixed: true),
                                 Expanded(
-                                  child: SingleChildScrollView(
-                                    controller: _fixedColumnScroll,
-                                    child: _selectedView == 0
-                                        ? _buildSpecificRows(specificData, isFixed: true)
-                                        : _buildGeneralRows(generalData, isFixed: true),
-                                  ),
+                                  child: _selectedView == 0
+                                      ? _buildSpecificRows(specificData,
+                                          isFixed: true,
+                                          controller: _fixedColumnScroll)
+                                      : _buildGeneralRows(generalData,
+                                          isFixed: true,
+                                          controller: _fixedColumnScroll),
                                 ),
                                 _selectedView == 0
                                     ? _totalRow('Total', '', '', isFixed: true)
@@ -26461,12 +26486,13 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                                   children: [
                                     _buildTableHeader(isFixed: false),
                                     Expanded(
-                                      child: SingleChildScrollView(
-                                        controller: _tableBodyScroll,
-                                        child: _selectedView == 0
-                                            ? _buildSpecificRows(specificData, isFixed: false)
-                                            : _buildGeneralRows(generalData, isFixed: false),
-                                      ),
+                                      child: _selectedView == 0
+                                          ? _buildSpecificRows(specificData,
+                                              isFixed: false,
+                                              controller: _tableBodyScroll)
+                                          : _buildGeneralRows(generalData,
+                                              isFixed: false,
+                                              controller: _tableBodyScroll),
                                     ),
                                     _selectedView == 0
                                         ? _totalRow(
@@ -26624,24 +26650,26 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
 
   Widget _buildSpecificRows(
       List<({MarketPortfolioRecord record, double position, double weight})>
-          data, {required bool isFixed}) {
+          data, {required bool isFixed, required ScrollController controller}) {
     final flexes = [1, 3, 3, 2, 1, 2, 2, 2];
     final displayFlexes = isFixed ? [flexes.first] : flexes.sublist(1);
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: data.asMap().entries.map((entry) {
-        final i = entry.key;
-        final r = entry.value.record;
-        final pos = entry.value.position;
-        final w = entry.value.weight;
+
+    return ListView.builder(
+      controller: controller,
+      itemExtent: _kTauxRowHeight,
+      itemCount: data.length,
+      itemBuilder: (context, i) {
+        final entry = data[i];
+        final r = entry.record;
+        final pos = entry.position;
+        final w = entry.weight;
         final exigence = pos * w;
         final rwa = exigence * (1 / 0.09); // 11,111111
         final categoryLabel = marketSpecificDebtRiskCategoryLabel(r);
         final isEven = i % 2 == 0;
         final selected = _selectedRowIndex == i;
         final isLast = i == data.length - 1;
-        
+
         final cells = [
           Text(r.titleId.isNotEmpty ? r.titleId : '-', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: _deepBlue)),
           Text(r.issuer, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400, color: _deepBlue)),
@@ -26679,42 +26707,42 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                       ),
                     ),
             ),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: () {
-                  final rowChildren = <Widget>[];
-                  for (var j = 0; j < displayCells.length; j++) {
-                    if (j > 0) rowChildren.add(Container(width: 0.5, color: _deepBlue.withValues(alpha: 0.15)));
-                    rowChildren.add(Expanded(
-                      flex: displayFlexes[j],
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
-                        child: displayCells[j],
-                      ),
-                    ));
-                  }
-                  return rowChildren;
-                }(),
-              ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: () {
+                final rowChildren = <Widget>[];
+                for (var j = 0; j < displayCells.length; j++) {
+                  if (j > 0) rowChildren.add(Container(width: 0.5, color: _deepBlue.withValues(alpha: 0.15)));
+                  rowChildren.add(Expanded(
+                    flex: displayFlexes[j],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+                      child: displayCells[j],
+                    ),
+                  ));
+                }
+                return rowChildren;
+              }(),
             ),
           ),
         );
-      }).toList(),
+      },
     );
   }
 
   Widget _buildGeneralRows(
-      List<({MarketPortfolioRecord record, double position})> data, {required bool isFixed}) {
+      List<({MarketPortfolioRecord record, double position})> data, {required bool isFixed, required ScrollController controller}) {
     final flexes = [1, 3, 2, 2, 2, 2, 2];
     final displayFlexes = isFixed ? [flexes.first] : flexes.sublist(1);
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: data.asMap().entries.map((entry) {
-        final i = entry.key;
-        final r = entry.value.record;
-        final pos = entry.value.position;
+    return ListView.builder(
+      controller: controller,
+      itemExtent: _kTauxRowHeight,
+      itemCount: data.length,
+      itemBuilder: (context, i) {
+        final entry = data[i];
+        final r = entry.record;
+        final pos = entry.position;
         final years = r.residualMaturityMonths / 12;
         final label = years < 1
             ? (years * 12).toInt().toString()
@@ -26762,28 +26790,26 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                       ),
                     ),
             ),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: () {
-                  final rowChildren = <Widget>[];
-                  for (var j = 0; j < displayCells.length; j++) {
-                    if (j > 0) rowChildren.add(Container(width: 0.5, color: _deepBlue.withValues(alpha: 0.15)));
-                    rowChildren.add(Expanded(
-                      flex: displayFlexes[j],
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
-                        child: displayCells[j],
-                      ),
-                    ));
-                  }
-                  return rowChildren;
-                }(),
-              ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: () {
+                final rowChildren = <Widget>[];
+                for (var j = 0; j < displayCells.length; j++) {
+                  if (j > 0) rowChildren.add(Container(width: 0.5, color: _deepBlue.withValues(alpha: 0.15)));
+                  rowChildren.add(Expanded(
+                    flex: displayFlexes[j],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+                      child: displayCells[j],
+                    ),
+                  ));
+                }
+                return rowChildren;
+              }(),
             ),
           ),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -26801,11 +26827,11 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
             ),
           ),
         ),
-        child: Row(children: [
+        child: const Row(children: [
           Expanded(
             flex: 1,
             child: Text('Total',
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: _deepBlue,
@@ -27716,9 +27742,6 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
     _repository = InMemoryForeignExchangeRepository();
     _aggregationService = MarketRiskAggregationService();
 
-    // Charger les données de démonstration
-    _repository.loadDemoData();
-
     // Écouter les changements de positions
     _positionsSubscription = _repository.positionsStream.listen((positions) {
       setState(() {
@@ -27729,7 +27752,8 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
       });
     });
 
-    // Récupérer les positions initiales
+    // Attendre la restauration depuis le backend (données démo semées une
+    // seule fois si rien n'a jamais été persisté), puis charger l'état actuel.
     _loadPositions();
   }
 
@@ -27740,7 +27764,9 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
   }
 
   Future<void> _loadPositions() async {
+    await _repository.initialized;
     final positions = await _repository.getAllPositions();
+    if (!mounted) return;
     setState(() {
       _positions = positions;
       _lastResult = _aggregationService.calculateAggregatedRisk(
@@ -28972,27 +28998,68 @@ class _ExigenceFPScreen extends StatefulWidget {
 
 class _ExigenceFPScreenState extends State<_ExigenceFPScreen> {
   bool _loading = true;
+  final InMemoryForeignExchangeRepository _fxRepository =
+      InMemoryForeignExchangeRepository();
+  List<ForeignExchangePosition> _fxPositions = [];
+  late final StreamSubscription<List<ForeignExchangePosition>>
+      _fxSubscription;
+  double? _lastPersistedRwa;
 
   @override
   void initState() {
     super.initState();
     MarketDataImportStore.instance.snapshotNotifier.addListener(_onData);
+    _fxSubscription = _fxRepository.positionsStream.listen((positions) {
+      if (!mounted) return;
+      setState(() => _fxPositions = positions);
+      _persistCapitalRequirement();
+    });
     _load();
   }
 
   Future<void> _load() async {
     await MarketDataImportStore.instance.initialized;
+    await _fxRepository.initialized;
+    final positions = await _fxRepository.getAllPositions();
     if (!mounted) return;
-    setState(() => _loading = false);
+    setState(() {
+      _fxPositions = positions;
+      _loading = false;
+    });
+    _persistCapitalRequirement();
   }
 
   void _onData() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    _persistCapitalRequirement();
+  }
+
+  void _persistCapitalRequirement() {
+    final api = MarketDataImportStore.instance.sqlBackendApi;
+    if (api == null) return;
+    final r = applyRealForeignExchangeRisk(
+      calculateMarketPrudentialCapital(records: _allMarketRecords()),
+      _fxPositions,
+    );
+    if (_lastPersistedRwa == r.marketRwa) return;
+    _lastPersistedRwa = r.marketRwa;
+    unawaited(
+      api
+          .saveMarketCapitalRequirement(
+            rwaMarche: r.marketRwa,
+            capitalRequis: r.capitalRequirement,
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+        debugPrint('Persist capital requis marché failed: $error');
+      }),
+    );
   }
 
   @override
   void dispose() {
     MarketDataImportStore.instance.snapshotNotifier.removeListener(_onData);
+    _fxSubscription.cancel();
     super.dispose();
   }
 
@@ -29000,7 +29067,10 @@ class _ExigenceFPScreenState extends State<_ExigenceFPScreen> {
   Widget build(BuildContext context) {
     PortfolioAmountUnitScope.of(context);
     final records = _allMarketRecords();
-    final r = calculateMarketPrudentialCapital(records: records);
+    final r = applyRealForeignExchangeRisk(
+      calculateMarketPrudentialCapital(records: records),
+      _fxPositions,
+    );
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding, AppTheme.pageGap,
@@ -29154,27 +29224,68 @@ class _RwaScreen extends StatefulWidget {
 
 class _RwaScreenState extends State<_RwaScreen> {
   bool _loading = true;
+  final InMemoryForeignExchangeRepository _fxRepository =
+      InMemoryForeignExchangeRepository();
+  List<ForeignExchangePosition> _fxPositions = [];
+  late final StreamSubscription<List<ForeignExchangePosition>>
+      _fxSubscription;
+  double? _lastPersistedRwa;
 
   @override
   void initState() {
     super.initState();
     MarketDataImportStore.instance.snapshotNotifier.addListener(_onData);
+    _fxSubscription = _fxRepository.positionsStream.listen((positions) {
+      if (!mounted) return;
+      setState(() => _fxPositions = positions);
+      _persistCapitalRequirement();
+    });
     _load();
   }
 
   Future<void> _load() async {
     await MarketDataImportStore.instance.initialized;
+    await _fxRepository.initialized;
+    final positions = await _fxRepository.getAllPositions();
     if (!mounted) return;
-    setState(() => _loading = false);
+    setState(() {
+      _fxPositions = positions;
+      _loading = false;
+    });
+    _persistCapitalRequirement();
   }
 
   void _onData() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    _persistCapitalRequirement();
+  }
+
+  void _persistCapitalRequirement() {
+    final api = MarketDataImportStore.instance.sqlBackendApi;
+    if (api == null) return;
+    final r = applyRealForeignExchangeRisk(
+      calculateMarketPrudentialCapital(records: _allMarketRecords()),
+      _fxPositions,
+    );
+    if (_lastPersistedRwa == r.marketRwa) return;
+    _lastPersistedRwa = r.marketRwa;
+    unawaited(
+      api
+          .saveMarketCapitalRequirement(
+            rwaMarche: r.marketRwa,
+            capitalRequis: r.capitalRequirement,
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+        debugPrint('Persist capital requis marché failed: $error');
+      }),
+    );
   }
 
   @override
   void dispose() {
     MarketDataImportStore.instance.snapshotNotifier.removeListener(_onData);
+    _fxSubscription.cancel();
     super.dispose();
   }
 
@@ -29182,7 +29293,10 @@ class _RwaScreenState extends State<_RwaScreen> {
   Widget build(BuildContext context) {
     PortfolioAmountUnitScope.of(context);
     final records = _allMarketRecords();
-    final r = calculateMarketPrudentialCapital(records: records);
+    final r = applyRealForeignExchangeRisk(
+      calculateMarketPrudentialCapital(records: records),
+      _fxPositions,
+    );
 
     final rwaTaux = r.interestRateRisk * (1 / 0.09);
     final rwaActions = r.equityRisk * (1 / 0.09);

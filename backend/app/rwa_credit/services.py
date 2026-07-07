@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from app.core.bceao_calculations import (
     calculate_fonds_propres,
-    calculate_risque_marche,
     calculate_risque_operationnel,
 )
 from app.core.calculations import convert_currency_amount
+from app.market.services import resolve_market_capital
 from app.core.config import RWA_EXPECTED_WEIGHT_RANGES, settings
 from app.expositions.services import list_expositions
 from app.rwa_credit.models import (
@@ -141,7 +141,7 @@ def _load_capital_position(rwa_credit: float) -> dict[str, float | bool | None]:
 
     fp_calc = calculate_fonds_propres(fp_data)
     ro_calc = calculate_risque_operationnel(ro_data)
-    rm_calc = calculate_risque_marche(rm_data)
+    rm_calc = resolve_market_capital(rm_data)
 
     own_funds = float(fp_calc["total_capital"])
     own_funds_available = bool(fp_row) and own_funds > 0

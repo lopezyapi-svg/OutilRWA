@@ -1627,12 +1627,12 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
     final securities = widget.securities;
 
     const rowH = 40.0;
-    final headerTextLight = const TextStyle(
+    const headerTextLight = TextStyle(
         fontSize: 10.5,
         fontWeight: FontWeight.w800,
         color: Colors.white,
         letterSpacing: 0.5);
-    final cellText = const TextStyle(
+    const cellText = TextStyle(
         fontSize: 11, color: Color(0xFF1E3A5F), fontWeight: FontWeight.w500);
 
     return LayoutBuilder(builder: (context, constraints) {

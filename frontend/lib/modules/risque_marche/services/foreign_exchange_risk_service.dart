@@ -34,6 +34,26 @@ class ForeignExchangePosition {
 
   /// Valeur absolue de la position nette
   double get absolutePosition => netPosition.abs();
+
+  Map<String, Object?> toJson() => {
+        'currency': currency,
+        'assets': assets,
+        'liabilities': liabilities,
+        'forward_purchases': forwardPurchases,
+        'forward_sales': forwardSales,
+      };
+
+  factory ForeignExchangePosition.fromJson(Map<String, Object?> json) {
+    double asDouble(Object? value) =>
+        value is num ? value.toDouble() : double.tryParse('$value') ?? 0.0;
+    return ForeignExchangePosition(
+      currency: (json['currency'] as String?) ?? '',
+      assets: asDouble(json['assets']),
+      liabilities: asDouble(json['liabilities']),
+      forwardPurchases: asDouble(json['forward_purchases']),
+      forwardSales: asDouble(json['forward_sales']),
+    );
+  }
 }
 
 /// Résultat du calcul du risque de change
