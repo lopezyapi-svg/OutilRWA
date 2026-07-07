@@ -25911,6 +25911,15 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
   final ScrollController _tableBodyScroll = ScrollController();
   bool _syncingTableScroll = false;
 
+  // ── Tri des tableaux ───────────────────────────────────────────────────────
+  // Index de la colonne triée (0 = ID, 1 = Instrument, 2 = Catégorie…) et
+  // sens du tri pour chaque vue. null = pas de tri appliqué (ordre naturel).
+  int? _specificSortColumn;
+  bool _specificSortAsc = true;
+  int? _generalSortColumn;
+  bool _generalSortAsc = true;
+  // ───────────────────────────────────────────────────────────────────────────
+
   // Résultat du calcul de risque, mis en cache : recalculé uniquement quand
   // les données source changent (pas à chaque rebuild, ex. sélection d'une
   // ligne), pour éviter de reconvertir/repondérer tout le portefeuille à
@@ -26615,10 +26624,20 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           ];
     final flexes =
         _selectedView == 0 ? [1, 3, 3, 2, 1, 2, 2, 2] : [1, 3, 2, 2, 2, 2, 2];
-        
+
+    // Colonnes entières (avec offset 0 = colonne fixe ID).
+    final int? sortCol =
+        _selectedView == 0 ? _specificSortColumn : _generalSortColumn;
+    final bool sortAsc =
+        _selectedView == 0 ? _specificSortAsc : _generalSortAsc;
+
     final displayColumns = isFixed ? [columns.first] : columns.sublist(1);
-    final displayAlignments = isFixed ? [alignments.first] : alignments.sublist(1);
+    final displayAlignments =
+        isFixed ? [alignments.first] : alignments.sublist(1);
     final displayFlexes = isFixed ? [flexes.first] : flexes.sublist(1);
+    // Offset réel : colonne ID est à l'index 0 du tableau complet ;
+    // les colonnes du corps commencent à l'index 1.
+    final int displayOffset = isFixed ? 0 : 1;
 
     return Container(
       width: double.infinity,
@@ -26637,19 +26656,99 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             for (var i = 0; i < displayColumns.length; i++) ...[
-              if (i > 0) Container(width: 0.5, color: Colors.white.withValues(alpha: 0.2)),
+              if (i > 0)
+                Container(
+                    width: 0.5,
+                    color: Colors.white.withValues(alpha: 0.2)),
               Expanded(
-                  flex: displayFlexes[i],
+                flex: displayFlexes[i],
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    final colIndex = displayOffset + i;
+                    setState(() {
+                      if (_selectedView == 0) {
+                        if (_specificSortColumn == colIndex) {
+                          _specificSortAsc = !_specificSortAsc;
+                        } else {
+                          _specificSortColumn = colIndex;
+                          _specificSortAsc = true;
+                        }
+                      } else {
+                        if (_generalSortColumn == colIndex) {
+                          _generalSortAsc = !_generalSortAsc;
+                        } else {
+                          _generalSortColumn = colIndex;
+                          _generalSortAsc = true;
+                        }
+                      }
+                      _selectedRowIndex = null;
+                    });
+                  },
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
-                    child: Text(displayColumns[i],
-                        textAlign: displayAlignments[i],
-                        style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            letterSpacing: 0.5)),
-                  )),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+                    child: Row(
+                      mainAxisAlignment:
+                          displayAlignments[i] == TextAlign.right
+                              ? MainAxisAlignment.end
+                              : displayAlignments[i] == TextAlign.center
+                                  ? MainAxisAlignment.center
+                                  : MainAxisAlignment.start,
+                      children: [
+                        if (displayAlignments[i] == TextAlign.right &&
+                            sortCol == displayOffset + i) ...
+                          [
+                            Icon(
+                              sortAsc
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward,
+                              size: 9,
+                              color: Colors.white70,
+                            ),
+                            const SizedBox(width: 2),
+                          ],
+                        Flexible(
+                          child: Text(
+                            displayColumns[i],
+                            textAlign: displayAlignments[i],
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: sortCol == displayOffset + i
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.85),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        if (displayAlignments[i] != TextAlign.right &&
+                            sortCol == displayOffset + i) ...
+                          [
+                            const SizedBox(width: 2),
+                            Icon(
+                              sortAsc
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward,
+                              size: 9,
+                              color: Colors.white70,
+                            ),
+                          ],
+                        if (sortCol != displayOffset + i)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 2),
+                            child: Icon(
+                              Icons.unfold_more,
+                              size: 9,
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ]
           ],
         ),
@@ -26660,6 +26759,42 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
   Widget _buildSpecificRows(
       List<({MarketPortfolioRecord record, double position, double weight})>
           data, {required bool isFixed, required ScrollController controller}) {
+    // ── Tri ──────────────────────────────────────────────────────────────────
+    var sortedData = List.of(data);
+    if (_specificSortColumn != null) {
+      final col = _specificSortColumn!;
+      final asc = _specificSortAsc;
+      sortedData.sort((a, b) {
+        int cmp;
+        switch (col) {
+          case 0: // ID
+            cmp = a.record.titleId.compareTo(b.record.titleId);
+          case 1: // Instrument
+            cmp = a.record.issuer.compareTo(b.record.issuer);
+          case 2: // Catégorie
+            cmp = marketSpecificDebtRiskCategoryLabel(a.record)
+                .compareTo(marketSpecificDebtRiskCategoryLabel(b.record));
+          case 3: // Position Nette
+            cmp = a.position.compareTo(b.position);
+          case 4: // Qualité
+            cmp = a.record.rating.compareTo(b.record.rating);
+          case 5: // Pondération
+            cmp = a.weight.compareTo(b.weight);
+          case 6: // Exigence
+            cmp = (a.position * a.weight).compareTo(b.position * b.weight);
+          case 7: // RWA
+            final rwaA = (a.position * a.weight) * (1 / 0.09);
+            final rwaB = (b.position * b.weight) * (1 / 0.09);
+            cmp = rwaA.compareTo(rwaB);
+          default:
+            cmp = 0;
+        }
+        return asc ? cmp : -cmp;
+      });
+    }
+    data = sortedData;
+    // ─────────────────────────────────────────────────────────────────────────
+
     final flexes = [1, 3, 3, 2, 1, 2, 2, 2];
     final displayFlexes = isFixed ? [flexes.first] : flexes.sublist(1);
 
@@ -26741,6 +26876,48 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
 
   Widget _buildGeneralRows(
       List<({MarketPortfolioRecord record, double position})> data, {required bool isFixed, required ScrollController controller}) {
+    // ── Tri ──────────────────────────────────────────────────────────────────
+    var sortedData = List.of(data);
+    if (_generalSortColumn != null) {
+      final col = _generalSortColumn!;
+      final asc = _generalSortAsc;
+      sortedData.sort((a, b) {
+        int cmp;
+        final yearsA = a.record.residualMaturityMonths / 12;
+        final yearsB = b.record.residualMaturityMonths / 12;
+        switch (col) {
+          case 0: // ID
+            cmp = a.record.titleId.compareTo(b.record.titleId);
+          case 1: // Instrument
+            cmp = a.record.issuer.compareTo(b.record.issuer);
+          case 2: // Position
+            cmp = a.position.compareTo(b.position);
+          case 3: // Maturité
+            cmp = yearsA.compareTo(yearsB);
+          case 4: // Pondération
+            cmp = marketGeneralRiskWeight(yearsA, a.record.coupon)
+                .compareTo(marketGeneralRiskWeight(yearsB, b.record.coupon));
+          case 5: // Exigence
+            cmp = (a.position * marketGeneralRiskWeight(yearsA, a.record.coupon))
+                .compareTo(
+                    b.position * marketGeneralRiskWeight(yearsB, b.record.coupon));
+          case 6: // RWA
+            final rwaA = (a.position *
+                    marketGeneralRiskWeight(yearsA, a.record.coupon)) *
+                (1 / 0.09);
+            final rwaB = (b.position *
+                    marketGeneralRiskWeight(yearsB, b.record.coupon)) *
+                (1 / 0.09);
+            cmp = rwaA.compareTo(rwaB);
+          default:
+            cmp = 0;
+        }
+        return asc ? cmp : -cmp;
+      });
+    }
+    data = sortedData;
+    // ─────────────────────────────────────────────────────────────────────────
+
     final flexes = [1, 3, 2, 2, 2, 2, 2];
     final displayFlexes = isFixed ? [flexes.first] : flexes.sublist(1);
     
