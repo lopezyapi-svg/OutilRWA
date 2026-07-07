@@ -1386,6 +1386,7 @@ class _FxKpiSection extends StatelessWidget {
               label: 'Exposition Totale',
               value: formatLargeNumber(result.totalExposure),
               unit: 'FCFA',
+              subtitle: 'Valeur nominale de l\'ensemble des titres exposés',
             ),
           ),
           const SizedBox(width: 10),
@@ -1394,6 +1395,7 @@ class _FxKpiSection extends StatelessWidget {
               label: 'Gain/Perte Global',
               value: formatLargeNumber(gain.abs()),
               unit: 'FCFA',
+              subtitle: gain >= 0 ? 'Gain net de change sur le portefeuille' : 'Perte nette de change sur le portefeuille',
             ),
           ),
           const SizedBox(width: 10),
@@ -1402,6 +1404,7 @@ class _FxKpiSection extends StatelessWidget {
               label: 'Exigence FP Change',
               value: formatLargeNumber(result.capitalRequirement),
               unit: 'FCFA',
+              subtitle: 'Position nette globale × 9 %',
               tooltipMessage: tooltip,
             ),
           ),
@@ -1411,6 +1414,7 @@ class _FxKpiSection extends StatelessWidget {
               label: 'RWA Change',
               value: formatLargeNumber(result.rwaChange),
               unit: 'FCFA',
+              subtitle: 'Exigence FP × 11,111111',
               tooltipMessage: tooltip,
             ),
           ),
@@ -1420,6 +1424,7 @@ class _FxKpiSection extends StatelessWidget {
               label: 'Contribution Risque Marché',
               value: result.marketRiskContribution.toStringAsFixed(1),
               unit: '%',
+              subtitle: 'Part du risque de change dans le RWA marché',
             ),
           ),
         ],
@@ -1434,12 +1439,14 @@ class _FxKpiCard extends StatefulWidget {
     required this.value,
     required this.unit,
     this.tooltipMessage,
+    this.subtitle,
   });
 
   final String label;
   final String value;
   final String unit;
   final String? tooltipMessage;
+  final String? subtitle;
 
   @override
   State<_FxKpiCard> createState() => _FxKpiCardState();
@@ -1459,7 +1466,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(3),
@@ -1478,8 +1485,9 @@ class _FxKpiCardState extends State<_FxKpiCard> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Label + tooltip
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -1519,7 +1527,12 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                 ],
               ),
             ),
-            const SizedBox(height: 4),
+            // Séparateur
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 9),
+              child: Divider(height: 1, thickness: 0.7, color: line),
+            ),
+            // Valeur
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -1529,7 +1542,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                     TextSpan(
                       text: widget.value,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                         color: deepBlue,
                       ),
@@ -1538,7 +1551,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                       TextSpan(
                         text: ' ${widget.unit}',
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w500,
                           color: deepBlue,
                         ),
@@ -1547,6 +1560,21 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                 ),
               ),
             ),
+            // Sous-titre
+            if (widget.subtitle != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                widget.subtitle!,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w400,
+                  color: muted,
+                  height: 1.35,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
         ),
       ),
