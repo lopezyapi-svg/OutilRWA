@@ -1676,20 +1676,25 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
         SizedBox(
             width: colW[1]!,
             child: _HCell('DEVISE', TextAlign.left, headerTextLight)),
+        _VDiv(isHeader: true),
         SizedBox(
             width: colW[2]!,
             child: _HCell(
                 'VALEUR NOMINALE (XOF)', TextAlign.right, headerTextLight)),
+        _VDiv(isHeader: true),
         SizedBox(
             width: colW[3]!,
             child: _HCell(
                 'VARIATION DEVISE (%)', TextAlign.right, headerTextLight)),
+        _VDiv(isHeader: true),
         SizedBox(
             width: colW[4]!,
             child: _HCell('GAIN/PERTE (%)', TextAlign.right, headerTextLight)),
+        _VDiv(isHeader: true),
         SizedBox(
             width: colW[5]!,
             child: _HCell('POSITION', TextAlign.center, headerTextLight)),
+        _VDiv(isHeader: true),
         SizedBox(
             width: colW[6]!,
             child: _HCell('RWA (XOF)', TextAlign.right, headerTextLight)),
@@ -1733,6 +1738,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                         width: colW[0]!,
                         child: _HCell(
                             'ÉMETTEUR', TextAlign.left, headerTextLight)),
+                    _VDiv(isHeader: true),
                     Expanded(
                       child: SizedBox(
                         height: rowH,
@@ -1747,6 +1753,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                         ),
                       ),
                     ),
+                    _VDiv(isHeader: true),
                     SizedBox(
                         width: colW[7]!,
                         child: _HCell('GAIN/PERTE DE CHANGE', TextAlign.right,
@@ -1781,10 +1788,14 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                                     : Colors.black.withValues(alpha: 0.02));
                             final middleRow = Row(
                               children: [
-                                for (int j = 0; j < middleWidths.length; j++)
+                                for (int j = 0;
+                                    j < middleWidths.length;
+                                    j++) ...[
+                                  if (j > 0) const _VDiv(),
                                   SizedBox(
                                       width: middleWidths[j],
                                       child: cells[1 + j]),
+                                ],
                               ],
                             );
                             return _FxSecurityRow(
@@ -1841,21 +1852,28 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                         SizedBox(
                             width: colW[0]!,
                             child: _HCell('TOTAL', TextAlign.left, headerTextLight.copyWith(color: const Color(0xFF1E3A5F), fontSize: 12))),
+                        const _VDiv(),
                         Expanded(
                           child: _syncedMiddle(
                             middleWidth,
                             Row(children: [
                               SizedBox(width: middleWidths[0]), // DEVISE
+                              const _VDiv(),
                               SizedBox(width: middleWidths[1]), // NOMINALE
+                              const _VDiv(),
                               SizedBox(width: middleWidths[2]), // VARIATION
+                              const _VDiv(),
                               SizedBox(width: middleWidths[3]), // GAIN/PERTE %
+                              const _VDiv(),
                               SizedBox(width: middleWidths[4]), // POSITION
+                              const _VDiv(),
                               SizedBox(
                                   width: middleWidths[5], // RWA
                                   child: _DCell(formatLargeNumber(securities.fold<double>(0, (sum, s) => sum + s.rwa)), cellText.copyWith(fontWeight: FontWeight.w700), align: TextAlign.right)),
                             ]),
                           ),
                         ),
+                        const _VDiv(),
                         SizedBox(
                             width: colW[7]!,
                             child: _DCell(formatLargeNumber(totalFxGainLoss), cellText.copyWith(fontWeight: FontWeight.w800, color: totalFxGainLoss >= 0 ? _fxSuccess : _fxDanger), align: TextAlign.right)),
@@ -1974,7 +1992,9 @@ class _FxSecurityRow extends StatelessWidget {
         child: Row(
           children: [
             SizedBox(width: leftWidth, child: leftCell),
+            const _VDiv(),
             Expanded(child: middle),
+            const _VDiv(),
             SizedBox(width: rightWidth, child: rightCell),
           ],
         ),
@@ -1984,6 +2004,24 @@ class _FxSecurityRow extends StatelessWidget {
 }
 
 // ─── Widgets internes ───
+
+/// Séparateur vertical fin entre colonnes.
+/// [isHeader] = true → trait blanc semi-transparent (fond sombre du header) ;
+/// false → trait bleu très clair (fond blanc des lignes et du footer).
+class _VDiv extends StatelessWidget {
+  const _VDiv({this.isHeader = false});
+  final bool isHeader;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 0.7,
+      color: isHeader
+          ? Colors.white.withValues(alpha: 0.20)
+          : const Color(0xFF1E3A5F).withValues(alpha: 0.10),
+    );
+  }
+}
 
 /// Ligne d'entête (pas d'ellipsis, tout doit être visible)
 /// Convertit un [TextAlign] horizontal en [Alignment] de cellule.
