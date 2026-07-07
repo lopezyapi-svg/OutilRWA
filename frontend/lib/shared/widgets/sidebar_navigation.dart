@@ -519,13 +519,15 @@ const List<_MenuEntry> _sidebarItems = [
       ),
       _MenuEntry.leaf(
         module: AppModule.risqueMarchePilotage,
-        icon: Icons.show_chart_rounded,
+        icon: Icons.lock_outline_rounded,
         label: 'Pilotage des risques',
+        disabled: true,
       ),
       _MenuEntry.leaf(
         module: AppModule.risqueMarcheImport,
-        icon: CupertinoIcons.doc_text_fill,
+        icon: Icons.lock_outline_rounded,
         label: 'Import des données',
+        disabled: true,
       ),
     ],
   ),

@@ -185,7 +185,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A237E),
+                            color: Color(0xFF1E3A5F),
                           ),
                         ),
                       ),
@@ -1633,7 +1633,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
         color: Colors.white,
         letterSpacing: 0.5);
     final cellText = const TextStyle(
-        fontSize: 11, color: Color(0xFF1A237E), fontWeight: FontWeight.w500);
+        fontSize: 11, color: Color(0xFF1E3A5F), fontWeight: FontWeight.w500);
 
     return LayoutBuilder(builder: (context, constraints) {
       // Largeurs naturelles des colonnes.
@@ -1645,7 +1645,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
         4: 120, // GAIN/PERTE (%)
         5: 120, // POSITION
         6: 150, // RWA (XOF)
-        7: 160, // GAIN/PERTE DE CHANGE (Right fixed)
+        7: 120, // GAIN/PERTE DE CHANGE (Right fixed)
       };
       const naturalMiddle = 80 + 190 + 140 + 120 + 120 + 150; // 800
       // Quand le tableau dispose de plus d'espace que sa largeur naturelle, on
@@ -1726,7 +1726,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                 Container(
                   height: rowH,
                   decoration: const BoxDecoration(
-                    color: Color(0xFF1A237E), // deepBlue
+                    color: Color(0xFF1E3A5F), // deepBlue
                   ),
                   child: Row(children: [
                     SizedBox(
@@ -1832,15 +1832,15 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                     return Container(
                       height: rowH,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A237E).withValues(alpha: 0.05),
+                        color: const Color(0xFF1E3A5F).withValues(alpha: 0.05),
                         border: Border(
                             top: BorderSide(
-                                color: const Color(0xFF1A237E).withValues(alpha: 0.15))),
+                                color: const Color(0xFF1E3A5F).withValues(alpha: 0.15))),
                       ),
                       child: Row(children: [
                         SizedBox(
                             width: colW[0]!,
-                            child: _HCell('TOTAL', TextAlign.left, headerTextLight.copyWith(color: const Color(0xFF1A237E), fontSize: 12))),
+                            child: _HCell('TOTAL', TextAlign.left, headerTextLight.copyWith(color: const Color(0xFF1E3A5F), fontSize: 12))),
                         Expanded(
                           child: _syncedMiddle(
                             middleWidth,
@@ -1997,7 +1997,11 @@ Widget _HCell(String text, TextAlign align, TextStyle style) => Container(
       height: 40,
       alignment: _cellAlignment(align),
       padding: const EdgeInsets.symmetric(horizontal: 3),
-      child: Text(text, style: style, textAlign: align, maxLines: 1),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: _cellAlignment(align),
+        child: Text(text, style: style, textAlign: align, maxLines: 1),
+      ),
     );
 
 /// Ligne de donnée

@@ -14,6 +14,7 @@ import 'package:flutter_math_fork/flutter_math.dart' as fm;
 import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
@@ -25906,7 +25907,23 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
   int? _selectedRowIndex;
   bool _loadingMarketData = true;
 
+  // Scroll vertical partagé entre la colonne ID figée et le corps du tableau.
+  final ScrollController _fixedColumnScroll = ScrollController();
+  final ScrollController _tableBodyScroll = ScrollController();
+  bool _syncingTableScroll = false;
+
   static const _views = ['Spécifique', 'Général'];
+
+  void _syncScroll(ScrollController source, ScrollController target) {
+    if (_syncingTableScroll) return;
+    if (!target.hasClients) return;
+    _syncingTableScroll = true;
+    target.jumpTo(source.offset.clamp(
+      target.position.minScrollExtent,
+      target.position.maxScrollExtent,
+    ));
+    _syncingTableScroll = false;
+  }
 
   List<MarketPortfolioRecord> get _bonds {
     final snapshot = MarketDataImportStore.instance.snapshotNotifier.value;
@@ -25919,6 +25936,10 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
   void initState() {
     super.initState();
     MarketDataImportStore.instance.snapshotNotifier.addListener(_onDataChanged);
+    _fixedColumnScroll
+        .addListener(() => _syncScroll(_fixedColumnScroll, _tableBodyScroll));
+    _tableBodyScroll
+        .addListener(() => _syncScroll(_tableBodyScroll, _fixedColumnScroll));
     _loadMarketData();
   }
 
@@ -25936,6 +25957,8 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
   void dispose() {
     MarketDataImportStore.instance.snapshotNotifier
         .removeListener(_onDataChanged);
+    _fixedColumnScroll.dispose();
+    _tableBodyScroll.dispose();
     super.dispose();
   }
 
@@ -26033,28 +26056,294 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           ),
           const SizedBox(height: 3),
           Expanded(
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: FractionallySizedBox(
-                widthFactor: 0.6,
-                child: Container(
-                  margin: const EdgeInsets.all(10),
-                  child: _loadingMarketData
-                      ? const Center(child: CupertinoActivityIndicator())
-                      : _buildMainCard(
-                          context,
-                          specificData,
-                          totalSpecific,
-                          generalData,
-                          totalGeneral,
-                        ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 6,
+                  child: Container(
+                    margin: const EdgeInsets.all(10),
+                    child: _loadingMarketData
+                        ? const Center(child: CupertinoActivityIndicator())
+                        : _buildMainCard(
+                            context,
+                            specificData,
+                            totalSpecific,
+                            generalData,
+                            totalGeneral,
+                          ),
+                  ),
                 ),
-              ),
+                Expanded(
+                  flex: 4,
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 10, bottom: 10, right: 10),
+                    child: _loadingMarketData
+                        ? const SizedBox.shrink()
+                        : _buildTop5Chart(context, specificData, generalData),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildTop5Chart(
+    BuildContext context,
+    List<({MarketPortfolioRecord record, double position, double weight})> specificData,
+    List<({MarketPortfolioRecord record, double position})> generalData,
+  ) {
+    final isSpecific = _selectedView == 0;
+    final items = <({String label, double exigence, double rwa})>[];
+    
+    if (isSpecific) {
+      for (final d in specificData) {
+        final exigence = d.position * d.weight;
+        final rwa = exigence * (1 / 0.09);
+        final issuerName = d.record.issuer.trim();
+        final label = issuerName.isNotEmpty && issuerName != 'Non renseigné'
+            ? issuerName
+            : d.record.titleId;
+        items.add((label: label, exigence: exigence, rwa: rwa));
+      }
+    } else {
+      for (final d in generalData) {
+        final years = d.record.residualMaturityMonths / 12;
+        final weight = marketGeneralRiskWeight(years, d.record.coupon);
+        final exigence = d.position * weight;
+        final rwa = exigence * (1 / 0.09);
+        final issuerName = d.record.issuer.trim();
+        final label = issuerName.isNotEmpty && issuerName != 'Non renseigné'
+            ? issuerName
+            : d.record.titleId;
+        items.add((label: label, exigence: exigence, rwa: rwa));
+      }
+    }
+
+    items.sort((a, b) => b.exigence.compareTo(a.exigence));
+    final top5 = items.take(5).toList();
+
+    if (top5.isEmpty) return const SizedBox.shrink();
+
+    final rawMaxY = top5.map((e) => e.rwa).fold(0.0, math.max) * 1.1;
+    final maxY = rawMaxY > 0 ? rawMaxY : 1.0;
+    final yInterval = maxY / 4;
+    final barGroups = top5.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final val = entry.value;
+      return BarChartGroupData(
+        x: idx,
+        barRods: [
+          BarChartRodData(
+            toY: val.exigence,
+            color: _deepBlue,
+            width: 14,
+            borderRadius: BorderRadius.circular(2),
+          ),
+          BarChartRodData(
+            toY: val.rwa,
+            color: const Color(0xFF64B5F6),
+            width: 14,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ],
+      );
+    }).toList();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _marketSurfaceFor(context),
+        border: Border.all(color: _marketBorderFor(context)),
+        borderRadius: BorderRadius.circular(2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E3A5F).withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            isSpecific
+                ? 'Top 5 des exigences spécifiques / RWA spécifiques'
+                : 'Top 5 des exigences générales / RWA généraux',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: _marketTextFor(context),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: BarChart(
+              BarChartData(
+                maxY: maxY,
+                barGroups: barGroups,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (group) => _deepBlue,
+                    tooltipBorderRadius: BorderRadius.circular(2),
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      if (groupIndex < 0 || groupIndex >= top5.length) {
+                        return null;
+                      }
+                      final serie = rodIndex == 0
+                          ? 'Exigence de fonds propres'
+                          : 'RWA équivalent';
+                      return BarTooltipItem(
+                        '${top5[groupIndex].label}\n',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11.5,
+                          height: 1.6,
+                        ),
+                        textAlign: TextAlign.left,
+                        children: [
+                          TextSpan(
+                            text: '$serie\n',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.72),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 10,
+                              height: 1.5,
+                            ),
+                          ),
+                          TextSpan(
+                            text: _marketMoneyText(
+                              rod.toY,
+                              displayCurrency: 'XOF',
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        final idx = value.toInt();
+                        if (idx >= 0 && idx < top5.length) {
+                          return SideTitleWidget(
+                            meta: meta,
+                            space: 12,
+                            angle: -0.35, // légère rotation (~20°)
+                            child: SizedBox(
+                              width: 80,
+                              child: Text(
+                                top5[idx].label,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 10),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                      reservedSize: 54,
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 52,
+                      interval: yInterval,
+                      getTitlesWidget: (value, meta) {
+                        if (value <= 0) return const SizedBox.shrink();
+                        return SideTitleWidget(
+                          meta: meta,
+                          space: 8,
+                          child: Text(
+                            _formatAxisAmount(value),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: _marketMutedFor(context),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: yInterval,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: _marketBorderFor(context),
+                    strokeWidth: 0.8,
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildLegendItem(_deepBlue, 'Exigence'),
+              const SizedBox(width: 16),
+              _buildLegendItem(const Color(0xFF64B5F6), 'RWA'),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 12, height: 12, color: color),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 11)),
+      ],
+    );
+  }
+
+  String _formatAxisAmount(double value) {
+    String compact(double scaled) {
+      var text =
+          scaled >= 100 ? scaled.toStringAsFixed(0) : scaled.toStringAsFixed(1);
+      if (text.endsWith('.0')) {
+        text = text.substring(0, text.length - 2);
+      }
+      return text.replaceAll('.', ',');
+    }
+
+    final absolute = value.abs();
+    if (absolute >= 1e9) return '${compact(value / 1e9)} Mds';
+    if (absolute >= 1e6) return '${compact(value / 1e6)} M';
+    if (absolute >= 1e3) return '${compact(value / 1e3)} k';
+    return value.toStringAsFixed(0);
   }
 
   Widget _buildMainCard(
@@ -26150,6 +26439,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                                 _buildTableHeader(isFixed: true),
                                 Expanded(
                                   child: SingleChildScrollView(
+                                    controller: _fixedColumnScroll,
                                     child: _selectedView == 0
                                         ? _buildSpecificRows(specificData, isFixed: true)
                                         : _buildGeneralRows(generalData, isFixed: true),
@@ -26172,6 +26462,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                                     _buildTableHeader(isFixed: false),
                                     Expanded(
                                       child: SingleChildScrollView(
+                                        controller: _tableBodyScroll,
                                         child: _selectedView == 0
                                             ? _buildSpecificRows(specificData, isFixed: false)
                                             : _buildGeneralRows(generalData, isFixed: false),
@@ -26637,22 +26928,33 @@ class _TauxSummaryRow extends StatelessWidget {
       children: [
         Expanded(
             child: _TauxSummaryItem(
-                label: 'Risque Spécifique', value: specificRisk)),
+                label: 'Risque Spécifique',
+                value: specificRisk,
+                subtitle: 'Exigence liée à la qualité de chaque émetteur')),
         const SizedBox(width: 10),
         Expanded(
             child: _TauxSummaryItem(
-                label: 'Risque Général', value: generalRisk)),
+                label: 'Risque Général',
+                value: generalRisk,
+                subtitle: 'Exigence liée aux variations du marché des taux')),
         const SizedBox(width: 10),
         Expanded(
             child: _TauxSummaryItem(
-                label: 'Exigence FP Taux', value: exigenceFP)),
-        const SizedBox(width: 10),
-        Expanded(
-            child: _TauxSummaryItem(label: 'RWA Taux', value: rwa)),
+                label: 'Exigence FP Taux',
+                value: exigenceFP,
+                subtitle: 'Risque spécifique + risque général')),
         const SizedBox(width: 10),
         Expanded(
             child: _TauxSummaryItem(
-                label: 'Contribution Risque Marché', value: contribution)),
+                label: 'RWA Taux',
+                value: rwa,
+                subtitle: 'Équivalent en actifs pondérés des risques')),
+        const SizedBox(width: 10),
+        Expanded(
+            child: _TauxSummaryItem(
+                label: 'Contribution Risque Marché',
+                value: contribution,
+                subtitle: 'Part du risque de taux dans le RWA de marché')),
       ],
     );
   }
@@ -26734,8 +27036,13 @@ class _SummaryInfoButton extends StatelessWidget {
 }
 
 class _TauxSummaryItem extends StatefulWidget {
-  const _TauxSummaryItem({required this.label, required this.value});
+  const _TauxSummaryItem({
+    required this.label,
+    required this.value,
+    this.subtitle,
+  });
   final String label, value;
+  final String? subtitle;
   @override
   State<_TauxSummaryItem> createState() => _TauxSummaryItemState();
 }
@@ -26768,7 +27075,8 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
       }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+        height: 104,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(3),
@@ -26787,7 +27095,7 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
             FittedBox(
               fit: BoxFit.scaleDown,
@@ -26799,11 +27107,16 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
                   fontSize: 9,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.3,
-                  color: _muted,
+                  color: Color(0xFF1A237E), // indigo foncé
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 7),
+            Container(
+              height: 0.8,
+              color: _line,
+            ),
+            const SizedBox(height: 9),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
@@ -26835,6 +27148,23 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
                 ],
               ),
             ),
+            if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
+              const Spacer(),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  widget.subtitle!,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w600,
+                    color: _muted,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

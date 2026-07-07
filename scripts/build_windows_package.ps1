@@ -218,6 +218,34 @@ function Copy-IfExists {
     Copy-Item $Source $Destination -Force
 }
 
+function Copy-VCRuntimeDlls {
+    param([Parameter(Mandatory = $true)][string]$TargetDir)
+
+    # Embarque le runtime Visual C++ pour que l'application demarre sur des
+    # postes ou le redistribuable n'est pas installe.
+    $requiredDlls = @("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+
+    $redistCrtDir = Get-ChildItem (Join-Path $env:ProgramFiles "Microsoft Visual Studio") -Recurse -Directory -Filter "Microsoft.VC*.CRT" -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -match "\\Redist\\" -and $_.FullName -match "\\x64\\" -and $_.FullName -notmatch "\\onecore\\" } |
+        Sort-Object FullName -Descending |
+        Select-Object -First 1 -ExpandProperty FullName
+
+    foreach ($dllName in $requiredDlls) {
+        $sourceDll = $null
+        if ($redistCrtDir -and (Test-Path (Join-Path $redistCrtDir $dllName))) {
+            $sourceDll = Join-Path $redistCrtDir $dllName
+        }
+        elseif (Test-Path (Join-Path $env:WINDIR "System32\$dllName")) {
+            $sourceDll = Join-Path $env:WINDIR "System32\$dllName"
+        }
+
+        if (-not $sourceDll) {
+            throw "Runtime VC++ introuvable : $dllName. Installez Visual Studio avec les outils desktop C++."
+        }
+        Copy-Item $sourceDll (Join-Path $TargetDir $dllName) -Force
+    }
+}
+
 function Resolve-PreferredWorkbookPath {
     $directCandidate = Join-Path $backendDir "data\modele_import_rwa.xlsx"
     if (Test-Path $directCandidate) {
@@ -350,6 +378,7 @@ Invoke-Step -Title "Assemblage du livrable portable" -Action {
     New-CleanDirectory -Path $portableDir
     Copy-Item (Join-Path $frontendBundleDir "*") $portableDir -Recurse -Force
     Copy-Item $backendPackageDir (Join-Path $portableDir "backend") -Recurse -Force
+    Copy-VCRuntimeDlls -TargetDir $portableDir
 }
 
 Invoke-Step -Title "Compression du livrable portable" -Action {

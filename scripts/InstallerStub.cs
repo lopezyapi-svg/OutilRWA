@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace RwaCalculatorInstaller
@@ -48,7 +49,10 @@ namespace RwaCalculatorInstaller
 
                     if (Directory.Exists(installDirectory))
                     {
-                        Directory.Delete(installDirectory, true);
+                        // Le backend Python embarqué de l'installation précédente
+                        // peut encore tourner et verrouiller ses fichiers (.pyd).
+                        KillProcessesUnder(installDirectory);
+                        DeleteDirectoryRobust(installDirectory);
                     }
 
                     Directory.CreateDirectory(installDirectory);
@@ -106,6 +110,83 @@ namespace RwaCalculatorInstaller
                     MessageBoxIcon.Error
                 );
                 return 1;
+            }
+        }
+
+        private static void KillProcessesUnder(string directory)
+        {
+            var prefix = directory.TrimEnd(Path.DirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+            foreach (var process in Process.GetProcesses())
+            {
+                string processPath;
+                try
+                {
+                    processPath = process.MainModule.FileName;
+                }
+                catch
+                {
+                    continue;
+                }
+
+                if (processPath != null
+                    && processPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        process.Kill();
+                        process.WaitForExit(5000);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }
+        }
+
+        private static void DeleteDirectoryRobust(string directory)
+        {
+            for (var attempt = 1; ; attempt++)
+            {
+                try
+                {
+                    ClearReadOnlyAttributes(new DirectoryInfo(directory));
+                    Directory.Delete(directory, true);
+                    return;
+                }
+                catch
+                {
+                    if (attempt >= 5)
+                    {
+                        throw new IOException(
+                            "Impossible de remplacer l'installation précédente dans « "
+                            + directory
+                            + " ». Fermez Risk management (et tout processus python.exe associé), puis relancez l'installation."
+                        );
+                    }
+                    Thread.Sleep(700);
+                }
+            }
+        }
+
+        private static void ClearReadOnlyAttributes(DirectoryInfo root)
+        {
+            foreach (var entry in root.GetFileSystemInfos("*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    entry.Attributes = FileAttributes.Normal;
+                }
+                catch
+                {
+                }
+            }
+            try
+            {
+                root.Attributes = FileAttributes.Normal;
+            }
+            catch
+            {
             }
         }
 

@@ -14,7 +14,7 @@ String _cleanLabel(String label) {
 }
 
 const List<Color> _barColors = [
-  Color(0xFF1A237E), // Indigo 900 (deepblue)
+  Color(0xFF1E3A5F), // Indigo 900 (deepblue)
   Color(0xFF3F51B5), // Indigo 500 (indigo)
   Color(0xFF2196F3), // Blue 500 (bleu)
   Color(0xFF64B5F6), // Blue 300 (clair)
