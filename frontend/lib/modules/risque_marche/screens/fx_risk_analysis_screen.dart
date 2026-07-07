@@ -1669,8 +1669,19 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
         6: naturalColW[6]! * stretch,
         7: naturalColW[7]!,
       };
-      final middleWidth =
-          colW[1]! + colW[2]! + colW[3]! + colW[4]! + colW[5]! + colW[6]!;
+      // Les 5 séparateurs _VDiv (0.7 px chacun) s'ajoutent à la largeur réelle
+      // du Row du milieu ; middleWidth doit les inclure pour que l'OverflowBox
+      // de _syncedMiddle corresponde exactement au contenu réel et évite
+      // l'erreur « ScrollController attached to multiple scroll views ».
+      const _vDivW = 0.7;
+      const _vDivCount = 5; // entre les 6 colonnes du milieu
+      final middleWidth = colW[1]! +
+          colW[2]! +
+          colW[3]! +
+          colW[4]! +
+          colW[5]! +
+          colW[6]! +
+          _vDivCount * _vDivW;
       // build header cells for scrollable middle (cols 1-6), sized with colW
       final headerMiddle = Row(children: [
         SizedBox(
