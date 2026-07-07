@@ -1466,7 +1466,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(3),
@@ -1529,7 +1529,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
             ),
             // Séparateur
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 9),
+              padding: EdgeInsets.symmetric(vertical: 6),
               child: Divider(height: 1, thickness: 0.7, color: line),
             ),
             // Valeur
@@ -1542,7 +1542,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                     TextSpan(
                       text: widget.value,
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 17,
                         fontWeight: FontWeight.w800,
                         color: deepBlue,
                       ),
