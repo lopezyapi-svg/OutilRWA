@@ -13,7 +13,6 @@ import '../../../shared/widgets/section_card.dart';
 import '../../dashboard/models/dashboard_models.dart';
 import '../../risque_credit_shared/models/credit_risk_models.dart';
 import '../../risque_credit_shared/services/credit_risk_submodules_service.dart';
-import '../../risque_credit_shared/widgets/credit_data_table_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 const double _umoaCet1Minimum = 0.05;

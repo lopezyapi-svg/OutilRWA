@@ -4,7 +4,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/state/portfolio_amount_unit_scope.dart';
-import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';

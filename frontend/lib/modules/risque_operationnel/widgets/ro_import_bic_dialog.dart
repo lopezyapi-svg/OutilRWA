@@ -1017,11 +1017,11 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
               style: TextStyle(fontSize: 12, color: _text),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 isDense: true,
                 hintText: '0',
-                contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                border: const OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                border: OutlineInputBorder(),
               ),
             ),
           ),

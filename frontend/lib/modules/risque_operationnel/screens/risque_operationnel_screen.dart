@@ -9576,7 +9576,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           ),
           child: Row(
             children: [
-              Icon(Icons.fact_check_outlined, size: 15, color: _kAccent),
+              const Icon(Icons.fact_check_outlined, size: 15, color: _kAccent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

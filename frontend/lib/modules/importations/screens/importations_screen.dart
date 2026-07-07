@@ -269,7 +269,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                         const SizedBox(height: 2),
                         Text(subtitle,
-                            style: TextStyle(fontSize: 11.5, color: AppTheme.muted, height: 1.3)),
+                            style: const TextStyle(fontSize: 11.5, color: AppTheme.muted, height: 1.3)),
                       ],
                     ),
                   ),
@@ -289,7 +289,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Le module Risque Opérationnel accepte deux formats de fichier.',
                   style: TextStyle(fontSize: 12.5, color: AppTheme.muted),
                 ),

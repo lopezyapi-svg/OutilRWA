@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import 'dashboard_design.dart';

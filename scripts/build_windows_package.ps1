@@ -283,7 +283,9 @@ target_path.write_bytes(excel_import_service.build_template_workbook())
 '@
 
     $targetWorkbookPath = Join-Path $TargetDataDir "modele_import_rwa.xlsx"
-    & $venvPython -c $generatorScript $repoRoot $targetWorkbookPath
+    $generatorScriptPath = Join-Path $buildDir "generate_template_workbook.py"
+    Set-Content -Path $generatorScriptPath -Encoding Ascii -Value $generatorScript
+    & $venvPython $generatorScriptPath $repoRoot $targetWorkbookPath
     Assert-LastExitCode -Context "La generation du modele Excel embarque"
 }
 

@@ -17,7 +17,7 @@ class ReportTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = const [
+        const columns = [
           DataColumn(label: Text('ID')),
           DataColumn(label: Text('Date')),
           DataColumn(label: Text('Periode')),

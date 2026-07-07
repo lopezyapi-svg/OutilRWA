@@ -20,7 +20,7 @@ class ExposureTable extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = const [
+        const columns = [
           DataColumn(label: Text('ID')),
           DataColumn(label: Text('Contrepartie')),
           DataColumn(label: Text('Categorie')),
