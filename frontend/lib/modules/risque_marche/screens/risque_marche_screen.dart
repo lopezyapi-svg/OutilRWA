@@ -26155,6 +26155,11 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
     final rawMaxY = top5.map((e) => e.rwa).fold(0.0, math.max) * 1.1;
     final maxY = rawMaxY > 0 ? rawMaxY : 1.0;
     final yInterval = maxY / 4;
+    // Spécifique : navy / bleu clair. Général : jaune / vert.
+    final exigenceColor =
+        isSpecific ? _deepBlue : const Color(0xFFF9A825);
+    final rwaColor =
+        isSpecific ? const Color(0xFF64B5F6) : const Color(0xFF2E7D32);
     final barGroups = top5.asMap().entries.map((entry) {
       final idx = entry.key;
       final val = entry.value;
@@ -26163,13 +26168,13 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
         barRods: [
           BarChartRodData(
             toY: val.exigence,
-            color: _deepBlue,
+            color: exigenceColor,
             width: 14,
             borderRadius: BorderRadius.circular(2),
           ),
           BarChartRodData(
             toY: val.rwa,
-            color: const Color(0xFF64B5F6),
+            color: rwaColor,
             width: 14,
             borderRadius: BorderRadius.circular(2),
           ),
@@ -26212,7 +26217,11 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                 barGroups: barGroups,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (group) => _deepBlue,
+                    getTooltipColor: (group) => Colors.white,
+                    tooltipBorder: BorderSide(
+                      color: _deepBlue.withValues(alpha: 0.18),
+                      width: 0.8,
+                    ),
                     tooltipBorderRadius: BorderRadius.circular(2),
                     tooltipPadding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -26230,7 +26239,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                       return BarTooltipItem(
                         '${top5[groupIndex].label}\n',
                         const TextStyle(
-                          color: Colors.white,
+                          color: _deepBlue,
                           fontWeight: FontWeight.w800,
                           fontSize: 11.5,
                           height: 1.6,
@@ -26240,7 +26249,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                           TextSpan(
                             text: '$serie\n',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.72),
+                              color: _deepBlue.withValues(alpha: 0.65),
                               fontWeight: FontWeight.w600,
                               fontSize: 10,
                               height: 1.5,
@@ -26252,7 +26261,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                               displayCurrency: 'XOF',
                             ),
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: _deepBlue,
                               fontWeight: FontWeight.w700,
                               fontSize: 12,
                               height: 1.4,
@@ -26332,9 +26341,9 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem(_deepBlue, 'Exigence'),
+              _buildLegendItem(exigenceColor, 'Exigence'),
               const SizedBox(width: 16),
-              _buildLegendItem(const Color(0xFF64B5F6), 'RWA'),
+              _buildLegendItem(rwaColor, 'RWA'),
             ],
           )
         ],
