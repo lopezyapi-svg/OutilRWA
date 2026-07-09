@@ -962,32 +962,11 @@ const List<String> marketBondPortfolioRequiredHeaders = [
 ];
 
 const List<String> marketEquityPortfolioRequiredHeaders = [
-  'ID Instrument',
-  'Pays / marché',
-  'Zone',
-  'Type d\'instrument',
-  'Code type d\'instrument',
   'Émetteur / Société',
-  'Ticker',
-  'ISIN',
-  'Bourse',
-  'Secteur',
   'Devise',
-  'Classification du titre',
-  'Intention comptable',
-  'Date d\'acquisition',
   'Quantité',
-  'Prix d\'achat unitaire',
-  'Coût d\'acquisition',
-  'Date de valorisation',
   'Cours actuel',
   'Valeur de marché',
-  'Plus/(moins)-value latente',
-  'Rendement latent (%)',
-  'Dividende par action',
-  'Rendement dividende (%)',
-  'P/E',
-  'Bêta',
 ];
 
 const List<String> marketPortfolioRequiredHeaders =

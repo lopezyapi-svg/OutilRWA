@@ -58,17 +58,23 @@ class FxSecurityAnalysis {
     return ((currentRate - initialRate) / initialRate) * 100;
   }
 
-  /// Gain ou perte de change en XOF
-  /// Calcul: Valeur_Actuelle_XOF - Valeur_Initiale_XOF
+  /// Gain ou perte de change en XOF — effet de change PUR.
+  /// Calcul: Position en devise × (Taux_Actuel − Taux_Initial).
+  /// La variation de PRIX du titre (émission → valeur actuelle en devise)
+  /// n'entre pas ici : à taux de change inchangé, le gain/perte de change
+  /// est nul par construction.
   double get fxGainLoss {
     if (currency == 'XOF' || currency == 'XAF') return 0.0;
-    return currentValueInXof - initialValueInXof;
+    return currentValue * quantity * (currentRate - initialRate);
   }
 
-  /// Gain ou perte de change en pourcentage
+  /// Gain ou perte de change en pourcentage de la position valorisée au
+  /// taux d'acquisition. Cohérent avec [currencyVariationPercent] : à taux
+  /// inchangé, il vaut 0.
   double get fxGainLossPercent {
-    if (initialValueInXof == 0) return 0;
-    return (fxGainLoss / initialValueInXof) * 100;
+    final base = (currentValue * quantity * initialRate).abs();
+    if (base == 0) return 0;
+    return (fxGainLoss / base) * 100;
   }
 
   /// Détermination du type de position (longue/courte)

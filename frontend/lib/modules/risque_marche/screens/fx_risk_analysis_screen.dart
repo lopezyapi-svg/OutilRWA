@@ -6,7 +6,9 @@ library fx_risk_analysis_screen;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/currency_registry.dart';
 import '../models/fx_security_analysis.dart';
@@ -17,7 +19,6 @@ import '../services/market_data_import_store.dart';
 const Color _fxPrimary = Color(0xFF2563EB);
 const Color _fxSuccess = Color(0xFF10B981);
 const Color _fxDanger = Color(0xFFEF4444);
-const Color _fxWarning = Color(0xFFF59E0B);
 const Color _fxText = Color(0xFF1F2937);
 const Color _fxMuted = Color(0xFF6B7280);
 const Color _fxBorder = Color(0xFFE5E7EB);
@@ -86,10 +87,14 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
   @override
   void initState() {
     super.initState();
-    for (final rate in CurrencyRegistry().getAllRates()) {
-      if (rate.code == 'XOF') continue;
-      _currentRates[rate.code] = rate.rateToXof;
-      _rateMeta[rate.code] =
+    // Devises principales toujours proposées dans la barre des taux ; les
+    // autres devises du registre n'y apparaissent que si le portefeuille en
+    // contient (cf. _ensurePortfolioCurrencies).
+    for (final code in const ['EUR', 'USD']) {
+      final rate = CurrencyRegistry().getRate(code);
+      if (rate == null) continue;
+      _currentRates[code] = rate.rateToXof;
+      _rateMeta[code] =
           _RateMeta(origin: FxRateOrigin.registry, asOf: rate.lastUpdate);
     }
     MarketDataImportStore.instance.snapshotNotifier.addListener(_onDataChanged);
@@ -122,11 +127,13 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
     final records = _records;
     if (records.isEmpty) return _emptyFxRiskAnalysisResult();
     try {
-      return _service.analyzePortfolio(
+      final result = _service.analyzePortfolio(
         records: records,
         analysisDate: DateTime.now(),
         exchangeRates: _currentRates,
       );
+      _ensurePortfolioCurrencies(result);
+      return result;
     } catch (_) {
       return _emptyFxRiskAnalysisResult();
     }
@@ -135,6 +142,55 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
   void _runAnalysis() {
     final result = _computeAnalysis();
     if (mounted) setState(() => _analysisResult = result);
+  }
+
+  /// Actualisation groupée : cote en ligne le taux courant de toutes les
+  /// devises de la barre (hors parités fixes), puis relance l'analyse.
+  bool _refreshingRates = false;
+
+  Future<void> _refreshAllRates() async {
+    if (_refreshingRates) return;
+    setState(() => _refreshingRates = true);
+    final codes = _currentRates.keys
+        .where((c) => !_isFixedParity(c))
+        .toList(growable: false);
+    final failures = <String>[];
+    for (final code in codes) {
+      try {
+        final live = await _rateService.fetchRateToXof(code);
+        _currentRates[code] = live.rateToXof;
+        _rateMeta[code] = _RateMeta(
+          origin: FxRateOrigin.online,
+          asOf: live.asOf,
+          provider: live.provider,
+        );
+      } catch (_) {
+        failures.add(code);
+      }
+    }
+    if (!mounted) return;
+    setState(() => _refreshingRates = false);
+    _runAnalysis();
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+      content: Text(failures.isEmpty
+          ? 'Contre-valeurs actualisées (${codes.length} devises).'
+          : 'Contre-valeurs actualisées. Cotation indisponible pour : '
+              '${failures.join(', ')}.'),
+      duration: const Duration(seconds: 4),
+    ));
+  }
+
+  /// Ajoute à la barre des taux les devises du portefeuille absentes du
+  /// registre : leur contre-valeur (inconnue = 1) devient ainsi éditable par
+  /// l'utilisateur au lieu de rester figée.
+  void _ensurePortfolioCurrencies(FxRiskAnalysisResult result) {
+    for (final s in result.securities) {
+      final code = s.currency;
+      if (code == 'XOF' || _currentRates.containsKey(code)) continue;
+      _currentRates[code] =
+          CurrencyRegistry().getRate(code)?.rateToXof ?? 1.0;
+      _rateMeta[code] = const _RateMeta(origin: FxRateOrigin.registry);
+    }
   }
 
   @override
@@ -176,33 +232,55 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
               children: [
                 Expanded(
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      Container(
+                        width: 3,
+                        height: 16,
+                        margin: const EdgeInsets.only(right: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E3A5F),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                       const Flexible(
                         child: Text(
                           'Titres exposés au risque de change',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.1,
                             color: Color(0xFF1E3A5F),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      // Nature de la position affichée UNE fois : un
+                      // portefeuille de titres achetés est long par nature,
+                      // inutile de le répéter sur chaque ligne du tableau.
+                      if (hasExposure) ...[
+                        const SizedBox(width: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _fxSuccess.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          child: const Text('POSITIONS LONGUES',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                  color: _fxSuccess)),
+                        ),
+                      ],
+                      const SizedBox(width: 12),
                       _FxInfoButton(result: _analysisResult),
                     ],
                   ),
                 ),
-                if (hasExposure) ...[
-                  const SizedBox(width: 12),
-                  _FxRatesBar(
-                    rates: _currentRates,
-                    meta: _rateMeta,
-                    isFixedParity: _isFixedParity,
-                    onEdit: _editRate,
-                  ),
-                ],
               ],
             ),
           ),
@@ -217,10 +295,88 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                   ? const Center(child: CupertinoActivityIndicator())
                   : !hasExposure
                       ? _FxEmptyState(hasMarketData: _records.isNotEmpty)
-                      : _FxContentSplit(result: _analysisResult),
+                      : _FxContentSplit(
+                          result: _analysisResult,
+                          onRefreshRates: _refreshAllRates,
+                          onManageRates: _openRatesManager,
+                          refreshingRates: _refreshingRates,
+                        ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Ouvre le gestionnaire des contre-valeurs : toutes les devises du
+  /// portefeuille, éditables (saisie manuelle ou cotation en ligne). Ouvert
+  /// depuis le bouton d'actualisation de l'en-tête de colonne
+  /// « VALEUR DEVISE ACTUELLE ».
+  Future<void> _openRatesManager() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: _fxSurfaceFor(context),
+          title: Row(
+            children: [
+              Container(
+                width: 3,
+                height: 16,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E3A5F),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Expanded(
+                child: Text('Contre-valeurs des devises',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: _fxTextFor(context))),
+              ),
+            ],
+          ),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Une pastille par devise du portefeuille. Cliquez sur une '
+                    'devise pour saisir son taux courant ou le coter en ligne : '
+                    'la table et le profil de choc se recalculent aussitôt.',
+                    style: TextStyle(
+                        fontSize: 11.5,
+                        height: 1.45,
+                        fontWeight: FontWeight.w500,
+                        color: _fxMutedFor(context)),
+                  ),
+                  const SizedBox(height: 12),
+                  _FxRatesBar(
+                    rates: _currentRates,
+                    meta: _rateMeta,
+                    isFixedParity: _isFixedParity,
+                    onEdit: (code) {
+                      _editRate(code).then((_) {
+                        if (context.mounted) setDialogState(() {});
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Fermer'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -296,205 +452,216 @@ class _FxInfoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const navy = Color(0xFF1E3A5F);
+    final accent = _isFxDark(context)
+        ? Colors.white.withValues(alpha: 0.75)
+        : navy;
     return InkWell(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(2),
       onTap: () => showDialog<void>(
         context: context,
         builder: (_) => _FxMethodologyDialog(result: result),
       ),
-      child: const Tooltip(
-        message: 'Méthodologie et formules',
-        child: Padding(
-          padding: EdgeInsets.all(1),
-          child: Icon(CupertinoIcons.info_circle, size: 17, color: _fxPrimary),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          border: Border.all(
+              color: accent.withValues(alpha: 0.35), width: 0.8),
+          borderRadius: BorderRadius.circular(2),
         ),
+        child: Text('MÉTHODOLOGIE',
+            style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.8,
+                color: accent)),
       ),
     );
   }
 }
 
-/// Dialogue expliquant la méthodologie du risque de change : intuition,
-/// formules prudentielles (BCEAO Art. 45) et valeurs courantes.
+/// Dialogue présentant la méthodologie du risque de change : périmètre de
+/// l'analyse (parités fixes) et définition de la position longue.
 class _FxMethodologyDialog extends StatelessWidget {
   const _FxMethodologyDialog({required this.result});
 
   final FxRiskAnalysisResult result;
 
+  static const Color _navy = Color(0xFF1E3A5F);
+
   @override
   Widget build(BuildContext context) {
     final textColor = _fxTextFor(context);
     final muted = _fxMutedFor(context);
-    return AlertDialog(
+    final isDark = _isFxDark(context);
+
+    return Dialog(
       backgroundColor: _fxSurfaceFor(context),
-      title: Row(
-        children: [
-          const Icon(CupertinoIcons.info_circle_fill,
-              size: 18, color: _fxPrimary),
-          const SizedBox(width: 2),
-          Expanded(
-            child: Text('Risque de change — méthodologie',
-                style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: textColor)),
-          ),
-        ],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(2),
+        side: BorderSide(color: _fxBorderFor(context)),
       ),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 540),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Le risque de change mesure l\'impact des variations de cours des '
-                'devises sur les positions en devise étrangère.',
-                style: TextStyle(fontSize: 12.5, color: textColor, height: 1.4),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Bandeau d'en-tête navy, aligné sur les en-têtes de tableaux.
+            Container(
+              color: _navy,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('MÉTHODOLOGIE',
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                          color: Colors.white.withValues(alpha: 0.65))),
+                  const SizedBox(height: 3),
+                  const Text('Risque de change',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.2,
+                          color: Colors.white)),
+                ],
               ),
-              const SizedBox(height: 3),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(3),
-                decoration: BoxDecoration(
-                  color: _fxWarning.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(AppTheme.radius),
-                  border: Border.all(color: _fxWarning.withValues(alpha: 0.30)),
-                ),
-                child: Text(
-                  'La devise de référence (XOF) et l\'EUR — à parité fixe '
-                  '(1 EUR = 655,957 FCFA) — ne portent aucun risque de change : '
-                  'leurs lignes restent donc à 0.',
-                  style: TextStyle(fontSize: 12, color: textColor, height: 1.4),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Le risque de change mesure l\'impact des variations de '
+                      'cours des devises sur la valeur en XOF des positions '
+                      'détenues en devise étrangère.',
+                      style: TextStyle(
+                          fontSize: 12.5, color: textColor, height: 1.55),
+                    ),
+                    const SizedBox(height: 14),
+                    // Panneau « périmètre » : liseré navy, fond neutre.
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : _navy.withValues(alpha: 0.04),
+                        border: Border(
+                          left: BorderSide(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.55)
+                                  : _navy,
+                              width: 3),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('PÉRIMÈTRE DE L\'ANALYSE',
+                              style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: isDark ? textColor : _navy)),
+                          const SizedBox(height: 5),
+                          Text(
+                            'La devise de référence (XOF) et l\'euro, lié au '
+                            'XOF par une parité fixe (1 EUR = 655,957 FCFA), '
+                            'ne portent aucun risque de change : leurs lignes '
+                            'restent à zéro. Seuls les titres libellés dans '
+                            'les autres devises alimentent le calcul.',
+                            style: TextStyle(
+                                fontSize: 12, color: muted, height: 1.55),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('DÉFINITIONS',
+                        style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: isDark ? textColor : _navy)),
+                    const SizedBox(height: 6),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          margin: const EdgeInsets.only(top: 5, right: 8),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.55)
+                              : _navy,
+                        ),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  height: 1.55,
+                                  color: textColor),
+                              children: [
+                                TextSpan(
+                                    text: 'Position longue : ',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark ? textColor : _navy)),
+                                TextSpan(
+                                  text: 'la banque détient la devise au '
+                                      'travers des titres achetés (actif). '
+                                      'Elle gagne si la devise s\'apprécie '
+                                      'face au XOF, elle perd si la devise '
+                                      'se déprécie.',
+                                  style: TextStyle(color: muted),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              _section(context, 'Définitions'),
-              _definition(context, 'Position longue',
-                  'La banque détient la devise (actif) : elle gagne si la devise s\'apprécie face au XOF.'),
-              _definition(context, 'Position courte',
-                  'La banque doit / a vendu la devise (passif) : elle perd si la devise s\'apprécie.'),
-              _definition(context, 'Position nette (par devise)',
-                  'Positions longues − positions courtes d\'une même devise. Positive = nette longue ; négative = nette courte.'),
-              _definition(context, 'Position nette globale',
-                  'Sur l\'ensemble des devises : MAX(somme des nettes longues ; somme des nettes courtes). C\'est la base de l\'exigence de fonds propres.'),
-              const SizedBox(height: 4),
-              _section(context, 'Au niveau du portefeuille'),
-              _formulaBlock(context, const [
-                'Position nette / devise = Σ(longues) − Σ(courtes)   [en XOF]',
-                'Position nette globale  = MAX( Σ longues ; Σ courtes )',
-                'Exigence de fonds propres = Position nette globale × 9 %',
-                'RWA Change = Exigence FP × 11,111111',
-              ]),
-              const SizedBox(height: 3),
-              _section(context, 'Par titre'),
-              _formulaBlock(context, const [
-                'Variation devise (%) =',
-                '   (Taux courant − Taux acquisition) ÷ Taux acquisition × 100',
-                'Gain/Perte de change =',
-                '   Valeur actuelle (XOF) − Valeur d\'acquisition (XOF)',
-              ]),
-              const SizedBox(height: 4),
-              _section(context, 'Valeurs actuelles'),
-              _kv(context, 'Σ Positions longues',
-                  '${formatLargeNumber(result.totalLongPositions)} XOF'),
-              _kv(context, 'Σ Positions courtes',
-                  '${formatLargeNumber(result.totalShortPositions)} XOF'),
-              _kv(context, 'Position nette globale',
-                  '${formatLargeNumber(result.globalNetPosition)} XOF'),
-              _kv(context, 'Exigence de fonds propres',
-                  '${formatLargeNumber(result.capitalRequirement)} XOF'),
-              _kv(context, 'RWA Change',
-                  '${formatLargeNumber(result.rwaChange)} XOF',
-                  highlight: true),
-              const SizedBox(height: 3),
-              Text('Référence : BCEAO — Dispositif prudentiel, Art. 45.',
-                  style: TextStyle(
-                      fontSize: 10.5,
-                      fontStyle: FontStyle.italic,
-                      color: muted)),
-            ],
-          ),
+            ),
+            // Pied de dialogue sobre.
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: _fxBorderFor(context)),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    foregroundColor: isDark ? textColor : _navy,
+                    textStyle: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3),
+                  ),
+                  child: const Text('Fermer'),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Fermer'),
-        ),
-      ],
     );
   }
-
-  Widget _section(BuildContext context, String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 2),
-        child: Text(title.toUpperCase(),
-            style: const TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.4,
-                color: _fxPrimary)),
-      );
-
-  Widget _definition(BuildContext context, String term, String desc) => Padding(
-        padding: const EdgeInsets.only(bottom: 2),
-        child: RichText(
-          text: TextSpan(
-            style: TextStyle(
-                fontSize: 11.5, height: 1.35, color: _fxTextFor(context)),
-            children: [
-              TextSpan(
-                  text: '$term : ',
-                  style: const TextStyle(fontWeight: FontWeight.w800)),
-              TextSpan(
-                  text: desc, style: TextStyle(color: _fxMutedFor(context))),
-            ],
-          ),
-        ),
-      );
-
-  Widget _formulaBlock(BuildContext context, List<String> lines) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(3),
-        decoration: BoxDecoration(
-          color: _isFxDark(context)
-              ? Colors.white.withValues(alpha: 0.04)
-              : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          border: Border.all(color: _fxBorderFor(context)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            for (final l in lines)
-              Text(l,
-                  style: TextStyle(
-                      fontSize: 11.5,
-                      height: 1.5,
-                      fontFamily: 'monospace',
-                      color: _fxTextFor(context))),
-          ],
-        ),
-      );
-
-  Widget _kv(BuildContext context, String k, String v,
-          {bool highlight = false}) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 1),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(k,
-                  style: TextStyle(fontSize: 12, color: _fxMutedFor(context))),
-            ),
-            Text(v,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: highlight ? FontWeight.w800 : FontWeight.w600,
-                    color: highlight ? _fxDanger : _fxTextFor(context))),
-          ],
-        ),
-      );
 }
 
 class _FxEmptyState extends StatelessWidget {
@@ -594,21 +761,59 @@ class _RateMeta {
 /// éditables (USD), l'utilisateur peut saisir le taux manuellement ou le coter
 /// en ligne.
 /// Met côte à côte le tableau (gauche) et le graphique de choc (droite).
-/// Empile verticalement sur les fenêtres étroites.
-class _FxContentSplit extends StatelessWidget {
-  const _FxContentSplit({required this.result});
+/// Empile verticalement sur les fenêtres étroites. Porte la sélection de ligne
+/// du tableau : le graphique de choc reflète le titre sélectionné.
+class _FxContentSplit extends StatefulWidget {
+  const _FxContentSplit({
+    required this.result,
+    this.onRefreshRates,
+    this.onManageRates,
+    this.refreshingRates = false,
+  });
 
   final FxRiskAnalysisResult result;
 
+  /// Actualisation en ligne des contre-valeurs courantes (bouton porté par
+  /// l'en-tête de colonne du tableau).
+  final Future<void> Function()? onRefreshRates;
+
+  /// Saisie manuelle des contre-valeurs (même menu d'en-tête de colonne).
+  final VoidCallback? onManageRates;
+  final bool refreshingRates;
+
+  @override
+  State<_FxContentSplit> createState() => _FxContentSplitState();
+}
+
+class _FxContentSplitState extends State<_FxContentSplit> {
+  FxSecurityAnalysis? _selected;
+
+  @override
+  void didUpdateWidget(covariant _FxContentSplit oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Après un nouvel import/calcul, la sélection peut référencer un titre
+    // qui n'existe plus : on la réinitialise.
+    if (_selected != null && !widget.result.securities.contains(_selected)) {
+      _selected = null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final result = widget.result;
     return LayoutBuilder(
       builder: (context, c) {
         final hasFx =
             (result.totalLongPositions - result.totalShortPositions).abs() >
                 0.01;
-        final table = _FxSecuritiesTable(securities: result.securities);
-        final right = _FxRightPanel(result: result);
+        final table = _FxSecuritiesTable(
+          securities: result.securities,
+          onSelectionChanged: (s) => setState(() => _selected = s),
+          onRefreshRates: widget.onRefreshRates,
+          onManageRates: widget.onManageRates,
+          refreshingRates: widget.refreshingRates,
+        );
+        final right = _FxRightPanel(result: result, selected: _selected);
         if (c.maxWidth < 900) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -632,23 +837,39 @@ class _FxContentSplit extends StatelessWidget {
   }
 }
 
-/// Graphique « Scénario de choc de change » : profil de gain/perte de change du
-/// portefeuille selon une variation (choc) des devises étrangères vs XOF. Le
-/// portefeuille n'étant sensible qu'à ses positions en devise étrangère, un
-/// portefeuille 100 % XOF affiche un état « aucune sensibilité ».
+/// Graphique « Scénario de choc de change » : profil de gain/perte de change
+/// selon une variation (choc) de la devise vs XOF. Le périmètre suit la
+/// sélection du tableau : titre sélectionné = profil de SA devise ; sinon,
+/// position nette de l'ensemble des devises flottantes du portefeuille.
+/// Le graphique est TOUJOURS affiché : sans sensibilité, la droite est plate.
 class _FxShockChart extends StatefulWidget {
-  const _FxShockChart({required this.result});
+  const _FxShockChart({required this.result, this.selected});
 
   final FxRiskAnalysisResult result;
+  final FxSecurityAnalysis? selected;
 
   @override
   State<_FxShockChart> createState() => _FxShockChartState();
 }
 
 class _FxShockChartState extends State<_FxShockChart> {
-  static const double _maxShock = 0.20; // ±20 %
-  static const double _exampleNet = 1e9; // 1 Md XOF — position USD d'exemple
-  bool _example = false;
+  static const double _baseMaxShock = 0.20; // ±20 % par défaut
+  static const Color _navy = Color(0xFF1E3A5F);
+
+  /// Borne d'affichage de l'axe des chocs. Reste à ±20 % tant que le choc
+  /// réalisé y tient ; sinon s'étend à une valeur « ronde » qui englobe le
+  /// choc courant avec 10 % de marge (ex. +76 % → axe ±80 %).
+  double _resolveMaxShock(double currentShockAbs) {
+    final needed = currentShockAbs * 1.1;
+    if (needed <= _baseMaxShock) return _baseMaxShock;
+    const steps = <double>[
+      0.25, 0.30, 0.40, 0.50, 0.60, 0.75, 0.80, 1.0, 1.25, 1.5, 2.0, 3.0
+    ];
+    for (final s in steps) {
+      if (needed <= s) return s;
+    }
+    return (needed / 0.5).ceilToDouble() * 0.5;
+  }
 
   /// Position nette sensible au change = positions en devises FLOTTANTES vs XOF
   /// (USD…). L'EUR est exclu : sa parité fixe (1 EUR = 655,957 FCFA) annule tout
@@ -667,16 +888,48 @@ class _FxShockChartState extends State<_FxShockChart> {
     return net;
   }
 
+  /// Gain/perte de change RÉALISÉ du périmètre (devises flottantes seulement).
+  double _floatingGain() {
+    var gain = 0.0;
+    for (final s in widget.result.securities) {
+      final c = s.currency;
+      if (c == 'XOF' || c == 'XAF' || c == 'EUR') continue;
+      gain += s.fxGainLoss;
+    }
+    return gain;
+  }
+
+  /// Position nette, libellé de devise et gain réalisé du périmètre courant.
+  (double, String, double) _scope() {
+    final sel = widget.selected;
+    if (sel != null) {
+      // Parité fixe : un titre EUR ne porte aucune sensibilité au change.
+      if (sel.currency == 'EUR') return (0.0, 'EUR', 0.0);
+      final signed = sel.positionType == FxPositionType.short
+          ? -sel.currentValueInXof
+          : sel.currentValueInXof;
+      return (signed, sel.currency, sel.fxGainLoss);
+    }
+    return (_floatingNet(), 'Devises', _floatingGain());
+  }
+
   @override
   Widget build(BuildContext context) {
-    final floatingNet = _floatingNet();
-    final hasFx = floatingNet.abs() > 0.01;
-    final showCurve = hasFx || _example;
-    // Position nette (pour la courbe) ; en démo on simule une position longue.
-    final effectiveNet = hasFx ? floatingNet : _exampleNet;
+    final sel = widget.selected;
+    final (net, curLabel, realizedGain) = _scope();
+    final flat = net.abs() <= 0.01;
+    // Choc équivalent au gain réalisé (gain = net × choc). L'axe s'adapte à ce
+    // choc : pour un choc de +76 %, l'échelle s'étend à ±80 % au lieu de coller
+    // le point au bord.
+    final trueShock = flat ? 0.0 : realizedGain / net;
+    final maxShock = _resolveMaxShock(trueShock.abs());
+    final currentShock =
+        flat ? 0.0 : trueShock.clamp(-maxShock, maxShock).toDouble();
+    final isDark = _isFxDark(context);
+    final accent = isDark ? Colors.white.withValues(alpha: 0.75) : _navy;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
       decoration: BoxDecoration(
         color: _fxSurfaceFor(context),
         border: Border.all(color: _fxBorderFor(context)),
@@ -688,125 +941,181 @@ class _FxShockChartState extends State<_FxShockChart> {
               offset: const Offset(0, 2)),
         ],
       ),
-      child: Column(
+      // Carte adaptative : quand la hauteur disponible se réduit (petite
+      // fenêtre), on replie d'abord le panneau d'interprétation puis le
+      // sous-titre, pour toujours préserver le graphique sans débordement.
+      child: LayoutBuilder(builder: (context, box) {
+        final showInterpretation = box.maxHeight >= 280;
+        final showSubtitle = box.maxHeight >= 150;
+        return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // En-tête : barre d'accent navy + titre + pastille de périmètre.
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.show_chart_rounded, size: 17, color: _fxPrimary),
-              const SizedBox(width: 2),
+              Container(
+                width: 3,
+                height: 14,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               Expanded(
-                child: Text('Profil de gain/perte - choc USD',
+                child: Text('Profil de gain et de perte de change',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
+                        letterSpacing: 0.1,
                         color: _fxTextFor(context))),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: accent.withValues(alpha: 0.35), width: 0.8),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: Text(
+                  (sel != null ? sel.currency : 'PORTEFEUILLE').toUpperCase(),
+                  style: TextStyle(
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: accent),
+                ),
               ),
             ],
           ),
-          if (showCurve) ...[
-            const SizedBox(height: 2),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-              decoration: BoxDecoration(
-                color: _fxPrimary.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(AppTheme.radius),
-                border: Border.all(color: _fxPrimary.withValues(alpha: 0.20)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.lightbulb_outline,
-                      size: 15, color: _fxPrimary),
-                  const SizedBox(width: 2),
-                  Expanded(
-                    child: _interpretationWidget(context, effectiveNet),
-                  ),
-                ],
-              ),
+          if (showSubtitle) ...[
+            const SizedBox(height: 3),
+            Text(
+              sel != null
+                  ? 'Choc appliqué au titre ${sel.titleName} (${sel.currency}).'
+                  : 'Choc appliqué à la position nette du portefeuille. '
+                      'Sélectionnez une ligne du tableau pour isoler un titre.',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w500,
+                  height: 1.35,
+                  color: _fxMutedFor(context)),
             ),
           ],
-          const SizedBox(height: 3),
+          if (showInterpretation) ...[
+            const SizedBox(height: 6),
+            // Panneau d'interprétation : liseré navy, fond neutre.
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(10, 7, 10, 8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : _navy.withValues(alpha: 0.04),
+                border: Border(
+                  left: BorderSide(color: accent, width: 3),
+                ),
+              ),
+              child: flat
+                  ? Text(
+                      sel != null && sel.currency == 'EUR'
+                          ? 'Parité fixe (1 EUR = 655,957 FCFA) : ce titre ne '
+                              'porte aucune sensibilité au change.'
+                          : 'Aucune position en devise flottante : le profil '
+                              'de gain et de perte est nul.',
+                      style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                          height: 1.45,
+                          color: _fxMutedFor(context)),
+                    )
+                  : _interpretationWidget(context, net, curLabel),
+            ),
+          ],
+          const SizedBox(height: 4),
           Expanded(
-            child: showCurve
-                ? TweenAnimationBuilder<double>(
-                    tween: Tween<double>(begin: 0.0, end: effectiveNet),
-                    duration: const Duration(milliseconds: 1200),
-                    curve: Curves.easeOutQuart,
-                    builder: (context, animatedNet, child) {
-                      return CustomPaint(
-                        painter: _FxShockPainter(
-                          netSensitivity: animatedNet,
-                          maxShock: _maxShock,
-                          isDark: _isFxDark(context),
-                        ),
-                        child: const SizedBox.expand(),
-                      );
-                    },
-                  )
-                : _buildEmpty(context),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: net),
+              duration: const Duration(milliseconds: 1200),
+              curve: Curves.easeOutQuart,
+              builder: (context, animatedNet, child) {
+                return CustomPaint(
+                  painter: _FxShockPainter(
+                    netSensitivity: animatedNet,
+                    maxShock: maxShock,
+                    currentShock: currentShock,
+                    isDark: _isFxDark(context),
+                  ),
+                  child: const SizedBox.expand(),
+                );
+              },
+            ),
           ),
         ],
-      ),
+      );
+      }),
     );
   }
 
-  /// Encart d'interprétation : la base (position nette USD), puis les DEUX
+  /// Encart d'interprétation : la position nette du périmètre, puis les DEUX
   /// scénarios ±10 % sur des lignes distinctes (gain en vert, perte en rouge),
-  /// et le sens de la position. Identique en données réelles (autres montants).
-  Widget _interpretationWidget(BuildContext context, double net) {
+  /// et le sens de la position.
+  Widget _interpretationWidget(
+      BuildContext context, double net, String curLabel) {
     final long = net >= 0;
+    final isDark = _isFxDark(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Position nette USD : ${_compact(net.abs())} XOF '
-          '(${long ? 'longue' : 'courte'})',
+          'POSITION NETTE ${curLabel.toUpperCase()}',
           style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w600,
-              color: _fxMutedFor(context)),
+              fontSize: 8.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              color: isDark ? _fxTextFor(context) : _navy),
         ),
-        const SizedBox(height: 2),
-        _scenarioLine(context, 'USD +10 %', net * 0.10),
-        const SizedBox(height: 1),
-        _scenarioLine(context, 'USD −10 %', net * -0.10),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         Text(
-          'La banque ${long ? 'gagne' : 'perd'} quand le USD s\'apprécie.',
+          '${_compact(net.abs())} XOF (${long ? 'longue' : 'courte'})',
           style: TextStyle(
-              fontSize: 10.5,
-              fontStyle: FontStyle.italic,
-              color: _fxMutedFor(context)),
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+              color: _fxTextFor(context)),
         ),
+        const SizedBox(height: 5),
+        _scenarioLine(context, '$curLabel +10 %', net * 0.10),
+        const SizedBox(height: 2),
+        _scenarioLine(context, '$curLabel −10 %', net * -0.10),
       ],
     );
   }
 
-  /// Une ligne de scénario : flèche + libellé du choc + impact signé + (gain/perte).
+  /// Une ligne de scénario : libellé du choc puis impact signé (gain/perte).
   Widget _scenarioLine(BuildContext context, String scenario, double pnl) {
     final gain = pnl >= 0;
     final color = gain ? _fxSuccess : _fxDanger;
     return Row(
       children: [
-        Icon(gain ? Icons.arrow_upward : Icons.arrow_downward,
-            size: 13, color: color),
-        const SizedBox(width: 2),
         SizedBox(
-          width: 64,
+          width: 92,
           child: Text(scenario,
               style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: _fxTextFor(context))),
         ),
-        Text('⇒  ',
-            style: TextStyle(fontSize: 11, color: _fxMutedFor(context))),
         Text('${_signed(pnl)} XOF',
             style: TextStyle(
                 fontSize: 11.5, fontWeight: FontWeight.w800, color: color)),
-        const SizedBox(width: 2),
+        const SizedBox(width: 4),
         Text('(${gain ? 'gain' : 'perte'})',
             style: TextStyle(fontSize: 10, color: _fxMutedFor(context))),
       ],
@@ -822,36 +1131,6 @@ class _FxShockChartState extends State<_FxShockChart> {
     if (a >= 1e3) return '${(v / 1e3).toStringAsFixed(0)} k';
     return v.toStringAsFixed(0);
   }
-
-  Widget _buildEmpty(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(CupertinoIcons.checkmark_shield,
-              size: 28, color: _fxSuccess.withValues(alpha: 0.7)),
-          const SizedBox(height: 3),
-          Text('Aucune sensibilité au change',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: _fxTextFor(context))),
-          const SizedBox(height: 4),
-          OutlinedButton.icon(
-            onPressed: () => setState(() => _example = true),
-            icon: const Icon(CupertinoIcons.eye, size: 15),
-            label: const Text('Voir démo'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: _fxPrimary,
-              side: BorderSide(color: _fxPrimary.withValues(alpha: 0.5)),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Peintre du profil de choc : droite de P&L = sensibilité nette × choc, avec
@@ -860,11 +1139,16 @@ class _FxShockPainter extends CustomPainter {
   _FxShockPainter({
     required this.netSensitivity,
     required this.maxShock,
+    required this.currentShock,
     required this.isDark,
   });
 
   final double netSensitivity;
   final double maxShock;
+
+  /// Choc équivalent à la position actuelle (variation réalisée) : le point
+  /// ambre est placé sur la droite à cette abscisse, 0 si aucune variation.
+  final double currentShock;
   final bool isDark;
 
   @override
@@ -876,7 +1160,10 @@ class _FxShockPainter extends CustomPainter {
     final cx = plot.center.dx;
     final cy = plot.center.dy;
     final yMax = netSensitivity.abs() * maxShock;
-    if (yMax <= 0) return;
+    // Sensibilité nulle : le graphique reste affiché, la droite est plate sur
+    // l'axe zéro (échelle neutre pour éviter la division par zéro).
+    final flat = yMax <= 0;
+    final yScale = flat ? 1.0 : yMax;
 
     final baseColor = isDark ? Colors.white : Colors.black;
     final gridPaint = Paint()
@@ -885,7 +1172,7 @@ class _FxShockPainter extends CustomPainter {
     final axisColor = baseColor.withValues(alpha: 0.40);
 
     double xFor(double shock) => cx + (shock / maxShock) * (plot.width / 2);
-    double yFor(double pnl) => cy - (pnl / yMax) * (plot.height / 2);
+    double yFor(double pnl) => cy - (pnl / yScale) * (plot.height / 2);
 
     TextPainter label(String s, {bool bold = false, Color? color}) {
       final tp = TextPainter(
@@ -901,8 +1188,16 @@ class _FxShockPainter extends CustomPainter {
       return tp;
     }
 
-    // Grille verticale + libellés X.
-    for (final s in const [-0.20, -0.10, 0.0, 0.10, 0.20]) {
+    // Grille verticale + libellés X : 5 graduations réparties sur la plage
+    // dynamique (-max, -max/2, 0, +max/2, +max).
+    final ticks = <double>[
+      -maxShock,
+      -maxShock / 2,
+      0.0,
+      maxShock / 2,
+      maxShock,
+    ];
+    for (final s in ticks) {
       final x = xFor(s);
       canvas.drawLine(Offset(x, plot.top), Offset(x, plot.bottom), gridPaint);
       final l = label('${s > 0 ? '+' : ''}${(s * 100).toStringAsFixed(0)} %');
@@ -916,14 +1211,16 @@ class _FxShockPainter extends CustomPainter {
         Paint()
           ..color = axisColor
           ..strokeWidth = 1.2);
-    final topL = label('+${_compact(yMax)}');
-    topL.paint(canvas, Offset(plot.left - topL.width - 6, plot.top - 2));
+    if (!flat) {
+      final topL = label('+${_compact(yMax)}');
+      topL.paint(canvas, Offset(plot.left - topL.width - 6, plot.top - 2));
+      final botL = label('-${_compact(yMax)}');
+      botL.paint(canvas,
+          Offset(plot.left - botL.width - 6, plot.bottom - botL.height + 2));
+    }
     final zeroL = label('0');
     zeroL.paint(
         canvas, Offset(plot.left - zeroL.width - 6, cy - zeroL.height / 2));
-    final botL = label('-${_compact(yMax)}');
-    botL.paint(canvas,
-        Offset(plot.left - botL.width - 6, plot.bottom - botL.height + 2));
 
     // Aires gain/perte (deux triangles autour du centre).
     void fillHalf(double xEnd, double yEnd) {
@@ -941,10 +1238,12 @@ class _FxShockPainter extends CustomPainter {
 
     final yL = yFor(netSensitivity * -maxShock);
     final yR = yFor(netSensitivity * maxShock);
-    fillHalf(plot.right, yR);
-    fillHalf(plot.left, yL);
+    if (!flat) {
+      fillHalf(plot.right, yR);
+      fillHalf(plot.left, yL);
+    }
 
-    // Droite de P&L.
+    // Droite de P&L (plate sur l'axe zéro quand la sensibilité est nulle).
     canvas.drawLine(
         Offset(plot.left, yL),
         Offset(plot.right, yR),
@@ -953,15 +1252,22 @@ class _FxShockPainter extends CustomPainter {
           ..strokeWidth = 2.4
           ..strokeCap = StrokeCap.round);
 
-    // Points repères.
+    // Points repères (les ±10 % n'apportent rien sur une droite plate).
+    // Le point CENTRAL (position actuelle, choc 0 %) porte une couleur
+    // distincte (ambre) avec un halo, pour ne pas se fondre dans la droite.
+    const currentColor = Color(0xFFF9A825);
     void dot(double shock, {bool current = false}) {
       final pnl = netSensitivity * shock;
       final p = Offset(xFor(shock), yFor(pnl));
-      final c = current ? _fxPrimary : (pnl >= 0 ? _fxSuccess : _fxDanger);
-      canvas.drawCircle(p, current ? 4.5 : 3.5, Paint()..color = c);
+      final c = current ? currentColor : (pnl >= 0 ? _fxSuccess : _fxDanger);
+      if (current) {
+        canvas.drawCircle(
+            p, 8, Paint()..color = currentColor.withValues(alpha: 0.25));
+      }
+      canvas.drawCircle(p, current ? 5 : 3.5, Paint()..color = c);
       canvas.drawCircle(
           p,
-          current ? 4.5 : 3.5,
+          current ? 5 : 3.5,
           Paint()
             ..color = Colors.white
             ..style = PaintingStyle.stroke
@@ -971,12 +1277,22 @@ class _FxShockPainter extends CustomPainter {
             bold: true, color: c);
         final dx = shock > 0 ? p.dx - l.width - 6 : p.dx + 6;
         l.paint(canvas, Offset(dx, p.dy - l.height - 2));
+      } else if (shock.abs() > 0.0005) {
+        // Position actuelle décalée du centre : afficher son gain réalisé.
+        final l = label('${pnl >= 0 ? '+' : ''}${_compact(pnl)}',
+            bold: true, color: currentColor);
+        final dx = shock > 0 ? p.dx - l.width - 8 : p.dx + 8;
+        l.paint(canvas, Offset(dx, p.dy + 4));
       }
     }
 
-    dot(-0.10);
-    dot(0.10);
-    dot(0.0, current: true);
+    if (!flat) {
+      // Points repères alignés sur les graduations intermédiaires (±max/2).
+      // Pour l'échelle par défaut ±20 %, ils tombent sur ±10 % comme avant.
+      dot(-maxShock / 2);
+      dot(maxShock / 2);
+    }
+    dot(flat ? 0.0 : currentShock, current: true);
   }
 
   String _compact(double v) {
@@ -991,18 +1307,21 @@ class _FxShockPainter extends CustomPainter {
   bool shouldRepaint(covariant _FxShockPainter old) =>
       old.netSensitivity != netSensitivity ||
       old.maxShock != maxShock ||
+      old.currentShock != currentShock ||
       old.isDark != isDark;
 }
 
-/// Colonne de droite : la répartition par devise (toujours affichée) et, quand
-/// le portefeuille comporte des devises étrangères, le profil de choc en dessous.
+/// Colonne de droite : le profil de choc de change, calé sur le titre
+/// sélectionné dans le tableau (ou sur le portefeuille entier à défaut).
 class _FxRightPanel extends StatelessWidget {
-  const _FxRightPanel({required this.result});
+  const _FxRightPanel({required this.result, this.selected});
 
   final FxRiskAnalysisResult result;
+  final FxSecurityAnalysis? selected;
 
   @override
-  Widget build(BuildContext context) => _FxShockChart(result: result);
+  Widget build(BuildContext context) =>
+      _FxShockChart(result: result, selected: selected);
 }
 
 class _FxRatesBar extends StatelessWidget {
@@ -1363,19 +1682,18 @@ class _FxKpiSection extends StatelessWidget {
 
   final FxRiskAnalysisResult result;
 
-  String _buildCalculationTooltip(FxRiskAnalysisResult result) {
-    return 'Détail du calcul prudentiel (BCEAO · Art. 45) :\n'
-        '• Σ Positions longues : ${formatLargeNumber(result.totalLongPositions)} XOF (somme des positions nettes > 0)\n'
-        '• Σ Positions courtes : ${formatLargeNumber(result.totalShortPositions)} XOF (somme des |positions nettes < 0|)\n'
-        '• Position nette globale : ${formatLargeNumber(result.globalNetPosition)} XOF (MAX(longues ; courtes))\n'
-        '• Exigence de fonds propres : ${formatLargeNumber(result.capitalRequirement)} XOF (position nette globale × 9 %)\n'
-        '• RWA Change : ${formatLargeNumber(result.rwaChange)} XOF (exigence FP × 11,111111)';
-  }
-
   @override
   Widget build(BuildContext context) {
     final gain = result.globalFxGainLoss;
-    final tooltip = _buildCalculationTooltip(result);
+    // S'abonne à l'unité d'affichage globale (M / Md) : la carte se reconstruit
+    // quand l'utilisateur change l'unité via le sélecteur du bandeau supérieur.
+    final unit = PortfolioAmountUnitScope.of(context);
+    String fmt(double value) {
+      final scaled = value / unit.divisor;
+      final decimals = scaled.abs() >= 100 ? 0 : 1;
+      return '${AppFormatters.decimalNumber(scaled, maxDecimals: decimals)} '
+          '${unit.label}';
+    }
 
     return IntrinsicHeight(
       child: Row(
@@ -1384,7 +1702,7 @@ class _FxKpiSection extends StatelessWidget {
           Expanded(
             child: _FxKpiCard(
               label: 'Exposition Totale',
-              value: formatLargeNumber(result.totalExposure),
+              value: fmt(result.totalExposure),
               unit: 'FCFA',
               subtitle: 'Valeur nominale de l\'ensemble des titres exposés',
             ),
@@ -1393,7 +1711,7 @@ class _FxKpiSection extends StatelessWidget {
           Expanded(
             child: _FxKpiCard(
               label: 'Gain/Perte Global',
-              value: formatLargeNumber(gain.abs()),
+              value: fmt(gain.abs()),
               unit: 'FCFA',
               subtitle: gain >= 0 ? 'Gain net de change sur le portefeuille' : 'Perte nette de change sur le portefeuille',
             ),
@@ -1402,20 +1720,18 @@ class _FxKpiSection extends StatelessWidget {
           Expanded(
             child: _FxKpiCard(
               label: 'Exigence FP Change',
-              value: formatLargeNumber(result.capitalRequirement),
+              value: fmt(result.capitalRequirement),
               unit: 'FCFA',
               subtitle: 'Position nette globale × 9 %',
-              tooltipMessage: tooltip,
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: _FxKpiCard(
               label: 'RWA Change',
-              value: formatLargeNumber(result.rwaChange),
+              value: fmt(result.rwaChange),
               unit: 'FCFA',
               subtitle: 'Exigence FP × 11,111111',
-              tooltipMessage: tooltip,
             ),
           ),
           const SizedBox(width: 10),
@@ -1438,14 +1754,12 @@ class _FxKpiCard extends StatefulWidget {
     required this.label,
     required this.value,
     required this.unit,
-    this.tooltipMessage,
     this.subtitle,
   });
 
   final String label;
   final String value;
   final String unit;
-  final String? tooltipMessage;
   final String? subtitle;
 
   @override
@@ -1470,9 +1784,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(3),
-          border: Border.all(
-            color: _hovered ? deepBlue.withValues(alpha: 0.30) : line,
-          ),
+          border: Border.all(color: line),
           boxShadow: _hovered
               ? [
                   BoxShadow(
@@ -1483,48 +1795,33 @@ class _FxKpiCardState extends State<_FxKpiCard> {
                 ]
               : null,
         ),
+        // Anneau de survol au premier plan, couleur opaque : évite la bordure
+        // entrecoupée (anti-aliasing sur largeurs fractionnaires).
+        foregroundDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(
+            color: _hovered
+                ? Color.alphaBlend(
+                    deepBlue.withValues(alpha: 0.30), Colors.white)
+                : Colors.transparent,
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Label + tooltip
+            // Label
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
-              child: Row(
-                children: [
-                  Text(
-                    widget.label.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                      color: muted,
-                    ),
-                  ),
-                  if (widget.tooltipMessage != null) ...[
-                    const SizedBox(width: 4),
-                    Tooltip(
-                      message: widget.tooltipMessage!,
-                      preferBelow: false,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.white,
-                        height: 1.4,
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                      child: const Icon(
-                        CupertinoIcons.info_circle,
-                        size: 11,
-                        color: muted,
-                      ),
-                    ),
-                  ],
-                ],
+              child: Text(
+                widget.label.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                  color: muted,
+                ),
               ),
             ),
             // Séparateur
@@ -1584,9 +1881,27 @@ class _FxKpiCardState extends State<_FxKpiCard> {
 
 /// Tableau des titres exposés - colonnes TITRE et STATUT fixes
 class _FxSecuritiesTable extends StatefulWidget {
-  const _FxSecuritiesTable({required this.securities});
+  const _FxSecuritiesTable({
+    required this.securities,
+    this.onSelectionChanged,
+    this.onRefreshRates,
+    this.onManageRates,
+    this.refreshingRates = false,
+  });
 
   final List<FxSecurityAnalysis> securities;
+
+  /// Notifie le parent quand une ligne est sélectionnée (null = désélection),
+  /// pour que le graphique de choc reflète le titre concerné.
+  final ValueChanged<FxSecurityAnalysis?>? onSelectionChanged;
+
+  /// Actualise en ligne les contre-valeurs courantes ; menu logé dans
+  /// l'en-tête de la colonne VALEUR DEVISE ACTUELLE.
+  final Future<void> Function()? onRefreshRates;
+
+  /// Ouvre la saisie manuelle des contre-valeurs (même menu).
+  final VoidCallback? onManageRates;
+  final bool refreshingRates;
 
   @override
   State<_FxSecuritiesTable> createState() => _FxSecuritiesTableState();
@@ -1618,6 +1933,77 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
 
   int? _selectedIndex;
   static const Color _selColor = Color(0xFFE3F2FD);
+
+  /// Tri par colonne (index visuel 0..7) ; null = ordre d'import.
+  int? _sortColumn;
+  bool _sortAscending = true;
+
+  void _onSort(int column) {
+    setState(() {
+      if (_sortColumn == column) {
+        _sortAscending = !_sortAscending;
+      } else {
+        _sortColumn = column;
+        // Colonnes texte : ascendant par défaut ; numériques : descendant.
+        _sortAscending = column == 0 || column == 1;
+      }
+      // La sélection référence un index de la liste triée : on la vide pour
+      // éviter qu'elle saute sur une autre ligne après le tri.
+      _selectedIndex = null;
+    });
+    widget.onSelectionChanged?.call(null);
+  }
+
+  List<FxSecurityAnalysis> get _sortedSecurities {
+    final list = List<FxSecurityAnalysis>.of(widget.securities);
+    final col = _sortColumn;
+    if (col == null) return list;
+    int compare(FxSecurityAnalysis a, FxSecurityAnalysis b) => switch (col) {
+          0 => a.titleName.toLowerCase().compareTo(b.titleName.toLowerCase()),
+          1 => a.currency.compareTo(b.currency),
+          2 => a.currentValueInXof.compareTo(b.currentValueInXof),
+          3 => a.initialRate.compareTo(b.initialRate),
+          4 => a.currentRate.compareTo(b.currentRate),
+          5 => a.currencyVariationPercent
+              .compareTo(b.currencyVariationPercent),
+          6 => a.rwa.compareTo(b.rwa),
+          _ => a.fxGainLoss.compareTo(b.fxGainLoss),
+        };
+    list.sort((a, b) => _sortAscending ? compare(a, b) : compare(b, a));
+    return list;
+  }
+
+  /// En-tête de colonne triable : libellé + chevron d'état, clic = tri.
+  Widget _sortableHCell(
+      int column, String text, TextAlign align, TextStyle style) {
+    final sorted = _sortColumn == column;
+    final icon = sorted
+        ? (_sortAscending
+            ? CupertinoIcons.chevron_up
+            : CupertinoIcons.chevron_down)
+        : CupertinoIcons.arrow_up_arrow_down;
+    final iconWidget = Icon(icon,
+        size: 10, color: Colors.white.withValues(alpha: sorted ? 1.0 : 0.45));
+    final labelWidget = Text(text, style: style, maxLines: 1);
+    return InkWell(
+      onTap: () => _onSort(column),
+      child: Container(
+        height: 40,
+        alignment: _cellAlignment(align),
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: _cellAlignment(align),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: align == TextAlign.right
+                ? [iconWidget, const SizedBox(width: 3), labelWidget]
+                : [labelWidget, const SizedBox(width: 3), iconWidget],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -1652,7 +2038,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
 
   @override
   Widget build(BuildContext context) {
-    final securities = widget.securities;
+    final securities = _sortedSecurities;
 
     const rowH = 40.0;
     const headerTextLight = TextStyle(
@@ -1669,13 +2055,13 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
         0: 180, // ÉMETTEUR (Left fixed)
         1: 80, // DEVISE
         2: 190, // VALEUR NOMINALE (XOF)
-        3: 140, // VARIATION DEVISE (%)
-        4: 120, // GAIN/PERTE (%)
-        5: 120, // POSITION
+        3: 160, // VALEUR DEVISE ACHAT (1 USD = 584,34)
+        4: 160, // VALEUR DEVISE ACTUELLE
+        5: 140, // VARIATION DEVISE (%)
         6: 150, // RWA (XOF)
         7: 120, // GAIN/PERTE DE CHANGE (Right fixed)
       };
-      const naturalMiddle = 80 + 190 + 140 + 120 + 120 + 150; // 800
+      const naturalMiddle = 80 + 190 + 160 + 160 + 140 + 150; // 880
       // Quand le tableau dispose de plus d'espace que sa largeur naturelle, on
       // étire proportionnellement les colonnes du milieu pour occuper toute la
       // largeur : plus d'espace vide entre RWA (XOF) et GAIN/PERTE DE CHANGE.
@@ -1710,33 +2096,84 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
           colW[5]! +
           colW[6]! +
           _vDivCount * _vDivW;
-      // build header cells for scrollable middle (cols 1-6), sized with colW
+      // build header cells for scrollable middle (cols 1-8), sized with colW
       final headerMiddle = Row(children: [
         SizedBox(
             width: colW[1]!,
-            child: _HCell('DEVISE', TextAlign.left, headerTextLight)),
+            child: _sortableHCell(1, 'DEVISE', TextAlign.left,
+                headerTextLight)),
         _VDiv(isHeader: true),
         SizedBox(
             width: colW[2]!,
-            child: _HCell(
-                'VALEUR NOMINALE (XOF)', TextAlign.right, headerTextLight)),
+            child: _sortableHCell(2, 'VALEUR NOMINALE (XOF)', TextAlign.right,
+                headerTextLight)),
         _VDiv(isHeader: true),
         SizedBox(
             width: colW[3]!,
-            child: _HCell(
-                'VARIATION DEVISE (%)', TextAlign.right, headerTextLight)),
+            child: _sortableHCell(3, 'VALEUR DEVISE ACHAT', TextAlign.right,
+                headerTextLight)),
         _VDiv(isHeader: true),
         SizedBox(
             width: colW[4]!,
-            child: _HCell('GAIN/PERTE (%)', TextAlign.right, headerTextLight)),
+            child: Row(children: [
+              Expanded(
+                  child: _sortableHCell(4, 'VALEUR DEVISE ACTUELLE',
+                      TextAlign.right, headerTextLight)),
+              if (widget.onRefreshRates != null || widget.onManageRates != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 2, right: 6),
+                  child: widget.refreshingRates
+                      ? const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 1.5, color: Colors.white),
+                        )
+                      : PopupMenuButton<int>(
+                          tooltip: '',
+                          padding: EdgeInsets.zero,
+                          position: PopupMenuPosition.under,
+                          onSelected: (v) {
+                            if (v == 0) {
+                              widget.onRefreshRates?.call();
+                            } else {
+                              widget.onManageRates?.call();
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            if (widget.onRefreshRates != null)
+                              const PopupMenuItem(
+                                value: 0,
+                                height: 34,
+                                child: Text('Actualiser en ligne',
+                                    style: TextStyle(fontSize: 12)),
+                              ),
+                            if (widget.onManageRates != null)
+                              const PopupMenuItem(
+                                value: 1,
+                                height: 34,
+                                child: Text('Saisir les contre-valeurs',
+                                    style: TextStyle(fontSize: 12)),
+                              ),
+                          ],
+                          child: const Padding(
+                            padding: EdgeInsets.all(2),
+                            child: Icon(CupertinoIcons.arrow_clockwise,
+                                size: 13, color: Colors.white),
+                          ),
+                        ),
+                ),
+            ])),
         _VDiv(isHeader: true),
         SizedBox(
             width: colW[5]!,
-            child: _HCell('POSITION', TextAlign.center, headerTextLight)),
+            child: _sortableHCell(5, 'VARIATION DEVISE (%)', TextAlign.right,
+                headerTextLight)),
         _VDiv(isHeader: true),
         SizedBox(
             width: colW[6]!,
-            child: _HCell('RWA (XOF)', TextAlign.right, headerTextLight)),
+            child: _sortableHCell(6, 'RWA (XOF)', TextAlign.right,
+                headerTextLight)),
       ]);
 
       // Largeurs des 6 colonnes du milieu (cols 1..6), dans l'ordre.
@@ -1775,8 +2212,8 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                   child: Row(children: [
                     SizedBox(
                         width: colW[0]!,
-                        child: _HCell(
-                            'ÉMETTEUR', TextAlign.left, headerTextLight)),
+                        child: _sortableHCell(
+                            0, 'ÉMETTEUR', TextAlign.left, headerTextLight)),
                     _VDiv(isHeader: true),
                     Expanded(
                       child: SizedBox(
@@ -1795,8 +2232,8 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                     _VDiv(isHeader: true),
                     SizedBox(
                         width: colW[7]!,
-                        child: _HCell('GAIN/PERTE DE CHANGE', TextAlign.right,
-                            headerTextLight)),
+                        child: _sortableHCell(7, 'GAIN/PERTE DE CHANGE',
+                            TextAlign.right, headerTextLight)),
                   ]),
                 ),
                 // Body — liste verticale unique et VIRTUALISÉE. Chaque ligne
@@ -1845,8 +2282,14 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                               leftCell: cells[0],
                               middle: _syncedMiddle(middleWidth, middleRow),
                               rightCell: cells[7],
-                              onTap: () => setState(() => _selectedIndex =
-                                  _selectedIndex == i ? null : i),
+                              onTap: () {
+                                setState(() => _selectedIndex =
+                                    _selectedIndex == i ? null : i);
+                                widget.onSelectionChanged?.call(
+                                    _selectedIndex == null
+                                        ? null
+                                        : securities[i]);
+                              },
                             );
                           },
                         ),
@@ -1900,11 +2343,11 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                               const _VDiv(),
                               SizedBox(width: middleWidths[1]), // NOMINALE
                               const _VDiv(),
-                              SizedBox(width: middleWidths[2]), // VARIATION
+                              SizedBox(width: middleWidths[2]), // TAUX ACQUIS.
                               const _VDiv(),
-                              SizedBox(width: middleWidths[3]), // GAIN/PERTE %
+                              SizedBox(width: middleWidths[3]), // TAUX ACTUEL
                               const _VDiv(),
-                              SizedBox(width: middleWidths[4]), // POSITION
+                              SizedBox(width: middleWidths[4]), // VARIATION
                               const _VDiv(),
                               SizedBox(
                                   width: middleWidths[5], // RWA
@@ -1930,7 +2373,8 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
 
   /// Construit les 8 cellules d'une ligne (cols 0..7). Le fond (zébrage /
   /// sélection) est porté par la ligne elle-même (_FxSecurityRow), les cellules
-  /// restent donc transparentes.
+  /// restent donc transparentes. La nature de la position (longue) n'est plus
+  /// une colonne : elle est constante et affichée une fois dans l'en-tête.
   List<Widget> _buildDataCells(
       FxSecurityAnalysis s, int index, TextStyle baseStyle) {
     return [
@@ -1941,35 +2385,19 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
       _DCell(formatLargeNumber(s.currentValueInXof), baseStyle,
           align: TextAlign.right),
       _DCell(
+          '1 ${s.currency} = ${formatDecimal(s.initialRate, 2)} XOF',
+          baseStyle,
+          align: TextAlign.right),
+      _DCell(
+          '1 ${s.currency} = ${formatDecimal(s.currentRate, 2)} XOF',
+          baseStyle.copyWith(fontWeight: FontWeight.w600),
+          align: TextAlign.right),
+      _DCell(
           '${s.currencyVariationPercent >= 0 ? '+' : ''}${formatDecimal(s.currencyVariationPercent, 2)}%',
           baseStyle.copyWith(
               fontWeight: FontWeight.w500,
               color: s.currencyVariationPercent >= 0 ? _fxSuccess : _fxDanger),
           align: TextAlign.right),
-      _DCell(
-          '${s.fxGainLossPercent >= 0 ? '+' : ''}${formatDecimal(s.fxGainLossPercent, 2)}%',
-          baseStyle.copyWith(
-              fontWeight: FontWeight.w500,
-              color: s.fxGainLossPercent.abs() < 0.001
-                  ? _fxTextFor(context)
-                  : (s.fxGainLossPercent > 0 ? _fxSuccess : _fxDanger)),
-          align: TextAlign.right),
-      _DCell(
-          s.positionLabel,
-          baseStyle.copyWith(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: s.positionType == FxPositionType.long
-                  ? _fxSuccess
-                  : (s.positionType == FxPositionType.short
-                      ? _fxDanger
-                      : _fxMutedFor(context))),
-          align: TextAlign.center,
-          chip: s.positionType == FxPositionType.long
-              ? _fxSuccess.withValues(alpha: 0.1)
-              : (s.positionType == FxPositionType.short
-                  ? _fxDanger.withValues(alpha: 0.1)
-                  : _fxBorderFor(context))),
       _DCell(formatLargeNumber(s.rwa),
           baseStyle.copyWith(fontWeight: FontWeight.w600),
           align: TextAlign.right),

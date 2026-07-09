@@ -519,9 +519,8 @@ const List<_MenuEntry> _sidebarItems = [
       ),
       _MenuEntry.leaf(
         module: AppModule.risqueMarchePilotage,
-        icon: Icons.lock_outline_rounded,
+        icon: Icons.speed_rounded,
         label: 'Pilotage des risques',
-        disabled: true,
       ),
       _MenuEntry.leaf(
         module: AppModule.risqueMarcheImport,

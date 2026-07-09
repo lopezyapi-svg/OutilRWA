@@ -211,12 +211,13 @@ class FxSecurityAnalysisService {
   /// Seuls les titres libellés en devise ÉTRANGÈRE sont exposés : la devise de
   /// référence de l'outil (XOF — ainsi que XAF/FCFA repliés sur XOF par
   /// [normalizeCurrencyCode]) ne porte par définition AUCUN risque de change.
-  /// C'est pourquoi un portefeuille 100 % XOF affiche partout 0.
+  /// Les titres XOF sont donc EXCLUS de l'analyse de change : un portefeuille
+  /// de titres achetés ne génère que des positions LONGUES en devise.
   /// Convention alignée sur le calcul prudentiel global de l'outil
   /// (`_marketForeignExchangeGlobalNetPosition`), qui exclut lui aussi le XOF.
   bool _isExposedToFxRisk(MarketPortfolioRecord record) {
     final currency = normalizeCurrencyCode(record.currency);
-    return currency.isNotEmpty;
+    return currency.isNotEmpty && currency != 'XOF';
   }
 
   /// Récupère le nom du titre
@@ -276,9 +277,10 @@ class FxSecurityAnalysisService {
 
   /// Taux de change à l'ACQUISITION, en XOF pour 1 unité de devise.
   /// On utilise le taux historique du titre s'il est fourni à l'import
-  /// ([MarketPortfolioRecord.acquisitionExchangeRate]) ; sinon on retombe sur le
-  /// taux courant — la variation est alors nulle, ce qui est honnête en
-  /// l'absence de donnée historique.
+  /// ([MarketPortfolioRecord.acquisitionExchangeRate]) ; sinon on retombe sur
+  /// le taux de RÉFÉRENCE du registre des devises (et non sur le taux courant
+  /// édité) : la saisie ou la cotation d'un taux courant différent produit
+  /// alors une variation mesurable dans la table et le profil de choc.
   double _getInitialExchangeRate(
     MarketPortfolioRecord record,
     String currency,
@@ -287,6 +289,8 @@ class FxSecurityAnalysisService {
     if (currency == 'XOF') return 1.0;
     final booked = record.acquisitionExchangeRate;
     if (booked > 0) return booked;
+    final reference = _currencyRegistry.getRate(currency)?.rateToXof;
+    if (reference != null && reference > 0) return reference;
     return _getCurrentExchangeRate(record, currency, exchangeRates);
   }
 

@@ -33,10 +33,14 @@ class CurrencyRegistry {
 
   CurrencyRegistry._internal();
 
-  // L'application ne gère que trois devises principales : XOF, EUR, USD.
-  // Les taux sont alignés sur ceux de `currency_conversion.dart` et du backend
-  // (`calculations.py`) pour garantir une source unique et cohérente.
+  // Devises principales (XOF, EUR, USD) alignées sur `currency_conversion.dart`
+  // et le backend (`calculations.py`) pour garantir une source unique.
   // XAF/FCFA sont repliés vers XOF par `normalizeCurrencyCode`.
+  //
+  // Les autres devises portent une CONTRE-VALEUR DE RÉFÉRENCE INDICATIVE en
+  // XOF (cohérente avec 1 USD = 600 XOF) : elle sert de taux d'acquisition par
+  // défaut et de point de départ dans la barre des taux, où l'utilisateur
+  // saisit ou cote le taux courant réel.
   final Map<String, CurrencyRate> _rates = {
     'XOF': CurrencyRate(
       code: 'XOF',
@@ -55,6 +59,114 @@ class CurrencyRegistry {
       label: 'Dollar américain',
       rateToXof: 600.0,
       lastUpdate: DateTime(2026, 6, 17),
+    ),
+    'GBP': CurrencyRate(
+      code: 'GBP',
+      label: 'Livre sterling',
+      rateToXof: 760.0,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'CHF': CurrencyRate(
+      code: 'CHF',
+      label: 'Franc suisse',
+      rateToXof: 660.0,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'JPY': CurrencyRate(
+      code: 'JPY',
+      label: 'Yen japonais',
+      rateToXof: 4.0,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'CNY': CurrencyRate(
+      code: 'CNY',
+      label: 'Yuan chinois',
+      rateToXof: 83.0,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'MAD': CurrencyRate(
+      code: 'MAD',
+      label: 'Dirham marocain',
+      rateToXof: 60.0,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'TND': CurrencyRate(
+      code: 'TND',
+      label: 'Dinar tunisien',
+      rateToXof: 190.0,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'EGP': CurrencyRate(
+      code: 'EGP',
+      label: 'Livre égyptienne',
+      rateToXof: 12.5,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'NGN': CurrencyRate(
+      code: 'NGN',
+      label: 'Naira nigérian',
+      rateToXof: 0.40,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'GHS': CurrencyRate(
+      code: 'GHS',
+      label: 'Cedi ghanéen',
+      rateToXof: 40.0,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'ZAR': CurrencyRate(
+      code: 'ZAR',
+      label: 'Rand sud-africain',
+      rateToXof: 32.5,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'KES': CurrencyRate(
+      code: 'KES',
+      label: 'Shilling kényan',
+      rateToXof: 4.65,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'ZMW': CurrencyRate(
+      code: 'ZMW',
+      label: 'Kwacha zambien',
+      rateToXof: 22.0,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'BWP': CurrencyRate(
+      code: 'BWP',
+      label: 'Pula botswanais',
+      rateToXof: 44.0,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'CDF': CurrencyRate(
+      code: 'CDF',
+      label: 'Franc congolais',
+      rateToXof: 0.21,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'GNF': CurrencyRate(
+      code: 'GNF',
+      label: 'Franc guinéen',
+      rateToXof: 0.07,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'SOS': CurrencyRate(
+      code: 'SOS',
+      label: 'Shilling somalien',
+      rateToXof: 1.05,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'SSP': CurrencyRate(
+      code: 'SSP',
+      label: 'Livre sud-soudanaise',
+      rateToXof: 0.13,
+      lastUpdate: DateTime(2026, 7, 8),
+    ),
+    'ZWG': CurrencyRate(
+      code: 'ZWG',
+      label: 'Dollar zimbabwéen',
+      rateToXof: 22.0,
+      lastUpdate: DateTime(2026, 7, 8),
     ),
   };
 
