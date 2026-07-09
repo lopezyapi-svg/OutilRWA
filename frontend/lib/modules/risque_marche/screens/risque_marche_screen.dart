@@ -14161,115 +14161,9 @@ class _MarketEquityRankedBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = _marketTextFor(context);
-    final muted = _marketMutedFor(context);
-    final border = _marketBorderFor(context);
-    final isDark = _isMarketDark(context);
-    final maxShare = entries.fold<double>(
-      0,
-      (max, entry) => math.max(max, entry.share),
-    );
-
     return SizedBox(
       height: 168,
-      child: Column(
-        children: [
-          for (var index = 0; index < entries.length; index++) ...[
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                decoration: BoxDecoration(
-                  color: index == 0
-                      ? _marketPrimary.withValues(alpha: isDark ? 0.11 : 0.055)
-                      : Colors.transparent,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: border.withValues(
-                        alpha: index == entries.length - 1 ? 0 : 0.56,
-                      ),
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 28,
-                      child: Text(
-                        '#${index + 1}',
-                        style: TextStyle(
-                          color: index == 0 ? _marketPrimary : muted,
-                          fontSize: 9.2,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 5,
-                      child: Text(
-                        entries[index].label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: text,
-                          fontSize: 9.8,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    Expanded(
-                      flex: 4,
-                      child: Stack(
-                        alignment: Alignment.centerLeft,
-                        children: [
-                          Container(
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: _marketPrimary.withValues(
-                                alpha: isDark ? 0.13 : 0.075,
-                              ),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                          FractionallySizedBox(
-                            widthFactor: maxShare <= 0
-                                ? 0
-                                : (entries[index].share / maxShare)
-                                    .clamp(0.025, 1.0),
-                            child: Container(
-                              height: 6,
-                              decoration: BoxDecoration(
-                                color: _marketPrimary.withValues(
-                                  alpha: index == 0 ? 0.88 : 0.58,
-                                ),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 46,
-                      child: Text(
-                        AppFormatters.percent(entries[index].share),
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          color: index == 0 ? _marketPrimary : muted,
-                          fontSize: 9.2,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (index != entries.length - 1) const SizedBox(height: 6),
-          ],
-        ],
-      ),
+      child: _BondRatingBarChart(entries: entries),
     );
   }
 }
@@ -30497,12 +30391,13 @@ RWA Marché = Exigence FP Marché × 11,111111''',
                     ),
                   ],
                 )
-              : SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _GenericSummaryRow(
-                        showInfo: false,
-                        tooltipContent: '''
+              : Column(
+                  children: [
+                    // Rangée KPI FIXE : reste visible en permanence, elle ne
+                    // fait pas partie du défilement.
+                    _GenericSummaryRow(
+                      showInfo: false,
+                      tooltipContent: '''
 Exigence Fonds Propres Marché — Dispositif prudentiel UEMOA
 
 L'exigence de fonds propres pour risque de marché est la somme des exigences par type de risque :
@@ -30513,43 +30408,48 @@ L'exigence de fonds propres pour risque de marché est la somme des exigences pa
 
 Exigence FP Marché = Σ exigences par risque
 RWA Marché = Exigence FP Marché × 11,111111''',
-                        items: [
-                          _SummaryItemData(
-                              label: 'Encours total',
-                              value: _fcfa(totalExposure),
-                              subtitle: 'Exposition brute globale (Actions + Obligations)'),
-                          _SummaryItemData(
-                              label: 'Risque de Taux',
-                              value: _fcfa(r.interestRateRisk),
-                              subtitle: 'Exigence sur le portefeuille obligations'),
-                          _SummaryItemData(
-                              label: 'Risque Actions',
-                              value: _fcfa(r.equityRisk),
-                              subtitle: 'Exigence sur le portefeuille actions'),
-                          _SummaryItemData(
-                              label: 'Risque de Change',
-                              value: _fcfa(r.foreignExchangeRisk),
-                              subtitle: 'Position nette globale × 9 %'),
-                          _SummaryItemData(
-                              label: 'Exigence FP Marché',
-                              value: _fcfa(r.capitalRequirement),
-                              subtitle: 'Somme des exigences par risque'),
-                          _SummaryItemData(
-                              label: 'RWA Marché',
-                              value: _fcfa(r.marketRwa),
-                              subtitle: 'Exigence FP Marché × 11,111111'),
-                        ],
+                      items: [
+                        _SummaryItemData(
+                            label: 'Encours total',
+                            value: _fcfa(totalExposure),
+                            subtitle: 'Exposition brute globale (Actions + Obligations)'),
+                        _SummaryItemData(
+                            label: 'Risque de Taux',
+                            value: _fcfa(r.interestRateRisk),
+                            subtitle: 'Exigence sur le portefeuille obligations'),
+                        _SummaryItemData(
+                            label: 'Risque Actions',
+                            value: _fcfa(r.equityRisk),
+                            subtitle: 'Exigence sur le portefeuille actions'),
+                        _SummaryItemData(
+                            label: 'Risque de Change',
+                            value: _fcfa(r.foreignExchangeRisk),
+                            subtitle: 'Position nette globale × 9 %'),
+                        _SummaryItemData(
+                            label: 'Exigence FP Marché',
+                            value: _fcfa(r.capitalRequirement),
+                            subtitle: 'Somme des exigences par risque'),
+                        _SummaryItemData(
+                            label: 'RWA Marché',
+                            value: _fcfa(r.marketRwa),
+                            subtitle: 'Exigence FP Marché × 11,111111'),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    // Seule la visualisation défile.
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: _MarketDashboardVisualisation(
+                          datasets: MarketDataImportStore
+                              .instance.snapshotNotifier.value.datasets,
+                          selectedType: _selectedVisualisationType,
+                          onTypeChanged: (type) {
+                            setState(() => _selectedVisualisationType = type);
+                          },
+                        ),
                       ),
-                      const SizedBox(height: 3),
-                      _MarketDashboardVisualisation(
-                        datasets: MarketDataImportStore.instance.snapshotNotifier.value.datasets,
-                        selectedType: _selectedVisualisationType,
-                        onTypeChanged: (type) {
-                          setState(() => _selectedVisualisationType = type);
-                        },
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
     );
   }
