@@ -2570,7 +2570,7 @@ class _YieldCurveRepository {
   static const List<_YieldCurveSnapshot> seedSnapshots = [
     _YieldCurveSnapshot(
       id: 'uemoa',
-      title: 'Zone UEMOA',
+      title: 'UEMOA',
       sourceName: 'UMOA-Titres',
       sourceUrl: _umoaPageUrl,
       sourceDateLabel: '29/05/2026',
@@ -2759,32 +2759,8 @@ class _YieldCurveRepository {
       ],
     ),
     _YieldCurveSnapshot(
-      id: 'hors_zone',
-      title: 'Hors zone',
-      sourceName: 'BCRG',
-      sourceUrl: '',
-      sourceDateLabel: 'Mars 2026',
-      methodology: 'Courbe locale pour la Guinée (Conakry).',
-      color: _marketWarning,
-      points: [
-        _YieldCurvePoint('6 mois', 0.5, 7.00),
-        _YieldCurvePoint('1 an', 1, 7.50),
-        _YieldCurvePoint('2 ans', 2, 8.00),
-      ],
-      countryCurves: [
-        _YieldCurveCountryCurve(
-          country: 'Guinée (Conakry)',
-          points: [
-            _YieldCurvePoint('6 mois', 0.5, 7.00),
-            _YieldCurvePoint('1 an', 1, 7.50),
-            _YieldCurvePoint('2 ans', 2, 8.00),
-          ],
-        ),
-      ],
-    ),
-    _YieldCurveSnapshot(
       id: 'cemac',
-      title: 'Zone CEMAC',
+      title: 'CEMAC',
       sourceName: 'BEAC',
       sourceUrl: _beacPdfUrl,
       sourceDateLabel: 'Mars 2026',
@@ -2868,6 +2844,30 @@ class _YieldCurveRepository {
             _YieldCurvePoint('8 ans', 8, 4.07),
             _YieldCurvePoint('9 ans', 9, 3.79),
             _YieldCurvePoint('10 ans', 10, 3.57),
+          ],
+        ),
+      ],
+    ),
+    _YieldCurveSnapshot(
+      id: 'hors_zone',
+      title: 'Hors zone',
+      sourceName: 'BCRG',
+      sourceUrl: '',
+      sourceDateLabel: 'Mars 2026',
+      methodology: 'Courbe locale pour la Guinée (Conakry).',
+      color: _marketWarning,
+      points: [
+        _YieldCurvePoint('6 mois', 0.5, 7.00),
+        _YieldCurvePoint('1 an', 1, 7.50),
+        _YieldCurvePoint('2 ans', 2, 8.00),
+      ],
+      countryCurves: [
+        _YieldCurveCountryCurve(
+          country: 'Guinée (Conakry)',
+          points: [
+            _YieldCurvePoint('6 mois', 0.5, 7.00),
+            _YieldCurvePoint('1 an', 1, 7.50),
+            _YieldCurvePoint('2 ans', 2, 8.00),
           ],
         ),
       ],
