@@ -2087,32 +2087,32 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
       // du Row du milieu ; middleWidth doit les inclure pour que l'OverflowBox
       // de _syncedMiddle corresponde exactement au contenu réel et évite
       // l'erreur « ScrollController attached to multiple scroll views ».
-      const _vDivW = 0.7;
-      const _vDivCount = 5; // entre les 6 colonnes du milieu
+      const vDivW = 0.7;
+      const vDivCount = 5; // entre les 6 colonnes du milieu
       final middleWidth = colW[1]! +
           colW[2]! +
           colW[3]! +
           colW[4]! +
           colW[5]! +
           colW[6]! +
-          _vDivCount * _vDivW;
+          vDivCount * vDivW;
       // build header cells for scrollable middle (cols 1-8), sized with colW
       final headerMiddle = Row(children: [
         SizedBox(
             width: colW[1]!,
             child: _sortableHCell(1, 'DEVISE', TextAlign.left,
                 headerTextLight)),
-        _VDiv(isHeader: true),
+        const _VDiv(isHeader: true),
         SizedBox(
             width: colW[2]!,
             child: _sortableHCell(2, 'VALEUR NOMINALE (XOF)', TextAlign.right,
                 headerTextLight)),
-        _VDiv(isHeader: true),
+        const _VDiv(isHeader: true),
         SizedBox(
             width: colW[3]!,
             child: _sortableHCell(3, 'VALEUR DEVISE ACHAT', TextAlign.right,
                 headerTextLight)),
-        _VDiv(isHeader: true),
+        const _VDiv(isHeader: true),
         SizedBox(
             width: colW[4]!,
             child: Row(children: [
@@ -2164,12 +2164,12 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                         ),
                 ),
             ])),
-        _VDiv(isHeader: true),
+        const _VDiv(isHeader: true),
         SizedBox(
             width: colW[5]!,
             child: _sortableHCell(5, 'VARIATION DEVISE (%)', TextAlign.right,
                 headerTextLight)),
-        _VDiv(isHeader: true),
+        const _VDiv(isHeader: true),
         SizedBox(
             width: colW[6]!,
             child: _sortableHCell(6, 'RWA (XOF)', TextAlign.right,
@@ -2214,7 +2214,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                         width: colW[0]!,
                         child: _sortableHCell(
                             0, 'ÉMETTEUR', TextAlign.left, headerTextLight)),
-                    _VDiv(isHeader: true),
+                    const _VDiv(isHeader: true),
                     Expanded(
                       child: SizedBox(
                         height: rowH,
@@ -2229,7 +2229,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                         ),
                       ),
                     ),
-                    _VDiv(isHeader: true),
+                    const _VDiv(isHeader: true),
                     SizedBox(
                         width: colW[7]!,
                         child: _sortableHCell(7, 'GAIN/PERTE DE CHANGE',

@@ -28030,7 +28030,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
     final yInterval = maxY / 4;
     
     final isDark = _isMarketDark(context);
-    final exigenceColor = const Color(0xFFC62828);
+    const exigenceColor = Color(0xFFC62828);
     final rwaColor = isDark ? Colors.blue.shade300 : _deepBlue;
     final barGroups = top5.asMap().entries.map((entry) {
       final idx = entry.key;

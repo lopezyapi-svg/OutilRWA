@@ -1025,8 +1025,28 @@ def get_dashboard() -> DashboardData:
 
 # ─── BIC — Approche Standard CRR3 ────────────────────────────────────────────
 
+def _compute_pnb_effectif(inp: OpRiskInput) -> float:
+    """PNB de l'exercice : valeur saisie/importée si renseignée (non nulle),
+    sinon reconstitué automatiquement à partir des postes ILDC/SC/FC déjà
+    disponibles (marge d'intérêts nette + dividendes + commissions nettes +
+    résultats nets de négociation et bancaire + autres produits/charges
+    nets). Ainsi un import qui ne fournit que le détail des composantes
+    CRR3 (sans ligne "PNB" explicite) affiche quand même un PNB calculé,
+    au lieu de rester à 0/tiret partout.
+    """
+    if inp.pnb:
+        return inp.pnb
+    return (
+        (inp.interets_percus - inp.interets_verses)
+        + inp.dividendes_percus
+        + (inp.commissions_percues - inp.commissions_versees)
+        + (inp.resultat_portefeuille_negociation + inp.resultat_portefeuille_bancaire)
+        + (inp.autres_produits_exploitation - inp.autres_charges_exploitation)
+    )
+
+
 def _row_to_input(row) -> OpRiskInput:
-    return OpRiskInput(
+    inp = OpRiskInput(
         annee=row["annee"],
         interets_percus=row["interets_percus"],
         interets_verses=row["interets_verses"],
@@ -1044,6 +1064,11 @@ def _row_to_input(row) -> OpRiskInput:
         provisions=row["provisions"],
         pnb=row["pnb"],
     )
+    # Le PNB affiché est toujours la valeur effective (saisie sinon
+    # calculée) — la valeur brute reste inchangée en base, seule la
+    # restitution API/UI applique le calcul automatique.
+    inp.pnb = _compute_pnb_effectif(inp)
+    return inp
 
 
 def _row_to_params(row) -> OpRiskParametres:
@@ -1224,25 +1249,11 @@ def calcul_bic(annee_n: int | None = None) -> OpRiskCalculResult:
     ofr_crr3 = bic
     rea_crr3 = ofr_crr3 * mult
 
-    def pnb_effectif(inp: OpRiskInput) -> float:
-        """PNB de l'exercice : valeur saisie/importée si renseignée, sinon
-        reconstitué à partir des postes ILDC/SC/FC (marge d'intérêts +
-        dividendes + commissions nettes + résultats nets de négociation et
-        bancaire + autres produits/charges nets) — sans quoi le champ PNB
-        reste à 0 par défaut après un import CCR3 et l'OFR BIA ne se calcule
-        jamais.
-        """
-        if inp.pnb:
-            return inp.pnb
-        return (
-            (inp.interets_percus - inp.interets_verses)
-            + inp.dividendes_percus
-            + (inp.commissions_percues - inp.commissions_versees)
-            + (inp.resultat_portefeuille_negociation + inp.resultat_portefeuille_bancaire)
-            + (inp.autres_produits_exploitation - inp.autres_charges_exploitation)
-        )
-
-    pnb_moy = sum(pnb_effectif(inp) for inp in inputs) / 3
+    # `inp.pnb` est déjà la valeur effective (saisie sinon calculée
+    # automatiquement à partir d'ILDC/SC/FC — voir _compute_pnb_effectif /
+    # _row_to_input), y compris pour les exercices absents de la base
+    # (OpRiskInput par défaut → tous postes à 0 → PNB calculé = 0).
+    pnb_moy = sum(_compute_pnb_effectif(inp) for inp in inputs) / 3
     ofr_bia = max(pnb_moy, 0.0) * 0.15
     rea_bia = ofr_bia * mult
     ecart = ofr_crr3 - ofr_bia

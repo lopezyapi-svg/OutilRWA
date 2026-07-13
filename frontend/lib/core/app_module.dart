@@ -100,7 +100,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.risqueOperationnelHistorique:
         return 'Historique événements';
       case AppModule.risqueOperationnelReporting:
-        return 'Reporting opérationnel';
+        return 'Reporting global';
       case AppModule.risqueOperationnelUemoiCcr3:
         return 'CCR3 / Dispositif UEMOI';
       case AppModule.analyse:
@@ -179,7 +179,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.risqueOperationnelHistorique:
         return 'Traçabilité complète de toutes les actions et modifications (Art. 314).';
       case AppModule.risqueOperationnelReporting:
-        return 'Génération automatique des rapports réglementaires (Art. 313.c).';
+        return 'Génération automatique du rapport réglementaire consolidé (Dashboard, Crédit, Marché, Opérationnel).';
       case AppModule.risqueOperationnelUemoiCcr3:
         return 'CCR3-COREP (BIC) et dispositif UEMOI : Indicateur de Base, Approche Standard et synthèse.';
       case AppModule.analyse:

@@ -275,6 +275,15 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
     for (var i = 0; i < _bicLabels.length; i++) {
       if (_norm(_bicLabels[i]) == n) return i;
     }
+    // Le PNB est référencé sous plusieurs libellés selon l'écran (« PNB
+    // (Produit Net Bancaire) » dans l'onglet Saisie, « PNB (BIA — si non
+    // calculé automatiquement) » dans le modèle Excel). Un fichier créé à la
+    // main avec l'un ou l'autre libellé — ou juste « PNB » — doit matcher
+    // dans tous les cas, sans quoi le poste reste systématiquement à 0 après
+    // import (symptôme : la colonne PNB n'affiche que des tirets).
+    if (n == 'pnb' || n.startsWith('pnb_')) {
+      return _bicFields.indexOf('pnb');
+    }
     final minLen = math.min(6, n.length);
     for (var i = 0; i < _bicLabels.length; i++) {
       final ln = _norm(_bicLabels[i]);

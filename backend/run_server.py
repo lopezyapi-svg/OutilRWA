@@ -5,12 +5,32 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import sys
 from pathlib import Path
+
+BACKEND_DIR = Path(__file__).resolve().parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
+os.chdir(BACKEND_DIR)
 
 import uvicorn
 
 from app.core.runtime_paths import logs_dir
 from app.main import app
+
+RELOAD_DIRS = [
+    BACKEND_DIR / "app",
+    BACKEND_DIR / "database",
+    BACKEND_DIR / "scripts",
+    BACKEND_DIR / "tests",
+]
+RELOAD_EXCLUDES = [
+    ".venv/*",
+    "__pycache__/*",
+    ".pytest_cache/*",
+    "data/*",
+    "*.pyc",
+]
 
 
 def _configure_logging() -> None:
@@ -60,6 +80,9 @@ def main() -> None:
         log_level=log_level,
         access_log=False,
         reload=args.reload,
+        reload_dirs=[str(path) for path in RELOAD_DIRS if path.exists()] if args.reload else None,
+        reload_excludes=RELOAD_EXCLUDES if args.reload else None,
+        app_dir=str(BACKEND_DIR),
     )
 
 

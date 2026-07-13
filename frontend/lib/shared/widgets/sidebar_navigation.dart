@@ -269,11 +269,6 @@ const List<_MenuEntry> _operationalRiskChildren = [
     label: 'Historique événements',
     disabled: true,
   ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueOperationnelReporting,
-    icon: Icons.summarize_outlined,
-    label: 'Reporting opérationnel',
-  ),
 ];
 
 const List<_MenuEntry> _stressChildren = [
@@ -549,6 +544,11 @@ const List<_MenuEntry> _sidebarItems = [
     icon: Icons.bar_chart_rounded,
     label: 'Capital Planning',
     children: _capitalPlanningChildren,
+  ),
+  _MenuEntry.leaf(
+    module: AppModule.risqueOperationnelReporting,
+    icon: Icons.summarize_outlined,
+    label: 'Reporting global',
   ),
   _MenuEntry.group(
     icon: Icons.settings_outlined,
