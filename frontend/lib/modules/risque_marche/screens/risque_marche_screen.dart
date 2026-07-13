@@ -2895,7 +2895,7 @@ class _YieldCurveRepository {
         final seed = result[i];
         final cached = cachedSnapshots.where((s) => s.id == seed.id);
         if (cached.isNotEmpty) {
-          result[i] = cached.first;
+          result[i] = cached.first.copyWith(title: seed.title);
         }
       }
       return result;
