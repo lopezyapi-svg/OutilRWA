@@ -3449,6 +3449,7 @@ class _YieldCurveSnapshot {
   }
 
   _YieldCurveSnapshot copyWith({
+    String? title,
     String? sourceUrl,
     String? sourceDateLabel,
     String? methodology,
@@ -3458,7 +3459,7 @@ class _YieldCurveSnapshot {
   }) {
     return _YieldCurveSnapshot(
       id: id,
-      title: title,
+      title: title ?? this.title,
       sourceName: sourceName,
       sourceUrl: sourceUrl ?? this.sourceUrl,
       sourceDateLabel: sourceDateLabel ?? this.sourceDateLabel,
