@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:marquee/marquee.dart';
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
@@ -31,6 +32,7 @@ import '../services/market_country_resolver.dart';
 import '../services/market_data_import_store.dart';
 import '../services/market_risk_aggregation_service.dart';
 import '../screens/fx_risk_analysis_screen.dart';
+import '../screens/value_at_risk_screen.dart';
 
 // Palette institutionnelle partagée avec l'écran Risque de Crédit.
 const Color _deepBlue = Color(0xFF001F4E);
@@ -234,19 +236,19 @@ class RisqueMarcheScreen extends StatelessWidget {
     _ensureMarketDataCacheInvalidationListener();
     return switch (view) {
       MarketRiskView.dashboard => _buildDashboard(context),
-      MarketRiskView.indicators => const _MarketIndicatorsWorkspace(),
+      MarketRiskView.indicators => const _MarketIndicatorsWorkspace(selectedType: MarketPortfolioType.bonds),
       MarketRiskView.yieldCurves => _MarketYieldCurvesWorkspace(api: api),
       MarketRiskView.amortizationCapital =>
         const _MarketCrdEvolutionWorkspace(),
-      MarketRiskView.varRisk => _ValueAtRiskModule(api: api),
+      MarketRiskView.varRisk => ValueAtRiskScreen(api: api),
       MarketRiskView.pilotageDashboard => _PilotageWorkspace(api: api),
       MarketRiskView.calculPrudentiel => const _CalculPrudentielWorkspace(),
       MarketRiskView.pilotage => _PilotageWorkspace(api: api),
-      MarketRiskView.pilotageVaR => _ValueAtRiskModule(api: api),
+      MarketRiskView.pilotageVaR => ValueAtRiskScreen(api: api),
       MarketRiskView.pilotageCourbeTaux =>
         _MarketYieldCurvesWorkspace(api: api),
       MarketRiskView.pilotageIndicateursCles =>
-        const _MarketIndicatorsWorkspace(),
+        const _MarketIndicatorsWorkspace(selectedType: MarketPortfolioType.bonds),
       MarketRiskView.fxRiskAnalysis => const FxRiskAnalysisScreen(),
     };
   }
@@ -273,6 +275,7 @@ class _MarketYieldCurvesWorkspaceState
   List<_YieldCurveSnapshot> _snapshots = _YieldCurveRepository.seedSnapshots;
   bool _loading = true;
   bool _refreshing = false;
+  int _selectedZoneIndex = 0;
 
   @override
   void initState() {
@@ -337,10 +340,7 @@ class _MarketYieldCurvesWorkspaceState
         children: [
           PageHeader(
             title: 'Courbe des taux',
-            subtitle:
-                'Courbes de référence UEMOA et CEMAC pour l’actualisation des flux et les analyses de valorisation.',
             titleFontSize: 26,
-            subtitleFontSize: 12.5,
             trailing: _YieldCurveHeaderActions(
               refreshing: _refreshing,
               onPressed: _refreshCurves,
@@ -360,46 +360,17 @@ class _MarketYieldCurvesWorkspaceState
                       ),
                     ),
                   )
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            const gap = 14.0;
-                            const minCardWidth = 520.0;
-                            const cardHeight = 572.0;
-                            final cardWidth = math.max(
-                              minCardWidth,
-                              (constraints.maxWidth - gap) / 2,
-                            );
-                            return SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              clipBehavior: Clip.none,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  for (var index = 0;
-                                      index < _snapshots.length;
-                                      index++) ...[
-                                    SizedBox(
-                                      width: cardWidth,
-                                      height: cardHeight,
-                                      child: _YieldCurveSnapshotCard(
-                                        snapshot: _snapshots[index],
-                                      ),
-                                    ),
-                                    if (index < _snapshots.length - 1)
-                                      const SizedBox(width: gap),
-                                  ],
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
+                : (_snapshots.isNotEmpty
+                    ? _YieldCurveDashboard(
+                        snapshots: _snapshots,
+                        selectedZoneIndex: _selectedZoneIndex,
+                        onZoneChanged: (index) {
+                          setState(() {
+                            _selectedZoneIndex = index;
+                          });
+                        },
+                      )
+                    : const SizedBox.shrink()),
           ),
         ],
       ),
@@ -710,38 +681,47 @@ class _YieldCurveInfoBanner extends StatelessWidget {
   }
 }
 
-class _YieldCurveSnapshotCard extends StatefulWidget {
-  const _YieldCurveSnapshotCard({required this.snapshot});
+class _YieldCurveDashboard extends StatefulWidget {
+  const _YieldCurveDashboard({
+    required this.snapshots,
+    required this.selectedZoneIndex,
+    required this.onZoneChanged,
+  });
 
-  final _YieldCurveSnapshot snapshot;
+  final List<_YieldCurveSnapshot> snapshots;
+  final int selectedZoneIndex;
+  final ValueChanged<int> onZoneChanged;
 
   @override
-  State<_YieldCurveSnapshotCard> createState() =>
-      _YieldCurveSnapshotCardState();
+  State<_YieldCurveDashboard> createState() =>
+      _YieldCurveDashboardState();
 }
 
-class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
+class _YieldCurveDashboardState extends State<_YieldCurveDashboard> {
   int? _selectedPointIndex;
   int? _hoveredPointIndex;
   Set<String> _selectedSeriesIds = const {_yieldZoneSeriesId};
 
+  _YieldCurveSnapshot get snapshot => widget.snapshots[widget.selectedZoneIndex];
+
   @override
-  void didUpdateWidget(covariant _YieldCurveSnapshotCard oldWidget) {
+  void didUpdateWidget(covariant _YieldCurveDashboard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.snapshot.id != widget.snapshot.id) {
+    final oldSnapshot = oldWidget.snapshots[oldWidget.selectedZoneIndex];
+    if (oldSnapshot.id != snapshot.id) {
       _selectedSeriesIds = const {_yieldZoneSeriesId};
       _selectedPointIndex = null;
       _hoveredPointIndex = null;
       return;
     }
     _selectedSeriesIds = _sanitizeYieldSelection(
-      widget.snapshot,
+      snapshot,
       _selectedSeriesIds,
     );
   }
 
   void _toggleSeries(String seriesId) {
-    if (!_isYieldSeriesSelectable(widget.snapshot, seriesId)) return;
+    if (!_isYieldSeriesSelectable(snapshot, seriesId)) return;
 
     final next = {..._selectedSeriesIds};
     if (seriesId == _yieldZoneSeriesId) {
@@ -759,7 +739,7 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
     }
 
     setState(() {
-      _selectedSeriesIds = _sanitizeYieldSelection(widget.snapshot, next);
+      _selectedSeriesIds = _sanitizeYieldSelection(snapshot, next);
       _selectedPointIndex = null;
       _hoveredPointIndex = null;
     });
@@ -767,7 +747,6 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
 
   @override
   Widget build(BuildContext context) {
-    final snapshot = widget.snapshot;
     final selectedSeriesIds =
         _sanitizeYieldSelection(snapshot, _selectedSeriesIds);
     if (selectedSeriesIds.length != _selectedSeriesIds.length ||
@@ -789,201 +768,193 @@ class _YieldCurveSnapshotCardState extends State<_YieldCurveSnapshotCard> {
     final text = _marketTextFor(context);
     final muted = _marketMutedFor(context);
     final border = _marketBorderFor(context);
-    final color = snapshot.color;
     final hasDrawableData = primaryPoints.length >= 2;
-    final shortPoint = hasDrawableData ? primaryPoints.first : null;
-    final tenYear = hasDrawableData ? primarySeries?.pointNear(10) : null;
-    final longPoint = hasDrawableData ? tenYear ?? primaryPoints.last : null;
-    final maxPoint = hasDrawableData
-        ? primaryPoints.reduce(
-            (best, point) => point.rate > best.rate ? point : best,
-          )
-        : null;
-    final slopeBps = hasDrawableData && longPoint != null && shortPoint != null
-        ? (longPoint.rate - shortPoint.rate) * 100
-        : null;
 
-    return _MarketCard(
-      padding: const EdgeInsets.all(4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppTheme.radius),
-                ),
-                child: Icon(
-                  CupertinoIcons.chart_bar_alt_fill,
-                  color: color,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      snapshot.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: text,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      [
-                        snapshot.sourceName,
-                        snapshot.sourceDateLabel,
-                      ].join(' · '),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: muted,
-                        fontSize: 10.8,
-                        fontWeight: FontWeight.w500,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 3),
-              if (hasDrawableData && primarySeries != null) ...[
-                _YieldCurveInterpretationButton(
-                  snapshot: snapshot,
-                  series: primarySeries,
-                ),
-                const SizedBox(width: 8),
-              ],
-              _YieldCurveSourceInfoButton(snapshot: snapshot),
-            ],
-          ),
-          const SizedBox(height: 4),
-          if (hasDrawableData) ...[
-            Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          height: 480,
+          child: _MarketCard(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // COLONNE A (45%) : Sections 1 et 2
                 Expanded(
-                  child: _YieldCurveMetricChip(
-                    label: 'Taux lissé CT · ${shortPoint!.label}',
-                    value: _formatYieldRate(shortPoint.rate),
-                    color: color,
+                  flex: 45,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- SECTION 1 ---
+                      // Sélecteur de zone
+                      Container(
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: _marketSurfaceSoftFor(context)
+                              .withValues(alpha: _isMarketDark(context) ? 0.3 : 0.6),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
+                          border: Border.all(color: border),
+                        ),
+                        child: Row(
+                          children: List.generate(widget.snapshots.length, (i) {
+                            final s = widget.snapshots[i];
+                            final isSelected = i == widget.selectedZoneIndex;
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () => widget.onZoneChanged(i),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? s.color.withValues(alpha: 0.15)
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(AppTheme.radius - 1),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    s.title,
+                                    style: TextStyle(
+                                      color: isSelected ? s.color : text,
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Source : ${snapshot.sourceName} / ${snapshot.sourceDateLabel}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: muted,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (hasDrawableData && primarySeries != null) ...[
+                            const SizedBox(width: 8),
+                            _YieldCurveInterpretationButton(
+                              snapshot: snapshot,
+                              series: primarySeries,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (snapshot.hasSeriesControls) ...[
+                        const Text(
+                          'Pays',
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
+                        const SizedBox(height: 8),
+                        _YieldCurveCountryLegend(
+                          snapshot: snapshot,
+                          selectedSeriesIds: selectedSeriesIds,
+                          onToggle: _toggleSeries,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      const SizedBox(height: 24),
+
+                      // --- SECTION 2 ---
+                      if (hasDrawableData)
+                        Expanded(
+                          child: _YieldCurveDataTable(
+                            stripItems: stripItems,
+                            visibleSeries: visibleSeries,
+                            primarySeries: primarySeries,
+                            activePointIndex: activePointIndex,
+                            onHoverChanged: (pointIndex, hovered) {
+                              setState(() {
+                                _hoveredPointIndex = hovered
+                                    ? pointIndex
+                                    : _hoveredPointIndex == pointIndex
+                                        ? null
+                                        : _hoveredPointIndex;
+                              });
+                            },
+                            onTap: (pointIndex) {
+                              setState(() {
+                                _selectedPointIndex =
+                                    selectedPointIndex == pointIndex
+                                        ? null
+                                        : pointIndex;
+                              });
+                            },
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _YieldCurveMetricChip(
-                    label: tenYear == null
-                        ? 'Taux lissé long · ${longPoint!.label}'
-                        : 'Taux lissé 10Y · ${longPoint!.label}',
-                    value: _formatYieldRate(longPoint.rate),
-                    color: _marketCyan,
-                  ),
+
+                // Séparateur
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: VerticalDivider(width: 1, color: border.withValues(alpha: 0.5)),
                 ),
-                const SizedBox(width: 8),
+
+                // COLONNE B (55%) : Section 3 (Courbes des taux)
                 Expanded(
-                  child: _YieldCurveMetricChip(
-                    label: 'Pente CT / ${longPoint.label}',
-                    value: _formatYieldSpread(slopeBps!),
-                    color: _marketWarning,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _YieldCurveMetricChip(
-                    label: 'Pic lissé · ${maxPoint!.label}',
-                    value: _formatYieldRate(maxPoint.rate),
-                    color: _marketSuccess,
+                  flex: 55,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'Courbes de taux',
+                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                            if (hasDrawableData && primarySeries != null)
+                              _YieldCurveRateTypeLegend(
+                                color: primarySeries.color,
+                                showZeroCoupon: _yieldHasDistinctZeroCouponRate(visibleSeries),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 380, // Fix height since Expanded won't work in SingleChildScrollView
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: _marketSurfaceSoftFor(context)
+                                  .withValues(alpha: _isMarketDark(context) ? 0.64 : 0.90),
+                              border: Border.all(color: border.withValues(alpha: 0.72)),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(3, 8, 3, 8),
+                              child: _YieldCurveChart(
+                                snapshot: snapshot,
+                                selectedSeriesIds: selectedSeriesIds,
+                                selectedPointIndex: activePointIndex,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-          ],
-          Container(
-            height: 286,
-            decoration: BoxDecoration(
-              color: _marketSurfaceSoftFor(context)
-                  .withValues(alpha: _isMarketDark(context) ? 0.64 : 0.90),
-              border: Border.all(color: border.withValues(alpha: 0.72)),
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(3, 8, 3, 8),
-              child: _YieldCurveChart(
-                snapshot: snapshot,
-                selectedSeriesIds: selectedSeriesIds,
-                selectedPointIndex: activePointIndex,
-              ),
-            ),
           ),
-          const SizedBox(height: 3),
-          if (hasDrawableData && primarySeries != null) ...[
-            _YieldCurveRateTypeLegend(
-              color: primarySeries.color,
-              showZeroCoupon: _yieldHasDistinctZeroCouponRate(visibleSeries),
-            ),
-            const SizedBox(height: 3),
-          ],
-          if (snapshot.hasSeriesControls) ...[
-            _YieldCurveCountryLegend(
-              snapshot: snapshot,
-              selectedSeriesIds: selectedSeriesIds,
-              onToggle: _toggleSeries,
-            ),
-            const SizedBox(height: 3),
-          ],
-          if (hasDrawableData)
-            SizedBox(
-              height: visibleSeries.length > 1 ? 50 : 44,
-              child: ListView.separated(addSemanticIndexes: false,
-                scrollDirection: Axis.horizontal,
-                itemBuilder: (context, index) {
-                  final item = stripItems[index];
-                  final isPrimary = item.series.id == primarySeries?.id;
-                  return _YieldCurvePointTile(
-                    point: item.point,
-                    seriesLabel:
-                        visibleSeries.length > 1 ? item.series.label : null,
-                    color: item.series.color,
-                    selected: isPrimary && activePointIndex == item.pointIndex,
-                    onHoverChanged: (hovered) {
-                      if (!isPrimary) return;
-                      setState(() {
-                        _hoveredPointIndex = hovered
-                            ? item.pointIndex
-                            : _hoveredPointIndex == item.pointIndex
-                                ? null
-                                : _hoveredPointIndex;
-                      });
-                    },
-                    onTap: () {
-                      if (!isPrimary) return;
-                      setState(() {
-                        _selectedPointIndex =
-                            selectedPointIndex == item.pointIndex
-                                ? null
-                                : item.pointIndex;
-                      });
-                    },
-                  );
-                },
-                separatorBuilder: (_, __) => const SizedBox(width: 6),
-                itemCount: stripItems.length,
-              ),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -1151,8 +1122,7 @@ class _YieldCurveInterpretationButtonState
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(CupertinoIcons.chart_bar_alt_fill, size: 12),
-                  const SizedBox(width: 5),
+
                   Text(
                     'Interprétation'.tr(context),
                     maxLines: 1,
@@ -1603,32 +1573,13 @@ class _YieldCurveCountryLegend extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: Row(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           zoneChip,
-          if (countryChips.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Expanded(
-              child: ClipRect(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  clipBehavior: Clip.hardEdge,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      for (var index = 0;
-                          index < countryChips.length;
-                          index++) ...[
-                        countryChips[index],
-                        if (index < countryChips.length - 1)
-                          const SizedBox(width: 8),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ...countryChips,
         ],
       ),
     );
@@ -1742,6 +1693,180 @@ class _YieldCurveSeriesControlChip extends StatelessWidget {
       message: tooltipText.tr(context),
       waitDuration: const Duration(milliseconds: 300),
       child: control,
+    );
+  }
+}
+
+class _YieldCurveDataTable extends StatefulWidget {
+  const _YieldCurveDataTable({
+    required this.stripItems,
+    required this.visibleSeries,
+    required this.primarySeries,
+    required this.activePointIndex,
+    required this.onHoverChanged,
+    required this.onTap,
+  });
+
+  final List<_YieldCurvePointStripItem> stripItems;
+  final List<_YieldCurveDisplaySeries> visibleSeries;
+  final _YieldCurveDisplaySeries? primarySeries;
+  final int? activePointIndex;
+  final Function(int?, bool) onHoverChanged;
+  final Function(int?) onTap;
+
+  @override
+  State<_YieldCurveDataTable> createState() => _YieldCurveDataTableState();
+}
+
+class _YieldCurveDataTableState extends State<_YieldCurveDataTable> {
+  int? _hoveredIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isMarketDark(context);
+    final border = _marketBorderFor(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final showSeries = widget.visibleSeries.length > 1;
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: border.withValues(alpha: 0.8)),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Container(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFF0F254B),
+            child: Row(
+              children: [
+                if (showSeries)
+                  Expanded(flex: 2, child: _buildHeaderCell('Série')),
+                if (showSeries) Container(width: 1, height: 44, color: Colors.white24),
+                Expanded(flex: 2, child: _buildHeaderCell('Maturité')),
+                Container(width: 1, height: 44, color: Colors.white24),
+                Expanded(flex: 2, child: _buildHeaderCell('Taux lissé', rightAlign: true)),
+                Container(width: 1, height: 44, color: Colors.white24),
+                Expanded(flex: 2, child: _buildHeaderCell('Zéro coupon', rightAlign: true)),
+              ],
+            ),
+          ),
+          // Rows
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ...List.generate(widget.stripItems.length, (index) {
+                    final item = widget.stripItems[index];
+                    final point = item.point;
+                    final isPrimary = item.series.id == widget.primarySeries?.id;
+                    final isSelected = isPrimary && widget.activePointIndex == item.pointIndex;
+                    final isHovered = _hoveredIndex == index;
+                    final color = item.series.color;
+                    final hasDistinctRaw = (point.rawRate - point.smoothedRate).abs() >= 0.005;
+
+                    final isOdd = index % 2 != 0;
+                    final defaultBg = isOdd 
+                        ? (isDark ? Colors.white.withValues(alpha: 0.02) : const Color(0xFFF9FAFC))
+                        : (isDark ? Colors.transparent : Colors.white);
+
+                    return MouseRegion(
+                      cursor: isPrimary ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                      onEnter: (_) {
+                        setState(() => _hoveredIndex = index);
+                        if (isPrimary) widget.onHoverChanged(item.pointIndex, true);
+                      },
+                      onExit: (_) {
+                        setState(() => _hoveredIndex = null);
+                        if (isPrimary) widget.onHoverChanged(item.pointIndex, false);
+                      },
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          if (isPrimary) widget.onTap(item.pointIndex);
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isSelected 
+                                ? color.withValues(alpha: isDark ? 0.15 : 0.08)
+                                : isHovered 
+                                    ? (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF0F4F8))
+                                    : defaultBg,
+                            border: index < widget.stripItems.length - 1 
+                                ? Border(bottom: BorderSide(color: border.withValues(alpha: 0.4)))
+                                : null,
+                          ),
+                          child: Row(
+                            children: [
+                              if (showSeries)
+                                Expanded(
+                                  flex: 2, 
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                    child: Text(item.series.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w600))
+                                  )
+                                ),
+                              Expanded(
+                                flex: 2, 
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  child: Text(point.label, style: TextStyle(color: isSelected ? color : text.withValues(alpha: 0.9), fontSize: 13, fontWeight: FontWeight.w500))
+                                )
+                              ),
+                              Expanded(
+                                flex: 2, 
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  child: Text(
+                                    _formatYieldRate(point.smoothedRate), 
+                                    textAlign: TextAlign.right, 
+                                    style: TextStyle(color: isSelected ? color : text.withValues(alpha: 0.9), fontSize: 13, fontWeight: FontWeight.w500)
+                                  )
+                                )
+                              ),
+                              Expanded(
+                                flex: 2, 
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  child: Text(
+                                    _formatYieldRate(point.rawRate), 
+                                    textAlign: TextAlign.right, 
+                                    style: TextStyle(color: isSelected ? color : text.withValues(alpha: 0.9), fontSize: 13, fontWeight: FontWeight.w500)
+                                  )
+                                )
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderCell(String text, {bool rightAlign = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: rightAlign ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (rightAlign) const Icon(Icons.unfold_more, size: 14, color: Colors.white54),
+          if (rightAlign) const SizedBox(width: 4),
+          Text(text, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+          if (!rightAlign) const SizedBox(width: 4),
+          if (!rightAlign) const Icon(Icons.unfold_more, size: 14, color: Colors.white54),
+        ],
+      ),
     );
   }
 }
@@ -2634,6 +2759,30 @@ class _YieldCurveRepository {
       ],
     ),
     _YieldCurveSnapshot(
+      id: 'hors_zone',
+      title: 'Hors zone',
+      sourceName: 'BCRG',
+      sourceUrl: '',
+      sourceDateLabel: 'Mars 2026',
+      methodology: 'Courbe locale pour la Guinée (Conakry).',
+      color: _marketWarning,
+      points: [
+        _YieldCurvePoint('6 mois', 0.5, 7.00),
+        _YieldCurvePoint('1 an', 1, 7.50),
+        _YieldCurvePoint('2 ans', 2, 8.00),
+      ],
+      countryCurves: [
+        _YieldCurveCountryCurve(
+          country: 'Guinée (Conakry)',
+          points: [
+            _YieldCurvePoint('6 mois', 0.5, 7.00),
+            _YieldCurvePoint('1 an', 1, 7.50),
+            _YieldCurvePoint('2 ans', 2, 8.00),
+          ],
+        ),
+      ],
+    ),
+    _YieldCurveSnapshot(
       id: 'cemac',
       title: 'Zone CEMAC',
       sourceName: 'BEAC',
@@ -2734,13 +2883,22 @@ class _YieldCurveRepository {
 
     try {
       final decoded = jsonDecode(raw) as List<dynamic>;
-      final snapshots = decoded
+      final cachedSnapshots = decoded
           .whereType<Map<String, dynamic>>()
           .map(_YieldCurveSnapshot.fromJson)
           .map(_hydrateYieldSnapshotFromSeed)
           .where((snapshot) => snapshot.points.length >= 2)
           .toList(growable: false);
-      return snapshots.length >= 2 ? snapshots : seedSnapshots;
+          
+      final result = List<_YieldCurveSnapshot>.from(seedSnapshots);
+      for (var i = 0; i < result.length; i++) {
+        final seed = result[i];
+        final cached = cachedSnapshots.where((s) => s.id == seed.id);
+        if (cached.isNotEmpty) {
+          result[i] = cached.first;
+        }
+      }
+      return result;
     } catch (_) {
       return seedSnapshots;
     }
@@ -3809,27 +3967,59 @@ double? _parseYieldNumber(String value) {
 }
 
 class _MarketIndicatorsWorkspace extends StatelessWidget {
-  const _MarketIndicatorsWorkspace();
+  const _MarketIndicatorsWorkspace({required this.selectedType});
+  final MarketPortfolioType selectedType;
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<MarketDataSnapshot>(
       valueListenable: MarketDataImportStore.instance.snapshotNotifier,
       builder: (context, snapshot, _) {
-        final dataset = snapshot.datasetFor(MarketPortfolioType.bonds);
+        final dataset = snapshot.datasetFor(selectedType);
         return Padding(
           padding: const EdgeInsets.all(AppTheme.pagePadding),
           child: dataset == null || dataset.rowCount == 0
-              ? const _MarketNoImportedDataState(
+              ? _MarketNoImportedDataState(
                   title: 'Aucune donnée chargée',
-                  subtitle:
-                      'Chargez un portefeuille obligataire depuis Import données pour afficher les indicateurs clés.',
+                  subtitle: selectedType == MarketPortfolioType.equities
+                      ? 'Chargez un portefeuille actions depuis Import données pour afficher les indicateurs clés.'
+                      : 'Chargez un portefeuille obligataire depuis Import données pour afficher les indicateurs clés.',
                   icon: CupertinoIcons.chart_bar_alt_fill,
                   fillAvailable: true,
                 )
-              : _MarketIndicatorsStatsView(dataset: dataset),
+              : selectedType == MarketPortfolioType.equities
+                  ? _EquityIndicatorsStatsView(dataset: dataset)
+                  : _MarketIndicatorsStatsView(dataset: dataset),
         );
       },
+    );
+  }
+}
+
+class _EquityIndicatorsStatsView extends StatelessWidget {
+  const _EquityIndicatorsStatsView({required this.dataset});
+  final MarketPortfolioDataset dataset;
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(CupertinoIcons.building_2_fill, size: 64, color: _marketDashboardDeepBlue),
+          SizedBox(height: 16),
+          Text(
+            'Indicateurs clés - Actions',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _marketDashboardDeepBlue),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'Tableau de bord institutionnel en cours de conception.\nVous pouvez consulter les onglets VaR et Tableau des données.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -4276,7 +4466,7 @@ class _MarketNoImportedDataState extends StatelessWidget {
   const _MarketNoImportedDataState({
     required this.title,
     required this.subtitle,
-    required this.icon,
+    this.icon,
     this.accent = _marketPrimary,
     this.minHeight = 320,
     this.fillAvailable = false,
@@ -4284,7 +4474,8 @@ class _MarketNoImportedDataState extends StatelessWidget {
 
   final String title;
   final String subtitle;
-  final IconData icon;
+  // Optionnelle : null = liseré sobre sans pictogramme (registre VaR).
+  final IconData? icon;
   final Color accent;
   final double minHeight;
   final bool fillAvailable;
@@ -4323,19 +4514,29 @@ class _MarketNoImportedDataState extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 46,
-                        height: 46,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.10),
-                          border: Border.all(
-                            color: accent.withValues(alpha: 0.22),
+                      if (icon != null)
+                        Container(
+                          width: 46,
+                          height: 46,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.10),
+                            border: Border.all(
+                              color: accent.withValues(alpha: 0.22),
+                            ),
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                          borderRadius: BorderRadius.circular(2),
+                          child: Icon(icon, color: accent, size: 24),
+                        )
+                      else
+                        Container(
+                          width: 46,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: accent.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                         ),
-                        child: Icon(icon, color: accent, size: 24),
-                      ),
                       const SizedBox(height: 4),
                       Text(
                         title.tr(context),
@@ -5721,7 +5922,7 @@ class _BondKeyIndicatorSpec {
         color: _marketPrimary,
         formula: r'CRD=\sum_i Principal_{i,restant}',
         detail:
-            "Encours restant reconstruit à partir du capital initial, de la date d'analyse du jour et du profil d'amortissement.",
+            "Montant total du principal restant à rembourser sur l'ensemble du portefeuille obligataire.",
         caption: 'Principal restant',
         category: 'Valorisation',
         method: 'Capital restant selon amortissement',
@@ -5731,11 +5932,11 @@ class _BondKeyIndicatorSpec {
         label: 'Valeur actualisée',
         value: _bondIndicatorMoneyValue(stats.presentValue),
         unit: 'FCFA',
-        icon: CupertinoIcons.money_dollar_circle_fill,
+        icon: CupertinoIcons.graph_circle_fill,
         color: _marketSuccess,
         formula: r'PV=\sum_i PV_i',
         detail:
-            'Somme des flux futurs actualisés avec la courbe des taux locale de la zone et, si disponible, du pays émetteur.',
+            'Valorisation économique du portefeuille par actualisation des flux de trésorerie futurs sur la courbe des taux.',
         caption: 'PV courbe de taux',
         category: 'Valorisation',
         method: 'Actualisation des cash-flows',
@@ -5749,7 +5950,7 @@ class _BondKeyIndicatorSpec {
         color: _marketWarning,
         formula: r'PV=\sum_t\frac{CF_t}{(1+YTM)^t}',
         detail:
-            'Taux annuel unique qui égalise la valeur actualisée du portefeuille et ses flux futurs agrégés.',
+            "Taux de rentabilité interne moyen du portefeuille, reflétant la rémunération globale attendue jusqu'à l'échéance.",
         caption: 'Moteur de performance',
         category: 'Rendement',
         method: 'Taux actuariel agrégé',
@@ -5762,7 +5963,7 @@ class _BondKeyIndicatorSpec {
         icon: CupertinoIcons.percent,
         color: _marketCyan,
         formula: r'\bar{c}=\frac{\sum_i c_i\times w_i}{\sum_i w_i}',
-        detail: 'Coupon facial importé, pondéré par capital restant dû.',
+        detail: "Taux d'intérêt facial moyen servi par les émetteurs, pondéré par les encours restants.",
         caption: 'Coupon pondéré',
         category: 'Rendement',
         method: 'Moyenne pondérée par CRD',
@@ -5776,7 +5977,7 @@ class _BondKeyIndicatorSpec {
         color: _marketViolet,
         formula: r'Spread=(\bar{c}-YTM)\times10000',
         detail:
-            'Écart entre coupon moyen et rendement actuariel, exprimé en points de base.',
+            'Prime ou décote de rendement mesurant l\'écart entre le portage contractuel et les conditions actuelles de marché.',
         caption: 'Écart coupon vs YTM',
         category: 'Rendement',
         method: 'Coupon moyen moins YTM',
@@ -5790,7 +5991,7 @@ class _BondKeyIndicatorSpec {
         color: _marketPrimary,
         formula: r'M_{res}=\frac{\sum_i M_i\times Encours_i}{\sum_i Encours_i}',
         detail:
-            "Maturité résiduelle calculée entre la date d'échéance et la date d'analyse du jour, puis pondérée.",
+            "Durée de vie moyenne restante des titres du portefeuille, pondérée par les encours.",
         caption: 'Échéance restante',
         category: 'Maturité',
         method: 'Maturité résiduelle calculée',
@@ -5899,7 +6100,7 @@ class _BondViewModeToggle extends StatelessWidget {
     final isDark = _isMarketDark(context);
     final muted = _marketMutedFor(context);
 
-    Widget buildButton(int index, String label, IconData icon) {
+    Widget buildButton(int index, String label) {
       final selected = activeView == index;
       return MouseRegion(
         cursor: SystemMouseCursors.click,
@@ -5907,32 +6108,29 @@ class _BondViewModeToggle extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: () => onChanged(index),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 140),
-            padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 5.0),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: selected
-                  ? _marketPrimary.withValues(alpha: isDark ? 0.30 : 0.12)
+                  ? _marketPrimary.withValues(alpha: isDark ? 0.25 : 0.12)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(2),
+              border: Border.all(
+                color: selected 
+                    ? _marketPrimary.withValues(alpha: 0.3) 
+                    : Colors.transparent,
+                width: 1,
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  icon,
-                  size: 13,
-                  color: selected ? _marketPrimary : muted,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: selected ? _marketPrimary : muted,
-                  ),
-                ),
-              ],
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? _marketPrimary : muted.withValues(alpha: 0.8),
+                letterSpacing: 0.2,
+              ),
             ),
           ),
         ),
@@ -5940,19 +6138,403 @@ class _BondViewModeToggle extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(2),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: _marketSurfaceFor(context),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(color: border.withValues(alpha: 0.82)),
+        color: isDark ? const Color(0xFF1E1E2C) : const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(2),
+        border: Border.all(color: border.withValues(alpha: 0.6)),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: _marketPrimary.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          buildButton(
-              0, 'Synthèse du Portefeuille', CupertinoIcons.briefcase_fill),
+          buildButton(0, 'Synthèse du Portefeuille'),
           const SizedBox(width: 2),
-          buildButton(1, 'Indicateurs par Titre', CupertinoIcons.table_fill),
+          buildButton(1, 'Indicateurs par Titre'),
+        ],
+      ),
+    );
+  }
+}
+
+class _BondTop5RankingPanel extends StatefulWidget {
+  const _BondTop5RankingPanel({
+    required this.availableKpis,
+    required this.titleRows,
+  });
+
+  final List<_BondKeyIndicatorSpec> availableKpis;
+  final List<_BondTitleIndicatorRow> titleRows;
+
+  @override
+  State<_BondTop5RankingPanel> createState() => _BondTop5RankingPanelState();
+}
+
+class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
+  String? _selectedKpiLabel;
+  String _selectedZoneFilter = 'All zone';
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.availableKpis.isNotEmpty) {
+      _selectedKpiLabel = widget.availableKpis.first.label;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _BondTop5RankingPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final currentLabels = widget.availableKpis.map((e) => e.label).join(',');
+    final oldLabels = oldWidget.availableKpis.map((e) => e.label).join(',');
+    if (currentLabels != oldLabels) {
+      if (widget.availableKpis.isNotEmpty) {
+        _selectedKpiLabel = widget.availableKpis.first.label;
+      } else {
+        _selectedKpiLabel = null;
+      }
+    }
+  }
+
+  double _getKpiValue(_BondTitleIndicatorRow row, _BondKeyIndicatorSpec kpi) {
+    switch (kpi.label) {
+      case 'Capital restant dû':
+        return row.capital;
+      case 'Valeur actualisée':
+        return row.presentValue;
+      case 'Rendement Actuariel (YTM)':
+        return row.ytm;
+      case 'Coupon moyen pondéré':
+        return row.coupon;
+      case 'Spread coupon / YTM':
+        return row.spread;
+      case 'Maturité résiduelle moy.':
+      case 'Maturité résiduelle':
+        return row.residualMaturityMonths.toDouble();
+      case 'Duration Macaulay':
+        return row.macaulay;
+      case 'Duration modifiée':
+        return row.modified;
+      case 'Convexité':
+        return row.convexity;
+      default:
+        return row.capital;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (widget.availableKpis.isEmpty) {
+      return Container(
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(color: _marketDashboardDeepBlue.withValues(alpha: 0.2), width: 0.3),
+        ),
+      );
+    }
+
+    final selectedKpi = widget.availableKpis.firstWhere(
+      (k) => k.label == _selectedKpiLabel,
+      orElse: () => widget.availableKpis.first,
+    );
+
+    // Compute top 5
+    var rowsList = List.of(widget.titleRows);
+    if (_selectedZoneFilter != 'All zone') {
+      final filterLabel = _selectedZoneFilter == 'HZ' ? 'hors' : _selectedZoneFilter;
+      rowsList = rowsList.where((r) => r.zone.toLowerCase().contains(filterLabel.toLowerCase())).toList();
+    }
+
+    rowsList.sort((a, b) => _getKpiValue(b, selectedKpi).compareTo(_getKpiValue(a, selectedKpi)));
+    final top5 = rowsList.take(5).toList();
+    final maxAmount = top5.isEmpty ? 1.0 : _getKpiValue(top5.first, selectedKpi);
+    final totalKpiValue = rowsList.fold<double>(0.0, (sum, r) => sum + _getKpiValue(r, selectedKpi).abs());
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: _marketDashboardDeepBlue.withValues(alpha: 0.2), width: 0.3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white10 : Colors.grey.shade100,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(3),
+                topRight: Radius.circular(3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Top 5',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: isDark ? Colors.white : _deepBlue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedKpiLabel,
+                          icon: Icon(CupertinoIcons.chevron_down, size: 14, color: isDark ? Colors.white70 : _deepBlue),
+                          isDense: true,
+                          isExpanded: true,
+                          dropdownColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : _deepBlue,
+                            fontFamily: textTheme.bodyMedium?.fontFamily,
+                          ),
+                          onChanged: (val) {
+                            if (val != null) setState(() => _selectedKpiLabel = val);
+                          },
+                          items: widget.availableKpis.map((kpi) {
+                            return DropdownMenuItem(
+                              value: kpi.label,
+                              child: Text(
+                                kpi.label == 'Maturité résiduelle moy.' ? 'Maturité résiduelle' :
+                                kpi.label == 'Coupon moyen pondéré' ? 'Coupon moyen' : kpi.label,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: _selectedKpiLabel == kpi.label ? FontWeight.bold : FontWeight.normal,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  '% portefeuille',
+                  textAlign: TextAlign.left,
+                  style: textTheme.bodySmall?.copyWith(
+                    fontSize: 10,
+                    color: isDark ? Colors.white54 : Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (top5.isEmpty)
+                  const Center(child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('Aucune donnée disponible'),
+                  ))
+                else
+                  ...top5.asMap().entries.map((entry) {
+                    return _buildTop5Item(context, entry.key + 1, entry.value, selectedKpi, maxAmount, totalKpiValue);
+                  }),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: ['UEMOA', 'CEMAC', 'HZ', 'All zone'].map((z) {
+                    final isSelected = _selectedZoneFilter == z;
+                    final baseColor = z == 'All zone'
+                        ? (isDark ? Colors.white70 : _marketDashboardDeepBlue)
+                        : _bondZoneAccent(z == 'HZ' ? 'hors' : z);
+
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedZoneFilter = z;
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected ? baseColor : Colors.transparent,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: isSelected ? baseColor : baseColor.withValues(alpha: 0.3),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Text(
+                          z == 'All zone' ? 'Toutes zones' : z,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                            color: isSelected ? (isDark && z == 'All zone' ? _marketDashboardDeepBlue : Colors.white) : baseColor.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTop5Item(
+    BuildContext context,
+    int rank,
+    _BondTitleIndicatorRow row,
+    _BondKeyIndicatorSpec kpi,
+    double maxAmount,
+    double totalKpiValue,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textTheme = Theme.of(context).textTheme;
+    final muted = _marketMutedFor(context);
+    final amount = _getKpiValue(row, kpi);
+    final ratio = totalKpiValue > 0 ? (amount / totalKpiValue) : 0.0;
+
+    String formattedAmount;
+    if (kpi.unit == 'FCFA' || (kpi.unit.isEmpty && amount > 1000)) {
+      formattedAmount = _marketReadableMoney(amount).replaceAll(RegExp(r'\s*(FCFA|XOF)'), '').trim();
+    } else if (kpi.unit == 'Mois' || kpi.unit == 'mois') {
+      formattedAmount = '${amount.toStringAsFixed(1).replaceAll('.', ',')} mois';
+    } else if (kpi.unit == 'ans') {
+      formattedAmount = '${amount.toStringAsFixed(2).replaceAll('.', ',')} ans';
+    } else if (kpi.unit == 'bps') {
+      formattedAmount = '${amount.toStringAsFixed(0)} bps';
+    } else if (kpi.unit.contains('%') || (kpi.unit.isEmpty && amount <= 1000)) {
+      formattedAmount = AppFormatters.percent(amount);
+    } else {
+      formattedAmount = amount > 1000
+          ? _marketReadableMoney(amount).replaceAll(RegExp(r'\s*(FCFA|XOF)'), '').trim()
+          : amount.toStringAsFixed(2);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      decoration: BoxDecoration(
+        color: rank % 2 == 0
+            ? (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.shade100)
+            : (isDark ? Colors.white.withValues(alpha: 0.04) : Colors.grey.shade50),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                '#$rank.',
+                style: textTheme.bodyMedium?.copyWith(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: _bondZoneAccent(row.zone),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        row.title,
+                        style: textTheme.bodyMedium?.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                formattedAmount,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'RobotoMono',
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                children: [
+                  Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white12 : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  FractionallySizedBox(
+                    widthFactor: ratio.clamp(0.0, 1.0),
+                    child: Container(
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: _bondZoneAccent(row.zone),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 4),
+          Text(
+            AppFormatters.percent(totalKpiValue > 0 ? (amount / totalKpiValue) : 0),
+            textAlign: TextAlign.right,
+            style: textTheme.bodySmall?.copyWith(
+              fontSize: 10,
+              color: muted,
+            ),
+          ),
         ],
       ),
     );
@@ -5976,6 +6558,11 @@ class _BondIndicatorContentBoard extends StatefulWidget {
 class _BondIndicatorContentBoardState
     extends State<_BondIndicatorContentBoard> {
   int _activeView = 0; // 0 for Synthèse, 1 for Indicateurs par titre
+  int _currentPage = 0;
+  static const int _itemsPerPage = 6;
+
+  int get _itemPages => widget.items.isEmpty ? 1 : (widget.items.length / _itemsPerPage).ceil();
+  int get _totalPages => _itemPages + 1;
 
   @override
   Widget build(BuildContext context) {
@@ -6003,20 +6590,50 @@ class _BondIndicatorContentBoardState
               ),
               const SizedBox(height: 3),
               _activeView == 0
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _BondIndicatorKpiPanel(
-                          items: widget.items,
-                        ),
-                        const SizedBox(height: 3),
-                        const _BondZoneMonetaryTable(
-                          rows: [],
-                        ),
-                      ],
+                  ? Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _currentPage == _itemPages
+                                      ? const _BondZoneMonetaryTable(rows: [], titleRows: [])
+                                      : SizedBox(
+                                          height: 400,
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                                            children: [
+                                              Expanded(
+                                                flex: 7,
+                                                child: _BondIndicatorKpiPanel(
+                                                  items: widget.items.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList(),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                flex: 3,
+                                                child: _BondTop5RankingPanel(
+                                                  availableKpis: widget.items.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).where((kpi) => kpi.label != 'Coupon moyen pondéré').toList(),
+                                                  titleRows: const [],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                  const SizedBox(height: 16),
+                                ],
+                              ),
+                            ),
+                          ),
+                          _buildPagination(),
+                          const SizedBox(height: 8),
+                        ],
+                      ),
                     )
-                  : const SizedBox(
-                      height: _bondIndicatorOverviewHeight,
+                  : const Expanded(
                       child: _MarketDeferredLoadingState(
                         title: 'Chargement du tableau',
                         subtitle: 'Nous préparons les titres à afficher.',
@@ -6031,6 +6648,8 @@ class _BondIndicatorContentBoardState
   }
 
   Widget _buildContent({required _BondIndicatorRowsBundle rows}) {
+    final currentKpis = widget.items.skip(_currentPage * _itemsPerPage).take(_itemsPerPage).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -6045,21 +6664,113 @@ class _BondIndicatorContentBoardState
         ),
         const SizedBox(height: 3),
         _activeView == 0
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _BondIndicatorKpiPanel(
-                    items: widget.items,
-                  ),
-                  const SizedBox(height: 3),
-                  _BondZoneMonetaryTable(
-                    rows: rows.zoneRows,
-                  ),
-                ],
+            ? Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _currentPage == _itemPages
+                                ? _BondZoneMonetaryTable(
+                                    rows: rows.zoneRows,
+                                    titleRows: rows.titleRows,
+                                  )
+                                : SizedBox(
+                                    height: 400,
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        Expanded(
+                                          flex: 7,
+                                          child: _BondIndicatorKpiPanel(
+                                            items: currentKpis,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          flex: 3,
+                                          child: _BondTop5RankingPanel(
+                                            availableKpis: currentKpis.where((kpi) => kpi.label != 'Coupon moyen pondéré').toList(),
+                                            titleRows: rows.titleRows,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+                    ),
+                    _buildPagination(),
+                    const SizedBox(height: 8),
+                  ],
+                ),
               )
             : Expanded(
                 child: _BondTitleIndicatorsTable(rows: rows.titleRows),
               ),
+      ],
+    );
+  }
+
+  Widget _buildPagination() {
+    if (_totalPages <= 1) return const SizedBox.shrink();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        MouseRegion(
+          cursor: _currentPage > 0 ? SystemMouseCursors.click : SystemMouseCursors.basic,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: _currentPage > 0 ? _marketPrimary.withValues(alpha: 0.1) : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Icon(
+                CupertinoIcons.chevron_left,
+                size: 14,
+                color: _currentPage > 0 ? _marketPrimary : _marketMutedFor(context).withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Text(
+          'Page ${_currentPage + 1} sur $_totalPages',
+          style: TextStyle(
+            color: _marketMutedFor(context),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 16),
+        MouseRegion(
+          cursor: _currentPage < _totalPages - 1 ? SystemMouseCursors.click : SystemMouseCursors.basic,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _currentPage < _totalPages - 1 ? () => setState(() => _currentPage++) : null,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: _currentPage < _totalPages - 1 ? _marketPrimary.withValues(alpha: 0.1) : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Icon(
+                CupertinoIcons.chevron_right,
+                size: 14,
+                color: _currentPage < _totalPages - 1 ? _marketPrimary : _marketMutedFor(context).withValues(alpha: 0.5),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -6146,6 +6857,11 @@ List<_BondZoneMonetaryRow> _buildBondIndicatorZoneRows(
   final ytmDenominators = <String, double>{};
   final durationNumerators = <String, double>{};
   final durationDenominators = <String, double>{};
+  final couponNumerators = <String, double>{};
+  final spreadNumerators = <String, double>{};
+  final maturityNumerators = <String, double>{};
+  final convexityNumerators = <String, double>{};
+
   for (final record in stats.dataset.records) {
     final capital = _bondOutstandingCapitalValue(record);
     if (capital <= 0) continue;
@@ -6162,16 +6878,27 @@ List<_BondZoneMonetaryRow> _buildBondIndicatorZoneRows(
         metrics.presentValue > 0 ? metrics.presentValue : capital;
     final zone = _bondZoneLabel(record);
     totals[zone] = (totals[zone] ?? 0) + capital;
-    if (metrics.yieldToMaturity.isFinite && valuationWeight > 0) {
-      ytmNumerators[zone] = (ytmNumerators[zone] ?? 0) +
-          metrics.yieldToMaturity * valuationWeight;
-      ytmDenominators[zone] = (ytmDenominators[zone] ?? 0) + valuationWeight;
-    }
-    if (metrics.modified > 0 && valuationWeight > 0) {
-      durationNumerators[zone] =
-          (durationNumerators[zone] ?? 0) + metrics.modified * valuationWeight;
-      durationDenominators[zone] =
-          (durationDenominators[zone] ?? 0) + valuationWeight;
+
+    if (valuationWeight > 0) {
+      if (metrics.yieldToMaturity.isFinite) {
+        ytmNumerators[zone] = (ytmNumerators[zone] ?? 0) +
+            metrics.yieldToMaturity * valuationWeight;
+        ytmDenominators[zone] = (ytmDenominators[zone] ?? 0) + valuationWeight;
+      }
+      if (metrics.modified > 0) {
+        durationNumerators[zone] =
+            (durationNumerators[zone] ?? 0) + metrics.modified * valuationWeight;
+        durationDenominators[zone] =
+            (durationDenominators[zone] ?? 0) + valuationWeight;
+      }
+
+      couponNumerators[zone] = (couponNumerators[zone] ?? 0) + coupon * valuationWeight;
+
+      final spread = (metrics.yieldToMaturity - metrics.marketRate);
+      spreadNumerators[zone] = (spreadNumerators[zone] ?? 0) + spread * valuationWeight;
+
+      maturityNumerators[zone] = (maturityNumerators[zone] ?? 0) + maturityYears * valuationWeight;
+      convexityNumerators[zone] = (convexityNumerators[zone] ?? 0) + metrics.convexity * valuationWeight;
     }
   }
 
@@ -6184,6 +6911,10 @@ List<_BondZoneMonetaryRow> _buildBondIndicatorZoneRows(
         share: 1,
         ytm: stats.yieldToMaturity,
         duration: stats.modifiedDuration,
+        coupon: 0,
+        spread: 0,
+        maturityMonths: 0,
+        convexity: 0,
       ),
     ];
   }
@@ -6195,12 +6926,24 @@ List<_BondZoneMonetaryRow> _buildBondIndicatorZoneRows(
       capital: amount,
       share: amount / total,
       ytm: (ytmDenominators[entry.key] ?? 0) <= 0
-          ? 0
+          ? 0.0
           : (ytmNumerators[entry.key] ?? 0) / ytmDenominators[entry.key]!,
       duration: (durationDenominators[entry.key] ?? 0) <= 0
-          ? 0
+          ? 0.0
           : (durationNumerators[entry.key] ?? 0) /
               durationDenominators[entry.key]!,
+      coupon: (ytmDenominators[entry.key] ?? 0) <= 0
+          ? 0.0
+          : (couponNumerators[entry.key] ?? 0) / ytmDenominators[entry.key]!,
+      spread: (ytmDenominators[entry.key] ?? 0) <= 0
+          ? 0.0
+          : (spreadNumerators[entry.key] ?? 0) / ytmDenominators[entry.key]!,
+      maturityMonths: (ytmDenominators[entry.key] ?? 0) <= 0
+          ? 0.0
+          : ((maturityNumerators[entry.key] ?? 0) / ytmDenominators[entry.key]!) * 12.0,
+      convexity: (ytmDenominators[entry.key] ?? 0) <= 0
+          ? 0.0
+          : (convexityNumerators[entry.key] ?? 0) / ytmDenominators[entry.key]!,
     );
   }).toList()
     ..sort((a, b) => b.capital.compareTo(a.capital));
@@ -6302,10 +7045,12 @@ class _BondIndicatorOverviewSwitcher extends StatefulWidget {
   const _BondIndicatorOverviewSwitcher({
     required this.items,
     required this.zoneRows,
+    required this.titleRows,
   });
 
   final List<_BondKeyIndicatorSpec> items;
   final List<_BondZoneMonetaryRow> zoneRows;
+  final List<_BondTitleIndicatorRow> titleRows;
 
   @override
   State<_BondIndicatorOverviewSwitcher> createState() =>
@@ -6335,6 +7080,7 @@ class _BondIndicatorOverviewSwitcherState
                   : _BondZoneMonetaryTable(
                       key: const ValueKey('bond-overview-zones'),
                       rows: widget.zoneRows,
+                      titleRows: widget.titleRows,
                     ),
             ),
           ),
@@ -6464,75 +7210,18 @@ class _BondIndicatorKpiPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(3, 7, 3, 8),
       decoration: BoxDecoration(
-        color: _marketSurfaceFor(context).withValues(
-          alpha: isDark ? 0.86 : 0.98,
-        ),
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        color: isDark ? const Color(0xFF161622) : const Color(0xFFF8F9FB),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: _marketDashboardDeepBlue.withValues(alpha: 0.2), width: 0.3),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.075),
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 24,
-                height: 23,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: _marketPrimary.withValues(alpha: isDark ? 0.18 : 0.10),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-                child: const Icon(
-                  CupertinoIcons.briefcase_fill,
-                  size: 14,
-                  color: _marketPrimary,
-                ),
-              ),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Synthèse du portefeuille obligataire'.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: text.withValues(alpha: 0.72),
-                        fontSize: 12.1,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.35,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Valorisation, rendement, maturité et sensibilité',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: muted.withValues(alpha: 0.95),
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w500,
-                        height: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _BondIndicatorCardGrid(items: items),
-        ],
-      ),
+      child: _BondIndicatorCardGrid(items: items),
     );
   }
 }
@@ -6544,6 +7233,10 @@ class _BondZoneMonetaryRow {
     required this.share,
     required this.ytm,
     required this.duration,
+    required this.coupon,
+    required this.spread,
+    required this.maturityMonths,
+    required this.convexity,
   });
 
   final String zone;
@@ -6551,15 +7244,21 @@ class _BondZoneMonetaryRow {
   final double share;
   final double ytm;
   final double duration;
+  final double coupon;
+  final double spread;
+  final double maturityMonths;
+  final double convexity;
 }
 
 class _BondZoneMonetaryTable extends StatelessWidget {
   const _BondZoneMonetaryTable({
     super.key,
     required this.rows,
+    required this.titleRows,
   });
 
   final List<_BondZoneMonetaryRow> rows;
+  final List<_BondTitleIndicatorRow> titleRows;
 
   @override
   Widget build(BuildContext context) {
@@ -6640,31 +7339,232 @@ class _BondZoneMonetaryTable extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 7),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const gap = 8.0;
-              if (rows.isEmpty) {
-                return const SizedBox.shrink();
-              }
+          const SizedBox(height: 12),
+          if (rows.isEmpty)
+            const SizedBox.shrink()
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isSmall = constraints.maxWidth < 600;
+                final charts = [
+                  _BondZoneCapitalPieChart(rows: rows, totalCapital: totalCapital),
+                  _BondZoneMetricsBarCharts(rows: rows),
+                ];
 
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (var index = 0; index < rows.length; index++) ...[
-                    Expanded(
-                      child: _BondZoneAllocationCard(
-                        row: rows[index],
-                        totalCapital: totalCapital,
-                        text: text,
-                        muted: muted,
-                        border: border,
+                if (isSmall) {
+                  return Column(
+                    children: [
+                      charts[0],
+                      const SizedBox(height: 16),
+                      charts[1],
+                      const SizedBox(height: 16),
+                      _BondZoneRadarProfileChart(rows: rows),
+                      const SizedBox(height: 16),
+                      _BondZoneRiskBubbleChart(rows: titleRows),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(flex: 2, child: charts[0]),
+                            const SizedBox(width: 16),
+                            Expanded(flex: 3, child: charts[1]),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(child: _BondZoneRadarProfileChart(rows: rows)),
+                            const SizedBox(width: 16),
+                            Expanded(child: _BondZoneRiskBubbleChart(rows: titleRows)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BondZoneCapitalPieChart extends StatefulWidget {
+  const _BondZoneCapitalPieChart({required this.rows, required this.totalCapital});
+
+  final List<_BondZoneMonetaryRow> rows;
+  final double totalCapital;
+
+  @override
+  State<_BondZoneCapitalPieChart> createState() => _BondZoneCapitalPieChartState();
+}
+
+class _BondZoneCapitalPieChartState extends State<_BondZoneCapitalPieChart> {
+  int _touchedIndex = -1;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = widget.rows;
+    final totalCapital = widget.totalCapital;
+    final isDark = _isMarketDark(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: muted.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Répartition du capital',
+            style: TextStyle(
+              color: text,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+              SizedBox(
+                width: 180,
+                height: 180,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PieChart(
+                      PieChartData(
+                        pieTouchData: PieTouchData(
+                          touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                            setState(() {
+                              if (!event.isInterestedForInteractions ||
+                                  pieTouchResponse == null ||
+                                  pieTouchResponse.touchedSection == null) {
+                                _touchedIndex = -1;
+                                return;
+                              }
+                              _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                            });
+                          },
+                        ),
+                        sectionsSpace: 3,
+                        centerSpaceRadius: 55,
+                        sections: rows.asMap().entries.map((entry) {
+                          final i = entry.key;
+                          final row = entry.value;
+                          final isTouched = i == _touchedIndex;
+                          final radius = isTouched ? 34.0 : 28.0;
+                          
+                          return PieChartSectionData(
+                            color: _bondZoneAccent(row.zone),
+                            value: row.capital,
+                            showTitle: false,
+                            radius: radius,
+                          );
+                        }).toList(),
                       ),
                     ),
-                    if (index < rows.length - 1) const SizedBox(width: gap),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Total',
+                          style: TextStyle(fontSize: 11, color: muted, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _bondIndicatorMdValue(totalCapital),
+                          style: TextStyle(fontSize: 16, color: text, fontWeight: FontWeight.w800),
+                        ),
+                        Text(
+                          PortfolioAmountUnitPreference.current.label,
+                          style: TextStyle(fontSize: 10, color: muted, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
                   ],
-                ],
-              );
-            },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: rows.map((row) {
+                    final pct = totalCapital > 0 ? (row.capital / totalCapital) : 0.0;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: _bondZoneAccent(row.zone),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      row.zone,
+                                      style: TextStyle(
+                                        color: text,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      AppFormatters.percent(pct),
+                                      style: TextStyle(
+                                        color: _bondZoneAccent(row.zone),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${_bondIndicatorMdValue(row.capital)} ${PortfolioAmountUnitPreference.current.label}',
+                                  style: TextStyle(
+                                    color: muted,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
           ),
         ],
       ),
@@ -6672,117 +7572,1199 @@ class _BondZoneMonetaryTable extends StatelessWidget {
   }
 }
 
-class _BondZoneAllocationCard extends StatelessWidget {
-  const _BondZoneAllocationCard({
-    required this.row,
-    required this.totalCapital,
-    required this.text,
-    required this.muted,
-    required this.border,
-  });
+class _BondZoneMetricsBarCharts extends StatefulWidget {
+  const _BondZoneMetricsBarCharts({required this.rows});
 
-  final _BondZoneMonetaryRow row;
-  final double totalCapital;
-  final Color text;
-  final Color muted;
-  final Color border;
+  final List<_BondZoneMonetaryRow> rows;
+
+  @override
+  State<_BondZoneMetricsBarCharts> createState() => _BondZoneMetricsBarChartsState();
+}
+
+class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
+  int _touchedGroupIndex = -1;
 
   @override
   Widget build(BuildContext context) {
-    final accent = _bondZoneAccent(row.zone);
+    // Sort rows to put 'Hors Zone' at the end
+    final sortedRows = List<_BondZoneMonetaryRow>.from(widget.rows)..sort((a, b) {
+      if (a.zone.toLowerCase() == 'hors zone') return 1;
+      if (b.zone.toLowerCase() == 'hors zone') return -1;
+      return 0;
+    });
+
     final isDark = _isMarketDark(context);
-    final capitalRatio = row.share.clamp(0.0, 1.0).toDouble();
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final border = _marketBorderFor(context);
+    // Prepare data for grouped bar chart
+    double maxYtm = 0;
+    double maxDuration = 0;
+    for (var r in sortedRows) {
+      if (r.ytm > maxYtm) maxYtm = r.ytm;
+      if (r.duration > maxDuration) maxDuration = r.duration;
+    }
+    // Calculate a "nice" maximum for the axes so that dividing by 4 yields clean numbers
+    if (maxYtm == 0) {
+      maxYtm = 0.04; // 4% default
+    } else {
+      // Add a small 10% padding, then find the next multiple of 4%
+      final paddedPercent = maxYtm * 100 * 1.1;
+      final targetPercent = (paddedPercent / 4).ceil() * 4;
+      maxYtm = targetPercent / 100;
+    }
+
+    if (maxDuration == 0) {
+      maxDuration = 4.0;
+    } else {
+      // Add a 10% padding, then find the next multiple of 4
+      final paddedDuration = maxDuration * 1.1;
+      final targetDuration = (paddedDuration / 4).ceil() * 4;
+      maxDuration = targetDuration.toDouble();
+    }
 
     return Container(
-      height: 68,
-      padding: const EdgeInsets.all(6),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark
-            ? Color.alphaBlend(
-                accent.withValues(alpha: 0.055),
-                _marketSurfaceFor(context),
-              )
-            : accent.withValues(alpha: 0.040),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: accent.withValues(alpha: 0.20)),
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: muted.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 4,
-                height: 14,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      'Rendement vs Sensibilité',
+                      style: TextStyle(
+                        color: text,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Tooltip(
+                    richMessage: WidgetSpan(
+                      child: Container(
+                        constraints: const BoxConstraints(maxWidth: 250),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Ce graphique compare le rendement attendu (YTM) à la sensibilité (Duration).',
+                              style: TextStyle(fontSize: 11, color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w500, height: 1.4),
+                            ),
+                            Divider(color: muted.withValues(alpha: 0.2), height: 16, thickness: 0.5),
+                            Text(
+                              'Un ratio YTM/Duration élevé indique un meilleur rendement pour un même niveau de risque de taux.',
+                              style: TextStyle(fontSize: 11, color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w500, height: 1.4),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey.shade900 : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: muted.withValues(alpha: 0.2)),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4)),
+                      ],
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.indigo.withValues(alpha: 0.5), width: 1.2),
+                        ),
+                        child: Text('i', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo, height: 1.1)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  _buildLegendItem('YTM', _marketPrimary, text),
+                  const SizedBox(width: 16),
+                  _buildLegendItem('Duration', _marketWarning, text),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            height: 240,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: 1.0, // Normalized to 1.0 for grouped bars of different scales
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchCallback: (FlTouchEvent event, barTouchResponse) {
+                    setState(() {
+                      if (!event.isInterestedForInteractions ||
+                          barTouchResponse == null ||
+                          barTouchResponse.spot == null) {
+                        _touchedGroupIndex = -1;
+                        return;
+                      }
+                      _touchedGroupIndex = barTouchResponse.spot!.touchedBarGroupIndex;
+                    });
+                  },
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => isDark ? const Color(0xFF162642) : Colors.white,
+                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    tooltipMargin: 8,
+                    tooltipBorder: BorderSide(color: muted.withValues(alpha: 0.2)),
+                    tooltipBorderRadius: BorderRadius.circular(8),
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final row = sortedRows[groupIndex];
+                      if (rodIndex == 0) {
+                        return BarTooltipItem(
+                          '${row.zone}\n',
+                          TextStyle(color: text, fontSize: 12, fontWeight: FontWeight.bold),
+                          children: [
+                            TextSpan(
+                              text: 'YTM: ',
+                              style: TextStyle(color: muted, fontSize: 11, fontWeight: FontWeight.w500),
+                            ),
+                            TextSpan(
+                              text: _bondIndicatorPercent(row.ytm),
+                              style: TextStyle(color: _marketPrimary, fontSize: 11, fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        );
+                      } else {
+                        return BarTooltipItem(
+                          '${row.zone}\n',
+                          TextStyle(color: text, fontSize: 12, fontWeight: FontWeight.bold),
+                          children: [
+                            TextSpan(
+                              text: 'Duration: ',
+                              style: TextStyle(color: muted, fontSize: 11, fontWeight: FontWeight.w500),
+                            ),
+                            TextSpan(
+                              text: '${_marketDecimalNumberText(row.duration, decimals: 2, trimTrailingZeros: false)} ans',
+                              style: TextStyle(color: _marketWarning, fontSize: 11, fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= sortedRows.length || value.toInt() < 0) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 10.0),
+                          child: Text(
+                            sortedRows[value.toInt()].zone,
+                            style: TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.w600),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    axisNameWidget: Text(
+                      'YTM',
+                      style: TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.w500),
+                    ),
+                    axisNameSize: 20,
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 45,
+                      interval: 0.25,
+                      getTitlesWidget: (value, meta) {
+                        if (value > 1.0) return const SizedBox.shrink();
+                        return Text(
+                          _bondIndicatorPercent(value * maxYtm),
+                          style: TextStyle(color: _marketPrimary.withValues(alpha: 0.8), fontSize: 10, fontWeight: FontWeight.w600),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(
+                    axisNameWidget: Text(
+                      'Duration (ans)',
+                      style: TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.w500),
+                    ),
+                    axisNameSize: 20,
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 28,
+                      interval: 0.25,
+                      getTitlesWidget: (value, meta) {
+                        if (value > 1.0) return const SizedBox.shrink();
+                        return Text(
+                          _marketDecimalNumberText(value * maxDuration, decimals: 1, trimTrailingZeros: true),
+                          style: TextStyle(color: _marketWarning.withValues(alpha: 0.8), fontSize: 10, fontWeight: FontWeight.w600),
+                        );
+                      },
+                    ),
+                  ),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: 0.25,
+                  getDrawingHorizontalLine: (value) {
+                    return FlLine(
+                      color: border.withValues(alpha: 0.5),
+                      strokeWidth: 1,
+                      dashArray: [4, 4],
+                    );
+                  },
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    bottom: BorderSide(color: border.withValues(alpha: 0.8), width: 1.5),
+                    left: BorderSide(color: border.withValues(alpha: 0.8), width: 1.5),
+                    right: BorderSide(color: border.withValues(alpha: 0.8), width: 1.5),
+                    top: BorderSide.none,
+                  ),
+                ),
+                barGroups: sortedRows.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final row = entry.value;
+                  final isTouched = index == _touchedGroupIndex;
+                  final width = isTouched ? 28.0 : 22.0;
+                  return BarChartGroupData(
+                    x: index,
+                    barsSpace: 4,
+                    barRods: [
+                      BarChartRodData(
+                        toY: maxYtm > 0 ? row.ytm / maxYtm : 0,
+                        width: width,
+                        gradient: LinearGradient(
+                          colors: isTouched
+                              ? [
+                                  _marketPrimary.withValues(alpha: 0.9),
+                                  _marketPrimary,
+                                ]
+                              : [
+                                  _marketPrimary.withValues(alpha: 0.7),
+                                  _marketPrimary,
+                                ],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                      ),
+                      BarChartRodData(
+                        toY: maxDuration > 0 ? row.duration / maxDuration : 0,
+                        width: width,
+                        gradient: LinearGradient(
+                          colors: isTouched
+                              ? [
+                                  _marketWarning.withValues(alpha: 0.9),
+                                  _marketWarning,
+                                ]
+                              : [
+                                  _marketWarning.withValues(alpha: 0.7),
+                                  _marketWarning,
+                                ],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color, Color textColor) {
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(color: textColor, fontSize: 9),
+        ),
+      ],
+    );
+  }
+}
+
+class _BondZoneRadarProfileChart extends StatefulWidget {
+  const _BondZoneRadarProfileChart({required this.rows});
+
+  final List<_BondZoneMonetaryRow> rows;
+
+  @override
+  State<_BondZoneRadarProfileChart> createState() => _BondZoneRadarProfileChartState();
+}
+
+class _BondZoneRadarProfileChartState extends State<_BondZoneRadarProfileChart> {
+  bool _isHovered = false;
+  int? _hoveredIndex;
+  Offset? _hoverPosition;
+
+  // Doit rester aligné avec le tickCount passé au RadarChart.
+  static const int _radarTickCount = 4;
+
+  /// Survol par secteur angulaire : le cadran est découpé en 5 parts centrées
+  /// sur chaque axe ; survoler la zone d'un indicateur ancre le marqueur sur
+  /// le sommet de son axe. La position du sommet réplique la géométrie de
+  /// fl_chart (rayon = min(l, h)/2 × 0,8 ; valeur du centre = min → un pas de
+  /// graduation ; échelle max forcée à 100 par le jeu de données invisible).
+  void _updateHoverFromPointer(Offset position, Size size, List<double> norms) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final delta = position - center;
+    int? index;
+    Offset? anchor;
+    if (delta.distance > 12) {
+      final count = norms.length;
+      final step = 2 * math.pi / count;
+      final theta = math.atan2(delta.dy, delta.dx);
+      index = (((theta + math.pi / 2) % (2 * math.pi)) / step).round() % count;
+      final radius = math.min(center.dx, center.dy) * 0.8;
+      final minEntry = norms.reduce(math.min);
+      const maxEntry = 100.0;
+      final centerValue = (maxEntry - minEntry) < 1e-9
+          ? 0.0
+          : minEntry - (maxEntry - minEntry) / _radarTickCount;
+      final scaled =
+          radius * (norms[index] - centerValue) / (maxEntry - centerValue);
+      final angle = step * index - math.pi / 2;
+      anchor = Offset(
+        center.dx + scaled * math.cos(angle),
+        center.dy + scaled * math.sin(angle),
+      );
+    }
+    if (index != null && (_hoveredIndex != index || _hoverPosition != anchor)) {
+      setState(() {
+        _hoveredIndex = index;
+        _isHovered = true;
+        _hoverPosition = anchor;
+      });
+    } else if (index == null && _isHovered) {
+      setState(() {
+        _isHovered = false;
+      });
+    }
+  }
+
+  void _clearHover() {
+    if (!_isHovered) return;
+    setState(() {
+      _isHovered = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isMarketDark(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+
+    double totalCapital = 0;
+    double weightedYtm = 0;
+    double weightedCoupon = 0;
+    double weightedDuration = 0;
+    double weightedConvexity = 0;
+    double weightedMaturity = 0;
+
+    for (var r in widget.rows) {
+      totalCapital += r.capital;
+      weightedYtm += r.ytm * r.capital;
+      weightedCoupon += r.coupon * r.capital;
+      weightedDuration += r.duration * r.capital;
+      weightedConvexity += r.convexity * r.capital;
+      weightedMaturity += (r.maturityMonths / 12) * r.capital;
+    }
+
+    final pfYtm = totalCapital > 0 ? weightedYtm / totalCapital : 0.0;
+    final pfCoupon = totalCapital > 0 ? weightedCoupon / totalCapital : 0.0;
+    final pfDuration = totalCapital > 0 ? weightedDuration / totalCapital : 0.0;
+    final pfConvexity = totalCapital > 0 ? weightedConvexity / totalCapital : 0.0;
+    final pfMaturity = totalCapital > 0 ? weightedMaturity / totalCapital : 0.0;
+
+    // Normalisation 0–100 sur des bornes de lecture du marché obligataire
+    // UEMOA (haut de fourchette) : duration et maturité 10 ans, convexité 100,
+    // rendement et coupon 12 %. YTM et coupon sont des fractions (0,09 = 9 %).
+    final maxDuration = math.max(10.0, pfDuration);
+    final maxConvexity = math.max(100.0, pfConvexity);
+    final maxYtm = math.max(0.12, pfYtm);
+    final maxCoupon = math.max(0.12, pfCoupon);
+    final maxMaturity = math.max(10.0, pfMaturity);
+
+    final normDuration = (pfDuration / maxDuration).clamp(0.0, 1.0) * 100;
+    final normConvexity = (pfConvexity / maxConvexity).clamp(0.0, 1.0) * 100;
+    final normYtm = (pfYtm / maxYtm).clamp(0.0, 1.0) * 100;
+    final normCoupon = (pfCoupon / maxCoupon).clamp(0.0, 1.0) * 100;
+    final normMaturity = (pfMaturity / maxMaturity).clamp(0.0, 1.0) * 100;
+    final norms = <double>[
+      normDuration,
+      normConvexity,
+      normYtm,
+      normCoupon,
+      normMaturity,
+    ];
+
+    // Contenu du survol : valeur exacte, lecture métier et échelle de l'axe.
+    final axisLabels = <String>[
+      'DURATION MODIFIÉE',
+      'CONVEXITÉ',
+      'RENDEMENT (YTM)',
+      'COUPON MOYEN',
+      'MATURITÉ RÉSIDUELLE',
+    ];
+    final axisValues = <String>[
+      '${_marketDecimalNumberText(pfDuration, decimals: 2)} ans',
+      _marketDecimalNumberText(pfConvexity, decimals: 2),
+      AppFormatters.percent(pfYtm),
+      AppFormatters.percent(pfCoupon),
+      '${_marketDecimalNumberText(pfMaturity, decimals: 1)} ans',
+    ];
+    final axisReadings = <String>[
+      'Taux +1 % → portefeuille →${_marketDecimalNumberText(pfDuration, decimals: 1)} %.',
+      'Amortit l\'effet des fortes variations de taux.',
+      'Rendement annuel du portefeuille à l\'échéance.',
+      'Intérêt contractuel moyen des titres.',
+      'Durée moyenne restante des titres.',
+    ];
+    final axisInterpretations = <String>[
+      'Mesure la sensibilité de la valeur du portefeuille face aux évolutions des taux d\'intérêt.',
+      'Indique si la sensibilité s\'atténue ou s\'accélère lors d\'un mouvement important des taux.',
+      'Taux de rentabilité annuel estimé si toutes les obligations sont conservées jusqu\'à échéance.',
+      'Niveau moyen des intérêts (flux de trésorerie) générés périodiquement par les titres.',
+      'Horizon de temps moyen restant avant le remboursement du capital par les émetteurs.',
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: muted.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'PROFIL DE RISQUE DU PORTEFEUILLE',
+                style: TextStyle(color: muted, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+              ),
+              Tooltip(
+                richMessage: WidgetSpan(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 300),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Profil de Risque',
+                          style: TextStyle(fontSize: 13, color: text, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Évaluation multidimensionnelle du portefeuille selon 5 critères de performance et de risque.',
+                          style: TextStyle(fontSize: 12, color: text, height: 1.4, fontWeight: FontWeight.normal),
+                        ),
+                        Divider(color: muted.withValues(alpha: 0.2), height: 16, thickness: 0.5),
+                        Text(
+                          'Facilite la détection des biais structurels (ex : rendement attractif couplé à une maturité trop longue).',
+                          style: TextStyle(fontSize: 12, color: text, height: 1.4, fontWeight: FontWeight.normal),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                margin: const EdgeInsets.symmetric(horizontal: 24),
                 decoration: BoxDecoration(
-                  color: accent,
-                  borderRadius: BorderRadius.circular(2),
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white, // Modern slate in dark, white in light
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: muted.withValues(alpha: 0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.indigo.withValues(alpha: 0.5), width: 1.2),
+                  ),
+                  child: Text('i', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo, height: 1.1)),
                 ),
               ),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Text(
-                  row.zone,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: text,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
+            ],
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            height: 300,
+            child: LayoutBuilder(
+              builder: (context, chartBox) {
+                return Stack(
+              children: [
+                Positioned.fill(
+                  // Survol par secteur angulaire : chaque cinquième du cadran
+                  // active son indicateur ; le marqueur reste ancré au sommet.
+                  child: MouseRegion(
+                    onHover: (event) => _updateHoverFromPointer(
+                      event.localPosition,
+                      chartBox.biggest,
+                      norms,
+                    ),
+                    onExit: (_) => _clearHover(),
+                    child: RadarChart(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    RadarChartData(
+                      radarTouchData: RadarTouchData(enabled: false),
+                      radarShape: RadarShape.polygon,
+                dataSets: [
+                  // Invisible dataset to force scale to 100
+                  RadarDataSet(
+                    fillColor: Colors.transparent,
+                    borderColor: Colors.transparent,
+                    entryRadius: 0,
+                    dataEntries: [
+                      RadarEntry(value: 100), RadarEntry(value: 100),
+                      RadarEntry(value: 100), RadarEntry(value: 100), RadarEntry(value: 100),
+                    ],
+                  ),
+                  // Portfolio dataset — palette de base. entryRadius reste à 0 :
+                  // fl_chart l'applique à tous les sommets à la fois ; seul le
+                  // sommet survolé est marqué (via l'overlay du Stack).
+                  RadarDataSet(
+                    fillColor: _marketPrimary.withValues(
+                      alpha: _isHovered ? 0.30 : 0.14,
+                    ),
+                    borderColor: _isHovered
+                        ? _marketDashboardDeepBlue
+                        : _marketPrimary,
+                    borderWidth: _isHovered ? 1.6 : 1.1,
+                    entryRadius: 0,
+                    dataEntries: [
+                      RadarEntry(value: normDuration),
+                      RadarEntry(value: normConvexity),
+                      RadarEntry(value: normYtm),
+                      RadarEntry(value: normCoupon),
+                      RadarEntry(value: normMaturity),
+                    ],
+                  ),
+                ],
+                radarBackgroundColor: Colors.transparent,
+                borderData: FlBorderData(show: false),
+                radarBorderData: const BorderSide(color: Colors.transparent),
+                titlePositionPercentageOffset: 0.15,
+                getTitle: (index, angle) {
+                  final textStyle = TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.normal);
+                  final valStyle = TextStyle(color: text, fontSize: 10, fontWeight: FontWeight.bold);
+                  switch (index) {
+                    case 0:
+                      return RadarChartTitle(text: 'Duration mod.\n${_marketDecimalNumberText(pfDuration, decimals: 2)} ans', angle: 0);
+                    case 1:
+                      return RadarChartTitle(text: 'Convexité\n${_marketDecimalNumberText(pfConvexity, decimals: 2)}', angle: 0);
+                    case 2:
+                      return RadarChartTitle(text: 'Rendement (YTM)\n${AppFormatters.percent(pfYtm)}', angle: 0);
+                    case 3:
+                      return RadarChartTitle(text: 'Coupon moy.\n${AppFormatters.percent(pfCoupon)}', angle: 0);
+                    case 4:
+                      return RadarChartTitle(text: 'Maturité\n${_marketDecimalNumberText(pfMaturity, decimals: 1)} ans', angle: 0);
+                    default: return const RadarChartTitle(text: '', angle: 0);
+                  }
+                },
+                titleTextStyle: TextStyle(color: text, fontSize: 10, fontWeight: FontWeight.bold),
+                tickCount: 5,
+                ticksTextStyle: const TextStyle(color: Colors.transparent, fontSize: 0),
+                tickBorderData: BorderSide(color: muted.withValues(alpha: 0.3)),
+                gridBorderData: BorderSide(color: muted.withValues(alpha: 0.3), width: 1),
+              ),
+            ),
+            ),
+          ),
+          if (_hoveredIndex != null && _hoverPosition != null) ...[
+            // Marqueur posé sur le sommet survolé (un seul à la fois).
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              left: _hoverPosition!.dx - 4,
+              top: _hoverPosition!.dy - 4,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _isHovered ? 1.0 : 0.0,
+                child: IgnorePointer(
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _marketDashboardDeepBlue,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.4),
+                    ),
                   ),
                 ),
               ),
-              _BondZoneShareChip(row: row, color: accent),
-            ],
+            ),
+            // Infobulle bornée au panneau : valeur exacte + lecture courte.
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              left: (_hoverPosition!.dx + 14).clamp(
+                0.0,
+                math.max(0.0, chartBox.maxWidth - 228),
+              ),
+              top: (_hoverPosition!.dy + 14).clamp(
+                0.0,
+                math.max(0.0, chartBox.maxHeight - 150),
+              ),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _isHovered ? 1.0 : 0.0,
+                child: IgnorePointer(
+                  child: Container(
+                  width: 220,
+                  padding: const EdgeInsets.fromLTRB(11, 9, 11, 9),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: muted.withValues(alpha: 0.25)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  axisLabels[_hoveredIndex!],
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: muted,
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.4,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                axisValues[_hoveredIndex!],
+                                style: TextStyle(
+                                  color: text,
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            axisReadings[_hoveredIndex!],
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: text.withValues(alpha: 0.85),
+                              fontSize: 10.5,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Divider(height: 1, thickness: 0.5, color: muted.withValues(alpha: 0.3)),
+                          const SizedBox(height: 6),
+                          Text(
+                            axisInterpretations[_hoveredIndex!],
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: muted,
+                              fontSize: 9.5,
+                              fontStyle: FontStyle.italic,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                      ), // closes Container
+                    ), // closes IgnorePointer
+                  ), // closes AnimatedOpacity
+                ), // closes AnimatedPositioned
+                ],
+              ],
+                );
+              },
+            ),
           ),
-          const SizedBox(height: 6),
+        ],
+      ),
+    );
+  }
+}
+
+class _BondZoneRiskBubbleChart extends StatefulWidget {
+  const _BondZoneRiskBubbleChart({required this.rows});
+
+  final List<_BondTitleIndicatorRow> rows;
+
+  @override
+  State<_BondZoneRiskBubbleChart> createState() => _BondZoneRiskBubbleChartState();
+}
+
+class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
+  int _topN = 40;
+  String _selectedZone = 'Toutes';
+
+  List<String> get _availableZones {
+    final zones = widget.rows.map((r) => r.zone).toSet().toList();
+    zones.sort((a, b) {
+      int weight(String z) {
+        switch (z.toUpperCase()) {
+          case 'UEMOA': return 1;
+          case 'CEMAC': return 2;
+          case 'HORS ZONE': return 3;
+          default: return 4;
+        }
+      }
+      final wA = weight(a);
+      final wB = weight(b);
+      if (wA != wB) return wA.compareTo(wB);
+      return a.compareTo(b);
+    });
+    return ['Toutes', ...zones];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Ajuster _topN au chargement si on a moins de lignes
+    if (widget.rows.length < _topN) {
+      _topN = widget.rows.length;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = _isMarketDark(context);
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+
+    final filteredRows = _selectedZone == 'Toutes'
+        ? widget.rows
+        : widget.rows.where((r) => r.zone == _selectedZone).toList();
+
+    // Calcul des options disponibles : on propose 20, 30, 40, 50, 60
+    // à condition qu'il y ait assez d'obligations.
+    final baseOptions = [20, 30, 40, 50, 60];
+    final options = baseOptions.where((n) => n <= filteredRows.length).toList();
+    
+    // Ajout de l'option "Toutes" (représentée par -1)
+    if (!options.contains(-1)) {
+      options.add(-1);
+    }
+
+    if (!options.contains(_topN)) {
+      _topN = options.last;
+    }
+
+    // Ne garder que le top selectionné pour éviter de surcharger le graphique
+    final displayRows = _topN == -1 ? filteredRows : filteredRows.take(_topN).toList();
+
+    double maxMaturity = 0;
+    double maxConvexity = 0;
+    for (var r in displayRows) {
+      if (r.maturityMonths > maxMaturity) maxMaturity = r.maturityMonths;
+      if (r.convexity > maxConvexity) maxConvexity = r.convexity;
+    }
+    // Round maturity to nearest multiple of 12 (months) with 10% margin
+    maxMaturity = ((maxMaturity * 1.1) / 12).ceil() * 12.0;
+    if (maxMaturity == 0) maxMaturity = 12.0;
+    // Round convexity to nearest multiple of 5 with 10% margin
+    maxConvexity = ((maxConvexity * 1.1) / 5).ceil() * 5.0;
+    if (maxConvexity == 0) maxConvexity = 5.0;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: muted.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                child: _BondZoneMetricText(
-                  label: 'Capital',
-                  value:
-                      '${_bondIndicatorMdValue(row.capital)} ${PortfolioAmountUnitPreference.current.label}',
-                  text: text,
-                  muted: muted,
+                child: Text(
+                  'Risque de Terme (Maturité vs Convexité)',
+                  style: TextStyle(color: text, fontSize: 13, fontWeight: FontWeight.w700),
                 ),
               ),
-              _BondZoneMetricText(
-                label: 'YTM',
-                value: _bondIndicatorPercent(row.ytm),
-                text: text,
-                muted: muted,
-                alignEnd: true,
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _availableZones.map((zone) {
+                    final isSelected = _selectedZone == zone;
+                    final color = zone == 'Toutes' ? text : _bondZoneAccent(zone);
+                    return InkWell(
+                      onTap: () => setState(() => _selectedZone = zone),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        margin: const EdgeInsets.only(right: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected ? color.withValues(alpha: 0.5) : muted.withValues(alpha: 0.2),
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Text(
+                          zone.toUpperCase(),
+                          style: TextStyle(
+                            color: isSelected ? color : muted,
+                            fontSize: 9,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
-              const SizedBox(width: 3),
-              _BondZoneMetricText(
-                label: 'Duration',
-                value:
-                    '${_marketDecimalNumberText(row.duration, decimals: 2, trimTrailingZeros: false)} ans',
-                text: text,
-                muted: muted,
-                alignEnd: true,
-              ),
+              if (options.length > 1)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: muted.withValues(alpha: 0.3)),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      DropdownButton<int>(
+                        value: _topN,
+                        icon: Icon(Icons.arrow_drop_down, color: muted, size: 16),
+                        isDense: true,
+                        underline: const SizedBox(),
+                        style: TextStyle(color: text, fontSize: 11),
+                        dropdownColor: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+                        items: options.map((n) {
+                          return DropdownMenuItem<int>(
+                            value: n,
+                            child: Text(n == -1 ? 'ALL' : 'TOP $n'),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _topN = val);
+                          }
+                        },
+                      ),
+                      Text(
+                        "de l'encours",
+                        style: TextStyle(color: muted, fontSize: 9, fontStyle: FontStyle.italic),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
-          const Spacer(),
-          Stack(
-            children: [
-              Container(
-                height: 3,
-                decoration: BoxDecoration(
-                  color: muted.withValues(alpha: isDark ? 0.16 : 0.12),
-                  borderRadius: BorderRadius.circular(2),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 300,
+            child: ScatterChart(
+              ScatterChartData(
+                scatterSpots: displayRows.map((row) {
+                  return ScatterSpot(
+                    row.maturityMonths,
+                    row.convexity,
+                    dotPainter: () {
+                      final baseColor = _bondZoneAccent(row.zone).withValues(alpha: 0.9);
+                      final strokeColor = isDark ? Colors.black87 : Colors.white;
+                      final zoneLower = row.zone.toLowerCase();
+                      if (zoneLower.contains('cemac')) {
+                        return FlDotSquarePainter(
+                          color: baseColor,
+                          size: 5.0,
+                          strokeWidth: 0.6,
+                          strokeColor: strokeColor,
+                        );
+                      } else if (zoneLower.contains('uemoa')) {
+                        return FlDotTrianglePainter(
+                          color: baseColor,
+                          size: 6.5,
+                          strokeWidth: 0.6,
+                          strokeColor: strokeColor,
+                        );
+                      } else {
+                        return FlDotCirclePainter(
+                          color: baseColor,
+                          radius: 2.5,
+                          strokeWidth: 0.6,
+                          strokeColor: strokeColor,
+                        );
+                      }
+                    }(),
+                  );
+                }).toList(),
+                minX: 0,
+                maxX: maxMaturity,
+                minY: 0,
+                maxY: maxConvexity,
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    bottom: BorderSide(color: muted.withValues(alpha: 0.2)),
+                    left: BorderSide(color: muted.withValues(alpha: 0.2)),
+                  ),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  drawHorizontalLine: true,
+                  getDrawingHorizontalLine: (value) => FlLine(color: muted.withValues(alpha: 0.1), strokeWidth: 1),
+                  getDrawingVerticalLine: (value) => FlLine(color: muted.withValues(alpha: 0.1), strokeWidth: 1),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    axisNameWidget: Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text('Maturité (en mois)', style: TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                    axisNameSize: 24,
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 24,
+                      interval: maxMaturity > 120 ? 24 : 12,
+                      getTitlesWidget: (value, meta) {
+                        if (value == maxMaturity) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6.0),
+                          child: Text(
+                            '${value.toInt()}',
+                            style: TextStyle(color: muted, fontSize: 9),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    axisNameWidget: Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Text('Convexité', style: TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                    axisNameSize: 24,
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      interval: maxConvexity > 25 ? 10 : 5,
+                      getTitlesWidget: (value, meta) {
+                        if (value == maxConvexity) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 6.0),
+                          child: Text(
+                            _marketDecimalNumberText(value, decimals: 1),
+                            style: TextStyle(color: muted, fontSize: 9),
+                            textAlign: TextAlign.right,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                scatterTouchData: ScatterTouchData(
+                  enabled: true,
+                  touchTooltipData: ScatterTouchTooltipData(
+                    getTooltipColor: (_) => isDark ? const Color(0xFF1E1E2C) : Colors.white,
+                    tooltipPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    tooltipBorderRadius: BorderRadius.circular(8),
+                    tooltipBorder: BorderSide(color: muted.withValues(alpha: 0.15), width: 1),
+                    getTooltipItems: (touchedSpot) {
+                      final row = displayRows.firstWhere(
+                        (r) => r.maturityMonths == touchedSpot.x && r.convexity == touchedSpot.y,
+                        orElse: () => displayRows.first,
+                      );
+                      return ScatterTooltipItem(
+                        '${row.title}\n',
+                        textAlign: TextAlign.left,
+                        textStyle: TextStyle(
+                          color: text,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          height: 1.5,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Zone: ',
+                            style: TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.normal),
+                          ),
+                          TextSpan(
+                            text: '${row.zone}\n',
+                            style: TextStyle(color: _bondZoneAccent(row.zone), fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: 'Maturité: ',
+                            style: TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.normal),
+                          ),
+                          TextSpan(
+                            text: '${_marketDecimalNumberText(row.maturityMonths, decimals: 0)} mois\n',
+                            style: TextStyle(color: text, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: 'Convexité: ',
+                            style: TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.normal),
+                          ),
+                          TextSpan(
+                            text: '${_marketDecimalNumberText(row.convexity, decimals: 2)}\n',
+                            style: TextStyle(color: text, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                          TextSpan(
+                            text: 'Poids: ',
+                            style: TextStyle(color: muted, fontSize: 10, fontWeight: FontWeight.normal),
+                          ),
+                          TextSpan(
+                            text: '${_marketDecimalNumberText(row.share * 100, decimals: 2)}%',
+                            style: TextStyle(color: text, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
-              FractionallySizedBox(
-                widthFactor: capitalRatio,
-                child: Container(
-                  height: 3,
-                  decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _buildLegendItem('UEMOA', _bondZoneAccent('UEMOA'), text),
+                  _buildLegendItem('CEMAC', _bondZoneAccent('CEMAC'), text),
+                  _buildLegendItem('Hors zone', _bondZoneAccent('Hors zone'), text),
+                ],
+              ),
+              Tooltip(
+                richMessage: WidgetSpan(
+                  child: Container(
+                    constraints: const BoxConstraints(maxWidth: 280),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Risque de Terme (Maturité)',
+                          style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Plus vous prêtez sur une longue durée, plus le risque (hausse des taux, inflation) est grand.',
+                          style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : Colors.black87, height: 1.4),
+                        ),
+                        Divider(color: muted.withValues(alpha: 0.2), height: 16, thickness: 0.5),
+                        Text(
+                          'Convexité (Le Bouclier)',
+                          style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Elle protège la valeur de l\'obligation contre les fortes secousses des taux d\'intérêt.',
+                          style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : Colors.black87, height: 1.4),
+                        ),
+                        Divider(color: muted.withValues(alpha: 0.2), height: 16, thickness: 0.5),
+                        Text(
+                          'Le Profil Idéal',
+                          style: TextStyle(fontSize: 12, color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Sur le graphique, visez les points situés en haut à gauche :\n• En haut (Forte convexité) : Le prix résiste très bien aux baisses de marché.\n• À gauche (Maturité courte) : Vous récupérez votre argent rapidement, ce qui limite grandement l\'incertitude.',
+                          style: TextStyle(fontSize: 11, color: isDark ? Colors.white70 : Colors.black87, height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey.shade900 : Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: muted.withValues(alpha: 0.2)),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4)),
+                  ],
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.indigo.withValues(alpha: 0.5), width: 1.2),
+                    ),
+                    child: Text('i', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo, height: 1.1)),
                   ),
                 ),
               ),
@@ -6792,81 +8774,28 @@ class _BondZoneAllocationCard extends StatelessWidget {
       ),
     );
   }
-}
 
-class _BondZoneShareChip extends StatelessWidget {
-  const _BondZoneShareChip({required this.row, required this.color});
+  Widget _buildLegendItem(String label, Color color, Color text) {
+    Widget icon;
+    final l = label.toLowerCase();
+    if (l.contains('cemac')) {
+      icon = Container(width: 8, height: 8, color: color);
+    } else if (l.contains('uemoa')) {
+      icon = SizedBox(
+        width: 10,
+        height: 10,
+        child: CustomPaint(painter: _TrianglePainter(color)),
+      );
+    } else {
+      icon = Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
+    }
 
-  final _BondZoneMonetaryRow row;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: _isMarketDark(context) ? 0.16 : 0.10),
-        borderRadius: BorderRadius.circular(2),
-      ),
-      child: Text(
-        _bondIndicatorPercent(row.share),
-        style: TextStyle(
-          color: _marketTextFor(context),
-          fontSize: 8.8,
-          fontWeight: FontWeight.w500,
-          height: 1,
-        ),
-      ),
-    );
-  }
-}
-
-class _BondZoneMetricText extends StatelessWidget {
-  const _BondZoneMetricText({
-    required this.label,
-    required this.value,
-    required this.text,
-    required this.muted,
-    this.alignEnd = false,
-  });
-
-  final String label;
-  final String value;
-  final Color text;
-  final Color muted;
-  final bool alignEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment:
-          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          value,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-          style: TextStyle(
-            color: text,
-            fontSize: 10.4,
-            fontWeight: FontWeight.w500,
-            height: 1,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-          style: TextStyle(
-            color: muted.withValues(alpha: 0.72),
-            fontSize: 7.3,
-            fontWeight: FontWeight.w500,
-            height: 1,
-          ),
-        ),
+        icon,
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(color: text, fontSize: 9, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -6874,10 +8803,9 @@ class _BondZoneMetricText extends StatelessWidget {
 
 Color _bondZoneAccent(String zone) {
   final normalized = zone.toLowerCase();
-  if (normalized.contains('uemoa')) return _marketPrimary;
-  if (normalized.contains('cemac')) return _marketCyan;
-  if (normalized.contains('hors')) return _marketViolet;
-  return _marketWarning;
+  if (normalized.contains('uemoa')) return Colors.amber.shade600; // Famille: Or/Jaune
+  if (normalized.contains('cemac')) return Colors.blue.shade500; // Famille: Bleu
+  return Colors.pink.shade500; // Famille: Rose/Rouge
 }
 
 class _BondTitleIndicatorRow {
@@ -8552,23 +10480,15 @@ class _BondIndicatorCardGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const gap = 10.0;
-    const rowGap = 7.0;
-    const cardHeight = 48.0;
-    const maxItemsPerRow = 5;
+    const gap = 16.0;
+    const rowGap = 16.0;
+    const cardHeight = 180.0;
+    const maxItemsPerRow = 3;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final columns = width >= 980
-            ? maxItemsPerRow
-            : width >= 760
-                ? 4
-                : width >= 560
-                    ? 3
-                    : width >= 360
-                        ? 2
-                        : 1;
+        final columns = maxItemsPerRow;
         final safeColumns = math.min(columns, math.max(1, items.length));
         final cardWidth =
             (width - gap * math.max(0, safeColumns - 1)) / safeColumns;
@@ -8588,7 +10508,7 @@ class _BondIndicatorCardGrid extends StatelessWidget {
                 SizedBox(
                   width: cardWidth,
                   height: cardHeight,
-                  child: _BondInstitutionalIndicatorCard(item: item),
+                  child: _BondInstitutionalIndicatorCard(key: ValueKey(item.label), item: item),
                 ),
             ],
           ),
@@ -8598,102 +10518,124 @@ class _BondIndicatorCardGrid extends StatelessWidget {
   }
 }
 
-class _BondInstitutionalIndicatorCard extends StatelessWidget {
-  const _BondInstitutionalIndicatorCard({required this.item});
-
+class _BondInstitutionalIndicatorCard extends StatefulWidget {
+  const _BondInstitutionalIndicatorCard({super.key, required this.item});
   final _BondKeyIndicatorSpec item;
+
+  @override
+  State<_BondInstitutionalIndicatorCard> createState() => _BondInstitutionalIndicatorCardState();
+}
+
+class _BondInstitutionalIndicatorCardState extends State<_BondInstitutionalIndicatorCard> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final text = _marketTextFor(context);
     final muted = _marketMutedFor(context);
     final isDark = _isMarketDark(context);
+    final border = _marketBorderFor(context);
+
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => showDialog<void>(
-          context: context,
-          builder: (_) => _BondIndicatorInfoDialog(item: item),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      onEnter: (_) {
+        if (mounted) setState(() => _hovered = true);
+      },
+      onExit: (_) {
+        if (mounted) setState(() => _hovered = false);
+      },
+      child: Material(
+        elevation: 4,
+        shadowColor: Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(3),
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark
-                ? Color.alphaBlend(
-                    item.color.withValues(alpha: 0.08),
-                    _marketSurfaceFor(context),
-                  )
-                : item.color.withValues(alpha: 0.065),
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(
+              color: _hovered ? _deepBlue : _deepBlue.withValues(alpha: 0.15),
+              width: 0.5,
+            ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: item.color.withValues(alpha: isDark ? 0.18 : 0.13),
-                  borderRadius: BorderRadius.circular(2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top row: Icon and Title
+            Row(
+              children: [
+                Icon(widget.item.icon, size: 15, color: isDark ? Colors.white70 : Colors.indigo),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.indigo,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
-                child: Icon(item.icon, size: 15.5, color: item.color),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              ],
+            ),
+            const SizedBox(height: 14),
+            // Middle row: Value and Unit
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: RichText(
+                maxLines: 1,
+                text: TextSpan(
+                  text: widget.item.value,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
                   children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: RichText(
-                        maxLines: 1,
-                        text: TextSpan(
-                          text: item.value,
-                          style: TextStyle(
-                            color: text,
-                            fontSize: 14.6,
-                            fontWeight: FontWeight.w500,
-                            height: 1,
-                          ),
-                          children: [
-                            if (item.unit.isNotEmpty)
-                              TextSpan(
-                                text: ' ${item.unit}',
-                                style: TextStyle(
-                                  color: muted,
-                                  fontSize: 9.2,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1,
-                                ),
-                              ),
-                          ],
+                    if (widget.item.unit.isNotEmpty)
+                      TextSpan(
+                        text: ' ${widget.item.unit}',
+                        style: TextStyle(
+                          color: muted,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      item.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: muted.withValues(alpha: 0.96),
-                        fontSize: 9.8,
-                        fontWeight: FontWeight.w500,
-                        height: 1,
-                      ),
-                    ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 16),
+            // Divider
+            Container(
+              height: 1,
+              color: border.withValues(alpha: 0.6),
+            ),
+            const SizedBox(height: 12),
+            // Bottom row: Tooltip description
+            Expanded(
+              child: Text(
+                widget.item.detail.isNotEmpty ? widget.item.detail : 'Aucune description disponible pour cet indicateur.',
+                maxLines: 4,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: muted,
+                  fontSize: 11,
+                  height: 1.45,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _BondIndicatorInfoDialog extends StatelessWidget {
@@ -8876,12 +10818,21 @@ class _MarketDashboardState extends State<_MarketDashboard> {
             AppTheme.pagePadding,
           ),
           child: SingleChildScrollView(
-            child: _MarketDashboardVisualisation(
-              datasets: snapshot.datasets,
-              selectedType: _selectedVisualisationType,
-              onTypeChanged: (type) {
-                setState(() => _selectedVisualisationType = type);
-              },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _MarketPortfolioTypeSwitch(
+                  selectedType: _selectedVisualisationType,
+                  onChanged: (type) {
+                    setState(() => _selectedVisualisationType = type);
+                  },
+                ),
+                const SizedBox(height: 12),
+                _MarketDashboardVisualisation(
+                  datasets: snapshot.datasets,
+                  selectedType: _selectedVisualisationType,
+                ),
+              ],
             ),
           ),
         );
@@ -8894,26 +10845,96 @@ class _MarketDashboardVisualisation extends StatelessWidget {
   const _MarketDashboardVisualisation({
     required this.datasets,
     required this.selectedType,
-    required this.onTypeChanged,
   });
 
   final Map<MarketPortfolioType, MarketPortfolioDataset> datasets;
   final MarketPortfolioType selectedType;
-  final ValueChanged<MarketPortfolioType> onTypeChanged;
 
   @override
   Widget build(BuildContext context) {
-    final source = datasets[selectedType];
-    final hasData = source != null && source.rowCount > 0;
+    var source = datasets[selectedType];
+    var hasData = source != null && source.rowCount > 0;
+
+    if (!hasData && selectedType == MarketPortfolioType.equities) {
+      source = MarketPortfolioDataset(
+        portfolioType: MarketPortfolioType.equities,
+        fileName: 'Démo Actions',
+        importedAt: DateTime.now(),
+        headers: const ['Emetteur', 'Secteur', 'Valeur de marché', 'La pire notation externe'],
+        records: [
+          MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.equities,
+            values: const {
+              'Emetteur': 'Sonatel',
+              'Secteur': 'Télécommunications',
+              'Valeur de marché': 277500000,
+              'La pire notation externe': 'A',
+              'Bêta': 0.85,
+              'Volatilité annualisée (%)': 18,
+              'Rendement attendu (%)': 9,
+            },
+          ),
+          MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.equities,
+            values: const {
+              'Emetteur': 'Ecobank',
+              'Secteur': 'Banque',
+              'Valeur de marché': 780000000,
+              'La pire notation externe': 'B',
+              'Bêta': 1.25,
+              'Volatilité annualisée (%)': 30,
+              'Rendement attendu (%)': 12,
+            },
+          ),
+          MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.equities,
+            values: const {
+              'Emetteur': 'SGB CI',
+              'Secteur': 'Banque',
+              'Valeur de marché': 128000000,
+              'La pire notation externe': 'A',
+              'Bêta': 1.05,
+              'Volatilité annualisée (%)': 24,
+              'Rendement attendu (%)': 8,
+            },
+          ),
+          MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.equities,
+            values: const {
+              'Emetteur': 'SAPH',
+              'Secteur': 'Agricole',
+              'Valeur de marché': 105000000,
+              'La pire notation externe': 'B',
+              'Bêta': 1.10,
+              'Volatilité annualisée (%)': 28,
+              'Rendement attendu (%)': 11,
+            },
+          ),
+          MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.equities,
+            values: const {
+              'Emetteur': 'Nestlé CI',
+              'Secteur': 'Agroalimentaire',
+              'Valeur de marché': 49800000,
+              'La pire notation externe': 'A',
+              'Bêta': 0.70,
+              'Volatilité annualisée (%)': 16,
+              'Rendement attendu (%)': 7,
+            },
+          ),
+        ],
+      );
+      hasData = true;
+    }
 
     return _MarketCard(
       padding: const EdgeInsets.all(3),
+      hasBorder: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _MarketVisualHeader(
             selectedType: selectedType,
-            onTypeChanged: onTypeChanged,
           ),
           const SizedBox(height: 3),
           Column(
@@ -8922,18 +10943,18 @@ class _MarketDashboardVisualisation extends StatelessWidget {
               if (!hasData)
                     _MarketVisualEmptyState(type: selectedType)
                   else if (selectedType == MarketPortfolioType.bonds)
-                    _BondInstitutionalDashboard(dataset: source)
+                    _BondInstitutionalDashboard(dataset: source!)
                   else ...[
-                    _MarketAnalyticKpiGrid(dataset: source),
+                    _MarketAnalyticKpiGrid(dataset: source!),
                     const SizedBox(height: 3),
                     _MarketVisualTwoColumnLayout(
-                      left: _MarketConcentrationPanel(dataset: source),
-                      right: _MarketScenarioRiskPanel(dataset: source),
+                      left: _MarketConcentrationPanel(dataset: source!),
+                      right: _MarketScenarioRiskPanel(dataset: source!),
                     ),
                     const SizedBox(height: 3),
                     _MarketVisualTwoColumnLayout(
-                      left: _MarketAllocationPanel(dataset: source),
-                      right: _MarketRiskSignalPanel(dataset: source),
+                      left: _MarketRiskSignalPanel(dataset: source!),
+                      right: _MarketAllocationPanel(dataset: source!),
                     ),
                   ],
             ],
@@ -8947,11 +10968,9 @@ class _MarketDashboardVisualisation extends StatelessWidget {
 class _MarketVisualHeader extends StatelessWidget {
   const _MarketVisualHeader({
     required this.selectedType,
-    required this.onTypeChanged,
   });
 
   final MarketPortfolioType selectedType;
-  final ValueChanged<MarketPortfolioType> onTypeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -9015,11 +11034,6 @@ class _MarketVisualHeader extends StatelessWidget {
               ),
             ],
           ),
-        ),
-        const SizedBox(width: 12),
-        _MarketPortfolioTypeToggle(
-          selectedType: selectedType,
-          onChanged: onTypeChanged,
         ),
       ],
     );
@@ -9224,14 +11238,10 @@ class _MarketAnalyticKpiSpec {
   const _MarketAnalyticKpiSpec({
     required this.label,
     required this.value,
-    required this.color,
-    required this.icon,
   });
 
   final String label;
   final String value;
-  final Color color;
-  final IconData icon;
 }
 
 class _MarketAnalyticKpiGrid extends StatelessWidget {
@@ -9242,35 +11252,48 @@ class _MarketAnalyticKpiGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final specs = _marketAnalyticKpis(dataset);
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const gap = 8.0;
-        const minWidth = 158.0;
-        final columns = math.max(
-          2,
-          math.min(
-              6, ((constraints.maxWidth + gap) / (minWidth + gap)).floor()),
-        );
-        final width = (constraints.maxWidth - gap * (columns - 1)) / columns;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final spec in specs)
-              SizedBox(
-                width: width,
-                height: 46,
-                child: _MarketAnalyticKpiCard(spec: spec),
-              ),
-          ],
-        );
-      },
+    final isDark = _isMarketDark(context);
+    final border = _marketBorderFor(context);
+
+    return Container(
+      width: double.infinity,
+      height: 180, // Vraiment très grande hauteur pour la carte
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.03) : _marketSurface,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Container(
+          constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 48), // Pour étaler sur la largeur si possible
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              for (final spec in specs)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _MarketAnalyticKpiItem(spec: spec),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
 
-class _MarketAnalyticKpiCard extends StatelessWidget {
-  const _MarketAnalyticKpiCard({required this.spec});
+class _MarketAnalyticKpiItem extends StatelessWidget {
+  const _MarketAnalyticKpiItem({required this.spec});
 
   final _MarketAnalyticKpiSpec spec;
 
@@ -9278,64 +11301,48 @@ class _MarketAnalyticKpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = _marketTextFor(context);
     final muted = _marketMutedFor(context);
-    final isDark = _isMarketDark(context);
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.035)
-            : spec.color.withValues(alpha: 0.050),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: spec.color.withValues(alpha: 0.20)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 21,
-            height: 21,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: spec.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(2),
-            ),
-            child: Icon(spec.icon, size: 11.5, color: spec.color),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Fin liseré navy pour la structure
+        Container(
+          width: 4,
+          height: 48,
+          decoration: BoxDecoration(
+            color: _marketDashboardDeepBlue,
+            borderRadius: BorderRadius.circular(2),
           ),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  spec.label.tr(context).toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: muted,
-                    fontSize: 7.2,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  spec.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: text,
-                    fontSize: 11.7,
-                    fontWeight: FontWeight.w500,
-                    height: 1,
-                  ),
-                ),
-              ],
+        ),
+        const SizedBox(width: 16),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              spec.label.tr(context).toUpperCase(),
+              style: TextStyle(
+                color: muted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                height: 1,
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: 10),
+            Text(
+              spec.value,
+              style: TextStyle(
+                color: text,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                height: 1,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -9374,9 +11381,11 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 980;
@@ -9386,7 +11395,7 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               return Column(
                 children: [
                   performance,
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   rating,
                 ],
               );
@@ -9395,13 +11404,13 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(flex: 15, child: performance),
-                const SizedBox(width: 10),
+                const SizedBox(width: 20),
                 Expanded(flex: 10, child: rating),
               ],
             );
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 980;
@@ -9411,7 +11420,7 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               return Column(
                 children: [
                   countryZone,
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   issuers,
                 ],
               );
@@ -9419,14 +11428,14 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(flex: 18, child: countryZone),
-                const SizedBox(width: 10),
-                Expanded(flex: 12, child: issuers),
+                Expanded(flex: 55, child: countryZone),
+                const SizedBox(width: 20),
+                Expanded(flex: 45, child: issuers),
               ],
             );
           },
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < 980;
@@ -9436,7 +11445,7 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               return Column(
                 children: [
                   maturity,
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
                   scatter,
                 ],
               );
@@ -9445,13 +11454,14 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(flex: 1, child: maturity),
-                const SizedBox(width: 10),
+                const SizedBox(width: 20),
                 Expanded(flex: 1, child: scatter),
               ],
             );
           },
         ),
       ],
+    ),
     );
   }
 }
@@ -10346,18 +12356,10 @@ class _BondSimulationPanelState extends State<_BondSimulationPanel> {
     final confidenceLabel = AppFormatters.percent(_confidence);
     final horizonLabel = _horizonLabel(_horizonDays);
     return _BondSectionPanel(
-      height: 262,
+      height: 320,
       title: 'Distribution des pertes simulées',
       subtitle:
           'Paramètres par défaut, seuil $confidenceLabel, horizon $horizonLabel',
-      leading: _BondRiskNotificationButton(
-        summary:
-            '${_bondRiskMethodLabel(_method)} · $confidenceLabel · $horizonLabel',
-        notifications: _bondRiskNotifications(
-          riskResult: riskResult,
-          confidenceLabel: confidenceLabel,
-        ),
-      ),
       actions: _BondSimulationSelectors(
         method: _method,
         confidence: _confidence,
@@ -11212,7 +13214,7 @@ class _BondRatingPanel extends StatelessWidget {
     final text = _marketTextFor(context);
     final muted = _marketMutedFor(context);
     return SizedBox(
-      height: 262,
+      height: 320,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
@@ -11373,7 +13375,7 @@ class _BondRatingBarChartPainter extends CustomPainter {
     canvas.drawLine(chart.bottomLeft, chart.topLeft, axisPaint);
 
     final groupWidth = chart.width / entries.length;
-    final barWidth = math.min(48.0, math.max(18.0, groupWidth * 0.54));
+    final barWidth = math.min(56.0, math.max(24.0, groupWidth * 0.48));
     int? hoveredIndex;
 
     for (var index = 0; index < entries.length; index++) {
@@ -11456,8 +13458,9 @@ class _BondRatingBarChartPainter extends CustomPainter {
         canvas,
         [
           entry.label,
-          AppFormatters.percent(entry.share),
-          _marketReadableMoney(entry.amount),
+          'Part: ${AppFormatters.percent(entry.share)}',
+          'Exposition totale: ${_marketReadableMoney(entry.amount)}',
+          if (entry.count > 0) '${entry.count} expositions',
         ],
         hoverPosition!,
         Offset.zero & size,
@@ -11550,13 +13553,13 @@ class _BondCountryZonePanel extends StatefulWidget {
 }
 
 class _BondCountryZonePanelState extends State<_BondCountryZonePanel> {
-  int _view = 0; // 0 = Pays émetteurs, 1 = Répartition par zone
+  int _view = 1; // 0 = Pays émetteurs, 1 = Répartition par zone
 
   @override
   Widget build(BuildContext context) {
     final isCountry = _view == 0;
     return _BondSectionPanel(
-      height: 286,
+      height: 350,
       title: isCountry ? 'Pays émetteurs' : 'Répartition par zone',
       subtitle: isCountry
           ? 'Top 5 par poids d’encours'
@@ -11646,19 +13649,42 @@ class _BondSegmentToggle extends StatelessWidget {
   }
 }
 
-class _BondIssuerConcentrationPanel extends StatelessWidget {
+class _BondIssuerConcentrationPanel extends StatefulWidget {
   const _BondIssuerConcentrationPanel({required this.stats});
 
   final _BondDashboardStats stats;
 
   @override
+  State<_BondIssuerConcentrationPanel> createState() =>
+      _BondIssuerConcentrationPanelState();
+}
+
+class _BondIssuerConcentrationPanelState
+    extends State<_BondIssuerConcentrationPanel> {
+  static const _topOptions = [3, 5, 8, 10];
+  int _selectedIndex = 3; // default Top 10
+
+  @override
   Widget build(BuildContext context) {
+    final topN = _topOptions[_selectedIndex];
     return _BondSectionPanel(
-      height: 286,
+      height: 350,
       title: 'Principaux émetteurs',
-      subtitle: 'Top 8 par poids d’encours',
-      child:
-          _BondIssuerRankedBars(entries: stats.issuerEntries.take(8).toList()),
+      subtitle: 'Top $topN par poids d\u2019encours',
+      actions: _BondSegmentToggle(
+        options: const ['Top 3', 'Top 5', 'Top 8', 'Top 10'],
+        selected: _selectedIndex,
+        onChanged: (index) => setState(() => _selectedIndex = index),
+      ),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 220),
+        child: KeyedSubtree(
+          key: ValueKey(topN),
+          child: _BondIssuerRankedBars(
+            entries: widget.stats.issuerEntries.take(topN).toList(),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -12229,32 +14255,7 @@ class _BondHorizontalBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = _marketTextFor(context);
-    final muted = _marketMutedFor(context);
-    final border = _marketBorderFor(context);
-    final isDark = _isMarketDark(context);
-    final maxAmount =
-        entries.fold<double>(0, (max, item) => math.max(max, item.amount));
-    final shown = entries.take(10).toList();
-    return Column(
-      children: [
-        for (var index = 0; index < shown.length; index++) ...[
-          Expanded(
-            child: _BondDistributionBarRow(
-              entry: shown[index],
-              maxAmount: maxAmount,
-              emphasized: index == 0,
-              isLast: index == shown.length - 1,
-              text: text,
-              muted: muted,
-              border: border,
-              isDark: isDark,
-            ),
-          ),
-          if (index != shown.length - 1) const SizedBox(height: 4),
-        ],
-      ],
-    );
+    return _BondRatingBarChart(entries: entries);
   }
 }
 
@@ -12436,6 +14437,7 @@ class _BondIssuerRankedBars extends StatelessWidget {
               entry: entries[index],
               rank: index + 1,
               maxShare: maxShare,
+              total: entries.length,
               emphasized: index == 0,
               isLast: index == entries.length - 1,
               text: text,
@@ -12456,6 +14458,7 @@ class _BondIssuerRankedRow extends StatefulWidget {
     required this.entry,
     required this.rank,
     required this.maxShare,
+    required this.total,
     required this.emphasized,
     required this.isLast,
     required this.text,
@@ -12467,6 +14470,7 @@ class _BondIssuerRankedRow extends StatefulWidget {
   final _MarketDistributionEntry entry;
   final int rank;
   final double maxShare;
+  final int total;
   final bool emphasized;
   final bool isLast;
   final Color text;
@@ -12547,51 +14551,64 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
               const SizedBox(width: 3),
               Expanded(
                 flex: 4,
-                child: SizedBox(
-                  height: 12,
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 150),
-                        curve: Curves.easeOutCubic,
-                        height: _hovered ? 7.8 : 6,
-                        decoration: BoxDecoration(
-                          color: _marketPrimary.withValues(
-                            alpha: widget.isDark ? 0.13 : 0.075,
-                          ),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      FractionallySizedBox(
-                        widthFactor: widthFactor,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          curve: Curves.easeOutCubic,
-                          height: _hovered ? 8.8 : 6,
-                          decoration: BoxDecoration(
-                            color: _marketPrimary.withValues(
-                              alpha: _hovered
-                                  ? (baseAlpha + 0.15).clamp(0.0, 1.0)
-                                  : baseAlpha,
+                child: Builder(
+                  builder: (context) {
+                    // Scale bar height based on total items
+                    final barH = switch (widget.total) {
+                      <= 3 => 14.0,
+                      <= 5 => 10.0,
+                      <= 8 => 7.0,
+                      _ => 5.0,
+                    };
+                    final hoverBarH = barH + 2;
+                    final wrapH = barH + 6;
+                    return SizedBox(
+                      height: wrapH,
+                      child: Stack(
+                        alignment: Alignment.centerLeft,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            curve: Curves.easeOutCubic,
+                            height: _hovered ? hoverBarH : barH,
+                            decoration: BoxDecoration(
+                              color: _marketPrimary.withValues(
+                                alpha: widget.isDark ? 0.13 : 0.075,
+                              ),
+                              borderRadius: BorderRadius.circular(2),
                             ),
-                            borderRadius: BorderRadius.circular(2),
-                            boxShadow: _hovered
-                                ? [
-                                    BoxShadow(
-                                      color: _marketPrimary.withValues(
-                                        alpha: 0.18,
-                                      ),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ]
-                                : null,
                           ),
-                        ),
+                          FractionallySizedBox(
+                            widthFactor: widthFactor,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              curve: Curves.easeOutCubic,
+                              height: _hovered ? (hoverBarH + 1) : barH,
+                              decoration: BoxDecoration(
+                                color: _marketPrimary.withValues(
+                                  alpha: _hovered
+                                      ? (baseAlpha + 0.15).clamp(0.0, 1.0)
+                                      : baseAlpha,
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                                boxShadow: _hovered
+                                    ? [
+                                        BoxShadow(
+                                          color: _marketPrimary.withValues(
+                                            alpha: 0.18,
+                                          ),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -12640,9 +14657,9 @@ List<_MarketDistributionEntry> _rankedBondZoneEntries(
   final colorsByLabel = <String, Color>{};
   for (var index = 0; index < ranked.length; index++) {
     colorsByLabel[ranked[index].label] = switch (index) {
-      0 => _marketPrimary,
-      1 => _marketWarning,
-      _ => _marketDanger,
+      0 => const Color(0xFF2563EB), // Modern Blue
+      1 => const Color(0xFF0D9488), // Modern Teal
+      _ => const Color(0xFF64748B), // Slate Gray
     };
   }
 
@@ -12679,8 +14696,8 @@ class _BondZoneDonutBreakdownState extends State<_BondZoneDonutBreakdown> {
   }) {
     if (position == null || entries.isEmpty) return null;
     final center = Offset(size / 2, size / 2);
-    const strokeWidth = 23.0;
     final radius = size / 2 - 15;
+    final strokeWidth = math.max(23.0, radius * 0.38);
     final distance = (position - center).distance;
     final inRing = distance >= radius - strokeWidth / 2 - 8 &&
         distance <= radius + strokeWidth / 2 + 8;
@@ -12726,7 +14743,7 @@ class _BondZoneDonutBreakdownState extends State<_BondZoneDonutBreakdown> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final donutSize = constraints.maxWidth < 310 ? 116.0 : 128.0;
+        final donutSize = constraints.maxWidth < 310 ? 116.0 : 210.0;
         final hoveredEntry = _hoveredEntryFor(
           position: _hoverPosition,
           size: donutSize,
@@ -12860,7 +14877,7 @@ class _BondZoneDonutBreakdownState extends State<_BondZoneDonutBreakdown> {
                 ),
               ),
             ),
-            const SizedBox(width: 3),
+            const SizedBox(width: 24),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -12875,8 +14892,14 @@ class _BondZoneDonutBreakdownState extends State<_BondZoneDonutBreakdown> {
                       text: text,
                       muted: muted,
                     ),
-                    if (index < widget.entries.length - 1)
-                      const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: _isMarketDark(context) ? const Color(0xFF3B4A6B) : const Color(0xFFE2E8F0),
+                      ),
+                    ),
                   ],
                 ],
               ),
@@ -12908,32 +14931,12 @@ class _BondZoneDonutLegendItem extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       curve: Curves.easeOutCubic,
-      height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(
-          alpha: highlighted
-              ? (_isMarketDark(context) ? 0.22 : 0.12)
-              : inactive
-                  ? (_isMarketDark(context) ? 0.09 : 0.045)
-                  : (_isMarketDark(context) ? 0.13 : 0.07),
-        ),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(
-          color: color.withValues(
-            alpha: highlighted ? 0.34 : (inactive ? 0.14 : 0.18),
-          ),
-          width: highlighted ? 0.9 : 0.7,
-        ),
-        boxShadow: highlighted
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.10),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : null,
+        color: highlighted
+            ? color.withValues(alpha: _isMarketDark(context) ? 0.15 : 0.06)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         children: [
@@ -12957,7 +14960,7 @@ class _BondZoneDonutLegendItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: text,
-                    fontSize: 10.3,
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w500,
                     height: 1,
                   ),
@@ -12969,7 +14972,7 @@ class _BondZoneDonutLegendItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: muted,
-                    fontSize: 8.1,
+                    fontSize: 9.8,
                     fontWeight: FontWeight.w500,
                     height: 1,
                   ),
@@ -12984,8 +14987,8 @@ class _BondZoneDonutLegendItem extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color,
-              fontSize: 10.5,
-              fontWeight: FontWeight.w500,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
               height: 1,
             ),
           ),
@@ -13605,10 +15608,19 @@ class _BondMaturityHistogramPainter extends CustomPainter {
     );
     if (buckets.isEmpty) return;
     const gap = 10.0;
-    final barWidth =
+    final rawBarWidth =
         (chart.width - gap * (buckets.length - 1)) / buckets.length;
-    final hoverIndex = hoverPosition != null && chart.contains(hoverPosition!)
-        ? (((hoverPosition!.dx - chart.left) / chart.width) * buckets.length)
+    final barWidth = rawBarWidth.clamp(10.0, 75.0);
+    final totalWidth = barWidth * buckets.length + gap * (buckets.length - 1);
+    final startX = chart.left + (chart.width - totalWidth) / 2;
+
+    final bool inBounds = hoverPosition != null &&
+        chart.contains(hoverPosition!) &&
+        hoverPosition!.dx >= startX &&
+        hoverPosition!.dx <= startX + totalWidth;
+
+    final hoverIndex = inBounds
+        ? (((hoverPosition!.dx - startX) / totalWidth) * buckets.length)
             .floor()
             .clamp(0, buckets.length - 1)
             .toInt()
@@ -13623,7 +15635,7 @@ class _BondMaturityHistogramPainter extends CustomPainter {
         chart.height,
         barHeight + (isHovered ? 9 * hoverProgress : 0),
       );
-      final x = chart.left + index * (barWidth + gap);
+      final x = startX + index * (barWidth + gap);
       final rect = Rect.fromLTWH(
         x,
         chart.bottom - animatedHeight,
@@ -13700,9 +15712,19 @@ class _BondMaturityHistogramPainter extends CustomPainter {
       );
       canvas.drawCircle(point, 3.0, Paint()..color = success);
     }
-    final maxYears = buckets.last.maxYears;
-    final avgX =
-        chart.left + (averageYears / maxYears).clamp(0.0, 1.0) * chart.width;
+    double avgX = chart.left;
+    if (buckets.isNotEmpty) {
+      int bucketIndex = buckets.indexWhere((b) => averageYears >= b.minYears && averageYears <= b.maxYears);
+      if (bucketIndex == -1) {
+        bucketIndex = averageYears < buckets.first.minYears ? 0 : buckets.length - 1;
+      }
+      final bucket = buckets[bucketIndex];
+      final bucketRange = bucket.maxYears - bucket.minYears;
+      final progress = bucketRange > 0
+          ? ((averageYears - bucket.minYears) / bucketRange).clamp(0.0, 1.0)
+          : 0.5;
+      avgX = startX + bucketIndex * (barWidth + gap) + progress * barWidth;
+    }
     _drawDashedVerticalLine(
       canvas,
       avgX,
@@ -13834,17 +15856,21 @@ class _BondCouponCurvePainter extends CustomPainter {
           .fold<double>(0, math.max),
     );
     final yMax = math.max(0.01, maxCoupon * 1.20);
-    final gap = safeBuckets.length <= 1
-        ? 0.0
-        : math.min(12.0, chart.width / (safeBuckets.length * 3));
-    final barWidth = math.max(
-      2.0,
-      (chart.width - gap * (safeBuckets.length - 1)) / safeBuckets.length,
-    );
+    const gap = 10.0;
+    final rawBarWidth = safeBuckets.isEmpty ? 0.0 : (chart.width - gap * (safeBuckets.length - 1)) / safeBuckets.length;
+    final barWidth = rawBarWidth.clamp(10.0, 75.0);
+    final totalWidth = safeBuckets.isEmpty ? 0.0 : barWidth * safeBuckets.length + gap * (safeBuckets.length - 1);
+    final startX = chart.left + (chart.width - totalWidth) / 2;
+
     final points = <Offset>[];
-    final hoverIndex = hoverPosition != null && chart.contains(hoverPosition!)
-        ? (((hoverPosition!.dx - chart.left) / chart.width) *
-                safeBuckets.length)
+
+    final bool inBounds = hoverPosition != null &&
+        chart.contains(hoverPosition!) &&
+        hoverPosition!.dx >= startX &&
+        hoverPosition!.dx <= startX + totalWidth;
+
+    final hoverIndex = inBounds
+        ? (((hoverPosition!.dx - startX) / totalWidth) * safeBuckets.length)
             .floor()
             .clamp(0, safeBuckets.length - 1)
             .toInt()
@@ -13852,7 +15878,7 @@ class _BondCouponCurvePainter extends CustomPainter {
 
     for (var index = 0; index < safeBuckets.length; index++) {
       final bucket = safeBuckets[index];
-      final x = chart.left + index * (barWidth + gap);
+      final x = startX + index * (barWidth + gap);
       final centerX = x + barWidth / 2;
       final amountRatio = maxAmount <= 0 ? 0.0 : bucket.amount / maxAmount;
       final barHeight = math.max(3.0, chart.height * amountRatio);
@@ -14051,7 +16077,7 @@ class _MarketAllocationPanel extends StatelessWidget {
           : 'Poids des secteurs en valeur de marché',
       child: isBonds
           ? _MarketDonutBreakdown(entries: entries)
-          : _MarketSectorTileGrid(entries: entries),
+          : SizedBox(height: 221, child: _BondRatingBarChart(entries: entries)),
     );
   }
 }
@@ -14162,7 +16188,7 @@ class _MarketEquityRankedBars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 168,
+      height: 220,
       child: _BondRatingBarChart(entries: entries),
     );
   }
@@ -14266,52 +16292,91 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
             ),
           ),
         ),
-        const SizedBox(width: 5),
+        const SizedBox(width: 20),
         Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              for (final entry in widget.entries) ...[
-                Tooltip(
-                  message:
-                      '${entry.label}\n${AppFormatters.percent(entry.share)}\n${_marketReadableMoney(entry.amount)}',
-                  waitDuration: const Duration(milliseconds: 220),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: entry.color,
-                        ),
-                      ),
-                      const SizedBox(width: 9),
-                      Expanded(
-                        child: Text(
-                          entry.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: text,
-                            fontSize: 10.4,
-                            fontWeight: FontWeight.w500,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: _isMarketDark(context) ? const Color(0xFF18233C) : Colors.white,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: _isMarketDark(context) ? const Color(0xFF3B4A6B) : const Color(0xFFE2E8F0),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < widget.entries.length; i++) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: widget.entries[i].color,
+                            shape: BoxShape.circle,
                           ),
                         ),
-                      ),
-                      Text(
-                        AppFormatters.percent(entry.share),
-                        style: TextStyle(
-                          color: muted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.entries[i].label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: text,
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.1,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _marketReadableMoney(widget.entries[i].amount),
+                                style: TextStyle(
+                                  color: muted,
+                                  fontSize: 9.8,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        Text(
+                          AppFormatters.percent(widget.entries[i].share),
+                          style: TextStyle(
+                            color: widget.entries[i].color,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                if (entry != widget.entries.last) const SizedBox(height: 8),
+                  if (i != widget.entries.length - 1)
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: _isMarketDark(context) ? const Color(0xFF3B4A6B) : const Color(0xFFE2E8F0),
+                    ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ],
@@ -14416,9 +16481,9 @@ class _MarketDonutPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    const strokeWidth = 23.0;
-    const segmentGap = 0.034;
     final radius = math.min(size.width, size.height) / 2 - 15;
+    final strokeWidth = math.max(23.0, radius * 0.38);
+    const segmentGap = 0.034;
     final rect = Rect.fromCircle(center: center, radius: radius);
     final trackPaint = Paint()
       ..isAntiAlias = true
@@ -14540,15 +16605,18 @@ class _MarketScenarioRiskPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: 92,
-            child: CustomPaint(
-              painter: _MarketScenarioSparkPainter(
-                returns: returns,
-                color: dataset.portfolioType == MarketPortfolioType.bonds
-                    ? _marketPrimary
-                    : _marketSuccess,
-                danger: _marketDanger,
-                isDark: _isMarketDark(context),
+            height: dataset.portfolioType == MarketPortfolioType.bonds ? 92 : 175,
+            child: Padding(
+              padding: EdgeInsets.all(dataset.portfolioType == MarketPortfolioType.bonds ? 0.0 : 20.0),
+              child: CustomPaint(
+                painter: _MarketScenarioSparkPainter(
+                  returns: returns,
+                  color: dataset.portfolioType == MarketPortfolioType.bonds
+                      ? _marketPrimary
+                      : _marketSuccess,
+                  danger: _marketDanger,
+                  isDark: _isMarketDark(context),
+                ),
               ),
             ),
           ),
@@ -14643,26 +16711,26 @@ class _MarketRiskSignalPanel extends StatelessWidget {
                       value: AppFormatters.percent(
                         dataset.annualizedVolatility,
                       ),
-                      color: _marketCyan,
+                      color: _marketDashboardDeepBlue,
                     ),
                     _MarketRiskTileData(
                       label: 'Bêta pondéré',
                       value: dataset.weightedBeta
                           .toStringAsFixed(2)
                           .replaceAll('.', ','),
-                      color: _marketPrimary,
+                      color: _marketDashboardDeepBlue,
                     ),
                     _MarketRiskTileData(
                       label: 'Rendement',
                       value: AppFormatters.percent(dataset.expectedReturn),
-                      color: _marketSuccess,
+                      color: _marketDashboardDeepBlue,
                     ),
                     _MarketRiskTileData(
                       label: 'Corrélation',
                       value: dataset.correlationProxy
                           .toStringAsFixed(2)
                           .replaceAll('.', ','),
-                      color: _marketViolet,
+                      color: _marketDashboardDeepBlue,
                     ),
                   ],
           ),
@@ -14801,20 +16869,6 @@ double _marketEquityResolvedReturn(
   return value.isFinite ? value.clamp(-0.20, 0.35).toDouble() : fallback;
 }
 
-double _marketNumericSpread(Iterable<double> values) {
-  var minValue = double.infinity;
-  var maxValue = -double.infinity;
-  var count = 0;
-  for (final value in values) {
-    if (!value.isFinite) continue;
-    minValue = math.min(minValue, value);
-    maxValue = math.max(maxValue, value);
-    count++;
-  }
-  if (count <= 1 || minValue == double.infinity) return 0;
-  return maxValue - minValue;
-}
-
 class _MarketEquityRiskReturnProfile extends StatelessWidget {
   const _MarketEquityRiskReturnProfile({required this.dataset});
 
@@ -14822,39 +16876,149 @@ class _MarketEquityRiskReturnProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final usableRecords = dataset.records
-        .where((record) => record.exposureAmount > 0)
-        .toList(growable: false);
-    final betaSpread = _marketNumericSpread(
-      usableRecords.map(
-        (record) => _marketEquityResolvedBeta(record, dataset.weightedBeta),
-      ),
-    );
-    final returnSpread = _marketNumericSpread(
-      usableRecords.map(
-        (record) => _marketEquityResolvedReturn(
-          record,
-          dataset.expectedReturn,
-        ),
-      ),
-    );
-    final hasTrueDispersion =
-        usableRecords.length >= 5 && betaSpread >= 0.09 && returnSpread >= 0.01;
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final border = _marketBorderFor(context);
+    final isDark = _isMarketDark(context);
 
-    if (!hasTrueDispersion) {
-      return _MarketEquityAggregateProfile(dataset: dataset);
+    // Tableau par émetteur, lisible et institutionnel (bêta = risque,
+    // rendement attendu), classé par poids de marché décroissant. Remplace
+    // l'ancien nuage de points illisible.
+    final rows = (dataset.records
+            .where((record) => record.exposureAmount > 0)
+            .toList(growable: false)
+          ..sort((a, b) => b.exposureAmount.compareTo(a.exposureAmount)))
+        .take(5)
+        .toList(growable: false);
+
+    if (rows.isEmpty) {
+      return Center(
+        child: Text(
+          'Aucune position action',
+          style: TextStyle(color: muted, fontSize: 11),
+        ),
+      );
     }
 
-    return CustomPaint(
-      painter: _MarketEquityScatterPainter(
-        records: usableRecords,
-        weightedBeta: dataset.weightedBeta,
-        expectedReturn: dataset.expectedReturn,
-        color: _marketSuccess,
-        danger: _marketDanger,
-        muted: _marketBorderFor(context),
-        text: _marketMutedFor(context),
-      ),
+    Widget headerCell(String label, int flex, {bool right = false}) => Expanded(
+          flex: flex,
+          child: Text(
+            label.tr(context),
+            textAlign: right ? TextAlign.right : TextAlign.left,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 8.6,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 20,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          decoration: const BoxDecoration(
+            color: _marketDashboardDeepBlue,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(2)),
+          ),
+          child: Row(
+            children: [
+              headerCell('Émetteur', 5),
+              headerCell('Bêta', 2, right: true),
+              headerCell('Rendement', 2, right: true),
+            ],
+          ),
+        ),
+        Expanded(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: border),
+                right: BorderSide(color: border),
+                bottom: BorderSide(color: border),
+              ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(2),
+              ),
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < rows.length; i++)
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9),
+                      color: i.isOdd
+                          ? (isDark
+                              ? Colors.white.withValues(alpha: 0.02)
+                              : _marketSurfaceSoft)
+                          : Colors.transparent,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: Text(
+                              rows[i].issuer.trim().isEmpty
+                                  ? 'Non renseigné'
+                                  : rows[i].issuer.trim(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: text,
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              _marketEquityResolvedBeta(
+                                rows[i],
+                                dataset.weightedBeta,
+                              ).toStringAsFixed(2).replaceAll('.', ','),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: text,
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              AppFormatters.percent(
+                                _marketEquityResolvedReturn(
+                                  rows[i],
+                                  dataset.expectedReturn,
+                                ),
+                              ),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: muted,
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -15269,13 +17433,13 @@ void _paintChartTooltip(
           color: index == 0
               ? accent
               : (isDark ? const Color(0xFFEAF2FF) : const Color(0xFF13203A)),
-          fontSize: index == 0 ? 8.8 : 8.2,
-          fontWeight: index == 0 ? FontWeight.w500 : FontWeight.w500,
-          height: 1.15,
+          fontSize: index == 0 ? 11.5 : 10.5,
+          fontWeight: index == 0 ? FontWeight.w600 : FontWeight.w500,
+          height: 1.2,
         ),
       ),
       textDirection: TextDirection.ltr,
-    )..layout(maxWidth: 150);
+    )..layout(maxWidth: 240);
     painters.add(painter);
   }
 
@@ -15332,6 +17496,7 @@ class _MarketVisualPanel extends StatelessWidget {
 
     return Container(
       width: double.infinity,
+      margin: const EdgeInsets.all(18),
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _marketSurfaceSoftFor(context)
@@ -15379,6 +17544,7 @@ class _MarketDistributionEntry {
     required this.amount,
     required this.share,
     required this.color,
+    this.count = 0,
     this.flagAsset,
     this.countryCode,
   });
@@ -15387,6 +17553,7 @@ class _MarketDistributionEntry {
   final double amount;
   final double share;
   final Color color;
+  final int count;
   final String? flagAsset;
   final String? countryCode;
 }
@@ -15423,33 +17590,11 @@ class _MarketFlaggedIssuerLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iso2 = _marketCountryIso2FromFlagAssetOrText(flagAsset, label);
-    if (iso2 == null || iso2.isEmpty) {
-      return Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: style,
-      );
-    }
-
-    return Row(
-      children: [
-        SizedBox(
-          width: 16,
-          height: 10,
-          child: _MarketCountryFlagImage(iso2: iso2),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: style,
-          ),
-        ),
-      ],
+    return Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: style,
     );
   }
 }
@@ -15649,42 +17794,27 @@ List<_MarketAnalyticKpiSpec> _marketAnalyticKpis(
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Encours total' : 'Valeur de marché',
       value: _marketReadableMoney(dataset.totalExposure),
-      color: _marketPrimary,
-      icon: CupertinoIcons.money_dollar_circle_fill,
     ),
-    _MarketAnalyticKpiSpec(
-      label: isBonds ? 'Émetteur dominant' : 'Position dominante',
-      value: dataset.dominantIssuer,
-      color: _marketWarning,
-      icon: CupertinoIcons.person_2_fill,
-    ),
+
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Maturité pondérée' : 'Bêta pondéré',
       value: isBonds
           ? '${dataset.weightedResidualYears.toStringAsFixed(1).replaceAll('.', ',')} ans'
           : dataset.weightedBeta.toStringAsFixed(2).replaceAll('.', ','),
-      color: _marketViolet,
-      icon: CupertinoIcons.time_solid,
     ),
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Coupon moyen' : 'Rendement attendu',
       value: AppFormatters.percent(
         isBonds ? dataset.averageCoupon : dataset.expectedReturn,
       ),
-      color: _marketSuccess,
-      icon: CupertinoIcons.percent,
     ),
     _MarketAnalyticKpiSpec(
       label: 'Volatilité',
       value: AppFormatters.percent(dataset.annualizedVolatility),
-      color: _marketCyan,
-      icon: CupertinoIcons.waveform_path_ecg,
     ),
     _MarketAnalyticKpiSpec(
       label: 'Corrélation',
       value: dataset.correlationProxy.toStringAsFixed(2).replaceAll('.', ','),
-      color: _marketDanger,
-      icon: CupertinoIcons.link_circle_fill,
     ),
   ];
 }
@@ -15713,6 +17843,7 @@ List<_MarketDistributionEntry> _bondGroupedEntries(
     ];
   }
   final grouped = <String, double>{};
+  final counts = <String, int>{};
   final labels = <String, String>{};
   final flagAssets = <String, String?>{};
   final countryCodes = <String, String>{};
@@ -15731,6 +17862,7 @@ List<_MarketDistributionEntry> _bondGroupedEntries(
       if (code.isNotEmpty) countryCodes.putIfAbsent(key, () => code);
     }
     grouped.update(key, (value) => value + exposure, ifAbsent: () => exposure);
+    counts.update(key, (value) => value + 1, ifAbsent: () => 1);
   }
   final ranked = grouped.entries.toList()
     ..sort((left, right) => right.value.compareTo(left.value));
@@ -15743,6 +17875,7 @@ List<_MarketDistributionEntry> _bondGroupedEntries(
         color: colors[index % colors.length],
         flagAsset: flagAssets[ranked[index].key],
         countryCode: countryCodes[ranked[index].key],
+        count: counts[ranked[index].key] ?? 0,
       ),
   ];
 }
@@ -15891,7 +18024,7 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
       maxYears: 1,
       amount: 0,
       titleCount: 0,
-      color: _marketSuccess,
+      color: _marketPrimary,
     ),
     const _BondMaturityBucket(
       label: '1-3A',
@@ -15907,7 +18040,7 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
       maxYears: 5,
       amount: 0,
       titleCount: 0,
-      color: _marketPrimary,
+      color: _marketViolet,
     ),
     const _BondMaturityBucket(
       label: '5-7A',
@@ -15915,7 +18048,7 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
       maxYears: 7,
       amount: 0,
       titleCount: 0,
-      color: _marketViolet,
+      color: _marketWarning,
     ),
     const _BondMaturityBucket(
       label: '>7A',
@@ -15923,7 +18056,7 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
       maxYears: 12,
       amount: 0,
       titleCount: 0,
-      color: _marketWarning,
+      color: _marketSuccess,
     ),
   ];
   final amounts = List<double>.filled(buckets.length, 0);
@@ -15960,11 +18093,11 @@ List<_BondMaturityBucket> _bondMaturityBuckets(
 List<_BondCouponBucket> _bondCouponBuckets(MarketPortfolioDataset dataset) {
   const labels = ['<1A', '1-3A', '3-5A', '5-7A', '>7A'];
   const colors = [
-    _marketSuccess,
-    _marketCyan,
     _marketPrimary,
+    _marketCyan,
     _marketViolet,
     _marketWarning,
+    _marketSuccess,
   ];
   final amounts = List<double>.filled(labels.length, 0);
   final couponNumerators = List<double>.filled(labels.length, 0);
@@ -16030,14 +18163,9 @@ List<_MarketDistributionEntry> _marketGroupedEntries(
   String Function(MarketPortfolioRecord record)? countryCodeOf,
   required int limit,
 }) {
-  const colors = [
-    _marketPrimary,
-    _marketCyan,
-    _marketViolet,
-    _marketWarning,
-    _marketSuccess,
-    _marketDanger,
-  ];
+  // Rampe navy institutionnelle (pas d'arc-en-ciel) : rang le plus élevé =
+  // teinte la plus foncée, alignée sur la palette de base du module.
+  const colors = _marketSequentialBlues;
   final total = dataset.totalExposure;
   if (dataset.records.isEmpty || total <= 0) {
     return [
@@ -16175,30 +18303,13 @@ class _MarketDashboardDataTable extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tableau des données'.tr(context),
-                        style: TextStyle(
-                          color: text,
-                          fontSize: 14.2,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 4),
-                _MarketPortfolioTypeSwitch(
-                  selectedType: selectedType,
-                  onChanged: onTypeChanged,
-                ),
-              ],
+            child: Text(
+              'Tableau des données'.tr(context),
+              style: TextStyle(
+                color: text,
+                fontSize: 14.2,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           const SizedBox(height: 4),
@@ -19195,9 +21306,7 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
                   ),
                   child: PageHeader(
                     title: 'VALUE AT RISK (VaR)',
-                    subtitle: 'Mesure et simulation du risque de marché',
                     titleFontSize: 26,
-                    subtitleFontSize: 12.5,
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -19236,8 +21345,7 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
                             title: 'Aucune donnée chargée',
                             subtitle:
                                 'Chargez un portefeuille depuis Import données pour calculer la VaR et lancer les simulations.',
-                            icon: CupertinoIcons.waveform_path_ecg,
-                            accent: _marketViolet,
+                            accent: _marketDashboardDeepBlue,
                             minHeight: 360,
                           )
                         else
@@ -19491,7 +21599,7 @@ class _UnifiedVarMethodView extends StatelessWidget {
           )
         : _MonteCarloVarResult.empty(mcConfidence);
     final insight = _insight(historicalResult);
-    final formula = _formulaSpec();
+    final formula = method.formulaSpec;
     final kpiItems = _kpiItems(
       historicalResult,
       parametricResult,
@@ -19501,15 +21609,7 @@ class _UnifiedVarMethodView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _MethodHeader(
-          icon: method.icon,
-          color: method.color,
-          title: method.title,
-          subtitle: method.subtitle,
-          insight: insight,
-          formula: formula,
-        ),
-        const SizedBox(height: AppTheme.pageGap),
+
         LayoutBuilder(
           builder: (context, constraints) {
             final parameterWidth = _resolvedParameterPanelWidth(constraints);
@@ -19520,11 +21620,13 @@ class _UnifiedVarMethodView extends StatelessWidget {
                 children: [
                   SizedBox(
                     width: parameterWidth,
-                    height: double.infinity,
-                    child: _MarketCard(
-                      padding: const EdgeInsets.all(3),
-                      child: _PersistentVarContentStack(
-                        activeIndex: method.index,
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: _MarketCard(
+                        padding: const EdgeInsets.all(3),
+                        child: _PersistentVarContentStack(
+                          expand: false,
+                          activeIndex: method.index,
                         children: [
                           _ParameterStack(
                             title: 'Paramètres de calcul',
@@ -19547,6 +21649,7 @@ class _UnifiedVarMethodView extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
                   const SizedBox(width: AppTheme.pageGap),
                   Expanded(
                     child: _MarketCard(
@@ -19723,8 +21826,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
               label: 'Valeur du portefeuille',
               value: _money(portfolio.portfolioValue, displayCurrency),
               detail: historicalPortfolio.label,
-              icon: CupertinoIcons.briefcase_fill,
-              color: _marketSuccess,
             ),
             _VarKpiSpec(
               label: historicalResult.isProxy
@@ -19734,16 +21835,12 @@ class _UnifiedVarMethodView extends StatelessWidget {
               detail: historicalResult.isProxy
                   ? historicalResult.sourceLabel
                   : '${AppFormatters.percent(historicalConfidence)} · ${_shortDaysLabel(historicalHorizon)}',
-              icon: CupertinoIcons.waveform_circle_fill,
-              color: _marketPrimary,
             ),
             _VarKpiSpec(
               label: 'Expected Shortfall',
               value:
                   _money(historicalResult.expectedShortfall, displayCurrency),
               detail: 'Perte moyenne au-delà du seuil',
-              icon: CupertinoIcons.chart_bar_square_fill,
-              color: _marketViolet,
             ),
             _VarKpiSpec(
               label: historicalResult.isProxy
@@ -19755,7 +21852,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
                   : AppLocalizations.isEnglish
                       ? '${historicalResult.windowDays} recalculated observations'
                       : '${historicalResult.windowDays} observations recalculées',
-              icon: CupertinoIcons.exclamationmark_triangle_fill,
               color: _marketDanger,
             ),
           ],
@@ -19770,31 +21866,24 @@ class _UnifiedVarMethodView extends StatelessWidget {
               label: 'Valeur du portefeuille',
               value: _money(parametricResult.portfolioValue, displayCurrency),
               detail: 'Base de calcul',
-              icon: CupertinoIcons.briefcase_fill,
-              color: _marketSuccess,
             ),
             _VarKpiSpec(
               label: 'VaR Paramétrique',
               value: _money(parametricResult.varValue, displayCurrency),
               detail: 'Z = ${parametricResult.zScore.toStringAsFixed(4)}',
-              icon: CupertinoIcons.function,
-              color: _marketViolet,
             ),
             _VarKpiSpec(
               label: 'Expected Shortfall',
               value:
                   _money(parametricResult.expectedShortfall, displayCurrency),
               detail: 'Queue normale au-delà du quantile',
-              icon: CupertinoIcons.chart_bar_square_fill,
-              color: _marketPrimary,
             ),
             _VarKpiSpec(
               label: 'Ratio de Sharpe',
               value: parametricResult.sharpeRatio.toStringAsFixed(2),
               detail: 'Prime de risque / volatilité',
-              icon: CupertinoIcons.speedometer,
               color: parametricResult.sharpeRatio >= 0
-                  ? _marketSuccess
+                  ? _marketDashboardDeepBlue
                   : _marketDanger,
             ),
           ],
@@ -19807,8 +21896,6 @@ class _UnifiedVarMethodView extends StatelessWidget {
               label: 'Valeur du portefeuille',
               value: _money(portfolio.portfolioValue, displayCurrency),
               detail: portfolio.portfolioType.label,
-              icon: CupertinoIcons.briefcase_fill,
-              color: _marketSuccess,
             ),
             _VarKpiSpec(
               label: 'VaR Monte-Carlo',
@@ -19816,16 +21903,12 @@ class _UnifiedVarMethodView extends StatelessWidget {
               detail: AppLocalizations.isEnglish
                   ? '${mcSimulations ~/ 1000}k simulated scenarios'
                   : '${mcSimulations ~/ 1000}k scénarios simulés',
-              icon: CupertinoIcons.chart_bar_alt_fill,
-              color: _marketCyan,
             ),
             _VarKpiSpec(
               label: 'Expected Shortfall',
               value:
                   _money(monteCarloResult.expectedShortfall, displayCurrency),
               detail: 'Moyenne des scénarios de queue',
-              icon: CupertinoIcons.chart_bar_square_fill,
-              color: _marketViolet,
             ),
           ],
         ],
@@ -19854,14 +21937,14 @@ class _UnifiedVarMethodView extends StatelessWidget {
                       'dans cette zone extrême, la perte moyenne attendue monte à ${_money(historicalResult.expectedShortfall, displayCurrency)}.',
         ),
       _VarMethod.parametric => const _VarInsightSpec(
-          color: _marketViolet,
+          color: _marketDashboardDeepBlue,
           title: 'Comprendre la formule paramétrique',
           body: 'La volatilité définit l’amplitude normale des mouvements. '
               'Le niveau de confiance fixe le quantile Zα : plus il est élevé, plus la perte retenue est prudente. '
               'Pour les obligations, la VaR Delta-Normale applique Z, σ, Dmod, PV et √(T/252). Pour les actions, le facteur de sensibilité reste égal à 1.',
         ),
       _VarMethod.monteCarlo => const _VarInsightSpec(
-          color: _marketCyan,
+          color: _marketPrimary,
           title: 'Comprendre la simulation Monte-Carlo',
           body:
               'Chaque scénario projette un choc de marché possible. Pour les obligations, le choc est converti en perte avec la duration modifiée, comme dans l’approche Delta-Normale. '
@@ -19871,65 +21954,24 @@ class _UnifiedVarMethodView extends StatelessWidget {
         ),
     };
   }
-
-  _VarFormulaSpec _formulaSpec() {
-    return switch (method) {
-      _VarMethod.historical => const _VarFormulaSpec(
-          color: _marketPrimary,
-          title: 'Formules - VaR historique',
-          formulas: [
-            r'L_{i,t}\approx D_{\mathrm{mod},i}\times PV_i\times \Delta y_{i,t}-\frac{1}{2}C_i\times PV_i\times(\Delta y_{i,t})^2',
-            r'L_t=\sum_i L_{i,t}',
-            r'\widehat{\mathrm{VaR}}_{\alpha,1j}=Q_{\alpha}(L)',
-            r'\widehat{\mathrm{VaR}}_{\alpha,T}=\widehat{\mathrm{VaR}}_{\alpha,1j}\times\sqrt{T}',
-            r'\widehat{\mathrm{ES}}_{\alpha,T}=\mathbb{E}\left[L\mid L\geq \widehat{\mathrm{VaR}}_{\alpha,T}\right]',
-          ],
-          variables:
-              'PVᵢ : valeur actuelle du titre ; Dmodᵢ : duration modifiée ; Cᵢ : convexité ; Δyᵢ,ₜ : choc de courbe interpolé ; α : niveau de confiance ; T : horizon en jours.',
-        ),
-      _VarMethod.parametric => const _VarFormulaSpec(
-          color: _marketViolet,
-          title: 'Formules - VaR paramétrique',
-          formulas: [
-            r'\sigma_{1j}=\frac{\sigma_{\mathrm{annuelle}}}{\sqrt{252}}',
-            r'\kappa=D_{\mathrm{mod}}\ \mathrm{(obligations)},\quad \kappa=1\ \mathrm{(actions)}',
-            r'\mathrm{VaR}_{\alpha,T}=z_{\alpha}\times\sigma_{1j}\times\kappa\times V\times\sqrt{T}',
-            r'\mathrm{ES}_{\alpha,T}=\frac{\varphi(z_{\alpha})}{1-\alpha}\times\sigma_{1j}\times\kappa\times V\times\sqrt{T}',
-          ],
-          variables:
-              'zα : quantile normal ; σ : volatilité annualisée convertie en volatilité journalière ; κ : Dmod pour obligations, 1 pour actions ; V : valeur du portefeuille ; T : horizon en jours ; φ : densité normale.',
-        ),
-      _VarMethod.monteCarlo => const _VarFormulaSpec(
-          color: _marketCyan,
-          title: 'Formules - VaR Monte-Carlo',
-          formulas: [
-            r'\varepsilon_i\sim\mathcal{D}(0,1)',
-            r'X_i=\mu\frac{T}{252}+\sigma_{1j}\sqrt{T}\,\varepsilon_i',
-            r'\kappa=D_{\mathrm{mod}}\ \mathrm{(obligations)},\quad \kappa=1\ \mathrm{(actions)}',
-            r'L_i=\kappa\times X_i\times V\ \mathrm{(obligations)},\quad L_i=-X_i\times V\ \mathrm{(actions)}',
-            r'\widehat{\mathrm{VaR}}_{\alpha,T}=Q_{\alpha}\left(\{L_i\}_{i=1}^{N}\right)',
-            r'\widehat{\mathrm{ES}}_{\alpha,T}=\frac{1}{N_{\alpha}}\sum_{L_i\geq \widehat{\mathrm{VaR}}_{\alpha,T}}L_i',
-          ],
-          variables:
-              'εᵢ : choc aléatoire selon la distribution choisie ; Xᵢ : choc simulé ; κ : facteur de sensibilité ; Lᵢ : perte simulée ; V : valeur du portefeuille ; N : scénarios.',
-        ),
-    };
-  }
 }
+
 
 class _PersistentVarContentStack extends StatelessWidget {
   const _PersistentVarContentStack({
     required this.activeIndex,
     required this.children,
+    this.expand = true,
   });
 
   final int activeIndex;
   final List<Widget> children;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
-      fit: StackFit.expand,
+      fit: expand ? StackFit.expand : StackFit.loose,
       children: [
         for (var index = 0; index < children.length; index++)
           _PersistentVarContentLayer(
@@ -20036,13 +22078,11 @@ class _VarEmptyChartState extends StatelessWidget {
   const _VarEmptyChartState({
     required this.title,
     required this.subtitle,
-    required this.icon,
     this.accent = _marketPrimary,
   });
 
   final String title;
   final String subtitle;
-  final IconData icon;
   final Color accent;
 
   @override
@@ -20062,21 +22102,19 @@ class _VarEmptyChartState extends StatelessWidget {
               alpha: isDark ? 0.44 : 0.74,
             ),
             border: Border.all(color: border.withValues(alpha: 0.78)),
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(3),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Liseré d'accent sobre — pas de pictogramme.
               Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
+                width: 44,
+                height: 3,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.10),
-                  border: Border.all(color: accent.withValues(alpha: 0.22)),
-                  borderRadius: BorderRadius.circular(2),
+                  color: accent.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(3),
                 ),
-                child: Icon(icon, color: accent, size: 22),
               ),
               const SizedBox(height: 3),
               Text(
@@ -20262,10 +22300,10 @@ class _VarMethodSwitch extends StatelessWidget {
               curve: _varMethodTransitionCurve,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: _marketPrimary.withValues(alpha: 0.1),
+                  color: _marketPrimary,
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(
-                    color: _marketPrimary.withValues(alpha: 0.25),
+                    color: _marketPrimary,
                   ),
                 ),
               ),
@@ -20284,14 +22322,50 @@ class _VarMethodSwitch extends StatelessWidget {
                           duration: _varMethodTransitionDuration,
                           curve: _varMethodTransitionCurve,
                           style: TextStyle(
-                            color: selected == method ? _marketPrimary : muted,
+                            color: selected == method ? Colors.white : muted,
                             fontSize: 10.4,
                             fontWeight: selected == method
-                                ? FontWeight.w500
+                                ? FontWeight.w600
                                 : FontWeight.w500,
                             letterSpacing: 0,
                           ),
-                          child: Text(method.label.tr(context)),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(method.label.tr(context)),
+                              const SizedBox(width: 6),
+                              _FormulaDetailsButton(
+                                spec: method.formulaSpec,
+                                child: Container(
+                                  width: 14,
+                                  height: 14,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: selected == method
+                                          ? Colors.white
+                                          : muted.withValues(alpha: 0.6),
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'i',
+                                    style: TextStyle(
+                                      fontFamily: 'serif',
+                                      fontStyle: FontStyle.italic,
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 10,
+                                      height: 1.1,
+                                      color: selected == method
+                                          ? Colors.white
+                                          : muted.withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -20305,303 +22379,12 @@ class _VarMethodSwitch extends StatelessWidget {
   }
 }
 
-class _MethodHeader extends StatelessWidget {
-  const _MethodHeader({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.insight,
-    required this.formula,
-  });
-
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
-  final _VarInsightSpec insight;
-  final _VarFormulaSpec formula;
-
-  @override
-  Widget build(BuildContext context) {
-    final textColor = _marketTextFor(context);
-    final mutedColor = _marketMutedFor(context);
-
-    return _MarketCard(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-      child: Row(
-        children: [
-          _MethodInsightIcon(
-            icon: icon,
-            color: color,
-            insight: insight,
-          ),
-          const SizedBox(width: 3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title.tr(context),
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 14.2,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle.tr(context),
-                  style: TextStyle(
-                    color: mutedColor,
-                    fontSize: 10.4,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 3),
-          _FormulaDetailsButton(spec: formula),
-        ],
-      ),
-    );
-  }
-}
-
-class _MethodInsightIcon extends StatefulWidget {
-  const _MethodInsightIcon({
-    required this.icon,
-    required this.color,
-    required this.insight,
-  });
-
-  final IconData icon;
-  final Color color;
-  final _VarInsightSpec insight;
-
-  @override
-  State<_MethodInsightIcon> createState() => _MethodInsightIconState();
-}
-
-class _MethodInsightIconState extends State<_MethodInsightIcon> {
-  final LayerLink _layerLink = LayerLink();
-  OverlayEntry? _entry;
-  Timer? _hideTimer;
-  bool _isVisible = false;
-
-  void _showTooltip() {
-    _hideTimer?.cancel();
-    if (_entry != null) {
-      _entry!.markNeedsBuild();
-      return;
-    }
-
-    final overlay = Overlay.maybeOf(context, rootOverlay: true);
-    if (overlay == null) {
-      return;
-    }
-
-    _entry = OverlayEntry(builder: _buildOverlay);
-    overlay.insert(_entry!);
-    if (mounted) {
-      setState(() => _isVisible = true);
-    }
-  }
-
-  void _scheduleHide() {
-    _hideTimer?.cancel();
-    _hideTimer = Timer(const Duration(milliseconds: 180), _hideTooltip);
-  }
-
-  void _hideTooltip() {
-    _hideTimer?.cancel();
-    _entry?.remove();
-    _entry = null;
-    if (mounted) {
-      setState(() => _isVisible = false);
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant _MethodInsightIcon oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_entry != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _entry?.markNeedsBuild();
-        }
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _hideTimer?.cancel();
-    _entry?.remove();
-    _entry = null;
-    super.dispose();
-  }
-
-  Widget _buildOverlay(BuildContext context) {
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          CompositedTransformFollower(
-            link: _layerLink,
-            showWhenUnlinked: false,
-            targetAnchor: Alignment.centerRight,
-            followerAnchor: Alignment.centerLeft,
-            offset: const Offset(10, 0),
-            child: MouseRegion(
-              onEnter: (_) => _hideTimer?.cancel(),
-              onExit: (_) => _scheduleHide(),
-              child: Material(
-                color: Colors.transparent,
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: const Duration(milliseconds: 170),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset((1 - value) * -6, 0),
-                        child: Transform.scale(
-                          scale: 0.985 + value * 0.015,
-                          alignment: Alignment.centerLeft,
-                          child: child,
-                        ),
-                      ),
-                    );
-                  },
-                  child: _MethodInsightTooltip(insight: widget.insight),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.help,
-        onEnter: (_) => _showTooltip(),
-        onExit: (_) => _scheduleHide(),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOutCubic,
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            color: widget.color.withValues(alpha: _isVisible ? 0.16 : 0.11),
-            borderRadius: BorderRadius.circular(AppTheme.radius),
-            border: Border.all(
-              color: widget.color.withValues(alpha: _isVisible ? 0.42 : 0.28),
-            ),
-            boxShadow: _isVisible
-                ? [
-                    BoxShadow(
-                      color: widget.color.withValues(alpha: 0.14),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Icon(widget.icon, color: widget.color, size: 17),
-        ),
-      ),
-    );
-  }
-}
-
-class _MethodInsightTooltip extends StatelessWidget {
-  const _MethodInsightTooltip({required this.insight});
-
-  final _VarInsightSpec insight;
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 560),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: _marketText.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.16),
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 4,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: insight.color.withValues(alpha: 0.82),
-                    borderRadius: BorderRadius.circular(AppTheme.radius),
-                  ),
-                ),
-                const SizedBox(width: 3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        insight.title.tr(context),
-                        style: TextStyle(
-                          color: insight.color,
-                          fontSize: 12.6,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        insight.body.tr(context),
-                        style: const TextStyle(
-                          color: Color(0xFFE5EDF8),
-                          fontSize: 10.8,
-                          fontWeight: FontWeight.w500,
-                          height: 1.42,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (insight.footer != null) ...[
-              const SizedBox(height: 3),
-              insight.footer!,
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _FormulaDetailsButton extends StatefulWidget {
-  const _FormulaDetailsButton({required this.spec});
+  const _FormulaDetailsButton({required this.spec, this.child});
 
   final _VarFormulaSpec spec;
+  final Widget? child;
 
   @override
   State<_FormulaDetailsButton> createState() => _FormulaDetailsButtonState();
@@ -20723,7 +22506,7 @@ class _FormulaDetailsButtonState extends State<_FormulaDetailsButton> {
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOutCubic,
             scale: _isVisible ? 1.04 : 1,
-            child: Container(
+            child: widget.child ?? Container(
               width: 26,
               height: 26,
               alignment: Alignment.center,
@@ -20772,7 +22555,7 @@ class _FormulaDetailsTooltip extends StatelessWidget {
     final textColor = _marketTextFor(context);
     final maxWidth = math.max(
       360.0,
-      math.min(640.0, MediaQuery.sizeOf(context).width - 24),
+      math.min(480.0, MediaQuery.sizeOf(context).width - 32),
     );
     final maxHeight = math.max(
       360.0,
@@ -20782,22 +22565,24 @@ class _FormulaDetailsTooltip extends StatelessWidget {
     return ConstrainedBox(
       constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
           color: surface,
-          borderRadius: BorderRadius.circular(AppTheme.radius),
+          borderRadius: BorderRadius.circular(AppTheme.radius + 6),
           border: Border.all(
-            color: spec.color.withValues(alpha: 0.28),
+            color: spec.color.withValues(alpha: 0.15),
+            width: 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF13203A).withValues(alpha: 0.12),
-              blurRadius: 28,
-              offset: const Offset(0, 14),
+              color: spec.color.withValues(alpha: 0.08),
+              blurRadius: 40,
+              spreadRadius: -4,
+              offset: const Offset(0, 16),
             ),
             BoxShadow(
-              color: spec.color.withValues(alpha: 0.08),
-              blurRadius: 32,
+              color: const Color(0xFF000000).withValues(alpha: 0.15),
+              blurRadius: 20,
               offset: const Offset(0, 8),
             ),
           ],
@@ -20809,43 +22594,26 @@ class _FormulaDetailsTooltip extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: spec.color.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(AppTheme.radius),
-                      border:
-                          Border.all(color: spec.color.withValues(alpha: 0.30)),
-                    ),
-                    child: Text(
-                      'Σ',
-                      style: TextStyle(
-                        color: spec.color,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        height: 1,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 3),
                   Expanded(
                     child: Text(
-                      spec.title.tr(context),
+                      spec.title,
                       style: TextStyle(
-                        color: textColor,
-                        fontSize: 13.4,
-                        fontWeight: FontWeight.w500,
-                        height: 1.2,
+                        color: spec.color.withValues(alpha: 0.95),
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 3),
+              Divider(
+                height: 16,
+                thickness: 1,
+                color: spec.color.withValues(alpha: 0.12),
+              ),
               _FormulaTextSection(
                 title: 'Formules de calcul',
                 color: spec.color,
@@ -20856,14 +22624,19 @@ class _FormulaDetailsTooltip extends StatelessWidget {
                         index++) ...[
                       _FormulaMathBlock(
                         latex: spec.formulas[index],
+                        color: spec.color,
                       ),
                       if (index < spec.formulas.length - 1)
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
+              Divider(
+                height: 16,
+                thickness: 1,
+                color: spec.color.withValues(alpha: 0.12),
+              ),
               _FormulaTextSection(
                 title: 'Variables',
                 color: spec.color,
@@ -20880,9 +22653,11 @@ class _FormulaDetailsTooltip extends StatelessWidget {
 class _FormulaMathBlock extends StatelessWidget {
   const _FormulaMathBlock({
     required this.latex,
+    required this.color,
   });
 
   final String latex;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -20890,7 +22665,7 @@ class _FormulaMathBlock extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4.0),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: fm.Math.tex(
@@ -20898,7 +22673,7 @@ class _FormulaMathBlock extends StatelessWidget {
           mathStyle: fm.MathStyle.display,
           textStyle: TextStyle(
             color: textColor,
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -20922,57 +22697,48 @@ class _FormulaTextSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceSoft = _marketSurfaceSoftFor(context);
-    final muted = _marketMutedFor(context);
+    final textColor = _marketTextFor(context);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 3),
-      decoration: BoxDecoration(
-        color: surfaceSoft,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(color: color.withValues(alpha: 0.12)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 3,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.82),
-                  borderRadius: BorderRadius.circular(AppTheme.radius),
-                ),
-              ),
-              const SizedBox(width: 7),
-              Text(
-                title.tr(context),
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                  height: 1.2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 7),
-          if (child != null)
-            child!
-          else
-            Text(
-              (body ?? '').tr(context),
-              style: TextStyle(
-                color: muted,
-                fontSize: 10.2,
-                fontWeight: FontWeight.w500,
-                height: 1.45,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 3,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-        ],
-      ),
+            const SizedBox(width: 10),
+            Text(
+              title.toUpperCase(),
+              style: TextStyle(
+                color: color,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        if (child != null)
+          child!
+        else
+          Text(
+            body ?? '',
+            style: TextStyle(
+              color: textColor.withValues(alpha: 0.8),
+              fontSize: 11.0,
+              fontWeight: FontWeight.w400,
+              height: 1.5,
+            ),
+          ),
+      ],
     );
   }
 }
@@ -21431,20 +23197,13 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
         children: [
           Row(
             children: [
+              // Liseré navy — pas de pictogramme.
               Container(
-                width: 24,
-                height: 24,
+                width: 3,
+                height: 16,
                 decoration: BoxDecoration(
-                  color: _marketPrimary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppTheme.radius),
-                  border: Border.all(
-                    color: _marketPrimary.withValues(alpha: 0.24),
-                  ),
-                ),
-                child: const Icon(
-                  CupertinoIcons.settings_solid,
                   color: _marketPrimary,
-                  size: 13,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
               const SizedBox(width: 8),
@@ -21568,20 +23327,13 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
           ),
           child: Row(
             children: [
+              // Liseré navy — pas de pictogramme.
               Container(
-                width: 21,
-                height: 21,
+                width: 3,
+                height: 15,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.76),
-                  borderRadius: BorderRadius.circular(AppTheme.radius),
-                  border: Border.all(
-                    color: _marketPrimary.withValues(alpha: 0.18),
-                  ),
-                ),
-                child: const Icon(
-                  CupertinoIcons.settings_solid,
                   color: _marketPrimary,
-                  size: 12,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
               const SizedBox(width: 7),
@@ -21825,47 +23577,43 @@ class _VarMiniKpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final surface = _marketSurfaceFor(context);
+    final border = _marketBorderFor(context);
     final muted = _marketMutedFor(context);
+    final text = _marketTextFor(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: surface.withValues(alpha: _isMarketDark(context) ? 0.72 : 0.92),
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: item.color.withValues(alpha: 0.18)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF334155).withValues(alpha: 0.045),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        color: surface.withValues(alpha: _isMarketDark(context) ? 0.72 : 1.0),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: border),
       ),
       child: Row(
         children: [
+          // Liseré d'accent — pas d'icône, palette de base.
           Container(
-            width: 20,
-            height: 20,
+            width: 2.5,
+            height: double.infinity,
             decoration: BoxDecoration(
-              color: item.color.withValues(alpha: 0.09),
-              borderRadius: BorderRadius.circular(2),
+              color: item.color,
+              borderRadius: BorderRadius.circular(3),
             ),
-            child: Icon(item.icon, size: 11, color: item.color),
           ),
-          const SizedBox(width: 7),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  item.label.tr(context),
+                  item.label.tr(context).toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: muted,
-                    fontSize: 8.3,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 7.8,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
                     height: 1,
                   ),
                 ),
@@ -21878,9 +23626,9 @@ class _VarMiniKpiCard extends StatelessWidget {
                       item.value,
                       maxLines: 1,
                       style: TextStyle(
-                        color: item.color,
-                        fontSize: 10.8,
-                        fontWeight: FontWeight.w500,
+                        color: text,
+                        fontSize: 11.4,
+                        fontWeight: FontWeight.w700,
                         height: 1,
                         letterSpacing: 0,
                       ),
@@ -21901,14 +23649,12 @@ class _VarKpiSpec {
     required this.label,
     required this.value,
     required this.detail,
-    required this.icon,
-    required this.color,
+    this.color = _marketDashboardDeepBlue,
   });
 
   final String label;
   final String value;
   final String detail;
-  final IconData icon;
   final Color color;
 }
 
@@ -21945,7 +23691,6 @@ class _HistoricalLossHistogramState extends State<_HistoricalLossHistogram> {
         title: 'Aucune donnée historique chargée',
         subtitle:
             'Chargez un portefeuille avec des données de marché pour afficher l’histogramme des pertes.',
-        icon: CupertinoIcons.chart_bar_alt_fill,
         accent: _marketPrimary,
       );
     }
@@ -22130,7 +23875,7 @@ class _HistoricalHistogramPainter extends CustomPainter {
         .toDouble();
     final baseColor = isTail
         ? Color.lerp(_marketWarning, _marketDanger, 0.42 + tailProgress * 0.42)!
-        : Color.lerp(_marketPrimary, _marketCyan, 0.16)!;
+        : Color.lerp(_marketPrimary, _marketSequentialBlues[5], 0.16)!;
     final alpha = isHovered
         ? 0.84
         : isTail
@@ -22403,6 +24148,7 @@ void _drawHistoricalGrid(
     'gains ←',
     Offset(chart.left, chart.bottom + 40),
     maxWidth: 58,
+    color: _marketSuccess,
   );
   _paintAxisLabel(
     canvas,
@@ -22410,6 +24156,7 @@ void _drawHistoricalGrid(
     Offset(chart.right, chart.bottom + 40),
     rightAlign: true,
     maxWidth: 96,
+    color: _marketDanger,
   );
 }
 
@@ -22522,7 +24269,7 @@ void _drawHistoricalMarkers(
     metrics,
     loss: metrics.percentile95,
     label: 'P95',
-    color: _marketCyan,
+    color: _marketPrimary,
     topOffset: 42,
     dashed: true,
   );
@@ -22532,7 +24279,7 @@ void _drawHistoricalMarkers(
     metrics,
     loss: metrics.percentile99,
     label: 'P99',
-    color: _marketViolet,
+    color: _marketDashboardDeepBlue,
     topOffset: 68,
     dashed: true,
   );
@@ -22657,8 +24404,8 @@ void _drawHistoricalHover(
   if (hover == null) return;
   final color = switch (hover.kind) {
     _HistoricalHoverKind.varLine => _marketDanger,
-    _HistoricalHoverKind.percentile95 => _marketCyan,
-    _HistoricalHoverKind.percentile99 => _marketViolet,
+    _HistoricalHoverKind.percentile95 => _marketPrimary,
+    _HistoricalHoverKind.percentile99 => _marketDashboardDeepBlue,
     _HistoricalHoverKind.bin => _marketPrimary,
   };
   canvas.drawLine(
@@ -22686,8 +24433,7 @@ class _NormalCurveChart extends StatelessWidget {
         title: 'Données insuffisantes',
         subtitle:
             'Chargez un portefeuille avec une valeur et une volatilité exploitables pour tracer la courbe Delta-Normale.',
-        icon: CupertinoIcons.function,
-        accent: _marketViolet,
+        accent: _marketDashboardDeepBlue,
       );
     }
     return _InteractiveNormalCurveChart(
@@ -22904,8 +24650,8 @@ class _NormalCurvePainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            _marketViolet.withValues(alpha: 0.14),
-            _marketViolet.withValues(alpha: 0.025),
+            _marketDashboardDeepBlue.withValues(alpha: 0.14),
+            _marketDashboardDeepBlue.withValues(alpha: 0.025),
           ],
         ).createShader(chart),
     );
@@ -22924,7 +24670,7 @@ class _NormalCurvePainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = _marketViolet.withValues(alpha: 0.18)
+        ..color = _marketDashboardDeepBlue.withValues(alpha: 0.18)
         ..strokeWidth = 8
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
@@ -22933,7 +24679,7 @@ class _NormalCurvePainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = _marketViolet
+        ..color = _marketDashboardDeepBlue
         ..strokeWidth = 2.9
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
@@ -23186,7 +24932,7 @@ void _drawParametricMarkers(
   final varX = metrics.xForLoss(chart, result.varValue);
 
   final sigmaPaint = Paint()
-    ..color = _marketViolet.withValues(alpha: 0.20)
+    ..color = _marketDashboardDeepBlue.withValues(alpha: 0.20)
     ..strokeWidth = 1;
   canvas.drawLine(
       Offset(sigmaX, chart.top + 12), Offset(sigmaX, chart.bottom), sigmaPaint);
@@ -23250,7 +24996,7 @@ void _drawParametricAnnotations(
     canvas,
     'Distribution des pertes potentielles',
     Offset(chart.left + 10, chart.top + 10),
-    color: _marketViolet,
+    color: _marketDashboardDeepBlue,
     maxWidth: 184,
     compact: true,
   );
@@ -23282,7 +25028,7 @@ void _drawParametricAnnotations(
     canvas,
     'σ* ${AppFormatters.percent(result.effectiveVolatility)}',
     Offset(math.min(sigmaLabelX + 10, chart.right - 90), chart.top + 70),
-    color: _marketCyan,
+    color: _marketPrimary,
     maxWidth: 88,
     compact: true,
   );
@@ -23299,7 +25045,7 @@ void _drawParametricHover(
   final color = switch (hover.kind) {
     _ParametricHoverKind.varLine || _ParametricHoverKind.tail => _marketDanger,
     _ParametricHoverKind.mean => _marketPrimary,
-    _ParametricHoverKind.curve => _marketViolet,
+    _ParametricHoverKind.curve => _marketDashboardDeepBlue,
   };
   canvas.drawLine(
     Offset(x, chart.top),
@@ -23437,8 +25183,7 @@ class _MonteCarloDistributionChartState
         title: 'Aucune simulation disponible',
         subtitle:
             'Chargez un portefeuille avec des données exploitables pour générer la distribution Monte-Carlo.',
-        icon: CupertinoIcons.chart_bar_square_fill,
-        accent: _marketCyan,
+        accent: _marketPrimary,
       );
     }
     final metrics = _MonteCarloDistributionMetrics.from(widget.result);
@@ -23946,6 +25691,7 @@ void _drawMonteCarloPnlCoordinates(
     );
   }
 
+
   final vertical = Paint()
     ..color = _marketBorder.withValues(alpha: 0.20)
     ..strokeWidth = 0.7;
@@ -23975,6 +25721,7 @@ void _drawMonteCarloPnlCoordinates(
     '← pertes sévères',
     Offset(chart.left, chart.bottom + 40),
     maxWidth: 96,
+    color: _marketDanger,
   );
   _paintAxisLabel(
     canvas,
@@ -23982,6 +25729,7 @@ void _drawMonteCarloPnlCoordinates(
     Offset(chart.right, chart.bottom + 40),
     rightAlign: true,
     maxWidth: 60,
+    color: _marketSuccess,
   );
 }
 
@@ -24010,7 +25758,7 @@ void _drawMonteCarloDepth(Canvas canvas, Rect chart) {
         end: Alignment.bottomCenter,
         colors: [
           _marketPrimary.withValues(alpha: 0.020),
-          _marketCyan.withValues(alpha: 0.010),
+          _marketPrimary.withValues(alpha: 0.010),
           _marketSurface.withValues(alpha: 0.0),
         ],
       ).createShader(chart),
@@ -24123,7 +25871,7 @@ void _drawMonteCarloHistogram(
         ? Color.lerp(_marketDanger, _marketWarning, 0.09)!
         : isCritical
             ? Color.lerp(_marketDanger, _marketWarning, 0.16)!
-            : Color.lerp(_marketPrimary, _marketCyan, 0.28)!;
+            : Color.lerp(_marketPrimary, _marketSequentialBlues[5], 0.28)!;
     final alpha = isHovered
         ? 0.88
         : isEs
@@ -24192,7 +25940,7 @@ void _drawMonteCarloKde(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          _marketCyan.withValues(alpha: 0.090),
+          _marketPrimary.withValues(alpha: 0.090),
           _marketPrimary.withValues(alpha: 0.020),
           _marketSurface.withValues(alpha: 0.0),
         ],
@@ -24201,7 +25949,7 @@ void _drawMonteCarloKde(
   canvas.drawPath(
     path,
     Paint()
-      ..color = _marketCyan.withValues(alpha: 0.20)
+      ..color = _marketPrimary.withValues(alpha: 0.20)
       ..strokeWidth = 8
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -24216,7 +25964,7 @@ void _drawMonteCarloKde(
         end: Alignment.centerRight,
         colors: [
           _marketDanger.withValues(alpha: 0.72),
-          _marketCyan.withValues(alpha: 0.72),
+          _marketPrimary.withValues(alpha: 0.72),
           _marketPrimary.withValues(alpha: 0.66),
         ],
       ).createShader(chart)
@@ -24353,7 +26101,7 @@ void _drawMonteCarloConvergence(
   canvas.drawRRect(
     rrect,
     Paint()
-      ..color = _marketCyan.withValues(alpha: 0.22)
+      ..color = _marketPrimary.withValues(alpha: 0.22)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.9,
   );
@@ -24402,7 +26150,7 @@ void _drawMonteCarloConvergence(
   canvas.drawPath(
     path,
     Paint()
-      ..color = _marketCyan
+      ..color = _marketPrimary
       ..strokeWidth = 1.6
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -24421,7 +26169,7 @@ void _drawMonteCarloHover(
     _MonteCarloHoverKind.varLine => _marketDanger,
     _MonteCarloHoverKind.expectedShortfall => _marketDanger,
     _MonteCarloHoverKind.extremeTail => _marketWarning,
-    _MonteCarloHoverKind.density => _marketCyan,
+    _MonteCarloHoverKind.density => _marketPrimary,
     _MonteCarloHoverKind.bin => _marketPrimary,
   };
   final x = metrics.xForPnl(chart, hover.pnl);
@@ -24539,13 +26287,14 @@ void _paintAxisLabel(
   bool rightAlign = false,
   bool center = false,
   double maxWidth = 60,
+  Color? color,
 }) {
   final resolvedText = _marketTr(text);
   final painter = TextPainter(
     text: TextSpan(
       text: resolvedText,
-      style: const TextStyle(
-        color: _marketMuted,
+      style: TextStyle(
+        color: color ?? _marketMuted,
         fontSize: 8,
         fontWeight: FontWeight.w500,
         height: 1,
@@ -24612,19 +26361,13 @@ class _SimulationPipeline extends StatelessWidget {
 
   final bool onDark;
 
+  // Étapes de la simulation — badges numérotés, palette de base (le rouge
+  // reste réservé à l'extraction du quantile de perte).
   static const _steps = [
-    (
-      'Génération des scénarios',
-      CupertinoIcons.chart_bar_alt_fill,
-      _marketCyan
-    ),
-    (
-      'Revalorisation portefeuille',
-      CupertinoIcons.briefcase_fill,
-      _marketViolet
-    ),
-    ('Distribution des pertes', CupertinoIcons.chart_bar_fill, _marketWarning),
-    ('Extraction de la VaR', CupertinoIcons.scope, _marketDanger),
+    ('Génération des scénarios', _marketPrimary),
+    ('Revalorisation portefeuille', _marketDashboardDeepBlue),
+    ('Distribution des pertes', _marketDashboardDeepBlue),
+    ('Extraction de la VaR', _marketDanger),
   ];
 
   @override
@@ -24639,8 +26382,7 @@ class _SimulationPipeline extends StatelessWidget {
               _PipelineStep(
                 index: index + 1,
                 label: _steps[index].$1,
-                icon: _steps[index].$2,
-                color: _steps[index].$3,
+                color: _steps[index].$2,
                 onDark: onDark,
                 width: constraints.maxWidth >= 900
                     ? (constraints.maxWidth - 32) / 5
@@ -24657,7 +26399,6 @@ class _PipelineStep extends StatelessWidget {
   const _PipelineStep({
     required this.index,
     required this.label,
-    required this.icon,
     required this.color,
     required this.width,
     required this.onDark,
@@ -24665,7 +26406,6 @@ class _PipelineStep extends StatelessWidget {
 
   final int index;
   final String label;
-  final IconData icon;
   final Color color;
   final double width;
   final bool onDark;
@@ -24688,23 +26428,41 @@ class _PipelineStep extends StatelessWidget {
           padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: color.withValues(alpha: onDark ? 0.13 : 0.055),
-            borderRadius: BorderRadius.circular(AppTheme.radius),
+            borderRadius: BorderRadius.circular(3),
             border: Border.all(
                 color: color.withValues(alpha: onDark ? 0.26 : 0.16)),
           ),
           child: Row(
             children: [
-              Icon(icon, size: 16, color: color),
+              // Badge numéroté — pas de pictogramme.
+              Container(
+                width: 18,
+                height: 18,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: onDark ? 0.30 : 0.12),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  '$index',
+                  style: TextStyle(
+                    color: onDark ? const Color(0xFFEAF2FF) : color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '$index. ${label.tr(context)}',
+                  label.tr(context),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: onDark ? const Color(0xFFEAF2FF) : _marketText,
                     fontSize: 10.2,
-                    fontWeight: onDark ? FontWeight.w500 : FontWeight.w500,
+                    fontWeight: FontWeight.w500,
                     height: 1.18,
                   ),
                 ),
@@ -24782,10 +26540,12 @@ class _MarketCard extends StatelessWidget {
   const _MarketCard({
     required this.child,
     this.padding = const EdgeInsets.all(4),
+    this.hasBorder = true,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final bool hasBorder;
 
   @override
   Widget build(BuildContext context) {
@@ -24799,7 +26559,7 @@ class _MarketCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? surface.withValues(alpha: 0.92) : Colors.white,
         borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: isDark ? border : _line),
+        border: hasBorder ? Border.all(color: isDark ? border : _line) : null,
       ),
       child: child,
     );
@@ -24839,6 +26599,12 @@ class _HistoricalVarResult {
   String get animationKey =>
       '$confidence-$horizonDays-$windowDays-${losses.length}-${varValue.round()}-$isProxy';
 
+  /// Taille minimale d'échantillon pour une VaR historique observée : en
+  /// dessous, le quantile 99 % dégénère vers le maximum de l'échantillon
+  /// (VaR = ES = pire perte) et n'a aucune valeur statistique. On bascule
+  /// alors sur les distributions reconstruites (chocs de courbe, proxy).
+  static const int _minHistoricalObservations = 100;
+
   static _HistoricalVarResult calculate({
     required _VarPortfolioContext portfolio,
     required double confidence,
@@ -24846,8 +26612,9 @@ class _HistoricalVarResult {
     required int windowDays,
   }) {
     final timeScale = math.sqrt(math.max(1, horizonDays));
-    if (portfolio.historicalReturns.isNotEmpty) {
-      final available = portfolio.historicalReturns.length;
+    final availableHistory = portfolio.historicalReturns.length;
+    if (availableHistory >= _minHistoricalObservations) {
+      final available = availableHistory;
       final effectiveWindow = math.min(windowDays, available);
       final sample = portfolio.historicalReturns
           .map(_asDecimalRate)
@@ -24878,6 +26645,13 @@ class _HistoricalVarResult {
         sourceLabel: 'Historique observé',
       );
     }
+
+    // Historique partiel (< minimum statistique) : signalé dans le libellé de
+    // source pour que l'utilisateur sache pourquoi la distribution est
+    // reconstruite plutôt qu'observée.
+    final insufficientHistoryNote = availableHistory > 0
+        ? ' · historique réel : $availableHistory obs. (< $_minHistoricalObservations)'
+        : '';
 
     if (portfolio.curveShockLosses.isNotEmpty) {
       final sourceLosses = _sampleLossWindow(
@@ -24915,10 +26689,11 @@ class _HistoricalVarResult {
         losses: losses,
         bins: _LossBin.build(losses, 32),
         isProxy: portfolio.curveShockIsProxy,
-        sourceLabel: portfolio.curveShockSourceLabel ??
-            (portfolio.curveShockIsProxy
-                ? 'Chocs de courbe reconstruits'
-                : 'Chocs historiques de courbe'),
+        sourceLabel: (portfolio.curveShockSourceLabel ??
+                (portfolio.curveShockIsProxy
+                    ? 'Chocs de courbe reconstruits'
+                    : 'Chocs historiques de courbe')) +
+            insufficientHistoryNote,
       );
     }
 
@@ -24981,7 +26756,7 @@ class _HistoricalVarResult {
         losses: proxyLosses,
         bins: _LossBin.build(proxyLosses, 32),
         isProxy: true,
-        sourceLabel: 'Proxy de marché',
+        sourceLabel: 'Proxy de marché$insufficientHistoryNote',
       );
     }
 
@@ -25346,10 +27121,14 @@ class _MonteCarloVarResult {
       );
     }
 
+    // La voie empirique exige le même minimum statistique que la VaR
+    // historique : rééchantillonner 3 observations produirait une
+    // distribution à 3 pics sans valeur. En dessous, repli sur la loi tirée.
+    final canUseEmpirical = distribution == _MonteCarloDistribution.empirical &&
+        empiricalReturns.length >=
+            _HistoricalVarResult._minHistoricalObservations;
     for (var index = 0; index < sampleCount; index++) {
-      final usesEmpiricalReturn =
-          distribution == _MonteCarloDistribution.empirical &&
-              empiricalReturns.isNotEmpty;
+      final usesEmpiricalReturn = canUseEmpirical;
       final shock = usesEmpiricalReturn
           ? (empiricalReturns[random.nextInt(empiricalReturns.length)] -
                   empiricalMean) /
@@ -25654,16 +27433,60 @@ extension on _VarMethod {
         _VarMethod.monteCarlo => CupertinoIcons.chart_bar_alt_fill,
       };
 
+  // Palette de base uniquement : les trois méthodes restent dans la famille
+  // navy (la distinction se fait par l'onglet actif, pas par la couleur).
   Color get color => switch (this) {
         _VarMethod.historical => _marketPrimary,
-        _VarMethod.parametric => _marketViolet,
-        _VarMethod.monteCarlo => _marketCyan,
+        _VarMethod.parametric => _marketDashboardDeepBlue,
+        _VarMethod.monteCarlo => _marketPrimary,
       };
 
   String get title => switch (this) {
         _VarMethod.historical => 'VaR Historique',
         _VarMethod.parametric => 'VaR Paramétrique',
         _VarMethod.monteCarlo => 'VaR Monte-Carlo',
+      };
+
+  _VarFormulaSpec get formulaSpec => switch (this) {
+        _VarMethod.historical => const _VarFormulaSpec(
+            color: _marketPrimary,
+            title: 'Formules - VaR historique',
+            formulas: [
+              r'L_{i,t}\approx D_{\mathrm{mod},i}\times PV_i\times \Delta y_{i,t}-\frac{1}{2}C_i\times PV_i\times(\Delta y_{i,t})^2',
+              r'L_t=\sum_i L_{i,t}',
+              r'\widehat{\mathrm{VaR}}_{\alpha,1j}=Q_{\alpha}(L)',
+              r'\widehat{\mathrm{VaR}}_{\alpha,T}=\widehat{\mathrm{VaR}}_{\alpha,1j}\times\sqrt{T}',
+              r'\widehat{\mathrm{ES}}_{\alpha,T}=\mathbb{E}\left[L\mid L\geq \widehat{\mathrm{VaR}}_{\alpha,T}\right]',
+            ],
+            variables:
+                'PVᵢ : valeur actuelle du titre ; Dmodᵢ : duration modifiée ; Cᵢ : convexité ; Δyᵢ,ₜ : choc de courbe interpolé ; α : niveau de confiance ; T : horizon en jours.',
+          ),
+        _VarMethod.parametric => const _VarFormulaSpec(
+            color: _marketDashboardDeepBlue,
+            title: 'Formules - VaR paramétrique',
+            formulas: [
+              r'\sigma_{1j}=\frac{\sigma_{\mathrm{annuelle}}}{\sqrt{252}}',
+              r'\kappa=D_{\mathrm{mod}}\ \mathrm{(obligations)},\quad \kappa=1\ \mathrm{(actions)}',
+              r'\mathrm{VaR}_{\alpha,T}=z_{\alpha}\times\sigma_{1j}\times\kappa\times V\times\sqrt{T}',
+              r'\mathrm{ES}_{\alpha,T}=\frac{\varphi(z_{\alpha})}{1-\alpha}\times\sigma_{1j}\times\kappa\times V\times\sqrt{T}',
+            ],
+            variables:
+                'zα : quantile normal ; σ : volatilité annualisée convertie en volatilité journalière ; κ : Dmod pour obligations, 1 pour actions ; V : valeur du portefeuille ; T : horizon en jours ; φ : densité normale.',
+          ),
+        _VarMethod.monteCarlo => const _VarFormulaSpec(
+            color: _marketPrimary,
+            title: 'Formules - VaR Monte-Carlo',
+            formulas: [
+              r'\varepsilon_i\sim\mathcal{D}(0,1)',
+              r'X_i=\mu\frac{T}{252}+\sigma_{1j}\sqrt{T}\,\varepsilon_i',
+              r'\kappa=D_{\mathrm{mod}}\ \mathrm{(obligations)},\quad \kappa=1\ \mathrm{(actions)}',
+              r'L_i=\kappa\times X_i\times V\ \mathrm{(obligations)},\quad L_i=-X_i\times V\ \mathrm{(actions)}',
+              r'\widehat{\mathrm{VaR}}_{\alpha,T}=Q_{\alpha}\left(\{L_i\}_{i=1}^{N}\right)',
+              r'\widehat{\mathrm{ES}}_{\alpha,T}=\frac{1}{N_{\alpha}}\sum_{L_i\geq \widehat{\mathrm{VaR}}_{\alpha,T}}L_i',
+            ],
+            variables:
+                'μ : rendement attendu ; σ : volatilité ; ε : tirage normal ; κ : sens du choc ; V : valeur du portefeuille ; N : nombre de scénarios ; T : horizon en jours.',
+          ),
       };
 
   String get subtitle => switch (this) {
@@ -25780,6 +27603,7 @@ class _CalculPrudentielWorkspace extends StatefulWidget {
 class _CalculPrudentielWorkspaceState
     extends State<_CalculPrudentielWorkspace> {
   _CalculPrudentielTab _selectedTab = _CalculPrudentielTab.analysePortefeuille;
+  MarketPortfolioType _selectedType = MarketPortfolioType.bonds;
 
   @override
   Widget build(BuildContext context) {
@@ -25790,7 +27614,9 @@ class _CalculPrudentielWorkspaceState
           padding: const EdgeInsets.fromLTRB(5, 4, 5, 0),
           child: _CalculPrudentielTabBar(
             selectedTab: _selectedTab,
-            onChanged: (tab) => setState(() => _selectedTab = tab),
+            selectedType: _selectedType,
+            onTabChanged: (tab) => setState(() => _selectedTab = tab),
+            onTypeChanged: (type) => setState(() => _selectedType = type),
           ),
         ),
         Expanded(child: _buildCurrentTab()),
@@ -25807,56 +27633,117 @@ class _CalculPrudentielWorkspaceState
       case _CalculPrudentielTab.actions:
         return const _ActionRiskScreen();
       case _CalculPrudentielTab.analysePortefeuille:
-        return const _MarketPortfolioAnalysisScreen();
+        return _MarketPortfolioAnalysisScreen(selectedType: _selectedType);
     }
   }
 
 }
 
 class _CalculPrudentielTabBar extends StatelessWidget {
-  const _CalculPrudentielTabBar(
-      {required this.selectedTab, required this.onChanged});
+  const _CalculPrudentielTabBar({
+    required this.selectedTab,
+    required this.selectedType,
+    required this.onTabChanged,
+    required this.onTypeChanged,
+  });
   final _CalculPrudentielTab selectedTab;
-  final ValueChanged<_CalculPrudentielTab> onChanged;
+  final MarketPortfolioType selectedType;
+  final ValueChanged<_CalculPrudentielTab> onTabChanged;
+  final ValueChanged<MarketPortfolioType> onTypeChanged;
 
   @override
   Widget build(BuildContext context) {
     final border = _marketBorderFor(context);
+    final isDark = _isMarketDark(context);
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+
     return Container(
       width: double.infinity,
-      decoration:
-          BoxDecoration(border: Border(bottom: BorderSide(color: border))),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(children: [
-          _tabButton(_CalculPrudentielTab.analysePortefeuille,
-              'Analyse portefeuille Marché'),
-          _tabButton(_CalculPrudentielTab.taux, 'Risque de Taux'),
-          _tabButton(_CalculPrudentielTab.change, 'Risque de Change'),
-          _tabButton(_CalculPrudentielTab.actions, 'Risque Actions'),
-        ]),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border(bottom: BorderSide(color: border)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0), // Slate 800 or Slate 200
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _tabButton(context, _CalculPrudentielTab.analysePortefeuille, 'Analyse portefeuille Marché'),
+                  _tabButton(context, _CalculPrudentielTab.taux, 'Risque de Taux'),
+                  _tabButton(context, _CalculPrudentielTab.change, 'Risque de Change'),
+                  _tabButton(context, _CalculPrudentielTab.actions, 'Risque Actions'),
+                ],
+              ),
+            ),
+          ),
+          if (selectedTab == _CalculPrudentielTab.analysePortefeuille)
+            _MarketPortfolioTypeSwitch(
+              selectedType: selectedType,
+              onChanged: onTypeChanged,
+            ),
+        ],
       ),
     );
   }
 
-  Widget _tabButton(_CalculPrudentielTab tab, String label) {
+  Widget _tabButton(BuildContext context, _CalculPrudentielTab tab, String label) {
     final isSelected = selectedTab == tab;
+    final isDark = _isMarketDark(context);
+
+    // Modern segmented control colors
+    final selectedBg = isDark ? const Color(0xFF334155) : Colors.white; // Slate 700 or White
+    final selectedText = isDark ? Colors.white : const Color(0xFF0F172A); // White or Slate 900
+
+    final unselectedText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B); // Slate 400 or Slate 500
+    final hoverBg = isDark ? const Color(0xFF334155).withValues(alpha: 0.5) : const Color(0xFFCBD5E1).withValues(alpha: 0.4);
+
     return InkWell(
-      onTap: () => onChanged(tab),
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      onTap: () => onTabChanged(tab),
+      hoverColor: hoverBg,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
         decoration: BoxDecoration(
-          border: Border(
-              bottom: BorderSide(
-                  color: isSelected ? _deepBlue : Colors.transparent,
-                  width: 2)),
+          color: isSelected ? selectedBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isSelected && !isDark ? [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 1,
+              offset: const Offset(0, 1),
+            )
+          ] : null,
         ),
-        child: Text(label,
-            style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected ? _deepBlue : _muted)),
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          style: TextStyle(
+              fontSize: 13.0, // Smaller, more elegant size
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500, // Lighter weights
+              color: isSelected ? selectedText : unselectedText,
+              fontFamily: 'Inter',
+          ),
+          child: Text(label),
+        ),
       ),
     );
   }
@@ -27147,7 +29034,8 @@ class _TauxSummaryRow extends StatelessWidget {
             child: _TauxSummaryItem(
                 label: 'RWA Taux',
                 value: rwa,
-                subtitle: 'Équivalent en actifs pondérés des risques')),
+                subtitle: 'Équivalent en actifs pondérés des risques',
+                useMarquee: true)),
         const SizedBox(width: 10),
         Expanded(
             child: _TauxSummaryItem(
@@ -27239,9 +29127,11 @@ class _TauxSummaryItem extends StatefulWidget {
     required this.label,
     required this.value,
     this.subtitle,
+    this.useMarquee = false,
   });
   final String label, value;
   final String? subtitle;
+  final bool useMarquee;
   @override
   State<_TauxSummaryItem> createState() => _TauxSummaryItemState();
 }
@@ -27360,20 +29250,43 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
             ),
             if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
               const Spacer(),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  widget.subtitle!,
-                  maxLines: 1,
-                  style: const TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w600,
-                    color: _muted,
-                    height: 1,
+              if (widget.useMarquee)
+                SizedBox(
+                  height: 12,
+                  child: Marquee(
+                    text: widget.subtitle!,
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600,
+                      color: _muted,
+                      height: 1,
+                    ),
+                    scrollAxis: Axis.horizontal,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    blankSpace: 30.0,
+                    velocity: 30.0,
+                    pauseAfterRound: const Duration(seconds: 1),
+                    accelerationDuration: const Duration(milliseconds: 500),
+                    accelerationCurve: Curves.linear,
+                    decelerationDuration: const Duration(milliseconds: 500),
+                    decelerationCurve: Curves.easeOut,
+                  ),
+                )
+              else
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    widget.subtitle!,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600,
+                      color: _muted,
+                      height: 1,
+                    ),
                   ),
                 ),
-              ),
             ],
           ],
         ),
@@ -28107,7 +30020,6 @@ class _MarketRwaStructureCardState extends State<_MarketRwaStructureCard> {
 // === Pilotage ===
 
 enum _PilotageTab {
-  dashboard,
   tableauDonnees,
   indicateurs,
   varRisk,
@@ -28122,19 +30034,19 @@ class _PilotageWorkspace extends StatefulWidget {
 }
 
 class _PilotageWorkspaceState extends State<_PilotageWorkspace> {
-  _PilotageTab _selectedTab = _PilotageTab.dashboard;
+  _PilotageTab _selectedTab = _PilotageTab.indicateurs;
+  MarketPortfolioType _selectedType = MarketPortfolioType.bonds;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(5, 4, 5, 0),
-          child: _PilotageTabBar(
-            selectedTab: _selectedTab,
-            onChanged: (tab) => setState(() => _selectedTab = tab),
-          ),
+        _PilotageTabBar(
+          selectedTab: _selectedTab,
+          selectedType: _selectedType,
+          onTabChanged: (tab) => setState(() => _selectedTab = tab),
+          onTypeChanged: (type) => setState(() => _selectedType = type),
         ),
         Expanded(child: _buildTabContent()),
       ],
@@ -28143,8 +30055,6 @@ class _PilotageWorkspaceState extends State<_PilotageWorkspace> {
 
   Widget _buildTabContent() {
     switch (_selectedTab) {
-      case _PilotageTab.dashboard:
-        return const _MarketDashboard();
       case _PilotageTab.tableauDonnees:
         return ValueListenableBuilder<MarketDataSnapshot>(
           valueListenable: MarketDataImportStore.instance.snapshotNotifier,
@@ -28153,16 +30063,16 @@ class _PilotageWorkspaceState extends State<_PilotageWorkspace> {
               padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding,
                   AppTheme.pageGap, AppTheme.pagePadding, AppTheme.pagePadding),
               child: _MarketDashboardDataTable(
-                  dataset: snapshot.datasetFor(MarketPortfolioType.bonds),
-                  selectedType: MarketPortfolioType.bonds,
-                  onTypeChanged: (_) {}),
+                  dataset: snapshot.datasetFor(_selectedType),
+                  selectedType: _selectedType,
+                  onTypeChanged: (type) => setState(() => _selectedType = type)),
             );
           },
         );
       case _PilotageTab.indicateurs:
-        return const _MarketIndicatorsWorkspace();
+        return _MarketIndicatorsWorkspace(selectedType: _selectedType);
       case _PilotageTab.varRisk:
-        return _ValueAtRiskModule(api: widget.api);
+        return ValueAtRiskScreen(api: widget.api);
       case _PilotageTab.courbeTaux:
         return _MarketYieldCurvesWorkspace(api: widget.api);
     }
@@ -28170,70 +30080,124 @@ class _PilotageWorkspaceState extends State<_PilotageWorkspace> {
 }
 
 class _PilotageTabBar extends StatelessWidget {
-  const _PilotageTabBar({required this.selectedTab, required this.onChanged});
+  const _PilotageTabBar({
+    required this.selectedTab,
+    required this.selectedType,
+    required this.onTabChanged,
+    required this.onTypeChanged,
+  });
   final _PilotageTab selectedTab;
-  final ValueChanged<_PilotageTab> onChanged;
+  final MarketPortfolioType selectedType;
+  final ValueChanged<_PilotageTab> onTabChanged;
+  final ValueChanged<MarketPortfolioType> onTypeChanged;
 
   @override
   Widget build(BuildContext context) {
     final border = _marketBorderFor(context);
+    final isDark = _isMarketDark(context);
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+
     return Container(
       width: double.infinity,
-      height: 50,
-      decoration:
-          BoxDecoration(border: Border(bottom: BorderSide(color: border))),
-      child: Row(children: [
-        Expanded(
-            child: _pilotageTabButton(_PilotageTab.dashboard,
-                Icons.dashboard_outlined, 'Dashboard Marché')),
-        Expanded(
-            child: _pilotageTabButton(_PilotageTab.tableauDonnees,
-                Icons.table_chart_outlined, 'Tableau des données')),
-        Expanded(
-            child: _pilotageTabButton(_PilotageTab.indicateurs,
-                Icons.bar_chart_rounded, 'Indicateurs Clés')),
-        Expanded(
-            child: _pilotageTabButton(_PilotageTab.varRisk,
-                Icons.multiline_chart_rounded, 'Value at Risk (VaR)')),
-        Expanded(
-            child: _pilotageTabButton(_PilotageTab.courbeTaux,
-                Icons.trending_up_rounded, 'Courbe des Taux')),
-      ]),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border(bottom: BorderSide(color: border)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0), // Slate 800 or Slate 200
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _pilotageTabButton(context, _PilotageTab.indicateurs, 'Indicateurs Clés'),
+                  _pilotageTabButton(context, _PilotageTab.varRisk, 'Value at Risk (VaR)'),
+                  _pilotageTabButton(context, _PilotageTab.tableauDonnees, 'Tableau des données'),
+                  _pilotageTabButton(context, _PilotageTab.courbeTaux, 'Courbe des Taux'),
+                ],
+              ),
+            ),
+          ),
+          _MarketPortfolioTypeSwitch(
+            selectedType: selectedType,
+            onChanged: onTypeChanged,
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _pilotageTabButton(_PilotageTab tab, IconData icon, String label) {
+  Widget _pilotageTabButton(BuildContext context, _PilotageTab tab, String label) {
     final isSelected = selectedTab == tab;
-    final fgColor = isSelected ? _deepBlue : _muted;
+    final isDark = _isMarketDark(context);
+
+    // Modern segmented control colors
+    final selectedBg = isDark ? const Color(0xFF334155) : Colors.white; // Slate 700 or White
+    final selectedText = isDark ? Colors.white : const Color(0xFF0F172A); // White or Slate 900
+
+    final unselectedText = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B); // Slate 400 or Slate 500
+    final hoverBg = isDark ? const Color(0xFF334155).withValues(alpha: 0.5) : const Color(0xFFCBD5E1).withValues(alpha: 0.4);
+
     return InkWell(
-      onTap: () => onChanged(tab),
-      borderRadius:
-          const BorderRadius.vertical(top: Radius.circular(AppTheme.radius)),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 9),
+      onTap: () => onTabChanged(tab),
+      hoverColor: hoverBg,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
         decoration: BoxDecoration(
-          border: Border(
-              bottom: BorderSide(
-                  color: isSelected ? _deepBlue : Colors.transparent,
-                  width: 2)),
+          color: isSelected ? selectedBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: isSelected && !isDark ? [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 1,
+              offset: const Offset(0, 1),
+            )
+          ] : null,
         ),
-        child: Text(label,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: fgColor)),
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          style: TextStyle(
+              fontSize: 13.0, // Smaller, more elegant size
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500, // Lighter weights
+              color: isSelected ? selectedText : unselectedText,
+              fontFamily: 'Inter',
+          ),
+          child: Text(label),
+        ),
       ),
     );
   }
 }
 
 class _SummaryItemData {
-  const _SummaryItemData(
-      {required this.label, required this.value, this.subtitle});
+  const _SummaryItemData({
+    required this.label,
+    required this.value,
+    this.subtitle,
+    this.useMarquee = false,
+  });
   final String label, value;
   final String? subtitle;
+  final bool useMarquee;
 }
 
 class _GenericSummaryRow extends StatelessWidget {
@@ -28258,7 +30222,8 @@ class _GenericSummaryRow extends StatelessWidget {
           child: _TauxSummaryItem(
               label: items[i].label,
               value: items[i].value,
-              subtitle: items[i].subtitle),
+              subtitle: items[i].subtitle,
+              useMarquee: items[i].useMarquee),
         ),
       );
     }
@@ -28345,7 +30310,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: const Text(
-                  'Position_Nette = Actifs − Passifs + Achats_à_terme − Ventes_à_terme',
+                  'Position_Nette = Actifs → Passifs + Achats_à_terme → Ventes_à_terme',
                   style: TextStyle(fontFamily: 'monospace', fontSize: 12),
                 ),
               ),
@@ -29303,7 +31268,7 @@ Risque Actions — Dispositif prudentiel UEMOA
 Le risque actions capture l'impact des variations des cours des actions et titres de propriété détenus.
 
 Position brute = Σ |valeur de marché| de chaque ligne
-Position nette = Σ valeur signée (longues − courtes)
+Position nette = Σ valeur signée (longues → courtes)
 
 Risque Spécifique = Position brute × 9 %
 Risque Général    = |Position nette| × 9 %
@@ -29317,7 +31282,8 @@ RWA Actions = Exigence FP Actions × 11,111111 (DISPRUD UMOA, Art. 395-401)''',
               _SummaryItemData(
                   label: 'Position brute',
                   value: _fcfa(gross),
-                  subtitle: 'Somme des valeurs absolues des positions'),
+                  subtitle: 'Somme des valeurs absolues des positions',
+                  useMarquee: true),
               _SummaryItemData(
                   label: 'Risque spécifique (9%)',
                   value: _fcfa(specific),
@@ -29337,7 +31303,8 @@ RWA Actions = Exigence FP Actions × 11,111111 (DISPRUD UMOA, Art. 395-401)''',
               _SummaryItemData(
                   label: 'RWA Actions',
                   value: _fcfa(rwa),
-                  subtitle: '\u00c9quivalent en actifs pond\u00e9r\u00e9s des risques'),
+                  subtitle: '\u00c9quivalent en actifs pond\u00e9r\u00e9s des risques',
+                  useMarquee: true),
             ],
           ),
           const SizedBox(height: 3),
@@ -29786,9 +31753,9 @@ class _EquityPortfolioTableState extends State<_EquityPortfolioTable> {
   double _lineRwa(({String name, bool short, double value}) l) =>
       _lineExigence(l) * (1 / 0.09);
 
-  /// Montant signé : « − » préfixé pour les positions courtes.
+  /// Montant signé : « → » préfixé pour les positions courtes.
   String _signedAmount(double v) =>
-      '${v < 0 ? '−' : ''}${formatLargeNumber(v.abs())}';
+      '${v < 0 ? '→' : ''}${formatLargeNumber(v.abs())}';
 
   List<({String name, bool short, double value})> get _sorted {
     final list =
@@ -30241,7 +32208,8 @@ class _EquityPortfolioTableState extends State<_EquityPortfolioTable> {
 // synthèse des exigences par type de risque, puis conversion en RWA.
 
 class _MarketPortfolioAnalysisScreen extends StatefulWidget {
-  const _MarketPortfolioAnalysisScreen();
+  const _MarketPortfolioAnalysisScreen({required this.selectedType});
+  final MarketPortfolioType selectedType;
 
   @override
   State<_MarketPortfolioAnalysisScreen> createState() =>
@@ -30257,7 +32225,6 @@ class _MarketPortfolioAnalysisScreenState
   late final StreamSubscription<List<ForeignExchangePosition>>
       _fxSubscription;
   double? _lastPersistedRwa;
-  MarketPortfolioType _selectedVisualisationType = MarketPortfolioType.bonds;
 
   @override
   void initState() {
@@ -30339,8 +32306,10 @@ class _MarketPortfolioAnalysisScreenState
       child: _loading
           ? const Center(child: CupertinoActivityIndicator())
           : records.isEmpty
-              ? Column(
-                  children: [
+              ? SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                     _GenericSummaryRow(
                       showInfo: false,
                       tooltipContent: '''
@@ -30358,7 +32327,8 @@ RWA Marché = Exigence FP Marché × 11,111111''',
                         _SummaryItemData(
                             label: 'Encours total',
                             value: _fcfa(totalExposure),
-                            subtitle: 'Exposition brute globale (Actions + Obligations)'),
+                            subtitle: 'Exposition brute globale (Actions + Obligations)',
+                            useMarquee: true),
                         _SummaryItemData(
                             label: 'Risque de Taux',
                             value: _fcfa(r.interestRateRisk),
@@ -30382,17 +32352,16 @@ RWA Marché = Exigence FP Marché × 11,111111''',
                       ],
                     ),
                     const SizedBox(height: 3),
-                    const Expanded(
-                      child: SingleChildScrollView(
-                        child: _MarketSectionEmpty(
-                            message:
-                                'Aucune donnée de marché importée.\nImportez les portefeuilles « Obligations » et/ou « Actions » pour analyser le portefeuille marché.'),
-                      ),
-                    ),
+                    const _MarketSectionEmpty(
+                        message:
+                            'Aucune donnée de marché importée.\nImportez les portefeuilles « Obligations » et/ou « Actions » pour analyser le portefeuille marché.'),
                   ],
-                )
-              : Column(
-                  children: [
+                ),
+              )
+              : SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                     // Rangée KPI FIXE : reste visible en permanence, elle ne
                     // fait pas partie du défilement.
                     _GenericSummaryRow(
@@ -30412,7 +32381,8 @@ RWA Marché = Exigence FP Marché × 11,111111''',
                         _SummaryItemData(
                             label: 'Encours total',
                             value: _fcfa(totalExposure),
-                            subtitle: 'Exposition brute globale (Actions + Obligations)'),
+                            subtitle: 'Exposition brute globale (Actions + Obligations)',
+                            useMarquee: true),
                         _SummaryItemData(
                             label: 'Risque de Taux',
                             value: _fcfa(r.interestRateRisk),
@@ -30437,20 +32407,14 @@ RWA Marché = Exigence FP Marché × 11,111111''',
                     ),
                     const SizedBox(height: 3),
                     // Seule la visualisation défile.
-                    Expanded(
-                      child: SingleChildScrollView(
-                        child: _MarketDashboardVisualisation(
-                          datasets: MarketDataImportStore
-                              .instance.snapshotNotifier.value.datasets,
-                          selectedType: _selectedVisualisationType,
-                          onTypeChanged: (type) {
-                            setState(() => _selectedVisualisationType = type);
-                          },
-                        ),
-                      ),
+                    _MarketDashboardVisualisation(
+                      datasets: MarketDataImportStore
+                          .instance.snapshotNotifier.value.datasets,
+                      selectedType: widget.selectedType,
                     ),
                   ],
                 ),
+              ),
     );
   }
 
@@ -30498,4 +32462,79 @@ RWA Marché = Exigence FP Marché × 11,111111''',
             r.commodityRisk * (1 / 0.09), _rwaCommodityColor),
     ];
   }
+}
+class _TrianglePainter extends CustomPainter {
+  final Color color;
+  _TrianglePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    final h = size.height;
+    final w = size.width;
+    path.moveTo(w / 2, 0); // Top
+    path.lineTo(0, h); // Bottom left
+    path.lineTo(w, h); // Bottom right
+    path.close();
+    canvas.drawPath(path, Paint()..color = color..style = PaintingStyle.fill);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrianglePainter oldDelegate) => oldDelegate.color != color;
+}
+
+class FlDotTrianglePainter extends FlDotPainter {
+  FlDotTrianglePainter({
+    required this.color,
+    this.size = 8.0,
+    this.strokeWidth = 0.0,
+    this.strokeColor = Colors.transparent,
+  });
+
+  final Color color;
+  final double size;
+  final double strokeWidth;
+  final Color strokeColor;
+
+  @override
+  void draw(Canvas canvas, FlSpot spot, Offset offsetInCanvas) {
+    final path = Path();
+    final height = size * 0.866;
+    path.moveTo(offsetInCanvas.dx, offsetInCanvas.dy - height / 2);
+    path.lineTo(offsetInCanvas.dx - size / 2, offsetInCanvas.dy + height / 2);
+    path.lineTo(offsetInCanvas.dx + size / 2, offsetInCanvas.dy + height / 2);
+    path.close();
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(path, paint);
+
+    if (strokeWidth > 0) {
+      final strokePaint = Paint()
+        ..color = strokeColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth;
+      canvas.drawPath(path, strokePaint);
+    }
+  }
+
+  @override
+  Size getSize(FlSpot spot) => Size(size, size);
+
+  @override
+  Color get mainColor => color;
+
+  @override
+  FlDotPainter lerp(FlDotPainter a, FlDotPainter b, double t) {
+    return this;
+  }
+
+  @override
+  List<Object?> get props => [
+        color,
+        size,
+        strokeWidth,
+        strokeColor,
+      ];
 }

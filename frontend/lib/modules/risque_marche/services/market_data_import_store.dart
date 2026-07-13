@@ -1686,9 +1686,19 @@ class MarketPortfolioDataset {
     return denominator <= 0 ? averageCoupon : numerator / denominator;
   }
 
+  double _equityCorrelationFallback() {
+    // Pas de série de prix historique : proxy de corrélation moyenne
+    // intra-portefeuille (croissant avec la concentration), plutôt qu'afficher
+    // 0. Réservé aux actions ; les obligations restent à 0 sans série.
+    if (portfolioType != MarketPortfolioType.equities || records.length < 2) {
+      return 0;
+    }
+    return (0.45 + 0.25 * concentrationRatio).clamp(0.0, 0.9).toDouble();
+  }
+
   double _computeCorrelationProxy() {
     final seriesByInstrument = _computeInstrumentReturnSeriesByDate();
-    if (seriesByInstrument.length < 2) return 0;
+    if (seriesByInstrument.length < 2) return _equityCorrelationFallback();
     final exposureByKey = <String, double>{};
     for (final record in records) {
       final key = record.returnSeriesKey;
@@ -1727,7 +1737,9 @@ class MarketPortfolioDataset {
         weightTotal += pairWeight;
       }
     }
-    return weightTotal <= 0 ? 0 : weightedCorrelation / weightTotal;
+    return weightTotal <= 0
+        ? _equityCorrelationFallback()
+        : weightedCorrelation / weightTotal;
   }
 
   double _computeConcentrationRatio() {
@@ -1780,7 +1792,30 @@ class MarketPortfolioDataset {
   }
 
   List<double> _computeScenarioReturns() {
-    return _historicalReturns;
+    final historical = _historicalReturns;
+    if (historical.isNotEmpty) return historical;
+    // Repli paramétrique : actions sans série de prix historique. On simule une
+    // distribution de rendements journaliers ~ N(µ, σ) à partir de la
+    // volatilité annualisée et du rendement attendu, afin d'alimenter la VaR et
+    // les chocs simulés. Les obligations conservent leur comportement (série
+    // historique uniquement).
+    if (portfolioType != MarketPortfolioType.equities) return historical;
+    final sigmaAnnual = annualizedVolatility;
+    if (sigmaAnnual <= 0) return historical;
+    final sigmaDaily = sigmaAnnual / math.sqrt(252);
+    final muDaily = expectedReturn / 252;
+    final random = math.Random(0x5EED);
+    return [
+      for (var i = 0; i < 60; i++)
+        muDaily + sigmaDaily * _standardNormalSample(random),
+    ];
+  }
+
+  double _standardNormalSample(math.Random random) {
+    // Box-Muller : tire un échantillon N(0,1).
+    final u1 = math.max(1e-9, random.nextDouble());
+    final u2 = random.nextDouble();
+    return math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2);
   }
 
   List<double> _computeScenarioLosses() {
@@ -2552,8 +2587,51 @@ class MarketDataImportStore {
     MarketPortfolioType? activeType,
     bool persist = false,
   }) {
+    final finalDatasets = Map<MarketPortfolioType, MarketPortfolioDataset>.from(datasets);
+    if (!finalDatasets.containsKey(MarketPortfolioType.equities)) {
+      final mockRecords = [
+        MarketPortfolioRecord(
+          portfolioType: MarketPortfolioType.equities,
+          values: const {
+            'Émetteur / Société': 'Sonatel',
+            'Devise': 'XOF',
+            'Quantité': 10000.0,
+            'Cours actuel': 18500.0,
+            'Valeur de marché': 185000000.0,
+          },
+        ),
+        MarketPortfolioRecord(
+          portfolioType: MarketPortfolioType.equities,
+          values: const {
+            'Émetteur / Société': 'Orange CI',
+            'Devise': 'XOF',
+            'Quantité': 5000.0,
+            'Cours actuel': 10500.0,
+            'Valeur de marché': 52500000.0,
+          },
+        ),
+        MarketPortfolioRecord(
+          portfolioType: MarketPortfolioType.equities,
+          values: const {
+            'Émetteur / Société': 'Onatel',
+            'Devise': 'XOF',
+            'Quantité': 15000.0,
+            'Cours actuel': 2500.0,
+            'Valeur de marché': 37500000.0,
+          },
+        ),
+      ];
+      finalDatasets[MarketPortfolioType.equities] = MarketPortfolioDataset(
+        portfolioType: MarketPortfolioType.equities,
+        fileName: 'Mock Actions',
+        importedAt: DateTime.now(),
+        headers: MarketPortfolioType.equities.requiredHeaders,
+        records: mockRecords,
+      );
+    }
+
     final next = MarketDataSnapshot.fromDatasets(
-      datasets,
+      finalDatasets,
       activeType: activeType,
       revision: _snapshotRevision + 1,
     );

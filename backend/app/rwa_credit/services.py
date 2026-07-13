@@ -60,7 +60,7 @@ class _AgentAccumulator:
         self.rwa = 0.0
         # Ventilation par taux de pondération appliqué : rw -> [ead, rwa].
         self.tranches: dict[float, list[float]] = {}
-        # Ventilation par contrepartie : nom -> [ead, rwa].
+        # Ventilation par contrepartie : nom -> [gross, ead, rwa].
         self.counterparties: dict[str, list[float]] = {}
 
     def add_tranche(self, risk_weight: float, ead: float, rwa: float) -> None:
@@ -68,10 +68,13 @@ class _AgentAccumulator:
         bucket[0] += ead
         bucket[1] += rwa
 
-    def add_counterparty(self, name: str, ead: float, rwa: float) -> None:
-        bucket = self.counterparties.setdefault(name, [0.0, 0.0])
-        bucket[0] += ead
-        bucket[1] += rwa
+    def add_counterparty(
+        self, name: str, gross: float, ead: float, rwa: float
+    ) -> None:
+        bucket = self.counterparties.setdefault(name, [0.0, 0.0, 0.0])
+        bucket[0] += gross
+        bucket[1] += ead
+        bucket[2] += rwa
 
     def build_tranches(self) -> list[RwaCreditTranche]:
         return [
@@ -95,14 +98,15 @@ class _AgentAccumulator:
         share_basis = self.rwa if rwa_based else self.ead
         ordered = sorted(
             self.counterparties.items(),
-            key=lambda item: (-item[1][1], -item[1][0], item[0]),
+            key=lambda item: (-item[1][2], -item[1][1], item[0]),
         )
         rows: list[RwaCreditCounterparty] = []
-        for name, (ead, rwa) in ordered:
+        for name, (gross, ead, rwa) in ordered:
             share_value = rwa if rwa_based else ead
             rows.append(
                 RwaCreditCounterparty(
                     name=name,
+                    gross_exposure=round(gross, 2),
                     exposure=round(ead, 2),
                     rwa=round(rwa, 2),
                     capital_required=round(rwa * ratio, 2),
@@ -251,9 +255,10 @@ def get_rwa_credit_analysis() -> RwaCreditAnalysis:
         rwa_xof = convert_currency_amount(
             rwa_source, from_currency=row.currency, to_currency="XOF"
         )
-        accumulator.gross_exposure += convert_currency_amount(
+        gross_xof = convert_currency_amount(
             gross_source, from_currency=row.currency, to_currency="XOF"
         )
+        accumulator.gross_exposure += gross_xof
         accumulator.ead += ead_xof
         accumulator.rwa += rwa_xof
         tranche_rw = float(row.final_rw or 0.0)
@@ -262,7 +267,10 @@ def get_rwa_credit_analysis() -> RwaCreditAnalysis:
         accumulator.add_tranche(tranche_rw, ead_xof, rwa_xof)
         counterparty_name = str(row.counterparty.name or "").strip()
         accumulator.add_counterparty(
-            counterparty_name or "Contrepartie non renseignée", ead_xof, rwa_xof
+            counterparty_name or "Contrepartie non renseignée",
+            gross_xof,
+            ead_xof,
+            rwa_xof,
         )
 
     total_gross = sum(item.gross_exposure for item in accumulators.values())

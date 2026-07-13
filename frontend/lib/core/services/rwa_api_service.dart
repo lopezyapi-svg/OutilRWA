@@ -73,6 +73,41 @@ class RwaApiService {
     throw StateError('Réponse CEMAC invalide.');
   }
 
+  /// Appelle un endpoint VaR du backend (/api/var/historique,
+  /// /api/var/parametrique ou /api/var/montecarlo). Tous les calculs sont
+  /// effectués côté serveur ; le client ne fait que de l'affichage.
+  Future<Map<String, dynamic>> fetchVarAnalysis({
+    required String methode,
+    required String typePortefeuille,
+    required double niveauConfiance,
+    required int horizonJours,
+    required int fenetreJours,
+    int? nbSimulations,
+    int? graine,
+  }) async {
+    final query = StringBuffer(
+      '/api/var/$methode'
+      '?type_portefeuille=$typePortefeuille'
+      '&niveau_confiance=$niveauConfiance'
+      '&horizon_jours=$horizonJours'
+      '&fenetre_jours=$fenetreJours',
+    );
+    if (nbSimulations != null) {
+      query.write('&nb_simulations=$nbSimulations');
+    }
+    if (graine != null) {
+      query.write('&graine=$graine');
+    }
+    final payload = await _client.get(query.toString());
+    if (payload is Map<String, dynamic>) {
+      return payload;
+    }
+    if (payload is Map) {
+      return Map<String, dynamic>.from(payload);
+    }
+    throw StateError('Réponse VaR invalide.');
+  }
+
   Future<Map<String, dynamic>?> fetchMarketPortfolioPayload() async {
     final payload = await _client.get('/market/portfolios');
     if (payload is! Map) return null;

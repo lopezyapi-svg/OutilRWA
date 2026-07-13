@@ -1966,6 +1966,17 @@ class ExposureRecord {
   String get zone => computeZone(counterparty.country);
   bool get isDefaultLike => status == 'En defaut' || categoryCode == 'i' || (provisionsAmount != null && provisionsAmount! > 0);
 
+  // Montants convertis en XOF, à utiliser pour TOUT calcul agrégé (totaux,
+  // parts, densités…). Les champs bruts restent dans la devise d'origine pour
+  // l'affichage unitaire ; la conversion vers la devise d'affichage se fait au
+  // moment du rendu, jamais dans les calculs.
+  double _toXof(double amount) =>
+      convertCurrencyAmount(amount, fromCurrency: currency, toCurrency: 'XOF');
+  double get grossAmountXof => _toXof(grossAmount);
+  double get eadXof => _toXof(ead);
+  double get rwaXof => _toXof(rwa);
+  double get capitalXof => _toXof(capital);
+
   factory ExposureRecord.fromJson(Map<String, dynamic> json) {
     final counterparty = CounterpartyModel.fromJson(
       json['counterparty'] as Map<String, dynamic>,

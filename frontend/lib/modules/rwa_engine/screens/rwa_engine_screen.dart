@@ -171,11 +171,11 @@ class _RwaPilotageView {
         currentRows.isEmpty ? exposures.toList(growable: false) : currentRows;
 
     final totalGross =
-        effectiveRows.fold<double>(0, (sum, item) => sum + item.grossAmount);
+        effectiveRows.fold<double>(0, (sum, item) => sum + item.grossAmountXof);
     final totalEad =
-        effectiveRows.fold<double>(0, (sum, item) => sum + item.ead);
+        effectiveRows.fold<double>(0, (sum, item) => sum + item.eadXof);
     final totalRwa =
-        effectiveRows.fold<double>(0, (sum, item) => sum + item.rwa);
+        effectiveRows.fold<double>(0, (sum, item) => sum + item.rwaXof);
     final agentMap = <String, _AgentAccumulator>{};
     for (final item in effectiveRows) {
       agentMap
@@ -273,10 +273,10 @@ class _AgentAccumulator {
 
   void add(ExposureRecord item) {
     count += 1;
-    exposure += item.grossAmount;
-    ead += item.ead;
-    rwa += item.rwa;
-    coveredExposure += item.grossAmount * item.crmCoveragePercent.clamp(0, 1);
+    exposure += item.grossAmountXof;
+    ead += item.eadXof;
+    rwa += item.rwaXof;
+    coveredExposure += item.grossAmountXof * item.crmCoveragePercent.clamp(0, 1);
     if (item.isDefaultLike) {
       defaultCount += 1;
     }
@@ -331,9 +331,9 @@ class _EntityAccumulator {
   var rwa = 0.0;
 
   void add(ExposureRecord record) {
-    exposure += record.grossAmount;
-    ead += record.ead;
-    rwa += record.rwa;
+    exposure += record.grossAmountXof;
+    ead += record.eadXof;
+    rwa += record.rwaXof;
     if (sector == 'Non renseigné') {
       sector = _sectorForExposure(record);
     }
@@ -1358,22 +1358,20 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
     RwaCreditAgentRow row,
     List<RwaCreditTranche> tranches,
   ) {
-    final agentExposures = widget.view.currentRows
-        .where((e) => e.categoryCode == row.code)
-        .toList(growable: false);
-
-    // Group by counterparty
-    final counterpartyMap = <String, _RealCounterpartyAccumulator>{};
-    for (final exp in agentExposures) {
-      final cpName = exp.counterparty.name.trim().isEmpty
-          ? 'Contrepartie non renseignée'
-          : exp.counterparty.name.trim();
-      counterpartyMap.putIfAbsent(cpName, () => _RealCounterpartyAccumulator(name: cpName)).add(exp);
-    }
-
-    // Convert to _RealCounterparty and sort by RWA
-    final allCounterparties = counterpartyMap.values
-        .map((acc) => acc.toRealCounterparty(row.rwa))
+    // La ventilation par contrepartie provient directement du backend
+    // (RwaCreditAgentRow.counterparties) : montants déjà convertis en XOF et
+    // part (share) sommant à 100 % au sein de l'agent. On n'agrège plus les
+    // expositions brutes côté frontend, ce qui produisait des pourcentages
+    // faussés dès qu'une catégorie contenait des devises étrangères.
+    final allCounterparties = row.counterparties
+        .map((cp) => _RealCounterparty(
+              cp.name,
+              cp.grossExposure,
+              cp.exposure,
+              cp.rwa,
+              cp.capitalRequired,
+              cp.share,
+            ))
         .toList(growable: false)
       ..sort((a, b) => b.rwa.compareTo(a.rwa));
 
@@ -1763,20 +1761,38 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                       Expanded(
                         flex: 45,
                         child: Container(
-                          padding: const EdgeInsets.only(top: 24, left: 16, right: 16, bottom: 16),
+                          padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 16),
                           decoration: BoxDecoration(
                             border: Border.all(color: _line, width: 1),
                             borderRadius: BorderRadius.circular(2),
                           ),
-                          child: Stack(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Positioned.fill(
-                                child: _TopExposuresChart(
-                                  top5: top5,
-                                  selectedIndex: selectedIndex,
-                                  onSelect: (index) {
-                                    setState(() => selectedIndex = index);
-                                  },
+                              Text(
+                                'PART DU RWA PAR CONTREPARTIE (%)',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                      color: _blue700,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                      letterSpacing: 0.3,
+                                    ),
+                              ),
+                              const SizedBox(height: 16),
+                              Expanded(
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: _TopExposuresChart(
+                                        top5: top5,
+                                        selectedIndex: selectedIndex,
+                                        onSelect: (index) {
+                                          setState(() => selectedIndex = index);
+                                        },
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -1848,33 +1864,6 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _RealCounterpartyAccumulator {
-  _RealCounterpartyAccumulator({required this.name});
-  final String name;
-  double exposure = 0;
-  double ead = 0;
-  double rwa = 0;
-  double capital = 0;
-
-  void add(ExposureRecord record) {
-    exposure += record.grossAmount;
-    ead += record.ead;
-    rwa += record.rwa;
-    capital += record.capital;
-  }
-
-  _RealCounterparty toRealCounterparty(double totalAgentRwa) {
-    return _RealCounterparty(
-      name,
-      exposure,
-      ead,
-      rwa,
-      capital,
-      totalAgentRwa > 0 ? rwa / totalAgentRwa : 0,
     );
   }
 }
@@ -3575,7 +3564,7 @@ double? _snapshotRwaBefore(List<ExposureRecord> exposures, DateTime date) {
       .reduce((left, right) => left.isAfter(right) ? left : right);
   return eligible
       .where((item) => DateUtils.isSameDay(item.analysisDate, snapshotDate))
-      .fold<double>(0, (sum, item) => sum + item.rwa);
+      .fold<double>(0, (sum, item) => sum + item.rwaXof);
 }
 
 double? _variation(double current, double? previous) {

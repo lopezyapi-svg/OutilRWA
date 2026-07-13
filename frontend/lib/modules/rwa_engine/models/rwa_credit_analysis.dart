@@ -41,6 +41,35 @@ class RwaCreditTranche {
   }
 }
 
+class RwaCreditCounterparty {
+  const RwaCreditCounterparty({
+    required this.name,
+    required this.grossExposure,
+    required this.exposure,
+    required this.rwa,
+    required this.capitalRequired,
+    required this.share,
+  });
+
+  final String name;
+  final double grossExposure; // Exposition brute agrégée (XOF).
+  final double exposure; // EAD agrégée (XOF).
+  final double rwa; // RWA agrégé (XOF).
+  final double capitalRequired; // Capital requis = RWA × taux minimum (XOF).
+  final double share; // Part du RWA de l'agent (ratio 0–1), somme à 1.
+
+  factory RwaCreditCounterparty.fromJson(Map<String, dynamic> json) {
+    return RwaCreditCounterparty(
+      name: (json['name'] ?? '') as String,
+      grossExposure: (json['gross_exposure'] as num? ?? 0).toDouble(),
+      exposure: (json['exposure'] as num? ?? 0).toDouble(),
+      rwa: (json['rwa'] as num? ?? 0).toDouble(),
+      capitalRequired: (json['capital_required'] as num? ?? 0).toDouble(),
+      share: (json['share'] as num? ?? 0).toDouble(),
+    );
+  }
+}
+
 class RwaCreditAgentRow {
   const RwaCreditAgentRow({
     required this.code,
@@ -56,6 +85,7 @@ class RwaCreditAgentRow {
     required this.weightOutOfRange,
     required this.rwaVariation,
     required this.tranches,
+    required this.counterparties,
   });
 
   final String code;
@@ -73,6 +103,9 @@ class RwaCreditAgentRow {
   final bool? weightOutOfRange;
   final RwaCreditVariation? rwaVariation;
   final List<RwaCreditTranche>? tranches;
+  // Ventilation par contrepartie (déjà en XOF, share sommant à 1) : source
+  // unique du dialogue « Top 5 / Voir tout » pour éviter tout recalcul frontend.
+  final List<RwaCreditCounterparty> counterparties;
 
   factory RwaCreditAgentRow.fromJson(Map<String, dynamic> json) {
     return RwaCreditAgentRow(
@@ -94,6 +127,10 @@ class RwaCreditAgentRow {
       tranches: (json['tranches'] as List<dynamic>?)
           ?.map((item) =>
               RwaCreditTranche.fromJson(item as Map<String, dynamic>))
+          .toList(growable: false),
+      counterparties: (json['counterparties'] as List<dynamic>? ?? const [])
+          .map((item) =>
+              RwaCreditCounterparty.fromJson(item as Map<String, dynamic>))
           .toList(growable: false),
     );
   }

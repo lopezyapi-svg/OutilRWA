@@ -37,6 +37,9 @@ class RwaCreditCounterparty(BaseModel):
     """Agrégat par contrepartie au sein d'un agent économique."""
 
     name: str = Field(..., description="Nom de la contrepartie.")
+    gross_exposure: float = Field(
+        default=0.0, description="Exposition brute agrégée de la contrepartie (XOF)."
+    )
     exposure: float = Field(..., description="EAD agrégée de la contrepartie (XOF).")
     rwa: float = Field(..., description="RWA agrégé de la contrepartie (XOF).")
     capital_required: float = Field(

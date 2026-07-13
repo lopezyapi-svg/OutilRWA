@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../../../core/services/rwa_api_service.dart';
+import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../../dashboard/models/dashboard_models.dart';
 import '../../expositions/models/exposition_models.dart';
@@ -187,13 +188,14 @@ class CreditRiskSubmodulesService {
     final exposures = exposureModule.exposures;
     final totalGross = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + item.grossAmount,
+      (sum, item) => sum + item.grossAmountXof,
     );
     final totalNetEad =
-        exposures.fold<double>(0.0, (sum, item) => sum + item.ead);
-    final totalRwa = exposures.fold<double>(0.0, (sum, item) => sum + item.rwa);
+        exposures.fold<double>(0.0, (sum, item) => sum + item.eadXof);
+    final totalRwa =
+        exposures.fold<double>(0.0, (sum, item) => sum + item.rwaXof);
     final totalCapital =
-        exposures.fold<double>(0.0, (sum, item) => sum + item.capital);
+        exposures.fold<double>(0.0, (sum, item) => sum + item.capitalXof);
     final latestDate = exposures.isEmpty
         ? DateTime.now()
         : exposures
@@ -255,10 +257,17 @@ class CreditRiskSubmodulesService {
             ),
           )
           .add(item, sector: sector, country: country);
+      // Tous les montants du détail sont convertis en XOF (devise de calcul
+      // unique) ; provisionRate reste un ratio (invariant par devise).
+      double toXof(double value) => convertCurrencyAmount(
+            value,
+            fromCurrency: item.currency,
+            toCurrency: 'XOF',
+          );
       ratingTotals.update(
         item.ratingLabel,
-        (value) => value + item.grossAmount,
-        ifAbsent: () => item.grossAmount,
+        (value) => value + item.grossAmountXof,
+        ifAbsent: () => item.grossAmountXof,
       );
       exposureDetails.add(
         ConcentrationExposureDetail(
@@ -274,19 +283,19 @@ class CreditRiskSubmodulesService {
           status: item.status,
           hasGuarantee: item.crmModeLabel != 'Aucune' || activeCoverage > 0,
           isDefault: item.isDefaultLike,
-          authorizationAmount: item.loanTotalAmount ?? item.grossAmount,
-          onBalanceAmount: item.onBalanceExposureAmount ?? item.grossAmount,
-          offBalanceAmount: item.offBalanceExposureAmount ?? 0.0,
-          grossAmount: item.grossAmount,
-          ead: item.ead,
-          rwa: item.rwa,
-          capital: item.capital,
+          authorizationAmount: toXof(item.loanTotalAmount ?? item.grossAmount),
+          onBalanceAmount: toXof(item.onBalanceExposureAmount ?? item.grossAmount),
+          offBalanceAmount: toXof(item.offBalanceExposureAmount ?? 0.0),
+          grossAmount: item.grossAmountXof,
+          ead: item.eadXof,
+          rwa: item.rwaXof,
+          capital: item.capitalXof,
           originalRiskWeight: _normalizedRiskWeight(item.originalRw),
           riskWeight: _normalizedRiskWeight(item.finalRw),
           crmCoverageRatio: activeCoverage,
           pd: _pdFromRating(item.ratingLabel),
           lgd: _lgdFromCrm(item),
-          estimatedProvision: estimatedProvision,
+          estimatedProvision: toXof(estimatedProvision),
           provisionRate: provisionRate,
         ),
       );
@@ -533,18 +542,24 @@ class CreditRiskSubmodulesService {
   }) {
     final defaultRows = exposures.where((item) => item.isDefaultLike).toList();
     final defaultGross =
-        defaultRows.fold<double>(0.0, (sum, item) => sum + item.grossAmount);
+        defaultRows.fold<double>(0.0, (sum, item) => sum + item.grossAmountXof);
     final weightedPd = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + _pdFromRating(item.ratingLabel) * item.ead,
+      (sum, item) => sum + _pdFromRating(item.ratingLabel) * item.eadXof,
     );
     final weightedLgd = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + _lgdFromCrm(item) * item.ead,
+      (sum, item) => sum + _lgdFromCrm(item) * item.eadXof,
     );
     final estimatedProvision = defaultRows.fold<double>(
       0.0,
-      (sum, item) => sum + _estimatedProvisionAmountForExposure(item),
+      (sum, item) =>
+          sum +
+          convertCurrencyAmount(
+            _estimatedProvisionAmountForExposure(item),
+            fromCurrency: item.currency,
+            toCurrency: 'XOF',
+          ),
     );
     final nplTrend = trends.length < 2
         ? 0.0
@@ -579,8 +594,10 @@ class CreditRiskSubmodulesService {
         ConcentrationTrendPoint(
           label: _monthLabel(date),
           date: date,
-          ead: groups[date]!.fold<double>(0.0, (sum, item) => sum + item.ead),
-          rwa: groups[date]!.fold<double>(0.0, (sum, item) => sum + item.rwa),
+          ead:
+              groups[date]!.fold<double>(0.0, (sum, item) => sum + item.eadXof),
+          rwa:
+              groups[date]!.fold<double>(0.0, (sum, item) => sum + item.rwaXof),
           npl: _nplRatio(groups[date]!),
           hhi: _hhiForRows(groups[date]!),
         ),
@@ -705,7 +722,7 @@ class CreditRiskSubmodulesService {
   double _hhiForRows(List<ExposureRecord> exposures) {
     final totalGross = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + item.grossAmount,
+      (sum, item) => sum + item.grossAmountXof,
     );
     if (totalGross == 0) {
       return 0.0;
@@ -714,8 +731,8 @@ class CreditRiskSubmodulesService {
     for (final item in exposures) {
       totals.update(
         item.counterparty.name,
-        (value) => value + item.grossAmount,
-        ifAbsent: () => item.grossAmount,
+        (value) => value + item.grossAmountXof,
+        ifAbsent: () => item.grossAmountXof,
       );
     }
     return _hhi(totals.values.map((amount) => amount / totalGross));
@@ -772,14 +789,14 @@ class CreditRiskSubmodulesService {
   double _nplRatio(List<ExposureRecord> exposures) {
     final totalGross = exposures.fold<double>(
       0.0,
-      (sum, item) => sum + item.grossAmount,
+      (sum, item) => sum + item.grossAmountXof,
     );
     if (totalGross == 0) {
       return 0.0;
     }
     final defaultGross = exposures
         .where((item) => item.isDefaultLike)
-        .fold<double>(0.0, (sum, item) => sum + item.grossAmount);
+        .fold<double>(0.0, (sum, item) => sum + item.grossAmountXof);
     return defaultGross / totalGross;
   }
 
@@ -1066,13 +1083,17 @@ class CreditRiskSubmodulesService {
       country: exposure.counterparty.country,
       sector: _sectorFromCategory(exposure.categoryLabel),
       rating: exposure.ratingLabel,
-      grossAmount: exposure.grossAmount,
-      ead: exposure.ead,
-      rwa: exposure.rwa,
-      capital: exposure.capital,
+      grossAmount: exposure.grossAmountXof,
+      ead: exposure.eadXof,
+      rwa: exposure.rwaXof,
+      capital: exposure.capitalXof,
       daysPastDue: daysPastDue,
       prudentialStatus: prudentialStatus,
-      estimatedProvision: estimatedProvision,
+      estimatedProvision: convertCurrencyAmount(
+        estimatedProvision,
+        fromCurrency: exposure.currency,
+        toCurrency: 'XOF',
+      ),
       provisionRate: provisionRate,
       incidents: incidents,
     );
@@ -1129,7 +1150,7 @@ class CreditRiskSubmodulesService {
   }
 
   double _defaultRiskScore(ExposureRecord exposure) {
-    var score = exposure.rwa;
+    var score = exposure.rwaXof;
     if (exposure.isDefaultLike) {
       score += 250000000;
     }
@@ -1240,9 +1261,9 @@ class _ConcentrationAccumulator {
     required String country,
   }) {
     exposureCount += 1;
-    grossAmount += exposure.grossAmount;
-    ead += exposure.ead;
-    rwa += exposure.rwa;
+    grossAmount += exposure.grossAmountXof;
+    ead += exposure.eadXof;
+    rwa += exposure.rwaXof;
     if (this.sector == 'Non renseigné' || this.sector.isEmpty) {
       this.sector = sector;
     }
