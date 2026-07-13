@@ -1862,7 +1862,14 @@ class _YieldCurveDataTableState extends State<_YieldCurveDataTable> {
         children: [
           if (rightAlign) const Icon(Icons.unfold_more, size: 14, color: Colors.white54),
           if (rightAlign) const SizedBox(width: 4),
-          Text(text, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text(
+              text, 
+              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ),
           if (!rightAlign) const SizedBox(width: 4),
           if (!rightAlign) const Icon(Icons.unfold_more, size: 14, color: Colors.white54),
         ],
