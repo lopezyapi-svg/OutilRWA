@@ -6,7 +6,7 @@ from typing import Any
 # CONSTANTES REGLEMENTAIRES UMOA / BALE III (Titre III & X)
 # ============================================================================
 MIN_CET1_RATIO = 0.05       # 5%
-MIN_TIER1_RATIO = 0.06      # 6%
+MIN_TIER1_RATIO = 0.075     # 7,5%
 MIN_SOLVENCY_RATIO = 0.09   # 9% — minimum SANS coussin (cible avec coussin = 11,5 %, cf. CONSERVATION_BUFFER)
 MIN_LEVERAGE_RATIO = 0.03   # 3%
 

@@ -354,8 +354,46 @@ def build_ro_import_template() -> bytes:
         c_text.alignment = left(wrap=True)
         ws2.row_dimensions[ri].height = 20
 
-    # Onglet de référence : pas de validation externe ni de feuilles supplémentaires
-    ws2.sheet_view.tabSelected = False
+    # ── Feuille 3 : Lignes_Métier (référence) ───────────────────────────────
+    # La feuille de saisie renvoie vers cet onglet ("Voir onglet Lignes_Métier")
+    # pour la colonne ligne_metier — doit exister et lister exactement les
+    # valeurs reconnues par le frontend (voir _lignesMetier dans
+    # ro_import_pertes_dialog.dart), sinon la référence est un lien mort.
+    ws3 = wb.create_sheet("Lignes_Métier")
+    ws3.column_dimensions["A"].width = 30
+    ws3["A1"].value = "Lignes de métier valides"
+    ws3["A1"].font = Font(bold=True, size=12, color="FFFFFF")
+    ws3["A1"].fill = fill(BLUE_DARK)
+    ws3["A1"].alignment = center()
+    lignes_metier = [
+        "Financement d'entreprise",
+        "Activités de marché",
+        "Banque de détail",
+        "Banque commerciale",
+        "Paiements et règlements",
+        "Fonctions d'agent",
+        "Gestion d'actifs",
+        "Courtage de détail",
+    ]
+    for ri, val in enumerate(lignes_metier, start=2):
+        c = ws3.cell(row=ri, column=1, value=val)
+        c.border = thin_b
+        c.font = Font(size=10)
+        c.fill = fill("FFFFFF") if ri % 2 == 0 else fill("F8FAFC")
+
+    # ── Feuille 4 : Types_Événement (référence) ─────────────────────────────
+    ws4 = wb.create_sheet("Types_Événement")
+    ws4.column_dimensions["A"].width = 20
+    ws4["A1"].value = "Types d'événement valides"
+    ws4["A1"].font = Font(bold=True, size=12, color="FFFFFF")
+    ws4["A1"].fill = fill(BLUE_DARK)
+    ws4["A1"].alignment = center()
+    types_evenement = ["Interne", "Externe", "Processus", "Système", "Personnel", "Juridique"]
+    for ri, val in enumerate(types_evenement, start=2):
+        c = ws4.cell(row=ri, column=1, value=val)
+        c.border = thin_b
+        c.font = Font(size=10)
+        c.fill = fill("FFFFFF") if ri % 2 == 0 else fill("F8FAFC")
 
     # ── Export en bytes ────────────────────────────────────────────────────
     buf = BytesIO()

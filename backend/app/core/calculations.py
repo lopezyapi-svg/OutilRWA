@@ -13,7 +13,7 @@ from app.core.config import settings
 
 # Ratios minimaux réglementaires UMOA (Bâle III adapté)
 MIN_CET1_RATIO = 0.05  # 5% - Common Equity Tier 1
-MIN_TIER1_RATIO = 0.06  # 6% - Tier 1 Capital
+MIN_TIER1_RATIO = 0.075  # 7.5% - Tier 1 Capital
 MIN_SOLVENCY_RATIO = 0.09  # 9% - Ratio de solvabilité total minimum, SANS coussin (CAR)
 MIN_LEVERAGE_RATIO = 0.03  # 3% - Ratio de levier
 
@@ -253,7 +253,7 @@ def calculate_tier1_ratio(tier1_capital: float, rwa: float) -> float:
         Tier 1 Ratio = Tier 1 Capital / RWA
 
     Seuil réglementaire UMOA:
-        Minimum 6% (MIN_TIER1_RATIO)
+        Minimum 7,5% (MIN_TIER1_RATIO)
 
     Entrees:
         tier1_capital: montant total du capital Tier 1.
@@ -264,8 +264,8 @@ def calculate_tier1_ratio(tier1_capital: float, rwa: float) -> float:
         Retourne 0.0 si RWA est nul.
 
     Exemple:
-        >>> calculate_tier1_ratio(tier1_capital=600_000, rwa=10_000_000)
-        0.06  # 6%
+        >>> calculate_tier1_ratio(tier1_capital=750_000, rwa=10_000_000)
+        0.075  # 7,5%
     """
     return safe_ratio(tier1_capital, rwa)
 

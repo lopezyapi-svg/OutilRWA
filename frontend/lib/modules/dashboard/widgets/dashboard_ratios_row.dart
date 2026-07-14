@@ -33,7 +33,7 @@ class DashboardRatiosRow extends StatelessWidget {
               _RatioTile(
                   label: 'Ratio Tier 1',
                   value: ratios.tier1,
-                  pilier1: 6.00,
+                  pilier1: 7.50,
                   coussin: 2.50),
               const SizedBox(height: 8),
               _RatioTile(
@@ -66,7 +66,7 @@ class DashboardRatiosRow extends StatelessWidget {
                 child: _RatioTile(
                     label: 'Ratio Tier 1',
                     value: ratios.tier1,
-                    pilier1: 6.00,
+                    pilier1: 7.50,
                     coussin: 2.50),
               ),
               const SizedBox(width: 8),

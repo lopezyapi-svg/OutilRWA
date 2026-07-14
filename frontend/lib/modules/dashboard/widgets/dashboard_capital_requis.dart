@@ -69,7 +69,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
     
     return [
       _CapLine('CET1', base: 5.0, coussin: 2.5, actuel: cet1Metric.value * 100),
-      _CapLine('Tier 1', base: 6.0, coussin: 2.5, actuel: t1Metric.value * 100),
+      _CapLine('Tier 1', base: 7.5, coussin: 2.5, actuel: t1Metric.value * 100),
       _CapLine('Solvabilité', base: 9.0, coussin: 2.5, actuel: solvMetric.value * 100),
     ];
   }

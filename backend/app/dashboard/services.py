@@ -344,10 +344,10 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     # CALCULATIONS BCEAO
     fp_calc = calculate_fonds_propres(fp_data)
     rm_calc = resolve_market_capital(rm_data)
-    # RWA Opérationnel = REA CRR3 (Approche Standard / BIC), issu de la saisie
+    # RWA Opérationnel = OFR CRR3 (Approche Standard / BIC), issu de la saisie
     # ou de l'import Excel BIC/CCR3 — remplace l'ancienne approche indicateur
     # de base (AIB) simplifiée qui n'était plus représentative.
-    rwa_operationnel = _calcul_bic_crr3().rea_crr3
+    rwa_operationnel = _calcul_bic_crr3().ofr_crr3
 
     fp_detail = FondsPropresDetail(
         capital_ordinaire=fp_data.get("capital_ordinaire", 0.0),
@@ -613,5 +613,135 @@ def update_fonds_propres(update_data: FondsPropresUpdate) -> DashboardSnapshot:
             ))
         
         conn.commit()
-    
+
     return get_dashboard_snapshot()
+
+
+# Libellés des 11 postes des Fonds Propres Réglementaires, dans l'ordre
+# attendu par le modèle Excel d'import. Doit rester synchronisé avec
+# `_fpFields`/`_fpLabels` côté frontend
+# (dashboard/widgets/dashboard_fonds_propres_import_dialog.dart) — chaque
+# libellé précise son groupe (CET1/AT1/Tier 2) car "Réduction prudentielle"
+# apparaît dans les trois groupes et doit rester non-ambigu.
+FONDS_PROPRES_INPUT_FIELDS: tuple[tuple[str, str, str], ...] = (
+    ("capital_ordinaire", "CET1", "Capital ordinaire"),
+    ("reserves", "CET1", "Réserves"),
+    ("resultats_report", "CET1", "Résultats en report"),
+    ("resultat_eligible", "CET1", "Résultat éligible"),
+    ("deductions_prud_cet1", "CET1", "Réduction prudentielle (CET1)"),
+    ("instruments_at1", "AT1", "Instruments additionnels (AT1)"),
+    ("primes_emission_at1", "AT1", "Primes d'émission (AT1)"),
+    ("deductions_prud_at1", "AT1", "Réduction prudentielle (AT1)"),
+    ("dettes_subordonnees_t2", "Tier 2", "Dettes subordonnées (Tier 2)"),
+    ("provisions_generales_t2", "Tier 2", "Provisions générales (Tier 2)"),
+    ("deductions_prud_t2", "Tier 2", "Réduction prudentielle (Tier 2)"),
+)
+
+
+def build_fonds_propres_import_template() -> bytes:
+    """Génère un classeur Excel de modèle pour l'import des Fonds Propres
+    Réglementaires (CET1 / AT1 / Tier 2).
+
+    Une seule "photo" à la fois (pas de dimension année) : le modèle contient
+    une ligne par poste, avec son groupe (CET1/AT1/Tier 2) et sa valeur —
+    l'import remplace entièrement les fonds propres actuellement enregistrés,
+    exactement comme le fait le formulaire "Mettre à jour".
+    """
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+
+    wb = Workbook()
+
+    BLUE_DARK = "1D4ED8"
+    BLUE_LIGHT = "DBEAFE"
+    BORDER_CLR = "CBD5E1"
+    thin = Side(style="thin", color=BORDER_CLR)
+    thin_b = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def fill(hex_color: str) -> PatternFill:
+        return PatternFill("solid", fgColor=hex_color)
+
+    def center(wrap: bool = False) -> Alignment:
+        return Alignment(horizontal="center", vertical="center", wrap_text=wrap)
+
+    def left(wrap: bool = False) -> Alignment:
+        return Alignment(horizontal="left", vertical="center", wrap_text=wrap)
+
+    ws = wb.active
+    ws.title = "Fonds propres"
+    ws.freeze_panes = "A3"
+
+    ws.row_dimensions[1].height = 32
+    ws.merge_cells("A1:C1")
+    title_cell = ws["A1"]
+    title_cell.value = "Modèle d'import — Fonds Propres Réglementaires (CET1 / AT1 / Tier 2)"
+    title_cell.font = Font(bold=True, size=13, color="FFFFFF")
+    title_cell.fill = fill(BLUE_DARK)
+    title_cell.alignment = center()
+
+    headers = [
+        ("A", "Groupe", 12),
+        ("B", "Poste", 36),
+        ("C", "Valeur (FCFA)", 18),
+    ]
+    ws.row_dimensions[2].height = 22
+    for col_letter, label, width in headers:
+        c = ws[f"{col_letter}2"]
+        c.value = label
+        c.font = Font(bold=True, size=10, color=BLUE_DARK)
+        c.fill = fill(BLUE_LIGHT)
+        c.border = thin_b
+        c.alignment = center()
+        ws.column_dimensions[col_letter].width = width
+
+    row_idx = 3
+    for _, groupe, label in FONDS_PROPRES_INPUT_FIELDS:
+        row_fill = fill("FFFFFF") if row_idx % 2 == 1 else fill("F8FAFC")
+        c_groupe = ws.cell(row=row_idx, column=1, value=groupe)
+        c_groupe.font = Font(size=10, bold=True, color=BLUE_DARK)
+        c_groupe.fill = row_fill
+        c_groupe.border = thin_b
+        c_groupe.alignment = center()
+
+        c_label = ws.cell(row=row_idx, column=2, value=label)
+        c_label.font = Font(size=10)
+        c_label.fill = row_fill
+        c_label.border = thin_b
+        c_label.alignment = left(wrap=True)
+
+        c_val = ws.cell(row=row_idx, column=3, value=0)
+        c_val.font = Font(size=10)
+        c_val.fill = row_fill
+        c_val.border = thin_b
+        c_val.alignment = center()
+
+        row_idx += 1
+
+    ws2 = wb.create_sheet("Instructions")
+    ws2.column_dimensions["A"].width = 78
+    ws2.merge_cells("A1:A1")
+    ws2["A1"].value = "Instructions — Import des Fonds Propres Réglementaires"
+    ws2["A1"].font = Font(bold=True, size=13, color="FFFFFF")
+    ws2["A1"].fill = fill(BLUE_DARK)
+    ws2["A1"].alignment = center()
+
+    instructions = [
+        "Ce modèle représente UNE photo des fonds propres (pas de notion "
+        "d'année) : l'import remplace entièrement les valeurs actuellement "
+        "enregistrées, comme le ferait le formulaire \"Mettre à jour\".",
+        "Ne pas modifier les colonnes « Groupe » et « Poste ».",
+        "Renseigner les montants (en FCFA) dans la colonne « Valeur ». Les "
+        "postes de réduction prudentielle doivent être saisis en valeur "
+        "positive (ils sont soustraits automatiquement).",
+        "Les cases vides ou non numériques sont importées comme 0.",
+    ]
+    for ri, text in enumerate(instructions, start=2):
+        c = ws2.cell(row=ri, column=1, value=text)
+        c.font = Font(size=10)
+        c.alignment = left(wrap=True)
+        ws2.row_dimensions[ri].height = 30
+
+    buf = BytesIO()
+    wb.save(buf)
+    return buf.getvalue()

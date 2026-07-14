@@ -295,7 +295,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
   Widget _buildComparisonTable(bool isDark) {
     final rows = [
       const _CompRow('CET1 minimum', 'Art. 91(a)', '5,0 %', '4,5 %', false),
-      const _CompRow('Tier 1 minimum', 'Art. 91(b)', '6,0 %', '6,0 %', true),
+      const _CompRow('Tier 1 minimum', 'Art. 91(b)', '7,5 %', '7,5 %', true),
       const _CompRow('Ratio FPE minimum (solvabilité)', 'Art. 91(c)', '9,0 %',
           '8,0 %', false),
       const _CompRow('Coussin de conservation (CET1)', 'Art. 92-97', '2,5 %',
@@ -559,9 +559,9 @@ class IcapUemoaCemacScreen extends StatelessWidget {
           _buildRatioCompRow(
             label: 'Tier 1 – Fonds propres de catégorie 1',
             ref: 'Art. 91(b)',
-            uemoaMin: 0.06,
+            uemoaMin: 0.075,
             uemoaTarget: 0.085,
-            cemacMin: 0.06,
+            cemacMin: 0.075,
             cemacTarget: 0.085,
             isDark: isDark,
           ),
@@ -1157,7 +1157,7 @@ class IcapUemoaCemacScreen extends StatelessWidget {
         icon: Icons.schedule_rounded,
         desc:
             'Montée en charge progressive : CET1 de 5 % (min) à 7,5 % (cible), '
-            'T1 de 6 % à 8,5 %, FPE de 9 % à 11,5 %. '
+            'T1 de 7,5 % à 8,5 %, FPE de 9 % à 11,5 %. '
             'CEMAC: entrée en vigueur directe en 2017.',
       ),
       (

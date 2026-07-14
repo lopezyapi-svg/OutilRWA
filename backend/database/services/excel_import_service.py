@@ -166,11 +166,17 @@ class ExcelImportService:
                 sheet.freeze_panes = "A2"
                 continue
 
-            if sheet_name == "Ref_Ponderation":
-                indicator_row = [""] * REF_MIN_COLUMN_COUNT
-                for index, marker in enumerate(
-                    EXPECTED_INDICATORS_BY_SHEET["Ref_Ponderation"]
-                ):
+            markers = EXPECTED_INDICATORS_BY_SHEET.get(sheet_name)
+            if markers:
+                # Ref_Ponderation alimente directement les calculs de l'outil
+                # et doit conserver sa largeur minimale de colonnes ; les
+                # autres feuilles de référence ne sont vérifiées que sur la
+                # présence de ces repères texte (voir _has_marker dans
+                # excel_import_validator.py) — une simple ligne de repères
+                # suffit à rendre le modèle téléchargé valide tel quel.
+                width = REF_MIN_COLUMN_COUNT if sheet_name == "Ref_Ponderation" else len(markers)
+                indicator_row = [""] * max(width, len(markers))
+                for index, marker in enumerate(markers):
                     indicator_row[index] = marker
                 sheet.append(indicator_row)
                 sheet.freeze_panes = "A2"

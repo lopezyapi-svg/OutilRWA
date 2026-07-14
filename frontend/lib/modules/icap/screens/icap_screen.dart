@@ -372,10 +372,10 @@ class _IcapScreenState extends State<IcapScreen> {
                 child: _buildRatioGauge(
                   label: 'Ratio Tier 1',
                   value: ratios.tier1Ratio,
-                  minimum: 0.06,
+                  minimum: 0.075,
                   target: 0.085,
                   isDark: isDark,
-                  helper: 'Minimum: 6% | Cible: 8.5%+',
+                  helper: 'Minimum: 7,5% | Cible: 8.5%+',
                 ),
               ),
               AppSpacing.hGapLg,

@@ -50,8 +50,8 @@ class TestPrudentialRatios:
 
     def test_calculate_tier1_ratio_normal(self):
         """Test du calcul Tier 1 ratio."""
-        result = calculate_tier1_ratio(tier1_capital=600_000, rwa=10_000_000)
-        assert result == 0.06  # 6%
+        result = calculate_tier1_ratio(tier1_capital=750_000, rwa=10_000_000)
+        assert result == 0.075  # 7,5%
         assert result >= MIN_TIER1_RATIO
 
     def test_calculate_tier1_ratio_with_hybrid_instruments(self):
@@ -359,7 +359,7 @@ class TestIntegrationScenarios:
         """Test analyse prudentielle complète d'une banque."""
         # Données fictives d'une banque
         cet1 = 5_000_000
-        tier1 = 6_000_000
+        tier1 = 7_500_000
         total_capital = 10_000_000
         rwa = 100_000_000
         total_exposures = 150_000_000

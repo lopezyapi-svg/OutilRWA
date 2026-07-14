@@ -62,6 +62,7 @@ const _colAliases = <String, List<String>>{
   'perte_brute': [
     'perte_brute',
     'perte brute',
+    'perte brute (fcfa)',
     'montant brut',
     'brut',
     'perte',
@@ -72,6 +73,7 @@ const _colAliases = <String, List<String>>{
     'perte_recuperee',
     'perte recuperee',
     'perte récupérée',
+    'perte récupérée (fcfa)',
     'recuperee',
     'recouv',
     'récupéré',

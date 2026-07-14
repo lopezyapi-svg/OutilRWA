@@ -103,14 +103,24 @@ EXPECTED_COLUMNS_BY_SHEET: dict[str, tuple[str, ...]] = {
         "Facteur_conversion (CCF)",
         "EAD_HB_ccf",
     ),
+    # Doit rester identique, colonne par colonne, à la spec du validateur
+    # (IMPORT_SHEET_SPECS dans app/validators/excel_import_validator.py) —
+    # sinon un modèle généré ici puis réimporté tel quel est rejeté par le
+    # validateur pour "colonnes requises manquantes".
     "CRM_non_financee": (
         "ID_Exposition",
         "Nom du garant",
-        "Catégorie du garant",
         "Note_garant",
-        "% Exp_couverte",
-        "Part couverte",
+        "Pays_garant",
+        "Note_pays_garant",
+        "Pondération_pays_garant",
+        "Catégorie du garant",
         "Pondération du garant",
+        "% Exp_couverte",
+        "%Exp_Nn_couverte",
+        "Part couverte",
+        "Part non couverte",
+        "RWA_non_fin",
     ),
     "CRM_financée": (
         "ID_Exposition",
@@ -143,6 +153,27 @@ EXPECTED_INDICATORS_BY_SHEET: dict[str, tuple[str, ...]] = {
         "Type_HB",
         "CCF_HB",
     ),
+    # Feuilles de référence / paramétrage : le validateur (IMPORT_SHEET_SPECS
+    # dans app/validators/excel_import_validator.py) ne vérifie que la
+    # présence de ces repères texte quelque part dans la feuille (pas de
+    # colonnes ni de contenu métier précis) — voir _has_marker. Ces tuples
+    # DOIVENT rester identiques aux `required_markers` de chaque spec là-bas,
+    # sinon un modèle généré ici puis réimporté tel quel est rejeté comme
+    # "repère requis manquant".
+    "LISTE": ("CATEGOREIS", "Type de CRM", "Financée", "Non financée"),
+    "(a) souverains": ("Notation", "Pondération"),
+    "(b) organismes pub. hors Adm c": ("Notation", "Pondération"),
+    "(c) Expositions sur les BMD": ("BMD", "Pondérations"),
+    "(d) institutions financières": ("institutions financières", "Pondération ="),
+    "(e) entreprises": ("Notation", "Pondération"),
+    "(f) clientèle de détail": ("Critère", "Condition"),
+    "(g) prêts garantis par l'immo R": ("Immobilier Résidentiel", "Pondération ="),
+    "(h) prêts garantis par l'immo C": ("Immobilier Commercial", "Condition de garantie"),
+    "(i) créances en souffrance": ("Elements", "Ponderations"),
+    "(j) créances à risque élevé": ("Ponderation", "1.5"),
+    "(k) autres actifs": ("Elements", "Pondérations"),
+    "(l) Hors bilan": ("Catégorie", "FCEC (%)"),
+    "Mapping des pondérations": ("DBRS", "Moody", "S&P", "Fitch"),
 }
 REF_REQUIRED_MARKERS = ("Type_HB", "CCF_HB")
 REF_MIN_COLUMN_COUNT = 17

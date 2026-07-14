@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
 
+import '../../dashboard/widgets/dashboard_fonds_propres_import_dialog.dart';
 import '../../expositions/widgets/excel_import_dialog.dart';
 import '../../risque_marche/screens/market_data_import_screen.dart';
 import '../../risque_operationnel/widgets/ro_import_bic_dialog.dart';
@@ -176,6 +177,28 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                                   successMessage = 'Données risque opérationnel chargées avec succès';
                                                 });
                                               }
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: 180,
+                                        child: _buildImportCard(
+                                          context,
+                                          title: 'Fonds Propres',
+                                          backgroundColor: const Color(0xFF1E40AF),
+                                          borderColor: const Color(0xFF1E40AF),
+                                          textColor: Colors.white,
+                                          onTap: () async {
+                                            final success = await showFondsPropresImportDialog(
+                                              context,
+                                              api: widget.api,
+                                            );
+                                            if (!mounted) return;
+                                            if (success == true) {
+                                              setState(() {
+                                                successMessage = 'Fonds propres réglementaires mis à jour avec succès';
+                                              });
                                             }
                                           },
                                         ),
@@ -353,6 +376,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
               Text(
                 title,
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: textColor ?? AppTheme.text,
                       fontWeight: FontWeight.w600,

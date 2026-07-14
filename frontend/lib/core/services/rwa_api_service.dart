@@ -148,6 +148,9 @@ class RwaApiService {
       'rwa_marche': rwaMarche,
       'capital_requis': capitalRequis,
     });
+    // Le RWA Marché stocké ici alimente directement rwa_total côté dashboard
+    // (resolve_market_capital) — même raison d'invalidation que pour le BIC.
+    _dashboardFuture = null;
   }
 
   final List<Map<String, dynamic>> _riskWeights = [
@@ -512,6 +515,11 @@ class RwaApiService {
 
     _dashboardFuture = null; // invalidation
     return DashboardSnapshot.fromJson(json);
+  }
+
+  /// Modèle Excel d'import des Fonds Propres Réglementaires (CET1/AT1/Tier2).
+  Future<Uint8List> downloadFondsPropresImportTemplate() async {
+    return _client.getBytes('/dashboard/fonds-propres/import/template');
   }
 
   Future<ExposureModuleData> fetchExpositionsModule() async {
@@ -1843,6 +1851,12 @@ class RwaApiService {
   Future<OpRiskInput> upsertBicInput(int annee, Map<String, dynamic> data) async {
     final json = await _client.put('/risque-operationnel/bic/inputs/$annee', data)
         as Map<String, dynamic>;
+    // Le RWA Opérationnel du dashboard (métrique 'rwa_op' et 'rwa' total,
+    // donc aussi les ratios CET1/Tier1/Solvabilité/Levier) dépend directement
+    // de calcul_bic() côté backend. Sans cette invalidation, un écran déjà
+    // ouvert (Tableau de bord, Reporting) continue d'afficher les anciens
+    // chiffres tant qu'il n'est pas rechargé manuellement.
+    _dashboardFuture = null;
     return OpRiskInput.fromJson(json);
   }
 
@@ -1868,6 +1882,9 @@ class RwaApiService {
   Future<OpRiskParametres> updateBicParametres(Map<String, dynamic> data) async {
     final json = await _client.put('/risque-operationnel/bic/parametres', data)
         as Map<String, dynamic>;
+    // Mêmes raisons que dans upsertBicInput() : les paramètres BIC/CCR3
+    // (seuils, coefficients) affectent aussi le RWA Opérationnel du dashboard.
+    _dashboardFuture = null;
     return OpRiskParametres.fromJson(json);
   }
 
