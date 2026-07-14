@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/currency_registry.dart';
 import '../models/fx_security_analysis.dart';

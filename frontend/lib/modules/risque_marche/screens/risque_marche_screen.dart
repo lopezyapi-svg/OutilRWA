@@ -1885,8 +1885,7 @@ class _YieldCurvePointTile extends StatelessWidget {
     required this.selected,
     required this.onHoverChanged,
     required this.onTap,
-    this.seriesLabel,
-  });
+  }) : seriesLabel = null;
 
   final _YieldCurvePoint point;
   final Color color;
@@ -5999,7 +5998,7 @@ class _BondKeyIndicatorSpec {
         color: _marketPrimary,
         formula: r'M_{res}=\frac{\sum_i M_i\times Encours_i}{\sum_i Encours_i}',
         detail:
-            "Durée de vie moyenne restante des titres du portefeuille, pondérée par les encours.",
+            'Durée de vie moyenne restante des titres du portefeuille, pondérée par les encours.',
         caption: 'Échéance restante',
         category: 'Maturité',
         method: 'Maturité résiduelle calculée',
@@ -7698,7 +7697,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.indigo.withValues(alpha: 0.5), width: 1.2),
                         ),
-                        child: Text('i', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo, height: 1.1)),
+                        child: const Text('i', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo, height: 1.1)),
                       ),
                     ),
                   ),
@@ -7752,7 +7751,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                             ),
                             TextSpan(
                               text: _bondIndicatorPercent(row.ytm),
-                              style: TextStyle(color: _marketPrimary, fontSize: 11, fontWeight: FontWeight.w800),
+                              style: const TextStyle(color: _marketPrimary, fontSize: 11, fontWeight: FontWeight.w800),
                             ),
                           ],
                         );
@@ -7767,7 +7766,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                             ),
                             TextSpan(
                               text: '${_marketDecimalNumberText(row.duration, decimals: 2, trimTrailingZeros: false)} ans',
-                              style: TextStyle(color: _marketWarning, fontSize: 11, fontWeight: FontWeight.w800),
+                              style: const TextStyle(color: _marketWarning, fontSize: 11, fontWeight: FontWeight.w800),
                             ),
                           ],
                         );
@@ -8139,7 +8138,7 @@ class _BondZoneRadarProfileChartState extends State<_BondZoneRadarProfileChart> 
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.indigo.withValues(alpha: 0.5), width: 1.2),
                   ),
-                  child: Text('i', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo, height: 1.1)),
+                  child: const Text('i', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo, height: 1.1)),
                 ),
               ),
             ],
@@ -8174,8 +8173,8 @@ class _BondZoneRadarProfileChartState extends State<_BondZoneRadarProfileChart> 
                     borderColor: Colors.transparent,
                     entryRadius: 0,
                     dataEntries: [
-                      RadarEntry(value: 100), RadarEntry(value: 100),
-                      RadarEntry(value: 100), RadarEntry(value: 100), RadarEntry(value: 100),
+                      const RadarEntry(value: 100), const RadarEntry(value: 100),
+                      const RadarEntry(value: 100), const RadarEntry(value: 100), const RadarEntry(value: 100),
                     ],
                   ),
                   // Portfolio dataset — palette de base. entryRadius reste à 0 :
@@ -8772,7 +8771,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.indigo.withValues(alpha: 0.5), width: 1.2),
                     ),
-                    child: Text('i', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo, height: 1.1)),
+                    child: const Text('i', style: TextStyle(fontFamily: 'serif', fontStyle: FontStyle.italic, fontWeight: FontWeight.w600, fontSize: 13, color: Colors.indigo, height: 1.1)),
                   ),
                 ),
               ),
@@ -10496,7 +10495,7 @@ class _BondIndicatorCardGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final columns = maxItemsPerRow;
+        const columns = maxItemsPerRow;
         final safeColumns = math.min(columns, math.max(1, items.length));
         final cardWidth =
             (width - gap * math.max(0, safeColumns - 1)) / safeColumns;
@@ -10956,13 +10955,13 @@ class _MarketDashboardVisualisation extends StatelessWidget {
                     _MarketAnalyticKpiGrid(dataset: source!),
                     const SizedBox(height: 3),
                     _MarketVisualTwoColumnLayout(
-                      left: _MarketConcentrationPanel(dataset: source!),
-                      right: _MarketScenarioRiskPanel(dataset: source!),
+                      left: _MarketConcentrationPanel(dataset: source),
+                      right: _MarketScenarioRiskPanel(dataset: source),
                     ),
                     const SizedBox(height: 3),
                     _MarketVisualTwoColumnLayout(
-                      left: _MarketRiskSignalPanel(dataset: source!),
-                      right: _MarketAllocationPanel(dataset: source!),
+                      left: _MarketRiskSignalPanel(dataset: source),
+                      right: _MarketAllocationPanel(dataset: source),
                     ),
                   ],
             ],
@@ -12245,9 +12244,8 @@ class _BondSectionPanel extends StatelessWidget {
     required this.subtitle,
     required this.child,
     this.actions,
-    this.leading,
     this.height,
-  });
+  }) : leading = null;
 
   final String title;
   final String subtitle;
