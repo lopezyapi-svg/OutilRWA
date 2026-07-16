@@ -29,6 +29,7 @@ dependencies:
   fl_chart: ^1.2.0
   url_launcher: ^6.3.1
   marquee: ^2.3.0
+  spreadsheet_decoder: ^2.3.0
 
 dev_dependencies:
   flutter_test:
