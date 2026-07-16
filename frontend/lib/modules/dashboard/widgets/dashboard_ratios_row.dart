@@ -81,7 +81,7 @@ class DashboardRatiosRow extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _RatioTile(
-                    label: 'Ratio de Levier (MAJ)',
+                    label: 'Ratio de Levier',
                     value: ratios.levier,
                     pilier1: 3.00,
                     coussin: 0.00),
