@@ -9,6 +9,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rwa_calculator/core/state/portfolio_amount_unit_scope.dart';
+import 'package:rwa_calculator/core/utils/currency_conversion.dart';
 import 'package:rwa_calculator/modules/risque_marche/screens/fx_risk_analysis_screen.dart';
 import 'package:rwa_calculator/modules/risque_marche/services/fx_rate_service.dart';
 import 'package:rwa_calculator/modules/risque_marche/services/market_data_import_store.dart';
@@ -16,7 +18,10 @@ import 'package:rwa_calculator/modules/risque_marche/services/market_data_import
 void main() {
   testWidgets('le taux USD peut être coté en ligne puis validé',
       (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1200, 1000);
+    // Large viewport : le tableau affiche toutes ses colonnes (dont l'en-tête
+    // « VALEUR DEVISE ACTUELLE » qui porte le menu de gestion des taux) sans
+    // être recouvert par le panneau de choc de droite.
+    tester.view.physicalSize = const Size(1920, 1200);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
       tester.view.resetPhysicalSize();
@@ -62,15 +67,27 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: FxRiskAnalysisScreen(rateService: service)),
+      PortfolioAmountUnitScope(
+        notifier:
+            ValueNotifier<PortfolioAmountUnit>(PortfolioAmountUnit.billion),
+        child: MaterialApp(
+          home: Scaffold(body: FxRiskAnalysisScreen(rateService: service)),
+        ),
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    // Au départ, la pastille USD (taux de référence) porte l'icône crayon ;
-    // l'EUR à parité fixe porte un cadenas.
+    // Les contre-valeurs sont gérées depuis le menu de l'en-tête de colonne
+    // « VALEUR DEVISE ACTUELLE » (icône d'actualisation) : on l'ouvre puis on
+    // choisit « Saisir les contre-valeurs ».
+    await tester.tap(find.byIcon(CupertinoIcons.arrow_clockwise));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Saisir les contre-valeurs'));
+    await tester.pumpAndSettle();
+
+    // Dans le gestionnaire, la pastille USD (taux de référence) porte l'icône
+    // crayon ; l'EUR à parité fixe porte un cadenas.
     expect(find.byIcon(CupertinoIcons.pencil), findsOneWidget);
 
     // Ouvre l'éditeur en cliquant la pastille USD via son icône.
@@ -88,8 +105,9 @@ void main() {
     expect(find.widgetWithText(TextField, '612,34'), findsOneWidget);
     expect(find.textContaining('exchangerate-api.com'), findsOneWidget);
 
-    // Valide : le dialogue se ferme et la pastille reflète l'origine « en
-    // ligne » (l'icône crayon devient une icône de cotation en ligne).
+    // Valide : l'éditeur se ferme et, de retour dans le gestionnaire des
+    // contre-valeurs, la pastille USD reflète l'origine « en ligne »
+    // (l'icône crayon devient une icône de cotation en ligne).
     await tester.tap(find.text('Valider'));
     await tester.pumpAndSettle();
 

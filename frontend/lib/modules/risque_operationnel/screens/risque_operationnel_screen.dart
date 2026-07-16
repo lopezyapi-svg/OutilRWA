@@ -7542,7 +7542,6 @@ class _CorepTabViewState extends State<_CorepTabView> {
   bool get _dk => widget.isDark;
   Color get _border => _dk ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
   Color get _card   => _dk ? const Color(0xFF101C32) : const Color(0xFFF6F9FF);
-  Color get _surf   => _dk ? const Color(0xFF0D1A2E) : Colors.white;
   Color get _txt    => _dk ? Colors.white : const Color(0xFF1F2937);
   Color get _muted  => _dk ? const Color(0xFF8BA3C7) : const Color(0xFF6B7280);
 
@@ -9788,19 +9787,6 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     decoration: BoxDecoration(color: c, shape: BoxShape.circle),
   );
 
-  // Format FCFA avec séparateur d'espace (format français)
-  String _arFcfa(double v) {
-    final abs = v.abs();
-    final sign = v < 0 ? '− ' : '';
-    // Formatage entier avec espaces insécables comme séparateurs de milliers
-    final str = abs.toStringAsFixed(2);
-    final parts = str.split('.');
-    final intPart = parts[0].replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+$)'),
-      (m) => '${m[1]} ',
-    );
-    return '$sign$intPart,${parts[1]} FCFA';
-  }
 
   // ── Vue Paramètres ────────────────────────────────────────────────────────────
 

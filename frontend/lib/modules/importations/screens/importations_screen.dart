@@ -1,4 +1,4 @@
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
@@ -51,7 +51,10 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                       ),
                 ),
                 const SizedBox(height: 6),
-                Divider(height: 1, thickness: 1, color: Theme.of(context).dividerColor),
+                Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: Theme.of(context).dividerColor),
                 const SizedBox(height: 6),
                 Text(
                   'Importez et consolidez les données d\'exposition par catégorie pour le calcul des risques pondérés (RWA).',
@@ -69,7 +72,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                   padding: const EdgeInsets.all(AppTheme.pagePadding),
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight - (AppTheme.pagePadding * 2),
+                      minHeight:
+                          constraints.maxHeight - (AppTheme.pagePadding * 2),
                     ),
                     child: IntrinsicHeight(
                       child: Column(
@@ -83,19 +87,29 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(32),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.accent.withValues(alpha: 0.05),
+                                      color: AppTheme.accent
+                                          .withValues(alpha: 0.05),
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: AppTheme.accent.withValues(alpha: 0.1),
+                                        color: AppTheme.accent
+                                            .withValues(alpha: 0.1),
                                         width: 2,
                                       ),
                                     ),
                                     child: Lottie.asset(
-                                      successMessage != null ? 'assets/lotties/Success.json' : 'assets/lotties/import_loader.json',
+                                      successMessage != null
+                                          ? 'assets/lotties/Success.json'
+                                          : 'assets/lotties/import_loader.json',
                                       width: 200,
                                       height: 200,
                                       fit: BoxFit.contain,
                                       repeat: successMessage == null,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return _ImportAnimationFallback(
+                                          completed: successMessage != null,
+                                        );
+                                      },
                                     ),
                                   ),
                                   const SizedBox(height: 48),
@@ -113,7 +127,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                           borderColor: AppTheme.accent,
                                           textColor: Colors.white,
                                           onTap: () async {
-                                            final result = await showExcelImportDialog(
+                                            final result =
+                                                await showExcelImportDialog(
                                               context,
                                               api: widget.api,
                                               onImportApplied: () async {},
@@ -121,7 +136,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                             if (!mounted) return;
                                             if (result != null) {
                                               setState(() {
-                                                successMessage = 'Données risque de crédit chargées avec succès';
+                                                successMessage =
+                                                    'Données risque de crédit chargées avec succès';
                                               });
                                             }
                                           },
@@ -136,11 +152,14 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                           borderColor: AppTheme.success,
                                           textColor: Colors.white,
                                           onTap: () async {
-                                            final success = await showMarketDataImportDialog(context);
+                                            final success =
+                                                await showMarketDataImportDialog(
+                                                    context);
                                             if (!mounted) return;
                                             if (success) {
                                               setState(() {
-                                                successMessage = 'Données risque de marché chargées avec succès';
+                                                successMessage =
+                                                    'Données risque de marché chargées avec succès';
                                               });
                                             }
                                           },
@@ -155,26 +174,37 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                           borderColor: AppTheme.warning,
                                           textColor: Colors.white,
                                           onTap: () async {
-                                            final choice = await _chooseRoImportType(context);
-                                            if (!mounted || choice == null) return;
+                                            final choice =
+                                                await _chooseRoImportType(
+                                                    context);
+                                            if (!context.mounted) return;
+                                            if (choice == null) return;
 
                                             if (choice == 'ccr3') {
-                                              final imported = await showRoImportBicDialog(
+                                              if (!context.mounted) return;
+                                              final imported =
+                                                  await showRoImportBicDialog(
                                                 context,
                                                 api: widget.api,
                                               );
                                               if (!mounted) return;
                                               if (imported == true) {
                                                 setState(() {
-                                                  successMessage = 'Données BIC / CCR3 chargées avec succès';
+                                                  successMessage =
+                                                      'Données BIC / CCR3 chargées avec succès';
                                                 });
                                               }
                                             } else {
-                                              final success = await showRoImportPertesDialog(context, api: widget.api);
+                                              if (!context.mounted) return;
+                                              final success =
+                                                  await showRoImportPertesDialog(
+                                                      context,
+                                                      api: widget.api);
                                               if (!mounted) return;
                                               if (success == true) {
                                                 setState(() {
-                                                  successMessage = 'Données risque opérationnel chargées avec succès';
+                                                  successMessage =
+                                                      'Données risque opérationnel chargées avec succès';
                                                 });
                                               }
                                             }
@@ -186,18 +216,21 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                         child: _buildImportCard(
                                           context,
                                           title: 'Fonds Propres',
-                                          backgroundColor: const Color(0xFF1E40AF),
+                                          backgroundColor:
+                                              const Color(0xFF1E40AF),
                                           borderColor: const Color(0xFF1E40AF),
                                           textColor: Colors.white,
                                           onTap: () async {
-                                            final success = await showFondsPropresImportDialog(
+                                            final success =
+                                                await showFondsPropresImportDialog(
                                               context,
                                               api: widget.api,
                                             );
                                             if (!mounted) return;
                                             if (success == true) {
                                               setState(() {
-                                                successMessage = 'Fonds propres réglementaires mis à jour avec succès';
+                                                successMessage =
+                                                    'Fonds propres réglementaires mis à jour avec succès';
                                               });
                                             }
                                           },
@@ -208,20 +241,28 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                   if (successMessage != null) ...[
                                     const SizedBox(height: 32),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 12),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.success.withValues(alpha: 0.1),
+                                        color: AppTheme.success
+                                            .withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(color: AppTheme.success.withValues(alpha: 0.3)),
+                                        border: Border.all(
+                                            color: AppTheme.success
+                                                .withValues(alpha: 0.3)),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.check_circle, color: AppTheme.success),
+                                          const Icon(Icons.check_circle,
+                                              color: AppTheme.success),
                                           const SizedBox(width: 8),
                                           Text(
                                             successMessage!,
-                                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(
                                                   color: AppTheme.success,
                                                   fontWeight: FontWeight.w600,
                                                 ),
@@ -289,10 +330,14 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(title,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.w700, fontSize: 13.5)),
                         const SizedBox(height: 2),
                         Text(subtitle,
-                            style: const TextStyle(fontSize: 11.5, color: AppTheme.muted, height: 1.3)),
+                            style: const TextStyle(
+                                fontSize: 11.5,
+                                color: AppTheme.muted,
+                                height: 1.3)),
                       ],
                     ),
                   ),
@@ -304,7 +349,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
         }
 
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           title: const Text('Quel type de fichier importer ?'),
           content: SizedBox(
             width: 420,
@@ -320,7 +366,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                 option(
                   icon: Icons.description_outlined,
                   title: 'Base prudentielle (pertes / incidents)',
-                  subtitle: 'Registre des incidents et pertes opérationnelles, ligne par ligne.',
+                  subtitle:
+                      'Registre des incidents et pertes opérationnelles, ligne par ligne.',
                   color: AppTheme.warning,
                   value: 'prudentielle',
                 ),
@@ -392,3 +439,34 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
   }
 }
 
+class _ImportAnimationFallback extends StatelessWidget {
+  const _ImportAnimationFallback({required this.completed});
+
+  final bool completed;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = completed ? AppTheme.success : AppTheme.accent;
+
+    return SizedBox(
+      width: 136,
+      height: 136,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          shape: BoxShape.circle,
+          border: Border.all(color: color.withValues(alpha: 0.2), width: 2),
+        ),
+        child: Center(
+          child: Icon(
+            completed
+                ? CupertinoIcons.checkmark_alt_circle
+                : CupertinoIcons.arrow_up_doc,
+            color: color,
+            size: 58,
+          ),
+        ),
+      ),
+    );
+  }
+}

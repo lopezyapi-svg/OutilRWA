@@ -6,7 +6,6 @@ import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
-import 'dashboard_top10_risques_table.dart' show kMockTop10;
 
 class DashboardTop10RisquesChart extends StatelessWidget {
   const DashboardTop10RisquesChart({
@@ -24,8 +23,28 @@ class DashboardTop10RisquesChart extends StatelessWidget {
     final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
     final scale = 1000000000 / amountUnit.divisor;
 
-    // Fallback vers les données mock si la liste est vide.
-    final data = exposures.isNotEmpty ? exposures : kMockTop10;
+    // Outil prudentiel : aucune donnée fictive. Sans exposition réelle, le
+    // graphique affiche un état vide explicite au lieu d'un jeu de démonstration.
+    final data = exposures;
+    if (data.isEmpty) {
+      return DashPanel(
+        title: 'RÉPARTITION PAR SECTEUR',
+        unit: 'En ${amountUnit.label} ($currency)',
+        child: SizedBox(
+          height: 200,
+          child: Center(
+            child: Text(
+              'Aucune exposition à afficher',
+              style: TextStyle(
+                color: c.muted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     // Group Top 10 exposures by sector
     final sectorTotals = <String, double>{};

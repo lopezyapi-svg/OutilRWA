@@ -10,10 +10,15 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show NumberFormat;
 
+import 'dart:io' show PathAccessException;
+
+import 'package:file_selector/file_selector.dart';
 import '../../../core/services/api_client.dart';
+import '../../../shared/utils/file_save.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/page_header.dart';
+import '../../../core/utils/currency_conversion.dart';
 
 const Color _varNavy = Color(0xFF0F1B3D);
 const Color _varDeepBlue = Color(0xFF001F4E);
@@ -26,16 +31,50 @@ const Color _varBorder = Color(0xFFDDE7F5);
 const Color _varSurface = Color(0xFFFFFFFF);
 const Color _varSurfaceSoft = Color(0xFFF8FAFC);
 
-const double _parameterPanelWidth = 340;
+const double _parameterPanelWidth = 220;
 
 final NumberFormat _formatMd = NumberFormat('#,##0.0', 'fr_FR');
 final NumberFormat _formatAxe = NumberFormat('#,##0.#', 'fr_FR');
 final NumberFormat _formatPct2 = NumberFormat('#,##0.00', 'fr_FR');
 final NumberFormat _formatEntier = NumberFormat('#,##0', 'fr_FR');
 
-String _md(num valeur) => '${_formatMd.format(valeur)} Md FCFA';
+/// Unité d'affichage adaptée à l'ordre de grandeur du portefeuille : au-delà
+/// de 1 Md on lit en milliards, en dessous en millions, afin qu'un petit
+/// portefeuille (actions de quelques centaines de millions) ne soit pas réduit
+/// à « 0,0 Md ». La même unité est appliquée aux cartes KPI et à l'axe du
+/// graphique pour rester cohérente.
+PortfolioAmountUnit _uniteEchelleVar(double portefeuilleMd) =>
+    portefeuilleMd.abs() >= 1.0
+        ? PortfolioAmountUnit.billion
+        : PortfolioAmountUnit.million;
 
-String _pourcentage(double fraction) => '${_formatPct2.format(fraction * 100)} %';
+(String, String) _mdFormat(num valeur, {PortfolioAmountUnit? unit}) {
+  if (unit != null) {
+    final scaled = (valeur * 1e9) / unit.divisor;
+    return (_formatMd.format(scaled), unit.label);
+  }
+  if (valeur == 0) return ('0,0', 'Md');
+  final absVal = valeur.abs();
+  if (absVal < 0.001) {
+    final format = NumberFormat('#,##0', 'fr_FR');
+    return (format.format(valeur * 1000000), 'k');
+  } else if (absVal < 0.01) {
+    final format = NumberFormat('#,##0.00', 'fr_FR');
+    return (format.format(valeur * 1000), 'M');
+  } else if (absVal < 0.1) {
+    final format = NumberFormat('#,##0.0', 'fr_FR');
+    return (format.format(valeur * 1000), 'M');
+  }
+  return (_formatMd.format(valeur), 'Md');
+}
+
+String _md(num valeur, {PortfolioAmountUnit? unit}) {
+  final res = _mdFormat(valeur, unit: unit);
+  return '${res.$1} ${res.$2}';
+}
+
+String _pourcentage(double fraction) =>
+    '${_formatPct2.format(fraction * 100)} %';
 
 enum VarMethode { historique, parametrique, monteCarlo }
 
@@ -52,19 +91,6 @@ extension on VarMethode {
         VarMethode.monteCarlo => 'VaR Monte-Carlo',
       };
 
-  String get definition => switch (this) {
-        VarMethode.historique =>
-          'La VaR (Value at Risk, valeur en risque) historique estime la '
-              'perte maximale probable à partir du quantile des pertes '
-              'réellement observées sur la fenêtre choisie.',
-        VarMethode.parametrique =>
-          'La VaR paramétrique suppose des pertes et gains distribués selon '
-              'une loi normale et déduit la perte maximale probable de la '
-              'moyenne et de l\'écart-type estimés.',
-        VarMethode.monteCarlo =>
-          'La VaR Monte-Carlo estime la perte maximale probable à partir de '
-              'milliers de scénarios simulés calibrés sur l\'historique.',
-      };
 }
 
 /// Classe d'histogramme reçue du backend.
@@ -86,6 +112,7 @@ class _ReponseVar {
     required this.expectedShortfall,
     required this.pirePerte,
     required this.p95,
+    this.p975,
     required this.p99,
     required this.tauxDepassementPct,
     required this.nombreObservations,
@@ -96,6 +123,8 @@ class _ReponseVar {
     this.graine,
     this.icVarBasse,
     this.icVarHaute,
+    this.durationModifiee,
+    this.durationModifieePortefeuille,
   });
 
   final String methode;
@@ -105,6 +134,7 @@ class _ReponseVar {
   final double expectedShortfall;
   final double pirePerte;
   final double p95;
+  final double? p975;
   final double p99;
   final double tauxDepassementPct;
   final int nombreObservations;
@@ -115,6 +145,11 @@ class _ReponseVar {
   final int? graine;
   final double? icVarBasse;
   final double? icVarHaute;
+  final double? durationModifiee;
+
+  /// Duration modifiée du portefeuille calculée par le backend (flux
+  /// amortis, pondérée par le capital restant dû) : valeur de référence.
+  final double? durationModifieePortefeuille;
 
   static double _d(dynamic valeur) => (valeur as num).toDouble();
 
@@ -140,6 +175,7 @@ class _ReponseVar {
       expectedShortfall: _d(json['expected_shortfall']),
       pirePerte: _d(json['pire_perte']),
       p95: _d(json['p95']),
+      p975: json['p975'] == null ? null : _d(json['p975']),
       p99: _d(json['p99']),
       tauxDepassementPct: _d(json['taux_depassement_pct']),
       nombreObservations: (json['nombre_observations'] as num).toInt(),
@@ -151,6 +187,14 @@ class _ReponseVar {
       graine: (json['graine'] as num?)?.toInt(),
       icVarBasse: ic == null ? null : _d(ic['borne_basse']),
       icVarHaute: ic == null ? null : _d(ic['borne_haute']),
+      durationModifiee: json['parametres'] != null &&
+              json['parametres']['duration_modifiee'] != null
+          ? _d(json['parametres']['duration_modifiee'])
+          : null,
+      durationModifieePortefeuille:
+          json['duration_modifiee_portefeuille'] == null
+              ? null
+              : _d(json['duration_modifiee_portefeuille']),
     );
   }
 }
@@ -159,6 +203,10 @@ class ValueAtRiskScreen extends StatefulWidget {
   const ValueAtRiskScreen({super.key, required this.api});
 
   final RwaApiService api;
+  static double? lastDashboardDurationModifiee;
+
+  /// Capital restant dû du tableau de bord Sensibilité, en FCFA (pas en Md).
+  static double? lastDashboardCrd;
 
   @override
   State<ValueAtRiskScreen> createState() => _ValueAtRiskScreenState();
@@ -169,14 +217,24 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   static const double _confianceDefaut = 0.99;
   static const int _horizonDefaut = 1;
   static const int _fenetreDefaut = 500;
+  static const double _volatiliteDefaut = 0.03;
+  static const double _durationDefaut = 3.4;
   static const int _simulationsDefaut = 10000;
+  static const double _betaDefaut = 1.0;
+
+  static const String _paysCourbeDefaut = "Côte d'Ivoire";
 
   VarMethode _methode = VarMethode.historique;
   String _portefeuille = _portefeuilleDefaut;
   double _confiance = _confianceDefaut;
   int _horizon = _horizonDefaut;
   int _fenetre = _fenetreDefaut;
+  double _volatilite = _volatiliteDefaut;
+  double _beta = _betaDefaut;
+  double? _durationModifiee;
   int _nbSimulations = _simulationsDefaut;
+  String _paysCourbe = _paysCourbeDefaut;
+  bool _actualisationEnCours = false;
 
   _ReponseVar? _reponse;
   bool _chargement = false;
@@ -185,6 +243,15 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   int _requeteEnCours = 0;
   Timer? _relanceAutomatique;
 
+  // Cadrage professionnel du graphique : l'axe des pertes est figé sur la
+  // première distribution du contexte courant (méthode + portefeuille +
+  // données) pour que les recalculs déplacent visiblement la cloche et les
+  // seuils au lieu de re-normaliser l'échelle à chaque réponse. La réponse
+  // précédente reste tracée en filigrane pour la comparaison avant/après.
+  double? _axeXMin;
+  double? _axeXMax;
+  _ReponseVar? _reponsePrecedente;
+
   // Sans données, l'écran réinterroge le serveur à intervalle régulier :
   // les fichiers déposés dans data/ sont ainsi chargés automatiquement.
   static const Duration _delaiRelance = Duration(seconds: 10);
@@ -192,6 +259,11 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   @override
   void initState() {
     super.initState();
+    // Duration de référence : celle du tableau de bord Sensibilité si déjà
+    // calculée, sinon null — le backend applique alors sa propre duration
+    // (mêmes conventions : flux amortis pondérés par le capital restant dû)
+    // et la renvoie pour affichage.
+    _durationModifiee = ValueAtRiskScreen.lastDashboardDurationModifiee;
     _charger();
   }
 
@@ -208,7 +280,151 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
     });
   }
 
-  Future<void> _charger() async {
+  /// Récupère en ligne la dernière courbe de taux UEMOA (UMOA-Titres) pour le
+  /// pays sélectionné, puis relance le calcul avec la courbe actualisée.
+  Future<void> _actualiserCourbe() async {
+    setState(() => _actualisationEnCours = true);
+    try {
+      final resume = await widget.api.actualiserCourbeUemoa(_paysCourbe);
+      if (!mounted) return;
+      final date = resume['date'] ?? '';
+      final points = resume['nombre_points'] ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Courbe $_paysCourbe actualisée (au $date, $points points).',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+      await _charger();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Échec de l\'actualisation : $e'),
+          backgroundColor: _varDanger,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _actualisationEnCours = false);
+    }
+  }
+
+  Future<void> _importerHistorique() async {
+    try {
+      const typeGroup = XTypeGroup(
+        label: 'Fichiers Excel',
+        extensions: ['xlsx'],
+      );
+      final file = await openFile(acceptedTypeGroups: [typeGroup]);
+      if (file == null) return;
+
+      setState(() {
+        _chargement = true;
+        _erreur = null;
+      });
+
+      final bytes = await file.readAsBytes();
+      await widget.api.uploadVarHistory(bytes, file.name);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Historique importé avec succès.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      _charger(nouveauContexte: true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _chargement = false;
+        _erreur = 'Échec de l\'importation : $e';
+      });
+    }
+  }
+
+  Future<void> _telechargerModele() async {
+    try {
+      final bytes = await widget.api.downloadVarHistoryTemplate();
+      if (!mounted) return;
+      final location = await getSaveLocation(
+        suggestedName: 'modele_import_var.xlsx',
+        acceptedTypeGroups: const [
+          XTypeGroup(label: 'Excel', extensions: ['xlsx']),
+        ],
+      );
+      if (!mounted || location == null) return;
+      await saveBytesAtLocation(location, bytes, requiredExtension: '.xlsx');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Modèle enregistré.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } on PathAccessException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Impossible d\'enregistrer : le fichier est probablement déjà '
+            'ouvert. Fermez-le puis réessayez.',
+          ),
+          backgroundColor: _varDanger,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Téléchargement impossible : $e'),
+          backgroundColor: _varDanger,
+        ),
+      );
+    }
+  }
+
+  /// Bornes complètes de la distribution (histogramme, cloche théorique,
+  /// VaR, IC) : servent de référence pour figer l'axe des pertes.
+  (double, double)? _bornesDistribution(_ReponseVar r) {
+    if (r.histogramme.isEmpty && r.courbeNormale.isEmpty) return null;
+    var borneMin = r.histogramme.isNotEmpty
+        ? r.histogramme.first.borneInf
+        : r.courbeNormale.first.dx;
+    var borneMax = r.histogramme.isNotEmpty
+        ? r.histogramme.last.borneSup
+        : r.courbeNormale.first.dx;
+    for (final point in r.courbeNormale) {
+      borneMin = math.min(borneMin, point.dx);
+      borneMax = math.max(borneMax, point.dx);
+    }
+    borneMax = math.max(borneMax, r.varValeur);
+    if (r.icVarHaute != null) {
+      borneMax = math.max(borneMax, r.icVarHaute!);
+    }
+    return (borneMin, borneMax);
+  }
+
+  /// Recale l'axe figé sur la distribution courante (bouton « recadrer »).
+  void _recadrerAxe() {
+    final r = _reponse;
+    if (r == null) return;
+    final bornes = _bornesDistribution(r);
+    if (bornes == null) return;
+    setState(() {
+      _axeXMin = bornes.$1;
+      _axeXMax = bornes.$2;
+    });
+  }
+
+  /// [nouveauContexte] : la distribution de référence change (méthode,
+  /// portefeuille, nouvel import) — l'axe figé et la comparaison
+  /// avant/après repartent de zéro.
+  Future<void> _charger({bool nouveauContexte = false}) async {
     final numero = ++_requeteEnCours;
     setState(() {
       _chargement = true;
@@ -221,15 +437,68 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
         niveauConfiance: _confiance,
         horizonJours: _horizon,
         fenetreJours: _fenetre,
+        // Le bêta est transmis séparément : c'est le backend qui applique
+        // VaR = Z x sigma x beta x PV (aucun calcul financier côté client).
+        volatilite: _methode != VarMethode.historique ? _volatilite : null,
+        beta: _methode != VarMethode.historique && _portefeuille == 'actions'
+            ? _beta
+            : null,
+        durationModifiee:
+            _methode != VarMethode.historique && _portefeuille == 'obligations'
+                ? _durationModifiee
+                : null,
+        // lastDashboardCrd est en FCFA ; l'API VaR attend des Md FCFA.
+        valeurPortefeuille: _portefeuille == 'obligations' &&
+                ValueAtRiskScreen.lastDashboardCrd != null
+            ? ValueAtRiskScreen.lastDashboardCrd! / 1e9
+            : null,
         nbSimulations:
             _methode == VarMethode.monteCarlo ? _nbSimulations : null,
       );
       if (!mounted || numero != _requeteEnCours) return;
       _relanceAutomatique?.cancel();
+      final nouvelle = _ReponseVar.fromJson(json);
+      // Changement de référentiel implicite : une valeur de portefeuille ou
+      // une source de données différente signifie que le book a changé
+      // (nouvel import, CRD recalculé, courbe actualisée) — le cadrage et
+      // la comparaison repartent alors de la nouvelle distribution.
+      final ancienne = _reponse;
+      final contexteChange = nouveauContexte ||
+          ancienne == null ||
+          ancienne.sourceDonnees != nouvelle.sourceDonnees ||
+          (nouvelle.valeurPortefeuille - ancienne.valeurPortefeuille).abs() >
+              ancienne.valeurPortefeuille.abs() * 1e-6;
       setState(() {
-        _reponse = _ReponseVar.fromJson(json);
+        // Filigrane avant/après : uniquement au sein d'un même contexte.
+        _reponsePrecedente = contexteChange ? null : ancienne;
+        _reponse = nouvelle;
         _chargement = false;
         _donneesAbsentes = false;
+
+        // Axe figé : initialisé sur la première distribution du contexte,
+        // puis étendu seulement si les données réelles (histogramme, VaR,
+        // IC) le débordent — la cloche théorique, elle, est écrêtée au
+        // tracé pour que les variations de paramètres restent visibles.
+        if (contexteChange) {
+          _axeXMin = null;
+          _axeXMax = null;
+        }
+        if (_axeXMin == null || _axeXMax == null) {
+          final bornes = _bornesDistribution(nouvelle);
+          if (bornes != null) {
+            _axeXMin = bornes.$1;
+            _axeXMax = bornes.$2;
+          }
+        } else {
+          if (nouvelle.histogramme.isNotEmpty) {
+            _axeXMin = math.min(_axeXMin!, nouvelle.histogramme.first.borneInf);
+            _axeXMax = math.max(_axeXMax!, nouvelle.histogramme.last.borneSup);
+          }
+          _axeXMax = math.max(_axeXMax!, nouvelle.varValeur);
+          if (nouvelle.icVarHaute != null) {
+            _axeXMax = math.max(_axeXMax!, nouvelle.icVarHaute!);
+          }
+        }
       });
     } catch (erreur) {
       if (!mounted || numero != _requeteEnCours) return;
@@ -243,6 +512,9 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
         if (donneesAbsentes) {
           // Les données absentes rendent l'ancienne réponse caduque.
           _reponse = null;
+          _reponsePrecedente = null;
+          _axeXMin = null;
+          _axeXMax = null;
         }
       });
       _programmerRelanceAutomatique();
@@ -252,7 +524,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   void _changerMethode(VarMethode methode) {
     if (methode == _methode) return;
     setState(() => _methode = methode);
-    _charger();
+    _charger(nouveauContexte: true);
   }
 
   void _reinitialiser() {
@@ -261,10 +533,23 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
       _confiance = _confianceDefaut;
       _horizon = _horizonDefaut;
       _fenetre = _fenetreDefaut;
+      _volatilite = _volatiliteDefaut;
+      _beta = _betaDefaut;
+      _durationModifiee = ValueAtRiskScreen.lastDashboardDurationModifiee;
       _nbSimulations = _simulationsDefaut;
     });
-    _charger();
+    _charger(nouveauContexte: true);
   }
+
+  void onHorizon(int value) => setState(() => _horizon = value);
+  void onFenetre(int value) => setState(() => _fenetre = value);
+  void onVolatilite(double value) => setState(() => _volatilite = value);
+  void onVolatiliteEnd(double value) => _charger();
+  void onBeta(double value) => setState(() => _beta = value);
+  void onBetaEnd(double value) => _charger();
+  void onDuration(double value) => setState(() => _durationModifiee = value);
+  void onDurationEnd(double value) => _charger();
+  void onNbSimulations(int value) => setState(() => _nbSimulations = value);
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +560,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
           padding: const EdgeInsets.all(AppTheme.pagePadding),
           child: PageHeader(
             title: 'VALUE AT RISK (VaR)',
-            titleFontSize: 26,
+            titleFontSize: 22,
             trailing: _SelecteurMethode(
               selection: _methode,
               onChanged: _changerMethode,
@@ -301,10 +586,24 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                     confiance: _confiance,
                     horizon: _horizon,
                     fenetre: _fenetre,
+                    volatilite: _volatilite,
+                    beta: _beta,
+                    durationModifiee: _durationModifiee ??
+                        _reponse?.durationModifieePortefeuille ??
+                        ValueAtRiskScreen.lastDashboardDurationModifiee ??
+                        _durationDefaut,
                     nbSimulations: _nbSimulations,
                     onPortefeuille: (valeur) {
-                      setState(() => _portefeuille = valeur);
-                      _charger();
+                      setState(() {
+                        _portefeuille = valeur;
+                        if (valeur == 'obligations') {
+                          _durationModifiee =
+                              ValueAtRiskScreen.lastDashboardDurationModifiee;
+                        } else {
+                          _durationModifiee = null;
+                        }
+                      });
+                      _charger(nouveauContexte: true);
                     },
                     onConfiance: (valeur) {
                       setState(() => _confiance = valeur);
@@ -318,10 +617,33 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                       setState(() => _fenetre = valeur);
                       _charger();
                     },
+                    onVolatilite: (valeur) {
+                      setState(() => _volatilite = valeur);
+                    },
+                    onVolatiliteEnd: (valeur) {
+                      _charger();
+                    },
+                    onBeta: (valeur) {
+                      setState(() => _beta = valeur);
+                    },
+                    onBetaEnd: (valeur) {
+                      _charger();
+                    },
+                    onDuration: (valeur) {
+                      setState(() => _durationModifiee = valeur);
+                    },
+                    onDurationEnd: (valeur) {
+                      _charger();
+                    },
                     onNbSimulations: (valeur) {
                       setState(() => _nbSimulations = valeur);
                       _charger();
                     },
+                    paysCourbe: _paysCourbe,
+                    actualisationEnCours: _actualisationEnCours,
+                    onPaysCourbe: (valeur) =>
+                        setState(() => _paysCourbe = valeur),
+                    onActualiserCourbe: _actualiserCourbe,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -342,13 +664,21 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Icon(
+                _donneesAbsentes
+                    ? Icons.info_outline
+                    : Icons.warning_amber_rounded,
+                size: 42,
+                color: _donneesAbsentes ? _varPrimary : Colors.red,
+              ),
+              const SizedBox(height: 16),
               Text(
                 _donneesAbsentes
                     ? 'Aucune donnée chargée'
-                    : 'Le calcul de la VaR est indisponible',
+                    : 'Erreur lors de l\'évaluation',
                 style: const TextStyle(
                   color: _varNavy,
-                  fontSize: 15,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -356,35 +686,14 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: Text(
-                  _erreur!,
+                  _donneesAbsentes
+                      ? "Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk."
+                      : _erreur!,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: _varMuted, fontSize: 12.5),
+                  style: const TextStyle(color: _varMuted, fontSize: 13),
                 ),
               ),
-              if (_donneesAbsentes) ...[
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(
-                      width: 11,
-                      height: 11,
-                      child: CircularProgressIndicator(strokeWidth: 1.4),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Les nouvelles données seront chargées automatiquement '
-                      'dès leur import.',
-                      style: TextStyle(
-                        color: _varNavy.withValues(alpha: 0.75),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               OutlinedButton(
                 onPressed: _charger,
                 child: const Text('Réessayer'),
@@ -412,10 +721,16 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
             child: _PanneauGraphique(
               methode: _methode,
               reponse: reponse,
+              reponsePrecedente: _reponsePrecedente,
               confiance: _confiance,
+              axeXMin: _axeXMin,
+              axeXMax: _axeXMax,
               chargement: _chargement,
               erreur: _erreur,
               onReinitialiser: _reinitialiser,
+              onImporterHistorique: _importerHistorique,
+              onTelechargerModele: _telechargerModele,
+              onRecadrer: _recadrerAxe,
             ),
           ),
         ),
@@ -440,7 +755,7 @@ class _SelecteurMethode extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _varSurface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: _varBorder),
       ),
       child: Row(
@@ -476,12 +791,12 @@ class _OngletMethode extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(2),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: actif ? _varPrimary : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          color: actif ? Colors.indigo : Colors.transparent,
+          borderRadius: BorderRadius.circular(2),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -492,16 +807,6 @@ class _OngletMethode extends StatelessWidget {
                 color: actif ? Colors.white : _varNavy,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Tooltip(
-              message: methode.definition,
-              waitDuration: const Duration(milliseconds: 250),
-              child: Icon(
-                Icons.info_outline,
-                size: 14,
-                color: actif ? Colors.white70 : _varMuted,
               ),
             ),
           ],
@@ -522,12 +827,25 @@ class _PanneauParametres extends StatelessWidget {
     required this.confiance,
     required this.horizon,
     required this.fenetre,
+    required this.volatilite,
+    required this.beta,
+    required this.durationModifiee,
     required this.nbSimulations,
     required this.onPortefeuille,
     required this.onConfiance,
     required this.onHorizon,
     required this.onFenetre,
+    required this.onVolatilite,
+    required this.onVolatiliteEnd,
+    required this.onBeta,
+    required this.onBetaEnd,
+    required this.onDuration,
+    required this.onDurationEnd,
     required this.onNbSimulations,
+    required this.paysCourbe,
+    required this.actualisationEnCours,
+    required this.onPaysCourbe,
+    required this.onActualiserCourbe,
   });
 
   final VarMethode methode;
@@ -535,16 +853,30 @@ class _PanneauParametres extends StatelessWidget {
   final double confiance;
   final int horizon;
   final int fenetre;
+  final double volatilite;
+  final double beta;
+  final double durationModifiee;
   final int nbSimulations;
   final ValueChanged<String> onPortefeuille;
   final ValueChanged<double> onConfiance;
   final ValueChanged<int> onHorizon;
   final ValueChanged<int> onFenetre;
+  final ValueChanged<double> onVolatilite;
+  final ValueChanged<double> onVolatiliteEnd;
+  final ValueChanged<double> onBeta;
+  final ValueChanged<double> onBetaEnd;
+  final ValueChanged<double> onDuration;
+  final ValueChanged<double> onDurationEnd;
   final ValueChanged<int> onNbSimulations;
+  final String paysCourbe;
+  final bool actualisationEnCours;
+  final ValueChanged<String> onPaysCourbe;
+  final VoidCallback onActualiserCourbe;
 
   @override
   Widget build(BuildContext context) {
     return _CarteVar(
+      color: Colors.indigo.shade50,
       padding: const EdgeInsets.all(14),
       child: SingleChildScrollView(
         child: Column(
@@ -585,13 +917,143 @@ class _PanneauParametres extends StatelessWidget {
               },
               onChanged: onHorizon,
             ),
-            _GroupeChoix<int>(
-              libelle: 'Fenêtre historique',
-              valeur: fenetre,
-              valeurs: const [250, 500, 1000],
-              libellePour: (valeur) => '$valeur jours',
-              onChanged: onFenetre,
-            ),
+            if (methode == VarMethode.historique)
+              _GroupeChoix<int>(
+                libelle: 'Fenêtre historique',
+                valeur: fenetre,
+                valeurs: const [250, 500, 1000],
+                libellePour: (valeur) => '$valeur jours',
+                onChanged: onFenetre,
+              ),
+            if (methode != VarMethode.historique)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            portefeuille == 'obligations'
+                                ? 'Volatilité des taux'
+                                : 'Volatilité du marché',
+                            style: const TextStyle(
+                              color: _varNavy,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${(volatilite * 100).toInt()} %',
+                          style: const TextStyle(
+                            color: _varPrimary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: volatilite,
+                      min: 0.0,
+                      max: 1.0,
+                      divisions: 100,
+                      activeColor: _varPrimary,
+                      inactiveColor: _varBorder,
+                      onChanged: onVolatilite,
+                      onChangeEnd: onVolatiliteEnd,
+                    ),
+                  ],
+                ),
+              ),
+            if (methode != VarMethode.historique && portefeuille == 'actions')
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Bêta pondéré',
+                            style: TextStyle(
+                              color: _varNavy,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          beta.toStringAsFixed(2),
+                          style: const TextStyle(
+                            color: _varPrimary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: beta.clamp(0.0, 3.0),
+                      min: 0.0,
+                      max: 3.0,
+                      divisions: 300,
+                      activeColor: _varPrimary,
+                      inactiveColor: _varBorder,
+                      onChanged: onBeta,
+                      onChangeEnd: onBetaEnd,
+                    ),
+                  ],
+                ),
+              ),
+            if (methode != VarMethode.historique &&
+                portefeuille == 'obligations')
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Duration modifiée',
+                            style: TextStyle(
+                              color: _varNavy,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          durationModifiee.toStringAsFixed(1),
+                          style: const TextStyle(
+                            color: _varPrimary,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: durationModifiee,
+                      min: 0.0,
+                      max: 30.0,
+                      divisions: 300,
+                      activeColor: _varPrimary,
+                      inactiveColor: _varBorder,
+                      onChanged: onDuration,
+                      onChangeEnd: onDurationEnd,
+                    ),
+                  ],
+                ),
+              ),
             if (methode == VarMethode.monteCarlo)
               _GroupeChoix<int>(
                 libelle: 'Nombre de simulations',
@@ -633,7 +1095,7 @@ class _GroupeChoix<T> extends StatelessWidget {
             libelle,
             style: const TextStyle(
               color: _varMuted,
-              fontSize: 12,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -641,7 +1103,7 @@ class _GroupeChoix<T> extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: _varSurfaceSoft,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(2),
               border: Border.all(color: _varBorder),
             ),
             child: Row(
@@ -652,22 +1114,21 @@ class _GroupeChoix<T> extends StatelessWidget {
                       onTap: () {
                         if (choix != valeur) onChanged(choix);
                       },
-                      borderRadius: BorderRadius.circular(7),
+                      borderRadius: BorderRadius.circular(2),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
                           color: choix == valeur
                               ? _varDeepBlue
                               : Colors.transparent,
-                          borderRadius: BorderRadius.circular(7),
+                          borderRadius: BorderRadius.circular(2),
                         ),
                         child: Text(
                           libellePour(choix),
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color:
-                                choix == valeur ? Colors.white : _varNavy,
-                            fontSize: 12,
+                            color: choix == valeur ? Colors.white : _varNavy,
+                            fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -703,12 +1164,29 @@ class _RangeeKpi extends StatelessWidget {
     final libellePire = methode == VarMethode.monteCarlo
         ? 'PIRE PERTE SIMULÉE'
         : 'PIRE PERTE OBSERVÉE';
-    final cartes = [
-      ('VALEUR DU PORTEFEUILLE', reponse.valeurPortefeuille, _varNavy),
-      (libelleVar, reponse.varValeur, _varNavy),
-      ('EXPECTED SHORTFALL', reponse.expectedShortfall, _varNavy),
-      (libellePire, reponse.pirePerte, _varDanger),
+    // Sans observation (mode réglementaire), il n'existe aucune pire perte
+    // observée : la carte affiche un tiret plutôt qu'un zéro trompeur.
+    final double? pirePerte =
+        methode != VarMethode.monteCarlo && reponse.nombreObservations == 0
+            ? null
+            : reponse.pirePerte;
+    final cartes = <(String, double?, Color, IconData)>[
+      (
+        'VALEUR DU PORTEFEUILLE',
+        reponse.valeurPortefeuille,
+        _varNavy,
+        Icons.account_balance_wallet_outlined
+      ),
+      (libelleVar, reponse.varValeur, _varNavy, Icons.analytics_outlined),
+      (
+        'EXPECTED SHORTFALL',
+        reponse.expectedShortfall,
+        _varNavy,
+        Icons.trending_down_outlined
+      ),
+      (libellePire, pirePerte, _varDanger, Icons.warning_amber_outlined),
     ];
+    final unite = _uniteEchelleVar(reponse.valeurPortefeuille);
     return Row(
       children: [
         for (var indice = 0; indice < cartes.length; indice++) ...[
@@ -718,6 +1196,8 @@ class _RangeeKpi extends StatelessWidget {
               libelle: cartes[indice].$1,
               valeur: cartes[indice].$2,
               accent: cartes[indice].$3,
+              icone: cartes[indice].$4,
+              unite: unite,
             ),
           ),
         ],
@@ -731,68 +1211,90 @@ class _CarteKpi extends StatelessWidget {
     required this.libelle,
     required this.valeur,
     required this.accent,
+    required this.icone,
+    required this.unite,
   });
 
   final String libelle;
-  final double valeur;
+  final double? valeur;
   final Color accent;
+  final IconData icone;
+  final PortfolioAmountUnit unite;
 
   @override
   Widget build(BuildContext context) {
+    final unit = unite;
     return Container(
       decoration: BoxDecoration(
-        color: _varSurface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _varBorder),
+        color: Colors.indigo.shade50,
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: _varBorder, width: 1.0),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(8),
-                  bottomLeft: Radius.circular(8),
-                ),
-              ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            libelle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.indigo.shade400,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.2,
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      libelle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _varMuted,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
+          ),
+          const SizedBox(height: 8),
+          valeur == null
+              ? const Text(
+                  '—',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _varNavy,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                )
+              : Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: _mdFormat(valeur!, unit: unit).$1,
+                        style: const TextStyle(
+                          color: _varNavy,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      _md(valeur),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: _varNavy,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                      TextSpan(
+                        text: ' ${_mdFormat(valeur!, unit: unit).$2}',
+                        style: const TextStyle(
+                          color: _varMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -806,38 +1308,36 @@ class _PanneauGraphique extends StatelessWidget {
   const _PanneauGraphique({
     required this.methode,
     required this.reponse,
+    required this.reponsePrecedente,
     required this.confiance,
+    required this.axeXMin,
+    required this.axeXMax,
     required this.chargement,
     required this.erreur,
     required this.onReinitialiser,
+    required this.onImporterHistorique,
+    required this.onTelechargerModele,
+    required this.onRecadrer,
   });
 
   final VarMethode methode;
   final _ReponseVar reponse;
+  final _ReponseVar? reponsePrecedente;
   final double confiance;
+  final double? axeXMin;
+  final double? axeXMax;
   final bool chargement;
   final String? erreur;
   final VoidCallback onReinitialiser;
-
-  String get _titre => switch (methode) {
-        VarMethode.historique => 'Histogramme des pertes historiques',
-        VarMethode.parametrique =>
-          'Distribution des pertes et loi normale ajustée',
-        VarMethode.monteCarlo => 'Distribution des pertes simulées',
-      };
-
-  String get _sousTitre => switch (methode) {
-        VarMethode.historique =>
-          'Distribution observée et seuil de perte VaR',
-        VarMethode.parametrique =>
-          'Histogramme observé et densité normale théorique',
-        VarMethode.monteCarlo =>
-          '${_formatEntier.format(reponse.nbSimulations ?? 0)} simulations, '
-              'graine ${reponse.graine ?? 0}',
-      };
+  final VoidCallback onImporterHistorique;
+  final VoidCallback onTelechargerModele;
+  final VoidCallback onRecadrer;
 
   @override
   Widget build(BuildContext context) {
+    // Même unité que les cartes KPI : adaptée à la taille du portefeuille
+    // pour ne pas afficher un axe entièrement à « 0 ».
+    final unit = _uniteEchelleVar(reponse.valeurPortefeuille);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -850,18 +1350,6 @@ class _PanneauGraphique extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Flexible(
-                        child: Text(
-                          _titre,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: _varNavy,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
                       if (reponse.sourceDonnees == 'simulation') ...[
                         const SizedBox(width: 8),
                         Container(
@@ -894,14 +1382,69 @@ class _PanneauGraphique extends StatelessWidget {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _sousTitre,
-                    style: const TextStyle(color: _varMuted, fontSize: 12),
-                  ),
                 ],
               ),
             ),
+            Tooltip(
+              message: 'Recadrer l\'axe sur la distribution courante',
+              child: InkWell(
+                onTap: onRecadrer,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _varBorder),
+                  ),
+                  child: const Icon(
+                    Icons.center_focus_strong,
+                    size: 15,
+                    color: _varMuted,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: 'Télécharger le modèle Excel d\'import',
+              child: InkWell(
+                onTap: onTelechargerModele,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _varBorder),
+                  ),
+                  child: const Icon(
+                    Icons.description_outlined,
+                    size: 15,
+                    color: _varMuted,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Tooltip(
+              message: 'Importer l\'historique',
+              child: InkWell(
+                onTap: onImporterHistorique,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _varBorder),
+                  ),
+                  child: const Icon(
+                    Icons.upload_file,
+                    size: 15,
+                    color: _varMuted,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
             Tooltip(
               message: 'Réinitialiser les paramètres',
               child: InkWell(
@@ -952,7 +1495,11 @@ class _PanneauGraphique extends StatelessWidget {
             painter: _HistogrammeVarPainter(
               methode: methode,
               reponse: reponse,
+              reponsePrecedente: reponsePrecedente,
               confiance: confiance,
+              unit: unit,
+              xMinFige: axeXMin,
+              xMaxFige: axeXMax,
             ),
             child: const SizedBox.expand(),
           ),
@@ -970,12 +1517,26 @@ class _HistogrammeVarPainter extends CustomPainter {
   _HistogrammeVarPainter({
     required this.methode,
     required this.reponse,
+    required this.reponsePrecedente,
     required this.confiance,
+    required this.unit,
+    required this.xMinFige,
+    required this.xMaxFige,
   });
 
   final VarMethode methode;
   final _ReponseVar reponse;
+
+  /// Réponse du recalcul précédent, tracée en filigrane pour la
+  /// comparaison avant/après (même contexte uniquement).
+  final _ReponseVar? reponsePrecedente;
   final double confiance;
+  final PortfolioAmountUnit unit;
+
+  /// Axe des pertes figé sur la distribution de référence du contexte :
+  /// les recalculs déplacent alors visiblement la cloche et les seuils.
+  final double? xMinFige;
+  final double? xMaxFige;
 
   static const double _gauche = 56;
   static const double _droite = 18;
@@ -985,7 +1546,9 @@ class _HistogrammeVarPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final classes = reponse.histogramme;
-    if (classes.isEmpty) return;
+    // Sans histogramme mais avec courbe normale (mode réglementaire sans
+    // historique) : la cloche théorique est tracée seule.
+    if (classes.isEmpty && reponse.courbeNormale.isEmpty) return;
     final zone = Rect.fromLTRB(
       _gauche,
       _haut,
@@ -993,15 +1556,37 @@ class _HistogrammeVarPainter extends CustomPainter {
       math.max(_haut + 10, size.height - _bas),
     );
 
-    var xMin = classes.first.borneInf;
-    var xMax = classes.last.borneSup;
-    for (final point in reponse.courbeNormale) {
-      xMin = math.min(xMin, point.dx);
-      xMax = math.max(xMax, point.dx);
-    }
-    xMax = math.max(xMax, reponse.varValeur);
-    if (reponse.icVarHaute != null) {
-      xMax = math.max(xMax, reponse.icVarHaute!);
+    double xMin;
+    double xMax;
+    if (xMinFige != null && xMaxFige != null) {
+      // Axe figé : le cadre reste stable d'un recalcul à l'autre. Seules
+      // les données réelles (histogramme, VaR, IC) peuvent l'étendre ; la
+      // cloche théorique est écrêtée au tracé si elle déborde.
+      xMin = xMinFige!;
+      xMax = math.max(xMaxFige!, reponse.varValeur);
+      if (classes.isNotEmpty) {
+        xMin = math.min(xMin, classes.first.borneInf);
+        xMax = math.max(xMax, classes.last.borneSup);
+      }
+      if (reponse.icVarHaute != null) {
+        xMax = math.max(xMax, reponse.icVarHaute!);
+      }
+    } else {
+      // Cadrage automatique : ajusté à l'étendue de la distribution.
+      xMin = classes.isNotEmpty
+          ? classes.first.borneInf
+          : reponse.courbeNormale.first.dx;
+      xMax = classes.isNotEmpty
+          ? classes.last.borneSup
+          : reponse.courbeNormale.last.dx;
+      for (final point in reponse.courbeNormale) {
+        xMin = math.min(xMin, point.dx);
+        xMax = math.max(xMax, point.dx);
+      }
+      xMax = math.max(xMax, reponse.varValeur);
+      if (reponse.icVarHaute != null) {
+        xMax = math.max(xMax, reponse.icVarHaute!);
+      }
     }
     final margeX = (xMax - xMin).abs() < 1e-9 ? 1.0 : (xMax - xMin) * 0.02;
     xMin -= margeX;
@@ -1019,17 +1604,105 @@ class _HistogrammeVarPainter extends CustomPainter {
 
     double xPixel(double valeur) =>
         zone.left + (valeur - xMin) / (xMax - xMin) * zone.width;
-    double yPixel(double valeur) =>
-        zone.bottom - (valeur / yMax) * zone.height;
+    double yPixel(double valeur) => zone.bottom - (valeur / yMax) * zone.height;
 
     _peindreGrille(canvas, zone, yMax, xMin, xMax, xPixel);
     _peindreZoneExtreme(canvas, zone, xPixel);
     _peindreBandeIc(canvas, zone, xPixel);
     _peindreBarres(canvas, zone, classes, xPixel, yPixel);
+    _peindreComparaison(canvas, zone, xPixel, yPixel);
     _peindreCourbeNormale(canvas, zone, xPixel, yPixel);
     _peindrePercentiles(canvas, zone, xPixel);
     _peindreLigneVar(canvas, zone, xPixel);
     _peindreAxes(canvas, zone, size);
+    _peindreLegendeComparaison(canvas, zone);
+  }
+
+  /// Légende discrète du filigrane, uniquement quand il est visible.
+  void _peindreLegendeComparaison(Canvas canvas, Rect zone) {
+    if (reponsePrecedente == null) return;
+    final y = zone.bottom + 38;
+    canvas.drawLine(
+      Offset(zone.center.dx - 60, y),
+      Offset(zone.center.dx - 46, y),
+      Paint()
+        ..color = _varDeepBlue.withValues(alpha: 0.30)
+        ..strokeWidth = 2,
+    );
+    _texte(
+      canvas,
+      'recalcul précédent',
+      Offset(zone.center.dx - 40, y - 6),
+      couleur: _varMuted,
+      taille: 9.5,
+    );
+  }
+
+  /// Filigrane avant/après : cloche et ligne VaR du recalcul précédent,
+  /// estompées, pour lire immédiatement l'effet d'un changement de
+  /// paramètre sur l'axe figé.
+  void _peindreComparaison(
+    Canvas canvas,
+    Rect zone,
+    double Function(double) xPixel,
+    double Function(double) yPixel,
+  ) {
+    final precedente = reponsePrecedente;
+    if (precedente == null) return;
+
+    if (methode == VarMethode.parametrique &&
+        precedente.courbeNormale.isNotEmpty) {
+      final chemin = Path();
+      var premier = true;
+      for (final point in precedente.courbeNormale) {
+        final position = Offset(
+          xPixel(point.dx),
+          math.max(zone.top, yPixel(point.dy)),
+        );
+        if (premier) {
+          chemin.moveTo(position.dx, position.dy);
+          premier = false;
+        } else {
+          chemin.lineTo(position.dx, position.dy);
+        }
+      }
+      canvas.save();
+      canvas.clipRect(zone);
+      canvas.drawPath(
+        chemin,
+        Paint()
+          ..color = _varDeepBlue.withValues(alpha: 0.22)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4,
+      );
+      canvas.restore();
+    }
+
+    // Ligne VaR précédente : uniquement si elle est distincte de la
+    // courante (sinon rien n'a changé, inutile de surcharger).
+    final xPrecedent = xPixel(precedente.varValeur);
+    final xCourant = xPixel(reponse.varValeur);
+    if (xPrecedent >= zone.left &&
+        xPrecedent <= zone.right &&
+        (xPrecedent - xCourant).abs() > 2) {
+      _ligneVerticalePointillee(
+        canvas,
+        xPrecedent,
+        zone.top,
+        zone.bottom,
+        Paint()
+          ..color = _varDanger.withValues(alpha: 0.38)
+          ..strokeWidth = 1.4,
+      );
+      _texte(
+        canvas,
+        'VaR préc.',
+        Offset(xPrecedent, zone.top - 12),
+        couleur: _varDanger.withValues(alpha: 0.55),
+        taille: 9.5,
+        centreHorizontal: true,
+      );
+    }
   }
 
   void _peindreGrille(
@@ -1072,9 +1745,13 @@ class _HistogrammeVarPainter extends CustomPainter {
           ..color = _varMuted
           ..strokeWidth = 1,
       );
+      // Valeur du tick dans l'unité d'affichage ; les valeurs qui
+      // arrondiraient à zéro sont ramenées à 0 pour éviter un « -0 ».
+      var valeurAxe = valeur * 1e9 / unit.divisor;
+      if (valeurAxe.abs() < 0.05) valeurAxe = 0;
       _texte(
         canvas,
-        _formatAxe.format(valeur),
+        _formatAxe.format(valeurAxe),
         Offset(x, zone.bottom + 7),
         couleur: _varMuted,
         taille: 10,
@@ -1105,52 +1782,6 @@ class _HistogrammeVarPainter extends CustomPainter {
     canvas.drawRect(
       rect,
       Paint()..color = _varOrange.withValues(alpha: 0.12),
-    );
-    // Étiquettes ancrées à gauche de la ligne VaR quand la zone orange est
-    // trop étroite, pour éviter tout chevauchement avec la ligne rouge.
-    _etiquetteAncree(
-      canvas,
-      zone,
-      'Zone des pertes extrêmes',
-      xVar,
-      zone.top + 8,
-      couleurTexte: _varOrange,
-      couleurBord: _varOrange.withValues(alpha: 0.5),
-    );
-    final libelleTaux = methode == VarMethode.monteCarlo
-        ? '${_formatPct2.format(reponse.tauxDepassementPct)} % des simulations dépassent ce seuil'
-        : '${_formatPct2.format(reponse.tauxDepassementPct)} % des observations dépassent ce seuil';
-    _etiquetteAncree(
-      canvas,
-      zone,
-      libelleTaux,
-      xVar,
-      zone.top + 34,
-      couleurTexte: _varDanger,
-      couleurBord: _varDanger.withValues(alpha: 0.45),
-    );
-  }
-
-  void _etiquetteAncree(
-    Canvas canvas,
-    Rect zone,
-    String contenu,
-    double xLigne,
-    double y, {
-    required Color couleurTexte,
-    required Color couleurBord,
-  }) {
-    final largeurEstimee = contenu.length * 6.4 + 14;
-    final xDroite = xLigne + 8;
-    final x = xDroite + largeurEstimee <= zone.right
-        ? xDroite
-        : math.max(zone.left, xLigne - largeurEstimee - 8);
-    _etiquette(
-      canvas,
-      contenu,
-      Offset(x, y),
-      couleurTexte: couleurTexte,
-      couleurBord: couleurBord,
     );
   }
 
@@ -1184,8 +1815,7 @@ class _HistogrammeVarPainter extends CustomPainter {
       final droite = xPixel(classe.borneSup);
       final haut = yPixel(classe.effectif.toDouble());
       final milieu = (classe.borneInf + classe.borneSup) / 2;
-      final couleur =
-          milieu >= reponse.varValeur ? _varOrange : _varBarBlue;
+      final couleur = milieu >= reponse.varValeur ? _varOrange : _varBarBlue;
       final rect = Rect.fromLTRB(
         gauche + 1,
         haut,
@@ -1215,13 +1845,31 @@ class _HistogrammeVarPainter extends CustomPainter {
     final chemin = Path();
     var premier = true;
     for (final point in reponse.courbeNormale) {
-      final position = Offset(xPixel(point.dx), yPixel(point.dy));
+      final position = Offset(
+        xPixel(point.dx),
+        math.max(zone.top, yPixel(point.dy)),
+      );
       if (premier) {
         chemin.moveTo(position.dx, position.dy);
         premier = false;
       } else {
         chemin.lineTo(position.dx, position.dy);
       }
+    }
+    // Avec un axe figé, la cloche peut déborder du cadre : écrêtage.
+    canvas.save();
+    canvas.clipRect(zone);
+    // Sans histogramme, la cloche théorique est légèrement remplie pour
+    // rester lisible seule.
+    if (reponse.histogramme.isEmpty && reponse.courbeNormale.isNotEmpty) {
+      final remplissage = Path.from(chemin)
+        ..lineTo(xPixel(reponse.courbeNormale.last.dx), zone.bottom)
+        ..lineTo(xPixel(reponse.courbeNormale.first.dx), zone.bottom)
+        ..close();
+      canvas.drawPath(
+        remplissage,
+        Paint()..color = _varDeepBlue.withValues(alpha: 0.07),
+      );
     }
     canvas.drawPath(
       chemin,
@@ -1230,6 +1878,7 @@ class _HistogrammeVarPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2,
     );
+    canvas.restore();
   }
 
   void _peindrePercentiles(
@@ -1237,10 +1886,14 @@ class _HistogrammeVarPainter extends CustomPainter {
     Rect zone,
     double Function(double) xPixel,
   ) {
-    for (final (valeur, libelle) in [
-      (reponse.p95, 'P95'),
-      (reponse.p99, 'P99'),
-    ]) {
+    // Hauteurs étagées pour éviter le chevauchement des étiquettes
+    // lorsque les seuils sont proches.
+    final seuils = <(double, String, double)>[
+      (reponse.p95, 'P95', 26),
+      if (reponse.p975 != null) (reponse.p975!, 'P97,5', 52),
+      (reponse.p99, 'P99', reponse.p975 != null ? 78 : 52),
+    ];
+    for (final (valeur, libelle, hauteur) in seuils) {
       final x = xPixel(valeur);
       if (x < zone.left || x > zone.right) continue;
       final stylo = Paint()
@@ -1250,7 +1903,7 @@ class _HistogrammeVarPainter extends CustomPainter {
       _etiquette(
         canvas,
         libelle,
-        Offset(x - 14, zone.bottom - (libelle == 'P95' ? 26 : 52)),
+        Offset(x - 14, zone.bottom - hauteur),
         couleurTexte: _varNavy,
         couleurBord: _varBorder,
       );
@@ -1271,11 +1924,10 @@ class _HistogrammeVarPainter extends CustomPainter {
         ..strokeWidth = 2,
     );
     final libelle =
-        'VaR ${_pourcentage(confiance)} : ${_md(reponse.varValeur)}';
+        'VaR ${_pourcentage(confiance)} : ${_md(reponse.varValeur, unit: unit)}';
     final largeurEstimee = libelle.length * 6.4 + 18;
-    final xEtiquette = x + largeurEstimee + 12 > zone.right
-        ? x - largeurEstimee - 10
-        : x + 10;
+    final xEtiquette =
+        x + largeurEstimee + 12 > zone.right ? x - largeurEstimee - 10 : x + 10;
     _etiquette(
       canvas,
       libelle,
@@ -1300,10 +1952,11 @@ class _HistogrammeVarPainter extends CustomPainter {
       stylo,
     );
 
-    // Titre de l'axe vertical.
+    // Titre de l'axe vertical : effectifs avec histogramme, densité
+    // relative (pic = 100) quand seule la loi théorique est tracée.
     _texte(
       canvas,
-      'Fréquence',
+      reponse.histogramme.isEmpty ? 'Densité (base 100)' : 'Fréquence',
       Offset(zone.left - 46, zone.top - 18),
       couleur: _varMuted,
       taille: 10.5,
@@ -1312,7 +1965,7 @@ class _HistogrammeVarPainter extends CustomPainter {
     // Titre et sens de lecture de l'axe horizontal.
     _texte(
       canvas,
-      'Pertes / gains (Md FCFA)',
+      'Pertes / gains (${unit.label})',
       Offset(zone.center.dx, zone.bottom + 24),
       couleur: _varMuted,
       taille: 10.5,
@@ -1413,7 +2066,8 @@ class _HistogrammeVarPainter extends CustomPainter {
       peintre.height + 8,
     );
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
-    canvas.drawRRect(rrect, Paint()..color = Colors.white.withValues(alpha: 0.92));
+    canvas.drawRRect(
+        rrect, Paint()..color = Colors.white.withValues(alpha: 0.92));
     canvas.drawRRect(
       rrect,
       Paint()
@@ -1427,8 +2081,11 @@ class _HistogrammeVarPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _HistogrammeVarPainter ancien) {
     return ancien.reponse != reponse ||
+        ancien.reponsePrecedente != reponsePrecedente ||
         ancien.methode != methode ||
-        ancien.confiance != confiance;
+        ancien.confiance != confiance ||
+        ancien.xMinFige != xMinFige ||
+        ancien.xMaxFige != xMaxFige;
   }
 }
 
@@ -1440,18 +2097,20 @@ class _CarteVar extends StatelessWidget {
   const _CarteVar({
     required this.child,
     this.padding = const EdgeInsets.all(14),
+    this.color = _varSurface,
   });
 
   final Widget child;
   final EdgeInsets padding;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: _varSurface,
-        borderRadius: BorderRadius.circular(10),
+        color: color,
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: _varBorder),
       ),
       child: child,

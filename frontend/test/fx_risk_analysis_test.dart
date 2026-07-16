@@ -96,7 +96,7 @@ void main() {
         );
 
     test(
-        'inclut les titres en devise de référence (XOF/XAF) avec RWA et gain nuls',
+        'exclut les titres en devise de référence (XOF/XAF) du périmètre de change',
         () {
       final result = service.analyzePortfolio(
         records: [
@@ -114,12 +114,11 @@ void main() {
         analysisDate: now,
       );
 
-      // Les titres sont inclus dans l'analyse mais leurs métriques de change sont nulles.
-      expect(result.securities, hasLength(2));
-      expect(result.securities[0].rwa, 0.0);
-      expect(result.securities[0].fxGainLoss, 0.0);
-      expect(result.securities[1].rwa, 0.0);
-      expect(result.securities[1].fxGainLoss, 0.0);
+      // La devise de référence ne porte par définition aucun risque de
+      // change : ces titres sont exclus du périmètre (convention alignée
+      // sur le calcul prudentiel global) et toutes les métriques sont nulles.
+      expect(result.securities, isEmpty);
+      expect(result.totalExposure, 0.0);
       expect(result.rwaChange, 0.0);
       expect(result.globalNetPosition, 0.0);
     });
@@ -134,7 +133,8 @@ void main() {
             'quantités': 1.0,
             'Taux d\'acquisition': 580.0,
           }),
-          // Un titre XOF doit être inclus dans la liste mais n'a pas d'impact sur le calcul du risque.
+          // Un titre XOF est exclu du périmètre de change : il ne doit ni
+          // apparaître dans la table ni peser sur le calcul du risque.
           bond({
             'Devise': 'XOF',
             'Valeur nominale unitaire': 9999.0,
@@ -145,8 +145,9 @@ void main() {
         exchangeRates: {'USD': 625.0},
       );
 
-      expect(result.securities, hasLength(2));
-      final usd = result.securities.firstWhere((s) => s.currency == 'USD');
+      expect(result.securities, hasLength(1));
+      final usd = result.securities.single;
+      expect(usd.currency, 'USD');
       expect(usd.initialRate, 580.0); // taux d'acquisition du titre
       expect(usd.currentRate, 625.0); // taux courant saisi
       expect(usd.currencyVariationPercent,
@@ -163,7 +164,8 @@ void main() {
     });
 
     test(
-        'sans taux d\'acquisition, la variation est nulle (repli sur le courant)',
+        'sans taux d\'acquisition, repli sur le taux de RÉFÉRENCE du registre '
+        '(pas sur le courant) : la cotation produit une variation mesurable',
         () {
       final result = service.analyzePortfolio(
         records: [
@@ -179,10 +181,13 @@ void main() {
 
       expect(result.securities, hasLength(1));
       final usd = result.securities.single;
-      expect(usd.initialRate, 625.0);
+      // Contre-valeur de référence USD du CurrencyRegistry : 600 XOF.
+      expect(usd.initialRate, 600.0);
       expect(usd.currentRate, 625.0);
-      expect(usd.currencyVariationPercent, 0.0);
-      expect(usd.fxGainLoss, 0.0);
+      expect(usd.currencyVariationPercent,
+          closeTo(((625.0 - 600.0) / 600.0) * 100, 0.0001));
+      // gain = 100 × 1 × 625 − 100 × 1 × 600 = 2 500
+      expect(usd.fxGainLoss, closeTo(2500.0, 0.0001));
       // L'exposition (et donc le RWA) reste bien calculée.
       expect(result.rwaChange, closeTo(62500.0, 0.0001));
     });

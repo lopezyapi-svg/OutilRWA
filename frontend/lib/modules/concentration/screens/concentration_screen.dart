@@ -612,7 +612,11 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                             ),
                           ),
                           if (i < chartEntries.length - 1)
-                            Divider(height: 1, color: Theme.of(context).dividerColor.withValues(alpha: 0.5)),
+                            Divider(
+                                height: 1,
+                                color: Theme.of(context)
+                                    .dividerColor
+                                    .withValues(alpha: 0.5)),
                         ],
                       ],
                     ),
@@ -714,11 +718,6 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                                 textAlign: TextAlign.right)),
                                         Expanded(
                                             flex: 2,
-                                            child: Text('Jours de retard',
-                                                style: _tableHeaderStyle(),
-                                                textAlign: TextAlign.center)),
-                                        Expanded(
-                                            flex: 2,
                                             child: Text('Provision',
                                                 style: _tableHeaderStyle(),
                                                 textAlign: TextAlign.right)),
@@ -731,7 +730,8 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                     ),
                                   ),
                                   Expanded(
-                                    child: ListView.separated(addSemanticIndexes: false,
+                                    child: ListView.separated(
+                                      addSemanticIndexes: false,
                                       itemCount: top5Npl.length,
                                       separatorBuilder: (context, index) =>
                                           Divider(
@@ -744,7 +744,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                             ? (e.estimatedProvision /
                                                 e.grossAmount)
                                             : 0.0;
-                                        final mockDaysLate = 475 - (index * 65);
+
                                         return Padding(
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 12),
@@ -809,21 +809,6 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                                               fontSize: 12))),
                                               Expanded(
                                                   flex: 2,
-                                                  child: Text('$mockDaysLate',
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                              color: AppTheme
-                                                                  .danger,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 12))),
-                                              Expanded(
-                                                  flex: 2,
                                                   child: Text(
                                                       '${_amountMd(e.estimatedProvision)} ${_amountUnitLabel()}',
                                                       textAlign:
@@ -880,7 +865,8 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                     fontWeight: FontWeight.w600,
                                     fontSize: 12)),
                         const SizedBox(width: 4),
-                        const Icon(Icons.arrow_forward, color: AppTheme.danger, size: 14),
+                        const Icon(Icons.arrow_forward,
+                            color: AppTheme.danger, size: 14),
                       ],
                     ),
                   ),
@@ -920,11 +906,6 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                         textAlign: TextAlign.center)),
                 Expanded(
                     flex: 2,
-                    child: Text('Jours de retard',
-                        style: _tableHeaderStyle(),
-                        textAlign: TextAlign.center)),
-                Expanded(
-                    flex: 2,
                     child: Text('Provision',
                         style: _tableHeaderStyle(),
                         textAlign: TextAlign.right)),
@@ -944,11 +925,6 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                 ? (e.estimatedProvision / e.grossAmount)
                 : 0.0;
             final barWidth = (coverageRate * 60).clamp(0, 60).toDouble();
-
-            // Mocking dates and days late for visual compliance with the design reference
-            final mockDaysLate = 475 - (i * 65);
-            final mockDate = AppFormatters.shortDate(
-                DateTime.now().subtract(Duration(days: mockDaysLate)));
 
             return Container(
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
@@ -1002,25 +978,6 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                               .bodySmall
                               ?.copyWith(
                                   color: AppTheme.text,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12))),
-                  Expanded(
-                      flex: 2,
-                      child: Text(mockDate,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: AppTheme.muted, fontSize: 12))),
-                  Expanded(
-                      flex: 2,
-                      child: Text('$mockDaysLate',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                  color: AppTheme.danger,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12))),
                   Expanded(
@@ -4579,7 +4536,8 @@ class _RwaExposureTableCardState extends State<_RwaExposureTableCard> {
                               thumbVisibility: rows.length > 7,
                               notificationPredicate: (notification) =>
                                   notification.metrics.axis == Axis.vertical,
-                              child: ListView.builder(addSemanticIndexes: false,
+                              child: ListView.builder(
+                                addSemanticIndexes: false,
                                 controller: _verticalController,
                                 physics: const ClampingScrollPhysics(),
                                 itemExtent: rowHeight,
@@ -6250,7 +6208,8 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
           content: SizedBox(
             width: 500,
             height: MediaQuery.of(context).size.height * 0.7,
-            child: ListView.separated(addSemanticIndexes: false,
+            child: ListView.separated(
+              addSemanticIndexes: false,
               itemCount: allRows.length,
               separatorBuilder: (context, index) => const SizedBox(height: 6),
               itemBuilder: (context, index) {

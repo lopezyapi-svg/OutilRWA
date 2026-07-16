@@ -13,6 +13,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rwa_calculator/core/state/portfolio_amount_unit_scope.dart';
+import 'package:rwa_calculator/core/utils/currency_conversion.dart';
 import 'package:rwa_calculator/modules/risque_marche/screens/fx_risk_analysis_screen.dart';
 import 'package:rwa_calculator/modules/risque_marche/services/market_data_import_store.dart';
 
@@ -82,8 +84,12 @@ void main() {
     // (cf. FxRiskAnalysisScreen.initState), donc le tableau est disponible dès
     // le premier pump sans dépendre de la restauration persistée.
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: FxRiskAnalysisScreen()),
+      PortfolioAmountUnitScope(
+        notifier:
+            ValueNotifier<PortfolioAmountUnit>(PortfolioAmountUnit.billion),
+        child: const MaterialApp(
+          home: Scaffold(body: FxRiskAnalysisScreen()),
+        ),
       ),
     );
     await tester.pump();

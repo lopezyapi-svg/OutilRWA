@@ -167,7 +167,7 @@ class _ExecutiveDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currency = PortfolioCurrencyScope.maybeOf(context) ?? 'XOF';
+    final currency = PortfolioCurrencyScope.maybeOf(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(color: _dashboardBackgroundFor(context)),
@@ -209,8 +209,6 @@ class _ExecutiveDashboard extends StatelessWidget {
                   exposures: data.grandsRisques,
                   allCategories: data.categoryDistribution,
                 );
-                const bottomStrip = DashboardBottomStrip();
-
                 List<Widget> children;
 
                 if (width >= 750) {

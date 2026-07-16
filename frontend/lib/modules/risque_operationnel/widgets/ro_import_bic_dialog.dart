@@ -103,7 +103,6 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
   bool get _isDark => _theme.brightness == Brightness.dark;
   Color get _bg =>
       _theme.cardTheme.color ?? (_isDark ? AppTheme.darkCard : AppTheme.card);
-  Color get _soft => _isDark ? const Color(0xFF14233D) : const Color(0xFFF8FAFE);
   Color get _border => _theme.dividerColor;
   Color get _text =>
       _theme.textTheme.bodyLarge?.color ??

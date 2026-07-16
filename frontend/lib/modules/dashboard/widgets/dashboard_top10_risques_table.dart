@@ -7,20 +7,6 @@ import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
 import 'dashboard_all_grands_risques_dialog.dart';
 
-/// Données mock de démonstration pour le Top 10 des grands risques.
-const List<TopExposure> kMockTop10 = [
-  TopExposure(counterparty: 'Groupe Sonatel', sector: 'Télécommunications', country: 'Sénégal', rating: 'A', exposureAmount: 185000000000, netExposure: 142000000000, rwaAmount: 71000000000, fpRatio: 18.4, status: 'Conforme'),
-  TopExposure(counterparty: 'Société Générale CI', sector: 'Institutions financières', country: 'Côte d\'Ivoire', rating: 'A-', exposureAmount: 163000000000, netExposure: 128000000000, rwaAmount: 64000000000, fpRatio: 16.6, status: 'Conforme'),
-  TopExposure(counterparty: 'État du Sénégal', sector: 'Souverains', country: 'Sénégal', rating: 'B+', exposureAmount: 148000000000, netExposure: 148000000000, rwaAmount: 0, fpRatio: 0.0, status: 'Conforme'),
-  TopExposure(counterparty: 'BOAD', sector: 'BMD', country: 'UEMOA', rating: 'BBB', exposureAmount: 132000000000, netExposure: 110000000000, rwaAmount: 55000000000, fpRatio: 14.3, status: 'Conforme'),
-  TopExposure(counterparty: 'Cimencam SA', sector: 'Entreprises', country: 'Cameroun', rating: 'BB+', exposureAmount: 118000000000, netExposure: 105000000000, rwaAmount: 105000000000, fpRatio: 27.3, status: 'Alerte'),
-  TopExposure(counterparty: 'Orange CI', sector: 'Télécommunications', country: 'Côte d\'Ivoire', rating: 'A-', exposureAmount: 102000000000, netExposure: 85000000000, rwaAmount: 42500000000, fpRatio: 11.0, status: 'Conforme'),
-  TopExposure(counterparty: 'Port Autonome Abidjan', sector: 'Organismes publics', country: 'Côte d\'Ivoire', rating: 'BBB-', exposureAmount: 95000000000, netExposure: 80000000000, rwaAmount: 40000000000, fpRatio: 10.4, status: 'Conforme'),
-  TopExposure(counterparty: 'Groupe Bolloré Africa', sector: 'Entreprises', country: 'Multi-pays', rating: 'BB', exposureAmount: 88000000000, netExposure: 78000000000, rwaAmount: 78000000000, fpRatio: 20.3, status: 'Sous cible'),
-  TopExposure(counterparty: 'Ecobank TG', sector: 'Institutions financières', country: 'Togo', rating: 'B+', exposureAmount: 76000000000, netExposure: 62000000000, rwaAmount: 46500000000, fpRatio: 12.1, status: 'Conforme'),
-  TopExposure(counterparty: 'Total Energies SN', sector: 'Entreprises', country: 'Sénégal', rating: 'A', exposureAmount: 71000000000, netExposure: 58000000000, rwaAmount: 29000000000, fpRatio: 7.5, status: 'Conforme'),
-];
-
 class DashboardTop10RisquesTable extends StatelessWidget {
   const DashboardTop10RisquesTable({
     super.key,
@@ -39,7 +25,6 @@ class DashboardTop10RisquesTable extends StatelessWidget {
     final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
     final scale = 1000000000 / amountUnit.divisor;
 
-    // On utilise les données du backend sans mock fallback
     final data = List<TopExposure>.from(exposures)
       ..sort((a, b) => b.netExposure.compareTo(a.netExposure));
 

@@ -12,7 +12,13 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.var_marche import portefeuille_data, var_historique, var_montecarlo, var_parametrique
+from app.var_marche import (
+    courbe_umoa,
+    portefeuille_data,
+    var_historique,
+    var_montecarlo,
+    var_parametrique,
+)
 from app.var_marche.portefeuille_data import DonneesAbsentesError, ErreurDonneesVar
 
 logger = logging.getLogger(__name__)
@@ -100,11 +106,18 @@ def _reponse_commune(
     serie_pnl: portefeuille_data.SeriePnl,
     resultat: dict[str, Any],
 ) -> dict[str, Any]:
+    val_portefeuille = parametres.get("valeur_portefeuille")
+    if val_portefeuille is None:
+        val_portefeuille = serie_pnl.valeur_portefeuille / _MILLIARD_FCFA
+        
     return {
         "methode": methode,
         "parametres": parametres,
         "source_donnees": serie_pnl.source_donnees,
-        "valeur_portefeuille": serie_pnl.valeur_portefeuille / _MILLIARD_FCFA,
+        "valeur_portefeuille": val_portefeuille,
+        # Duration modifiée calculée par le backend sur le portefeuille
+        # (pondérée par l'exposition) : valeur de référence du curseur client.
+        "duration_modifiee_portefeuille": serie_pnl.duration_modifiee,
         "unite": "Md FCFA",
         "avertissements": serie_pnl.avertissements,
         **resultat,
@@ -115,7 +128,8 @@ def _verifier_coherence_methodes(
     pertes_md, niveau_confiance: float, contexte: str
 ) -> None:
     """Journalise un avertissement si VaR historique et paramétrique divergent."""
-
+    if len(pertes_md) == 0:
+        return
     var_hist = var_historique.calculer(pertes_md, niveau_confiance)["var"]
     var_param = var_parametrique.calculer(pertes_md, niveau_confiance)["var"]
     reference = max(abs(var_hist), abs(var_param))
@@ -145,6 +159,13 @@ def var_historique_endpoint(
     _valider_parametres(type_portefeuille, niveau_confiance, horizon_jours, fenetre_jours)
     serie_pnl = _serie_ou_422(type_portefeuille, fenetre_jours, horizon_jours)
     donnees = _en_milliards(serie_pnl)
+    
+    if len(donnees["pertes"]) == 0:
+        raise _erreur_422(
+            "La méthode de la VaR Historique nécessite obligatoirement l'importation "
+            "d'un historique de prix dans le fichier Excel. Aucun historique trouvé."
+        )
+        
     resultat = var_historique.calculer(donnees["pertes"], niveau_confiance)
     _verifier_coherence_methodes(
         donnees["pertes"], niveau_confiance, f"historique {type_portefeuille}"
@@ -168,13 +189,26 @@ def var_parametrique_endpoint(
     niveau_confiance: float = Query(0.99),
     horizon_jours: int = Query(1),
     fenetre_jours: int = Query(500),
+    volatilite: float = Query(0.03),
+    duration_modifiee: float | None = Query(None),
+    valeur_portefeuille: float | None = Query(None),
+    beta: float = Query(1.0, ge=0.0),
 ) -> dict[str, Any]:
     """VaR paramétrique (variance-covariance, hypothèse normale)."""
 
     _valider_parametres(type_portefeuille, niveau_confiance, horizon_jours, fenetre_jours)
     serie_pnl = _serie_ou_422(type_portefeuille, fenetre_jours, horizon_jours)
     donnees = _en_milliards(serie_pnl)
-    resultat = var_parametrique.calculer(donnees["pertes"], niveau_confiance)
+    resultat = var_parametrique.calculer(
+        donnees["pertes"], 
+        niveau_confiance,
+        type_portefeuille=type_portefeuille,
+        valeur_portefeuille=valeur_portefeuille if valeur_portefeuille is not None else donnees.get("valeur_portefeuille"),
+        duration_modifiee=duration_modifiee if duration_modifiee is not None else serie_pnl.duration_modifiee,
+        horizon_jours=horizon_jours,
+        volatilite_reglementaire=volatilite,
+        beta=beta,
+    )
     _verifier_coherence_methodes(
         donnees["pertes"], niveau_confiance, f"parametrique {type_portefeuille}"
     )
@@ -185,6 +219,10 @@ def var_parametrique_endpoint(
             "niveau_confiance": niveau_confiance,
             "horizon_jours": horizon_jours,
             "fenetre_jours": fenetre_jours,
+            "volatilite": volatilite,
+            "duration_modifiee": duration_modifiee if duration_modifiee is not None else serie_pnl.duration_modifiee,
+            "valeur_portefeuille": valeur_portefeuille,
+            "beta": beta,
         },
         serie_pnl,
         resultat,
@@ -199,6 +237,10 @@ def var_montecarlo_endpoint(
     fenetre_jours: int = Query(500),
     nb_simulations: int = Query(var_montecarlo.NB_SIMULATIONS_DEFAUT),
     graine: int = Query(var_montecarlo.GRAINE_DEFAUT),
+    volatilite: float = Query(0.03),
+    duration_modifiee: float | None = Query(None),
+    valeur_portefeuille: float | None = Query(None),
+    beta: float = Query(1.0, ge=0.0),
 ) -> dict[str, Any]:
     """VaR Monte-Carlo : quantile empirique des pertes simulées."""
 
@@ -213,14 +255,18 @@ def var_montecarlo_endpoint(
     variations_taux = serie_pnl.variations_taux
     resultat = var_montecarlo.calculer(
         type_portefeuille=type_portefeuille,
-        valeur_portefeuille=donnees["valeur_portefeuille"],
+        valeur_portefeuille=valeur_portefeuille
+        if valeur_portefeuille is not None
+        else donnees["valeur_portefeuille"],
         pertes_quotidiennes=donnees["pertes_quotidiennes"],
         niveau_confiance=niveau_confiance,
         horizon_jours=horizon_jours,
         nb_simulations=nb_simulations,
         graine=graine,
-        duration_modifiee=serie_pnl.duration_modifiee,
+        duration_modifiee=duration_modifiee if duration_modifiee is not None else serie_pnl.duration_modifiee,
         variations_taux=variations_taux,
+        volatilite_reglementaire=volatilite,
+        beta=beta,
     )
     _verifier_coherence_methodes(
         donnees["pertes"], niveau_confiance, f"montecarlo {type_portefeuille}"
@@ -234,7 +280,79 @@ def var_montecarlo_endpoint(
             "fenetre_jours": fenetre_jours,
             "nb_simulations": nb_simulations,
             "graine": graine,
+            "volatilite": volatilite,
+            "duration_modifiee": duration_modifiee if duration_modifiee is not None else serie_pnl.duration_modifiee,
+            "valeur_portefeuille": valeur_portefeuille,
+            "beta": beta,
         },
         serie_pnl,
         resultat,
     )
+
+
+@router.get("/courbe/pays")
+def pays_courbe_disponibles() -> dict[str, Any]:
+    """Liste des pays UEMOA dont la courbe de taux est actualisable en ligne."""
+
+    return {"pays": list(courbe_umoa.PAYS_UEMOA), "source": "UMOA-Titres"}
+
+
+def _ecrire_historique_taux(points: list[dict[str, Any]], jour: str) -> None:
+    """Écrit la courbe (format long) dans historique_taux : table SQLite
+    recréée en date/maturite_annees/taux_pct + CSV pour transparence."""
+
+    import sqlite3
+
+    racine = portefeuille_data.repertoire_data()
+    racine.mkdir(parents=True, exist_ok=True)
+
+    chemin_db = racine / "rwa_data.db"
+    with sqlite3.connect(chemin_db) as connexion:
+        connexion.execute("DROP TABLE IF EXISTS historique_taux")
+        connexion.execute(
+            "CREATE TABLE historique_taux "
+            "(date TEXT, maturite_annees TEXT, taux_pct TEXT)"
+        )
+        connexion.executemany(
+            "INSERT INTO historique_taux(date, maturite_annees, taux_pct) "
+            "VALUES (?, ?, ?)",
+            [
+                (jour, str(point["maturite_annees"]), str(point["taux_pct"]))
+                for point in points
+            ],
+        )
+
+    lignes_csv = ["date;maturite_annees;taux_pct"]
+    lignes_csv += [
+        f"{jour};{point['maturite_annees']};{point['taux_pct']}" for point in points
+    ]
+    (racine / "historique_taux.csv").write_text(
+        "\n".join(lignes_csv) + "\n", encoding="utf-8"
+    )
+
+
+@router.post("/actualiser-courbe")
+def actualiser_courbe(pays: str = Query("Côte d'Ivoire")) -> dict[str, Any]:
+    """Récupère en ligne la courbe de taux UEMOA la plus récente pour le pays
+    demandé (UMOA-Titres) et l'installe comme courbe active du calcul VaR."""
+
+    try:
+        courbe = courbe_umoa.recuperer_courbe(pays)
+    except courbe_umoa.ErreurCourbeUmoa as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "VAR_COURBE_INDISPONIBLE", "message": str(exc)},
+        ) from exc
+
+    _ecrire_historique_taux(courbe["points"], courbe["date"])
+    portefeuille_data.invalider_cache_series()
+
+    return {
+        "status": "ok",
+        "pays": courbe["pays"],
+        "date": courbe["date"],
+        "nombre_points": len(courbe["points"]),
+        "source": "UMOA-Titres",
+        "source_url": courbe["source_url"],
+        "points": courbe["points"],
+    }

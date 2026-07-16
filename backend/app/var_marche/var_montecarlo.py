@@ -13,38 +13,45 @@ Calibrage :
   (moyenne, écart-type, degrés de liberté estimés par la méthode des
   moments), repli en loi normale si les queues ne sont pas épaisses ;
   perte simulée = -V x rendement simulé x racine(horizon).
+- Sans aucun historique (mode réglementaire) : chocs quotidiens tirés en loi
+  normale N(0, volatilité réglementaire / racine(252)), sensibilité = duration
+  modifiée pour les obligations, delta = 1 pour les actions.
 """
 
 from __future__ import annotations
 
+import math
 import numpy as np
 
 from app.var_marche.var_historique import construire_histogramme
 
-GRAINE_DEFAUT = 42
-NB_SIMULATIONS_DEFAUT = 10_000
-
+# Quantiles pour les intervalles de confiance du bootstrap.
+_NIVEAU_CONFIANCE_BORNE_INF = 0.025
+_NIVEAU_CONFIANCE_BORNE_SUP = 0.975
 _NB_REECHANTILLONNAGES_BOOTSTRAP = 200
+
+# Cap du nombre de degrés de liberté de la loi de Student. Au-delà, la loi
+# est considérée indiscernable d'une loi normale (kurtosis = 3.0).
+_DDL_MAXIMUM = 30.0
+
+NB_SIMULATIONS_DEFAUT = 10_000
+GRAINE_DEFAUT = 42
+
 _DDL_MINIMUM = 3.0
-_DDL_MAXIMUM = 100.0
 
 
 def _degres_liberte_student(rendements: np.ndarray) -> float:
-    """Degrés de liberté estimés par la méthode des moments sur le kurtosis.
-
-    Pour une loi de Student, kurtosis en excès = 6 / (ddl - 4), donc
-    ddl = 4 + 6 / kurtosis. Au-delà de _DDL_MAXIMUM la loi est
-    indistinguable d'une normale.
-    """
-
-    sigma = rendements.std(ddof=0)
-    if sigma <= 0:
+    rendements_propres = rendements[~np.isnan(rendements)]
+    if len(rendements_propres) < 4:
         return _DDL_MAXIMUM
-    ecarts = rendements - rendements.mean()
-    kurtosis_exces = float((ecarts**4).mean() / sigma**4 - 3.0)
+    variance = float(np.var(rendements_propres, ddof=1))
+    if variance == 0:
+        return _DDL_MAXIMUM
+    kurtosis_exces = float(np.mean((rendements_propres - np.mean(rendements_propres)) ** 4)) / (variance**2) - 3.0
     if kurtosis_exces <= 0.1:
         return _DDL_MAXIMUM
-    return float(np.clip(4.0 + 6.0 / kurtosis_exces, _DDL_MINIMUM + 0.1, _DDL_MAXIMUM))
+    ddl = 6.0 / kurtosis_exces + 4.0
+    return min(ddl, _DDL_MAXIMUM)
 
 
 def _simuler_pertes_obligations(
@@ -54,9 +61,15 @@ def _simuler_pertes_obligations(
     duration_modifiee: float,
     variations_taux: np.ndarray,
     horizon_jours: int,
+    volatilite_reglementaire: float,
 ) -> np.ndarray:
-    moyenne = float(variations_taux.mean())
-    ecart_type = float(variations_taux.std(ddof=1))
+    if len(variations_taux) == 0:
+        moyenne = 0.0
+        ecart_type = volatilite_reglementaire / math.sqrt(252.0)
+    else:
+        moyenne = float(variations_taux.mean())
+        ecart_type = float(variations_taux.std(ddof=1))
+        
     chocs_taux = generateur.normal(moyenne, ecart_type, nb_simulations)
     # Perte positive quand le taux monte : perte = DM x V x dTaux.
     pertes_quotidiennes = duration_modifiee * valeur_portefeuille * chocs_taux
@@ -73,6 +86,26 @@ def _simuler_pertes_par_calibrage_pnl(
     ecart_type = float(pertes_quotidiennes.std(ddof=1))
     tirages = generateur.normal(moyenne, ecart_type, nb_simulations)
     return tirages * np.sqrt(horizon_jours)
+
+
+def _simuler_pertes_reglementaire(
+    generateur: np.random.Generator,
+    nb_simulations: int,
+    valeur_portefeuille: float,
+    horizon_jours: int,
+    volatilite_reglementaire: float,
+    sensibilite: float = 1.0,
+) -> np.ndarray:
+    """Simulation Delta-Normal réglementaire, sans historique.
+
+    Chocs quotidiens N(0, vol_annuelle / racine(252)) ; perte simulée =
+    sensibilité x V x choc x racine(horizon). La sensibilité vaut 1 pour les
+    actions (delta) et la duration modifiée pour les obligations.
+    """
+
+    ecart_type = volatilite_reglementaire / math.sqrt(252.0)
+    chocs = generateur.normal(0.0, ecart_type, nb_simulations)
+    return sensibilite * valeur_portefeuille * chocs * np.sqrt(horizon_jours)
 
 
 def _simuler_pertes_actions(
@@ -127,6 +160,8 @@ def calculer(
     graine: int = GRAINE_DEFAUT,
     duration_modifiee: float | None = None,
     variations_taux: np.ndarray | None = None,
+    volatilite_reglementaire: float = 0.03,
+    beta: float = 1.0,
 ) -> dict:
     pertes_quotidiennes = np.asarray(pertes_quotidiennes, dtype=float)
     generateur = np.random.default_rng(graine)
@@ -134,26 +169,52 @@ def calculer(
     degres_liberte = None
 
     if type_portefeuille == "obligations":
-        if (
-            duration_modifiee is not None
-            and duration_modifiee > 0
-            and variations_taux is not None
-            and len(variations_taux) >= 2
-        ):
+        variations = (
+            np.asarray(variations_taux, dtype=float)
+            if variations_taux is not None
+            else np.array([])
+        )
+        if duration_modifiee is not None and duration_modifiee > 0 and len(variations) >= 2:
+            # 1. Courbe de taux disponible : chocs calibrés sur ses variations.
             pertes_simulees = _simuler_pertes_obligations(
                 generateur,
                 nb_simulations,
                 valeur_portefeuille,
                 duration_modifiee,
-                np.asarray(variations_taux, dtype=float),
+                variations,
                 horizon_jours,
+                volatilite_reglementaire,
             )
             modele = "chocs de taux normaux x duration modifiée"
-        else:
+        elif len(pertes_quotidiennes) >= 2:
+            # 2. Historique de prix importé : calibrage sur les P&L observés.
             pertes_simulees = _simuler_pertes_par_calibrage_pnl(
                 generateur, nb_simulations, pertes_quotidiennes, horizon_jours
             )
-    else:
+            modele = "P&L historiques simulés"
+        elif duration_modifiee is not None and duration_modifiee > 0:
+            # 3. Sans historique : chocs de taux réglementaires x duration.
+            pertes_simulees = _simuler_pertes_obligations(
+                generateur,
+                nb_simulations,
+                valeur_portefeuille,
+                duration_modifiee,
+                variations,
+                horizon_jours,
+                volatilite_reglementaire,
+            )
+            modele = "chocs de taux réglementaires x duration modifiée"
+        else:
+            # 4. Ni duration ni historique : repli Delta-Normal réglementaire.
+            pertes_simulees = _simuler_pertes_reglementaire(
+                generateur,
+                nb_simulations,
+                valeur_portefeuille,
+                horizon_jours,
+                volatilite_reglementaire,
+            )
+            modele = "chocs réglementaires normaux"
+    elif len(pertes_quotidiennes) >= 2:
         pertes_simulees, degres_liberte = _simuler_pertes_actions(
             generateur,
             nb_simulations,
@@ -166,6 +227,18 @@ def calculer(
             if degres_liberte < _DDL_MAXIMUM
             else "rendements normaux"
         )
+    else:
+        # Actions sans historique : rendements N(0, sigma réglementaire),
+        # sensibilité au marché = |bêta| (indépendant du signe du bêta).
+        pertes_simulees = _simuler_pertes_reglementaire(
+            generateur,
+            nb_simulations,
+            valeur_portefeuille,
+            horizon_jours,
+            volatilite_reglementaire,
+            sensibilite=abs(beta),
+        )
+        modele = "rendements normaux réglementaires x bêta"
 
     var = float(np.quantile(pertes_simulees, niveau_confiance))
     pertes_extremes = pertes_simulees[pertes_simulees >= var]
@@ -174,6 +247,7 @@ def calculer(
     )
     pire_perte = float(pertes_simulees.max())
     p95 = float(np.quantile(pertes_simulees, 0.95))
+    p975 = float(np.quantile(pertes_simulees, 0.975))
     p99 = float(np.quantile(pertes_simulees, 0.99))
     depassements = int((pertes_simulees > var).sum())
     taux_depassement_pct = depassements / nb_simulations * 100.0
@@ -187,6 +261,7 @@ def calculer(
         "expected_shortfall": expected_shortfall,
         "pire_perte": pire_perte,
         "p95": p95,
+        "p975": p975,
         "p99": p99,
         "taux_depassement_pct": taux_depassement_pct,
         "nombre_observations": nb_simulations,

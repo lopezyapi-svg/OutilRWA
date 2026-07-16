@@ -17,6 +17,8 @@ const String marketPortfolioSheetName = 'Saisir donnée';
 const String marketEquityPortfolioSheetName = 'Actions';
 const int _marketDataImportStorageVersion = 5;
 const String _marketDataImportStorageKey = 'rwa.market_data_import.datasets.v5';
+const String _legacyMarketDataImportStorageKey =
+    'rwa.market_data_import.datasets.v1';
 
 enum MarketPortfolioType { bonds, equities }
 
@@ -191,15 +193,15 @@ MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
     0,
     (sum, record) => sum + _marketPrudentialBondPositionValue(record).abs(),
   );
-  final equityPosition = _marketEquityRiskMeasure(equityRecords);
+  final equityPosition = _marketEquityRiskMeasure(
+      equityRecords, equityPortfolioLiquidAndDiversified);
   final commodityMeasure = _marketCommodityPositionMeasure(commodityPositions);
-  final equitySpecificRate = equityPortfolioLiquidAndDiversified ? 0.04 : 0.09;
 
   return MarketPrudentialCapitalResult(
     interestRateSpecificRisk: interestSpecific,
     interestRateGeneralRisk: interestGeneral,
     // Risque spécifique : (9% ou 4%) × Σ|net par émetteur| (Art. 398-399)
-    equitySpecificRisk: equityPosition.specificRiskBase * equitySpecificRate,
+    equitySpecificRisk: equityPosition.specificRiskTotal,
     // Risque général : 9% × Σ|net par marché national/régional| (Art. 400-401)
     equityGeneralRisk: equityPosition.generalRiskBase * 0.09,
     foreignExchangeRisk: _marketForeignExchangeRisk(marketRecords),
@@ -368,12 +370,14 @@ class _MarketEquityRiskMeasure {
     required this.grossPosition,
     required this.netPosition,
     required this.specificRiskBase,
+    required this.specificRiskTotal,
     required this.generalRiskBase,
   });
 
   final double grossPosition;
   final double netPosition;
   final double specificRiskBase;
+  final double specificRiskTotal;
   final double generalRiskBase;
 }
 
@@ -489,8 +493,10 @@ double _marketMatchMaturityZones(
 
 _MarketEquityRiskMeasure _marketEquityRiskMeasure(
   List<MarketPortfolioRecord> records,
+  bool globalLiquidDiversified,
 ) {
   final netByIssuer = <String, double>{};
+  final isLiquidByIssuer = <String, bool>{};
   final netByMarket = <String, double>{};
   var gross = 0.0;
   var net = 0.0;
@@ -502,8 +508,13 @@ _MarketEquityRiskMeasure _marketEquityRiskMeasure(
     net += signed;
 
     // Risque spécifique : compensation des positions par émetteur (Art. 399).
-    netByIssuer.update(record.issuerAnalysisKey, (value) => value + signed,
+    final issuerKey = record.issuerAnalysisKey;
+    netByIssuer.update(issuerKey, (value) => value + signed,
         ifAbsent: () => signed);
+
+    if (record.isLiquidAndDiversified) {
+      isLiquidByIssuer[issuerKey] = true;
+    }
 
     // Risque général : position nette par marché national/régional (Art. 401).
     // À défaut de pays/marché renseigné, la devise sert de proxy de marché.
@@ -514,8 +525,17 @@ _MarketEquityRiskMeasure _marketEquityRiskMeasure(
         ifAbsent: () => signed);
   }
 
-  final specificBase =
-      netByIssuer.values.fold<double>(0, (sum, value) => sum + value.abs());
+  var specificBase = 0.0;
+  var specificTotal = 0.0;
+  for (final entry in netByIssuer.entries) {
+    final issuerKey = entry.key;
+    final value = entry.value.abs();
+    specificBase += value;
+    final isLiquid =
+        isLiquidByIssuer[issuerKey] == true || globalLiquidDiversified;
+    specificTotal += value * (isLiquid ? 0.04 : 0.09);
+  }
+
   final generalBase =
       netByMarket.values.fold<double>(0, (sum, value) => sum + value.abs());
 
@@ -523,6 +543,7 @@ _MarketEquityRiskMeasure _marketEquityRiskMeasure(
     grossPosition: gross,
     netPosition: net,
     specificRiskBase: specificBase,
+    specificRiskTotal: specificTotal,
     generalRiskBase: generalBase,
   );
 }
@@ -962,11 +983,21 @@ const List<String> marketBondPortfolioRequiredHeaders = [
 ];
 
 const List<String> marketEquityPortfolioRequiredHeaders = [
+  'ID Instrument',
+  'Type d\'instrument',
   'Émetteur / Société',
+  'Secteur',
+  'Pays / marché',
+  'Bourse',
   'Devise',
+  'Intention comptable',
   'Quantité',
+  'Prix d\'acquisition',
   'Cours actuel',
-  'Valeur de marché',
+  'Bêta',
+  'Volatilité annualisée (%)',
+  'Rendement dividende (%)',
+  'Liquide et diversifié (Oui/Non)',
 ];
 
 const List<String> marketPortfolioRequiredHeaders =
@@ -1274,9 +1305,24 @@ class MarketPortfolioRecord {
   }
 
   double get shares => _numberAny(const ['Nombre d\'actions', 'Quantité']);
-  double get marketPrice =>
-      _numberAny(const ['Prix de marché', 'Cours actuel']);
-  double get marketValue => _number('Valeur de marché');
+  double get marketPrice {
+    final explicit = _numberAny(const ['Prix de marché', 'Cours actuel']);
+    if (explicit != 0) return explicit;
+    final mv = _number('Valeur de marché');
+    final q = shares;
+    if (mv != 0 && q > 0) return mv / q;
+    return 0.0;
+  }
+
+  double get marketValue {
+    final explicit = _number('Valeur de marché');
+    if (explicit != 0) return explicit;
+    final mp = _numberAny(const ['Prix de marché', 'Cours actuel']);
+    final q = shares;
+    if (mp != 0 && q > 0) return mp * q;
+    return 0.0;
+  }
+
   double get beta => _number('Bêta');
   double get annualizedVolatilityInput =>
       _percentNumber('Volatilité annualisée (%)');
@@ -1285,6 +1331,14 @@ class MarketPortfolioRecord {
     if (explicit != 0) return explicit;
     return _percentNumber('Rendement latent (%)') +
         _percentNumber('Rendement dividende (%)');
+  }
+
+  double get dividendYield => _percentNumber('Rendement dividende (%)');
+  double get acquisitionPrice => _number('Prix d\'acquisition');
+  bool get isLiquidAndDiversified {
+    final val =
+        _text('Liquide et diversifié (Oui/Non)', fallback: '').toLowerCase();
+    return val == 'oui' || val == 'yes' || val == 'true' || val == '1';
   }
 
   int get couponPaymentsPerYear {
@@ -1516,6 +1570,7 @@ class MarketPortfolioDataset {
   late final double expectedReturn = _computeExpectedReturn();
   late final double correlationProxy = _computeCorrelationProxy();
   late final double concentrationRatio = _computeConcentrationRatio();
+  late final double totalLatentGain = _computeTotalLatentGain();
   late final String dominantIssuer = _computeDominantIssuer();
   late final List<double> scenarioReturns = _computeScenarioReturns();
   late final List<double> scenarioLosses = _computeScenarioLosses();
@@ -1610,6 +1665,19 @@ class MarketPortfolioDataset {
               : record.exposureAmount),
     );
     return math.max(0.0, total).toDouble();
+  }
+
+  double _computeTotalLatentGain() {
+    if (portfolioType != MarketPortfolioType.equities) return 0.0;
+    var totalGain = 0.0;
+    for (final record in records) {
+      final acqPrice = record.acquisitionPrice;
+      final currentPrice = record.marketPrice;
+      if (acqPrice > 0 && currentPrice > 0) {
+        totalGain += (currentPrice - acqPrice) * record.shares;
+      }
+    }
+    return totalGain;
   }
 
   double _computeAverageCoupon() {
@@ -2621,49 +2689,8 @@ class MarketDataImportStore {
     MarketPortfolioType? activeType,
     bool persist = false,
   }) {
-    final finalDatasets = Map<MarketPortfolioType, MarketPortfolioDataset>.from(datasets);
-    if (!finalDatasets.containsKey(MarketPortfolioType.equities)) {
-      final mockRecords = [
-        MarketPortfolioRecord(
-          portfolioType: MarketPortfolioType.equities,
-          values: const {
-            'Émetteur / Société': 'Sonatel',
-            'Devise': 'XOF',
-            'Quantité': 10000.0,
-            'Cours actuel': 18500.0,
-            'Valeur de marché': 185000000.0,
-          },
-        ),
-        MarketPortfolioRecord(
-          portfolioType: MarketPortfolioType.equities,
-          values: const {
-            'Émetteur / Société': 'Orange CI',
-            'Devise': 'XOF',
-            'Quantité': 5000.0,
-            'Cours actuel': 10500.0,
-            'Valeur de marché': 52500000.0,
-          },
-        ),
-        MarketPortfolioRecord(
-          portfolioType: MarketPortfolioType.equities,
-          values: const {
-            'Émetteur / Société': 'Onatel',
-            'Devise': 'XOF',
-            'Quantité': 15000.0,
-            'Cours actuel': 2500.0,
-            'Valeur de marché': 37500000.0,
-          },
-        ),
-      ];
-      finalDatasets[MarketPortfolioType.equities] = MarketPortfolioDataset(
-        portfolioType: MarketPortfolioType.equities,
-        fileName: 'Mock Actions',
-        importedAt: DateTime.now(),
-        headers: MarketPortfolioType.equities.requiredHeaders,
-        records: mockRecords,
-      );
-    }
-
+    final finalDatasets =
+        Map<MarketPortfolioType, MarketPortfolioDataset>.from(datasets);
     final next = MarketDataSnapshot.fromDatasets(
       finalDatasets,
       activeType: activeType,
@@ -2958,7 +2985,13 @@ class MarketDataImportStore {
   Future<void> _restoreSqlDatasets(RwaApiService api) async {
     try {
       await _restoreFuture;
-      final payload = await api.fetchMarketPortfolioPayload();
+      final response = await api.fetchMarketPortfolioPayload();
+      if (response.isEmpty) {
+        await _clearPersistedDatasets();
+        return;
+      }
+
+      final payload = response.payload;
       if (payload != null && await _restoreDecodedDatasets(payload)) {
         return;
       }
@@ -2994,6 +3027,22 @@ class MarketDataImportStore {
       );
     } catch (_) {
       return false;
+    }
+  }
+
+  Future<void> _clearPersistedDatasets() async {
+    try {
+      await local_storage.clearMarketDataPayload();
+    } catch (error) {
+      debugPrint('Suppression du cache fichier marché impossible: $error');
+    }
+
+    try {
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.remove(_marketDataImportStorageKey);
+      await preferences.remove(_legacyMarketDataImportStorageKey);
+    } catch (error) {
+      debugPrint('Suppression du cache préférences marché impossible: $error');
     }
   }
 

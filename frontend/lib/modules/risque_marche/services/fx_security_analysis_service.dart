@@ -5,22 +5,21 @@ library fx_security_analysis_service;
 
 import 'dart:math' as math;
 
-import '../../../core/services/rwa_api_service.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../models/currency_registry.dart';
 import '../models/fx_security_analysis.dart';
 import 'market_data_import_store.dart';
 
-/// Service pour analyser le risque de change au niveau des titres
+/// Service pour analyser le risque de change au niveau des titres.
+///
+/// Outil prudentiel : le service ne travaille QUE sur les données réellement
+/// importées — aucune donnée de démonstration, aucun repli fabriqué.
 class FxSecurityAnalysisService {
   FxSecurityAnalysisService({
     CurrencyRegistry? currencyRegistry,
-    RwaApiService? rwaApiService,
-  })  : _currencyRegistry = currencyRegistry ?? CurrencyRegistry(),
-        _rwaApiService = rwaApiService;
+  }) : _currencyRegistry = currencyRegistry ?? CurrencyRegistry();
 
   final CurrencyRegistry _currencyRegistry;
-  final RwaApiService? _rwaApiService;
 
   /// Calcule l'exposition au risque de change pour un portefeuille de titres
   /// Retourne un résultat structuré pour présentation multi-niveaux
@@ -58,103 +57,6 @@ class FxSecurityAnalysisService {
       marketRiskContribution: globalMetrics['marketRiskContribution'] as double,
       analysisDate: analysisDate,
     );
-  }
-
-  /// Fetch real portfolio data and analyze FX risk
-  /// Uses RwaApiService to fetch live data, CurrencyRegistry for FX rates
-  /// Falls back to demo data if API is unavailable
-  Future<FxRiskAnalysisResult> analyzePortfolioAsync({
-    required DateTime analysisDate,
-    bool useFallbackData = true,
-  }) async {
-    try {
-      // Fetch real portfolio data from backend
-      final portfolioPayload =
-          await _rwaApiService?.fetchMarketPortfolioPayload();
-
-      if (portfolioPayload == null || portfolioPayload.isEmpty) {
-        if (useFallbackData) {
-          return createDemoData();
-        }
-        throw Exception('No portfolio data available');
-      }
-
-      // Convert payload to MarketPortfolioRecords
-      // The payload structure: {bonds: {...}, equities: {...}}
-      final records = _convertPayloadToRecords(portfolioPayload);
-
-      if (records.isEmpty) {
-        if (useFallbackData) {
-          return createDemoData();
-        }
-        throw Exception('No valid portfolio records found');
-      }
-
-      // Use real FX rates from CurrencyRegistry
-      final exchangeRates = _getRealExchangeRates();
-
-      // Analyze with real data
-      return analyzePortfolio(
-        records: records,
-        analysisDate: analysisDate,
-        exchangeRates: exchangeRates,
-      );
-    } catch (e) {
-      // If API fails and useFallbackData is true, return demo data
-      if (useFallbackData) {
-        return createDemoData();
-      }
-      rethrow;
-    }
-  }
-
-  /// Convert API payload to MarketPortfolioRecords
-  List<MarketPortfolioRecord> _convertPayloadToRecords(
-    Map<String, dynamic> payload,
-  ) {
-    final records = <MarketPortfolioRecord>[];
-
-    // Process bonds
-    final bonds = payload['bonds'] as Map<String, dynamic>? ?? {};
-    for (final entry in bonds.entries) {
-      try {
-        final record = MarketPortfolioRecord(
-          portfolioType: MarketPortfolioType.bonds,
-          values: entry.value as Map<String, Object?>,
-        );
-        records.add(record);
-      } catch (e) {
-        // Skip invalid records
-      }
-    }
-
-    // Process equities
-    final equities = payload['equities'] as Map<String, dynamic>? ?? {};
-    for (final entry in equities.entries) {
-      try {
-        final record = MarketPortfolioRecord(
-          portfolioType: MarketPortfolioType.equities,
-          values: entry.value as Map<String, Object?>,
-        );
-        records.add(record);
-      } catch (e) {
-        // Skip invalid records
-      }
-    }
-
-    return records;
-  }
-
-  /// Get real FX rates from CurrencyRegistry
-  Map<String, double> _getRealExchangeRates() {
-    final rates = <String, double>{};
-
-    // Get rates for all currencies in the registry
-    for (final rate in _currencyRegistry.getAllRates()) {
-      rates[rate.code] = rate.rateToXof;
-    }
-
-    return rates;
   }
 
   /// Analyse chaque titre pour ses expositions au risque de change
@@ -384,167 +286,4 @@ class FxSecurityAnalysisService {
     };
   }
 
-  /// Crée des données de démonstration pour les tests
-  static FxRiskAnalysisResult createDemoData() {
-    final analysisDate = DateTime(2024, 6, 17);
-
-    // Titres de démonstration
-    final securities = [
-      FxSecurityAnalysis(
-        titleId: 'US_TREAS_001',
-        titleName: 'Obligation Trésor US',
-        currency: 'USD',
-        initialValue: 100000000,
-        currentValue: 102000000,
-        initialRate: 580.0,
-        currentRate: 625.0,
-        quantity: 1.0,
-        acquisitionDate: DateTime(2023, 6, 17),
-        analysisDate: analysisDate,
-      ),
-      FxSecurityAnalysis(
-        titleId: 'EU_BOND_001',
-        titleName: 'Eurobond Sénégal',
-        currency: 'EUR',
-        initialValue: 50000000,
-        currentValue: 51000000,
-        initialRate: 656.0,
-        currentRate: 680.0,
-        quantity: 1.0,
-        acquisitionDate: DateTime(2023, 9, 17),
-        analysisDate: analysisDate,
-      ),
-      FxSecurityAnalysis(
-        titleId: 'WB_BOND_001',
-        titleName: 'Obligation Banque Mondiale',
-        currency: 'USD',
-        initialValue: 75000000,
-        currentValue: 76000000,
-        initialRate: 580.0,
-        currentRate: 625.0,
-        quantity: 1.0,
-        acquisitionDate: DateTime(2023, 12, 17),
-        analysisDate: analysisDate,
-      ),
-      FxSecurityAnalysis(
-        titleId: 'CORP_ORANGE_001',
-        titleName: 'Obligation Corporate Orange CI',
-        currency: 'EUR',
-        initialValue: 40000000,
-        currentValue: 39500000,
-        initialRate: 656.0,
-        currentRate: 680.0,
-        quantity: 1.0,
-        acquisitionDate: DateTime(2024, 1, 17),
-        analysisDate: analysisDate,
-      ),
-    ];
-
-    // Agréger par devise
-    final exposures = _aggregateByCurrencyStatic(securities);
-
-    // Calculer les métriques globales
-    final metrics = _calculateGlobalMetricsStatic(
-      securities: securities,
-      currencyExposures: exposures,
-    );
-
-    return FxRiskAnalysisResult(
-      securities: securities,
-      currencyExposures: exposures,
-      totalExposure: metrics['totalExposure'] as double,
-      globalFxGainLoss: metrics['globalFxGainLoss'] as double,
-      totalLongPositions: metrics['totalLongPositions'] as double,
-      totalShortPositions: metrics['totalShortPositions'] as double,
-      globalNetPosition: metrics['globalNetPosition'] as double,
-      capitalRequirement: metrics['capitalRequirement'] as double,
-      rwaChange: metrics['rwaChange'] as double,
-      marketRiskContribution: metrics['marketRiskContribution'] as double,
-      analysisDate: analysisDate,
-    );
-  }
-
-  /// Agréger statiquement (pour données démo)
-  static List<FxCurrencyExposure> _aggregateByCurrencyStatic(
-    List<FxSecurityAnalysis> securities,
-  ) {
-    final byDevise = <String, FxCurrencyExposure>{};
-
-    for (final security in securities) {
-      final currency = security.currency;
-      if (currency == 'XOF' || currency == 'XAF') continue;
-      final existing = byDevise[currency];
-
-      final longExposure =
-          security.quantity > 0 ? security.currentValueInXof : 0.0;
-      final shortExposure =
-          security.quantity < 0 ? security.currentValueInXof.abs() : 0.0;
-
-      if (existing != null) {
-        byDevise[currency] = FxCurrencyExposure(
-          currency: currency,
-          totalLongExposure: existing.totalLongExposure + longExposure,
-          totalShortExposure: existing.totalShortExposure + shortExposure,
-          netExposure: existing.netExposure + (longExposure - shortExposure),
-          securitiesCount: existing.securitiesCount + 1,
-          acquisitionDate: existing.acquisitionDate,
-          analysisDate: security.analysisDate,
-        );
-      } else {
-        byDevise[currency] = FxCurrencyExposure(
-          currency: currency,
-          totalLongExposure: longExposure,
-          totalShortExposure: shortExposure,
-          netExposure: longExposure - shortExposure,
-          securitiesCount: 1,
-          acquisitionDate: security.acquisitionDate,
-          analysisDate: security.analysisDate,
-        );
-      }
-    }
-
-    return byDevise.values.toList();
-  }
-
-  /// Calculer les métriques statiquement (pour données démo)
-  static Map<String, double> _calculateGlobalMetricsStatic({
-    required List<FxSecurityAnalysis> securities,
-    required List<FxCurrencyExposure> currencyExposures,
-  }) {
-    double totalExposure = 0;
-    double globalFxGainLoss = 0;
-    double totalLongPositions = 0;
-    double totalShortPositions = 0;
-
-    for (final security in securities) {
-      if (security.currency == 'XOF' || security.currency == 'XAF') continue;
-      totalExposure += security.currentValueInXof;
-      globalFxGainLoss += security.fxGainLoss;
-    }
-
-    for (final exposure in currencyExposures) {
-      if (exposure.currency == 'XOF' || exposure.currency == 'XAF') continue;
-      totalLongPositions += exposure.totalLongExposure;
-      totalShortPositions += exposure.totalShortExposure;
-    }
-
-    final globalNetPosition =
-        math.max(totalLongPositions, totalShortPositions).toDouble();
-    final capitalRequirement = globalNetPosition * 0.09;
-    final rwaChange = capitalRequirement * (1 / 0.09); // 11,111111
-
-    final marketRiskContribution =
-        totalExposure > 0 ? (capitalRequirement / totalExposure) * 100 : 0.0;
-
-    return {
-      'totalExposure': totalExposure,
-      'globalFxGainLoss': globalFxGainLoss,
-      'totalLongPositions': totalLongPositions,
-      'totalShortPositions': totalShortPositions,
-      'globalNetPosition': globalNetPosition,
-      'capitalRequirement': capitalRequirement,
-      'rwaChange': rwaChange,
-      'marketRiskContribution': marketRiskContribution,
-    };
-  }
 }

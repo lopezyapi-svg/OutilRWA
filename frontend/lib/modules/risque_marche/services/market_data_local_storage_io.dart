@@ -16,6 +16,13 @@ Future<void> writeMarketDataPayload(String payload) async {
   await file.writeAsString(payload, flush: true);
 }
 
+Future<void> clearMarketDataPayload() async {
+  final file = await _storageFile();
+  if (await file.exists()) {
+    await file.delete();
+  }
+}
+
 Future<File> _storageFile() async {
   final root = Platform.environment['APPDATA'] ??
       Platform.environment['LOCALAPPDATA'] ??

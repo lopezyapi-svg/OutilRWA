@@ -13,7 +13,6 @@ Invariants communs aux trois méthodes :
 
 from __future__ import annotations
 
-import os
 import sys
 from datetime import date
 from pathlib import Path
@@ -41,14 +40,21 @@ NIVEAUX = (0.95, 0.975, 0.99)
 
 
 @pytest.fixture(scope="module", autouse=True)
-def _mode_simulation_pour_les_series():
+def _mode_simulation_pour_les_series(tmp_path_factory):
     """Les invariants des moteurs sont testés sur les séries simulées
-    reproductibles : aucun fichier de données n'est livré avec le dépôt."""
+    reproductibles : la couche de données est isolée dans un répertoire
+    vide pour que d'éventuelles données réelles présentes sur la machine
+    (portefeuille importé dans rwa_data.db, courbe UMOA actualisée)
+    n'interfèrent pas avec les fixtures."""
 
-    os.environ["VAR_MODE_SIMULATION"] = "1"
+    patchs = pytest.MonkeyPatch()
+    racine_vide = tmp_path_factory.mktemp("var_data_isolees")
+    patchs.setattr(portefeuille_data, "app_data_root", lambda: racine_vide)
+    patchs.setenv("VAR_MODE_SIMULATION", "1")
+    patchs.delenv("VAR_POSTGRES_DSN", raising=False)
     portefeuille_data.invalider_cache_series()
     yield
-    os.environ.pop("VAR_MODE_SIMULATION", None)
+    patchs.undo()
     portefeuille_data.invalider_cache_series()
 
 

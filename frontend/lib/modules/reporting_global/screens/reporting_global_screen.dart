@@ -29,7 +29,7 @@ import '../../risque_operationnel/models/ro_models.dart';
 // ─── Constantes couleur ───────────────────────────────────────────────────
 // Dupliquées depuis risque_operationnel_screen.dart (constantes privées à ce
 // fichier là-bas, sans lien de dépendance entre les deux modules).
-const _kBlue = AppTheme.accent;
+const _kBlue = AppTheme.sidebar;
 const _kSuccess = AppTheme.success;
 const _kDanger = AppTheme.danger;
 const _kMuted = AppTheme.muted;
@@ -38,57 +38,54 @@ const _kMuted = AppTheme.muted;
 // Dupliqué depuis risque_operationnel_screen.dart pour les mêmes raisons.
 const _artExplanations = <String, String>{
   'Art. 313':
-      'Gestion du risque opérationnel — dispositif d\'identification, de mesure,\n'
-      'de surveillance et de contrôle obligatoire (Instruction UMOA).\n\n'
-      'Mesure du risque (matrice 5×5) :\n'
-      '  Score = Impact × Probabilité   (échelle 1 – 5)\n'
-      '  Zone rouge : Score ≥ 15   |   Zone orange : 8 – 14\n'
-      '  Piliers : Identification → Mesure → Surveillance → Contrôle',
+      'Gestion du risque opérationnel : dispositif d\'identification, de mesure,\n'
+          'de surveillance et de contrôle obligatoire (Instruction UMOA).\n\n'
+          'Mesure du risque (matrice 5×5) :\n'
+          '  Score = Impact × Probabilité   (échelle 1 à 5)\n'
+          '  Zone rouge : Score ≥ 15   |   Zone orange : 8 à 14\n'
+          '  Piliers : Identification → Mesure → Surveillance → Contrôle',
   'Art. 313.b':
-      'Déclaration des incidents opérationnels — tout incident significatif\n'
-      'doit être documenté (cause racine, pertes) avec suivi formel imposé.\n\n'
-      'Calcul de la perte nette :\n'
-      '  Perte nette = Perte brute − Récupérations\n'
-      '  Récupérations : assurance + provisions + reversements\n'
-      '  Délai de déclaration : ≤ J+5 ouvrés après détection',
+      'Déclaration des incidents opérationnels : tout incident significatif\n'
+          'doit être documenté (cause racine, pertes) avec suivi formel imposé.\n\n'
+          'Calcul de la perte nette :\n'
+          '  Perte nette = Perte brute − Récupérations\n'
+          '  Récupérations : assurance + provisions + reversements\n'
+          '  Délai de déclaration : ≤ J+5 ouvrés après détection',
   'Art. 313.c':
-      'Plans d\'actions correctives et préventives — documentés, assignés\n'
-      'à un responsable avec échéance et taux d\'avancement obligatoires.\n\n'
-      'Indicateurs de suivi :\n'
-      '  Avancement (%) = (Actions terminées / Actions totales) × 100\n'
-      '  Taux global = Σ avancement_i / n   (n = nb plans actifs)\n'
-      '  Retard = Date_échéance − Date_aujourd\'hui  < 0 → en retard',
-  'Art. 314':
-      'Contrôle interne — dispositif permanent et périodique obligatoire.\n'
+      'Plans d\'actions correctives et préventives : documentés, assignés\n'
+          'à un responsable avec échéance et taux d\'avancement obligatoires.\n\n'
+          'Indicateurs de suivi :\n'
+          '  Avancement (%) = (Actions terminées / Actions totales) × 100\n'
+          '  Taux global = Σ avancement_i / n   (n = nb plans actifs)\n'
+          '  Retard = Date_échéance − Date_aujourd\'hui  < 0 → en retard',
+  'Art. 314': 'Contrôle interne : dispositif permanent et périodique obligatoire.\n'
       'Conservation des documents : ≥ 7 ans (exigence UMOA).\n\n'
       'Efficacité du contrôle :\n'
       '  Taux de conformité = (Contrôles conformes / Contrôles réalisés) × 100\n'
       '  Couverture = Nb processus contrôlés / Nb processus totaux × 100\n'
       '  Fréquences : permanent (quotidien/hebdo) | périodique (mensuel/annuel)',
   'Art. 89':
-      'Calcul des RWA opérationnels — méthode Indicateur de Base (BIA).\n\n'
-      'Formule BIA :\n'
-      '  Capital minimal = α × PNBmoy₃\n'
-      '  α = 15 %   (coefficient réglementaire BCEAO)\n'
-      '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
-      '  RWA_opérationnel = Capital minimal ÷ 9 %   (facteur 11,111111)',
+      'Calcul des RWA opérationnels : méthode Indicateur de Base (BIA).\n\n'
+          'Formule BIA :\n'
+          '  Capital minimal = α × PNBmoy₃\n'
+          '  α = 15 %   (coefficient réglementaire BCEAO)\n'
+          '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
+          '  RWA_opérationnel = Capital minimal ÷ 9 %   (facteur 11,111111)',
   'Art. 301/307':
       'Exigences minimales en fonds propres (dispositif prudentiel BCEAO).\n\n'
-      'Ratios réglementaires :\n'
-      '  Ratio Tier 1 = Fonds propres de catégorie 1 / RWA total  ≥ 7,5 %\n'
-      '  Ratio global = Fonds propres totaux / RWA total   ≥ 9 %\n'
-      '  RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
-      '  Coussin de conservation : + 2,5 % des RWA (si applicable)',
-  'Art. 545':
-      'Stress testing — simulations de scénarios de crise pour évaluer\n'
+          'Ratios réglementaires :\n'
+          '  Ratio Tier 1 = Fonds propres de catégorie 1 / RWA total  ≥ 7,5 %\n'
+          '  Ratio global = Fonds propres totaux / RWA total   ≥ 9 %\n'
+          '  RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
+          '  Coussin de conservation : + 2,5 % des RWA (si applicable)',
+  'Art. 545': 'Stress testing : simulations de scénarios de crise pour évaluer\n'
       'la résilience du dispositif de gestion des risques.\n\n'
       'Scénarios types et formule d\'impact :\n'
       '  S1 : Optimiste  |  S2 : Neutre  |  S3 : Pessimiste  |  S4 : Crise\n'
       '  Impact net = Pertes simulées − (Provisions + Couverture assurance)\n'
       '  Résilience = Fonds propres disponibles − Pertes simulées  ≥ 0\n'
       '  Ratio de résistance = FP après choc / RWA stressés  ≥ seuil',
-  'Art. 546':
-      'Rapport annuel sur le dispositif de gestion des risques,\n'
+  'Art. 546': 'Rapport annuel sur le dispositif de gestion des risques,\n'
       'transmis à la Commission Bancaire de l\'UMOA.\n\n'
       'Indicateurs clés à reporter :\n'
       '  • RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
@@ -107,7 +104,8 @@ Widget _artInfo(String artRef) {
       preferBelow: false,
       waitDuration: Duration.zero,
       showDuration: const Duration(seconds: 8),
-      textStyle: const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
+      textStyle:
+          const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
       decoration: BoxDecoration(
         color: const Color(0xFF1E2A3A),
         borderRadius: BorderRadius.circular(6),
@@ -118,36 +116,62 @@ Widget _artInfo(String artRef) {
   );
 }
 
-Widget _dropdown<T>(String label, T? value, List<T> items, void Function(T?) onChanged,
+Widget _dropdown<T>(BuildContext context, String label, T? value, List<T> items,
+    void Function(T?) onChanged,
     {bool required = false, IconData? icon, String? hint}) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final borderColor = isDark ? AppTheme.darkBorder : AppTheme.border;
+  final fillColor = isDark ? AppTheme.darkCard : const Color(0xFFFBFCFF);
+  final outline = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(AppTheme.radius),
+    borderSide: BorderSide(color: borderColor),
+  );
+
   return Padding(
     padding: const EdgeInsets.only(bottom: 14),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          if (icon != null) ...[Icon(icon, size: 12, color: _kBlue), const SizedBox(width: 5)],
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: _kBlue),
+            const SizedBox(width: 5)
+          ],
           Text(required ? '$label *' : label,
-            style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
-              color: _kMuted, letterSpacing: 0.1)),
+              style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: _kMuted,
+                  letterSpacing: 0.1)),
         ]),
         const SizedBox(height: 5),
         DropdownButtonFormField<T>(
           initialValue: value,
           isExpanded: true,
           icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
-          items: items.map((e) => DropdownMenuItem(
-            value: e,
-            child: Text(e.toString(), style: const TextStyle(fontSize: 13.5),
-              overflow: TextOverflow.ellipsis),
-          )).toList(),
+          items: items
+              .map((e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(e.toString(),
+                        style: const TextStyle(fontSize: 13.5),
+                        overflow: TextOverflow.ellipsis),
+                  ))
+              .toList(),
           onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+            hintStyle:
+                const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+            filled: true,
+            fillColor: fillColor,
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            border: outline,
+            enabledBorder: outline,
+            focusedBorder: outline.copyWith(
+              borderSide: const BorderSide(color: _kBlue, width: 1.1),
+            ),
           ),
           validator: required ? (v) => v == null ? 'Champ requis' : null : null,
         ),
@@ -164,8 +188,10 @@ double _metricValue(List<DashboardMetric> metrics, String key) {
   return 0.0;
 }
 
-String _formatAmountForPreview(BuildContext context, double amount, {int maxDecimals = 1}) {
-  final displayCurrency = PortfolioCurrencyScope.maybeOf(context, fallback: 'XOF');
+String _formatAmountForPreview(BuildContext context, double amount,
+    {int maxDecimals = 1}) {
+  final displayCurrency =
+      PortfolioCurrencyScope.maybeOf(context, fallback: 'XOF');
   final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
   return formatCurrencyInDisplayUnit(
     amount,
@@ -202,7 +228,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
   DateTime? _dateDebut;
   DateTime? _dateFin;
   final _dateDebutCtrl = TextEditingController();
-  final _dateFinCtrl   = TextEditingController();
+  final _dateFinCtrl = TextEditingController();
 
   // ─── Aperçu de l'export (données réellement injectées dans le PDF) ────────
   DashboardSnapshot? _previewDash;
@@ -218,7 +244,10 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
   }
 
   Future<void> _loadPreview() async {
-    setState(() { _previewLoading = true; _previewError = null; });
+    setState(() {
+      _previewLoading = true;
+      _previewError = null;
+    });
     try {
       final results = await Future.wait([
         widget.api.fetchDashboard(),
@@ -227,12 +256,15 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
       if (!mounted) return;
       setState(() {
         _previewDash = results[0] as DashboardSnapshot;
-        _previewRo   = results[1] as RoDashboardData;
+        _previewRo = results[1] as RoDashboardData;
         _previewLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _previewError = '$e'; _previewLoading = false; });
+      setState(() {
+        _previewError = '$e';
+        _previewLoading = false;
+      });
     }
   }
 
@@ -263,7 +295,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
       _dateDebut = debut;
       _dateFin = now;
       _dateDebutCtrl.text = _fmtDate(debut);
-      _dateFinCtrl.text   = _fmtDate(now);
+      _dateFinCtrl.text = _fmtDate(now);
     });
   }
 
@@ -273,7 +305,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
   String get _periodeLabel {
     final d = _dateDebut;
     final f = _dateFin;
-    if (d != null && f != null) return '${_fmtDate(d)} — ${_fmtDate(f)}';
+    if (d != null && f != null) return '${_fmtDate(d)} - ${_fmtDate(f)}';
     return _periode;
   }
 
@@ -297,7 +329,10 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
   // ─── Génération + dialog de sauvegarde ──────────────────────────────────────
 
   Future<void> _generateAndSave() async {
-    setState(() { _generating = true; _savedFileName = null; });
+    setState(() {
+      _generating = true;
+      _savedFileName = null;
+    });
     try {
       // 1. Récupérer les données de tous les domaines en parallèle
       final results = await Future.wait([
@@ -321,14 +356,18 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
       final marketResult = results[8] as MarketPrudentialCapitalResult;
 
       final debut = _dateDebut;
-      final fin   = _dateFin;
+      final fin = _dateFin;
       final incidents = (results[1] as List<RoIncident>).where((i) {
         try {
           final d = DateTime.parse(i.dateOccurrence);
           if (debut != null && d.isBefore(debut)) return false;
-          if (fin   != null && d.isAfter(fin.add(const Duration(days: 1)))) return false;
+          if (fin != null && d.isAfter(fin.add(const Duration(days: 1)))) {
+            return false;
+          }
           return true;
-        } catch (_) { return true; }
+        } catch (_) {
+          return true;
+        }
       }).toList();
 
       if (!mounted) return;
@@ -336,23 +375,35 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
       // 2. Construire le PDF
       final now = DateTime.now();
       final bytes = await _buildPdf(
-        dash, incidents, kriData.kriList, risques, controles, plans,
-        globalDash, creditSummary, marketResult, now,
+        dash,
+        incidents,
+        kriData.kriList,
+        risques,
+        controles,
+        plans,
+        globalDash,
+        creditSummary,
+        marketResult,
+        now,
       );
 
       if (!mounted) return;
 
       // 3. Dialog de sauvegarde natif Windows
-      final ts = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
+      final ts =
+          '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}'
           '_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}';
       final location = await getSaveLocation(
         suggestedName: 'rapport_global_${_periode.toLowerCase()}_$ts.pdf',
-        acceptedTypeGroups: const [XTypeGroup(label: 'PDF', extensions: ['pdf'])],
+        acceptedTypeGroups: const [
+          XTypeGroup(label: 'PDF', extensions: ['pdf'])
+        ],
       );
       if (!mounted || location == null) return;
 
       // 4. Enregistrer
-      final saved = await saveBytesAtLocation(location, bytes, requiredExtension: '.pdf');
+      final saved =
+          await saveBytesAtLocation(location, bytes, requiredExtension: '.pdf');
       if (!mounted) return;
 
       final fileName = saved.path.split(RegExp(r'[\\/]')).last;
@@ -391,61 +442,80 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
     DateTime now,
   ) async {
     final doc = pw.Document();
-    const headerBg  = PdfColor.fromInt(0xFF0F2544);
-    const accentBg  = PdfColor.fromInt(0xFF2563EB);
+    const headerBg = PdfColor.fromInt(0xFF0F2544);
+    const accentBg = PdfColor.fromInt(0xFF2563EB);
     const borderCol = PdfColor.fromInt(0xFFE5E7EB);
-    const mutedCol  = PdfColor.fromInt(0xFF6B7280);
+    const mutedCol = PdfColor.fromInt(0xFF6B7280);
 
-    final dateStr = '${now.day.toString().padLeft(2,'0')}/${now.month.toString().padLeft(2,'0')}/${now.year}';
+    final dateStr =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
     // La police de base utilisée par le PDF ne sait pas afficher le tiret
     // cadratin « — » (il ressort comme un carré/tofu) — on le remplace par
     // un tiret simple partout dans le texte injecté dans le document.
     final periodePdf = _periodeLabel.replaceAll('—', '-');
 
-    const mutedStyle  = pw.TextStyle(fontSize: 8.5, color: mutedCol);
-    const bodyStyle   = pw.TextStyle(fontSize: 9);
-    final headerStyle = pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white);
+    const mutedStyle = pw.TextStyle(fontSize: 8.5, color: mutedCol);
+    const bodyStyle = pw.TextStyle(fontSize: 9);
+    final headerStyle = pw.TextStyle(
+        fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColors.white);
 
     pw.Widget sectionBanner(String text) => pw.Container(
-      width: double.infinity,
-      margin: const pw.EdgeInsets.only(bottom: 6),
-      padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.circular(3)),
-      child: pw.Text(text, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-    );
+          width: double.infinity,
+          margin: const pw.EdgeInsets.only(bottom: 6),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: pw.BoxDecoration(
+              color: headerBg, borderRadius: pw.BorderRadius.circular(3)),
+          child: pw.Text(text,
+              style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white)),
+        );
 
     pw.Widget kpiGrid(List<(String label, String value)> items) => pw.Row(
-      children: items.map((item) => pw.Expanded(
-        child: pw.Container(
-          margin: const pw.EdgeInsets.only(right: 6, bottom: 6),
-          padding: const pw.EdgeInsets.all(8),
-          decoration: pw.BoxDecoration(border: pw.Border.all(color: borderCol), borderRadius: pw.BorderRadius.circular(4)),
-          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-            pw.Text(item.$1, style: mutedStyle),
-            pw.SizedBox(height: 3),
-            pw.Text(item.$2, style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: headerBg)),
-          ]),
-        ),
-      )).toList(),
-    );
+          children: items
+              .map((item) => pw.Expanded(
+                    child: pw.Container(
+                      margin: const pw.EdgeInsets.only(right: 6, bottom: 6),
+                      padding: const pw.EdgeInsets.all(8),
+                      decoration: pw.BoxDecoration(
+                          border: pw.Border.all(color: borderCol),
+                          borderRadius: pw.BorderRadius.circular(4)),
+                      child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(item.$1, style: mutedStyle),
+                            pw.SizedBox(height: 3),
+                            pw.Text(item.$2,
+                                style: pw.TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: pw.FontWeight.bold,
+                                    color: headerBg)),
+                          ]),
+                    ),
+                  ))
+              .toList(),
+        );
 
     pw.Widget table(List<String> headers, List<List<String>> rows) =>
-      pw.TableHelper.fromTextArray(
-        headers: headers,
-        data: rows,
-        headerStyle: headerStyle,
-        headerDecoration: const pw.BoxDecoration(color: accentBg),
-        cellStyle: bodyStyle,
-        border: pw.TableBorder.all(color: borderCol, width: 0.4),
-        cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-      );
+        pw.TableHelper.fromTextArray(
+          headers: headers,
+          data: rows,
+          headerStyle: headerStyle,
+          headerDecoration: const pw.BoxDecoration(color: accentBg),
+          cellStyle: bodyStyle,
+          border: pw.TableBorder.all(color: borderCol, width: 0.4),
+          cellPadding:
+              const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+        );
 
     // Décomposition du capital requis marché — taux / actions / change (FX),
     // même formule REA = Capital × 1/9% que le reste de l'outil.
     const reaMultiplier = 1 / 0.09;
     final marketTotal = marketResult.capitalRequirement;
-    String marketShare(double component) =>
-        marketTotal > 0 ? '${(component / marketTotal * 100).toStringAsFixed(1)} %' : '0,0 %';
+    String marketShare(double component) => marketTotal > 0
+        ? '${(component / marketTotal * 100).toStringAsFixed(1)} %'
+        : '0,0 %';
 
     // Montants arrondis et compacts (ex. "913,5 Md FCFA" au lieu de
     // "913 540 920 410 FCFA"), même unité (M/Md) que celle choisie par
@@ -457,56 +527,93 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
       margin: const pw.EdgeInsets.fromLTRB(28, 28, 28, 32),
       header: (_) => pw.Container(
         padding: const pw.EdgeInsets.only(bottom: 6),
-        decoration: const pw.BoxDecoration(border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
-        child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-          pw.Text('Rapport Risque Global -- $periodePdf', style: mutedStyle),
-          pw.Text('$_destinataire  ·  $dateStr', style: mutedStyle),
-        ]),
+        decoration: const pw.BoxDecoration(
+            border: pw.Border(bottom: pw.BorderSide(color: PdfColors.grey300))),
+        child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Rapport Risque Global -- $periodePdf',
+                  style: mutedStyle),
+              pw.Text('$_destinataire  ·  $dateStr', style: mutedStyle),
+            ]),
       ),
       footer: (ctx) => pw.Container(
         padding: const pw.EdgeInsets.only(top: 6),
-        decoration: const pw.BoxDecoration(border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300))),
-        child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-          pw.Text('Confidentiel -- Usage interne', style: mutedStyle),
-          pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}', style: mutedStyle),
-        ]),
+        decoration: const pw.BoxDecoration(
+            border: pw.Border(top: pw.BorderSide(color: PdfColors.grey300))),
+        child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Confidentiel -- Usage interne', style: mutedStyle),
+              pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}',
+                  style: mutedStyle),
+            ]),
       ),
       build: (_) => [
-
         // ── COUVERTURE ────────────────────────────────────────────────────────
         pw.Container(
           width: double.infinity,
           padding: const pw.EdgeInsets.all(22),
-          decoration: pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.circular(6)),
-          child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-            pw.Text('RAPPORT DE RISQUE GLOBAL',
-                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-            pw.SizedBox(height: 6),
-            pw.Text('Période : $periodePdf  ·  Destinataire : $_destinataire',
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey300)),
-            pw.Text('Date de génération : $dateStr',
-                style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey300)),
-            pw.SizedBox(height: 4),
-            pw.Text('Art. 301/307, 313, 313.b, 313.c, 314, 545, 546 -- UMOA/BCEAO',
-                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey400)),
-          ]),
+          decoration: pw.BoxDecoration(
+              color: headerBg, borderRadius: pw.BorderRadius.circular(6)),
+          child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text('RAPPORT DE RISQUE GLOBAL',
+                    style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.white)),
+                pw.SizedBox(height: 6),
+                pw.Text(
+                    'Période : $periodePdf  ·  Destinataire : $_destinataire',
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey300)),
+                pw.Text('Date de génération : $dateStr',
+                    style: const pw.TextStyle(
+                        fontSize: 10, color: PdfColors.grey300)),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                    'Art. 301/307, 313, 313.b, 313.c, 314, 545, 546 -- UMOA/BCEAO',
+                    style: const pw.TextStyle(
+                        fontSize: 8, color: PdfColors.grey400)),
+              ]),
         ),
         pw.SizedBox(height: 16),
 
         // ── 1. SYNTHÈSE GLOBALE ──────────────────────────────────────────────
         sectionBanner('1. SYNTHÈSE GLOBALE  '),
         kpiGrid([
-          ('RWA Total',          amt(_metricValue(globalDash.metrics, 'rwa'))),
-          ('RWA Crédit',         amt(_metricValue(globalDash.metrics, 'rwa_credit'))),
-          ('RWA Marché',         amt(_metricValue(globalDash.metrics, 'rwa_market'))),
-          ('RWA Opérationnel',   amt(_metricValue(globalDash.metrics, 'rwa_op'))),
-          ('Capital Total (FPE)', amt(_metricValue(globalDash.metrics, 'capital'))),
+          ('RWA Total', amt(_metricValue(globalDash.metrics, 'rwa'))),
+          ('RWA Crédit', amt(_metricValue(globalDash.metrics, 'rwa_credit'))),
+          ('RWA Marché', amt(_metricValue(globalDash.metrics, 'rwa_market'))),
+          ('RWA Opérationnel', amt(_metricValue(globalDash.metrics, 'rwa_op'))),
+          (
+            'Capital Total (FPE)',
+            amt(_metricValue(globalDash.metrics, 'capital'))
+          ),
         ]),
         kpiGrid([
-          ('Ratio CET1',           AppFormatters.percent(_metricValue(globalDash.metrics, 'cet1_ratio'))),
-          ('Ratio Tier 1',         AppFormatters.percent(_metricValue(globalDash.metrics, 'tier1_ratio'))),
-          ('Ratio de solvabilité', AppFormatters.percent(_metricValue(globalDash.metrics, 'solvabilite'))),
-          ('Ratio de levier',      AppFormatters.percent(_metricValue(globalDash.metrics, 'ratio_levier'))),
+          (
+            'Ratio CET1',
+            AppFormatters.percent(
+                _metricValue(globalDash.metrics, 'cet1_ratio'))
+          ),
+          (
+            'Ratio Tier 1',
+            AppFormatters.percent(
+                _metricValue(globalDash.metrics, 'tier1_ratio'))
+          ),
+          (
+            'Ratio de solvabilité',
+            AppFormatters.percent(
+                _metricValue(globalDash.metrics, 'solvabilite'))
+          ),
+          (
+            'Ratio de levier',
+            AppFormatters.percent(
+                _metricValue(globalDash.metrics, 'ratio_levier'))
+          ),
         ]),
         pw.SizedBox(height: 6),
 
@@ -519,17 +626,20 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
         // Vue d'ensemble (DashboardTopMetricsGrid::exposuresCount).
         sectionBanner('2. RISQUE CRÉDIT  '),
         kpiGrid([
-          ('Nombre d\'expositions', (globalDash.portfolioOverview.length).toString()),
-          ('EAD total',             amt(creditSummary.totalEad)),
-          ('RWA Crédit',            amt(creditSummary.totalRwa)),
-          ('Capital requis',        amt(creditSummary.totalCapital)),
+          (
+            'Nombre d\'expositions',
+            (globalDash.portfolioOverview.length).toString()
+          ),
+          ('EAD total', amt(creditSummary.totalEad)),
+          ('RWA Crédit', amt(creditSummary.totalRwa)),
+          ('Capital requis', amt(creditSummary.totalCapital)),
         ]),
         pw.SizedBox(height: 12),
 
         // ── 3. RISQUE DE MARCHÉ ──────────────────────────────────────────────
         sectionBanner('3. RISQUE DE MARCHÉ  '),
         kpiGrid([
-          ('RWA Marché',           amt(marketResult.marketRwa)),
+          ('RWA Marché', amt(marketResult.marketRwa)),
           ('Capital requis marché', amt(marketResult.capitalRequirement)),
         ]),
         pw.SizedBox(height: 6),
@@ -567,39 +677,65 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
         // ── 4. SYNTHÈSE GÉNÉRALE — RISQUE OPÉRATIONNEL ───────────────────────
         sectionBanner('4. SYNTHÈSE GÉNÉRALE - RISQUE OPÉRATIONNEL  '),
         kpiGrid([
-          ('Exigence fonds propres (K)', amt(dash.widget1.exigenceFondsPropres)),
-          ('RWA risque opérationnel',    amt(dash.widget1.aprRisqueOp)),
-          ('Statut réglementaire',       dash.widget1.statutReglementaire),
-          ('Incidents (mois)',           '${dash.widget2.totalIncidentsMois}'),
-          ('Non clôturés',              '${dash.widget2.incidentsNonClos}'),
-          ('Actions en retard',         '${dash.widget3.actionsEnRetard}'),
+          (
+            'Exigence fonds propres (K)',
+            amt(dash.widget1.exigenceFondsPropres)
+          ),
+          ('RWA risque opérationnel', amt(dash.widget1.aprRisqueOp)),
+          ('Statut réglementaire', dash.widget1.statutReglementaire),
+          ('Incidents (mois)', '${dash.widget2.totalIncidentsMois}'),
+          ('Non clôturés', '${dash.widget2.incidentsNonClos}'),
+          ('Actions en retard', '${dash.widget3.actionsEnRetard}'),
         ]),
         pw.SizedBox(height: 12),
 
         // ── 5. INCIDENTS ET PERTES ───────────────────────────────────────────
         sectionBanner('5. INCIDENTS ET PERTES  '),
         kpiGrid([
-          ('Pertes brutes totales', amt(incidents.fold(0.0, (s, i) => s + i.perteBrute))),
-          ('Pertes nettes totales', amt(incidents.fold(0.0, (s, i) => s + i.perteNette))),
-          ('Incidents significatifs', '${incidents.where((i) => i.significatif).length}'),
+          (
+            'Pertes brutes totales',
+            amt(incidents.fold(0.0, (s, i) => s + i.perteBrute))
+          ),
+          (
+            'Pertes nettes totales',
+            amt(incidents.fold(0.0, (s, i) => s + i.perteNette))
+          ),
+          (
+            'Incidents significatifs',
+            '${incidents.where((i) => i.significatif).length}'
+          ),
         ]),
         pw.SizedBox(height: 6),
         if (incidents.isEmpty)
           pw.Text('Aucun incident enregistré.', style: mutedStyle)
         else ...[
           table(
-            ['Référence', 'Date', 'Ligne métier', 'Perte brute', 'Perte nette', 'Statut'],
-            incidents.take(15).map((i) => [
-              i.reference, i.dateOccurrence, i.ligneMetier,
-              amt(i.perteBrute),
-              amt(i.perteNette),
-              i.statut,
-            ]).toList(),
+            [
+              'Référence',
+              'Date',
+              'Ligne métier',
+              'Perte brute',
+              'Perte nette',
+              'Statut'
+            ],
+            incidents
+                .take(15)
+                .map((i) => [
+                      i.reference,
+                      i.dateOccurrence,
+                      i.ligneMetier,
+                      amt(i.perteBrute),
+                      amt(i.perteNette),
+                      i.statut,
+                    ])
+                .toList(),
           ),
           if (incidents.length > 15)
             pw.Padding(
               padding: const pw.EdgeInsets.only(top: 3),
-              child: pw.Text('... et ${incidents.length - 15} autres incidents.', style: mutedStyle),
+              child: pw.Text(
+                  '... et ${incidents.length - 15} autres incidents.',
+                  style: mutedStyle),
             ),
         ],
         pw.SizedBox(height: 12),
@@ -609,8 +745,14 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
         if (controles.isNotEmpty)
           kpiGrid([
             ('Total contrôles', '${controles.length}'),
-            ('Non conformes', '${controles.where((c) => c.resultat == 'Non-conforme').length}'),
-            ('Taux moyen', '${(controles.fold(0.0, (s, c) => s + c.tauxConformite) / controles.length).toStringAsFixed(1)} %'),
+            (
+              'Non conformes',
+              '${controles.where((c) => c.resultat == 'Non-conforme').length}'
+            ),
+            (
+              'Taux moyen',
+              '${(controles.fold(0.0, (s, c) => s + c.tauxConformite) / controles.length).toStringAsFixed(1)} %'
+            ),
           ])
         else
           pw.Text('Aucun contrôle enregistré.', style: mutedStyle),
@@ -622,7 +764,10 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
           kpiGrid([
             ('Plans total', '${plans.length}'),
             ('En retard', '${plans.where((p) => p.enRetard).length}'),
-            ('Réalisation moy.', '${(plans.fold(0.0, (s, p) => s + p.avancement) / plans.length).toStringAsFixed(0)} %'),
+            (
+              'Réalisation moy.',
+              '${(plans.fold(0.0, (s, p) => s + p.avancement) / plans.length).toStringAsFixed(0)} %'
+            ),
           ])
         else
           pw.Text('Aucun plan d\'action enregistré.', style: mutedStyle),
@@ -674,15 +819,21 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
               opacity: _showSuccessToast ? 1 : 0,
               child: Container(
                 constraints: const BoxConstraints(maxWidth: 420),
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
-                      ? const Color(0xFF0F2544) : Colors.white,
+                      ? const Color(0xFF0F2544)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 24, offset: const Offset(0, 8)),
+                    BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.18),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8)),
                   ],
-                  border: Border.all(color: _kSuccess.withValues(alpha: 0.3), width: 1.2),
+                  border: Border.all(
+                      color: _kSuccess.withValues(alpha: 0.3), width: 1.2),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -691,7 +842,8 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                       width: 64,
                       height: 64,
                       child: _showSuccessToast
-                          ? Lottie.asset('assets/lotties/Success.json', repeat: false, fit: BoxFit.contain)
+                          ? Lottie.asset('assets/lotties/Success.json',
+                              repeat: false, fit: BoxFit.contain)
                           : null,
                     ),
                     const SizedBox(width: 14),
@@ -701,11 +853,17 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text('Rapport enregistré',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: _kSuccess)),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: _kSuccess)),
                           if (_savedFileName != null) ...[
                             const SizedBox(height: 2),
                             Text(_savedFileName!,
-                                style: const TextStyle(fontSize: 12.5, color: _kMuted, fontWeight: FontWeight.w500),
+                                style: const TextStyle(
+                                    fontSize: 12.5,
+                                    color: _kMuted,
+                                    fontWeight: FontWeight.w500),
                                 overflow: TextOverflow.ellipsis),
                           ],
                         ],
@@ -729,7 +887,8 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
         children: [
           const PageHeader(
             title: 'Reporting global',
-            subtitle: 'Génération du rapport consolidé — Dashboard, Crédit, Marché, Opérationnel',
+            subtitle:
+                'Génération du rapport consolidé : Dashboard, Crédit, Marché, Opérationnel',
             titleFontSize: 26,
             subtitleFontSize: 12.5,
           ),
@@ -740,115 +899,85 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SectionCard(
-                    title: 'Paramètres du rapport',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text('Période rapide :',
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
-                        color: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkMuted : _kMuted)),
-                    const SizedBox(width: 10),
-                    ...['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'].map((p) {
-                      final sel = _periode == p && _dateDebut != null && _dateFin != null;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () => _applyQuickPeriod(p),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: sel ? _kBlue : _kBlue.withValues(alpha: 0.07),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: sel ? _kBlue : _kBlue.withValues(alpha: 0.25)),
-                            ),
-                            child: Text(p, style: TextStyle(
-                              fontSize: 11.5, fontWeight: FontWeight.w600,
-                              color: sel ? Colors.white : _kBlue,
-                            )),
-                          ),
+                    title: '',
+                    child: _buildReportParametersCard(context),
+                  ),
+                  const SizedBox(height: 16),
+                  SectionCard(
+                    title: 'Aperçu de l\'export',
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.refresh_rounded,
+                              size: 17, color: _kMuted),
+                          tooltip: 'Actualiser',
+                          onPressed: _previewLoading ? null : _loadPreview,
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints:
+                              const BoxConstraints(minWidth: 28, minHeight: 28),
                         ),
-                      );
-                    }),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: _reportingDateField(context, 'Date de début', _dateDebutCtrl, _dateDebut, (picked) {
-                      setState(() { _dateDebut = picked; _dateDebutCtrl.text = _fmtDate(picked); });
-                    })),
-                    const SizedBox(width: 12),
-                    Expanded(child: _reportingDateField(context, 'Date de fin', _dateFinCtrl, _dateFin, (picked) {
-                      setState(() { _dateFin = picked; _dateFinCtrl.text = _fmtDate(picked); });
-                    })),
-                    const SizedBox(width: 12),
-                    Expanded(child: _dropdown('Destinataire', _destinataire,
-                      ['Organe exécutif', 'Organe délibérant', 'Commission Bancaire'],
-                      (v) => setState(() => _destinataire = v ?? 'Organe exécutif'))),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          SectionCard(
-            title: 'Aperçu de l\'export',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.refresh_rounded, size: 17, color: _kMuted),
-                  tooltip: 'Actualiser',
-                  onPressed: _previewLoading ? null : _loadPreview,
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                ),
-                _artInfo('Art. 301/307'),
-              ],
-            ),
-            child: _buildPreviewContent(context),
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 14,
-            runSpacing: 10,
-            children: [
-              FilledButton.icon(
-                onPressed: _generating ? null : _generateAndSave,
-                style: FilledButton.styleFrom(
-                  backgroundColor: _kBlue,
-                  disabledBackgroundColor: _kBlue.withValues(alpha: 0.5),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-                  minimumSize: const Size(0, 48),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                icon: _generating
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.picture_as_pdf_outlined, size: 18, color: Colors.white),
-                label: _generating
-                    ? const Text('Génération en cours…',
-                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Colors.white))
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Générer le rapport',
-                              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Colors.white, height: 1.2)),
-                          Text(_periodeLabel,
-                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-                                  color: Colors.white.withValues(alpha: 0.75), height: 1.2)),
-                        ],
+                        _artInfo('Art. 301/307'),
+                      ],
+                    ),
+                    child: _buildPreviewContent(context),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 14,
+                    runSpacing: 10,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _generating ? null : _generateAndSave,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _kBlue,
+                          disabledBackgroundColor:
+                              _kBlue.withValues(alpha: 0.5),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 13),
+                          minimumSize: const Size(0, 48),
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppTheme.radius)),
+                        ),
+                        icon: _generating
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Icon(Icons.picture_as_pdf_outlined,
+                                size: 18, color: Colors.white),
+                        label: _generating
+                            ? const Text('Génération en cours…',
+                                style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white))
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Générer le rapport',
+                                      style: TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                          height: 1.2)),
+                                  Text(_periodeLabel,
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.75),
+                                          height: 1.2)),
+                                ],
+                              ),
                       ),
-              ),
-            ],
-          ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -858,12 +987,259 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
     );
   }
 
+  Widget _buildReportParametersCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppTheme.darkBorder : AppTheme.border;
+    final headerBg = isDark
+        ? const Color(0xFF0F1B31)
+        : AppTheme.sidebar.withValues(alpha: 0.045);
+    final textColor = isDark ? AppTheme.darkText : AppTheme.text;
+    final mutedColor = isDark ? AppTheme.darkMuted : _kMuted;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 840;
+
+        final periodSection = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _parameterSectionTitle(
+              context,
+              'Période du rapport',
+              'Sélection rapide',
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel']
+                  .map((p) => _quickPeriodButton(context, p))
+                  .toList(),
+            ),
+          ],
+        );
+
+        final fieldsSection = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _parameterSectionTitle(
+              context,
+              'Détails de génération',
+              'Dates et destinataire',
+            ),
+            const SizedBox(height: 10),
+            if (compact)
+              Column(
+                children: [
+                  _reportingDateField(
+                      context, 'Date de début', _dateDebutCtrl, _dateDebut,
+                      (picked) {
+                    setState(() {
+                      _dateDebut = picked;
+                      _dateDebutCtrl.text = _fmtDate(picked);
+                    });
+                  }),
+                  _reportingDateField(
+                      context, 'Date de fin', _dateFinCtrl, _dateFin, (picked) {
+                    setState(() {
+                      _dateFin = picked;
+                      _dateFinCtrl.text = _fmtDate(picked);
+                    });
+                  }),
+                  _dropdown(
+                    context,
+                    'Destinataire',
+                    _destinataire,
+                    [
+                      'Organe exécutif',
+                      'Organe délibérant',
+                      'Commission Bancaire'
+                    ],
+                    (v) =>
+                        setState(() => _destinataire = v ?? 'Organe exécutif'),
+                  ),
+                ],
+              )
+            else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                      child: _reportingDateField(
+                          context, 'Date de début', _dateDebutCtrl, _dateDebut,
+                          (picked) {
+                    setState(() {
+                      _dateDebut = picked;
+                      _dateDebutCtrl.text = _fmtDate(picked);
+                    });
+                  })),
+                  const SizedBox(width: 16),
+                  Expanded(
+                      child: _reportingDateField(
+                          context, 'Date de fin', _dateFinCtrl, _dateFin,
+                          (picked) {
+                    setState(() {
+                      _dateFin = picked;
+                      _dateFinCtrl.text = _fmtDate(picked);
+                    });
+                  })),
+                  const SizedBox(width: 16),
+                  Expanded(
+                      child: _dropdown(
+                    context,
+                    'Destinataire',
+                    _destinataire,
+                    [
+                      'Organe exécutif',
+                      'Organe délibérant',
+                      'Commission Bancaire'
+                    ],
+                    (v) =>
+                        setState(() => _destinataire = v ?? 'Organe exécutif'),
+                  )),
+                ],
+              ),
+          ],
+        );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: headerBg,
+                borderRadius: BorderRadius.circular(AppTheme.radius),
+                border: Border.all(color: borderColor),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 3,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: AppTheme.sidebar,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Paramètres du rapport',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          _periodeLabel,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: mutedColor,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            periodSection,
+            const SizedBox(height: 14),
+            Divider(height: 1, color: borderColor),
+            const SizedBox(height: 14),
+            fieldsSection,
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _parameterSectionTitle(
+      BuildContext context, String title, String subtitle) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: isDark ? AppTheme.darkText : AppTheme.text,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: isDark ? AppTheme.darkBorder : AppTheme.border,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 10.5,
+            fontWeight: FontWeight.w600,
+            color: isDark ? AppTheme.darkMuted : _kMuted,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _quickPeriodButton(BuildContext context, String period) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final selected =
+        _periode == period && _dateDebut != null && _dateFin != null;
+    final borderColor = isDark ? AppTheme.darkBorder : AppTheme.border;
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppTheme.radius),
+      onTap: () => _applyQuickPeriod(period),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        constraints: const BoxConstraints(minWidth: 112, minHeight: 42),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? _kBlue : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(AppTheme.radius),
+          border: Border.all(color: selected ? _kBlue : borderColor),
+        ),
+        child: Text(
+          period,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected
+                ? Colors.white
+                : (isDark ? AppTheme.darkText : AppTheme.text),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ─── Aperçu de l'export : uniquement les éléments utiles à la décision ─────
   Widget _buildPreviewContent(BuildContext context) {
     if (_previewLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 24),
-        child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))),
+        child: Center(
+            child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2))),
       );
     }
     if (_previewError != null) {
@@ -872,8 +1248,9 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
         child: Row(children: [
           const Icon(Icons.error_outline, size: 16, color: _kDanger),
           const SizedBox(width: 8),
-          Expanded(child: Text('Aperçu indisponible : $_previewError',
-            style: const TextStyle(fontSize: 12, color: _kDanger))),
+          Expanded(
+              child: Text('Aperçu indisponible : $_previewError',
+                  style: const TextStyle(fontSize: 12, color: _kDanger))),
         ]),
       );
     }
@@ -881,123 +1258,236 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
     final ro = _previewRo;
     if (dash == null) return const SizedBox.shrink();
 
-    final rwaTotal   = _metricValue(dash.metrics, 'rwa');
-    final rwaCredit  = _metricValue(dash.metrics, 'rwa_credit');
-    final rwaMarche  = _metricValue(dash.metrics, 'rwa_market');
-    final rwaOp      = _metricValue(dash.metrics, 'rwa_op');
-    final capital    = _metricValue(dash.metrics, 'capital');
-    final solvab     = _metricValue(dash.metrics, 'solvabilite');
-    final solvabOk   = solvab >= 8.0;
+    final rwaTotal = _metricValue(dash.metrics, 'rwa');
+    final rwaCredit = _metricValue(dash.metrics, 'rwa_credit');
+    final rwaMarche = _metricValue(dash.metrics, 'rwa_market');
+    final rwaOp = _metricValue(dash.metrics, 'rwa_op');
+    final capital = _metricValue(dash.metrics, 'capital');
+    final solvab = _metricValue(dash.metrics, 'solvabilite');
+    final solvabOk = solvab >= 8.0;
 
     final incidentsNonClos = ro?.widget2.incidentsNonClos ?? 0;
-    final actionsEnRetard  = ro?.widget3.actionsEnRetard ?? 0;
-    final statutReg        = ro?.widget1.statutReglementaire ?? '—';
+    final actionsEnRetard = ro?.widget3.actionsEnRetard ?? 0;
+    final statutReg = ro?.widget1.statutReglementaire ?? 'Non renseigné';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 10.0;
+        final maxWidth = constraints.maxWidth;
+        final columns = maxWidth >= 1080
+            ? 3
+            : maxWidth >= 700
+                ? 3
+                : maxWidth >= 460
+                    ? 2
+                    : 1;
+        final cardWidth = (maxWidth - (gap * (columns - 1))) / columns;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _previewKpi('RWA Total', _formatAmountForPreview(context, rwaTotal), icon: Icons.donut_large_rounded),
-            _previewKpi('Capital Total (FPE)', _formatAmountForPreview(context, capital), icon: Icons.account_balance_rounded),
-            _previewKpi('Ratio de solvabilité', AppFormatters.percent(solvab),
-              color: solvabOk ? _kSuccess : _kDanger,
-              icon: solvabOk ? Icons.check_circle_outline : Icons.warning_amber_rounded),
+            Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                _previewKpi(
+                  context,
+                  'RWA Total',
+                  _formatAmountForPreview(context, rwaTotal),
+                  width: cardWidth,
+                ),
+                _previewKpi(
+                  context,
+                  'Capital Total (FPE)',
+                  _formatAmountForPreview(context, capital),
+                  width: cardWidth,
+                ),
+                _previewKpi(
+                  context,
+                  'Ratio de solvabilité',
+                  AppFormatters.percent(solvab),
+                  color: solvabOk ? _kSuccess : _kDanger,
+                  emphasized: true,
+                  width: cardWidth,
+                ),
+                _previewKpi(
+                  context,
+                  'RWA Crédit',
+                  _formatAmountForPreview(context, rwaCredit),
+                  width: cardWidth,
+                ),
+                _previewKpi(
+                  context,
+                  'RWA Marché',
+                  _formatAmountForPreview(context, rwaMarche),
+                  width: cardWidth,
+                ),
+                _previewKpi(
+                  context,
+                  'RWA Opérationnel',
+                  _formatAmountForPreview(context, rwaOp),
+                  width: cardWidth,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Divider(height: 1, color: Theme.of(context).dividerColor),
+            const SizedBox(height: 12),
+            Text('Alertes à date',
+                style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkMuted
+                        : _kMuted,
+                    letterSpacing: 0.2)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                _previewAlert(
+                    context, 'Incidents non clôturés', '$incidentsNonClos',
+                    alert: incidentsNonClos > 0),
+                _previewAlert(context, 'Actions en retard', '$actionsEnRetard',
+                    alert: actionsEnRetard > 0),
+                _previewAlert(context, 'Statut réglementaire', statutReg,
+                    alert: statutReg.toLowerCase().contains('non')),
+              ],
+            ),
           ],
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _previewKpi('RWA Crédit', _formatAmountForPreview(context, rwaCredit)),
-            _previewKpi('RWA Marché', _formatAmountForPreview(context, rwaMarche)),
-            _previewKpi('RWA Opérationnel', _formatAmountForPreview(context, rwaOp)),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Divider(height: 1, color: Theme.of(context).dividerColor),
-        const SizedBox(height: 12),
-        Text('Alertes à date', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
-          color: Theme.of(context).brightness == Brightness.dark ? AppTheme.darkMuted : _kMuted, letterSpacing: 0.2)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _previewAlert('Incidents non clôturés', '$incidentsNonClos',
-              alert: incidentsNonClos > 0),
-            _previewAlert('Actions en retard', '$actionsEnRetard',
-              alert: actionsEnRetard > 0),
-            _previewAlert('Statut réglementaire', statutReg,
-              alert: statutReg.toLowerCase().contains('non')),
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
 
-  Widget _previewKpi(String label, String value, {Color? color, IconData? icon}) {
+  Widget _previewKpi(BuildContext context, String label, String value,
+      {Color? color, bool emphasized = false, double width = 168}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final c = color ?? _kBlue;
+    final surface = isDark ? AppTheme.darkCard : AppTheme.card;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.border;
+    final labelColor = isDark ? AppTheme.darkMuted : _kMuted;
+    final valueColor =
+        emphasized ? c : (isDark ? AppTheme.darkText : AppTheme.text);
     return Container(
-      width: 168,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      width: width,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
       decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: c.withValues(alpha: 0.18)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            if (icon != null) ...[Icon(icon, size: 13, color: c), const SizedBox(width: 5)],
-            Expanded(child: Text(label, style: const TextStyle(fontSize: 10.5, color: _kMuted, fontWeight: FontWeight.w600),
-              maxLines: 1, overflow: TextOverflow.ellipsis)),
-          ]),
-          const SizedBox(height: 5),
-          Text(value, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: c),
-            maxLines: 1, overflow: TextOverflow.ellipsis),
+        color: surface,
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border:
+            Border.all(color: emphasized ? c.withValues(alpha: 0.30) : border),
+        boxShadow: [
+          BoxShadow(
+            color:
+                const Color(0xFF1B2559).withValues(alpha: isDark ? 0.0 : 0.035),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
         ],
       ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: c,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      style: TextStyle(
+                          fontSize: 10.5,
+                          color: labelColor,
+                          fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 5),
+                  Text(value,
+                      style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: valueColor),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _previewAlert(String label, String value, {required bool alert}) {
+  Widget _previewAlert(BuildContext context, String label, String value,
+      {required bool alert}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final c = alert ? _kDanger : _kSuccess;
+    final surface = isDark ? AppTheme.darkCard : AppTheme.card;
+    final labelColor = isDark ? AppTheme.darkMuted : _kMuted;
     return Container(
       constraints: const BoxConstraints(minWidth: 150),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: c.withValues(alpha: 0.22)),
+        color: surface,
+        borderRadius: BorderRadius.circular(AppTheme.radius),
+        border: Border.all(color: c.withValues(alpha: alert ? 0.30 : 0.24)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(alert ? Icons.priority_high_rounded : Icons.check_circle_outline, size: 14, color: c),
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+          ),
           const SizedBox(width: 7),
-          Text('$label : ', style: const TextStyle(fontSize: 11.5, color: _kMuted, fontWeight: FontWeight.w600)),
-          Text(value, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: c)),
+          Text('$label : ',
+              style: TextStyle(
+                  fontSize: 11.5,
+                  color: labelColor,
+                  fontWeight: FontWeight.w600)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.w800, color: c)),
         ],
       ),
     );
   }
 
-  Widget _reportingDateField(BuildContext context, String label, TextEditingController ctrl,
-      DateTime? value, ValueChanged<DateTime> onPicked) {
+  Widget _reportingDateField(
+      BuildContext context,
+      String label,
+      TextEditingController ctrl,
+      DateTime? value,
+      ValueChanged<DateTime> onPicked) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? AppTheme.darkBorder : AppTheme.border;
+    final fillColor = isDark ? AppTheme.darkCard : const Color(0xFFFBFCFF);
+    final outline = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppTheme.radius),
+      borderSide: BorderSide(color: borderColor),
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.calendar_month_outlined, size: 12, color: _kBlue),
-            const SizedBox(width: 5),
-            Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: _kMuted, letterSpacing: 0.1)),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    color: _kMuted,
+                    letterSpacing: 0.1)),
           ]),
           const SizedBox(height: 5),
           TextFormField(
@@ -1006,15 +1496,27 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
             style: const TextStyle(fontSize: 13.5),
             decoration: InputDecoration(
               hintText: 'jj/mm/aaaa',
-              hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+              hintStyle:
+                  const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
+              filled: true,
+              fillColor: fillColor,
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-              border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+              border: outline,
+              enabledBorder: outline,
+              focusedBorder: outline.copyWith(
+                borderSide: const BorderSide(color: _kBlue, width: 1.1),
+              ),
               suffixIcon: Container(
                 margin: const EdgeInsets.all(6),
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: _kBlue.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(6)),
-                child: const Icon(Icons.calendar_month_outlined, size: 14, color: _kBlue),
+                decoration: BoxDecoration(
+                  color: _kBlue.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
+                ),
+                child: const Icon(Icons.calendar_month_outlined,
+                    size: 14, color: _kBlue),
               ),
             ),
             onTap: () async {

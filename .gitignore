@@ -57,3 +57,6 @@ outputs/
 # Fichiers de test locaux
 backend/_excel_source_test.xlsx
 backend/_excel_recalc_test.vbs
+
+# Configuration locale Claude Code
+.claude/

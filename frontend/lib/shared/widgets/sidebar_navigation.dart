@@ -274,17 +274,6 @@ const List<_MenuEntry> _operationalRiskChildren = [
 const List<_MenuEntry> _stressChildren = [
   _MenuEntry.leaf(
     module: AppModule.stressTest,
-    icon: Icons.dashboard_outlined,
-    label: 'Dashboard Stress',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.stressTest,
-    icon: Icons.public_rounded,
-    label: 'Scénarios macroéconomiques',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.stressTest,
     icon: Icons.credit_card_outlined,
     label: 'Stress crédit',
     selectable: false,
@@ -297,44 +286,8 @@ const List<_MenuEntry> _stressChildren = [
   ),
   _MenuEntry.leaf(
     module: AppModule.stressTest,
-    icon: Icons.water_drop_outlined,
-    label: 'Stress liquidité',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.stressTest,
-    icon: Icons.home_work_outlined,
-    label: 'Stress immobilier',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.stressTest,
-    icon: Icons.center_focus_strong_rounded,
-    label: 'Stress concentration',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.stressTest,
-    icon: Icons.autorenew_rounded,
-    label: 'Reverse stress testing',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.stressTest,
-    icon: Icons.bar_chart_rounded,
-    label: 'Impact solvabilité',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.stressTest,
-    icon: Icons.monetization_on_outlined,
-    label: 'Impact capital',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.stressTest,
-    icon: Icons.summarize_outlined,
-    label: 'Reporting stress',
+    icon: Icons.engineering_outlined,
+    label: 'Stress opérationnel',
     selectable: false,
   ),
 ];
@@ -342,109 +295,16 @@ const List<_MenuEntry> _stressChildren = [
 const List<_MenuEntry> _icaapChildren = [
   _MenuEntry.leaf(
     module: AppModule.icap,
-    icon: Icons.dashboard_outlined,
-    label: 'Dashboard ICAAP',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapCapitalEconomique,
-    icon: Icons.bar_chart_rounded,
-    label: 'Capital economique',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapCapitalReglementaire,
-    icon: Icons.layers_outlined,
-    label: 'Capital reglementaire',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapAppetenceRisque,
-    icon: Icons.favorite_border_rounded,
-    label: 'Appetence au risque',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapBuffersPrudentiels,
-    icon: Icons.shield_outlined,
-    label: 'Buffers prudentiels',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapProjectionCapital,
-    icon: Icons.open_in_new_rounded,
-    label: 'Projection capital',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapAnalyseSolvabilite,
-    icon: Icons.speed_rounded,
-    label: 'Analyse solvabilite',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapPlansCapital,
-    icon: Icons.format_list_bulleted_rounded,
-    label: 'Plans de capital',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapReportingIcaap,
-    icon: Icons.summarize_outlined,
-    label: 'Reporting ICAAP',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.icapUemoaCemac,
-    icon: Icons.compare_arrows_rounded,
-    label: 'Specificites UEMOA/CEMAC',
+    icon: Icons.construction_outlined,
+    label: 'En cours de construction',
   ),
 ];
 
 const List<_MenuEntry> _capitalPlanningChildren = [
   _MenuEntry.leaf(
     module: AppModule.capitalPlaning,
-    icon: Icons.dashboard_outlined,
-    label: 'Dashboard Capital',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.capitalPlaning,
-    icon: Icons.open_in_new_rounded,
-    label: 'Projection RWA',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.capitalPlaning,
-    icon: Icons.speed_rounded,
-    label: 'Projection solvabilité',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.capitalPlaning,
-    icon: Icons.analytics_outlined,
-    label: 'Scénarios croissance',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.capitalPlaning,
-    icon: Icons.monetization_on_outlined,
-    label: 'Besoins futurs capital',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.capitalPlaning,
-    icon: Icons.file_download_outlined,
-    label: 'Gestion dividendes',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.capitalPlaning,
-    icon: Icons.inventory_2_outlined,
-    label: 'Allocation capital',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.capitalPlaning,
-    icon: Icons.tune_rounded,
-    label: 'Optimisation capital',
-    selectable: false,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.capitalPlaning,
-    icon: Icons.shield_outlined,
-    label: 'Buffers réglementaires',
-    selectable: false,
+    icon: Icons.construction_outlined,
+    label: 'En cours de construction',
   ),
 ];
 
@@ -516,12 +376,6 @@ const List<_MenuEntry> _sidebarItems = [
         module: AppModule.risqueMarchePilotage,
         icon: Icons.speed_rounded,
         label: 'Pilotage des risques',
-      ),
-      _MenuEntry.leaf(
-        module: AppModule.risqueMarcheImport,
-        icon: Icons.lock_outline_rounded,
-        label: 'Import des données',
-        disabled: true,
       ),
     ],
   ),

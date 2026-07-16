@@ -20,7 +20,6 @@ class UemoiAsScreen extends StatefulWidget {
 
 class _UemoiAsScreenState extends State<UemoiAsScreen> {
   AsCalculResult? _result;
-  ParametresAs? _params;
   List<BetaLigneView> _betas = [];
   bool _loading = true;
   String? _error;
@@ -52,7 +51,6 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
         widget.api.fetchBetaLignes(),
       ]);
       final r = results[0] as AsCalculResult;
-      final p = results[1] as ParametresAs;
       final b = results[2] as List<BetaLigneView>;
 
       for (final c in _pnbCtrls.values) {
@@ -69,7 +67,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
         );
       }
 
-      setState(() { _result = r; _params = p; _betas = b; });
+      setState(() { _result = r; _betas = b; });
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {

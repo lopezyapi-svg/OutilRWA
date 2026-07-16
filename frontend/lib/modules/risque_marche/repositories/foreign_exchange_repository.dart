@@ -76,15 +76,11 @@ class InMemoryForeignExchangeRepository implements ForeignExchangeRepository {
             return MapEntry(position.currency, position);
           }));
         _notifyListeners();
-        return;
       }
-      // Rien de persisté : on ne seme les données de démo qu'une seule fois,
-      // pour ne plus écraser un portefeuille vidé volontairement à chaque
-      // réouverture de l'écran.
-      if (_positions.isEmpty) {
-        loadDemoData();
-        unawaited(_persist());
-      }
+      // Rien de persisté : le portefeuille de change reste VIDE. Outil
+      // prudentiel : aucune position fictive n'est jamais injectée — seules
+      // les positions réellement saisies ou importées par l'utilisateur sont
+      // affichées et prises en compte dans le calcul.
     } catch (error) {
       debugPrint('Restauration des positions de change indisponible: $error');
     }
@@ -140,38 +136,6 @@ class InMemoryForeignExchangeRepository implements ForeignExchangeRepository {
 
   void _notifyListeners() {
     _positionsController.add(List.from(_positions.values));
-  }
-
-  /// Ajoute des données de démonstration
-  void loadDemoData() {
-    final demoPositions = [
-      const ForeignExchangePosition(
-        currency: 'USD',
-        assets: 500000000,
-        liabilities: 200000000,
-        forwardPurchases: 50000000,
-        forwardSales: 0,
-      ),
-      const ForeignExchangePosition(
-        currency: 'EUR',
-        assets: 300000000,
-        liabilities: 400000000,
-        forwardPurchases: 0,
-        forwardSales: 100000000,
-      ),
-      const ForeignExchangePosition(
-        currency: 'XOF',
-        assets: 150000000,
-        liabilities: 80000000,
-        forwardPurchases: 0,
-        forwardSales: 0,
-      ),
-    ];
-
-    for (final pos in demoPositions) {
-      _positions[pos.currency] = pos;
-    }
-    _notifyListeners();
   }
 
   void dispose() {
