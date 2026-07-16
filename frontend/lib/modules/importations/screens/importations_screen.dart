@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
 
@@ -44,7 +45,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Gestion des Importations',
+                  'Gestion des Importations'.tr(context),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: AppTheme.text,
                         fontWeight: FontWeight.w700,
@@ -57,7 +58,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                     color: Theme.of(context).dividerColor),
                 const SizedBox(height: 6),
                 Text(
-                  'Importez et consolidez les données d\'exposition par catégorie pour le calcul des risques pondérés (RWA).',
+                  'Importez et consolidez les données d\'exposition par catégorie pour le calcul des risques pondérés (RWA).'
+                      .tr(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.muted,
                       ),
@@ -122,7 +124,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                         width: 180,
                                         child: _buildImportCard(
                                           context,
-                                          title: 'Risque de Crédit',
+                                          title: 'Risque de Crédit'.tr(context),
                                           backgroundColor: AppTheme.accent,
                                           borderColor: AppTheme.accent,
                                           textColor: Colors.white,
@@ -136,8 +138,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                             if (!mounted) return;
                                             if (result != null) {
                                               setState(() {
-                                                successMessage =
-                                                    'Données risque de crédit chargées avec succès';
+                                                successMessage = 'Données risque de crédit chargées avec succès'
+                                                    .tr(context);
                                               });
                                             }
                                           },
@@ -147,7 +149,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                         width: 180,
                                         child: _buildImportCard(
                                           context,
-                                          title: 'Risque de Marché',
+                                          title: 'Risque de Marché'.tr(context),
                                           backgroundColor: AppTheme.success,
                                           borderColor: AppTheme.success,
                                           textColor: Colors.white,
@@ -158,8 +160,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                             if (!mounted) return;
                                             if (success) {
                                               setState(() {
-                                                successMessage =
-                                                    'Données risque de marché chargées avec succès';
+                                                successMessage = 'Données risque de marché chargées avec succès'
+                                                    .tr(context);
                                               });
                                             }
                                           },
@@ -169,7 +171,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                         width: 180,
                                         child: _buildImportCard(
                                           context,
-                                          title: 'Risque Opérationnel',
+                                          title: 'Risque Opérationnel'.tr(context),
                                           backgroundColor: AppTheme.warning,
                                           borderColor: AppTheme.warning,
                                           textColor: Colors.white,
@@ -190,8 +192,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                               if (!mounted) return;
                                               if (imported == true) {
                                                 setState(() {
-                                                  successMessage =
-                                                      'Données BIC / CCR3 chargées avec succès';
+                                                  successMessage = 'Données BIC / CCR3 chargées avec succès'
+                                                      .tr(context);
                                                 });
                                               }
                                             } else {
@@ -203,8 +205,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                               if (!mounted) return;
                                               if (success == true) {
                                                 setState(() {
-                                                  successMessage =
-                                                      'Données risque opérationnel chargées avec succès';
+                                                  successMessage = 'Données risque opérationnel chargées avec succès'
+                                                      .tr(context);
                                                 });
                                               }
                                             }
@@ -215,9 +217,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                         width: 180,
                                         child: _buildImportCard(
                                           context,
-                                          title: 'Fonds Propres',
-                                          backgroundColor:
-                                              const Color(0xFF1E40AF),
+                                          title: 'Fonds Propres'.tr(context),
+                                          backgroundColor: const Color(0xFF1E40AF),
                                           borderColor: const Color(0xFF1E40AF),
                                           textColor: Colors.white,
                                           onTap: () async {
@@ -229,8 +230,8 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                             if (!mounted) return;
                                             if (success == true) {
                                               setState(() {
-                                                successMessage =
-                                                    'Fonds propres réglementaires mis à jour avec succès';
+                                                successMessage = 'Fonds propres réglementaires mis à jour avec succès'
+                                                    .tr(context);
                                               });
                                             }
                                           },
@@ -329,15 +330,11 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.w700, fontSize: 13.5)),
+                        Text(title.tr(ctx),
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
                         const SizedBox(height: 2),
-                        Text(subtitle,
-                            style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppTheme.muted,
-                                height: 1.3)),
+                        Text(subtitle.tr(ctx),
+                            style: const TextStyle(fontSize: 11.5, color: AppTheme.muted, height: 1.3)),
                       ],
                     ),
                   ),
@@ -349,18 +346,18 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
         }
 
         return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          title: const Text('Quel type de fichier importer ?'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          title: Text('Quel type de fichier importer ?'.tr(ctx)),
           content: SizedBox(
             width: 420,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Le module Risque Opérationnel accepte deux formats de fichier.',
-                  style: TextStyle(fontSize: 12.5, color: AppTheme.muted),
+                Text(
+                  'Le module Risque Opérationnel accepte deux formats de fichier.'
+                      .tr(ctx),
+                  style: const TextStyle(fontSize: 12.5, color: AppTheme.muted),
                 ),
                 const SizedBox(height: 14),
                 option(
@@ -386,7 +383,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, null),
-              child: const Text('Annuler'),
+              child: Text('Annuler'.tr(ctx)),
             ),
           ],
         );

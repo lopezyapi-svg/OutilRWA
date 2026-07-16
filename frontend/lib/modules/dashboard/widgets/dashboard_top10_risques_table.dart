@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
@@ -42,7 +43,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
     Widget vDivTotal() => Container(width: 0.3, height: 38, color: borderColor);
 
     return DashPanel(
-      title: 'TOP 10 DES GRANDS RISQUES',
+      title: 'TOP 10 DES GRANDS RISQUES'.tr(context),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -69,7 +70,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Voir tous',
+                        'Voir tous'.tr(context),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -305,13 +306,13 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                         children: [
                           const SizedBox(width: 32),
                           vDivTotal(),
-                          const Expanded(
+                          Expanded(
                             flex: 3,
                             child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
                               child: Text(
-                                'Total',
-                                style: TextStyle(
+                                'Total'.tr(context),
+                                style: const TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w800,
                                   color: headerBg,
@@ -406,7 +407,7 @@ class _HeaderCell extends StatelessWidget {
     final child = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Text(
-        label,
+        label.tr(context),
         textAlign: align,
         style: const TextStyle(
           color: Color(0xFFFFFFFF),
@@ -456,7 +457,7 @@ class _StatutBadge extends StatelessWidget {
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
-          status,
+          status.tr(context),
           maxLines: 1,
           style: TextStyle(
             fontSize: 10.5,

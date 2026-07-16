@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -44,24 +45,24 @@ class DashboardCapitalConsumption extends StatelessWidget {
     final statusColor = isSafe ? c.conforme : c.sousMinimum;
 
     return DashPanel(
-      title: 'RATIO DE SOLVABILITÉ',
-      unit: 'En ${amountUnit.label} ($currency)',
+      title: 'RATIO DE SOLVABILITÉ'.tr(context),
+      unit: context.tr('En {{unit}} ({{currency}})', args: {'unit': amountUnit.label, 'currency': currency}),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 8),
-          _buildMetricRow('Fonds propres (Capital détenu)', capitalDetenu, c.navy, c, amountUnit.label),
+          _buildMetricRow('Fonds propres (Capital détenu)'.tr(context), capitalDetenu, c.navy, c, amountUnit.label),
           const SizedBox(height: 12),
-          _buildMetricRow('Exigence minimale (9%)', capitalRequis, c.ink, c, amountUnit.label),
+          _buildMetricRow('Exigence minimale (9%)'.tr(context), capitalRequis, c.ink, c, amountUnit.label),
           const SizedBox(height: 12),
-          _buildMetricRow('Coussin de sécurité (Excédent)', excedent, excedent >= 0 ? c.conforme : c.sousMinimum, c, amountUnit.label, showPlus: true),
+          _buildMetricRow('Coussin de sécurité (Excédent)'.tr(context), excedent, excedent >= 0 ? c.conforme : c.sousMinimum, c, amountUnit.label, showPlus: true),
           const SizedBox(height: 16),
-          
+
           // Ratio display
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Ratio de Solvabilité global', style: TextStyle(fontSize: 13, color: c.muted, fontWeight: FontWeight.w600)),
+              Text('Ratio de Solvabilité global'.tr(context), style: TextStyle(fontSize: 13, color: c.muted, fontWeight: FontWeight.w600)),
               Text(
                 AppFormatters.percent(solvabilite),
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: statusColor),
@@ -116,7 +117,7 @@ class DashboardCapitalConsumption extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('0%', style: TextStyle(fontSize: 11, color: c.muted)),
-              Text('Min: 9%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.ink)),
+              Text('Min: 9%'.tr(context), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.ink)),
               Text('20%+', style: TextStyle(fontSize: 11, color: c.muted)),
             ],
           ),

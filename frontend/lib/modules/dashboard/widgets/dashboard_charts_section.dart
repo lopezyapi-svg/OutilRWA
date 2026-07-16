@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_crm_donut.dart';
 import 'dashboard_design.dart';
@@ -48,13 +49,13 @@ class _DashboardChartsSectionState extends State<DashboardChartsSection> {
         );
 
         final eadPanel = DashPanel(
-          title: 'Top 5 de l\'EAD par catégorie',
+          title: 'Top 5 de l\'EAD par catégorie'.tr(context),
           height: 360,
           child: grossContent,
         );
 
         final rwaPanel = DashPanel(
-          title: 'Top 5 du RWA crédit par catégorie',
+          title: 'Top 5 du RWA crédit par catégorie'.tr(context),
           height: 360,
           child: rwaContent,
         );

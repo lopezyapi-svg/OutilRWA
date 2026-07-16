@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -41,8 +42,8 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
     final total = credit + operationnel + marche;
 
     return DashPanel(
-      title: 'RWA TOTAL ET CAPITAL REQUIS',
-      unit: 'En ${amountUnit.label} (${widget.currency})',
+      title: 'RWA TOTAL ET CAPITAL REQUIS'.tr(context),
+      unit: context.tr('En {{unit}} ({{currency}})', args: {'unit': amountUnit.label, 'currency': widget.currency}),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -50,7 +51,7 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'RWA TOTAL',
+                'RWA TOTAL'.tr(context),
                 style: DashText.eyebrow(c, color: Colors.indigo.shade500).copyWith(fontSize: 14),
                 textAlign: TextAlign.center,
               ),
@@ -85,7 +86,7 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'CAPITAL MINIMUM REQUIS (9%)',
+                'CAPITAL MINIMUM REQUIS (9%)'.tr(context),
                 style: DashText.eyebrow(c, color: Colors.indigo.shade500).copyWith(fontSize: 14),
                 textAlign: TextAlign.center,
               ),

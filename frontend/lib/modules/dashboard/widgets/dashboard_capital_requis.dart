@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -67,9 +68,9 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
     final solvMetric = widget.data.metrics.firstWhere((m) => m.key == 'solvabilite', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
     
     return [
-      _CapLine('CET1', base: 5.0, coussin: 2.5, actuel: cet1Metric.value * 100),
-      _CapLine('Tier 1', base: 7.5, coussin: 2.5, actuel: t1Metric.value * 100),
-      _CapLine('Solvabilité', base: 9.0, coussin: 2.5, actuel: solvMetric.value * 100),
+      _CapLine('CET1'.tr(context), base: 5.0, coussin: 2.5, actuel: cet1Metric.value * 100),
+      _CapLine('Tier 1'.tr(context), base: 7.5, coussin: 2.5, actuel: t1Metric.value * 100),
+      _CapLine('Solvabilité'.tr(context), base: 9.0, coussin: 2.5, actuel: solvMetric.value * 100),
     ];
   }
 
@@ -121,14 +122,14 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
       // Pilier 1 marker
       if ((pos.dx - xb).abs() < 12) {
         found = _TooltipData(
-          '${l.label} : Pilier 1 (en $unitLabel)',
+          context.tr('{{label}} : Pilier 1 (en {{unit}})', args: {'label': l.label, 'unit': unitLabel}),
           [
-            _TooltipRow('Seuil minimum strict', basePct),
+            _TooltipRow('Seuil minimum strict'.tr(context), basePct),
             const _TooltipRow.divider(),
-            _TooltipRow('Montant équivalent', '$baseMd$unitLabel', isHighlight: true),
+            _TooltipRow('Montant équivalent'.tr(context), '$baseMd$unitLabel', isHighlight: true),
           ],
           pos,
-          formula: '(Seuil minimum × Actifs pondérés au risque)',
+          formula: '(Seuil minimum × Actifs pondérés au risque)'.tr(context),
         );
         foundRow = i;
         foundDot = 0;
@@ -137,17 +138,17 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
       // Globale circle
       if ((pos.dx - xr).abs() < 12) {
         found = _TooltipData(
-          '${l.label} : Exigence globale (en $unitLabel)',
+          context.tr('{{label}} : Exigence globale (en {{unit}})', args: {'label': l.label, 'unit': unitLabel}),
           [
-            _TooltipRow('Pilier 1', basePct),
-            _TooltipRow('Coussin de conservation', coussinPct),
+            _TooltipRow('Pilier 1'.tr(context), basePct),
+            _TooltipRow('Coussin de conservation'.tr(context), coussinPct),
             const _TooltipRow.divider(),
-            _TooltipRow('Taux global exigé', exigPct, isHighlight: true),
+            _TooltipRow('Taux global exigé'.tr(context), exigPct, isHighlight: true),
             const _TooltipRow.divider(),
-            _TooltipRow('Montant requis', '$requisMd$unitLabel', isHighlight: true),
+            _TooltipRow('Montant requis'.tr(context), '$requisMd$unitLabel', isHighlight: true),
           ],
           pos,
-          formula: '(Taux global exigé × Actifs pondérés au risque)',
+          formula: '(Taux global exigé × Actifs pondérés au risque)'.tr(context),
         );
         foundRow = i;
         foundDot = 1;
@@ -157,20 +158,20 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
       if ((pos.dx - xd).abs() < 12) {
         final sign = l.surplus(rwaVal) >= 0 ? '+' : '';
         found = _TooltipData(
-          '${l.label} : Fonds propres détenus (en $unitLabel)',
+          context.tr('{{label}} : Fonds propres détenus (en {{unit}})', args: {'label': l.label, 'unit': unitLabel}),
           [
-            _TooltipRow('Montant détenu', '$detenuMd$unitLabel'),
-            _TooltipRow('Ratio effectif', actPct, isHighlight: true),
+            _TooltipRow('Montant détenu'.tr(context), '$detenuMd$unitLabel'),
+            _TooltipRow('Ratio effectif'.tr(context), actPct, isHighlight: true),
             const _TooltipRow.divider(),
-            _TooltipRow('Montant exigé', '$requisMd$unitLabel'),
+            _TooltipRow('Montant exigé'.tr(context), '$requisMd$unitLabel'),
             _TooltipRow(
-              l.surplus(rwaVal) >= 0 ? 'Excédent de capital' : 'Déficit de capital',
+              (l.surplus(rwaVal) >= 0 ? 'Excédent de capital' : 'Déficit de capital').tr(context),
               '$sign$surplusMd$unitLabel',
               isHighlight: true,
             ),
           ],
           pos,
-          formula: '(Montant détenu - Montant exigé)',
+          formula: '(Montant détenu - Montant exigé)'.tr(context),
         );
         foundRow = i;
         foundDot = 2;
@@ -207,7 +208,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
     if (maxAxis <= 0) maxAxis = tickStep;
 
     return DashPanel(
-      title: 'Exigences de fonds propres',
+      title: 'Exigences de fonds propres'.tr(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -215,20 +216,20 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
             children: [
               const _LegendShape(type: 0),
               const SizedBox(width: 6),
-              Text('Pilier 1', style: DashText.caption(c, color: c.muted)),
+              Text('Pilier 1'.tr(context), style: DashText.caption(c, color: c.muted)),
               const SizedBox(width: 14),
               const _LegendShape(type: 1),
               const SizedBox(width: 6),
-              Text('Coussin', style: DashText.caption(c, color: c.muted)),
+              Text('Coussin'.tr(context), style: DashText.caption(c, color: c.muted)),
               const SizedBox(width: 14),
               const _LegendShape(type: 2),
               const SizedBox(width: 6),
-              Text('Globale',
+              Text('Globale'.tr(context),
                   style: DashText.caption(c, color: c.muted)),
               const SizedBox(width: 18),
               _LegendShape(type: 3, color: c.accent),
               const SizedBox(width: 6),
-              Text('Détenus',
+              Text('Détenus'.tr(context),
                   style: DashText.caption(c, color: c.muted)),
               const Spacer(),
               Text(' ', style: DashText.caption(c)),

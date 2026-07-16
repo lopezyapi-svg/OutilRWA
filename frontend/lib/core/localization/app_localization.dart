@@ -943,6 +943,276 @@ const Map<String, String> _englishTranslations = {
   'Lecture des impacts': 'Impact reading',
   'Comparez le scénario central aux hypothèses adverses, identifiez les seuils de rupture et préparez les actions de mitigation à suivre.':
       'Compare the central scenario with adverse assumptions, identify breakpoints and prepare follow-up mitigation actions.',
+
+  // --- Module Importations ---
+  'Gestion des Importations': 'Import Management',
+  'Importez et consolidez les données d\'exposition par catégorie pour le calcul des risques pondérés (RWA).':
+      'Import and consolidate exposure data by category for risk-weighted assets (RWA) calculation.',
+  'Risque de Crédit': 'Credit Risk',
+  'Données risque de crédit chargées avec succès':
+      'Credit risk data loaded successfully',
+  'Risque de Marché': 'Market Risk',
+  'Données risque de marché chargées avec succès':
+      'Market risk data loaded successfully',
+  'Données BIC / CCR3 chargées avec succès':
+      'BIC / CCR3 data loaded successfully',
+  'Données risque opérationnel chargées avec succès':
+      'Operational risk data loaded successfully',
+  'Fonds Propres': 'Own Funds',
+  'Fonds propres réglementaires mis à jour avec succès':
+      'Regulatory own funds updated successfully',
+  'Quel type de fichier importer ?': 'Which file type do you want to import?',
+  'Le module Risque Opérationnel accepte deux formats de fichier.':
+      'The Operational Risk module accepts two file formats.',
+  'Base prudentielle (pertes / incidents)':
+      'Prudential base (losses / incidents)',
+  'Registre des incidents et pertes opérationnelles, ligne par ligne.':
+      'Register of operational incidents and losses, line by line.',
+  'BIC / CCR3': 'BIC / CCR3',
+  'Formulaire de saisie de l\'indicateur d\'activité — un onglet Excel par exercice.':
+      'Business indicator input form — one Excel tab per fiscal year.',
+
+  // --- Dashboard: import Fonds Propres ---
+  'Modèle enregistré.': 'Template saved.',
+  'Impossible d\'enregistrer : le fichier est probablement déjà ouvert '
+          '(par exemple dans Excel). Fermez-le puis réessayez, ou choisissez '
+          'un autre emplacement.':
+      'Unable to save: the file is probably already open '
+          '(for example in Excel). Close it and try again, or choose '
+          'another location.',
+  'Téléchargement impossible: {{error}}': 'Download failed: {{error}}',
+  'Seuls les fichiers .xlsx sont acceptés.': 'Only .xlsx files are accepted.',
+  'Poste non reconnu, ignoré : "{{label}}"':
+      'Item not recognized, ignored: "{{label}}"',
+  'Postes absents (laissés à 0) : {{missing}}':
+      'Missing items (left at 0): {{missing}}',
+  'Importation Fonds Propres Réglementaires': 'Regulatory Own Funds Import',
+  'Lecture du fichier...': 'Reading file...',
+  'Déposez le fichier pour lancer la lecture': 'Drop the file to start reading',
+  'Déposez le fichier Fonds Propres ici': 'Drop the Own Funds file here',
+  'L\'import remplace entièrement les fonds propres actuellement '
+          'enregistrés (comme le formulaire "Mettre à jour").':
+      'The import fully replaces the currently recorded own funds '
+          '(like the "Update" form).',
+  'Modèle Excel': 'Excel template',
+  'Fichier accepté: .xlsx, avec les colonnes « Groupe », « Poste » et « Valeur ».':
+      'Accepted file: .xlsx, with the "Group", "Item" and "Value" columns.',
+  'Choisir un autre fichier': 'Choose another file',
+  'Une ligne = un poste. Trois colonnes : « Groupe », « Poste », '
+          '« Valeur ». 11 lignes (CET1, AT1, Tier 2).':
+      'One row = one item. Three columns: "Group", "Item", "Value". '
+          '11 rows (CET1, AT1, Tier 2).',
+  'Poste': 'Item',
+  'Un des 11 libellés du formulaire': 'One of the form\'s 11 labels',
+  'Montant en FCFA': 'Amount in FCFA',
+  'Télécharger le modèle': 'Download the template',
+  'À vérifier': 'To review',
+  'Changer': 'Change',
+  'Fonds propres de base': 'Core own funds',
+  'Fonds propres additionnels': 'Additional own funds',
+  'Fonds propres complémentaires': 'Supplementary own funds',
+  'Fonds Propres Globaux': 'Total Own Funds',
+  'Import terminé': 'Import completed',
+  'Échec de l\'import': 'Import failed',
+  'Les fonds propres réglementaires ont été mis à jour.':
+      'The regulatory own funds have been updated.',
+  'Une erreur est survenue.': 'An error occurred.',
+  'Actualiser le tableau de bord': 'Refresh the dashboard',
+  'Vérifiez les valeurs ci-dessus avant d\'enregistrer.':
+      'Review the values above before saving.',
+  'Sélectionnez un fichier pour lancer la lecture.':
+      'Select a file to start reading.',
+  'Capital ordinaire': 'Ordinary capital',
+  'Réserves': 'Reserves',
+  'Résultats en report': 'Retained earnings',
+  'Résultat éligible': 'Eligible income',
+  'Réduction prudentielle (CET1)': 'Prudential reduction (CET1)',
+  'Instruments additionnels (AT1)': 'Additional instruments (AT1)',
+  'Primes d\'émission (AT1)': 'Issue premiums (AT1)',
+  'Réduction prudentielle (AT1)': 'Prudential reduction (AT1)',
+  'Dettes subordonnées (Tier 2)': 'Subordinated debt (Tier 2)',
+  'Provisions générales (Tier 2)': 'General provisions (Tier 2)',
+  'Réduction prudentielle (Tier 2)': 'Prudential reduction (Tier 2)',
+
+  // --- Dashboard: grands risques ---
+  'TOUS LES GRANDS RISQUES': 'ALL LARGE EXPOSURES',
+  'Contrepartie / Groupe lié': 'Counterparty / Linked group',
+  'Pays de risque': 'Risk country',
+  'Risque Brut': 'Gross risk',
+  'Risque Net': 'Net risk',
+  'Ratio RN/FP (%)': 'Net risk / Own funds ratio (%)',
+  'Conforme': 'Compliant',
+  'Alerte': 'Alert',
+  'Dans la norme': 'Within norm',
+  'Dépassement': 'Breach',
+  'TOUTES LES CATÉGORIES (GRANDS RISQUES)': 'ALL CATEGORIES (LARGE EXPOSURES)',
+  'Catégorie d\'exposition': 'Exposure category',
+  'Part (%)': 'Share (%)',
+  'TOP 10 DES GRANDS RISQUES': 'TOP 10 LARGE EXPOSURES',
+  'Voir tous': 'View all',
+  'Total': 'Total',
+  'Sous cible': 'Below target',
+  'SYNTHÈSE DES GRANDS RISQUES': 'LARGE EXPOSURES SUMMARY',
+  'Total grands risques': 'Total large exposures',
+  'Risque Net Total': 'Total net risk',
+  'CLASSIFICATION PRUDENTIELLE': 'PRUDENTIAL CLASSIFICATION',
+  'CATÉGORIES LES PLUS CONCENTRÉES ( TOP 5 )': 'MOST CONCENTRATED CATEGORIES (TOP 5)',
+  'Erreur lors de la sauvegarde : {{error}}': 'Error while saving: {{error}}',
+  'Modifier les Fonds Propres': 'Edit Own Funds',
+  'Devise de saisie :': 'Entry currency:',
+  'Réduction prudentielle': 'Prudential reduction',
+  'Instruments additionnels': 'Additional instruments',
+  'Primes d\'émission': 'Issue premiums',
+  'Dettes subordonnées': 'Subordinated debt',
+  'Provisions générales': 'General provisions',
+  'Fonds propres de base de catégorie 1': 'Category 1 core own funds',
+  'Fonds propres additionnels de catégorie 1': 'Category 1 additional own funds',
+
+  // --- Dashboard: exigences de fonds propres (dot plot) ---
+  'Exigences de fonds propres': 'Capital requirements',
+  'Solvabilité': 'Solvency',
+  'Globale': 'Overall',
+  'Détenus': 'Held',
+  '{{label}} : Pilier 1 (en {{unit}})': '{{label}}: Pillar 1 (in {{unit}})',
+  '{{label}} : Exigence globale (en {{unit}})': '{{label}}: Overall requirement (in {{unit}})',
+  '{{label}} : Fonds propres détenus (en {{unit}})': '{{label}}: Own funds held (in {{unit}})',
+  'Seuil minimum strict': 'Strict minimum threshold',
+  'Montant équivalent': 'Equivalent amount',
+  'Coussin de conservation': 'Conservation buffer',
+  'Taux global exigé': 'Overall required rate',
+  'Montant requis': 'Required amount',
+  'Montant détenu': 'Amount held',
+  'Ratio effectif': 'Effective ratio',
+  'Montant exigé': 'Required amount',
+  'Excédent de capital': 'Capital surplus',
+  'Déficit de capital': 'Capital deficit',
+  '(Seuil minimum × Actifs pondérés au risque)':
+      '(Minimum threshold × Risk-weighted assets)',
+  '(Taux global exigé × Actifs pondérés au risque)':
+      '(Overall required rate × Risk-weighted assets)',
+  '(Montant détenu - Montant exigé)': '(Amount held - Required amount)',
+
+  // --- Dashboard: ratio de solvabilité (jauge) ---
+  'RATIO DE SOLVABILITÉ': 'SOLVENCY RATIO',
+  'En {{unit}} ({{currency}})': 'In {{unit}} ({{currency}})',
+  'Fonds propres (Capital détenu)': 'Own funds (Capital held)',
+  'Exigence minimale (9%)': 'Minimum requirement (9%)',
+  'Coussin de sécurité (Excédent)': 'Safety buffer (Surplus)',
+  'Ratio de Solvabilité global': 'Overall solvency ratio',
+  'Min: 9%': 'Min: 9%',
+
+  // --- Dashboard: grands risques (top contreparties) ---
+  'Grands Risques (Top Contreparties)': 'Large Exposures (Top Counterparties)',
+  'Méthodologie: Exposition Nette (Brut - Garanties) vs 25% des Fonds Propres':
+      'Methodology: Net Exposure (Gross - Guarantees) vs 25% of Own Funds',
+  'Aucune donnée de contrepartie.': 'No counterparty data.',
+  'Consommation FP: {{value}}%': 'Own funds consumption: {{value}}%',
+  'Limite 25% dépassée': '25% limit exceeded',
+
+  // --- Dashboard: bandeau des ratios ---
+  'Ratio CET1': 'CET1 Ratio',
+  'Ratio Tier 1': 'Tier 1 Ratio',
+  'Ratio de solvabilité': 'Solvency ratio',
+  'Ratio de Levier': 'Leverage ratio',
+  'Ratio de Levier (MAJ)': 'Leverage ratio (updated)',
+  'Excédent': 'Surplus',
+  'Sous surveillance': 'Under review',
+  'Déficit': 'Deficit',
+  'Seuil réglementaire :': 'Regulatory threshold:',
+  'Pilier 1 ({{value}}%)': 'Pillar 1 ({{value}}%)',
+  'Coussin ({{value}}%)': 'Buffer ({{value}}%)',
+
+  // --- Dashboard: jauge de conformité grands risques ---
+  'Conformité grands risques — plus forte exposition':
+      'Large exposures compliance — highest exposure',
+  'En % des fonds propres': 'As % of own funds',
+  'Plus forte exposition': 'Highest exposure',
+  'LIMITE RÉGLEMENTAIRE': 'REGULATORY LIMIT',
+  "Seuil d'alerte interne : {{value}}%": 'Internal alert threshold: {{value}}%',
+
+  // --- Dashboard: structure des RWA ---
+  'STRUCTURE DES RWA': 'RWA STRUCTURE',
+  'Total RWA': 'Total RWA',
+  'Contribution aux exigences minimales (9%)':
+      'Contribution to minimum requirements (9%)',
+  'Crédit (Approche Standard)': 'Credit (Standard Approach)',
+  'Marché (Modèles Internes)': 'Market (Internal Models)',
+  'Opérationnel (Indicateur de Base)': 'Operational (Basic Indicator)',
+  'Crédit': 'Credit',
+  'Opérationnel': 'Operational',
+
+  // --- Dashboard: fonds propres (treemap) ---
+  'Fonds propres réglementaires': 'Regulatory own funds',
+  'Mettre à jour': 'Update',
+  'Capital Complémentaire': 'Complementary Capital',
+  'Réduction prud.': 'Prudential reduction',
+  'Instruments add.': 'Additional instruments',
+
+  // --- Dashboard: ratios réglementaires & capital requis ---
+  'Ratios Réglementaires & Capital Requis': 'Regulatory Ratios & Required Capital',
+  'Cap. Requis: {{value}}': 'Required Capital: {{value}}',
+  'Actuel: {{value}}%': 'Current: {{value}}%',
+  'Min. exigé: {{value}}%': 'Min. required: {{value}}%',
+
+  // --- Dashboard: capital détenu vs requis ---
+  'Capital détenu vs capital requis': 'Capital held vs required capital',
+  'En {{unit}} FCFA': 'In {{unit}} FCFA',
+  'Détenu': 'Held',
+  'Requis': 'Required',
+  'Total FP': 'Total own funds',
+  'Actualiser': 'Refresh',
+
+  // --- Dashboard: exigences par type de risque ---
+  'EXIGENCES DE FONDS PROPRES PAR TYPE DE RISQUE':
+      'CAPITAL REQUIREMENTS BY RISK TYPE',
+  'Capital Requis': 'Required Capital',
+  'Aucune donnée disponible': 'No data available',
+  '{{count}} exposition(s)': '{{count}} exposure(s)',
+
+  // --- Dashboard: top metrics grid ---
+  'Exposition brute': 'Gross exposure',
+  'Nombre d\'expositions : {{count}}': 'Number of exposures: {{count}}',
+  'EAD × RW (Taux de pondération)': 'EAD × RW (Risk weight)',
+  'RWA × 9%': 'RWA × 9%',
+  'Risque résiduel': 'Residual risk',
+  'Exposition brute - Sûretés/Garanties': 'Gross exposure - Collateral/Guarantees',
+  'Non-Performing Loans (NPL)': 'Non-Performing Loans (NPL)',
+  'Prêts en défaut / Total des prêts': 'Defaulted loans / Total loans',
+
+  // --- Dashboard: statuts ratio ---
+  'Sous la cible': 'Below target',
+  'Sous le minimum': 'Below minimum',
+
+  // --- Dashboard: en-tête général & bandeau bas ---
+  "Vue d'ensemble des indicateurs prudentiels": 'Overview of prudential indicators',
+  'Fonds propres totaux': 'Total own funds',
+  'Consommation des FP': 'Own funds consumption',
+  'Nombre de grands risques': 'Number of large exposures',
+  'Risques traités': 'Processed exposures',
+
+  // --- Dashboard: treemap concentration ---
+  'Concentration des risques — top 10 contreparties':
+      'Risk concentration — top 10 counterparties',
+  'Groupe A': 'Group A',
+  'Groupe B': 'Group B',
+  'Groupe C': 'Group C',
+  'Groupe D': 'Group D',
+  'Groupe E': 'Group E',
+  'Autres': 'Other',
+
+  // --- Dashboard: RWA total / capital requis (donut) ---
+  'RWA TOTAL ET CAPITAL REQUIS': 'TOTAL RWA AND REQUIRED CAPITAL',
+  'RWA TOTAL': 'TOTAL RWA',
+  'CAPITAL MINIMUM REQUIS (9%)': 'MINIMUM CAPITAL REQUIRED (9%)',
+
+  // --- Dashboard: libellés CRM recalculés (dashboard_screen.dart) ---
+  'AUCUNE GARANTIE': 'NO GUARANTEE',
+  'GARANTIE NON FINANCÉE': 'UNFUNDED GUARANTEE',
+  'GARANTIE FINANCÉE': 'FUNDED GUARANTEE',
+
+  // --- Dashboard: répartition par secteur (top10 chart) ---
+  'RÉPARTITION PAR SECTEUR': 'BREAKDOWN BY SECTOR',
+  'Top 5 de l\'EAD par catégorie': 'Top 5 EAD by category',
 };
 
 const Map<String, String> _frenchTranslations = {

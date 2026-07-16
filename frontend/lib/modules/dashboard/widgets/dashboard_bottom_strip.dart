@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import 'dashboard_design.dart';
 
 /// Bandeau de chiffres-clés en bas de dashboard.
@@ -14,15 +15,15 @@ class DashboardBottomStrip extends StatelessWidget {
     final c = DashColors.of(context);
 
     final cells = <Widget>[
-      _Cell(c: c, label: 'Fonds propres totaux', value: '180 Md FCFA'),
+      _Cell(c: c, label: 'Fonds propres totaux'.tr(context), value: '180 Md FCFA'),
       _Cell(
         c: c,
-        label: 'Consommation des FP',
+        label: 'Consommation des FP'.tr(context),
         value: '70,9%',
         progress: 0.708,
       ),
-      _Cell(c: c, label: 'Nombre de grands risques', value: '54'),
-      _Cell(c: c, label: 'Risques traités', value: '337'),
+      _Cell(c: c, label: 'Nombre de grands risques'.tr(context), value: '54'),
+      _Cell(c: c, label: 'Risques traités'.tr(context), value: '337'),
     ];
 
     return LayoutBuilder(

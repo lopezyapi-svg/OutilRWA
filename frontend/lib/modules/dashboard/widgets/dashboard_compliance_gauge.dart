@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import 'dashboard_design.dart';
 
 /// Jauge de conformité « grands risques » — plus forte exposition vs limite.
@@ -27,8 +28,8 @@ class DashboardComplianceGauge extends StatelessWidget {
 
     return DashPanel(
       height: 280,
-      title: 'Conformité grands risques — plus forte exposition',
-      unit: 'En % des fonds propres',
+      title: 'Conformité grands risques — plus forte exposition'.tr(context),
+      unit: 'En % des fonds propres'.tr(context),
       child: Row(
         children: [
           Expanded(
@@ -57,7 +58,7 @@ class DashboardComplianceGauge extends StatelessWidget {
                             style: DashText.hero(c, size: 26, color: valueColor),
                           ),
                           const SizedBox(height: 4),
-                          Text('Plus forte exposition',
+                          Text('Plus forte exposition'.tr(context),
                               style: DashText.caption(c)),
                         ],
                       ),
@@ -74,7 +75,7 @@ class DashboardComplianceGauge extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('LIMITE RÉGLEMENTAIRE',
+                Text('LIMITE RÉGLEMENTAIRE'.tr(context),
                     style: DashText.eyebrow(c, color: c.faint)),
                 const SizedBox(height: 4),
                 Text('${_limit.toInt()}%', style: DashText.hero(c, size: 22)),
@@ -88,7 +89,7 @@ class DashboardComplianceGauge extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  "Seuil d'alerte interne : ${_alerteInterne.toInt()}%",
+                  context.tr("Seuil d'alerte interne : {{value}}%", args: {'value': _alerteInterne.toInt()}),
                   style: DashText.caption(c, color: c.muted),
                 ),
               ],
@@ -125,7 +126,7 @@ class _AlertLine extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            label,
+            label.tr(context),
             style: TextStyle(
                 fontSize: 10, fontWeight: FontWeight.w600, color: color),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
@@ -93,7 +94,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
             children: [
               Expanded(
                 child: Text(
-                  _cleanLabel(widget.entry.label),
+                  _cleanLabel(widget.entry.label).tr(context),
                   style: DashText.caption(c, color: _isHovered ? widget.color : c.ink).copyWith(fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

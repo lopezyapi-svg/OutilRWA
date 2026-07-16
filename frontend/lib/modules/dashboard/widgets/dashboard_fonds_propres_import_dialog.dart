@@ -18,6 +18,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/utils/file_save.dart';
@@ -112,18 +113,24 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       );
       if (location == null) return;
       await saveBytesAtLocation(location, bytes, requiredExtension: '.xlsx');
-      if (mounted) _showMsg('Modèle enregistré.');
+      if (mounted) _showMsg('Modèle enregistré.'.tr(context));
     } on PathAccessException {
       if (mounted) {
         _showMsg(
-          'Impossible d\'enregistrer : le fichier est probablement déjà ouvert '
-          '(par exemple dans Excel). Fermez-le puis réessayez, ou choisissez '
-          'un autre emplacement.',
+          ('Impossible d\'enregistrer : le fichier est probablement déjà ouvert '
+                  '(par exemple dans Excel). Fermez-le puis réessayez, ou choisissez '
+                  'un autre emplacement.')
+              .tr(context),
           error: true,
         );
       }
     } catch (e) {
-      if (mounted) _showMsg('Téléchargement impossible: $e', error: true);
+      if (mounted) {
+        _showMsg(
+          context.tr('Téléchargement impossible: {{error}}', args: {'error': e}),
+          error: true,
+        );
+      }
     } finally {
       if (mounted) setState(() => _isDownloadingTemplate = false);
     }
@@ -141,7 +148,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
 
   Future<void> _loadFile(XFile file) async {
     if (!file.name.toLowerCase().endsWith('.xlsx')) {
-      _showMsg('Seuls les fichiers .xlsx sont acceptés.', error: true);
+      _showMsg('Seuls les fichiers .xlsx sont acceptés.'.tr(context), error: true);
       return;
     }
     setState(() {
@@ -320,8 +327,15 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
     ];
 
     return [
-      ...unmatched.map((l) => 'Poste non reconnu, ignoré : "$l"'),
-      if (missing.isNotEmpty) 'Postes absents (laissés à 0) : ${missing.join(', ')}',
+      ...unmatched.map((l) => context.tr(
+            'Poste non reconnu, ignoré : "{{label}}"',
+            args: {'label': l},
+          )),
+      if (missing.isNotEmpty)
+        context.tr(
+          'Postes absents (laissés à 0) : {{missing}}',
+          args: {'missing': missing.join(', ')},
+        ),
     ];
   }
 
@@ -433,7 +447,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
           const SizedBox(width: 4),
           Expanded(
             child: Text(
-              'Importation Fonds Propres Réglementaires',
+              'Importation Fonds Propres Réglementaires'.tr(context),
               style: TextStyle(color: _text, fontSize: 20, fontWeight: FontWeight.w500),
             ),
           ),
@@ -441,7 +455,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => Navigator.pop(context, false),
-            tooltip: 'Fermer',
+            tooltip: 'Fermer'.tr(context),
           ),
         ],
       );
@@ -485,13 +499,13 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
           borderRadius: BorderRadius.circular(4),
         ),
         child: _isParsing
-            ? const Center(
+            ? Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 10),
-                    Text('Lecture du fichier...', style: TextStyle(color: AppTheme.muted)),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 10),
+                    Text('Lecture du fichier...'.tr(context), style: const TextStyle(color: AppTheme.muted)),
                   ],
                 ),
               )
@@ -517,7 +531,8 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             ),
             const SizedBox(height: 18),
             Text(
-              _isDragging ? 'Déposez le fichier pour lancer la lecture' : 'Déposez le fichier Fonds Propres ici',
+              (_isDragging ? 'Déposez le fichier pour lancer la lecture' : 'Déposez le fichier Fonds Propres ici')
+                  .tr(context),
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -527,8 +542,9 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             ),
             const SizedBox(height: 8),
             Text(
-              'L\'import remplace entièrement les fonds propres actuellement '
-              'enregistrés (comme le formulaire "Mettre à jour").',
+              ('L\'import remplace entièrement les fonds propres actuellement '
+                      'enregistrés (comme le formulaire "Mettre à jour").')
+                  .tr(context),
               style: TextStyle(fontSize: 13, color: _muted, height: 1.45),
             ),
             const SizedBox(height: 22),
@@ -537,7 +553,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
                 FilledButton.icon(
                   onPressed: _pickFile,
                   icon: const Icon(Icons.folder_open_outlined, size: 17),
-                  label: const Text('Choisir un fichier'),
+                  label: Text('Choisir un fichier'.tr(context)),
                 ),
                 const SizedBox(width: 10),
                 OutlinedButton.icon(
@@ -546,13 +562,13 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
                       ? const SizedBox(
                           width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.download_outlined, size: 16),
-                  label: const Text('Modèle Excel'),
+                  label: Text('Modèle Excel'.tr(context)),
                 ),
               ],
             ),
             const SizedBox(height: 14),
             Text(
-              'Fichier accepté: .xlsx, avec les colonnes « Groupe », « Poste » et « Valeur ».',
+              'Fichier accepté: .xlsx, avec les colonnes « Groupe », « Poste » et « Valeur ».'.tr(context),
               style: TextStyle(fontSize: 11.5, color: _muted),
             ),
           ],
@@ -579,7 +595,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
               _selectedFile = null;
             }),
             icon: const Icon(Icons.refresh),
-            label: const Text('Choisir un autre fichier'),
+            label: Text('Choisir un autre fichier'.tr(context)),
           ),
         ],
       );
@@ -598,7 +614,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
           Row(
             children: [
               Expanded(
-                child: Text('Format attendu',
+                child: Text('Format attendu'.tr(context),
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _text)),
               ),
               Icon(Icons.rule_outlined, size: 16, color: _accent),
@@ -606,8 +622,9 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Une ligne = un poste. Trois colonnes : « Groupe », « Poste », '
-            '« Valeur ». 11 lignes (CET1, AT1, Tier 2).',
+            ('Une ligne = un poste. Trois colonnes : « Groupe », « Poste », '
+                    '« Valeur ». 11 lignes (CET1, AT1, Tier 2).')
+                .tr(context),
             style: TextStyle(fontSize: 12, color: _muted, height: 1.35),
           ),
           const SizedBox(height: 12),
@@ -621,7 +638,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             icon: _isDownloadingTemplate
                 ? const SizedBox(width: 13, height: 13, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.download_outlined, size: 15),
-            label: const Text('Télécharger le modèle'),
+            label: Text('Télécharger le modèle'.tr(context)),
           ),
         ],
       ),
@@ -644,10 +661,10 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label,
+                Text(label.tr(context),
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _text)),
                 const SizedBox(height: 2),
-                Text(detail, style: TextStyle(fontSize: 11, color: _muted, height: 1.25)),
+                Text(detail.tr(context), style: TextStyle(fontSize: 11, color: _muted, height: 1.25)),
               ],
             ),
           ),
@@ -702,7 +719,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
               }
             }),
             icon: const Icon(Icons.swap_horiz, size: 15),
-            label: const Text('Changer'),
+            label: Text('Changer'.tr(context)),
           ),
         ],
       ),
@@ -724,7 +741,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             children: [
               const Icon(Icons.info_outline, size: 14, color: AppTheme.warning),
               const SizedBox(width: 6),
-              Text('À vérifier',
+              Text('À vérifier'.tr(context),
                   style: TextStyle(fontSize: 12, color: _text, fontWeight: FontWeight.w700)),
             ],
           ),
@@ -749,7 +766,8 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             const SizedBox(width: 12),
             Expanded(child: _groupCard('AT1', 'Fonds propres additionnels', const Color(0xFF1E3A8A), 5, 8)),
             const SizedBox(width: 12),
-            Expanded(child: _groupCard('Tier 2', 'Fonds propres complémentaires', const Color(0xFF475569), 8, 11)),
+            Expanded(
+                child: _groupCard('Tier 2', 'Fonds propres complémentaires', const Color(0xFF475569), 8, 11)),
           ],
         ),
         const SizedBox(height: 14),
@@ -791,9 +809,9 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _text)),
+                Text(title.tr(context), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _text)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: TextStyle(fontSize: 10.5, color: _muted)),
+                Text(subtitle.tr(context), style: TextStyle(fontSize: 10.5, color: _muted)),
               ],
             ),
           ),
@@ -817,7 +835,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_fpLabels[idx], style: TextStyle(fontSize: 11, color: _muted)),
+          Text(_fpLabels[idx].tr(context), style: TextStyle(fontSize: 11, color: _muted)),
           const SizedBox(height: 3),
           TextField(
             controller: _ctrl[idx],
@@ -843,7 +861,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label.toUpperCase(),
+        Text(label.tr(context).toUpperCase(),
             style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: _muted)),
         const SizedBox(height: 4),
         Text(
@@ -881,7 +899,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    ok ? 'Import terminé' : 'Échec de l\'import',
+                    (ok ? 'Import terminé' : 'Échec de l\'import').tr(context),
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: _text),
                   ),
                 ),
@@ -890,8 +908,8 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             const SizedBox(height: 14),
             Text(
               ok
-                  ? 'Les fonds propres réglementaires ont été mis à jour.'
-                  : (_importError ?? 'Une erreur est survenue.'),
+                  ? 'Les fonds propres réglementaires ont été mis à jour.'.tr(context)
+                  : (_importError ?? 'Une erreur est survenue.'.tr(context)),
               style: TextStyle(fontSize: 14, color: _text),
             ),
             const SizedBox(height: 18),
@@ -900,7 +918,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
               child: FilledButton.icon(
                 onPressed: () => Navigator.pop(context, ok),
                 icon: const Icon(Icons.refresh, size: 18),
-                label: const Text('Actualiser le tableau de bord'),
+                label: Text('Actualiser le tableau de bord'.tr(context)),
               ),
             ),
           ],
@@ -923,15 +941,16 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
         children: [
           Expanded(
             child: Text(
-              _rowsReady
-                  ? 'Vérifiez les valeurs ci-dessus avant d\'enregistrer.'
-                  : 'Sélectionnez un fichier pour lancer la lecture.',
+              (_rowsReady
+                      ? 'Vérifiez les valeurs ci-dessus avant d\'enregistrer.'
+                      : 'Sélectionnez un fichier pour lancer la lecture.')
+                  .tr(context),
               style: TextStyle(fontSize: 11.5, color: _muted),
             ),
           ),
           TextButton(
             onPressed: _isImporting ? null : () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text('Annuler'.tr(context)),
           ),
           const SizedBox(width: 8),
           FilledButton.icon(
@@ -941,7 +960,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
                     width: 16, height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.upload_rounded, size: 18),
-            label: const Text('Enregistrer'),
+            label: Text('Enregistrer'.tr(context)),
           ),
         ],
       ),

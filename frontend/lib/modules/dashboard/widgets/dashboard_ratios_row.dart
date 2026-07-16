@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
@@ -184,11 +185,11 @@ class _RatioTile extends StatelessWidget {
 
     String badgeText;
     if (status == DashStatus.conforme) {
-      badgeText = 'Excédent';
+      badgeText = 'Excédent'.tr(context);
     } else if (status == DashStatus.sousCible) {
-      badgeText = 'Sous surveillance';
+      badgeText = 'Sous surveillance'.tr(context);
     } else {
-      badgeText = 'Déficit';
+      badgeText = 'Déficit'.tr(context);
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -231,7 +232,7 @@ class _RatioTile extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              label.toUpperCase(),
+              label.tr(context).toUpperCase(),
               style: DashText.eyebrow(
                 c,
                 color:
@@ -253,13 +254,13 @@ class _RatioTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
-                  'Seuil réglementaire :',
+                  'Seuil réglementaire :'.tr(context),
                   style: DashText.caption(c, color: c.ink)
                       .copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'Pilier 1 (${_fr(pilier1)}%)',
+                  context.tr('Pilier 1 ({{value}}%)', args: {'value': _fr(pilier1)}),
                   style: DashText.caption(c, color: c.muted),
                 ),
                 if (coussin > 0) ...[
@@ -267,7 +268,7 @@ class _RatioTile extends StatelessWidget {
                   Container(width: 1, height: 10, color: c.divider),
                   const SizedBox(width: 6),
                   Text(
-                    'Coussin (${_fr(coussin)}%)',
+                    context.tr('Coussin ({{value}}%)', args: {'value': _fr(coussin)}),
                     style: DashText.caption(c, color: c.muted),
                   ),
                 ],

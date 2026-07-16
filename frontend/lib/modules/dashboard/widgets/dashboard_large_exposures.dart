@@ -123,7 +123,7 @@ class DashboardLargeExposures extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Consommation FP: ${(ratioFP * 100).toStringAsFixed(2)}%',
+                context.tr('Consommation FP: {{value}}%', args: {'value': (ratioFP * 100).toStringAsFixed(2)}),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -138,9 +138,9 @@ class DashboardLargeExposures extends StatelessWidget {
                     color: Colors.redAccent.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text(
-                    'Limite 25% dépassée',
-                    style: TextStyle(
+                  child: Text(
+                    'Limite 25% dépassée'.tr(context),
+                    style: const TextStyle(
                       color: Colors.redAccent,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,

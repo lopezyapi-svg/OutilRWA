@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
@@ -54,7 +55,7 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
     }
 
     return DashPanel(
-      title: 'Répartition totale par type de CRM',
+      title: 'Répartition totale par type de CRM'.tr(context),
       height: 360,
       child: Column(
         children: [
@@ -137,7 +138,7 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                dominantSector.label,
+                                dominantSector.label.tr(context),
                                 style: DashText.caption(c, color: c.muted).copyWith(fontSize: 10),
                                 maxLines: 1,
                               ),
@@ -195,7 +196,7 @@ class _LegendItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
-    final countText = '${sector.count} exposition${sector.count > 1 ? 's' : ''}';
+    final countText = context.tr('{{count}} exposition(s)', args: {'count': sector.count});
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
@@ -219,7 +220,7 @@ class _LegendItem extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  sector.label, 
+                  sector.label.tr(context),
                   style: DashText.caption(c, color: c.muted).copyWith(fontWeight: FontWeight.w700, fontSize: 9),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

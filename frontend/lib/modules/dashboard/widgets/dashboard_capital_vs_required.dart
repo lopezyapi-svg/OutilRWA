@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/currency_conversion.dart';
@@ -19,38 +20,38 @@ class DashboardCapitalVsRequired extends StatelessWidget {
 
     return DashPanel(
       height: 300,
-      title: 'Capital détenu vs capital requis',
-      unit: 'En ${amountUnit.label} FCFA',
+      title: 'Capital détenu vs capital requis'.tr(context),
+      unit: context.tr('En {{unit}} FCFA', args: {'unit': amountUnit.label}),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              _legend(c, c.navy, 'Détenu'),
+              _legend(context, c, c.navy, 'Détenu'),
               const SizedBox(width: 20),
-              _legend(c, c.ramp[3], 'Requis'),
+              _legend(context, c, c.ramp[3], 'Requis'),
             ],
           ),
           const Spacer(),
-          _row(c, 'CET1', held: 120 * 1e9, requiredAmt: 80 * 1e9, unit: amountUnit),
+          _row(context, c, 'CET1', held: 120 * 1e9, requiredAmt: 80 * 1e9, unit: amountUnit),
           const SizedBox(height: 16),
-          _row(c, 'Tier 1', held: 135 * 1e9, requiredAmt: 95 * 1e9, unit: amountUnit),
+          _row(context, c, 'Tier 1', held: 135 * 1e9, requiredAmt: 95 * 1e9, unit: amountUnit),
           const SizedBox(height: 16),
-          _row(c, 'Total FP', held: 180 * 1e9, requiredAmt: 120 * 1e9, unit: amountUnit),
+          _row(context, c, 'Total FP', held: 180 * 1e9, requiredAmt: 120 * 1e9, unit: amountUnit),
           const Spacer(),
         ],
       ),
     );
   }
 
-  Widget _legend(DashColors c, Color color, String label) {
+  Widget _legend(BuildContext context, DashColors c, Color color, String label) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(width: 10, height: 10, color: color),
         const SizedBox(width: 8),
         Text(
-          label,
+          label.tr(context),
           style: TextStyle(
               fontSize: 12, fontWeight: FontWeight.w500, color: c.muted),
         ),
@@ -59,6 +60,7 @@ class DashboardCapitalVsRequired extends StatelessWidget {
   }
 
   Widget _row(
+    BuildContext context,
     DashColors c,
     String label, {
     required double held,
@@ -79,7 +81,7 @@ class DashboardCapitalVsRequired extends StatelessWidget {
         SizedBox(
           width: 64,
           child: Text(
-            label.toUpperCase(),
+            label.tr(context).toUpperCase(),
             style: DashText.eyebrow(c, color: c.ink),
           ),
         ),

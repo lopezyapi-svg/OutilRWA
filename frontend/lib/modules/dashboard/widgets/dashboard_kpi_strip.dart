@@ -136,7 +136,7 @@ class _CleanKpiCard extends StatelessWidget {
                   if (item.bottomLabel != null && item.bottomValue != null) ...[
                     const SizedBox(height: 8),
                     Text(
-                      '${item.bottomValue} ${item.bottomLabel}',
+                      '${item.bottomValue} ${item.bottomLabel?.tr(context)}',
                       style: TextStyle(
                         fontSize: 12,
                         color: mutedColor,

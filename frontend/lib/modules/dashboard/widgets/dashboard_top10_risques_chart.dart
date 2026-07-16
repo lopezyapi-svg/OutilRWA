@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
@@ -67,8 +68,8 @@ class DashboardTop10RisquesChart extends StatelessWidget {
     final maxX = maxAmount * 1.2;
 
     return DashPanel(
-      title: 'RÉPARTITION PAR SECTEUR',
-      unit: 'En ${amountUnit.label} ($currency)',
+      title: 'RÉPARTITION PAR SECTEUR'.tr(context),
+      unit: context.tr('En {{unit}} ({{currency}})', args: {'unit': amountUnit.label, 'currency': currency}),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -84,7 +85,7 @@ class DashboardTop10RisquesChart extends StatelessWidget {
                     getTooltipColor: (group) => const Color(0xFFFEFEFE),
                     tooltipBorder: BorderSide(color: c.navy.withValues(alpha: 0.2), width: 1),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final sectorLabel = displaySectors[groupIndex].key;
+                      final sectorLabel = displaySectors[groupIndex].key.tr(context);
                       return BarTooltipItem(
                         '$sectorLabel\n',
                         TextStyle(
@@ -125,13 +126,13 @@ class DashboardTop10RisquesChart extends StatelessWidget {
                         if (index < 0 || index >= displaySectors.length) return const SizedBox.shrink();
                         
                         final label = displaySectors[index].key.replaceFirst(RegExp(r'^\([a-z]\)\s*'), '');
-                        
+
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: SizedBox(
                             width: 80,
                             child: Text(
-                              label,
+                              label.tr(context),
                               style: TextStyle(
                                 color: c.navy,
                                 fontWeight: FontWeight.w600,

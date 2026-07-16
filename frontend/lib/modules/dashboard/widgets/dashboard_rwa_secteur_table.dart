@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -13,6 +14,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
   final DashboardSnapshot? data;
 
   Widget _buildRiskBlock({
+    required BuildContext context,
     required String title,
     required double rwa,
     required double capital,
@@ -47,7 +49,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                title,
+                title.tr(context),
                 style: TextStyle(
                   color: c.navy,
                   fontWeight: FontWeight.bold,
@@ -74,7 +76,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'RWA',
+                    'RWA'.tr(context),
                     style: TextStyle(color: c.muted, fontSize: 9),
                   ),
                   const SizedBox(height: 1),
@@ -92,7 +94,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    'Capital Requis',
+                    'Capital Requis'.tr(context),
                     style: TextStyle(color: c.muted, fontSize: 9),
                   ),
                   const SizedBox(height: 1),
@@ -171,13 +173,14 @@ class DashboardRwaSecteurChart extends StatelessWidget {
     final opColor = c.accent;
 
     return DashPanel(
-      title: 'EXIGENCES DE FONDS PROPRES PAR TYPE DE RISQUE',
-      unit: 'En ${amountUnit.label} ($currency)',
+      title: 'EXIGENCES DE FONDS PROPRES PAR TYPE DE RISQUE'.tr(context),
+      unit: context.tr('En {{unit}} ({{currency}})', args: {'unit': amountUnit.label, 'currency': currency}),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 8),
           _buildRiskBlock(
+            context: context,
             title: 'Risque de Crédit',
             rwa: rwaCredit,
             capital: capCredit,
@@ -189,6 +192,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
             bottomMargin: 8,
           ),
           _buildRiskBlock(
+            context: context,
             title: 'Risque Opérationnel',
             rwa: rwaOp,
             capital: capOp,
@@ -200,6 +204,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
             bottomMargin: 8,
           ),
           _buildRiskBlock(
+            context: context,
             title: 'Risque de Marché',
             rwa: rwaMarket,
             capital: capMarket,

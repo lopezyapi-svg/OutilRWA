@@ -89,7 +89,7 @@ class DashboardRegulatoryRatios extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                ratio.label,
+                ratio.label.tr(context),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -97,7 +97,7 @@ class DashboardRegulatoryRatios extends StatelessWidget {
                 ),
               ),
               Text(
-                'Cap. Requis: $capReqFormatted',
+                context.tr('Cap. Requis: {{value}}', args: {'value': capReqFormatted}),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -136,7 +136,7 @@ class DashboardRegulatoryRatios extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Actuel: ${(ratio.value * 100).toStringAsFixed(2)}%',
+                context.tr('Actuel: {{value}}%', args: {'value': (ratio.value * 100).toStringAsFixed(2)}),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -144,7 +144,7 @@ class DashboardRegulatoryRatios extends StatelessWidget {
                 ),
               ),
               Text(
-                'Min. exigé: ${(ratio.minimum * 100).toStringAsFixed(2)}%',
+                context.tr('Min. exigé: {{value}}%', args: {'value': (ratio.minimum * 100).toStringAsFixed(2)}),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,

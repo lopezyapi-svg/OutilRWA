@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
@@ -27,35 +28,35 @@ class DashboardTopMetricsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final cards = [
       _MinimalMetricCard(
-        label: 'Exposition brute',
+        label: 'Exposition brute'.tr(context),
         value: grossMetric.value,
         isCurrency: true,
-        subtitle: 'Nombre d\'expositions : $exposuresCount',
+        subtitle: context.tr('Nombre d\'expositions : {{count}}', args: {'count': exposuresCount}),
       ),
       _MinimalMetricCard(
-        label: 'RWA Crédit',
+        label: 'RWA Crédit'.tr(context),
         value: rwaMetric.value,
         isCurrency: true,
-        subtitle: 'EAD × RW (Taux de pondération)',
+        subtitle: 'EAD × RW (Taux de pondération)'.tr(context),
       ),
       _MinimalMetricCard(
-        label: 'Capital requis',
+        label: 'Capital requis'.tr(context),
         value: capitalMetric.value,
         isCurrency: true,
-        subtitle: 'RWA × 9%',
+        subtitle: 'RWA × 9%'.tr(context),
       ),
       _MinimalMetricCard(
-        label: 'Risque résiduel',
+        label: 'Risque résiduel'.tr(context),
         value: residualRiskMetric.value,
         isCurrency: true,
-        subtitle: 'Exposition brute - Sûretés/Garanties',
+        subtitle: 'Exposition brute - Sûretés/Garanties'.tr(context),
       ),
 
       _MinimalMetricCard(
-        label: 'Non-Performing Loans (NPL)',
+        label: 'Non-Performing Loans (NPL)'.tr(context),
         value: defaultRateMetric.value * 100,
         isCurrency: false,
-        subtitle: 'Prêts en défaut / Total des prêts',
+        subtitle: 'Prêts en défaut / Total des prêts'.tr(context),
       ),
     ];
 

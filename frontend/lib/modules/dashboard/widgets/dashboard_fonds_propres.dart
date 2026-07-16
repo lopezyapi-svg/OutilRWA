@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -46,11 +47,11 @@ class DashboardFondsPropres extends StatelessWidget {
     final tier2 = fp?.tier2 ?? 0.0;
 
     return DashPanel(
-      title: 'Fonds propres réglementaires',
+      title: 'Fonds propres réglementaires'.tr(context),
       trailing: onEdit != null
           ? ElevatedButton.icon(
               icon: const Icon(Icons.edit_outlined, size: 16),
-              label: const Text('Mettre à jour'),
+              label: Text('Mettre à jour'.tr(context)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.indigo,
                 foregroundColor: Colors.white,
@@ -114,23 +115,27 @@ class DashboardFondsPropres extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           _buildCompactRow(
+                              context,
                               'Capital ordinaire',
                               fp?.capitalOrdinaire ?? 0.0,
                               const Color(0xFF1E40AF),
                               amountUnit),
-                          _buildCompactRow('Réserves', fp?.reserves ?? 0.0,
+                          _buildCompactRow(context, 'Réserves', fp?.reserves ?? 0.0,
                               const Color(0xFF2563EB), amountUnit),
                           _buildCompactRow(
+                              context,
                               'Résultats en report',
                               fp?.resultatsReport ?? 0.0,
                               const Color(0xFF3B82F6),
                               amountUnit),
                           _buildCompactRow(
+                              context,
                               'Résultat éligible',
                               fp?.resultatEligible ?? 0.0,
                               const Color(0xFF93C5FD),
                               amountUnit),
                           _buildCompactRow(
+                              context,
                               'Réduction prud.',
                               -(fp?.deductionsPrudCet1 ?? 0.0),
                               const Color(0xFFEF4444),
@@ -156,14 +161,16 @@ class DashboardFondsPropres extends StatelessWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
-                          _buildCompactRow('Instruments add.',
+                          _buildCompactRow(context, 'Instruments add.',
                               fp?.instrumentsAt1 ?? 0.0, c.ramp[1], amountUnit),
                           _buildCompactRow(
+                              context,
                               'Primes d\'émission',
                               fp?.primesEmissionAt1 ?? 0.0,
                               c.ramp[2],
                               amountUnit),
                           _buildCompactRow(
+                              context,
                               'Réduction prud.',
                               -(fp?.deductionsPrudAt1 ?? 0.0),
                               const Color(0xFFEF4444),
@@ -190,16 +197,19 @@ class DashboardFondsPropres extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           _buildCompactRow(
+                              context,
                               'Dettes subordonnées',
                               fp?.dettesSubordonneesT2 ?? 0.0,
                               c.ramp[3],
                               amountUnit),
                           _buildCompactRow(
+                              context,
                               'Provisions générales',
                               fp?.provisionsGeneralesT2 ?? 0.0,
                               c.ramp[4],
                               amountUnit),
                           _buildCompactRow(
+                              context,
                               'Réduction prud.',
                               -(fp?.deductionsPrudT2 ?? 0.0),
                               const Color(0xFFEF4444),
@@ -236,7 +246,7 @@ class DashboardFondsPropres extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title,
+              Text(title.tr(context),
                   style: TextStyle(
                       color: textColor,
                       fontSize: 11,
@@ -253,7 +263,7 @@ class DashboardFondsPropres extends StatelessWidget {
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
-              subtitle,
+              subtitle.tr(context),
               style: TextStyle(
                 color: textColor.withValues(alpha: 0.8),
                 fontSize: 10,
@@ -276,7 +286,7 @@ class DashboardFondsPropres extends StatelessWidget {
     return '$amountVal $amountSuffix'.trim();
   }
 
-  Widget _buildCompactRow(String label, double amount, Color color,
+  Widget _buildCompactRow(BuildContext context, String label, double amount, Color color,
       PortfolioAmountUnit amountUnit) {
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
@@ -301,7 +311,7 @@ class DashboardFondsPropres extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                label,
+                label.tr(context),
                 style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
                 softWrap: true,
               ),

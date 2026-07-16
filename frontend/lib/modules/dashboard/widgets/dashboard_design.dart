@@ -7,6 +7,7 @@
 // catégories : les séries multiples se déclinent en **nuances de navy**.
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Constantes de mise en page partagées par les panneaux du dashboard.
@@ -334,7 +335,7 @@ class DashStatusTag extends StatelessWidget {
         ),
         const SizedBox(width: 6),
         Text(
-          status.label,
+          status.label.tr(context),
           style: TextStyle(
             color: color,
             fontSize: dense ? 11 : 12,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
@@ -36,7 +37,7 @@ class DashboardFondsPropresDialog extends StatefulWidget {
     final result = await showGeneralDialog<bool>(
       context: context,
       barrierDismissible: true,
-      barrierLabel: 'Fermer',
+      barrierLabel: 'Fermer'.tr(context),
       pageBuilder: (context, _, __) {
         return Align(
           alignment: Alignment.center,
@@ -249,7 +250,7 @@ class _DashboardFondsPropresDialogState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la sauvegarde : $e'),
+            content: Text(context.tr('Erreur lors de la sauvegarde : {{error}}', args: {'error': e})),
             backgroundColor: Colors.red,
           ),
         );
@@ -298,7 +299,7 @@ class _DashboardFondsPropresDialogState
             children: [
               Expanded(
                 child: Text(
-                  'Modifier les Fonds Propres',
+                  'Modifier les Fonds Propres'.tr(context),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -318,7 +319,7 @@ class _DashboardFondsPropresDialogState
           Row(
             children: [
               Text(
-                'Devise de saisie :',
+                'Devise de saisie :'.tr(context),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -454,7 +455,7 @@ class _DashboardFondsPropresDialogState
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 ),
-                child: const Text('Annuler'),
+                child: Text('Annuler'.tr(context)),
               ),
               const SizedBox(width: 12),
               ElevatedButton(
@@ -476,7 +477,7 @@ class _DashboardFondsPropresDialogState
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Enregistrer'),
+                    : Text('Enregistrer'.tr(context)),
               ),
             ],
           ),
@@ -501,7 +502,7 @@ class _DashboardFondsPropresDialogState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          label.toUpperCase(),
+          label.tr(context).toUpperCase(),
           style: TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.w700,
@@ -570,7 +571,7 @@ class _DashboardFondsPropresDialogState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  title.tr(context),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
@@ -580,7 +581,7 @@ class _DashboardFondsPropresDialogState
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  subtitle,
+                  subtitle.tr(context),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -625,7 +626,7 @@ class _DashboardFondsPropresDialogState
           Expanded(
             flex: 6,
             child: Text(
-              label,
+              label.tr(context),
               style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w500,

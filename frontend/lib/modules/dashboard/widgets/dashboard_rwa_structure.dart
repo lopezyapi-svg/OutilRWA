@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import 'dashboard_design.dart';
@@ -25,7 +26,7 @@ class DashboardRwaStructure extends StatelessWidget {
     ];
 
     return DashPanel(
-      title: 'STRUCTURE DES RWA',
+      title: 'STRUCTURE DES RWA'.tr(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -37,7 +38,7 @@ class DashboardRwaStructure extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Total RWA', style: DashText.caption(c, color: c.muted)),
+                  Text('Total RWA'.tr(context), style: DashText.caption(c, color: c.muted)),
                   const SizedBox(height: 2),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -61,14 +62,14 @@ class DashboardRwaStructure extends StatelessWidget {
             children: [
               for (var i = 0; i < parts.length; i++) ...[
                 if (i > 0) const SizedBox(height: 14),
-                _buildPartRow(parts[i], c, currency, amountUnit.label),
+                _buildPartRow(context, parts[i], c, currency, amountUnit.label),
               ]
             ],
           ),
           
           const SizedBox(height: 24),
           Text(
-            'Contribution aux exigences minimales (9%)',
+            'Contribution aux exigences minimales (9%)'.tr(context),
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink),
           ),
           const SizedBox(height: 12),
@@ -78,7 +79,7 @@ class DashboardRwaStructure extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(p.label.split(' ').first, style: TextStyle(fontSize: 13, color: c.muted)),
+                  Text(p.label.split(' ').first.tr(context), style: TextStyle(fontSize: 13, color: c.muted)),
                   Text(
                     '${AppFormatters.integer(p.amount * 0.09)} ${amountUnit.label}',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink),
@@ -92,7 +93,7 @@ class DashboardRwaStructure extends StatelessWidget {
     );
   }
 
-  Widget _buildPartRow(_RwaPart p, DashColors c, String currency, String unitLabel) {
+  Widget _buildPartRow(BuildContext context, _RwaPart p, DashColors c, String currency, String unitLabel) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -103,7 +104,7 @@ class DashboardRwaStructure extends StatelessWidget {
               children: [
                 Container(width: 8, height: 8, decoration: BoxDecoration(color: p.color, shape: BoxShape.circle)),
                 const SizedBox(width: 8),
-                Text(p.label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink)),
+                Text(p.label.tr(context), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink)),
               ],
             ),
             Text('${AppFormatters.integer(p.amount)}$unitLabel', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.ink)),

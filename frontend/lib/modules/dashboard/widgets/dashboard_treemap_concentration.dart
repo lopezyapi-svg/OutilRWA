@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import 'dashboard_design.dart';
 
 /// Concentration des risques — top 10 contreparties, en treemap.
@@ -22,8 +23,8 @@ class DashboardTreemapConcentration extends StatelessWidget {
 
     return DashPanel(
       height: 300,
-      title: 'Concentration des risques — top 10 contreparties',
-      unit: 'En % des fonds propres',
+      title: 'Concentration des risques — top 10 contreparties'.tr(context),
+      unit: 'En % des fonds propres'.tr(context),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(2),
         child: Row(
@@ -88,7 +89,7 @@ class _TreemapBox extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              title,
+              title.tr(context),
               style: TextStyle(
                 color: onColor.withValues(alpha: 0.85),
                 fontSize: 11,

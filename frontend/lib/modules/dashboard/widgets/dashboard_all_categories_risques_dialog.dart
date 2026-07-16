@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import 'dashboard_design.dart';
@@ -45,7 +46,7 @@ class DashboardAllCategoriesRisquesDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'TOUTES LES CATÉGORIES (GRANDS RISQUES)',
+                  'TOUTES LES CATÉGORIES (GRANDS RISQUES)'.tr(context),
                   style: DashText.eyebrow(c).copyWith(fontSize: 14),
                 ),
                 IconButton(
@@ -79,27 +80,27 @@ class DashboardAllCategoriesRisquesDialog extends StatelessWidget {
                           child: Text('#', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                         ),
                         vDivHeader(),
-                        const Expanded(
+                        Expanded(
                           flex: 4,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Catégorie d\'exposition', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Catégorie d\'exposition'.tr(context), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        const Expanded(
+                        Expanded(
                           flex: 3,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Risque Net', textAlign: TextAlign.right, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Risque Net'.tr(context), textAlign: TextAlign.right, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        const Expanded(
+                        Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Part (%)', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Part (%)'.tr(context), textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                       ],
@@ -141,7 +142,7 @@ class DashboardAllCategoriesRisquesDialog extends StatelessWidget {
                                 flex: 4,
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  child: Text(formatCategory(entry.key), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.navy), overflow: TextOverflow.ellipsis),
+                                  child: Text(formatCategory(entry.key).tr(context), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: c.navy), overflow: TextOverflow.ellipsis),
                                 ),
                               ),
                               vDiv(),

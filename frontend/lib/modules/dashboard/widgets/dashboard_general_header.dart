@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/formatters.dart';
 import 'dashboard_design.dart';
 
@@ -44,7 +45,7 @@ class DashboardGeneralHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Tableau de bord',
+                  'Tableau de bord'.tr(context),
                   style: TextStyle(
                     color: c.ink,
                     fontSize: 19,
@@ -57,7 +58,7 @@ class DashboardGeneralHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 1),
                 Text(
-                  "Vue d'ensemble des indicateurs prudentiels",
+                  "Vue d'ensemble des indicateurs prudentiels".tr(context),
                   style: TextStyle(
                     color: c.muted,
                     fontSize: 12,
@@ -160,7 +161,7 @@ class _IconButtonBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: tooltip,
+      message: tooltip.tr(context),
       child: Material(
         color: Colors.transparent,
         child: InkWell(

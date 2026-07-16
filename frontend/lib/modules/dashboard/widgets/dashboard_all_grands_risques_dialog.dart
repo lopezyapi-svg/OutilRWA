@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
@@ -44,7 +45,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'TOUS LES GRANDS RISQUES',
+                  'TOUS LES GRANDS RISQUES'.tr(context),
                   style: DashText.eyebrow(c).copyWith(fontSize: 14),
                 ),
                 IconButton(
@@ -78,51 +79,51 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                           child: Text('#', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                         ),
                         vDivHeader(),
-                        const Expanded(
+                        Expanded(
                           flex: 3,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Contrepartie / Groupe lié', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Contrepartie / Groupe lié'.tr(context), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        const Expanded(
+                        Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Pays de risque', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Pays de risque'.tr(context), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        const Expanded(
+                        Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Risque Brut', textAlign: TextAlign.right, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Risque Brut'.tr(context), textAlign: TextAlign.right, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        const Expanded(
+                        Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Risque Net', textAlign: TextAlign.right, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Risque Net'.tr(context), textAlign: TextAlign.right, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        const Expanded(
+                        Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Ratio RN/FP (%)', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Ratio RN/FP (%)'.tr(context), textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                         vDivHeader(),
-                        const Expanded(
+                        Expanded(
                           flex: 2,
                           child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('Statut', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('Statut'.tr(context), textAlign: TextAlign.center, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: headerText)),
                           ),
                         ),
                       ],
@@ -209,7 +210,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
-                                      e.status,
+                                      e.status.tr(context),
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,

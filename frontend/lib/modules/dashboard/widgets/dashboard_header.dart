@@ -119,7 +119,7 @@ class _HeaderButton extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                label,
+                label.tr(context),
                 style: TextStyle(
                   color: isPrimary ? Colors.white : c.navy,
                   fontSize: 13,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
@@ -44,7 +45,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
     final topSecteurs = sortedSecteurs.take(5).toList();
 
     return DashPanel(
-      title: 'SYNTHÈSE DES GRANDS RISQUES',
+      title: 'SYNTHÈSE DES GRANDS RISQUES'.tr(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -56,7 +57,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
                 flex: 2,
                 child: _buildMetric(
                   context,
-                  label: 'Total grands risques',
+                  label: 'Total grands risques'.tr(context),
                   value: totalRisques.toString(),
                   color: const Color(0xFF0F172A),
                 ),
@@ -66,7 +67,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
                 flex: 3,
                 child: _buildMetric(
                   context,
-                  label: 'Risque Net Total',
+                  label: 'Risque Net Total'.tr(context),
                   value: AppFormatters.formatAmountValue(totalNet),
                   suffix: AppFormatters.formatAmountSuffix(totalNet),
                   color: const Color(0xFF0F172A),
@@ -76,17 +77,17 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
             ],
           ),
           Divider(height: 16, thickness: 1, color: Colors.indigo.withValues(alpha: 0.2)),
-          const Text(
-            'CLASSIFICATION PRUDENTIELLE',
-            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.indigo),
+          Text(
+            'CLASSIFICATION PRUDENTIELLE'.tr(context),
+            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.indigo),
           ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: _buildStatusPill('Dans la norme', '< 25%', conformes, const Color(0xFFE3FCEF), const Color(0xFF006644))),
+              Expanded(child: _buildStatusPill('Dans la norme'.tr(context), '< 25%', conformes, const Color(0xFFE3FCEF), const Color(0xFF006644))),
               const SizedBox(width: 8),
-              Expanded(child: _buildStatusPill('Dépassement', '> 25%', alertes, const Color(0xFFFFEBE6), const Color(0xFFDE350B))),
+              Expanded(child: _buildStatusPill('Dépassement'.tr(context), '> 25%', alertes, const Color(0xFFFFEBE6), const Color(0xFFDE350B))),
             ],
           ),
           Divider(height: 16, thickness: 1, color: Colors.indigo.withValues(alpha: 0.2)),
@@ -95,9 +96,9 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Text(
-                  'CATÉGORIES LES PLUS CONCENTRÉES ( TOP 5 )',
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.indigo),
+                Text(
+                  'CATÉGORIES LES PLUS CONCENTRÉES ( TOP 5 )'.tr(context),
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 0.5, color: Colors.indigo),
                 ),
                 Material(
                   color: Colors.transparent,
@@ -122,7 +123,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Voir tous', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: c.navy)),
+                          Text('Voir tous'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: c.navy)),
                           const SizedBox(width: 4),
                           Icon(Icons.arrow_forward, size: 10, color: c.navy),
                         ],
@@ -173,7 +174,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
                     // Category Name
                     Expanded(
                       child: Text(
-                        cleanName,
+                        cleanName.tr(context),
                         style: TextStyle(fontSize: 10, color: c.navy, fontWeight: FontWeight.w600),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

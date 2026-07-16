@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
@@ -36,7 +37,7 @@ class DashboardTopRwaChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final top5 = entries.take(5).toList();
     if (top5.isEmpty) {
-      return const Center(child: Text('Aucune donnée disponible'));
+      return Center(child: Text('Aucune donnée disponible'.tr(context)));
     }
 
     final maxAmount = top5.map((e) => e.amount).fold<double>(0.0, math.max);
@@ -98,7 +99,7 @@ class DashboardTopRwaChart extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 alignment: Alignment.topCenter,
                 child: Text(
-                  _cleanLabel(entry.label),
+                  _cleanLabel(entry.label).tr(context),
                   textAlign: TextAlign.center,
                   style: DashText.caption(DashColors.of(context), color: DashColors.of(context).ink)
                       .copyWith(fontWeight: FontWeight.w500, fontSize: 11),
