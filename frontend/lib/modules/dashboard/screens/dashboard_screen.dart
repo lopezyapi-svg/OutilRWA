@@ -200,39 +200,3 @@ DashboardMetric _metric(Map<String, DashboardMetric> metrics, String key) {
       );
 }
 
-String _dashboardScaledNumber(double value) {
-  final absolute = value.abs();
-  final decimals = absolute >= 100
-      ? 0
-      : absolute >= 10
-          ? 1
-          : 2;
-  final fixedValue = value.toStringAsFixed(decimals);
-  final trimmed =
-      fixedValue.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
-  final normalized = trimmed == '-0' || trimmed.isEmpty ? '0' : trimmed;
-  final parts = normalized.split('.');
-  final decimalSeparator = AppLocalizations.isEnglish ? '.' : ',';
-
-  if (parts.length == 1) {
-    return _dashboardGroupDigits(parts.first);
-  }
-  return '${_dashboardGroupDigits(parts.first)}$decimalSeparator${parts.last}';
-}
-
-String _dashboardGroupDigits(String value) {
-  final isNegative = value.startsWith('-');
-  final digits = isNegative ? value.substring(1) : value;
-  final separator = AppLocalizations.isEnglish ? ',' : ' ';
-  final buffer = StringBuffer();
-
-  for (var index = 0; index < digits.length; index++) {
-    final remaining = digits.length - index;
-    if (index > 0 && remaining % 3 == 0) {
-      buffer.write(separator);
-    }
-    buffer.write(digits[index]);
-  }
-
-  return isNegative ? '-$buffer' : buffer.toString();
-}

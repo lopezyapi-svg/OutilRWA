@@ -687,7 +687,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                 constraints: const BoxConstraints(maxWidth: 560),
                 child: Text(
                   _donneesAbsentes
-                      ? "Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk."
+                      ? 'Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk.'
                       : _erreur!,
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: _varMuted, fontSize: 13),

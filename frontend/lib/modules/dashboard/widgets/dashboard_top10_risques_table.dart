@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/state/portfolio_amount_unit_scope.dart';
-import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
@@ -22,7 +21,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
-    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
     final scale = 1000000000 / amountUnit.divisor;
 
     final data = List<TopExposure>.from(exposures)
@@ -30,7 +29,6 @@ class DashboardTop10RisquesTable extends StatelessWidget {
 
     // Couleurs du tableau
     const headerBg = Color(0xFF172B4D);      // Navy profond
-    const headerText = Color(0xFFFFFFFF);     // Blanc
     const rowEvenBg = Color(0xFFFFFFFF);      // Blanc pur
     const rowOddBg = Color(0xFFF7F8FB);       // Gris très léger (zébré)
     const borderColor = Color(0xFFE3E7EE);    // Bordure douce
@@ -435,19 +433,16 @@ class _StatutBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color dotColor;
     Color textColor;
     Color bgColor;
 
     switch (status) {
       case 'Dépassement':
-        dotColor = colors.sousMinimum;
         textColor = colors.sousMinimum;
         bgColor = const Color(0xFFFEF2F2);
         break;
 
       default: // Dans la norme
-        dotColor = colors.conforme;
         textColor = colors.conforme;
         bgColor = const Color(0xFFF0FDF4);
     }

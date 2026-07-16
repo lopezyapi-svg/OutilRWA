@@ -27,7 +27,6 @@ import 'modules/importations/screens/importations_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/reporting_credit/screens/reporting_credit_screen.dart';
 import 'modules/reporting_global/screens/reporting_global_screen.dart';
-import 'modules/risque_credit_shared/services/credit_risk_submodules_service.dart';
 import 'modules/risque_marche/repositories/foreign_exchange_repository.dart';
 import 'modules/risque_marche/screens/market_data_import_screen.dart';
 import 'modules/risque_marche/screens/risque_marche_screen.dart';
@@ -69,12 +68,9 @@ class _RwaAppState extends State<RwaApp> {
   bool _showWelcomeScreen = true;
   bool _isMarketImportDialogOpen = false;
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
-  CreditRiskSubmodulesService? _creditRiskService;
-
   @override
   void initState() {
     super.initState();
-    _creditRiskService = CreditRiskSubmodulesService(_api);
     AppLocalizations.setCurrentLanguage(_appLanguage.value);
     PortfolioAmountUnitPreference.current = _portfolioAmountUnit.value;
     _portfolioAmountUnit.addListener(_handleAmountUnitChanged);

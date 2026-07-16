@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/state/portfolio_amount_unit_scope.dart';
-import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
@@ -106,7 +105,7 @@ class _MinimalMetricCardState extends State<_MinimalMetricCard> {
     String suffix = '';
     
     if (widget.isCurrency) {
-      final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+      final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
       formattedValue = AppFormatters.decimalNumber(widget.value / amountUnit.divisor, maxDecimals: 2);
       suffix = amountUnit.label;
     } else {

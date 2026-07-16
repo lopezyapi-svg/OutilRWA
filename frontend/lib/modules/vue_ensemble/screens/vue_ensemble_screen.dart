@@ -9,7 +9,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../dashboard/models/dashboard_models.dart';
 import '../../dashboard/widgets/dashboard_general_header.dart';
 import '../../dashboard/widgets/dashboard_ratios_row.dart';
-import '../../dashboard/widgets/dashboard_bottom_strip.dart';
 import '../../dashboard/widgets/dashboard_capital_requis.dart';
 import '../../dashboard/widgets/dashboard_fonds_propres.dart';
 import '../../dashboard/widgets/dashboard_fonds_propres_dialog.dart';

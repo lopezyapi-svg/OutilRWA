@@ -46,7 +46,6 @@ class DashboardCapitalRequis extends StatefulWidget {
 }
 
 class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
-  Offset? _hover;
   _TooltipData? _tooltip;
   int? _hoveredRow;
   int? _hoveredDotType;
@@ -79,7 +78,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
     final rb = _chartKey.currentContext!.findRenderObject() as RenderBox;
     final pos = rb.globalToLocal(event.position);
 
-    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
     final unitLabel = amountUnit.label;
 
     final rwaVal = convertCurrencyAmount(_rwa, fromCurrency: 'XOF', toCurrency: widget.currency) / amountUnit.divisor;
@@ -114,7 +113,6 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
       final requisMd = AppFormatters.compactNumber(l.requis(rwaVal));
       final detenuMd = AppFormatters.compactNumber(l.detenu(rwaVal));
       final surplusMd = AppFormatters.compactNumber(l.surplus(rwaVal));
-      final coussinMd = AppFormatters.compactNumber(l.coussin * rwaVal / 100);
       final basePct = '${l.base.toStringAsFixed(1)}%';
       final exigPct = '${l.exigence.toStringAsFixed(1)}%';
       final actPct = '${l.actuel.toStringAsFixed(1)}%';
@@ -181,7 +179,6 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
     }
 
     setState(() {
-      _hover = pos;
       _tooltip = found;
       _hoveredRow = foundRow;
       _hoveredDotType = foundDot;
@@ -190,7 +187,6 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
 
   void _onExit(PointerEvent _) {
     setState(() {
-      _hover = null;
       _tooltip = null;
       _hoveredRow = null;
       _hoveredDotType = null;
@@ -199,7 +195,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
 
   @override
   Widget build(BuildContext context) {
-    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
     final unitLabel = amountUnit.label;
 
     final c = DashColors.of(context);
@@ -683,6 +679,3 @@ class _DotPlotPainter extends CustomPainter {
 }
 
 enum _Align { left, center, right }
-
-String _pct(double v) => '${v.toStringAsFixed(2).replaceAll('.', ',')}%';
-String _dec(double v) => v.toStringAsFixed(2).replaceAll('.', ',');

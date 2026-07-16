@@ -25,7 +25,7 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
-    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
     final scale = 1.0 / amountUnit.divisor;
 
     // RWA Data from explicit metrics

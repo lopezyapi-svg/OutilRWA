@@ -2,7 +2,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/state/portfolio_amount_unit_scope.dart';
-import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
@@ -20,7 +19,7 @@ class DashboardTop10RisquesChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
-    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
     final scale = 1000000000 / amountUnit.divisor;
 
     // Outil prudentiel : aucune donnée fictive. Sans exposition réelle, le

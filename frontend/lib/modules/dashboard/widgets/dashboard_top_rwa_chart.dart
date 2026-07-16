@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
 import '../../../core/state/portfolio_amount_unit_scope.dart';
-import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
@@ -47,7 +46,7 @@ class DashboardTopRwaChart extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: top5.map((entry) {
-            final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+            final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
             final valScaled = entry.amount / amountUnit.divisor;
             final formatted = AppFormatters.decimalNumber(valScaled, maxDecimals: 2);
             final suffix = amountUnit.label;

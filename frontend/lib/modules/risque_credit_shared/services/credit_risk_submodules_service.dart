@@ -1062,12 +1062,6 @@ class CreditRiskSubmodulesService {
     };
     final daysPastDue = baseDelay + (index * 11);
     final prudentialStatus = _prudentialStatusForDelay(daysPastDue);
-    final rawProvisionRate = switch (prudentialStatus) {
-      'Defaut prudentiel' => 0.38,
-      'Sous surveillance renforcee' => 0.24,
-      'Surveillance' => 0.15,
-      _ => 0.09,
-    };
     final estimatedProvision = _estimatedProvisionAmountForExposure(exposure);
     final provisionRate =
         exposure.ead > 0 ? estimatedProvision / exposure.ead : 0.0;

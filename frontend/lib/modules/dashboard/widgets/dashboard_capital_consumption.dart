@@ -15,7 +15,7 @@ class DashboardCapitalConsumption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
-    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
 
     // Get raw data in XOF from metrics
     double rwaXof = 3180.0 * 1000000000;

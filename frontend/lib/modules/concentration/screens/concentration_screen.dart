@@ -19,11 +19,6 @@ const double _umoaCet1Minimum = 0.05;
 const double _umoaTier1Minimum = 0.06;
 const double _umoaSolvencyMinimum = 0.09;
 const double _umoaConservationBuffer = 0.025;
-const double _umoaCet1Target = _umoaCet1Minimum + _umoaConservationBuffer;
-const double _umoaTier1Target = _umoaTier1Minimum + _umoaConservationBuffer;
-const double _umoaSolvencyTarget =
-    _umoaSolvencyMinimum + _umoaConservationBuffer;
-const double _umoaLeverageMinimum = 0.03;
 const int _counterpartyTopCount = 10;
 const int _issuerResidenceCountryTopCount = 10;
 const int _concentrationViewModelVersion = 5;
@@ -1319,56 +1314,6 @@ class _PortfolioTabButton extends StatelessWidget {
   }
 }
 
-class _ExcelLargeExposureWorkspace extends StatelessWidget {
-  const _ExcelLargeExposureWorkspace({required this.view});
-
-  final _ConcentrationViewModel view;
-
-  @override
-  Widget build(BuildContext context) {
-    final analysis = _ExcelLargeExposureAnalysis.from(view);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _ExcelLargeExposureSummary(analysis: analysis),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth < 1120) {
-              return Column(
-                children: [
-                  _ExcelLargeExposureChart(analysis: analysis),
-                  const SizedBox(height: 12),
-                  _ExcelLargeExposureControlBox(analysis: analysis),
-                ],
-              );
-            }
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    flex: 58,
-                    child: _ExcelLargeExposureChart(analysis: analysis),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 42,
-                    child: _ExcelLargeExposureControlBox(analysis: analysis),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        _ExcelLargeExposureGrid(analysis: analysis),
-      ],
-    );
-  }
-}
-
 class _ExcelLargeExposureAnalysis {
   const _ExcelLargeExposureAnalysis({
     required this.rows,
@@ -2471,54 +2416,6 @@ BoxDecoration _excelPanelDecoration(BuildContext context) {
 
 String _fmtAmount(double value) => _amountMd(value, maxDecimals: 1);
 
-class _LargeExposureWorkspace extends StatelessWidget {
-  const _LargeExposureWorkspace({required this.view});
-
-  final _ConcentrationViewModel view;
-
-  @override
-  Widget build(BuildContext context) {
-    final analysis = _LargeExposureAnalysis.from(view);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _LargeExposureKpiGrid(analysis: analysis),
-        const SizedBox(height: AppTheme.pageGap),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            if (constraints.maxWidth < 1050) {
-              return Column(
-                children: [
-                  _LargeExposureChartCard(analysis: analysis),
-                  const SizedBox(height: AppTheme.pageGap),
-                  _LargeExposureLimitCard(analysis: analysis),
-                ],
-              );
-            }
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                      flex: 62,
-                      child: _LargeExposureChartCard(analysis: analysis)),
-                  const SizedBox(width: AppTheme.pageGap),
-                  Expanded(
-                      flex: 38,
-                      child: _LargeExposureLimitCard(analysis: analysis)),
-                ],
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: AppTheme.pageGap),
-        _LargeExposureTableCard(analysis: analysis),
-      ],
-    );
-  }
-}
-
 class _LargeExposureAnalysis {
   const _LargeExposureAnalysis({
     required this.rows,
@@ -2649,83 +2546,6 @@ double _largeExposureOwnFunds(_ConcentrationViewModel view) {
     return estimated;
   }
   return view.totalCapital > 0 ? view.totalCapital * 1.42 : 0.0;
-}
-
-class _LargeExposureHeader extends StatelessWidget {
-  const _LargeExposureHeader({required this.analysis});
-
-  final _LargeExposureAnalysis analysis;
-
-  @override
-  Widget build(BuildContext context) {
-    final leader = analysis.leader?.counterparty ?? 'N/D';
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: isDark ? AppTheme.darkCard : AppTheme.card,
-        borderRadius: BorderRadius.circular(6),
-        border:
-            Border.all(color: isDark ? AppTheme.darkBorder : AppTheme.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.05),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.concentrationDeeper.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: const Icon(
-              CupertinoIcons.chart_bar_alt_fill,
-              color: AppColors.concentrationDeeper,
-              size: 21,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Grands risques',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppTheme.text,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                      ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Suivi des contreparties significatives, seuils 10% / 25% FP et concentration Top 5. Premier groupe : $leader.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.muted,
-                        height: 1.25,
-                      ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          _LargeExposureThresholdPill(
-            label: 'FP estimés',
-            value: '${_amountMd(analysis.ownFunds)} ${_amountUnitFcfaLabel()}',
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _LargeExposureThresholdPill extends StatelessWidget {
@@ -5382,23 +5202,6 @@ class _RwaBadge extends StatelessWidget {
   }
 }
 
-class _UnitLabel extends StatelessWidget {
-  const _UnitLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: AppTheme.muted,
-            fontWeight: FontWeight.w600,
-          ),
-    );
-  }
-}
-
 class _RiskWeightLegend extends StatelessWidget {
   const _RiskWeightLegend();
 
@@ -6492,62 +6295,6 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
   }
 }
 
-class _RiskWeightDistributionCard extends StatelessWidget {
-  const _RiskWeightDistributionCard({
-    required this.rows,
-    required this.ratingRows,
-  });
-
-  final List<RiskWeightBucketRow> rows;
-  final List<DistributionEntry> ratingRows;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dividerColor = isDark ? AppTheme.darkBorder : AppTheme.border;
-    const title = 'Répartition des pondérations';
-
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(3, 9, 3, 9),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.concentrationDark,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                ),
-                const _RiskWeightLegend(),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Divider(color: dividerColor),
-            const SizedBox(height: 8),
-            Expanded(
-              child: _RiskWeightChart(
-                key: const ValueKey('risk-weight-view'),
-                rows: rows,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _RiskWeightChart extends StatelessWidget {
   const _RiskWeightChart({
     super.key,
@@ -6564,11 +6311,6 @@ class _RiskWeightChart extends StatelessWidget {
 
     final sortedRows = rows.toList(growable: false)
       ..sort((left, right) => left.weight.compareTo(right.weight));
-    final totalEad =
-        sortedRows.fold<double>(0.0, (sum, item) => sum + item.ead);
-    final totalRwa =
-        sortedRows.fold<double>(0.0, (sum, item) => sum + item.rwa);
-    final averageRiskWeight = totalEad == 0 ? 0.0 : totalRwa / totalEad;
     final dominantRwa = sortedRows.reduce(
       (left, right) => right.rwaShare > left.rwaShare ? right : left,
     );
@@ -6634,77 +6376,6 @@ class _RiskWeightChart extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-class _RiskWeightSummaryBand extends StatelessWidget {
-  const _RiskWeightSummaryBand({
-    required this.averageRiskWeight,
-  });
-
-  final double averageRiskWeight;
-
-  @override
-  Widget build(BuildContext context) {
-    const accent = AppColors.panelAccent;
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-      decoration: BoxDecoration(
-        color: Color.alphaBlend(
-          accent.withValues(alpha: 0.055),
-          Theme.of(context).cardColor,
-        ),
-        borderRadius: BorderRadius.circular(_concentrationRadius),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(_concentrationRadius),
-            ),
-            child: const Icon(
-              CupertinoIcons.chart_bar_alt_fill,
-              size: 13,
-              color: accent,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Lecture capital',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppTheme.muted,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.7,
-                      ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  'Pondération moyenne ${AppFormatters.percent(averageRiskWeight)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.text,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -7075,25 +6746,6 @@ String _riskWeightTone(double weight) {
   return 'Capital intensif';
 }
 
-class _ConcentrationAlertsWorkspace extends StatelessWidget {
-  const _ConcentrationAlertsWorkspace({required this.view});
-
-  final _ConcentrationViewModel view;
-
-  @override
-  Widget build(BuildContext context) {
-    final alerts = view.alerts;
-
-    return Semantics(
-      label: 'Alertes et décisions, ${alerts.length} signaux analysés',
-      child: _AlertsKpiInfographic(
-        alerts: alerts,
-        view: view,
-      ),
-    );
-  }
-}
-
 List<ConcentrationAlert> _rankedAlerts(List<ConcentrationAlert> alerts) {
   return alerts.toList(growable: false)
     ..sort(
@@ -7166,58 +6818,6 @@ class _AlertNarrativeSet {
     required this.action,
     required this.control,
   });
-
-  factory _AlertNarrativeSet.noActiveSignal(_ConcentrationViewModel view) {
-    return _AlertNarrativeSet(
-      signal: [
-        'La situation observée : aucun seuil de concentration ne déclenche d’alerte active.',
-        'La base analysée : le portefeuille porte un EAD de ${_amountMdFcfa(view.totalEad)} et un RWA de ${_amountMdFcfa(view.totalRwa)}.',
-        'La granularité du portefeuille : ${view.counterpartyRows.length} contreparties sont suivies avec un HHI de ${view.hhi.toStringAsFixed(0)}.',
-      ],
-      risk: [
-        'La lecture du risque : les seuils internes restent dans une zone de surveillance normale.',
-        'La qualité crédit : le NPL ressort à ${AppFormatters.percent(view.quality.nplRatio)} et la PD moyenne atteint ${AppFormatters.percent(view.quality.averagePd)}.',
-        'Le cadre prudentiel : le pilotage des concentrations reste aligné avec les principes de revue interne.',
-      ],
-      impact: [
-        'L’impact portefeuille : la diversification demeure compatible avec les limites suivies.',
-        'L’impact sur le capital : la consommation de RWA ne crée pas de pression immédiate identifiée.',
-        'La résilience attendue : les nouvelles entrées doivent continuer à préserver la dispersion du risque.',
-      ],
-      decision: [
-        'La décision de comité : les limites actuelles et les seuils de vigilance peuvent être conservés.',
-        'L’orientation de gestion : les dossiers qui améliorent la granularité doivent rester prioritaires.',
-        'La règle d’arbitrage : toute variation anormale d’EAD ou de RWA doit être documentée.',
-      ],
-      action: [
-        'La production nouvelle : l’octroi peut se poursuivre sous contrôle des limites internes.',
-        'La gestion des garanties : les sûretés reconnues doivent rester traçables et opposables.',
-        'La qualité des données : les ratings, statuts et garanties doivent être revus périodiquement.',
-      ],
-      control: [
-        'Le rythme de contrôle : une revue doit être réalisée à chaque clôture portefeuille.',
-        'Les indicateurs suivis : le HHI, le top contrepartie, le top secteur, le top pays et le RWA doivent rester visibles.',
-        'La preuve de gouvernance : l’historique des arbitrages et validations doit être conservé.',
-      ],
-    );
-  }
-
-  factory _AlertNarrativeSet.fromAlert(
-    ConcentrationAlert alert,
-    _ConcentrationViewModel view,
-  ) {
-    final band = _alertSeverityBand(alert);
-    final key = alert.level.toLowerCase();
-    return switch (key) {
-      'client' => _clientNarrative(alert, view, band),
-      'secteur' => _sectorNarrative(alert, view, band),
-      'pays' => _countryNarrative(alert, view, band),
-      'rwa' => _rwaNarrative(alert, view, band),
-      'hhi' => _hhiNarrative(alert, view, band),
-      'croissance' => _growthNarrative(alert, view, band),
-      _ => _genericNarrative(alert, view, band),
-    };
-  }
 
   final List<String> signal;
   final List<String> risk;
@@ -7312,56 +6912,6 @@ String _normalizeAlertNarrativeValue(String value) {
   return value.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
-_AlertNarrativeSet _clientNarrative(
-  ConcentrationAlert alert,
-  _ConcentrationViewModel view,
-  _AlertSeverityBand band,
-) {
-  final row = _matchingCounterparty(alert, view) ??
-      (view.counterpartyRows.isEmpty ? null : view.counterpartyRows.first);
-  final name = row?.counterpartyName ?? _alertSignalSubject(alert);
-  final details = _detailsForCounterparty(view, name);
-  final ownFundsEstimate = view.totalRwa * 0.09 * 1.42;
-  final ownFundsRatio = row == null || ownFundsEstimate <= 0
-      ? 0.0
-      : row.grossAmount / ownFundsEstimate;
-  final defaultCount = details.where((item) => item.isDefault).length;
-  final crmCoverage = _weightedCrmCoverage(details);
-  final rating = _dominantRating(details);
-
-  return _AlertNarrativeSet(
-    signal: [
-      'La contrepartie concernée : $name représente ${row == null ? 'N/D' : AppFormatters.percent(row.share)} du portefeuille brut.',
-      'L’exposition mesurée : son EAD atteint ${_amountMdFcfa(row?.ead ?? 0)}, son RWA atteint ${_amountMdFcfa(row?.rwa ?? 0)} et son RW moyen ressort à ${AppFormatters.percent(row?.averageRiskWeight ?? 0)}.',
-      'L’origine du signal : le ratio single-name atteint ${AppFormatters.percent(ownFundsRatio)} des fonds propres estimés.',
-    ],
-    risk: [
-      'La gravité observée : le niveau est ${_alertSeverityBandLabel(band)} parce qu’une seule signature domine le risque.',
-      'La lecture prudentielle : une grande exposition doit être suivie dès qu’elle dépasse 10 % des fonds propres.',
-      'Les facteurs aggravants : le rating dominant est $rating, la couverture atteint ${AppFormatters.percent(crmCoverage)} et $defaultCount défaut(s) sont recensés.',
-    ],
-    impact: [
-      'La perte potentielle : une défaillance de $name affaiblirait directement la granularité du portefeuille.',
-      'L’impact sur le capital : cette exposition mobilise environ ${_amountMdFcfa((row?.rwa ?? 0) * 0.09)} de capital indicatif.',
-      'L’effet portefeuille : la marge de diversification dépendra de la réduction nette ou du renforcement des sûretés.',
-    ],
-    decision: [
-      'Le comité risque : il doit acter ${_decisionTempo(band)} sur la limite client et les dépassements.',
-      'L’arbitrage attendu : la banque doit réduire, couvrir ou syndiquer l’exposition avant tout nouveau ticket.',
-      'La condition d’acceptation : l’exposition doit être validée avec un EAD, un RWA, un rating et des garanties à jour.',
-    ],
-    action: [
-      'La limite opérationnelle : il faut appliquer ${_primaryMeasure(band)} sur les nouvelles expositions non couvertes.',
-      'Les sûretés mobilisables : les garanties éligibles, le collatéral ou l’engagement de sortie doivent être renforcés.',
-      'Le plan d’exécution : un calendrier daté doit être fixé si le ratio reste au-dessus du seuil interne.',
-    ],
-    control: [
-      'Le rythme de contrôle : ${_controlCadence(band)} doit couvrir l’exposition nette et les garanties.',
-      'Les indicateurs suivis : le ratio fonds propres, l’EAD, le RWA, le RW moyen et la couverture CRM doivent être rapprochés.',
-      'La preuve de décision : chaque action doit être tracée jusqu’au retour sous seuil ou jusqu’à la validation du comité.',
-    ],
-  );
-}
 
 _AlertNarrativeSet _sectorNarrative(
   ConcentrationAlert alert,
@@ -8460,10 +8010,6 @@ InlineSpan _alertSelectorTooltipMessage(
   );
 }
 
-String _pointsLabel(double value) {
-  return '${(value * 100).toStringAsFixed(1).replaceAll('.', ',')} pt${value >= 0.02 ? 's' : ''}';
-}
-
 int _severityRank(String severity) {
   return switch (severity.toLowerCase()) {
     'élevé' || 'eleve' => 3,
@@ -8478,41 +8024,6 @@ Color _severityColor(String severity) {
     'moyen' => AppTheme.warning,
     _ => AppTheme.success,
   };
-}
-
-Color _hhiColor(double hhi) {
-  if (hhi > 2500) return AppTheme.danger;
-  if (hhi > 1800) return AppTheme.warning;
-  return AppTheme.success;
-}
-
-class _SeverityBadge extends StatelessWidget {
-  const _SeverityBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = label == 'Élevé'
-        ? AppTheme.danger
-        : label == 'Moyen'
-            ? AppTheme.warning
-            : AppTheme.success;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(_concentrationRadius),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-    );
-  }
 }
 
 class _EmptyInline extends StatelessWidget {

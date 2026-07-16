@@ -33,12 +33,6 @@ const _fpFields = [
   'dettes_subordonnees_t2', 'provisions_generales_t2', 'deductions_prud_t2',
 ];
 
-const _fpGroups = [
-  'CET1', 'CET1', 'CET1', 'CET1', 'CET1',
-  'AT1', 'AT1', 'AT1',
-  'Tier 2', 'Tier 2', 'Tier 2',
-];
-
 const _fpLabels = [
   'Capital ordinaire', 'Réserves', 'Résultats en report', 'Résultat éligible',
   'Réduction prudentielle (CET1)',

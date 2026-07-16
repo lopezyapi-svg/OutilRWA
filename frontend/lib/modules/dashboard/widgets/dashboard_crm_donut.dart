@@ -29,15 +29,13 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
     ];
 
     List<_SectorData> sectors = [];
-    double totalPercent = 0;
-    
+
     // Safety check, handle up to 4 just in case
     final safeColors = [...colors, Colors.purple, Colors.orange];
 
     for (int i = 0; i < widget.entries.length; i++) {
       final entry = widget.entries[i];
       final percent = entry.percentage * 100;
-      totalPercent += percent;
       sectors.add(
         _SectorData(
           entry.label,

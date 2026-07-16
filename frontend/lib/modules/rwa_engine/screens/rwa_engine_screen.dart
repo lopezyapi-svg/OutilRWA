@@ -410,39 +410,6 @@ class _PilotageHeader extends StatelessWidget {
   }
 }
 
-class _ReferenceDateBadge extends StatelessWidget {
-  const _ReferenceDateBadge({required this.date});
-
-  final DateTime date;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: _blue700.withValues(alpha: 0.26),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(CupertinoIcons.calendar, color: Colors.white, size: 15),
-          const SizedBox(width: 9),
-          Text(
-            'Date de référence : ${AppFormatters.shortDate(date)}',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _PilotageTabs extends StatelessWidget {
   const _PilotageTabs({
     required this.selectedIndex,
@@ -816,67 +783,6 @@ class _AgentTablePanel extends StatelessWidget {
   }
 }
 
-class _VariationBadge extends StatelessWidget {
-  const _VariationBadge({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final double? value;
-
-  @override
-  Widget build(BuildContext context) {
-    final variation = value;
-    final isPositive = variation == null || variation >= 0;
-    final color = variation == null
-        ? _muted
-        : isPositive
-            ? AppColors.success
-            : AppColors.danger;
-    final icon = variation == null
-        ? CupertinoIcons.info_circle_fill
-        : isPositive
-            ? CupertinoIcons.arrow_up_right
-            : CupertinoIcons.arrow_down_right;
-
-    return Row(
-      children: [
-        Icon(icon, color: color, size: 15),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                variation == null ? 'N/D' : _formatSignedPercent(variation),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w900,
-                      height: 1,
-                    ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: _muted,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _AgentBreakdownSection extends StatelessWidget {
   const _AgentBreakdownSection({required this.analysis, required this.view});
 
@@ -896,87 +802,6 @@ class _AgentBreakdownSection extends StatelessWidget {
               totals: analysis.totals,
               reconciliationThreshold: analysis.reconciliationThreshold,
               view: view,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AgentDonutPanel extends StatelessWidget {
-  const _AgentDonutPanel({required this.view});
-
-  final _RwaPilotageView view;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 284,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: _soft,
-        borderRadius: BorderRadius.circular(_pageRadius),
-        border: Border.all(color: _line),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Center(
-              child: SizedBox(
-                width: 224,
-                height: 224,
-                child: CustomPaint(
-                  painter: _AgentDonutPainter(rows: view.agentRows),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'RWA CRÉDIT',
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: _deepBlue,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatMoneyValue(view.totalRwa),
-                          style:
-                              Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: _deepBlue,
-                                    fontWeight: FontWeight.w900,
-                                    height: 1,
-                                  ),
-                        ),
-                        Text(
-                          _formatMoneyUnit(view.totalRwa),
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: _blue700,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          SizedBox(
-            width: 220,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                for (var index = 0; index < view.agentRows.length; index++)
-                  _AgentLegendItem(
-                    row: view.agentRows[index],
-                    color: _agentPalette[index % _agentPalette.length],
-                  ),
-              ],
             ),
           ),
         ],
@@ -1034,8 +859,6 @@ class _AgentLegendItem extends StatelessWidget {
 enum _AgentSortKey { exposure, ead, rwa, weight, capital, contribution, variation }
 
 const double _agentNumWidth = 40;
-const Color _weightAlertBg = Color(0xFFFBE7D2);
-const Color _weightAlertFg = Color(0xFF8A5A00);
 
 class _AgentContributionTable extends StatefulWidget {
   const _AgentContributionTable({
@@ -1060,7 +883,6 @@ class _AgentContributionTable extends StatefulWidget {
 class _AgentContributionTableState extends State<_AgentContributionTable> {
   _AgentSortKey _sortKey = _AgentSortKey.rwa;
   bool _ascending = false;
-  final Set<String> _expanded = <String>{};
 
   double _valueFor(RwaCreditAgentRow row, _AgentSortKey key) {
     switch (key) {
@@ -1877,89 +1699,6 @@ class _RealCounterparty {
   final double percentage;
 
   _RealCounterparty(this.name, this.exposure, this.ead, this.rwa, this.capitalRequired, this.percentage);
-}
-
-class _DominantAgentSection extends StatelessWidget {
-  const _DominantAgentSection({required this.view});
-
-  final _RwaPilotageView view;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final narrow = constraints.maxWidth < 900;
-            final summary = _DominantSummaryCard(row: view.dominantAgent);
-            final factors = _DominantFactorsCard(factors: view.dominantFactors);
-            if (narrow) {
-              return Column(
-                children: [
-                  summary,
-                  const SizedBox(height: 10),
-                  factors,
-                ],
-              );
-            }
-            return IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(flex: 38, child: summary),
-                  const SizedBox(width: 12),
-                  Expanded(flex: 62, child: factors),
-                ],
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 14),
-        Text(
-          'TOP 5 DES ENTITÉS LES PLUS EXPOSÉES',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: _blue700,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0,
-              ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Classement limité à l’agent économique dominant : ${view.dominantAgent.label}.',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: _muted,
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-        const SizedBox(height: 10),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final narrow = constraints.maxWidth < 1080;
-            final table = _DominantTopTable(rows: view.dominantEntities);
-            final chart = _DominantTopBarChart(rows: view.dominantEntities);
-            if (narrow) {
-              return Column(
-                children: [
-                  table,
-                  const SizedBox(height: 12),
-                  chart,
-                ],
-              );
-            }
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 58, child: table),
-                const SizedBox(width: 14),
-                Expanded(flex: 42, child: chart),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
 }
 
 class _DominantSummaryCard extends StatelessWidget {
@@ -3486,30 +3225,6 @@ List<BoxShadow> get _cardShadow => [
       ),
     ];
 
-String _economicAgentFor(ExposureRecord item) {
-  final normalized = _normalize(item.categoryLabel);
-  if (normalized.contains('entreprise')) {
-    return 'Entreprises';
-  }
-  if (normalized.contains('detail') ||
-      normalized.contains('particulier') ||
-      normalized.contains('immo r')) {
-    return 'Clientèle de détail';
-  }
-  if (normalized.contains('souverain') ||
-      normalized.contains('organismes pub') ||
-      normalized.contains('bmd') ||
-      normalized.contains('administration')) {
-    return 'Administrations publiques';
-  }
-  if (normalized.contains('institution') ||
-      normalized.contains('banque') ||
-      normalized.contains('etablissement')) {
-    return 'Etablissements de crédit';
-  }
-  return 'Autres expositions';
-}
-
 String _sectorForExposure(ExposureRecord item) {
   final normalized = _normalize(item.categoryLabel);
   if (normalized.contains('souverain') ||
@@ -3626,21 +3341,9 @@ String _formatMoneyUnit(double value) {
   return unit.label;
 }
 
-String _formatMoneyShortUnit(double value) {
-  final unit = PortfolioAmountUnitPreference.current;
-  return unit.label;
-}
-
 String _formatSignedPercent(double value) {
   final sign = value > 0 ? '+' : '';
   return '$sign${AppFormatters.percent(value)}';
-}
-
-/// Formate un montant en millions avec signe explicite (les négatifs portent
-/// déjà leur « - » via le formateur).
-String _signedMillions(double value) {
-  final formatted = _formatMoney(value, maxDecimals: 0);
-  return value > 0 ? '+$formatted' : formatted;
 }
 
 class _TopExposuresChart extends StatelessWidget {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/state/portfolio_amount_unit_scope.dart';
-import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
@@ -78,7 +77,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
     final c = DashColors.of(context);
     final percentage = widget.entry.percentage * 100;
     
-    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
     final valScaled = widget.entry.amount / amountUnit.divisor;
     final decimals = valScaled >= 1000 ? 0 : 2;
     final formattedAmount = AppFormatters.decimalNumber(valScaled, maxDecimals: decimals);

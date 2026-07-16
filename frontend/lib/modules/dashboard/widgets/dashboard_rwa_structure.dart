@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/state/portfolio_amount_unit_scope.dart';
-import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import 'dashboard_design.dart';
 
@@ -14,11 +13,10 @@ class DashboardRwaStructure extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
-    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
     final scale = 1000000000 / amountUnit.divisor;
 
     final rwaTotal = 3180.0 * scale;
-    final capMin = rwaTotal * 0.09;
 
     final parts = <_RwaPart>[
       _RwaPart('Crédit (Approche Standard)', 2450 * scale, 77, c.ramp[0]),

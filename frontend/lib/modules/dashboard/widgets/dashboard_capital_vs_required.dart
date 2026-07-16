@@ -15,7 +15,7 @@ class DashboardCapitalVsRequired extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
-    final amountUnit = PortfolioAmountUnitScope.maybeOf(context) ?? PortfolioAmountUnit.billion;
+    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
 
     return DashPanel(
       height: 300,
