@@ -81,13 +81,6 @@ const Color _marketPrimary = Color(0xFF2563EB);
 // Palette catégorielle de la structure du RWA marché (ordre fixe :
 // Taux, Actions, Change, Marchandises). Validée daltonisme/contraste
 // sur surfaces claire et sombre ; l'ambre a une variante mode sombre.
-const Color _rwaTauxColor = Color(0xFF0072B2);
-const Color _rwaChangeColor = Color(0xFF009E73);
-const Color _rwaCommodityColor = Color(0xFFD55E00);
-Color _rwaActionsColorFor(BuildContext context) =>
-    Theme.of(context).brightness == Brightness.dark
-        ? const Color(0xFFBD7F00)
-        : const Color(0xFFE69F00);
 const Color _marketCyan = Color(0xFF06B6D4);
 const Color _marketSuccess = Color(0xFF10B981);
 const Color _marketWarning = Color(0xFFF59E0B);
@@ -33094,12 +33087,6 @@ class _MarketRwaStructureCard extends StatefulWidget {
       _MarketRwaStructureCardState();
 }
 
-/// Une devise et la valeur de portefeuille qui lui est associée.
-class _CurrencyBreakdownEntry {
-  const _CurrencyBreakdownEntry(this.currency, this.value);
-  final String currency;
-  final double value;
-}
 class _MarketRwaStructureCardState extends State<_MarketRwaStructureCard> {
   int? _touchedIndex;
   int? _hoveredBar;

@@ -536,33 +536,37 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
   // ─── Header ───────────────────────────────────────────────────────────────
 
   Widget _buildHeader() => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2F6EEA), Color(0xFF12A7B4)],
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.indigo, Colors.blue.shade900],
               ),
-              borderRadius: BorderRadius.circular(AppTheme.radius),
+              borderRadius: BorderRadius.circular(3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.indigo.withValues(alpha: 0.22),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: const Icon(Icons.cloud_upload, color: Colors.white, size: 20),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Importation BIC / CCR3',
-              style: TextStyle(
-                color: _text,
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(color: _text, fontSize: 19, fontWeight: FontWeight.w500, letterSpacing: -0.2),
             ),
           ),
-          const Spacer(),
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: Icon(Icons.close, color: _muted),
             onPressed: () => Navigator.pop(context, false),
             tooltip: 'Fermer',
           ),
@@ -579,216 +583,540 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
 
   // ─── Écran 1 : Drop zone ──────────────────────────────────────────────────
 
-  Widget _buildDropZoneScreen() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(flex: 7, child: _buildDropZone()),
-        const SizedBox(width: 14),
-        SizedBox(width: 300, child: _buildFormatCard()),
-      ],
-    );
-  }
+  bool _showExpectedFormat = true;
 
-  Widget _buildDropZone() {
-    return DropTarget(
-      onDragEntered: (_) => setState(() => _isDragging = true),
-      onDragExited: (_) => setState(() => _isDragging = false),
-      onDragDone: (d) async {
-        setState(() => _isDragging = false);
-        if (d.files.isNotEmpty) await _loadFile(d.files.first);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: _isDragging ? _accent.withValues(alpha: 0.06) : _bg,
-          border: Border.all(
-            color: _isDragging ? _accent : _border,
-            width: _isDragging ? 1.4 : 1,
+  Widget _buildDropZoneScreen() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildImportZone(),
+          const SizedBox(height: 4),
+          _buildExpectedFormatSection(),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: !_showExpectedFormat && _selectedFile == null
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: _buildEmptyStatePlaceholder(),
+                  )
+                : const SizedBox.shrink(),
           ),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: _isParsing
-            ? const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 10),
-                    Text('Lecture du fichier...', style: TextStyle(color: AppTheme.muted)),
-                  ],
-                ),
-              )
-            : (_unmatchedWarnings != null &&
-                    _unmatchedWarnings!.length == 1 &&
-                    _unmatchedWarnings!.first.startsWith('Lecture impossible'))
-                ? _buildParseErrorContent()
-                : _buildDropContent(),
+          if (_unmatchedWarnings != null &&
+              _unmatchedWarnings!.length == 1 &&
+              _unmatchedWarnings!.first.startsWith('Lecture impossible'))
+            _buildParseErrorContent(),
+        ],
       ),
     );
   }
 
-  Widget _buildDropContent() => Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              _isDragging ? Icons.file_download_done_rounded : Icons.upload_file_outlined,
-              size: 38,
-              color: _isDragging ? _accent : _muted,
-            ),
-            const SizedBox(height: 18),
-            Text(
-              _isDragging ? 'Déposez le fichier pour lancer la lecture' : 'Déposez le fichier BIC / CCR3 ici',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: _isDragging ? _accent : _text,
-                height: 1.05,
+  Widget _buildImportZone() {
+    final zoneBackground = _isDark ? const Color(0xFF121C2B) : const Color(0xFFF8FAFD);
+    final zoneBorder = _isDragging ? _accent : (_isDark ? const Color(0xFF2A3850) : const Color(0xFFDCE5F0));
+    final zoneIconBackground = _isDragging ? Color.lerp(zoneBackground, _accent, 0.32)! : (_isDark ? const Color(0xFF21314A) : const Color(0xFFE8EEF8));
+    final zoneIconColor = _isDragging ? Colors.white : (_isDark ? const Color(0xFFD9E5FA) : _accent);
+    final actionBackground = _isDark ? const Color(0xFF1C2A40) : const Color(0xFFEEF3FA);
+    final actionForeground = _isDark ? const Color(0xFFF4F7FC) : const Color(0xFF2A436A);
+    final selectedFileName = _selectedFile?.name;
+    final headline = _isDragging ? 'Relâchez pour charger le fichier' : 'Cliquez pour sélectionner votre fichier';
+    final subtitle = _isParsing ? 'Lecture du fichier en cours…' : selectedFileName != null ? 'Fichier chargé : $selectedFileName' : 'Format accepté : .xlsx. Utilisez la sélection de fichier pour importer.';
+
+    return DropTarget(
+      onDragDone: (d) async {
+        setState(() => _isDragging = false);
+        if (d.files.isNotEmpty) await _loadFile(d.files.first);
+      },
+      onDragEntered: (_) => setState(() => _isDragging = true),
+      onDragExited: (_) => setState(() => _isDragging = false),
+      child: _buildSectionCard(
+        icon: Icons.upload_file_outlined,
+        title: 'Zone d’import',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _isParsing || _isImporting ? null : _pickFile,
+            borderRadius: BorderRadius.circular(8),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              decoration: BoxDecoration(
+                color: _isDragging ? Color.lerp(zoneBackground, _accent, 0.09) : zoneBackground,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: zoneBorder, width: _isDragging ? 1.3 : 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: _isDark ? 0.12 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 860;
+                  final summary = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 160),
+                        child: Text(
+                          headline,
+                          key: ValueKey<String>(headline),
+                          style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: -0.1),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: _muted, fontSize: 11, height: 1.3, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 9),
+                      Wrap(
+                        spacing: 7,
+                        runSpacing: 7,
+                        children: [
+                          _buildImportHintChip(icon: Icons.ads_click_rounded, label: 'Sélection manuelle'),
+                          _buildImportHintChip(icon: Icons.description_outlined, label: '.xlsx'),
+                        ],
+                      ),
+                    ],
+                  );
+
+                  final actionButton = FilledButton.icon(
+                    onPressed: _isParsing || _isImporting ? null : _pickFile,
+                    icon: _isParsing
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+                        : const Icon(Icons.folder_open_rounded, size: 16),
+                    label: Text(_isParsing ? 'Lecture…' : 'Choisir un fichier'),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      elevation: 0,
+                      backgroundColor: actionBackground,
+                      foregroundColor: actionForeground,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      textStyle: const TextStyle(fontSize: 11.2, fontWeight: FontWeight.w500),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                  );
+
+                  final iconBadge = Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(color: zoneIconBackground, borderRadius: BorderRadius.circular(8)),
+                    child: Icon(_isDragging ? Icons.file_download_done_rounded : Icons.cloud_upload_rounded, color: zoneIconColor, size: 24),
+                  );
+
+                  return isCompact
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [iconBadge, const SizedBox(width: 3), Expanded(child: summary)],
+                            ),
+                            const SizedBox(height: 3),
+                            actionButton,
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            iconBadge, const SizedBox(width: 4), Expanded(child: summary), const SizedBox(width: 4), actionButton,
+                          ],
+                        );
+                },
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Chaque onglet du fichier porte le nom de l\'exercice concerné '
-              '(ex : « 2024 »), donc l\'import sait toujours à quelle année '
-              'appartiennent les valeurs de chaque feuille.',
-              style: TextStyle(fontSize: 13, color: _muted, height: 1.45),
-            ),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                FilledButton.icon(
-                  onPressed: _pickFile,
-                  icon: const Icon(Icons.folder_open_outlined, size: 17),
-                  label: const Text('Choisir un fichier'),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpectedFormatSection({Key? key}) {
+    final buttonBackground = _isDark ? const Color(0xFF243027) : const Color(0xFFF3F1EA);
+    final buttonBorder = _isDark ? const Color(0xFF3D5344) : const Color(0xFFE0D8C9);
+    final buttonForeground = _isDark ? const Color(0xFFF4F7F3) : const Color(0xFF2E3740);
+    final downloadBackground = _isDark ? const Color(0xFF1D2635) : const Color(0xFFF1F4F8);
+    final downloadBorder = _isDark ? const Color(0xFF334257) : const Color(0xFFD7E0EA);
+    final downloadForeground = _isDark ? const Color(0xFFF2F6FC) : const Color(0xFF263445);
+
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: 156,
+              height: 34,
+              child: FilledButton.icon(
+                onPressed: () => setState(() => _showExpectedFormat = !_showExpectedFormat),
+                icon: Icon(_showExpectedFormat ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 16),
+                label: const Text('Format attendu'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: buttonBackground,
+                  foregroundColor: buttonForeground,
+                  elevation: 0,
+                  alignment: Alignment.centerLeft,
+                  textStyle: const TextStyle(fontSize: 11.2, fontWeight: FontWeight.w500),
+                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5), side: BorderSide(color: buttonBorder)),
                 ),
-                const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
-                  icon: _isDownloadingTemplate
-                      ? const SizedBox(
-                          width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.download_outlined, size: 16),
-                  label: const Text('Modèle Excel'),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 14),
-            Text(
-              'Fichier accepté: .xlsx — un onglet par exercice (nommé avec '
-              'l\'année), avec les colonnes « Poste » et « Valeur ».',
-              style: TextStyle(fontSize: 11.5, color: _muted),
+            const SizedBox(width: 3),
+            SizedBox(
+              width: 182,
+              height: 34,
+              child: FilledButton.icon(
+                onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
+                icon: _isDownloadingTemplate
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.download_outlined, size: 15),
+                label: const Text('Télécharger le modèle'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: downloadBackground,
+                  foregroundColor: downloadForeground,
+                  elevation: 0,
+                  textStyle: const TextStyle(fontSize: 10.8, fontWeight: FontWeight.w500),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5), side: BorderSide(color: downloadBorder)),
+                ),
+              ),
             ),
           ],
         ),
-      );
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: !_showExpectedFormat && _selectedFile == null
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: DropTarget(
+                    onDragDone: (d) async {
+                      setState(() => _isDragging = false);
+                      if (d.files.isNotEmpty) await _loadFile(d.files.first);
+                    },
+                    onDragEntered: (_) => setState(() => _isDragging = true),
+                    onDragExited: (_) => setState(() => _isDragging = false),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _isParsing || _isImporting ? null : _pickFile,
+                        borderRadius: BorderRadius.circular(3),
+                        child: AnimatedContainer(
+                          width: double.infinity,
+                          height: 178,
+                          duration: const Duration(milliseconds: 180),
+                          decoration: BoxDecoration(
+                            color: _isDragging ? Color.lerp(_bg, _accent, 0.05) : _bg,
+                            borderRadius: BorderRadius.circular(3),
+                            border: Border.all(color: _isDragging ? _accent : _border, width: _isDragging ? 1.3 : 1),
+                          ),
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 180),
+                                  width: 58,
+                                  height: 58,
+                                  decoration: BoxDecoration(
+                                    color: _isDragging ? _accent.withValues(alpha: 0.14) : _accent.withValues(alpha: 0.10),
+                                    borderRadius: BorderRadius.circular(3),
+                                    border: Border.all(color: _accent.withValues(alpha: 0.18)),
+                                  ),
+                                  child: Icon(
+                                    _isDragging ? Icons.file_download_done_rounded : Icons.upload_file_rounded,
+                                    color: _accent,
+                                    size: 28,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  _isDragging ? 'Relâchez pour charger le fichier' : 'Sélectionnez votre fichier ici',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: _text, fontSize: 12.2, fontWeight: FontWeight.w500),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Cliquez pour choisir un fichier .xlsx',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: _muted, fontSize: 10.6, fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : !_showExpectedFormat
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(3), border: Border.all(color: _border)),
+                        child: _buildExpectedFormat(),
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
 
-  Widget _buildParseErrorContent() => Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildExpectedFormat() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildWorkbookSummaryCard(),
+        const SizedBox(height: 3),
+        _buildSheetSpecTile(),
+      ],
+    );
+  }
+
+  Widget _buildWorkbookSummaryCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161F2E) : const Color(0xFFF6F8FA),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline, size: 44, color: AppTheme.danger),
-          const SizedBox(height: 3),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              _unmatchedWarnings!.first,
-              style: const TextStyle(color: AppTheme.danger, fontSize: 13),
-              textAlign: TextAlign.center,
-            ),
-          ),
+          Text('Structure requise', style: TextStyle(color: _text, fontSize: 11.8, fontWeight: FontWeight.w500)),
           const SizedBox(height: 4),
-          OutlinedButton.icon(
-            onPressed: () => setState(() {
-              _unmatchedWarnings = null;
-              _selectedFile = null;
-            }),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Choisir un autre fichier'),
+          Text(
+            'Un onglet par exercice. L\'onglet doit être renommé avec l\'année correspondante.',
+            style: TextStyle(color: _muted, fontSize: 10.2),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 5,
+            runSpacing: 5,
+            children: [
+              _buildSheetNameChip('Ex : 2024', backgroundColor: const Color(0xFFEDF2FB)),
+              _buildSheetNameChip('Ex : 2023', backgroundColor: const Color(0xFFEDF2FB)),
+            ],
           ),
         ],
-      );
+      ),
+    );
+  }
 
-  Widget _buildFormatCard() {
+  Widget _buildSheetNameChip(String sheetName, {required Color backgroundColor}) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: _bg,
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: backgroundColor.withValues(alpha: 0.78)),
+      ),
+      child: Text(sheetName, style: TextStyle(color: _text, fontSize: 9.7, fontWeight: FontWeight.w500)),
+    );
+  }
+
+  Widget _buildSheetSpecTile() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 3),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161F2E) : const Color(0xFFF6F8FA),
+        borderRadius: BorderRadius.circular(3),
         border: Border.all(color: _border),
-        borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text('Format attendu',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _text)),
+              Text('Onglet d\'exercice', style: TextStyle(color: _text, fontSize: 11.8, fontWeight: FontWeight.w500)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(color: _accent.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(999)),
+                child: Text('Saisie', style: TextStyle(color: _text, fontSize: 9.8, fontWeight: FontWeight.w500)),
               ),
-              Icon(Icons.rule_outlined, size: 16, color: _accent),
             ],
           ),
+          const SizedBox(height: 6),
+          Text(
+            'Chaque onglet doit contenir 13 lignes (les libellés du formulaire BIC).',
+            style: TextStyle(color: _muted, fontSize: 10.2),
+          ),
           const SizedBox(height: 8),
-          Text(
-            'Un onglet = un exercice. Renommez l\'onglet avec l\'année '
-            '(ex : « 2024 »). Dans chaque onglet, deux colonnes : « Poste », '
-            '« Valeur ».',
-            style: TextStyle(fontSize: 12, color: _muted, height: 1.35),
-          ),
-          const SizedBox(height: 12),
-          _formatCheck('Nom de l\'onglet', 'L\'année de l\'exercice, ex : « 2024 »', true),
-          _formatCheck('Poste', 'Un des 13 libellés du formulaire BIC', true),
-          _formatCheck('Valeur', 'Montant en FCFA', true),
-          const SizedBox(height: 4),
-          Text(
-            'Astuce : une feuille unique avec une colonne « Année » par ligne '
-            'reste aussi acceptée.',
-            style: TextStyle(fontSize: 10.5, color: _muted, fontStyle: FontStyle.italic, height: 1.3),
-          ),
-          const Spacer(),
-          Divider(height: 18, color: _border),
-          TextButton.icon(
-            onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
-            icon: _isDownloadingTemplate
-                ? const SizedBox(width: 13, height: 13, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.download_outlined, size: 15),
-            label: const Text('Télécharger le modèle'),
+          _buildColumnGroup(
+            title: 'Colonnes attendues',
+            count: 2,
+            items: ['Poste', 'Valeur (FCFA)'],
+            color: _accent,
           ),
         ],
       ),
     );
   }
 
-  Widget _formatCheck(String label, String detail, bool required) {
-    final color = required ? _accent : _muted;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
+  Widget _buildColumnGroup({required String title, required int count, required List<dynamic> items, required Color color}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(7, 7, 7, 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(Icons.check_circle_outline, size: 15, color: color),
+          Row(
+            children: [
+              Container(width: 7, height: 7, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(99))),
+              const SizedBox(width: 6),
+              Text(title, style: TextStyle(color: _text, fontSize: 9.9, fontWeight: FontWeight.w500)),
+              const SizedBox(width: 4),
+              Text('($count)', style: TextStyle(color: _muted, fontSize: 9.0, fontWeight: FontWeight.w500)),
+            ],
           ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _text)),
-                const SizedBox(height: 2),
-                Text(detail, style: TextStyle(fontSize: 11, color: _muted, height: 1.25)),
-              ],
-            ),
+          const SizedBox(height: 5),
+          Wrap(
+            spacing: 5, runSpacing: 4,
+            children: items.map((item) => _buildMarkerChip(item.toString(), color)).toList(),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildMarkerChip(String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      decoration: BoxDecoration(color: _bg, borderRadius: BorderRadius.circular(4), border: Border.all(color: color.withValues(alpha: 0.28))),
+      child: Text(value, style: TextStyle(color: _text, fontSize: 9.15, fontWeight: FontWeight.w500)),
+    );
+  }
+
+  Widget _buildSectionCard({required IconData icon, required String title, required Widget child, Key? key}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E2736) : Colors.white;
+    final headerBg = isDark ? const Color(0xFF161F2E) : const Color(0xFFF9FAFC);
+
+    return Container(
+      key: key,
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02), blurRadius: 4, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              color: headerBg,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+              border: Border(bottom: BorderSide(color: _border)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 16, color: _text),
+                const SizedBox(width: 8),
+                Text(title, style: TextStyle(color: _text, fontSize: 12.5, fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImportHintChip({required IconData icon, required String label}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: _isDark ? const Color(0xFF161F2E) : Colors.white,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: _isDark ? const Color(0xFF2A3850) : const Color(0xFFDCE5F0)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: _muted),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: _muted, fontSize: 9.8, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyStatePlaceholder() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        color: _isDark ? const Color(0xFF161F2E) : const Color(0xFFF6F8FA),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.dashboard_customize_outlined, size: 38, color: _muted.withValues(alpha: 0.5)),
+          const SizedBox(height: 12),
+          Text('Aucun fichier sélectionné', style: TextStyle(color: _muted, fontSize: 13, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParseErrorContent() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppTheme.danger.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(color: AppTheme.danger.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline, size: 32, color: AppTheme.danger),
+            const SizedBox(height: 6),
+            Text(
+              _unmatchedWarnings!.first,
+              style: const TextStyle(color: AppTheme.danger, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   // ─── Écran 2 : Prévisualisation / édition ─────────────────────────────────
 
@@ -1117,7 +1445,7 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
 
   // ─── Footer ───────────────────────────────────────────────────────────────
 
-  Widget _buildFooter() {
+Widget _buildFooter() {
     if (_importResult != null) return const SizedBox.shrink();
 
     final canImport = _rowsReady && _years.isNotEmpty && !_isImporting;
@@ -1163,6 +1491,11 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
                   )
                 : const Icon(Icons.upload_rounded, size: 18),
             label: const Text('Enregistrer dans le formulaire'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.success,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+            ),
           ),
         ],
       ),

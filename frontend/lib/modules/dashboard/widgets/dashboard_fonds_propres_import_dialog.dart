@@ -18,7 +18,6 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/utils/file_save.dart';
@@ -70,6 +69,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
   bool _isImporting = false;
   bool _isDownloadingTemplate = false;
   bool _rowsReady = false;
+  bool _showExpectedFormat = false;
 
   XFile? _selectedFile;
   List<String>? _unmatchedWarnings;
@@ -113,24 +113,18 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       );
       if (location == null) return;
       await saveBytesAtLocation(location, bytes, requiredExtension: '.xlsx');
-      if (mounted) _showMsg('Modèle enregistré.'.tr(context));
+      if (mounted) _showMsg('Modèle enregistré.');
     } on PathAccessException {
       if (mounted) {
         _showMsg(
-          ('Impossible d\'enregistrer : le fichier est probablement déjà ouvert '
-                  '(par exemple dans Excel). Fermez-le puis réessayez, ou choisissez '
-                  'un autre emplacement.')
-              .tr(context),
+          'Impossible d\'enregistrer : le fichier est probablement déjà ouvert '
+          '(par exemple dans Excel). Fermez-le puis réessayez, ou choisissez '
+          'un autre emplacement.',
           error: true,
         );
       }
     } catch (e) {
-      if (mounted) {
-        _showMsg(
-          context.tr('Téléchargement impossible: {{error}}', args: {'error': e}),
-          error: true,
-        );
-      }
+      if (mounted) _showMsg('Téléchargement impossible: $e', error: true);
     } finally {
       if (mounted) setState(() => _isDownloadingTemplate = false);
     }
@@ -148,7 +142,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
 
   Future<void> _loadFile(XFile file) async {
     if (!file.name.toLowerCase().endsWith('.xlsx')) {
-      _showMsg('Seuls les fichiers .xlsx sont acceptés.'.tr(context), error: true);
+      _showMsg('Seuls les fichiers .xlsx sont acceptés.', error: true);
       return;
     }
     setState(() {
@@ -327,15 +321,8 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
     ];
 
     return [
-      ...unmatched.map((l) => context.tr(
-            'Poste non reconnu, ignoré : "{{label}}"',
-            args: {'label': l},
-          )),
-      if (missing.isNotEmpty)
-        context.tr(
-          'Postes absents (laissés à 0) : {{missing}}',
-          args: {'missing': missing.join(', ')},
-        ),
+      ...unmatched.map((l) => 'Poste non reconnu, ignoré : "$l"'),
+      if (missing.isNotEmpty) 'Postes absents (laissés à 0) : ${missing.join(', ')}',
     ];
   }
 
@@ -409,20 +396,42 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: _bg,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      backgroundColor: Colors.transparent,
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 900, maxHeight: 760),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: _bg,
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(color: _border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: _isDark ? 0.34 : 0.14),
+                blurRadius: 28,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildHeader(),
-              const SizedBox(height: 16),
-              Expanded(child: _buildBody()),
-              const SizedBox(height: 14),
-              _buildFooter(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: _buildHeader(),
+              ),
+              Divider(height: 1, color: _border),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: _buildBody(),
+                ),
+              ),
+              Divider(height: 1, color: _border),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: _buildFooter(),
+              ),
             ],
           ),
         ),
@@ -431,31 +440,39 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
   }
 
   Widget _buildHeader() => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2F6EEA), Color(0xFF12A7B4)],
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.indigo, Colors.blue.shade900],
               ),
-              borderRadius: BorderRadius.circular(AppTheme.radius),
+              borderRadius: BorderRadius.circular(3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.indigo.withValues(alpha: 0.22),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: const Icon(Icons.account_balance_outlined, color: Colors.white, size: 20),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Importation Fonds Propres Réglementaires'.tr(context),
-              style: TextStyle(color: _text, fontSize: 20, fontWeight: FontWeight.w500),
+              'Importation Fonds Propres Réglementaires',
+              style: TextStyle(color: _text, fontSize: 19, fontWeight: FontWeight.w500, letterSpacing: -0.2),
             ),
           ),
-          const Spacer(),
           IconButton(
-            icon: const Icon(Icons.close),
+            icon: Icon(Icons.close, color: _muted),
             onPressed: () => Navigator.pop(context, false),
-            tooltip: 'Fermer'.tr(context),
+            tooltip: 'Fermer',
           ),
         ],
       );
@@ -469,111 +486,512 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
   // ─── Écran 1 : Drop zone ──────────────────────────────────────────────────
 
   Widget _buildDropZoneScreen() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(flex: 7, child: _buildDropZone()),
-        const SizedBox(width: 14),
-        SizedBox(width: 300, child: _buildFormatCard()),
-      ],
-    );
-  }
-
-  Widget _buildDropZone() {
-    return DropTarget(
-      onDragEntered: (_) => setState(() => _isDragging = true),
-      onDragExited: (_) => setState(() => _isDragging = false),
-      onDragDone: (d) async {
-        setState(() => _isDragging = false);
-        if (d.files.isNotEmpty) await _loadFile(d.files.first);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: _isDragging ? _accent.withValues(alpha: 0.06) : _bg,
-          border: Border.all(
-            color: _isDragging ? _accent : _border,
-            width: _isDragging ? 1.4 : 1,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildImportZone(),
+          const SizedBox(height: 4),
+          _buildExpectedFormatSection(),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: !_showExpectedFormat && _selectedFile == null
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: _buildEmptyStatePlaceholder(),
+                  )
+                : const SizedBox.shrink(),
           ),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: _isParsing
-            ? Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 10),
-                    Text('Lecture du fichier...'.tr(context), style: const TextStyle(color: AppTheme.muted)),
-                  ],
-                ),
-              )
-            : (_unmatchedWarnings != null &&
-                    _unmatchedWarnings!.length == 1 &&
-                    _unmatchedWarnings!.first.startsWith('Lecture impossible'))
-                ? _buildParseErrorContent()
-                : _buildDropContent(),
+          if ((_unmatchedWarnings != null &&
+                  _unmatchedWarnings!.isNotEmpty &&
+                  _unmatchedWarnings!.first.startsWith('Lecture impossible')))
+            _buildParseErrorContent(),
+        ],
       ),
     );
   }
 
-  Widget _buildDropContent() => Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              _isDragging ? Icons.file_download_done_rounded : Icons.upload_file_outlined,
-              size: 38,
-              color: _isDragging ? _accent : _muted,
-            ),
-            const SizedBox(height: 18),
-            Text(
-              (_isDragging ? 'Déposez le fichier pour lancer la lecture' : 'Déposez le fichier Fonds Propres ici')
-                  .tr(context),
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: _isDragging ? _accent : _text,
-                height: 1.05,
+  Widget _buildImportZone() {
+    final zoneBackground = _isDark ? const Color(0xFF121C2B) : const Color(0xFFF8FAFD);
+    final zoneBorder = _isDragging ? _accent : (_isDark ? const Color(0xFF2A3850) : const Color(0xFFDCE5F0));
+    final zoneIconBackground = _isDragging ? Color.lerp(zoneBackground, _accent, 0.32)! : (_isDark ? const Color(0xFF21314A) : const Color(0xFFE8EEF8));
+    final zoneIconColor = _isDragging ? Colors.white : (_isDark ? const Color(0xFFD9E5FA) : _accent);
+    final actionBackground = _isDark ? const Color(0xFF1C2A40) : const Color(0xFFEEF3FA);
+    final actionForeground = _isDark ? const Color(0xFFF4F7FC) : const Color(0xFF2A436A);
+    final selectedFileName = _selectedFile?.name;
+    final headline = _isDragging ? 'Relâchez pour charger le fichier' : 'Cliquez pour sélectionner votre fichier';
+    final subtitle = _isParsing ? 'Lecture du fichier en cours…' : selectedFileName != null ? 'Fichier chargé : $selectedFileName' : 'Format accepté : .xlsx. Utilisez la sélection de fichier pour importer.';
+
+    return DropTarget(
+      onDragDone: (d) async {
+        setState(() => _isDragging = false);
+        if (d.files.isNotEmpty) await _loadFile(d.files.first);
+      },
+      onDragEntered: (_) => setState(() => _isDragging = true),
+      onDragExited: (_) => setState(() => _isDragging = false),
+      child: _buildSectionCard(
+        icon: Icons.upload_file_outlined,
+        title: 'Zone d’import',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: _isParsing || _isImporting ? null : _pickFile,
+            borderRadius: BorderRadius.circular(8),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              decoration: BoxDecoration(
+                color: _isDragging ? Color.lerp(zoneBackground, _accent, 0.09) : zoneBackground,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: zoneBorder, width: _isDragging ? 1.3 : 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: _isDark ? 0.12 : 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 860;
+                  final summary = Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 160),
+                        child: Text(
+                          headline,
+                          key: ValueKey<String>(headline),
+                          style: TextStyle(color: _text, fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: -0.1),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: _muted, fontSize: 11, height: 1.3, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 9),
+                      Wrap(
+                        spacing: 7,
+                        runSpacing: 7,
+                        children: [
+                          _buildImportHintChip(icon: Icons.ads_click_rounded, label: 'Sélection manuelle'),
+                          _buildImportHintChip(icon: Icons.description_outlined, label: '.xlsx'),
+                        ],
+                      ),
+                    ],
+                  );
+
+                  final actionButton = FilledButton.icon(
+                    onPressed: _isParsing || _isImporting ? null : _pickFile,
+                    icon: _isParsing
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+                        : const Icon(Icons.folder_open_rounded, size: 16),
+                    label: Text(_isParsing ? 'Lecture…' : 'Choisir un fichier'),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      elevation: 0,
+                      backgroundColor: actionBackground,
+                      foregroundColor: actionForeground,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      textStyle: const TextStyle(fontSize: 11.2, fontWeight: FontWeight.w500),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                  );
+
+                  final iconBadge = Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(color: zoneIconBackground, borderRadius: BorderRadius.circular(8)),
+                    child: Icon(_isDragging ? Icons.file_download_done_rounded : Icons.cloud_upload_rounded, color: zoneIconColor, size: 24),
+                  );
+
+                  return isCompact
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [iconBadge, const SizedBox(width: 3), Expanded(child: summary)],
+                            ),
+                            const SizedBox(height: 3),
+                            actionButton,
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            iconBadge, const SizedBox(width: 4), Expanded(child: summary), const SizedBox(width: 4), actionButton,
+                          ],
+                        );
+                },
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              ('L\'import remplace entièrement les fonds propres actuellement '
-                      'enregistrés (comme le formulaire "Mettre à jour").')
-                  .tr(context),
-              style: TextStyle(fontSize: 13, color: _muted, height: 1.45),
-            ),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                FilledButton.icon(
-                  onPressed: _pickFile,
-                  icon: const Icon(Icons.folder_open_outlined, size: 17),
-                  label: Text('Choisir un fichier'.tr(context)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpectedFormatSection({Key? key}) {
+    final buttonBackground = _isDark ? const Color(0xFF243027) : const Color(0xFFF3F1EA);
+    final buttonBorder = _isDark ? const Color(0xFF3D5344) : const Color(0xFFE0D8C9);
+    final buttonForeground = _isDark ? const Color(0xFFF4F7F3) : const Color(0xFF2E3740);
+    final downloadBackground = _isDark ? const Color(0xFF1D2635) : const Color(0xFFF1F4F8);
+    final downloadBorder = _isDark ? const Color(0xFF334257) : const Color(0xFFD7E0EA);
+    final downloadForeground = _isDark ? const Color(0xFFF2F6FC) : const Color(0xFF263445);
+
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: 156,
+              height: 34,
+              child: FilledButton.icon(
+                onPressed: () => setState(() => _showExpectedFormat = !_showExpectedFormat),
+                icon: Icon(_showExpectedFormat ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded, size: 16),
+                label: const Text('Format attendu'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: buttonBackground,
+                  foregroundColor: buttonForeground,
+                  elevation: 0,
+                  alignment: Alignment.centerLeft,
+                  textStyle: const TextStyle(fontSize: 11.2, fontWeight: FontWeight.w500),
+                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5), side: BorderSide(color: buttonBorder)),
                 ),
-                const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
-                  icon: _isDownloadingTemplate
-                      ? const SizedBox(
-                          width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.download_outlined, size: 16),
-                  label: Text('Modèle Excel'.tr(context)),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 14),
-            Text(
-              'Fichier accepté: .xlsx, avec les colonnes « Groupe », « Poste » et « Valeur ».'.tr(context),
-              style: TextStyle(fontSize: 11.5, color: _muted),
+            const SizedBox(width: 3),
+            SizedBox(
+              width: 182,
+              height: 34,
+              child: FilledButton.icon(
+                onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
+                icon: _isDownloadingTemplate
+                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.download_outlined, size: 15),
+                label: const Text('Télécharger le modèle'),
+                style: FilledButton.styleFrom(
+                  visualDensity: VisualDensity.compact,
+                  backgroundColor: downloadBackground,
+                  foregroundColor: downloadForeground,
+                  elevation: 0,
+                  textStyle: const TextStyle(fontSize: 10.8, fontWeight: FontWeight.w500),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5), side: BorderSide(color: downloadBorder)),
+                ),
+              ),
             ),
           ],
         ),
-      );
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          child: !_showExpectedFormat
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.only(top: 3),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: _bg,
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(color: _border),
+                    ),
+                    child: _buildExpectedFormat(),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpectedFormat() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildWorkbookSummaryCard(),
+        const SizedBox(height: 3),
+        _buildSheetSpecTile(),
+      ],
+    );
+  }
+
+  Widget _buildWorkbookSummaryCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: _isDark ? const Color(0xFF161F2E) : const Color(0xFFF6F8FA),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Classeur complet requis',
+            style: TextStyle(
+              color: _text,
+              fontSize: 11.8,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '1 feuille doit être présente et conservée dans le fichier importé.',
+            style: TextStyle(color: _muted, fontSize: 10.2),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 5,
+            runSpacing: 5,
+            children: [
+              _buildSheetNameChip('Fonds Propres', backgroundColor: const Color(0xFFEDF2FB)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSheetNameChip(String sheetName, {required Color backgroundColor}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: backgroundColor.withValues(alpha: 0.78)),
+      ),
+      child: Text(
+        sheetName,
+        style: TextStyle(
+          color: _text,
+          fontSize: 9.7,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSheetSpecTile() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 3),
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: _isDark ? const Color(0xFF161F2E) : const Color(0xFFF6F8FA),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Fonds Propres',
+                style: TextStyle(color: _text, fontSize: 11.8, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Saisie',
+                  style: TextStyle(color: _text, fontSize: 9.8, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Une ligne = un poste. 11 lignes attendues (CET1, AT1, Tier 2).',
+            style: TextStyle(color: _muted, fontSize: 10.2),
+          ),
+          const SizedBox(height: 8),
+          _buildColumnGroup(
+            title: 'Colonnes attendues',
+            count: 3,
+            items: ['Groupe', 'Poste', 'Valeur'],
+            color: _accent,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColumnGroup({required String title, required int count, required List<dynamic> items, required Color color}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(7, 7, 7, 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 7, height: 7,
+                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(99)),
+              ),
+              const SizedBox(width: 6),
+              Text(title, style: TextStyle(color: _text, fontSize: 9.9, fontWeight: FontWeight.w500)),
+              const SizedBox(width: 4),
+              Text('($count)', style: TextStyle(color: _muted, fontSize: 9.0, fontWeight: FontWeight.w500)),
+            ],
+          ),
+          const SizedBox(height: 5),
+          Wrap(
+            spacing: 5, runSpacing: 4,
+            children: items.map((item) => _buildMarkerChip(item.toString(), color)).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMarkerChip(String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        value,
+        style: TextStyle(color: _text, fontSize: 9.15, fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+
+
+  Widget _buildEmptyStatePlaceholder() {
+    return DropTarget(
+      onDragDone: (details) async {
+        if (mounted) setState(() => _isDragging = false);
+        if (details.files.isNotEmpty) await _loadFile(details.files.first);
+      },
+      onDragEntered: (_) => setState(() => _isDragging = true),
+      onDragExited: (_) => setState(() => _isDragging = false),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _isParsing || _isImporting ? null : _pickFile,
+          borderRadius: BorderRadius.circular(3),
+          child: AnimatedContainer(
+            width: double.infinity,
+            height: 178,
+            duration: const Duration(milliseconds: 180),
+            decoration: BoxDecoration(
+              color: _isDragging ? Color.lerp(_bg, _accent, 0.05) : _bg,
+              borderRadius: BorderRadius.circular(3),
+              border: Border.all(color: _isDragging ? _accent : _border, width: _isDragging ? 1.3 : 1),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: _isDragging ? _accent.withValues(alpha: 0.14) : _accent.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(3),
+                      border: Border.all(color: _accent.withValues(alpha: 0.18)),
+                    ),
+                    child: Icon(
+                      _isDragging ? Icons.file_download_done_rounded : Icons.upload_file_rounded,
+                      color: _accent,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    _isDragging ? 'Relâchez pour charger le fichier' : 'Sélectionnez votre fichier ici',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: _text, fontSize: 12.2, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Cliquez pour choisir un fichier .xlsx',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: _muted, fontSize: 10.6, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({required IconData icon, required String title, required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: _isDark ? const Color(0xFF172130) : const Color(0xFFF4F7FC),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+              border: Border(bottom: BorderSide(color: _border)),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 16, color: _accent),
+                const SizedBox(width: 8),
+                Text(title, style: TextStyle(color: _text, fontSize: 12.8, fontWeight: FontWeight.w600, letterSpacing: -0.2)),
+              ],
+            ),
+          ),
+          Padding(padding: const EdgeInsets.all(14), child: child),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImportHintChip({required IconData icon, required String label}) {
+    final chipBackground = _isDark ? const Color(0xFF1A2638) : const Color(0xFFF2F6FB);
+    final chipForeground = _isDark ? const Color(0xFFC9D6EA) : const Color(0xFF5B6A81);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(color: chipBackground, borderRadius: BorderRadius.circular(999)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: chipForeground),
+          const SizedBox(width: 5),
+          Text(label, style: TextStyle(color: chipForeground, fontSize: 10.2, fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
 
   Widget _buildParseErrorContent() => Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -595,55 +1013,10 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
               _selectedFile = null;
             }),
             icon: const Icon(Icons.refresh),
-            label: Text('Choisir un autre fichier'.tr(context)),
+            label: const Text('Choisir un autre fichier'),
           ),
         ],
       );
-
-  Widget _buildFormatCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: _bg,
-        border: Border.all(color: _border),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text('Format attendu'.tr(context),
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _text)),
-              ),
-              Icon(Icons.rule_outlined, size: 16, color: _accent),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            ('Une ligne = un poste. Trois colonnes : « Groupe », « Poste », '
-                    '« Valeur ». 11 lignes (CET1, AT1, Tier 2).')
-                .tr(context),
-            style: TextStyle(fontSize: 12, color: _muted, height: 1.35),
-          ),
-          const SizedBox(height: 12),
-          _formatCheck('Groupe', 'CET1 / AT1 / Tier 2', false),
-          _formatCheck('Poste', 'Un des 11 libellés du formulaire', true),
-          _formatCheck('Valeur', 'Montant en FCFA', true),
-          const Spacer(),
-          Divider(height: 18, color: _border),
-          TextButton.icon(
-            onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
-            icon: _isDownloadingTemplate
-                ? const SizedBox(width: 13, height: 13, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.download_outlined, size: 15),
-            label: Text('Télécharger le modèle'.tr(context)),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _formatCheck(String label, String detail, bool required) {
     final color = required ? _accent : _muted;
@@ -661,10 +1034,9 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label.tr(context),
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _text)),
+                Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _text)),
                 const SizedBox(height: 2),
-                Text(detail.tr(context), style: TextStyle(fontSize: 11, color: _muted, height: 1.25)),
+                Text(detail, style: TextStyle(fontSize: 11, color: _muted, height: 1.25)),
               ],
             ),
           ),
@@ -673,7 +1045,6 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
     );
   }
 
-  // ─── Écran 2 : Prévisualisation / édition ─────────────────────────────────
 
   Widget _buildPreviewScreen() {
     return Column(
@@ -695,7 +1066,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: _bg,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(3),
         border: Border.all(color: _border),
       ),
       child: Row(
@@ -719,7 +1090,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
               }
             }),
             icon: const Icon(Icons.swap_horiz, size: 15),
-            label: Text('Changer'.tr(context)),
+            label: const Text('Changer'),
           ),
         ],
       ),
@@ -741,7 +1112,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             children: [
               const Icon(Icons.info_outline, size: 14, color: AppTheme.warning),
               const SizedBox(width: 6),
-              Text('À vérifier'.tr(context),
+              Text('À vérifier',
                   style: TextStyle(fontSize: 12, color: _text, fontWeight: FontWeight.w700)),
             ],
           ),
@@ -766,8 +1137,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             const SizedBox(width: 12),
             Expanded(child: _groupCard('AT1', 'Fonds propres additionnels', const Color(0xFF1E3A8A), 5, 8)),
             const SizedBox(width: 12),
-            Expanded(
-                child: _groupCard('Tier 2', 'Fonds propres complémentaires', const Color(0xFF475569), 8, 11)),
+            Expanded(child: _groupCard('Tier 2', 'Fonds propres complémentaires', const Color(0xFF475569), 8, 11)),
           ],
         ),
         const SizedBox(height: 14),
@@ -795,9 +1165,9 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
   Widget _groupCard(String title, String subtitle, Color color, int from, int to) {
     return Container(
       decoration: BoxDecoration(
-        color: _isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _border, width: 0.6),
+        color: _isDark ? const Color(0xFF1B273A) : const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: _border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -809,9 +1179,9 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title.tr(context), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _text)),
+                Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _text)),
                 const SizedBox(height: 2),
-                Text(subtitle.tr(context), style: TextStyle(fontSize: 10.5, color: _muted)),
+                Text(subtitle, style: TextStyle(fontSize: 10.5, color: _muted)),
               ],
             ),
           ),
@@ -835,7 +1205,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(_fpLabels[idx].tr(context), style: TextStyle(fontSize: 11, color: _muted)),
+          Text(_fpLabels[idx], style: TextStyle(fontSize: 11, color: _muted)),
           const SizedBox(height: 3),
           TextField(
             controller: _ctrl[idx],
@@ -861,7 +1231,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label.tr(context).toUpperCase(),
+        Text(label.toUpperCase(),
             style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.5, color: _muted)),
         const SizedBox(height: 4),
         Text(
@@ -883,7 +1253,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
         decoration: BoxDecoration(
           color: _bg,
           border: Border.all(color: _border),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(3),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -899,7 +1269,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    (ok ? 'Import terminé' : 'Échec de l\'import').tr(context),
+                    ok ? 'Import terminé' : 'Échec de l\'import',
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: _text),
                   ),
                 ),
@@ -908,8 +1278,8 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             const SizedBox(height: 14),
             Text(
               ok
-                  ? 'Les fonds propres réglementaires ont été mis à jour.'.tr(context)
-                  : (_importError ?? 'Une erreur est survenue.'.tr(context)),
+                  ? 'Les fonds propres réglementaires ont été mis à jour.'
+                  : (_importError ?? 'Une erreur est survenue.'),
               style: TextStyle(fontSize: 14, color: _text),
             ),
             const SizedBox(height: 18),
@@ -918,7 +1288,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
               child: FilledButton.icon(
                 onPressed: () => Navigator.pop(context, ok),
                 icon: const Icon(Icons.refresh, size: 18),
-                label: Text('Actualiser le tableau de bord'.tr(context)),
+                label: const Text('Actualiser le tableau de bord'),
               ),
             ),
           ],
@@ -941,16 +1311,15 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
         children: [
           Expanded(
             child: Text(
-              (_rowsReady
-                      ? 'Vérifiez les valeurs ci-dessus avant d\'enregistrer.'
-                      : 'Sélectionnez un fichier pour lancer la lecture.')
-                  .tr(context),
+              _rowsReady
+                  ? 'Vérifiez les valeurs ci-dessus avant d\'enregistrer.'
+                  : 'Sélectionnez un fichier pour lancer la lecture.',
               style: TextStyle(fontSize: 11.5, color: _muted),
             ),
           ),
           TextButton(
             onPressed: _isImporting ? null : () => Navigator.pop(context, false),
-            child: Text('Annuler'.tr(context)),
+            child: const Text('Annuler'),
           ),
           const SizedBox(width: 8),
           FilledButton.icon(
@@ -960,7 +1329,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
                     width: 16, height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.upload_rounded, size: 18),
-            label: Text('Enregistrer'.tr(context)),
+            label: const Text('Enregistrer'),
           ),
         ],
       ),

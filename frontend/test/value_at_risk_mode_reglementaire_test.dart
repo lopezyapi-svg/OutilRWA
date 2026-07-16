@@ -101,7 +101,7 @@ RwaApiService _serviceSimule() {
           'detail': {
             'code': 'VAR_PARAMETRE_INVALIDE',
             'message':
-                "La méthode de la VaR Historique nécessite obligatoirement "
+                'La méthode de la VaR Historique nécessite obligatoirement '
                     "l'importation d'un historique de prix dans le fichier "
                     'Excel. Aucun historique trouvé.',
           },
