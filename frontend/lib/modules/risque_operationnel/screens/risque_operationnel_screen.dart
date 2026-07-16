@@ -1228,7 +1228,7 @@ class _RoHeroStatCardState extends State<_RoHeroStatCard> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        height: 130,
+        height: 152,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: c.surface,
@@ -1244,14 +1244,15 @@ class _RoHeroStatCardState extends State<_RoHeroStatCard> {
             Text(
               widget.label.toUpperCase(),
               style: DashText.eyebrow(c, color: Colors.indigo).copyWith(
-                fontSize: 9.5,
+                fontSize: 9.0,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.2,
+                height: 1.25,
               ),
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Divider(color: c.border, thickness: Dash.hairline, height: 1),
             const SizedBox(height: 10),
             Text(
@@ -9326,33 +9327,33 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
 
     return Row(children: [
       Expanded(child: _RoHeroStatCard(
-        label: 'OFR CRR3',
+        label: 'Exigence de fonds propres (OFR) CRR3',
         value: _roAmount(context, r.ofrCrr3),
         valueColor: _kAccent,
         subtitle: 'Besoin en fonds propres',
       )),
       const SizedBox(width: 12),
       Expanded(child: _RoHeroStatCard(
-        label: 'REA CRR3',
+        label: "Montant d'exposition au risque (REA) CRR3",
         value: _roAmount(context, r.reaCrr3),
         subtitle: '× ${r.params.multiplicateurRea.toStringAsFixed(1)}',
       )),
       const SizedBox(width: 12),
       Expanded(child: _RoHeroStatCard(
-        label: 'OFR BIA',
+        label: 'Exigence de fonds propres (OFR) BIA',
         value: _roAmount(context, r.ofrBia),
         subtitle: '15 % × PNB moy',
       )),
       const SizedBox(width: 12),
       Expanded(child: _RoHeroStatCard(
-        label: 'Écart OFR (CRR3 − BIA)',
+        label: "Écart d'exigence de fonds propres (OFR) CRR3 − BIA",
         value: '${r.ecart > 0 ? "+" : ""}${_roAmount(context, r.ecart)}',
         valueColor: ecartColor,
         subtitle: ecartPos ? 'CRR3 > BIA (défavorable)' : 'CRR3 < BIA (favorable)',
       )),
       const SizedBox(width: 12),
       Expanded(child: _RoHeroStatCard(
-        label: 'Tranche BIC',
+        label: "Tranche de la composante de l'indicateur d'activité (BIC)",
         value: trancheLabel,
         valueColor: bi.trancheActive == 1 ? _kGreen :
                     bi.trancheActive == 2 ? Colors.orange : _kRed,

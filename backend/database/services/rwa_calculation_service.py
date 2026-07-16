@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+import re
 from typing import Any
 
 from app.core.calculations import bucketize_rating, calculate_capital, convert_currency_amount
@@ -56,17 +57,17 @@ _SOVEREIGN_LEGACY_SPECIAL_CASE_NORMALIZED = normalize_text(SOVEREIGN_LEGACY_SPEC
 
 
 CATEGORY_OPTIONS: tuple[dict[str, str], ...] = (
-    {"code": "a", "legacy": "Souverains", "prudential": "(a) souverains"},
-    {"code": "b", "legacy": "Organismes publics", "prudential": "(b) organismes pub. hors Adm c"},
-    {"code": "c", "legacy": "BMD", "prudential": "(c) Expositions sur les BMD"},
-    {"code": "d", "legacy": "Banques", "prudential": "(d) institutions financières"},
-    {"code": "e", "legacy": "Entreprises", "prudential": "(e) entreprises"},
-    {"code": "f", "legacy": "Particuliers", "prudential": "(f) clientèle de détail"},
-    {"code": "g", "legacy": "Immobilier residentiel", "prudential": "(g) prêts garantis par l'immo R"},
-    {"code": "h", "legacy": "Immobilier commercial", "prudential": "(h) prêts garantis par l'immo C"},
-    {"code": "i", "legacy": "Creances en souffrance", "prudential": "(i) créances en souffrance"},
-    {"code": "j", "legacy": "Créances à risque élevé", "prudential": "(j) créances à risque élevé"},
-    {"code": "k", "legacy": "Autres actifs", "prudential": "(k) autres actifs"},
+    {"code": "a", "legacy": "Souverains", "prudential": "Souverains"},
+    {"code": "b", "legacy": "Organismes publics", "prudential": "Organismes pub. hors Adm c"},
+    {"code": "c", "legacy": "BMD", "prudential": "Expositions sur les BMD"},
+    {"code": "d", "legacy": "Banques", "prudential": "Institutions financières"},
+    {"code": "e", "legacy": "Entreprises", "prudential": "Entreprises"},
+    {"code": "f", "legacy": "Particuliers", "prudential": "Clientèle de détail"},
+    {"code": "g", "legacy": "Immobilier residentiel", "prudential": "Prêts garantis par l'immo R"},
+    {"code": "h", "legacy": "Immobilier commercial", "prudential": "Prêts garantis par l'immo C"},
+    {"code": "i", "legacy": "Creances en souffrance", "prudential": "Créances en souffrance"},
+    {"code": "j", "legacy": "Créances à risque élevé", "prudential": "Créances à risque élevé"},
+    {"code": "k", "legacy": "Autres actifs", "prudential": "Autres actifs"},
 )
 
 _SOVEREIGN_OCE_RW_BY_NOTE: dict[str, float] = {
@@ -133,13 +134,19 @@ OFF_BALANCE_RISK_LEVEL_OPTIONS: tuple[str, ...] = (
 )
 
 
+_LETTER_PREFIX_PATTERN = re.compile(r"^\([a-z]\)\s*")
+
+
 def resolve_category(category: str) -> dict[str, str]:
     normalized = normalize_text(category)
+    # Tolère un éventuel préfixe lettre historique ("(a) ", "(b) "...) : les
+    # exports/expositions enregistrés avant le retrait des préfixes des
+    # libellés de catégorie (voir CATEGORY_OPTIONS) continuent ainsi à être
+    # reconnus correctement, sans nécessiter de migration des données.
+    normalized_unprefixed = _LETTER_PREFIX_PATTERN.sub("", normalized)
     for option in CATEGORY_OPTIONS:
-        if normalized in {
-            normalize_text(option["legacy"]),
-            normalize_text(option["prudential"]),
-        }:
+        candidates = {normalize_text(option["legacy"]), normalize_text(option["prudential"])}
+        if normalized in candidates or normalized_unprefixed in candidates:
             return option
         if option["code"] == "j" and normalized == normalize_text("Risque eleve"):
             return option
@@ -1231,6 +1238,13 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
         crm_details["eva_hb"] = crm_details.get("eva_hb", 0.0)
     return {
         "id": exposure_id,
+        # Discriminant utilisé par exposure_repository._upsert_type_subtables
+        # pour router la ligne vers l'une des 12 sous-tables de type
+        # prudentiel (exposition_souveraine, exposition_bmd, ...). Sans ce
+        # champ, le routage retombe sur category_raw (ex : "Souverains"),
+        # qui ne correspond à aucun des codes lettre attendus ("a".."k") et
+        # ne route donc jamais vers aucune sous-table.
+        "prudential_type": category["code"],
         "analysis_date": payload.analysis_date,
         "grant_date": payload.grant_date,
         "maturity_date": payload.maturity_date,

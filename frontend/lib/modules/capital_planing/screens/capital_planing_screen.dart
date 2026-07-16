@@ -11,6 +11,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../../shared/widgets/section_card.dart';
+import '../../dashboard/models/dashboard_models.dart';
 
 /// Ecran de projection du capital.
 class CapitalPlaningScreen extends StatefulWidget {
@@ -26,7 +27,36 @@ class CapitalPlaningScreen extends StatefulWidget {
 }
 
 class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
+  static const double _minimumRatio = 0.09;
+
   String _selectedScenario = 'base';
+  late Future<DashboardSnapshot> _future;
+  DashboardSnapshot? _snapshot;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = widget.api.fetchDashboard();
+  }
+
+  double get _baseCapital => _snapshot?.fondsPropres?.totalFp ?? 0.0;
+
+  double get _baseRwa {
+    final snapshot = _snapshot;
+    if (snapshot == null) return 0.0;
+    double rwaFor(String label) {
+      for (final entry in snapshot.rwaTypeDistribution) {
+        if (entry.label == label) return entry.amount;
+      }
+      return 0.0;
+    }
+
+    final total =
+        rwaFor('Crédit') + rwaFor('Marché') + rwaFor('Opérationnel');
+    if (total > 0) return total;
+    return snapshot.portfolioOverview
+        .fold<double>(0.0, (sum, row) => sum + row.rwa);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,33 +64,46 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
 
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PageHeader(
-            title: 'Capital Planning',
-            subtitle:
-                'Projection du capital, des besoins prudentiels et des marges de manoeuvre.',
-            trailing: _buildScenarioSelector(isDark),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildKpiSection(isDark),
-                  const SizedBox(height: AppSpacing.pageGap),
-                  _buildProjectionChart(isDark),
-                  const SizedBox(height: AppSpacing.pageGap),
-                  _buildYearlyTable(isDark),
-                  const SizedBox(height: AppSpacing.pageGap),
-                  _buildGapAnalysisSection(isDark),
-                ],
+      child: FutureBuilder<DashboardSnapshot>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Erreur : ${snapshot.error}'));
+          }
+          _snapshot = snapshot.data;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PageHeader(
+                title: 'Capital Planning',
+                subtitle:
+                    'Projection du capital, des besoins prudentiels et des marges de manoeuvre.',
+                trailing: _buildScenarioSelector(isDark),
               ),
-            ),
-          ),
-        ],
+              const SizedBox(height: AppSpacing.lg),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildKpiSection(isDark),
+                      const SizedBox(height: AppSpacing.pageGap),
+                      _buildProjectionChart(isDark),
+                      const SizedBox(height: AppSpacing.pageGap),
+                      _buildYearlyTable(isDark),
+                      const SizedBox(height: AppSpacing.pageGap),
+                      _buildGapAnalysisSection(isDark),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -159,7 +202,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
               label: 'Ratio de solvabilité',
               value: AppFormatters.percent(currentYear.ratio),
               icon: CupertinoIcons.chart_pie_fill,
-              color: currentYear.ratio >= 0.105
+              color: currentYear.ratio >= _minimumRatio
                   ? AppColors.success
                   : AppColors.danger,
               isDark: isDark,
@@ -323,7 +366,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
 
   TableRow _buildTableRow(_ProjectionYear item, bool isDark) {
     final textColor = isDark ? AppTheme.darkText : AppTheme.text;
-    final isCompliant = item.ratio >= 0.105;
+    final isCompliant = item.ratio >= _minimumRatio;
 
     return TableRow(
       decoration: BoxDecoration(
@@ -415,7 +458,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
 
   Widget _buildGapAnalysisSection(bool isDark) {
     final data = _getProjectionData();
-    final deficitYears = data.where((y) => y.ratio < 0.105).toList();
+    final deficitYears = data.where((y) => y.ratio < _minimumRatio).toList();
     final hasDeficit = deficitYears.isNotEmpty;
 
     return SectionCard(
@@ -428,7 +471,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
               Expanded(
                 child: _buildInfoCard(
                   title: 'Seuil minimum réglementaire',
-                  value: '10.5%',
+                  value: '9%',
                   icon: CupertinoIcons.shield_fill,
                   color: AppColors.prudentialCompliance,
                   isDark: isDark,
@@ -629,7 +672,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
                       ),
                       TextSpan(
                         text:
-                            ' pour atteindre le ratio minimum de 10.5% (ratio projeté: ${AppFormatters.percent(year.ratio)}).',
+                            ' pour atteindre le ratio minimum de 9% (ratio projeté: ${AppFormatters.percent(year.ratio)}).',
                       ),
                     ],
                   ),
@@ -645,10 +688,9 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
   }
 
   List<_ProjectionYear> _getProjectionData() {
-    // Base year 2024
-    const baseYear = 2024;
-    const baseCapital = 58000000000.0; // 58B FCFA
-    const baseRWA = 420000000000.0; // 420B FCFA
+    final baseYear = DateTime.now().year;
+    final baseCapital = _baseCapital;
+    final baseRWA = _baseRwa;
 
     final growthRate = switch (_selectedScenario) {
       'optimistic' => 0.05,
@@ -661,8 +703,8 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
     for (var i = 0; i < 5; i++) {
       final year = baseYear + i;
       final rwa = baseRWA * math.pow(1 + growthRate, i);
-      const capital = baseCapital; // Capital stable
-      final ratio = capital / rwa;
+      final capital = baseCapital; // Capital stable
+      final ratio = rwa > 0 ? capital / rwa : 0.0;
 
       projections.add(
         _ProjectionYear(
@@ -679,8 +721,7 @@ class _CapitalPlaningScreenState extends State<CapitalPlaningScreen> {
   }
 
   double _calculateGap(_ProjectionYear year) {
-    const minRatio = 0.105;
-    final requiredCapital = year.rwa * minRatio;
+    final requiredCapital = year.rwa * _minimumRatio;
     return math.max(0, requiredCapital - year.capital);
   }
 
@@ -728,7 +769,7 @@ class _CapitalProjectionChartPainter extends CustomPainter {
     final ratios = data.map((d) => d.ratio).toList();
     final maxRatio = ratios.reduce(math.max);
     final minRatio = ratios.reduce(math.min);
-    const thresholdRatio = 0.105;
+    const thresholdRatio = 0.09;
 
     final minY = math.min(minRatio, thresholdRatio) * 0.95;
     final maxY = math.max(maxRatio, thresholdRatio) * 1.05;
@@ -749,7 +790,7 @@ class _CapitalProjectionChartPainter extends CustomPainter {
       axisPaint,
     );
 
-    // Draw threshold line (10.5%)
+    // Draw threshold line (9%)
     final thresholdY =
         padding + chartHeight * (1 - (thresholdRatio - minY) / (maxY - minY));
     final thresholdPaint = Paint()
@@ -771,7 +812,7 @@ class _CapitalProjectionChartPainter extends CustomPainter {
     // Draw threshold label
     final thresholdTextPainter = TextPainter(
       text: const TextSpan(
-        text: 'Seuil 10.5%',
+        text: 'Seuil 9%',
         style: TextStyle(
           color: AppColors.danger,
           fontSize: 11,

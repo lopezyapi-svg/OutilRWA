@@ -1139,6 +1139,40 @@ class MarketPortfolioRecord {
   String get zone => _text('Zone', fallback: 'Non renseignée');
   String get currency => _text('Devise', fallback: 'XOF');
 
+  /// Clé d'identité utilisée pour fusionner deux imports (mode "Merge") :
+  /// une ligne dont la clé correspond déjà à une position existante MET À
+  /// JOUR cette position au lieu de la dupliquer. Utilise l'identifiant
+  /// explicite du titre s'il est fourni (ID Titre pour les obligations, ID
+  /// Instrument/ISIN/Ticker pour les actions).
+  ///
+  /// Le modèle minimal des actions n'impose pas de colonne ID : à défaut
+  /// d'identifiant explicite, la clé de repli inclut la quantité et la
+  /// valeur de marché en plus de l'émetteur et de la devise. Se limiter à
+  /// « émetteur + devise » faisait qu'une nouvelle ligne d'action portant
+  /// sur le même émetteur (nouveau lot, quantité différente) écrasait la
+  /// position déjà en base au lieu de s'y ajouter — le mode « Compléter la
+  /// base » semblait alors ne rien importer. Avec quantité + valeur en plus,
+  /// seul un réimport strictement identique (même fichier) continue à
+  /// mettre à jour la ligne existante ; toute ligne réellement différente
+  /// est désormais ajoutée.
+  String get mergeIdentityKey {
+    final explicitId = _textAny(
+      const ['ID Titre', 'ID Instrument', 'ISIN', 'Ticker'],
+      fallback: '',
+    );
+    if (explicitId.isNotEmpty) {
+      return 'id::${explicitId.toLowerCase()}';
+    }
+    final issuerKey = issuer.trim().toLowerCase();
+    final currencyKey = currency.trim().toLowerCase();
+    final quantityValue = portfolioType == MarketPortfolioType.equities
+        ? shares
+        : quantity;
+    final quantityKey = quantityValue.toStringAsFixed(4);
+    final valueKey = valuationAmount.toStringAsFixed(2);
+    return 'issuer::$issuerKey::$currencyKey::$quantityKey::$valueKey';
+  }
+
   /// Taux de change à l'acquisition (1 unité de devise = X XOF), lu à l'import
   /// s'il est fourni. Sert à calculer la variation de change et le gain/perte
   /// latent par rapport au taux courant (spot). Retourne 0 si la colonne est
@@ -2816,6 +2850,25 @@ class MarketDataImportStore {
     );
   }
 
+  /// Fusionne `incoming` dans `existing` par identité de titre
+  /// (`mergeIdentityKey`) : une ligne déjà présente est REMPLACÉE par sa
+  /// version la plus récente au lieu d'être dupliquée. Corrige le
+  /// comportement précédent du mode "Merge", qui concaténait les deux
+  /// listes sans déduplication et doublait silencieusement les positions
+  /// (et donc les totaux/bêta pondéré) lors d'un réimport du même fichier.
+  List<MarketPortfolioRecord> _mergeRecordsByIdentity(
+    List<MarketPortfolioRecord> existing,
+    List<MarketPortfolioRecord> incoming,
+  ) {
+    final merged = <String, MarketPortfolioRecord>{
+      for (final record in existing) record.mergeIdentityKey: record,
+    };
+    for (final record in incoming) {
+      merged[record.mergeIdentityKey] = record;
+    }
+    return merged.values.toList(growable: false);
+  }
+
   MarketImportCommitResult _commitParsedWorkbook(
     _ParsedMarketWorkbook parsed,
     String fileName, {
@@ -2830,7 +2883,7 @@ class MarketDataImportStore {
     final current = snapshotNotifier.value.datasets[portfolioType];
     final previousRowCount = current?.rowCount ?? 0;
     final records = append && current != null
-        ? [...current.records, ...parsed.records]
+        ? _mergeRecordsByIdentity(current.records, parsed.records)
         : parsed.records;
     final parsedCashflowMetricsDate =
         parsed.bondCashflowModifiedDuration > 0 ? _marketToday() : null;

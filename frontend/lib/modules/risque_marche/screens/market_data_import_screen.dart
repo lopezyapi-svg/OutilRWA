@@ -216,7 +216,7 @@ class _MarketDataImportDialogState extends State<_MarketDataImportDialog> {
     await _loadFile(file);
   }
 
-  Future<void> _loadFile(XFile file) async {
+  Future<void> _loadFile(XFile file, {bool autoDetectScope = true}) async {
     if (!file.name.toLowerCase().endsWith('.xlsx')) {
       setState(() {
         _selectedFile = file;
@@ -236,19 +236,58 @@ class _MarketDataImportDialogState extends State<_MarketDataImportDialog> {
 
     try {
       final bytes = await file.readAsBytes();
-      final inspections = await Future.wait([
-        for (final type in _scope.portfolioTypes)
-          _store.inspectWorkbookAsync(
-            bytes,
-            file.name,
-            portfolioType: type,
-          ),
-      ]);
+      final previousScope = _scope;
+      var effectiveScope = _scope;
+      List<MarketImportInspection> inspections;
+
+      if (autoDetectScope) {
+        // Détecte le type de portefeuille (Obligations / Actions / complet) à
+        // partir des feuilles réellement présentes dans le fichier déposé,
+        // plutôt que de dépendre du scope actuellement sélectionné dans la
+        // boîte de dialogue — évite de valider un fichier Actions contre la
+        // structure Obligations (ou l'inverse) simplement parce que
+        // l'utilisateur n'a pas cliqué sur le bon onglet avant de déposer.
+        final probes = await Future.wait([
+          for (final type in MarketPortfolioType.values)
+            _store.inspectWorkbookAsync(bytes, file.name, portfolioType: type),
+        ]);
+        final bondsFound = probes[MarketPortfolioType.bonds.index].sheetFound;
+        final equitiesFound =
+            probes[MarketPortfolioType.equities.index].sheetFound;
+        effectiveScope = switch ((bondsFound, equitiesFound)) {
+          (true, true) => _MarketImportScope.both,
+          (true, false) => _MarketImportScope.bonds,
+          (false, true) => _MarketImportScope.equities,
+          // Aucune des deux feuilles reconnues : conserve le scope choisi
+          // pour afficher un message d'erreur cohérent avec celui-ci.
+          (false, false) => _scope,
+        };
+        inspections = [
+          for (final type in effectiveScope.portfolioTypes)
+            probes[type.index],
+        ];
+      } else {
+        inspections = await Future.wait([
+          for (final type in effectiveScope.portfolioTypes)
+            _store.inspectWorkbookAsync(
+              bytes,
+              file.name,
+              portfolioType: type,
+            ),
+        ]);
+      }
+
       if (!mounted) return;
       setState(() {
+        _scope = effectiveScope;
         _selectedBytes = bytes;
         _inspections = inspections;
       });
+      if (autoDetectScope && effectiveScope != previousScope) {
+        _showMessage(
+          'Type de portefeuille détecté automatiquement : ${effectiveScope.label}.',
+        );
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -350,7 +389,9 @@ class _MarketDataImportDialogState extends State<_MarketDataImportDialog> {
       _isInspecting = selectedFile != null;
     });
     if (selectedFile != null) {
-      await _loadFile(selectedFile);
+      // Choix manuel explicite de l'utilisateur : ne pas laisser la
+      // détection automatique le réécraser.
+      await _loadFile(selectedFile, autoDetectScope: false);
     }
   }
 

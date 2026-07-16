@@ -1,17 +1,33 @@
 """Couche de données des portefeuilles pour le calcul de la VaR.
 
 Sources de données, par ordre de priorité :
-1. fichiers CSV dans le répertoire data/ (encodage UTF-8, séparateur
-   point-virgule, point décimal, dates AAAA-MM-JJ) ;
-2. tables PostgreSQL équivalentes si la variable d'environnement
+1. portefeuille importé via la boîte de dialogue « Importer données de
+   marché » de l'application (feuilles Obligations/Actions), persisté en
+   SQLite (table metadonnees_app, clé market_portfolios_payload_v1) — c'est
+   la façon normale, pour un utilisateur de l'application, d'alimenter le
+   calcul avec ses propres positions ;
+2. fichiers CSV dans le répertoire data/ (encodage UTF-8, séparateur
+   point-virgule, point décimal, dates AAAA-MM-JJ) — dépôt manuel réservé
+   au développement/tests ou à un usage avancé ;
+3. tables PostgreSQL équivalentes si la variable d'environnement
    VAR_POSTGRES_DSN est renseignée (mêmes colonnes, mêmes types) ;
-3. si aucune donnée réelle : erreur explicite invitant à déposer les
-   fichiers ; une série simulée reproductible n'est utilisée que si la
-   variable d'environnement VAR_MODE_SIMULATION vaut 1 (démonstration).
+4. si aucune donnée réelle : erreur explicite invitant à importer un
+   portefeuille ou déposer les fichiers ; une série simulée reproductible
+   n'est utilisée que si la variable d'environnement VAR_MODE_SIMULATION
+   vaut 1 (démonstration).
 
-Les fichiers déposés sont pris en compte automatiquement : le cache des
-séries est invalidé dès qu'un fichier change (empreinte mtime + taille),
-sans redémarrage du serveur.
+Important : le portefeuille importé ne fournit que les POSITIONS actuelles
+(quantités, prix courant) — la VaR historique/Monte-Carlo a en plus besoin
+d'un historique de prix ou de taux (courbe quotidienne) pour reconstituer
+les variations passées. Cet historique reste un fichier CSV (ou une table
+Postgres) : un import de positions seul, sans historique disponible,
+retombe donc sur la valorisation par courbe si elle existe, sinon sur une
+erreur explicite (ou la simulation si activée).
+
+Les fichiers déposés et le portefeuille importé sont pris en compte
+automatiquement : le cache des séries est invalidé dès qu'un fichier change
+(empreinte mtime + taille) ou qu'un nouvel import est enregistré (horodatage
+de sauvegarde), sans redémarrage du serveur.
 
 Convention de signe unique pour toute la chaîne VaR :
 - une PERTE est POSITIVE, un GAIN est NÉGATIF ;
@@ -33,6 +49,7 @@ mode simulation.
 from __future__ import annotations
 
 import csv
+import json
 import logging
 import os
 from dataclasses import dataclass, field
@@ -161,6 +178,171 @@ def _lire_csv(chemin: Path) -> list[dict[str, str]]:
         ]
 
 
+_MARKET_PORTFOLIOS_SQLITE_KEY = "market_portfolios_payload_v1"
+_MARKET_PORTFOLIOS_SAVED_AT_SQLITE_KEY = "market_portfolios_saved_at"
+
+_FREQUENCE_COUPON_PAR_LIBELLE = {
+    "annuel": "1",
+    "annuelle": "1",
+    "semestriel": "2",
+    "semestrielle": "2",
+    "trimestriel": "4",
+    "trimestrielle": "4",
+    "mensuel": "12",
+    "mensuelle": "12",
+}
+
+
+def _normaliser_frequence_coupon(valeur: str) -> str:
+    brut = (valeur or "").strip()
+    if not brut:
+        return "1"
+    try:
+        nombre = float(brut.replace(",", "."))
+        if nombre > 0:
+            return str(int(round(nombre)))
+    except ValueError:
+        pass
+    return _FREQUENCE_COUPON_PAR_LIBELLE.get(brut.strip().lower(), "1")
+
+
+def _texte_date_import(valeur: object) -> str:
+    brut = str(valeur or "").strip()
+    return brut[:10] if brut else ""
+
+
+def _lire_valeur_marche_portefeuilles_sqlite() -> dict | None:
+    """Lit le payload JSON du portefeuille marché importé via l'application
+    (table metadonnees_app, clé market_portfolios_payload_v1). Renvoie None
+    si aucun import n'a encore été enregistré ou si la lecture échoue —
+    dans ce cas les sources suivantes (CSV, Postgres) prennent le relais."""
+
+    try:
+        from database.connection import database_manager
+    except Exception:
+        return None
+    try:
+        with database_manager.read_connection() as connexion:
+            ligne = connexion.execute(
+                "SELECT valeur AS value FROM metadonnees_app WHERE cle = ?",
+                (_MARKET_PORTFOLIOS_SQLITE_KEY,),
+            ).fetchone()
+    except Exception:
+        logger.exception(
+            "Lecture SQLite du portefeuille marché importé impossible ; "
+            "passage au mode suivant."
+        )
+        return None
+    if ligne is None or not str(ligne["value"] or "").strip():
+        return None
+    try:
+        charge = json.loads(str(ligne["value"]))
+    except (TypeError, ValueError):
+        logger.warning("Portefeuille marché importé illisible (JSON invalide).")
+        return None
+    return charge if isinstance(charge, dict) else None
+
+
+def _lire_positions_obligations_depuis_import(
+    records: list,
+) -> list[dict[str, str]]:
+    lignes: list[dict[str, str]] = []
+    for enregistrement in records:
+        valeurs = (
+            enregistrement.get("values") if isinstance(enregistrement, dict) else None
+        )
+        if not isinstance(valeurs, dict):
+            continue
+        isin = str(valeurs.get("ID Titre") or valeurs.get("ISIN") or "").strip()
+        date_emission = _texte_date_import(valeurs.get("Date d'émission"))
+        date_echeance = _texte_date_import(valeurs.get("Date d'échéance"))
+        if not isin or not date_emission or not date_echeance:
+            # Ligne insuffisamment renseignée pour une valorisation par
+            # courbe/flux (ex : import minimal sans dates) : ignorée plutôt
+            # que de faire échouer tout le portefeuille.
+            continue
+        prix_marche = valeurs.get("Cours actuel") or valeurs.get("Prix de marché")
+        lignes.append(
+            {
+                "isin": isin,
+                "emetteur": str(
+                    valeurs.get("Emetteur") or valeurs.get("Émetteur / Société") or isin
+                ),
+                "devise": str(valeurs.get("Devise") or "XOF"),
+                "valeur_nominale": str(valeurs.get("Valeur nominale unitaire") or "0"),
+                "taux_coupon_pct": str(valeurs.get("Coupon (%)") or "0"),
+                "frequence_coupon": _normaliser_frequence_coupon(
+                    str(valeurs.get("Fréquence de paiement des intérêts") or "")
+                ),
+                "date_emission": date_emission,
+                "date_echeance": date_echeance,
+                "quantite": str(
+                    valeurs.get("quantités") or valeurs.get("Quantité") or "0"
+                ),
+                "prix_marche_pct": "" if prix_marche in (None, "") else str(prix_marche),
+            }
+        )
+    return lignes
+
+
+def _lire_positions_actions_depuis_import(records: list) -> list[dict[str, str]]:
+    lignes: list[dict[str, str]] = []
+    for enregistrement in records:
+        valeurs = (
+            enregistrement.get("values") if isinstance(enregistrement, dict) else None
+        )
+        if not isinstance(valeurs, dict):
+            continue
+        libelle = str(
+            valeurs.get("Émetteur / Société") or valeurs.get("Emetteur") or ""
+        ).strip()
+        if not libelle:
+            continue
+        ticker = str(valeurs.get("Ticker") or libelle).strip()
+        lignes.append(
+            {
+                "ticker": ticker,
+                "libelle": libelle,
+                "secteur": str(valeurs.get("Secteur") or "Non renseigné"),
+                "quantite": str(
+                    valeurs.get("Quantité") or valeurs.get("quantités") or "0"
+                ),
+            }
+        )
+    return lignes
+
+
+def _charger_positions_importees(nom_table: str) -> list[dict[str, str]] | None:
+    """Positions saisies via la boîte d'import « Portefeuille marché » de
+    l'application, persistées en SQLite. Prime sur les CSV manuels : c'est
+    la façon normale, pour un utilisateur de l'application, d'alimenter le
+    calcul de VaR avec son propre portefeuille plutôt que de déposer des
+    fichiers à la main. Renvoie None si aucun import exploitable n'est
+    disponible pour ce type de portefeuille (les sources suivantes — CSV,
+    Postgres — prennent alors le relais)."""
+
+    if nom_table not in ("positions_obligations", "positions_actions"):
+        return None
+    charge = _lire_valeur_marche_portefeuilles_sqlite()
+    if charge is None:
+        return None
+    datasets = charge.get("datasets")
+    if not isinstance(datasets, dict):
+        return None
+    cle_type = "bonds" if nom_table == "positions_obligations" else "equities"
+    jeu = datasets.get(cle_type)
+    if not isinstance(jeu, dict):
+        return None
+    records = jeu.get("records")
+    if not isinstance(records, list) or not records:
+        return None
+    if nom_table == "positions_obligations":
+        lignes = _lire_positions_obligations_depuis_import(records)
+    else:
+        lignes = _lire_positions_actions_depuis_import(records)
+    return lignes or None
+
+
 def _lire_table_postgres(nom_table: str) -> list[dict[str, str]] | None:
     """Lit une table PostgreSQL équivalente au CSV si la base est configurée.
 
@@ -191,6 +373,9 @@ def _lire_table_postgres(nom_table: str) -> list[dict[str, str]] | None:
 
 
 def _charger_lignes(nom_fichier: str, nom_table: str) -> list[dict[str, str]] | None:
+    importees = _charger_positions_importees(nom_table)
+    if importees is not None:
+        return importees
     chemin = repertoire_data() / nom_fichier
     if chemin.exists():
         return _lire_csv(chemin)
@@ -684,16 +869,46 @@ _SeriePayload = tuple[
 _cache_series: dict[str, tuple[tuple, _SeriePayload]] = {}
 
 
-def _empreinte_donnees(type_portefeuille: str) -> tuple:
-    """Empreinte des fichiers sources : répertoire, mtime et taille.
+def _empreinte_portefeuille_importe_sqlite() -> str | None:
+    """Horodatage de la dernière sauvegarde du portefeuille marché importé
+    (métadonnée mise à jour à chaque import réussi côté API) — inclus dans
+    l'empreinte de cache pour qu'un import via l'application soit pris en
+    compte immédiatement, sans attendre qu'un fichier CSV change."""
 
-    Toute création, modification ou suppression d'un fichier change
-    l'empreinte et force le recalcul de la série : les nouvelles données
-    importées sont donc chargées automatiquement, sans redémarrage.
+    try:
+        from database.connection import database_manager
+    except Exception:
+        return None
+    try:
+        with database_manager.read_connection() as connexion:
+            ligne = connexion.execute(
+                "SELECT valeur AS value FROM metadonnees_app WHERE cle = ?",
+                (_MARKET_PORTFOLIOS_SAVED_AT_SQLITE_KEY,),
+            ).fetchone()
+    except Exception:
+        return None
+    if ligne is None:
+        return None
+    valeur = str(ligne["value"] or "").strip()
+    return valeur or None
+
+
+def _empreinte_donnees(type_portefeuille: str) -> tuple:
+    """Empreinte des fichiers sources : répertoire, mtime et taille, plus
+    l'horodatage du dernier import de portefeuille enregistré en SQLite.
+
+    Toute création, modification ou suppression d'un fichier, ou tout
+    nouvel import via l'application, change l'empreinte et force le
+    recalcul de la série : les nouvelles données sont donc chargées
+    automatiquement, sans redémarrage.
     """
 
     racine = repertoire_data()
-    parts: list[object] = [str(racine), mode_simulation_actif()]
+    parts: list[object] = [
+        str(racine),
+        mode_simulation_actif(),
+        _empreinte_portefeuille_importe_sqlite(),
+    ]
     for nom in _FICHIERS_PAR_TYPE[type_portefeuille]:
         chemin = racine / nom
         if chemin.exists():
@@ -744,7 +959,8 @@ def _construire_serie_valeurs(type_portefeuille: str) -> _SeriePayload:
     if not mode_simulation_actif():
         raise DonneesAbsentesError(
             f"Aucune donnée réelle trouvée pour le portefeuille "
-            f"{type_portefeuille}. Déposez "
+            f"{type_portefeuille}. Importez un portefeuille via « Importer "
+            "données de marché », ou déposez "
             f"{_FICHIERS_ATTENDUS_MESSAGE[type_portefeuille]} dans "
             f"{repertoire_data()} ; les nouvelles données seront chargées "
             "automatiquement."

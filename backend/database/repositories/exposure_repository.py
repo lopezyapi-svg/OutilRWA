@@ -437,8 +437,15 @@ class ExposureRepository:
                 high_risk_rows.append((eid,))
             elif ptype == "k":
                 other_asset_rows.append((eid, str(r.get("other_asset_type") or "") or None))
-            elif ptype == "l":
-                off_balance_rows.append((eid, str(r.get("off_balance_risk_level") or "") or None))
+
+            # Le hors bilan n'est pas une catégorie prudentielle (a..k) mais
+            # une composante que n'importe quelle exposition peut avoir en
+            # plus de sa catégorie ; il est donc routé indépendamment du
+            # switch ci-dessus plutôt que via un ptype "l" qui n'existe plus
+            # dans CATEGORY_OPTIONS (et ne serait donc jamais atteint).
+            off_balance_level = r.get("off_balance_risk_level")
+            if off_balance_level:
+                off_balance_rows.append((eid, str(off_balance_level)))
 
         if sovereign_rows:
             connection.executemany(

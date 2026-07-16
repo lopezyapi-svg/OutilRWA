@@ -20,6 +20,8 @@ from app.core.runtime_paths import (
     exports_dir,
     is_packaged_runtime,
 )
+from app.expositions.models import ExposureCreate, ExposureCrmDetails
+from database.services.rwa_calculation_service import build_exposure_record
 
 
 def _resolve_excel_source_path() -> Path:
@@ -46,81 +48,49 @@ EXCEL_SOURCE_PATH = _resolve_excel_source_path()
 APP_DATA_PATH = app_data_root()
 EXPOSURE_METADATA_PATH = ensure_seed_data_file("exposure_metadata.json")
 EXPOSURE_EXPORTS_PATH = exports_dir()
+# Modèle épuré : uniquement les feuilles de saisie qui contiennent des
+# données brutes réellement utilisées par le moteur de calcul. Les feuilles
+# de référence/paramétrage (LISTE, (a)...(k), Mapping des pondérations,
+# Ref_Ponderation) ont été retirées : leur contenu n'était jamais lu par les
+# calculs (uniquement vérifié comme "présent" à l'import), donc elles ne
+# faisaient qu'alourdir le fichier sans utilité pour l'utilisateur.
 EXPECTED_SHEETS = (
     "Template données",
-    "LISTE",
-    "Traitement_HB",
     "CRM_non_financee",
     "CRM_financée",
-    "(a) souverains",
-    "(b) organismes pub. hors Adm c",
-    "(c) Expositions sur les BMD",
-    "(d) institutions financières",
-    "(e) entreprises",
-    "(f) clientèle de détail",
-    "(g) prêts garantis par l'immo R",
-    "(h) prêts garantis par l'immo C",
-    "(i) créances en souffrance",
-    "(j) créances à risque élevé",
-    "(k) autres actifs",
-    "(l) Hors bilan",
-    "Mapping des pondérations",
-    "Ref_Ponderation",
 )
+# Doit rester identique, colonne par colonne, à la spec du validateur
+# (IMPORT_SHEET_SPECS dans app/validators/excel_import_validator.py) — sinon
+# un modèle généré ici puis réimporté tel quel est rejeté par le validateur
+# pour "colonnes requises manquantes".
+#
+# Chaque colonne ci-dessous correspond à une donnée brute que l'utilisateur
+# saisit réellement (les mêmes informations que le formulaire "Ajouter une
+# exposition"). Aucune colonne calculée (pondération finale, EAD, RWA,
+# capital, maturités déduites, etc.) n'est demandée : ces valeurs sont
+# recalculées automatiquement par le même moteur de calcul prudentiel que la
+# saisie manuelle (voir excel_import_service._parse_workbook).
 EXPECTED_COLUMNS_BY_SHEET: dict[str, tuple[str, ...]] = {
     "Template données": (
         "Date d'analyse",
         "ID_Exposition",
-        "Date d'octroi",
-        "Date d'échéance",
-        "Maturité de l'exposition",
-        "Maturité résiduelle",
         "Contrepartie",
         "Notation_externe_contrepartie",
         "Pays_contrepartie",
         "Notation_externe_pays",
-        "Pondération_pays",
         "Catégorie d'exposition",
-        "Pondération (RW)",
-        "PRÊT TOTAL",
         "Montant_exposition_but_au_bilan",
-        "Montant d'exposition au HB",
         "Devise",
-        "CRM_existe",
         "Type_CRM",
-        "EAD_bilan",
-        "EAD_HB",
-        "EAD_HB_ccf",
-        "EAD_Total",
-        "RWA_EB",
-        "RWA_HB",
-        "RWA_crédit",
-        "Capital_min_reg",
     ),
-    "Traitement_HB": (
-        "ID_Exposition",
-        "Catégorie Hors bilan",
-        "Facteur_conversion (CCF)",
-        "EAD_HB_ccf",
-    ),
-    # Doit rester identique, colonne par colonne, à la spec du validateur
-    # (IMPORT_SHEET_SPECS dans app/validators/excel_import_validator.py) —
-    # sinon un modèle généré ici puis réimporté tel quel est rejeté par le
-    # validateur pour "colonnes requises manquantes".
     "CRM_non_financee": (
         "ID_Exposition",
         "Nom du garant",
+        "Catégorie du garant",
         "Note_garant",
         "Pays_garant",
         "Note_pays_garant",
-        "Pondération_pays_garant",
-        "Catégorie du garant",
-        "Pondération du garant",
-        "% Exp_couverte",
-        "%Exp_Nn_couverte",
         "Part couverte",
-        "Part non couverte",
-        "RWA_non_fin",
     ),
     "CRM_financée": (
         "ID_Exposition",
@@ -129,54 +99,52 @@ EXPECTED_COLUMNS_BY_SHEET: dict[str, tuple[str, ...]] = {
         "Notation",
         "Bloc",
         "Maturite",
-        "HE",
-        "HC",
-        "Hfx",
-        "Eva_EB",
-        "Eva_HB",
-        "Cva",
     ),
 }
+# Colonnes optionnelles : données brutes également utilisées par le moteur de
+# calcul, mais qui ne s'appliquent qu'à certaines catégories d'exposition ou
+# certains cas particuliers (mêmes options que le formulaire "Ajouter une
+# exposition"). Elles peuvent rester vides si elles ne concernent pas la
+# ligne.
 OPTIONAL_COLUMNS_BY_SHEET: dict[str, tuple[str, ...]] = {
     "Template données": (
-        "Commentaire",
+        "Date d'octroi",
+        "Date d'échéance",
+        "PRÊT TOTAL",
+        "Montant d'exposition au HB",
+        "Niveau de risque HB",
+        "Statut",
         "Provisions",
+        "Commentaire",
+        "Cas_particulier_souverain",
+        "Souverain_ponderation_pref_nulle",
+        "Souverain_OCE_etabli",
+        "Souverain_note_OCE",
+        "Organisme_public_cas_UEMOA_FCFA",
+        "Organisme_public_activite_non_publique",
+        "BMD_cas_haute_qualite",
+        "BMD_cas_UEMOA_FCFA",
+        "BMD_criteres_UEMOA_respectes",
+        "BMD_institution_listee_FCFA",
+        "Cas_institution_bancaire",
+        "Type_autre_actif",
+        "Clientele_detail_criteres_respectes",
+        "Immobilier_residentiel_eligible",
+        "Immobilier_commercial_eligible",
+        "Ponderation_initiale_avant_defaut",
+        "Defaut_pret_immo_residentiel",
+        "Defaut_provision_min_20pct",
+        "Entreprise_depasse_seuil_degradation_BCEAO",
+        "Entreprise_procedure_prudentielle",
+        "Entreprise_investissement_hors_loi_bancaire",
+    ),
+    "CRM_financée": (
+        "Devise_Collatéral",
+        "Type_Collatéral",
+        "Obligation_convertible_indice_principal",
+        "Decote_OPCVM_max",
     ),
 }
-EXPECTED_INDICATORS_BY_SHEET: dict[str, tuple[str, ...]] = {
-    "Ref_Ponderation": (
-        "Notation / RW Souverains",
-        "Notation / RW Organismes publics",
-        "Notation / RW Entreprises",
-        "Notation / RW Banques <=3m",
-        "Notation / RW Banques >3m",
-        "Type_HB",
-        "CCF_HB",
-    ),
-    # Feuilles de référence / paramétrage : le validateur (IMPORT_SHEET_SPECS
-    # dans app/validators/excel_import_validator.py) ne vérifie que la
-    # présence de ces repères texte quelque part dans la feuille (pas de
-    # colonnes ni de contenu métier précis) — voir _has_marker. Ces tuples
-    # DOIVENT rester identiques aux `required_markers` de chaque spec là-bas,
-    # sinon un modèle généré ici puis réimporté tel quel est rejeté comme
-    # "repère requis manquant".
-    "LISTE": ("CATEGOREIS", "Type de CRM", "Financée", "Non financée"),
-    "(a) souverains": ("Notation", "Pondération"),
-    "(b) organismes pub. hors Adm c": ("Notation", "Pondération"),
-    "(c) Expositions sur les BMD": ("BMD", "Pondérations"),
-    "(d) institutions financières": ("institutions financières", "Pondération ="),
-    "(e) entreprises": ("Notation", "Pondération"),
-    "(f) clientèle de détail": ("Critère", "Condition"),
-    "(g) prêts garantis par l'immo R": ("Immobilier Résidentiel", "Pondération ="),
-    "(h) prêts garantis par l'immo C": ("Immobilier Commercial", "Condition de garantie"),
-    "(i) créances en souffrance": ("Elements", "Ponderations"),
-    "(j) créances à risque élevé": ("Ponderation", "1.5"),
-    "(k) autres actifs": ("Elements", "Pondérations"),
-    "(l) Hors bilan": ("Catégorie", "FCEC (%)"),
-    "Mapping des pondérations": ("DBRS", "Moody", "S&P", "Fitch"),
-}
-REF_REQUIRED_MARKERS = ("Type_HB", "CCF_HB")
-REF_MIN_COLUMN_COUNT = 17
 
 
 class ExcelImportValidationError(ValueError):
@@ -239,6 +207,23 @@ def _as_optional_float(value: Any) -> float | None:
         return float(compact)
     except ValueError:
         return None
+
+
+def _as_optional_bool(value: Any) -> bool | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    text = _normalize_for_key(str(value))
+    if not text:
+        return None
+    if text in {"oui", "yes", "true", "vrai", "1", "x"}:
+        return True
+    if text in {"non", "no", "false", "faux", "0"}:
+        return False
+    return None
 
 
 def _as_date(value: Any) -> date:
@@ -413,19 +398,6 @@ class ExcelRepository:
             if missing_columns:
                 missing_columns_by_sheet[sheet_name] = missing_columns
 
-        if "Ref_Ponderation" in workbook_sheets:
-            ref_sheet = workbook["Ref_Ponderation"]
-            ref_markers = self._collect_sheet_markers(workbook, "Ref_Ponderation")
-            missing_markers = [
-                marker for marker in REF_REQUIRED_MARKERS if _normalize_for_key(marker) not in ref_markers
-            ]
-            if missing_markers:
-                missing_indicators_by_sheet["Ref_Ponderation"] = missing_markers
-            if ref_sheet.max_column < REF_MIN_COLUMN_COUNT:
-                sheet_diagnostics["Ref_Ponderation"] = [
-                    f"La feuille doit contenir au moins {REF_MIN_COLUMN_COUNT} colonnes utiles pour les RW et les CCF."
-                ]
-
         if missing_sheets or missing_columns_by_sheet or missing_indicators_by_sheet or sheet_diagnostics:
             payload: dict[str, Any] = {
                 "error_code": "excel_structure_invalid",
@@ -434,7 +406,6 @@ class ExcelRepository:
                 "available_sheets": list(workbook.sheetnames),
                 "sheet_columns": {sheet: list(columns) for sheet, columns in EXPECTED_COLUMNS_BY_SHEET.items()},
                 "optional_columns": {sheet: list(columns) for sheet, columns in OPTIONAL_COLUMNS_BY_SHEET.items()},
-                "sheet_indicators": {sheet: list(indicators) for sheet, indicators in EXPECTED_INDICATORS_BY_SHEET.items()},
             }
             if missing_sheets:
                 payload["missing_sheets"] = missing_sheets
@@ -477,12 +448,26 @@ class ExcelRepository:
 
     def _build_cache_from_workbook(self, workbook) -> ExcelWorkbookCache:
         self._validate_workbook_structure(workbook)
+        # "Traitement_HB" et "Ref_Ponderation" ne font plus partie du modèle
+        # épuré (voir EXPECTED_SHEETS) ; on les lit uniquement si un classeur
+        # historique (avant nettoyage) les contient encore, pour ne pas
+        # casser ce chemin de code legacy (list_exposures / upsert), qui
+        # n'est plus utilisé par le pipeline d'import actif mais reste dans
+        # ce fichier.
+        hb_rows = (
+            self._read_sheet_rows(workbook, "Traitement_HB")
+            if "Traitement_HB" in workbook.sheetnames
+            else []
+        )
+        ref_rows = (
+            self._read_ref_rows(workbook) if "Ref_Ponderation" in workbook.sheetnames else []
+        )
         return ExcelWorkbookCache(
             template_rows=self._read_sheet_rows(workbook, "Template données"),
-            hb_rows=self._read_sheet_rows(workbook, "Traitement_HB"),
+            hb_rows=hb_rows,
             crm_non_fin_rows=self._read_sheet_rows(workbook, "CRM_non_financee"),
             crm_fin_rows=self._read_sheet_rows(workbook, "CRM_financée"),
-            ref_rows=self._read_ref_rows(workbook),
+            ref_rows=ref_rows,
         )
 
     def _build_cache_for_path(self, path: Path) -> ExcelWorkbookCache:
@@ -848,177 +833,141 @@ class ExcelRepository:
         crm_non_fin_row: dict[str, Any] | None = None,
         crm_fin_row: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
+        """Construit un enregistrement d'exposition complet à partir d'une
+        ligne brute du modèle Excel épuré.
+
+        Contrairement à l'ancienne version, aucune colonne calculée
+        (pondération finale, EAD, RWA, capital...) n'est lue depuis le
+        fichier : seules les données brutes sont extraites, puis le même
+        moteur de calcul prudentiel que la saisie manuelle
+        (`build_exposure_record` / `compute_metrics` dans
+        `rwa_calculation_service.py`) est invoqué pour obtenir des résultats
+        strictement identiques, que l'exposition vienne du formulaire ou
+        d'un import Excel.
+        """
         exposure_id = _as_clean_text(row.get("ID_Exposition")) or ""
-        metadata = exposure_metadata or {}
         raw_category = _as_clean_text(row.get("Catégorie d'exposition")) or "Entreprises"
         country = _normalize_country_display(_as_clean_text(row.get("Pays_contrepartie")) or "")
-        country_rating = (
-            _as_clean_text(metadata.get("country_rating"))
-            or _as_clean_text(row.get("Notation_externe_pays"))
-            or "Non noté"
-        )
+        country_rating = _as_clean_text(row.get("Notation_externe_pays")) or "Non noté"
         rating = _as_clean_text(row.get("Notation_externe_contrepartie")) or "Non noté"
-        grant_date = _as_optional_date(metadata.get("grant_date")) or _as_optional_date(
-            row.get("Date d'octroi")
-        )
-        maturity_date = _as_optional_date(metadata.get("maturity_date")) or _as_optional_date(
-            row.get("Date d'échéance")
-        )
-        crm_type = _as_clean_text(row.get("Type_CRM")) or "Sans CRM"
-        loan_total_amount = _as_optional_float(row.get("PRÊT TOTAL"))
-        on_balance_exposure_amount = _as_optional_float(
-            row.get("Montant_exposition_but_au_bilan")
-        )
-        off_balance_exposure_amount = _as_optional_float(
-            row.get("Montant d'exposition au HB")
-        )
-        country_risk_weight = _as_optional_float(row.get("Pondération_pays"))
-        ead_bilan_amount = _as_optional_float(row.get("EAD_bilan"))
-        ead_hb_amount = _as_optional_float(row.get("EAD_HB"))
-        ead_hb_ccf_amount = _as_optional_float(row.get("EAD_HB_ccf"))
-        ead_total_amount = _as_optional_float(row.get("EAD_Total"))
-        rwa_eb_amount = _as_optional_float(row.get("RWA_EB"))
-        rwa_hb_amount = _as_optional_float(row.get("RWA_HB"))
-        rwa_credit_amount = _as_optional_float(row.get("RWA_crédit"))
-        capital_amount = _as_optional_float(row.get("Capital_min_reg"))
-        stored_rw = _as_optional_float(row.get("Pondération (RW)")) or 0.0
-        gross_amount = on_balance_exposure_amount or loan_total_amount or 0.0
-        exposure_maturity_months = (
-            int(raw_value)
-            if (raw_value := _as_optional_float(row.get("Maturité de l'exposition"))) is not None
-            else _months_between(grant_date, maturity_date)
-        )
-        residual_maturity_months = (
-            int(raw_value)
-            if (raw_value := _as_optional_float(row.get("Maturité résiduelle"))) is not None
-            else _months_between(_as_date(row.get("Date d'analyse")), maturity_date)
-        )
-        is_off_balance = _normalize_for_key(raw_category).startswith("(l) hors bilan")
-        computed_ead_total = (
-            ead_total_amount
-            if ead_total_amount is not None
-            else (
-                (ead_bilan_amount or 0.0) + (ead_hb_ccf_amount or 0.0)
-                if ead_bilan_amount is not None or ead_hb_ccf_amount is not None
-                else ead_bilan_amount
-            )
-        )
-        stored_rwa = (
-            rwa_credit_amount
-            if rwa_credit_amount is not None
-            else (
-                (rwa_eb_amount or 0.0) + (rwa_hb_amount or 0.0)
-                if rwa_eb_amount is not None or rwa_hb_amount is not None
-                else None
-            )
-        )
-        if computed_ead_total is None or computed_ead_total <= 0:
-            # Colonnes EAD absentes ou nulles dans le classeur : l'EAD est
-            # reconstituée via l'identité réglementaire RWA = EAD × RW, sinon
-            # depuis le montant au bilan (EAD bilan = valeur comptable).
-            if stored_rwa is not None and stored_rwa > 0 and stored_rw > 0:
-                computed_ead_total = round(stored_rwa / stored_rw, 2)
-            elif not is_off_balance:
-                computed_ead_total = on_balance_exposure_amount
-        ead = 0.0 if is_off_balance else (computed_ead_total or 0.0)
-        rwa = 0.0 if is_off_balance else (
-            stored_rwa
-            if stored_rwa is not None
-            else round((computed_ead_total or 0.0) * stored_rw, 2)
-        )
-        capital = 0.0 if is_off_balance else (
-            capital_amount if capital_amount is not None else round(rwa * 0.09, 2)
-        )
-        crm_coverage_percent = _as_float(metadata.get("crm_coverage_percent"))
-        crm_mode = _crm_mode_from_type(crm_type)
-        crm_details = metadata.get("crm_details")
-        if not isinstance(crm_details, dict):
-            crm_details = {
-                "mode": crm_mode,
-                "label": crm_type,
-                "coverage_percent": crm_coverage_percent,
-            }
-            if crm_mode == "CRM non financee" and crm_non_fin_row is not None:
-                coverage = _as_float(crm_non_fin_row.get("% Exp_couverte"))
-                crm_coverage_percent = coverage
-                crm_details.update(
-                    {
-                        "guarantor_name": _as_clean_text(crm_non_fin_row.get("Nom du garant")) or "",
-                        "guarantor_category": _as_clean_text(crm_non_fin_row.get("Catégorie du garant")) or "",
-                        "guarantor_rating": _as_clean_text(crm_non_fin_row.get("Note_garant")) or "",
-                        "coverage_percent": coverage,
-                    }
-                )
-            elif crm_mode == "CRM financee" and crm_fin_row is not None:
-                coverage_amount = max(
-                    (
-                        _as_float(crm_fin_row.get("Eva_EB"))
-                        + _as_float(crm_fin_row.get("Eva_HB"))
-                    )
-                    - _as_float(crm_fin_row.get("Cva")),
-                    0.0,
-                )
-                coverage_base = loan_total_amount or gross_amount
-                coverage = 0.0 if coverage_base == 0 else min(coverage_amount / coverage_base, 1.0)
-                crm_coverage_percent = coverage
-                crm_details.update(
-                    {
-                        "collateral_value": _as_float(crm_fin_row.get("Valeur_Collatéral")),
-                        "issuer_type": _as_clean_text(crm_fin_row.get("Type_emetteur")) or "",
-                        "issuer_rating": _as_clean_text(crm_fin_row.get("Notation")) or "",
-                        "maturity_bucket": _as_clean_text(crm_fin_row.get("Maturite")) or "<=1 an",
-                        "fx_haircut": _as_float(crm_fin_row.get("Hfx")),
-                        "coverage_percent": coverage,
-                    }
-                )
+        grant_date = _as_optional_date(row.get("Date d'octroi"))
+        maturity_date = _as_optional_date(row.get("Date d'échéance"))
+        crm_type = _as_clean_text(row.get("Type_CRM")) or "Aucune"
+        currency = _as_clean_text(row.get("Devise")) or "XOF"
 
-        original_rw = _as_float(metadata.get("original_rw")) or stored_rw
-        final_rw = _as_float(metadata.get("final_rw")) or (stored_rw if ead > 0 else 0.0)
-        ead = _as_float(metadata.get("ead")) or ead
-        rwa = _as_float(metadata.get("rwa")) or rwa
-        capital = _as_float(metadata.get("capital")) or capital
-        source_fields = {
-            "loan_total_amount": loan_total_amount,
-            "on_balance_exposure_amount": on_balance_exposure_amount,
-            "off_balance_exposure_amount": off_balance_exposure_amount,
-            "exposure_maturity_months": exposure_maturity_months,
-            "residual_maturity_months": residual_maturity_months,
-            "country_risk_weight": country_risk_weight,
-            "ead_bilan_amount": ead_bilan_amount,
-            "ead_hb_amount": ead_hb_amount,
-            "ead_hb_ccf_amount": ead_hb_ccf_amount,
-            "ead_total_amount": ead_total_amount,
-            "rwa_eb_amount": rwa_eb_amount,
-            "rwa_hb_amount": rwa_hb_amount,
-        }
-        return {
-            "id": exposure_id,
-            "analysis_date": _as_date(row.get("Date d'analyse")),
-            "grant_date": grant_date,
-            "maturity_date": maturity_date,
-            "counterparty_name": _as_clean_text(row.get("Contrepartie")) or exposure_id,
-            "country": country,
-            "country_rating": country_rating,
-            "category_raw": raw_category,
-            "category_dashboard": _dashboard_category_from_raw(raw_category),
-            "category_standard": _standard_category_from_raw(raw_category),
-            "rating": rating,
-            "gross_amount": gross_amount,
-            **source_fields,
-            "source_fields": source_fields,
-            "currency": _as_clean_text(metadata.get("currency")) or _as_clean_text(row.get("Devise")) or "XOF",
-            "status": _as_clean_text(metadata.get("status")) or "Active",
-            "crm_exists": (_normalize_for_key(_as_clean_text(row.get("CRM_existe")) or "") == "oui"),
-            "crm_type": crm_type,
-            "crm_coverage_percent": crm_coverage_percent,
-            "crm_details": crm_details,
-            "original_rw": original_rw,
-            "final_rw": final_rw,
-            "ead": ead,
-            "rwa": rwa,
-            "capital": capital,
-            "comment": _as_clean_text(metadata.get("comment")) or _as_clean_text(row.get("Commentaire")),
-        }
+        loan_total_amount = _as_optional_float(row.get("PRÊT TOTAL"))
+        on_balance_exposure_amount = _as_optional_float(row.get("Montant_exposition_but_au_bilan"))
+        off_balance_exposure_amount = _as_optional_float(row.get("Montant d'exposition au HB"))
+        gross_amount = (
+            on_balance_exposure_amount
+            if on_balance_exposure_amount is not None
+            else (loan_total_amount or 0.0)
+        )
+
+        crm_mode = _crm_mode_from_type(crm_type)
+        crm_details_kwargs: dict[str, Any] = {"mode": crm_mode, "label": crm_type}
+        coverage_percent = 0.0
+        if crm_mode == "CRM non financee" and crm_non_fin_row is not None:
+            covered_amount = _as_float(crm_non_fin_row.get("Part couverte"))
+            coverage_base = gross_amount or 0.0
+            coverage_percent = 0.0 if coverage_base <= 0 else min(covered_amount / coverage_base, 1.0)
+            crm_details_kwargs.update(
+                {
+                    "guarantor_name": _as_clean_text(crm_non_fin_row.get("Nom du garant")) or "",
+                    "guarantor_category": _as_clean_text(crm_non_fin_row.get("Catégorie du garant")) or "",
+                    "guarantor_rating": _as_clean_text(crm_non_fin_row.get("Note_garant")) or "",
+                    "guarantor_country": _as_clean_text(crm_non_fin_row.get("Pays_garant")) or "",
+                    "guarantor_country_rating": _as_clean_text(crm_non_fin_row.get("Note_pays_garant")) or "",
+                    "coverage_percent": coverage_percent,
+                }
+            )
+        elif crm_mode == "CRM financee" and crm_fin_row is not None:
+            crm_details_kwargs.update(
+                {
+                    "collateral_value": _as_float(crm_fin_row.get("Valeur_Collatéral")),
+                    "collateral_currency": _as_clean_text(crm_fin_row.get("Devise_Collatéral")) or currency,
+                    "collateral_type": _as_clean_text(crm_fin_row.get("Type_Collatéral"))
+                    or "Liquidités dans la même devise",
+                    "issuer_type": _as_clean_text(crm_fin_row.get("Type_emetteur")) or "",
+                    "issuer_rating": _as_clean_text(crm_fin_row.get("Notation")) or "",
+                    "maturity_bucket": _as_clean_text(crm_fin_row.get("Maturite")) or "<=1 an",
+                    "label": _as_clean_text(crm_fin_row.get("Bloc")) or crm_type,
+                    "convertible_main_index": _as_optional_bool(
+                        crm_fin_row.get("Obligation_convertible_indice_principal")
+                    )
+                    if _as_optional_bool(crm_fin_row.get("Obligation_convertible_indice_principal")) is not None
+                    else True,
+                    "opcvm_highest_haircut": (
+                        _as_optional_float(crm_fin_row.get("Decote_OPCVM_max"))
+                        if _as_optional_float(crm_fin_row.get("Decote_OPCVM_max")) is not None
+                        else 0.30
+                    ),
+                }
+            )
+
+        payload = ExposureCreate(
+            id=exposure_id or None,
+            analysis_date=_as_date(row.get("Date d'analyse")),
+            grant_date=grant_date,
+            maturity_date=maturity_date,
+            counterparty_name=_as_clean_text(row.get("Contrepartie")) or exposure_id,
+            country=country,
+            country_rating=country_rating,
+            category=raw_category,
+            rating=rating,
+            gross_amount=gross_amount,
+            loan_total_amount=loan_total_amount,
+            on_balance_exposure_amount=on_balance_exposure_amount,
+            off_balance_exposure_amount=off_balance_exposure_amount,
+            provisions_amount=_as_optional_float(row.get("Provisions")),
+            currency=currency,
+            status=_as_clean_text(row.get("Statut")) or "Active",
+            sovereign_special_case=_as_clean_text(row.get("Cas_particulier_souverain")) or "",
+            sovereign_preferential_zero_weight=_as_optional_bool(
+                row.get("Souverain_ponderation_pref_nulle")
+            )
+            or False,
+            sovereign_oce_established=_as_optional_bool(row.get("Souverain_OCE_etabli")) or False,
+            sovereign_oce_note=_as_clean_text(row.get("Souverain_note_OCE")) or "",
+            public_body_uemoa_fcfa_case=_as_optional_bool(row.get("Organisme_public_cas_UEMOA_FCFA")),
+            public_body_non_public_activity=_as_optional_bool(
+                row.get("Organisme_public_activite_non_publique")
+            ),
+            bmd_high_quality_case=_as_optional_bool(row.get("BMD_cas_haute_qualite")),
+            bmd_uemoa_fcfa_case=_as_optional_bool(row.get("BMD_cas_UEMOA_FCFA")),
+            bmd_uemoa_criteria_satisfied=_as_optional_bool(row.get("BMD_criteres_UEMOA_respectes")),
+            bmd_listed_institution_fcfa_case=_as_optional_bool(row.get("BMD_institution_listee_FCFA")),
+            bank_institution_case=_as_clean_text(row.get("Cas_institution_bancaire")),
+            other_asset_type=_as_clean_text(row.get("Type_autre_actif")),
+            off_balance_risk_level=_as_clean_text(row.get("Niveau de risque HB")),
+            retail_eligibility_criteria_satisfied=_as_optional_bool(
+                row.get("Clientele_detail_criteres_respectes")
+            ),
+            residential_mortgage_eligible=_as_optional_bool(row.get("Immobilier_residentiel_eligible")),
+            commercial_real_estate_eligible=_as_optional_bool(row.get("Immobilier_commercial_eligible")),
+            defaulted_exposure_initial_risk_weight=_as_optional_float(
+                row.get("Ponderation_initiale_avant_defaut")
+            ),
+            defaulted_exposure_residential_mortgage_in_default=_as_optional_bool(
+                row.get("Defaut_pret_immo_residentiel")
+            ),
+            defaulted_exposure_provision_at_least_twenty_percent=_as_optional_bool(
+                row.get("Defaut_provision_min_20pct")
+            ),
+            enterprise_exceeds_bceao_degradation_threshold=_as_optional_bool(
+                row.get("Entreprise_depasse_seuil_degradation_BCEAO")
+            ),
+            enterprise_prudential_procedure=_as_optional_bool(row.get("Entreprise_procedure_prudentielle")),
+            enterprise_investment_firm_without_banking_law=_as_optional_bool(
+                row.get("Entreprise_investissement_hors_loi_bancaire")
+            ),
+            crm_type=crm_type,
+            crm_coverage_percent=coverage_percent,
+            crm_details=ExposureCrmDetails(**crm_details_kwargs),
+            comment=_as_clean_text(row.get("Commentaire")),
+        )
+
+        return build_exposure_record(payload, exposure_id or "")
 
     def exposure_template_fields_by_id(self) -> dict[str, dict[str, Any]]:
         return self._index_exposure_template_fields(self._load_cache().template_rows)

@@ -9,6 +9,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../../shared/widgets/section_card.dart';
+import '../../dashboard/models/dashboard_models.dart';
 
 /// Ecran d'evaluation interne du capital (ICAAP).
 /// Conforme aux exigences Bâle III et dispositif prudentiel BCEAO/UMOA.
@@ -40,26 +41,52 @@ class IcapScreen extends StatefulWidget {
 
 class _IcapScreenState extends State<IcapScreen> {
   String _selectedScenario = 'base';
+  late Future<DashboardSnapshot> _future;
+  DashboardSnapshot? _snapshot;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = widget.api.fetchDashboard();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final content = _contentFor(widget.view, isDark);
 
-    return SingleChildScrollView(
-      padding: AppSpacing.pageInsets,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PageHeader(
-            title: content.title,
-            subtitle: content.subtitle,
-            trailing: _buildScenarioSelector(isDark),
+    return FutureBuilder<DashboardSnapshot>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Erreur : ${snapshot.error}'),
+          );
+        }
+        // Mémorisé pour la durée du build : _getCapitalData() (appelée par
+        // toutes les sections ci-dessous) lit ce champ plutôt que de
+        // recevoir la snapshot en paramètre à chaque appel.
+        _snapshot = snapshot.data;
+        final content = _contentFor(widget.view, isDark);
+
+        return SingleChildScrollView(
+          padding: AppSpacing.pageInsets,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PageHeader(
+                title: content.title,
+                subtitle: content.subtitle,
+                trailing: _buildScenarioSelector(isDark),
+              ),
+              AppSpacing.gapLg,
+              ...content.sections,
+            ],
           ),
-          AppSpacing.gapLg,
-          ...content.sections,
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -326,7 +353,8 @@ class _IcapScreenState extends State<IcapScreen> {
           _buildRequirementRow(
             label: 'Coussin contracyclique (0-2.5%)',
             required: data.totalRwa * requirements.countercyclicalBuffer,
-            available: data.totalCapital - (data.totalRwa * 0.105),
+            available: data.totalCapital -
+                (data.totalRwa * (_minimumRatio + _conservationBuffer)),
             percentage: requirements.countercyclicalBuffer,
             isDark: isDark,
           ),
@@ -409,7 +437,7 @@ class _IcapScreenState extends State<IcapScreen> {
               Expanded(
                 child: _buildAdditionalMetric(
                   label: 'Marge de capital excédentaire',
-                  value: data.totalCapital - (data.totalRwa * 0.105),
+                  value: data.totalCapital - (data.totalRwa * _minimumRatio),
                   format: 'currency',
                   icon: Icons.savings,
                   color: AppColors.success,
@@ -1228,24 +1256,67 @@ class _IcapScreenState extends State<IcapScreen> {
     );
   }
 
+  // Seuils prudentiels partagés avec le reste de l'application (RWA credit,
+  // BIC/CRR3, dashboard) : minimum Pilier 1 9 %, coussin de conservation
+  // 2,5 %, coussin contracyclique variable (0-2,5 %, paramètre macro-
+  // prudentiel non déduit du portefeuille — laissé à sa valeur par défaut).
+  static const double _minimumRatio = 0.09;
+  static const double _conservationBuffer = 0.025;
+  static const double _defaultCountercyclicalBuffer = 0.015;
+
   _CapitalData _getCapitalData() {
+    final snapshot = _snapshot;
+    final fondsPropres = snapshot?.fondsPropres;
+    final totalCapital = fondsPropres?.totalFp ?? 0.0;
+    final cet1Capital = fondsPropres?.cet1 ?? 0.0;
+    final tier1Capital = fondsPropres?.tier1 ?? 0.0;
+
+    double rwaForType(String label) {
+      final entries = snapshot?.rwaTypeDistribution ?? const [];
+      for (final entry in entries) {
+        if (entry.label == label) return entry.amount;
+      }
+      return 0.0;
+    }
+
+    final creditRwa = rwaForType('Crédit');
+    final marketRwa = rwaForType('Marché');
+    final operationalRwa = rwaForType('Opérationnel');
+    // Somme des 3 types de risque (même agrégat que le backend
+    // app/dashboard/services.py, total_all_risks) ; repli sur le RWA crédit
+    // seul si la répartition par type n'est pas disponible.
+    final totalRwa = (creditRwa + marketRwa + operationalRwa) > 0
+        ? creditRwa + marketRwa + operationalRwa
+        : (snapshot?.portfolioOverview.fold<double>(
+              0.0,
+              (sum, row) => sum + row.rwa,
+            ) ??
+            0.0);
+
     return _CapitalData(
-      cet1Capital: 287.5e9,
-      tier1Capital: 312.8e9,
-      totalCapital: 356.4e9,
-      totalRwa: 2145.6e9,
+      cet1Capital: cet1Capital,
+      tier1Capital: tier1Capital,
+      totalCapital: totalCapital,
+      totalRwa: totalRwa,
       requirements: _PrudentialRequirements(
-        creditRiskCapital: 1523.4e9,
-        marketRiskCapital: 172.8e9,
-        operationalRiskCapital: 149.2e9,
-        countercyclicalBuffer: 0.015,
-        totalRequiredRatio: 0.105,
+        creditRiskCapital: creditRwa * _minimumRatio,
+        marketRiskCapital: marketRwa * _minimumRatio,
+        operationalRiskCapital: operationalRwa * _minimumRatio,
+        countercyclicalBuffer: _defaultCountercyclicalBuffer,
+        totalRequiredRatio:
+            _minimumRatio + _conservationBuffer + _defaultCountercyclicalBuffer,
       ),
       ratios: _CapitalRatios(
-        cet1Ratio: 0.134,
-        tier1Ratio: 0.146,
-        totalCapitalRatio: 0.166,
-        leverageRatio: 0.052,
+        cet1Ratio: totalRwa > 0 ? cet1Capital / totalRwa : 0.0,
+        tier1Ratio: totalRwa > 0 ? tier1Capital / totalRwa : 0.0,
+        totalCapitalRatio: totalRwa > 0 ? totalCapital / totalRwa : 0.0,
+        // Ratio de levier approximatif (Tier 1 / RWA au taux minimum, faute
+        // d'exposition totale au bilan+hors bilan distincte du RWA dans ce
+        // snapshot) : indicatif, à affiner si une exposition totale dédiée
+        // devient disponible.
+        leverageRatio: totalRwa > 0
+            ? tier1Capital / (totalRwa / _minimumRatio)
+            : 0.0,
       ),
     );
   }
@@ -1253,36 +1324,60 @@ class _IcapScreenState extends State<IcapScreen> {
   List<_StressScenario> _getStressScenarios() {
     final baseData = _getCapitalData();
 
+    // Chocs exprimés en pourcentage du CET1 réel (calibrés sur les mêmes
+    // proportions que les scénarios de référence UMOA-BCEAO) plutôt qu'en
+    // montants absolus figés, afin de rester cohérents avec le portefeuille
+    // réellement importé.
+    _StressScenario buildScenario({
+      required String name,
+      required String description,
+      required double impactRatio,
+      required bool colorIsWarning,
+      required bool colorIsSevere,
+      required IconData icon,
+    }) {
+      final impact = baseData.cet1Capital * impactRatio;
+      final postStress = baseData.cet1Capital - impact;
+      final ratioPostStress =
+          baseData.totalRwa > 0 ? postStress / baseData.totalRwa : 0.0;
+      return _StressScenario(
+        name: name,
+        description: description,
+        cet1Impact: impact,
+        cet1PostStress: postStress,
+        ratioPostStress: ratioPostStress,
+        isCompliant: ratioPostStress >= _minimumRatio,
+        color: colorIsSevere
+            ? AppColors.danger
+            : (colorIsWarning ? AppColors.warning : AppColors.operationalHigh),
+        icon: icon,
+      );
+    }
+
     return [
-      _StressScenario(
+      buildScenario(
         name: 'Récession modérée',
         description: 'Croissance -2%, hausse NPL à 9%, baisse marchés 15%',
-        cet1Impact: 28.5e9,
-        cet1PostStress: baseData.cet1Capital - 28.5e9,
-        ratioPostStress: (baseData.cet1Capital - 28.5e9) / baseData.totalRwa,
-        isCompliant: true,
-        color: AppColors.warning,
+        impactRatio: 0.0991,
+        colorIsWarning: true,
+        colorIsSevere: false,
         icon: CupertinoIcons.cloud_rain,
       ),
-      _StressScenario(
+      buildScenario(
         name: 'Choc sévère',
         description:
             'Croissance -4%, NPL à 12%, chute marchés 30%, taux +200bp',
-        cet1Impact: 62.3e9,
-        cet1PostStress: baseData.cet1Capital - 62.3e9,
-        ratioPostStress: (baseData.cet1Capital - 62.3e9) / baseData.totalRwa,
-        isCompliant: true,
-        color: AppColors.operationalHigh,
+        impactRatio: 0.2167,
+        colorIsWarning: false,
+        colorIsSevere: false,
         icon: CupertinoIcons.bolt_fill,
       ),
-      _StressScenario(
+      buildScenario(
         name: 'Crise systémique',
         description: 'Croissance -6%, NPL à 19%, krach -50%, crise liquidité',
-        cet1Impact: 115.8e9,
-        cet1PostStress: baseData.cet1Capital - 115.8e9,
-        ratioPostStress: (baseData.cet1Capital - 115.8e9) / baseData.totalRwa,
-        isCompliant: false,
-        color: AppColors.danger,
+        impactRatio: 0.4026,
+        colorIsWarning: false,
+        colorIsSevere: true,
         icon: CupertinoIcons.exclamationmark_triangle_fill,
       ),
     ];

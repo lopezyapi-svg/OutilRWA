@@ -832,12 +832,12 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
             style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: _text),
             onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               isDense: true,
               hintText: '0',
               suffixText: ' FCFA',
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              border: const OutlineInputBorder(),
+              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              border: OutlineInputBorder(),
             ),
           ),
         ],

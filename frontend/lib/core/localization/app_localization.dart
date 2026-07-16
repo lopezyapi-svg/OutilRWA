@@ -521,20 +521,18 @@ const Map<String, String> _englishTranslations = {
   'Creances en souffrance': 'Past-due exposures',
   'Risque eleve': 'High-risk',
   'Créances à risque élevé': 'High-risk exposures',
-  '(a) souverains': '(a) sovereigns',
-  '(b) organismes pub. hors Adm c':
-      '(b) public-sector entities outside central administration',
-  '(c) Expositions sur les BMD': '(c) MDB exposures',
-  '(d) institutions financieres': '(d) financial institutions',
-  '(e) entreprises': '(e) corporates',
-  '(f) clientele de detail': '(f) retail clients',
-  "(g) prêts garantis par l'immo R":
-      '(g) residential real-estate secured loans',
-  "(h) prêts garantis par l'immo C": '(h) commercial real-estate secured loans',
-  '(i) creances en souffrance': '(i) past-due exposures',
-  '(j) creances a risque eleve': '(j) high-risk exposures',
-  '(j) créances à risque élevé': '(j) high-risk exposures',
-  '(k) autres actifs': '(k) other assets',
+  // Libellés prudentiels de catégorie sans préfixe lettre (le préfixe
+  // "(a) ", "(b) "... a été retiré partout dans l'appli — voir
+  // CATEGORY_OPTIONS dans rwa_calculation_service.py et exposureCategories
+  // dans exposition_models.dart).
+  'Organismes pub. hors Adm c':
+      'Public-sector entities outside central administration',
+  'Institutions financières': 'Financial institutions',
+  'Clientèle de détail': 'Retail clients',
+  "Prêts garantis par l'immo R": 'Residential real-estate secured loans',
+  "Prêts garantis par l'immo C": 'Commercial real-estate secured loans',
+  'Créances en souffrance': 'Past-due exposures',
+  'Autres actifs': 'Other assets',
   '{{title}} - {{count}} ligne(s), affichage des {{preview}} premiere(s)':
       '{{title}} - {{count}} row(s), showing the first {{preview}}',
   'Infos calcul': 'Calculation info',

@@ -10,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../../shared/widgets/section_card.dart';
+import '../../dashboard/models/dashboard_models.dart';
 
 /// Ecran de simulation des scenarios adverses.
 class StressTestScreen extends StatefulWidget {
@@ -25,44 +26,86 @@ class StressTestScreen extends StatefulWidget {
 }
 
 class _StressTestScreenState extends State<StressTestScreen> {
+  static const double _minimumRatio = 0.09;
+
   String _selectedScenario = 'recession';
+  late Future<DashboardSnapshot> _future;
+  DashboardSnapshot? _snapshot;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = widget.api.fetchDashboard();
+  }
+
+  double get _baseCapital => _snapshot?.fondsPropres?.totalFp ?? 0.0;
+
+  double get _baseRwa {
+    final snapshot = _snapshot;
+    if (snapshot == null) return 0.0;
+    double rwaFor(String label) {
+      for (final entry in snapshot.rwaTypeDistribution) {
+        if (entry.label == label) return entry.amount;
+      }
+      return 0.0;
+    }
+
+    final total =
+        rwaFor('Crédit') + rwaFor('Marché') + rwaFor('Opérationnel');
+    if (total > 0) return total;
+    return snapshot.portfolioOverview
+        .fold<double>(0.0, (sum, row) => sum + row.rwa);
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final scenario = _getScenarioData(_selectedScenario);
 
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          PageHeader(
-            title: 'Stress Test',
-            subtitle:
-                'Simulation de chocs et scénarios adverses sur le portefeuille et le capital.',
-            trailing: _buildScenarioSelector(isDark),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildScenarioInfoSection(scenario, isDark),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildImpactOverviewSection(scenario, isDark),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildCategoryImpactSection(scenario, isDark),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildCapitalAdequacySection(scenario, isDark),
-                  const SizedBox(height: AppSpacing.md),
-                  _buildScenarioComparisonSection(isDark),
-                ],
+      child: FutureBuilder<DashboardSnapshot>(
+        future: _future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Erreur : ${snapshot.error}'));
+          }
+          _snapshot = snapshot.data;
+          final scenario = _getScenarioData(_selectedScenario);
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              PageHeader(
+                title: 'Stress Test',
+                subtitle:
+                    'Simulation de chocs et scénarios adverses sur le portefeuille et le capital.',
+                trailing: _buildScenarioSelector(isDark),
               ),
-            ),
-          ),
-        ],
+              const SizedBox(height: AppSpacing.lg),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildScenarioInfoSection(scenario, isDark),
+                      const SizedBox(height: AppSpacing.md),
+                      _buildImpactOverviewSection(scenario, isDark),
+                      const SizedBox(height: AppSpacing.md),
+                      _buildCategoryImpactSection(scenario, isDark),
+                      const SizedBox(height: AppSpacing.md),
+                      _buildCapitalAdequacySection(scenario, isDark),
+                      const SizedBox(height: AppSpacing.md),
+                      _buildScenarioComparisonSection(isDark),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -213,14 +256,15 @@ class _StressTestScreenState extends State<StressTestScreen> {
   }
 
   Widget _buildImpactOverviewSection(_StressScenario scenario, bool isDark) {
-    const baseCapital = 58000000000.0;
-    const baseRwa = 420000000000.0;
-    const baseRatio = baseCapital / baseRwa;
+    final baseCapital = _baseCapital;
+    final baseRwa = _baseRwa;
+    final baseRatio = baseRwa > 0 ? baseCapital / baseRwa : 0.0;
 
     final stressedRwa = baseRwa * (1 + scenario.rwaImpact);
-    final stressedRatio = baseCapital / stressedRwa;
-    final capitalGap =
-        stressedRatio < 0.105 ? (stressedRwa * 0.105 - baseCapital) : 0.0;
+    final stressedRatio = stressedRwa > 0 ? baseCapital / stressedRwa : 0.0;
+    final capitalGap = stressedRatio < _minimumRatio
+        ? (stressedRwa * _minimumRatio - baseCapital)
+        : 0.0;
 
     return SectionCard(
       title: 'Vue d\'ensemble de l\'impact',
@@ -257,8 +301,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
               baseValue: baseRatio,
               stressedValue: stressedRatio,
               icon: CupertinoIcons.gauge,
-              color:
-                  stressedRatio >= 0.105 ? AppColors.success : AppColors.danger,
+              color: stressedRatio >= _minimumRatio
+                  ? AppColors.success
+                  : AppColors.danger,
               isDark: isDark,
               format: 'percent',
             ),
@@ -435,11 +480,11 @@ class _StressTestScreenState extends State<StressTestScreen> {
   }
 
   Widget _buildCapitalAdequacySection(_StressScenario scenario, bool isDark) {
-    const baseCapital = 58000000000.0;
-    const baseRwa = 420000000000.0;
-    const baseRatio = baseCapital / baseRwa;
+    final baseCapital = _baseCapital;
+    final baseRwa = _baseRwa;
+    final baseRatio = baseRwa > 0 ? baseCapital / baseRwa : 0.0;
     final stressedRwa = baseRwa * (1 + scenario.rwaImpact);
-    final stressedRatio = baseCapital / stressedRwa;
+    final stressedRatio = stressedRwa > 0 ? baseCapital / stressedRwa : 0.0;
 
     return SectionCard(
       title: 'Adéquation du capital',
@@ -479,7 +524,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
     required bool isDark,
     required bool isStressed,
   }) {
-    final isCompliant = ratio >= 0.105;
+    final isCompliant = ratio >= _minimumRatio;
     final color = isCompliant ? AppColors.success : AppColors.danger;
 
     return Container(
@@ -545,7 +590,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Seuil: 10.5%',
+            'Seuil: 9%',
             style: TextStyle(
               fontSize: 10,
               color: isDark ? AppTheme.darkMuted : AppTheme.muted,
@@ -561,8 +606,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
         .map((id) => _getScenarioData(id))
         .toList();
 
-    const baseCapital = 58000000000.0;
-    const baseRwa = 420000000000.0;
+    final baseCapital = _baseCapital;
+    final baseRwa = _baseRwa;
 
     return SectionCard(
       title: 'Comparaison des scénarios',
@@ -572,8 +617,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: scenarios.map((scenario) {
             final stressedRwa = baseRwa * (1 + scenario.rwaImpact);
-            final stressedRatio = baseCapital / stressedRwa;
-            final isCompliant = stressedRatio >= 0.105;
+            final stressedRatio =
+                stressedRwa > 0 ? baseCapital / stressedRwa : 0.0;
+            final isCompliant = stressedRatio >= _minimumRatio;
             final color = isCompliant ? AppColors.success : AppColors.danger;
             final height = (stressedRatio / 0.15 * 250).clamp(20.0, 250.0);
 
@@ -677,7 +723,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
   }
 
   List<_CategoryImpact> _getCategoryImpacts(_StressScenario scenario) {
-    const baseRwa = 420000000000.0;
+    final baseRwa = _baseRwa;
     final categories = {
       'Administrations centrales': 0.15,
       'Banques': 0.12,

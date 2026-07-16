@@ -104,6 +104,33 @@ class ExportService:
                 "RWA_HB",
                 "RWA_crédit",
                 "Capital_min_reg",
+                # Colonnes brutes supplémentaires (mêmes noms que le modèle
+                # d'import) : permettent de réimporter directement un export
+                # sans perdre le statut, le niveau de risque hors bilan, ni
+                # les cas particuliers par catégorie.
+                "Statut",
+                "Niveau de risque HB",
+                "Cas_particulier_souverain",
+                "Souverain_ponderation_pref_nulle",
+                "Souverain_OCE_etabli",
+                "Souverain_note_OCE",
+                "Organisme_public_cas_UEMOA_FCFA",
+                "Organisme_public_activite_non_publique",
+                "BMD_cas_haute_qualite",
+                "BMD_cas_UEMOA_FCFA",
+                "BMD_criteres_UEMOA_respectes",
+                "BMD_institution_listee_FCFA",
+                "Cas_institution_bancaire",
+                "Type_autre_actif",
+                "Clientele_detail_criteres_respectes",
+                "Immobilier_residentiel_eligible",
+                "Immobilier_commercial_eligible",
+                "Ponderation_initiale_avant_defaut",
+                "Defaut_pret_immo_residentiel",
+                "Defaut_provision_min_20pct",
+                "Entreprise_depasse_seuil_degradation_BCEAO",
+                "Entreprise_procedure_prudentielle",
+                "Entreprise_investissement_hors_loi_bancaire",
             ]
         )
         workbook.create_sheet(self._CRM_FINANCED_SHEET).append(
@@ -120,6 +147,10 @@ class ExportService:
                 "Eva_EB",
                 "Eva_HB",
                 "Cva",
+                "Devise_Collatéral",
+                "Type_Collatéral",
+                "Obligation_convertible_indice_principal",
+                "Decote_OPCVM_max",
             ]
         )
         workbook.create_sheet(self._CRM_NON_FINANCED_SHEET).append(
@@ -128,7 +159,7 @@ class ExportService:
                 "Nom du garant",
                 "Note_garant",
                 "Pays_garant",
-                "Notation_externe_pays_garant",
+                "Note_pays_garant",
                 "Pondération_pays_garant",
                 "Catégorie du garant",
                 "Pondération du garant",
@@ -235,12 +266,17 @@ class ExportService:
     def _crm_type_label(self, exposure: dict[str, Any]) -> str:
         return str(exposure.get("crm_type") or "")
 
+    def _bool_export(self, value: Any) -> str | None:
+        if value is None:
+            return None
+        return "Oui" if bool(value) else "Non"
+
     def _fill_template_sheet(
         self,
         sheet,
         exposures: list[dict[str, Any]],
     ) -> None:
-        self._clear_sheet_values(sheet, max_columns=27)
+        self._clear_sheet_values(sheet, max_columns=50)
 
         for row_index, exposure in enumerate(exposures, start=2):
             analysis_date = self._coerce_excel_date(exposure.get("analysis_date"))
@@ -295,6 +331,39 @@ class ExportService:
                     self._coerce_optional_float(exposure.get("rwa_hb_amount")),
                     self._coerce_float(exposure.get("rwa")),
                     self._coerce_float(exposure.get("capital")),
+                    str(exposure.get("status") or "Active"),
+                    exposure.get("off_balance_risk_level"),
+                    exposure.get("sovereign_special_case") or None,
+                    self._bool_export(exposure.get("sovereign_preferential_zero_weight")),
+                    self._bool_export(exposure.get("sovereign_oce_established")),
+                    exposure.get("sovereign_oce_note") or None,
+                    self._bool_export(exposure.get("public_body_uemoa_fcfa_case")),
+                    self._bool_export(exposure.get("public_body_non_public_activity")),
+                    self._bool_export(exposure.get("bmd_high_quality_case")),
+                    self._bool_export(exposure.get("bmd_uemoa_fcfa_case")),
+                    self._bool_export(exposure.get("bmd_uemoa_criteria_satisfied")),
+                    self._bool_export(exposure.get("bmd_listed_institution_fcfa_case")),
+                    exposure.get("bank_institution_case"),
+                    exposure.get("other_asset_type"),
+                    self._bool_export(exposure.get("retail_eligibility_criteria_satisfied")),
+                    self._bool_export(exposure.get("residential_mortgage_eligible")),
+                    self._bool_export(exposure.get("commercial_real_estate_eligible")),
+                    self._coerce_optional_float(
+                        exposure.get("defaulted_exposure_initial_risk_weight")
+                    ),
+                    self._bool_export(
+                        exposure.get("defaulted_exposure_residential_mortgage_in_default")
+                    ),
+                    self._bool_export(
+                        exposure.get("defaulted_exposure_provision_at_least_twenty_percent")
+                    ),
+                    self._bool_export(
+                        exposure.get("enterprise_exceeds_bceao_degradation_threshold")
+                    ),
+                    self._bool_export(exposure.get("enterprise_prudential_procedure")),
+                    self._bool_export(
+                        exposure.get("enterprise_investment_firm_without_banking_law")
+                    ),
                 ],
             )
 
@@ -303,7 +372,7 @@ class ExportService:
         sheet,
         exposures: list[dict[str, Any]],
     ) -> None:
-        self._clear_sheet_values(sheet, max_columns=12)
+        self._clear_sheet_values(sheet, max_columns=16)
 
         row_index = 2
         for exposure in exposures:
@@ -334,6 +403,13 @@ class ExportService:
                         exposure.get("off_balance_exposure_amount")
                     ),
                     self._coerce_float(crm_details.get("cva")),
+                    str(crm_details.get("collateral_currency") or exposure.get("currency") or "XOF"),
+                    str(
+                        crm_details.get("collateral_type")
+                        or "Liquidités dans la même devise"
+                    ),
+                    self._bool_export(crm_details.get("convertible_main_index")),
+                    self._coerce_optional_float(crm_details.get("opcvm_highest_haircut")),
                 ],
             )
             row_index += 1
