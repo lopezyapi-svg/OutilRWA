@@ -478,7 +478,7 @@ def _build_var_history_template() -> bytes:
     add_note(ws, 6, "Prix de marché : en pourcentage du nominal (ex: 99.5 pour 99,5 %).", col=notes_col)
     add_note(ws, 7, "Fréquence : Annuelle, Semestrielle, Trimestrielle ou Mensuelle.", col=notes_col)
     add_note(ws, 8, "Dates : format AAAA-MM-JJ ou format Excel date.", col=notes_col)
-    add_note(ws, 9, "Minimum requis : 30 dates par titre pour une VaR historique fiable.", col=notes_col)
+    add_note(ws, 9, "Minimum requis : 250 dates par titre (fenêtre la plus courte proposée par l'écran VaR).", col=notes_col)
     auto_width(ws, len(headers_bonds))
     ws.column_dimensions[get_column_letter(notes_col)].width = 68
 
@@ -503,7 +503,7 @@ def _build_var_history_template() -> bytes:
     add_note(ws2, 3, "avec une Date et un Cours différents, pour construire son historique.", col=notes_col2)
     add_note(ws2, 4, "Une ligne sans Date ni Cours est acceptée (position sans historique encore fourni).", col=notes_col2)
     add_note(ws2, 5, "Cours de clôture : prix unitaire en devise locale (XOF).", col=notes_col2)
-    add_note(ws2, 6, "Minimum requis : 30 dates par instrument pour une VaR historique fiable.", col=notes_col2)
+    add_note(ws2, 6, "Minimum requis : 250 dates par instrument (fenêtre la plus courte proposée par l'écran VaR).", col=notes_col2)
     auto_width(ws2, len(headers_equities))
     ws2.column_dimensions[get_column_letter(notes_col2)].width = 68
 
