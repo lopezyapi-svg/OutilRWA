@@ -1698,10 +1698,21 @@ class _FxKpiSection extends StatelessWidget {
     // S'abonne à l'unité d'affichage globale (M / Md) : la carte se reconstruit
     // quand l'utilisateur change l'unité via le sélecteur du bandeau supérieur.
     final unit = PortfolioAmountUnitScope.of(context);
+    // Précision adaptative : plus la valeur est petite dans l'unité choisie,
+    // plus on garde de décimales (jusqu'à 3), afin qu'un basculement d'unité
+    // ne déforme pas le chiffre — 973 M doit se lire « 0,973 Md », pas
+    // « 1 Md ». Les décimales inutiles (zéros de fin) ne s'affichent pas.
+    int decimalesPour(double scaled) {
+      final abs = scaled.abs();
+      if (abs >= 100) return 0;
+      if (abs >= 10) return 1;
+      if (abs >= 1) return 2;
+      return 3;
+    }
+
     String fmt(double value) {
       final scaled = value / unit.divisor;
-      final decimals = scaled.abs() >= 100 ? 0 : 1;
-      return '${AppFormatters.decimalNumber(scaled, maxDecimals: decimals)} '
+      return '${AppFormatters.decimalNumber(scaled, maxDecimals: decimalesPour(scaled))} '
           '${unit.label}';
     }
 
@@ -1712,7 +1723,7 @@ class _FxKpiSection extends StatelessWidget {
     // qui s'arrondit à zéro à la précision affichée n'affiche pas « -0,0 ».
     String fmtSigned(double value) {
       final scaled = value / unit.divisor;
-      final decimals = scaled.abs() >= 100 ? 0 : 1;
+      final decimals = decimalesPour(scaled);
       final rounded = double.parse(scaled.toStringAsFixed(decimals));
       final normalized = rounded == 0 ? 0.0 : rounded;
       return '${AppFormatters.decimalNumber(normalized, maxDecimals: decimals)} '
