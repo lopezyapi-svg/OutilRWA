@@ -57,6 +57,11 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
     return rb?.size.width ?? 500;
   }
 
+  double _getHeight() {
+    final rb = _chartKey.currentContext?.findRenderObject() as RenderBox?;
+    return rb?.size.height ?? 190;
+  }
+
   double get _rwa {
     final metric = widget.data.metrics.firstWhere((m) => m.key == 'rwa', orElse: () => const DashboardMetric(key: 'rwa', label: '', value: 0.0, variation: '', trend: []));
     return metric.value;
@@ -66,11 +71,25 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
     final cet1Metric = widget.data.metrics.firstWhere((m) => m.key == 'cet1_ratio', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
     final t1Metric = widget.data.metrics.firstWhere((m) => m.key == 'tier1_ratio', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
     final solvMetric = widget.data.metrics.firstWhere((m) => m.key == 'solvabilite', orElse: () => const DashboardMetric(key: '', label: '', value: 0.0, variation: '', trend: []));
-    
+
+    // Les ratios servis par le backend sont arrondis (3 décimales de %) : les
+    // reconstituer en montants (ratio × RWA) fait diverger le « Montant
+    // détenu » des fonds propres réels affichés dans le panneau voisin.
+    // On repart donc des montants CET1/Tier 1/FP totaux du snapshot, et on ne
+    // retombe sur la métrique que si le détail des fonds propres est absent.
+    final fp = widget.data.fondsPropres;
+    final rwa = _rwa;
+    double actuelPct(double? montant, DashboardMetric fallback) {
+      if (montant != null && rwa > 0) {
+        return montant / rwa * 100;
+      }
+      return fallback.value * 100;
+    }
+
     return [
-      _CapLine('CET1'.tr(context), base: 5.0, coussin: 2.5, actuel: cet1Metric.value * 100),
-      _CapLine('Tier 1'.tr(context), base: 7.5, coussin: 2.5, actuel: t1Metric.value * 100),
-      _CapLine('Solvabilité'.tr(context), base: 9.0, coussin: 2.5, actuel: solvMetric.value * 100),
+      _CapLine('CET1'.tr(context), base: 5.0, coussin: 2.5, actuel: actuelPct(fp?.cet1, cet1Metric)),
+      _CapLine('Tier 1'.tr(context), base: 7.5, coussin: 2.5, actuel: actuelPct(fp?.tier1, t1Metric)),
+      _CapLine('Solvabilité'.tr(context), base: 9.0, coussin: 2.5, actuel: actuelPct(fp?.totalFp, solvMetric)),
     ];
   }
 
@@ -91,10 +110,12 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
     var maxAxis = (maxDetenu / tickStep).ceil() * tickStep;
     if (maxAxis <= 0) maxAxis = tickStep;
 
+    // Mêmes marges que _DotPlotPainter pour que le survol vise exactement
+    // les points dessinés.
     final plotW = _getWidth() - 85.0 - 60.0;
     const plotLeft = 85.0;
     const plotTop = 12.0;
-    const plotBottom = 158.0 - 26.0;
+    final plotBottom = _getHeight() - 26.0;
 
     double x(double v) => plotLeft + (v / maxAxis) * plotW;
 
@@ -273,7 +294,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
                           _tooltip!.pos.dx < _getWidth() / 2
                               ? _tooltip!.pos.dx + 16
                               : _tooltip!.pos.dx - 336)),
-                      bottom: 158 - _tooltip!.pos.dy + 12,
+                      bottom: _getHeight() - _tooltip!.pos.dy + 12,
                       child: IgnorePointer(
                         child: Container(
                           width: 320,

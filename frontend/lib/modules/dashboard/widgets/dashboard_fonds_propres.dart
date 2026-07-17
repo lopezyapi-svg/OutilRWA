@@ -281,8 +281,11 @@ class DashboardFondsPropres extends StatelessWidget {
   }
 
   String _formatAmountWithUnit(double value, PortfolioAmountUnit unit) {
-    final amountVal = _formatAmount(value, unit);
-    final amountSuffix = AppFormatters.formatAmountSuffix(value, unit.label);
+    // Les déductions sont passées négativées ; quand elles valent zéro le
+    // double -0.0 s'afficherait « -0 ». On normalise vers le zéro positif.
+    final normalized = value == 0.0 ? 0.0 : value;
+    final amountVal = _formatAmount(normalized, unit);
+    final amountSuffix = AppFormatters.formatAmountSuffix(normalized, unit.label);
     return '$amountVal $amountSuffix'.trim();
   }
 
