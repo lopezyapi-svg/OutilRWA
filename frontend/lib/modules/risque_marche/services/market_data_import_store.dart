@@ -9,6 +9,7 @@ import 'package:xml/xml.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/utils/currency_conversion.dart';
+import '../models/currency_registry.dart';
 import 'market_country_resolver.dart';
 import 'market_data_local_storage.dart' as local_storage;
 import 'market_risk_orchestrator.dart';
@@ -610,14 +611,22 @@ double _marketPrudentialRecordPositionValue(MarketPortfolioRecord record) {
   };
 }
 
+/// Taux courant vers XOF pour une devise : lu dans le référentiel partagé
+/// (CurrencyRegistry), tenu à jour par l'écran Risque de Change (saisie
+/// manuelle ou cotation en ligne) — pas la table figée de
+/// currency_conversion.dart, jamais actualisée, qui ferait diverger les
+/// exigences de fonds propres (Taux/Actions/Change) de ce tableau de bord
+/// par rapport aux mêmes montants recalculés sur l'écran Risque de Change.
+double _tauxCourantVersXof(String currencyCode) {
+  final normalized = normalizeCurrencyCode(currencyCode);
+  if (normalized == 'XOF') return 1.0;
+  return CurrencyRegistry().getRate(normalized)?.rateToXof ?? 1.0;
+}
+
 double _marketPrudentialBondPositionValue(MarketPortfolioRecord record) {
   final value = _bondMarketValue(record);
   if (value <= 0 || !value.isFinite) return 0;
-  return convertCurrencyAmount(
-    value,
-    fromCurrency: record.currency,
-    toCurrency: 'XOF',
-  );
+  return value * _tauxCourantVersXof(record.currency);
 }
 
 double _marketPrudentialEquityPositionValue(MarketPortfolioRecord record) {
@@ -625,11 +634,7 @@ double _marketPrudentialEquityPositionValue(MarketPortfolioRecord record) {
       ? record.valuationAmount
       : record.exposureAmount;
   if (value <= 0 || !value.isFinite) return 0;
-  return convertCurrencyAmount(
-    value,
-    fromCurrency: record.currency,
-    toCurrency: 'XOF',
-  );
+  return value * _tauxCourantVersXof(record.currency);
 }
 
 double _marketRecordPositionSign(MarketPortfolioRecord record) {

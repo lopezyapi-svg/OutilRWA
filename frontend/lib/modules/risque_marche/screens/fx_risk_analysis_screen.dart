@@ -174,6 +174,11 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
           asOf: live.asOf,
           provider: live.provider,
         );
+        // Le référentiel partagé doit refléter le taux actualisé : les
+        // calculs agrégés hors de cet écran (tableau de bord Analyse
+        // portefeuille Marché, etc.) s'appuient sur lui, pas sur cette
+        // map locale à l'écran.
+        CurrencyRegistry().updateRate(code, live.rateToXof);
       } catch (_) {
         failures.add(code);
       }
@@ -410,6 +415,9 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
           provider: result.provider,
         );
       });
+      // Même raison que dans _refreshAllRates : garder le référentiel
+      // partagé aligné sur le taux courant affiché ici.
+      CurrencyRegistry().updateRate(code, result.rate);
       _runAnalysis();
     }
   }
