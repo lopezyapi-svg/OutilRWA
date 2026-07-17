@@ -64,11 +64,18 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
   /// par l'utilisateur ; initialisés depuis le registre des devises. Ils
   /// servent de taux de valorisation : la variation et le gain/perte de change
   /// sont calculés par rapport au taux d'acquisition de chaque titre.
-  final Map<String, double> _currentRates = {};
+  ///
+  /// `static` volontairement : l'écran est recréé à chaque changement de vue
+  /// dans `RisqueMarcheScreen` (switch sur un widget différent par onglet),
+  /// ce qui détruirait sinon la dernière actualisation à chaque navigation.
+  /// La dernière valeur connue doit rester jusqu'à la prochaine actualisation
+  /// explicite, pas jusqu'à la prochaine visite de l'écran.
+  static final Map<String, double> _currentRates = {};
 
   /// Origine et horodatage de chaque taux courant (référence interne, saisie
-  /// manuelle ou cotation en ligne), pour traçabilité dans la barre.
-  final Map<String, _RateMeta> _rateMeta = {};
+  /// manuelle ou cotation en ligne), pour traçabilité dans la barre. Même
+  /// raison de `static` que `_currentRates`.
+  static final Map<String, _RateMeta> _rateMeta = {};
 
   /// Service de cotation en ligne (injectable via le widget pour les tests).
   late final FxRateService _rateService = widget.rateService ?? FxRateService();
@@ -90,6 +97,10 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
     // autres devises du registre n'y apparaissent que si le portefeuille en
     // contient (cf. _ensurePortfolioCurrencies).
     for (final code in const ['EUR', 'USD']) {
+      // Une actualisation précédente (saisie ou cotation en ligne) est
+      // déjà présente dans la map statique : on ne l'écrase pas avec la
+      // valeur par défaut du référentiel à chaque recréation de l'écran.
+      if (_currentRates.containsKey(code)) continue;
       final rate = CurrencyRegistry().getRate(code);
       if (rate == null) continue;
       _currentRates[code] = rate.rateToXof;
