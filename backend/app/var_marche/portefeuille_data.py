@@ -724,6 +724,29 @@ def _duration_et_variations_taux(
     return duration_portefeuille, variations_taux
 
 
+_MAX_TITRES_CITES_DANS_ERREUR = 8
+
+
+def _message_titres_sans_historique(
+    absents: list[str],
+    nom_historique: str,
+    nom_identifiant: str,
+) -> str:
+    """Message de couverture incomplète, lisible même pour un portefeuille de
+    plusieurs dizaines de titres : dénombrement + premiers identifiants,
+    plutôt que la liste exhaustive (illisible à l'écran)."""
+
+    extrait = ", ".join(absents[:_MAX_TITRES_CITES_DANS_ERREUR])
+    reste = len(absents) - _MAX_TITRES_CITES_DANS_ERREUR
+    suite = f" et {reste} autres" if reste > 0 else ""
+    return (
+        f"{len(absents)} titre(s) du portefeuille sans donnée dans "
+        f"{nom_historique} : {extrait}{suite}. L'historique importé doit "
+        f"couvrir chaque titre du portefeuille (même {nom_identifiant} "
+        "que les positions)."
+    )
+
+
 def _serie_obligations(
     avertissements: list[str],
 ) -> tuple[np.ndarray, float, float | None, np.ndarray | None] | None:
@@ -749,8 +772,9 @@ def _serie_obligations(
         absents = sorted(isins_positions - isins_historique)
         if absents:
             raise ErreurDonneesVar(
-                "Titres présents dans les positions mais absents de "
-                "l'historique des prix : " + ", ".join(absents) + "."
+                _message_titres_sans_historique(
+                    absents, "l'historique des prix", "ID Titre"
+                )
             )
 
         valeurs_par_date: dict[date, float] = {}
@@ -823,8 +847,9 @@ def _serie_actions(avertissements: list[str]) -> tuple[list[date], np.ndarray] |
     absents = sorted(tickers_positions - tickers_historique)
     if absents:
         raise ErreurDonneesVar(
-            "Titres présents dans les positions mais absents de "
-            "l'historique des cours : " + ", ".join(absents) + "."
+            _message_titres_sans_historique(
+                absents, "l'historique des cours", "ID Instrument"
+            )
         )
 
     valeurs_par_date: dict[date, float] = {}

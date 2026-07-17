@@ -90,7 +90,6 @@ extension on VarMethode {
         VarMethode.parametrique => 'VaR Paramétrique',
         VarMethode.monteCarlo => 'VaR Monte-Carlo',
       };
-
 }
 
 /// Classe d'histogramme reçue du backend.
@@ -660,56 +659,62 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
     final reponse = _reponse;
     if (_erreur != null && reponse == null) {
       return _CarteVar(
+        // Défilable : un message d'erreur long (ex. liste de titres sans
+        // historique) ne doit pas pousser les boutons d'action hors de la
+        // carte (RenderFlex overflow).
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _donneesAbsentes
-                    ? Icons.info_outline
-                    : Icons.warning_amber_rounded,
-                size: 42,
-                color: _donneesAbsentes ? _varPrimary : Colors.red,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                _donneesAbsentes
-                    ? 'Aucune donnée chargée'
-                    : 'Erreur lors de l\'évaluation',
-                style: const TextStyle(
-                  color: _varNavy,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
-                child: Text(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
                   _donneesAbsentes
-                      ? 'Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk.'
-                      : _erreur!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: _varMuted, fontSize: 13),
+                      ? Icons.info_outline
+                      : Icons.warning_amber_rounded,
+                  size: 42,
+                  color: _donneesAbsentes ? _varPrimary : Colors.red,
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _BoutonImportModele(
-                    onImporter: _importerHistorique,
-                    onTelecharger: _telechargerModele,
-                    compact: false,
+                const SizedBox(height: 16),
+                Text(
+                  _donneesAbsentes
+                      ? 'Aucune donnée chargée'
+                      : 'Erreur lors de l\'évaluation',
+                  style: const TextStyle(
+                    color: _varNavy,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: 10),
-                  OutlinedButton(
-                    onPressed: _charger,
-                    child: const Text('Réessayer'),
+                ),
+                const SizedBox(height: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Text(
+                    _donneesAbsentes
+                        ? 'Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk.'
+                        : _erreur!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: _varMuted, fontSize: 13),
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _BoutonImportModele(
+                      onImporter: _importerHistorique,
+                      onTelecharger: _telechargerModele,
+                      compact: false,
+                    ),
+                    const SizedBox(width: 10),
+                    OutlinedButton(
+                      onPressed: _charger,
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -1549,8 +1554,7 @@ class _BoutonImportModele extends StatelessWidget {
               ),
             )
           : Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 border: Border.all(color: _varBorder),
                 borderRadius: BorderRadius.circular(8),
@@ -1574,7 +1578,9 @@ class _BoutonImportModele extends StatelessWidget {
               ),
             ),
     );
-    return compact ? Tooltip(message: 'Historique de prix', child: bouton) : bouton;
+    return compact
+        ? Tooltip(message: 'Historique de prix', child: bouton)
+        : bouton;
   }
 }
 
