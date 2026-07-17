@@ -3,7 +3,7 @@ import 'dart:io' show PathAccessException;
 import 'dart:math' as math;
 
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:excel/excel.dart' hide Border;
+import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -286,32 +286,9 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     return null;
   }
 
-  static String _cellStr(Data? cell) {
+  static String _cellStr(dynamic cell) {
     if (cell == null) return '';
-    try {
-      final v = cell.value;
-      if (v == null) return '';
-      if (v is TextCellValue) return (v.value.text ?? '').trim();
-      if (v is IntCellValue) return v.value.toString();
-      if (v is DoubleCellValue) return v.value.toString();
-      if (v is DateTimeCellValue) {
-        // asDateTimeLocal() peut être null dans certaines versions du package
-        try {
-          final dt = v.asDateTimeLocal();
-          return '${dt.year}-'
-              '${dt.month.toString().padLeft(2, '0')}-'
-              '${dt.day.toString().padLeft(2, '0')}';
-        } catch (_) {
-          // Fallback : construire depuis les champs directs
-          return '${v.year}-'
-              '${v.month.toString().padLeft(2, '0')}-'
-              '${v.day.toString().padLeft(2, '0')}';
-        }
-      }
-      return v.toString().trim();
-    } catch (_) {
-      return '';
-    }
+    return cell.toString().trim();
   }
 
   static double _parseNum(String s) {
@@ -369,16 +346,16 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
 
   List<_ParsedRow> _parseExcel(Uint8List bytes) {
     // Décode avec protection contre les erreurs internes du package excel
-    final Excel excel;
+    final SpreadsheetDecoder excel;
     try {
-      excel = Excel.decodeBytes(bytes);
+      excel = SpreadsheetDecoder.decodeBytes(bytes);
     } catch (e) {
       throw Exception('Fichier illisible ou corrompu : $e');
     }
     if (excel.tables.isEmpty) throw Exception('Aucune feuille trouvée.');
 
     // Cherche la feuille "Incidents" — lookup explicitement null-safe
-    Sheet? sheet;
+    SpreadsheetTable? sheet;
     for (final key in excel.tables.keys) {
       if (key.toLowerCase().contains('incident')) {
         final candidate = excel.tables[key];
@@ -471,13 +448,11 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     }
 
     // ── Étape 3 : parser les lignes de données ─────────────────────────────
-    String getField(List<Data?> row, String field) {
-      final ci = bestColMap.entries
-          .where((e) => e.value == field)
-          .map((e) => e.key)
-          .firstOrNull;
-      if (ci == null) return '';
-      return ci < row.length ? _cellStr(row[ci]) : '';
+    String getField(List<dynamic> row, String field) {
+      final colIndices = {for (var e in bestColMap.entries) e.value: e.key};
+      final idx = colIndices[field];
+      if (idx == null || idx >= row.length) return '';
+      return _cellStr(row[idx]);
     }
 
     final result = <_ParsedRow>[];
@@ -665,39 +640,34 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
 
   Widget _buildBody() {
     if (_importResult != null) return _buildResultScreen();
-    if (_parsedRows != null) return _buildPreviewScreen();
-    return _buildDropZoneScreen();
-  }
-
-  // ─── Écran 1 : Drop zone ──────────────────────────────────────────────────
-
-  bool _showExpectedFormat = true;
-
-  Widget _buildDropZoneScreen() {
+    final rowsReady = _parsedRows != null;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildImportZone(),
-          const SizedBox(height: 4),
+          if (!rowsReady) _buildImportZone(),
+          if (!rowsReady) const SizedBox(height: 4),
+          if (rowsReady) _buildPreviewScreen(),
+          if (rowsReady) const SizedBox(height: 4),
           _buildExpectedFormatSection(),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: !_showExpectedFormat && _selectedFile == null
+            child: !_showExpectedFormat && _selectedFile == null && !rowsReady
                 ? Padding(
                     padding: const EdgeInsets.only(top: 3),
                     child: _buildEmptyStatePlaceholder(),
                   )
                 : const SizedBox.shrink(),
           ),
-          if (_parseError != null)
-            _buildParseErrorContent(),
-          const SizedBox(height: 12),
-          _buildModeSelector(),
+          if (!rowsReady && _parseError != null) _buildParseErrorContent(),
         ],
       ),
     );
   }
+
+  // ─── Écran 1 : Drop zone ──────────────────────────────────────────────────
+
+  bool _showExpectedFormat = true;
 
   Widget _buildImportZone() {
     final zoneBackground = _isDark ? const Color(0xFF121C2B) : const Color(0xFFF8FAFD);
@@ -1253,30 +1223,30 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     final valid = _validRows;
     final errors = _errorRows;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildFileInfoBar(rows, valid, errors),
-        const SizedBox(height: 12),
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildPreviewTable(rows),
-                if (errors.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  _buildErrorPanel(errors),
-                ],
+    return _buildSectionCard(
+      icon: Icons.checklist_rtl_rounded,
+      title: 'Vérification du fichier',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildFileInfoBar(rows, valid, errors),
+          const SizedBox(height: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPreviewTable(rows),
+              if (errors.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                _buildBiaNotice(valid),
+                _buildErrorPanel(errors),
               ],
-            ),
+              const SizedBox(height: 10),
+              _buildBiaNotice(valid),
+            ],
           ),
-        ),
-        const SizedBox(height: 12),
-        _buildModeSelector(),
-      ],
+          const SizedBox(height: 12),
+          _buildModeSelector(),
+        ],
+      ),
     );
   }
 

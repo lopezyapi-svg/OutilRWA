@@ -264,26 +264,28 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.text,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11)),
-                    if (formula != null) ...[
-                      const SizedBox(height: 2),
-                      Text(formula,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                  color: AppTheme.muted.withValues(alpha: 0.6),
-                                  fontSize: 10,
-                                  fontStyle: FontStyle.italic)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.text,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11)),
+                      if (formula != null) ...[
+                        const SizedBox(height: 2),
+                        Text(formula,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                    color: AppTheme.muted.withValues(alpha: 0.6),
+                                    fontSize: 10,
+                                    fontStyle: FontStyle.italic)),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Text(value,
@@ -346,20 +348,23 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                 color: AppTheme.background,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Encours NPL :  ',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.muted,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12)),
-                  Text('${_amountMd(encoursNpl)} ${_amountUnitLabel()}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.text,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12)),
-                ],
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Encours NPL :  ',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.muted,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12)),
+                    Text('${_amountMd(encoursNpl)} ${_amountUnitLabel()}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.text,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -371,20 +376,23 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                 color: AppTheme.background,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Provisions totales :  ',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.muted,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12)),
-                  Text('${_amountMd(provisions)} ${_amountUnitLabel()}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.text,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12)),
-                ],
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Provisions totales :  ',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.muted,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12)),
+                    Text('${_amountMd(provisions)} ${_amountUnitLabel()}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.text,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -396,20 +404,23 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                 color: AppTheme.background,
                 borderRadius: BorderRadius.circular(6),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Nombre NPL :  ',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.muted,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12)),
-                  Text('$countNpl',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppTheme.text,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12)),
-                ],
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Nombre NPL :  ',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.muted,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12)),
+                    Text('$countNpl',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppTheme.text,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12)),
+                  ],
+                ),
               ),
             ),
           ),
@@ -3803,7 +3814,7 @@ String _standardZoneLabel(String label) {
 Color _geoZoneColor(String label) {
   return switch (_standardZoneLabel(label)) {
     'UEMOA' => Colors.blue,
-    'CEMAC' => Colors.indigo,
+    'CEMAC' => const Color(0xFF0D9488),
     _ => AppColors.concentrationDeeper,
   };
 }

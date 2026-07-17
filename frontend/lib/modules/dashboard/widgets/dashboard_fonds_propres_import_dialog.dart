@@ -13,7 +13,7 @@ import 'dart:io' show PathAccessException;
 import 'dart:math' as math;
 
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:excel/excel.dart' hide Border;
+import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -69,7 +69,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
   bool _isImporting = false;
   bool _isDownloadingTemplate = false;
   bool _rowsReady = false;
-  bool _showExpectedFormat = false;
+  bool _showExpectedFormat = true;
 
   XFile? _selectedFile;
   List<String>? _unmatchedWarnings;
@@ -189,18 +189,9 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
 
   static const _valeurAliases = ['valeur', 'montant', 'value', 'val', 'fcfa'];
 
-  static String _cellStr(Data? cell) {
+  static String _cellStr(dynamic cell) {
     if (cell == null) return '';
-    try {
-      final v = cell.value;
-      if (v == null) return '';
-      if (v is TextCellValue) return (v.value.text ?? '').trim();
-      if (v is IntCellValue) return v.value.toString();
-      if (v is DoubleCellValue) return v.value.toString();
-      return v.toString().trim();
-    } catch (_) {
-      return '';
-    }
+    return cell.toString().trim();
   }
 
   static double _parseNum(String s) {
@@ -228,15 +219,15 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
   }
 
   List<String> _parseExcel(Uint8List bytes) {
-    final Excel excel;
+    final SpreadsheetDecoder excel;
     try {
-      excel = Excel.decodeBytes(bytes);
+      excel = SpreadsheetDecoder.decodeBytes(bytes);
     } catch (e) {
       throw Exception('Fichier illisible ou corrompu : $e');
     }
     if (excel.tables.isEmpty) throw Exception('Aucune feuille trouvée.');
 
-    Sheet? sheet;
+    SpreadsheetTable? sheet;
     for (final key in excel.tables.keys) {
       if (key.toLowerCase().contains('fonds') || key.toLowerCase().contains('propres')) {
         final candidate = excel.tables[key];
@@ -479,30 +470,27 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
 
   Widget _buildBody() {
     if (_importSuccess != null) return _buildResultScreen();
-    if (_rowsReady) return _buildPreviewScreen();
-    return _buildDropZoneScreen();
-  }
 
-  // ─── Écran 1 : Drop zone ──────────────────────────────────────────────────
-
-  Widget _buildDropZoneScreen() {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildImportZone(),
-          const SizedBox(height: 4),
+          if (!_rowsReady) _buildImportZone(),
+          if (!_rowsReady) const SizedBox(height: 4),
+          if (_rowsReady) _buildPreviewScreen(),
+          if (_rowsReady) const SizedBox(height: 4),
           _buildExpectedFormatSection(),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: !_showExpectedFormat && _selectedFile == null
+            child: !_showExpectedFormat && _selectedFile == null && !_rowsReady
                 ? Padding(
                     padding: const EdgeInsets.only(top: 3),
                     child: _buildEmptyStatePlaceholder(),
                   )
                 : const SizedBox.shrink(),
           ),
-          if ((_unmatchedWarnings != null &&
+          if (!_rowsReady &&
+              (_unmatchedWarnings != null &&
                   _unmatchedWarnings!.isNotEmpty &&
                   _unmatchedWarnings!.first.startsWith('Lecture impossible')))
             _buildParseErrorContent(),
@@ -1018,46 +1006,22 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
         ],
       );
 
-  Widget _formatCheck(String label, String detail, bool required) {
-    final color = required ? _accent : _muted;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
+  Widget _buildPreviewScreen() {
+    return _buildSectionCard(
+      icon: Icons.checklist_rtl_rounded,
+      title: 'Vérification du fichier',
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(Icons.check_circle_outline, size: 15, color: color),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _text)),
-                const SizedBox(height: 2),
-                Text(detail, style: TextStyle(fontSize: 11, color: _muted, height: 1.25)),
-              ],
-            ),
-          ),
+          _buildFileInfoBar(),
+          const SizedBox(height: 12),
+          if (_unmatchedWarnings != null && _unmatchedWarnings!.isNotEmpty) ...[
+            _buildWarningPanel(_unmatchedWarnings!),
+            const SizedBox(height: 10),
+          ],
+          _buildEditableGroups(),
         ],
       ),
-    );
-  }
-
-
-  Widget _buildPreviewScreen() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildFileInfoBar(),
-        const SizedBox(height: 12),
-        if (_unmatchedWarnings != null && _unmatchedWarnings!.isNotEmpty) ...[
-          _buildWarningPanel(_unmatchedWarnings!),
-          const SizedBox(height: 10),
-        ],
-        Expanded(child: SingleChildScrollView(child: _buildEditableGroups())),
-      ],
     );
   }
 

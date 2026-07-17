@@ -20,7 +20,7 @@ import 'dart:io' show PathAccessException;
 import 'dart:math' as math;
 
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:excel/excel.dart' hide Border;
+import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -239,18 +239,9 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
   static const _anneeAliases = ['annee', 'année', 'exercice', 'year', 'ex'];
   static const _valeurAliases = ['valeur', 'montant', 'value', 'val', 'fcfa'];
 
-  static String _cellStr(Data? cell) {
+  static String _cellStr(dynamic cell) {
     if (cell == null) return '';
-    try {
-      final v = cell.value;
-      if (v == null) return '';
-      if (v is TextCellValue) return (v.value.text ?? '').trim();
-      if (v is IntCellValue) return v.value.toString();
-      if (v is DoubleCellValue) return v.value.toString();
-      return v.toString().trim();
-    } catch (_) {
-      return '';
-    }
+    return cell.toString().trim();
   }
 
   static double _parseNum(String s) {
@@ -310,9 +301,9 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
   /// (une ligne = un exercice), par compatibilité. Retourne les
   /// avertissements non bloquants.
   List<String> _parseExcel(Uint8List bytes) {
-    final Excel excel;
+    final SpreadsheetDecoder excel;
     try {
-      excel = Excel.decodeBytes(bytes);
+      excel = SpreadsheetDecoder.decodeBytes(bytes);
     } catch (e) {
       throw Exception('Fichier illisible ou corrompu : $e');
     }
@@ -577,32 +568,25 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
 
   Widget _buildBody() {
     if (_importResult != null) return _buildResultScreen();
-    if (_rowsReady) return _buildPreviewScreen();
-    return _buildDropZoneScreen();
-  }
-
-  // ─── Écran 1 : Drop zone ──────────────────────────────────────────────────
-
-  bool _showExpectedFormat = true;
-
-  Widget _buildDropZoneScreen() {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildImportZone(),
-          const SizedBox(height: 4),
+          if (!_rowsReady) _buildImportZone(),
+          if (!_rowsReady) const SizedBox(height: 4),
+          if (_rowsReady) _buildPreviewScreen(),
+          if (_rowsReady) const SizedBox(height: 4),
           _buildExpectedFormatSection(),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 180),
-            child: !_showExpectedFormat && _selectedFile == null
+            child: !_showExpectedFormat && _selectedFile == null && !_rowsReady
                 ? Padding(
                     padding: const EdgeInsets.only(top: 3),
                     child: _buildEmptyStatePlaceholder(),
                   )
                 : const SizedBox.shrink(),
           ),
-          if (_unmatchedWarnings != null &&
+          if (!_rowsReady && _unmatchedWarnings != null &&
               _unmatchedWarnings!.length == 1 &&
               _unmatchedWarnings!.first.startsWith('Lecture impossible'))
             _buildParseErrorContent(),
@@ -610,6 +594,8 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
       ),
     );
   }
+
+  bool _showExpectedFormat = true;
 
   Widget _buildImportZone() {
     final zoneBackground = _isDark ? const Color(0xFF121C2B) : const Color(0xFFF8FAFD);
@@ -1121,17 +1107,21 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
   // ─── Écran 2 : Prévisualisation / édition ─────────────────────────────────
 
   Widget _buildPreviewScreen() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildFileInfoBar(),
-        const SizedBox(height: 12),
-        if (_unmatchedWarnings != null && _unmatchedWarnings!.isNotEmpty) ...[
-          _buildWarningPanel(_unmatchedWarnings!),
-          const SizedBox(height: 10),
+    return _buildSectionCard(
+      icon: Icons.checklist_rtl_rounded,
+      title: 'Vérification du fichier',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildFileInfoBar(),
+          const SizedBox(height: 12),
+          if (_unmatchedWarnings != null && _unmatchedWarnings!.isNotEmpty) ...[
+            _buildWarningPanel(_unmatchedWarnings!),
+            const SizedBox(height: 10),
+          ],
+          _buildEditableTable(),
         ],
-        Expanded(child: SingleChildScrollView(child: _buildEditableTable())),
-      ],
+      ),
     );
   }
 

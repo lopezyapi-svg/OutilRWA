@@ -207,6 +207,8 @@ def _normaliser_frequence_coupon(valeur: str) -> str:
 
 
 def _texte_date_import(valeur: object) -> str:
+    if isinstance(valeur, dict) and valeur.get("type") == "datetime":
+        valeur = valeur.get("value")
     brut = str(valeur or "").strip()
     return brut[:10] if brut else ""
 

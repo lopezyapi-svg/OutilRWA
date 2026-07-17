@@ -206,7 +206,6 @@ class _ExecutiveDashboard extends StatelessWidget {
                 final top10Chart = DashboardGrandsRisquesSummary(
                   currency: currency,
                   exposures: data.grandsRisques,
-                  allCategories: data.categoryDistribution,
                 );
                 List<Widget> children;
 

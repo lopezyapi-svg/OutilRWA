@@ -13,7 +13,6 @@ import 'core/state/portfolio_currency_scope.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/currency_conversion.dart';
 import 'modules/analyse/screens/analyse_screen.dart';
-import 'modules/capital_planing/screens/capital_planing_screen.dart';
 import 'modules/concentration/screens/concentration_screen.dart';
 import 'modules/crm/screens/crm_screen.dart';
 import 'modules/dashboard/screens/dashboard_screen.dart';
@@ -21,8 +20,6 @@ import 'modules/defauts_impayes/screens/defauts_impayes_screen.dart';
 import 'modules/expositions/screens/expositions_screen.dart';
 import 'modules/garanties/screens/garanties_screen.dart';
 import 'modules/hors_bilan/screens/hors_bilan_screen.dart';
-import 'modules/icap/screens/icap_screen.dart';
-import 'modules/icap/screens/icap_uemoa_cemac_screen.dart';
 import 'modules/importations/screens/importations_screen.dart';
 import 'modules/rapports/screens/rapports_screen.dart';
 import 'modules/reporting_credit/screens/reporting_credit_screen.dart';
@@ -34,10 +31,10 @@ import 'modules/risque_marche/services/market_capital_requirement_persister.dart
 import 'modules/risque_marche/services/market_data_import_store.dart';
 import 'modules/risque_operationnel/screens/risque_operationnel_screen.dart';
 import 'modules/rwa_engine/screens/rwa_engine_screen.dart';
-import 'modules/stress_test/screens/stress_test_screen.dart';
 import 'modules/vue_ensemble/screens/vue_ensemble_screen.dart';
 import 'modules/welcome/screens/welcome_screen.dart';
 import 'shared/widgets/app_shell.dart';
+import 'shared/widgets/under_construction_screen.dart';
 
 /// Widget racine qui pilote le thème et la navigation principale.
 class RwaApp extends StatefulWidget {
@@ -288,42 +285,21 @@ class _RwaAppState extends State<RwaApp> {
           view: OperationalRiskView.ccr3Uemoi,
         ),
       AppModule.analyse => AnalyseScreen(api: _api),
-      AppModule.stressTest => StressTestScreen(api: _api),
-      AppModule.icap => IcapScreen(api: _api),
-      AppModule.icapCapitalEconomique => IcapScreen(
-          api: _api,
-          view: IcapView.capitalEconomique,
-        ),
-      AppModule.icapCapitalReglementaire => IcapScreen(
-          api: _api,
-          view: IcapView.capitalReglementaire,
-        ),
-      AppModule.icapAppetenceRisque => IcapScreen(
-          api: _api,
-          view: IcapView.appetenceRisque,
-        ),
-      AppModule.icapBuffersPrudentiels => IcapScreen(
-          api: _api,
-          view: IcapView.buffersPrudentiels,
-        ),
-      AppModule.icapProjectionCapital => IcapScreen(
-          api: _api,
-          view: IcapView.projectionCapital,
-        ),
-      AppModule.icapAnalyseSolvabilite => IcapScreen(
-          api: _api,
-          view: IcapView.analyseSolvabilite,
-        ),
-      AppModule.icapPlansCapital => IcapScreen(
-          api: _api,
-          view: IcapView.plansCapital,
-        ),
-      AppModule.icapReportingIcaap => IcapScreen(
-          api: _api,
-          view: IcapView.reporting,
-        ),
-      AppModule.icapUemoaCemac => const IcapUemoaCemacScreen(),
-      AppModule.capitalPlaning => CapitalPlaningScreen(api: _api),
+      AppModule.stressTest =>
+        const UnderConstructionScreen(title: 'Stress Test'),
+      AppModule.icap ||
+      AppModule.icapCapitalEconomique ||
+      AppModule.icapCapitalReglementaire ||
+      AppModule.icapAppetenceRisque ||
+      AppModule.icapBuffersPrudentiels ||
+      AppModule.icapProjectionCapital ||
+      AppModule.icapAnalyseSolvabilite ||
+      AppModule.icapPlansCapital ||
+      AppModule.icapReportingIcaap ||
+      AppModule.icapUemoaCemac =>
+        const UnderConstructionScreen(title: 'ICAAP'),
+      AppModule.capitalPlaning =>
+        const UnderConstructionScreen(title: 'Capital Planning'),
       AppModule.referentiels => _screenFor(AppModule.vueEnsemble),
       AppModule.rapports => RapportsScreen(api: _api),
     };

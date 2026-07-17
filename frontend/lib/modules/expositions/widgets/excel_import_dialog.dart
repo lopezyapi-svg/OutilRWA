@@ -189,7 +189,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
           return AlertDialog(
             title: const Text('Confirmer l’écrasement'),
             content: const Text(
-              'Les données existantes seront remplacées par celles du fichier importé. Une sauvegarde SQLite sera faite avant l’opération.',
+              'Les données existantes seront remplacées par celles du fichier importé. Une copie de sauvegarde sera créée automatiquement avant l’opération.',
             ),
             actions: [
               TextButton(
@@ -215,7 +215,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
     try {
       await Future<void>.delayed(const Duration(milliseconds: 120));
       if (mounted) {
-        setState(() => _importStage = 'Insertion SQLite');
+        setState(() => _importStage = 'Enregistrement des données');
       }
       final result = await widget.api.importExposureExcelFile(
         _selectedBytes!,

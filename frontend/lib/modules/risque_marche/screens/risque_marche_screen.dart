@@ -14693,30 +14693,7 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 980;
-              final performance = _BondSimulationPanel(stats: stats);
-              final rating = _BondRatingPanel(stats: stats);
-              if (compact) {
-                return Column(
-                  children: [
-                    performance,
-                    const SizedBox(height: 20),
-                    rating,
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 15, child: performance),
-                  const SizedBox(width: 20),
-                  Expanded(flex: 10, child: rating),
-                ],
-              );
-            },
-          ),
+          _BondRatingPanel(stats: stats),
           const SizedBox(height: 20),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -15637,94 +15614,6 @@ class _BondSectionPanel extends StatelessWidget {
   }
 }
 
-class _BondSimulationPanel extends StatefulWidget {
-  const _BondSimulationPanel({required this.stats});
-
-  final _BondDashboardStats stats;
-
-  @override
-  State<_BondSimulationPanel> createState() => _BondSimulationPanelState();
-}
-
-class _BondSimulationPanelState extends State<_BondSimulationPanel> {
-  _VarMethod _method = _VarMethod.monteCarlo;
-  double _confidence = 0.99;
-  int _horizonDays = 10;
-
-  @override
-  Widget build(BuildContext context) {
-    final riskResult = _bondDashboardRiskResult(
-      stats: widget.stats,
-      method: _method,
-      confidence: _confidence,
-      horizonDays: _horizonDays,
-    );
-    final confidenceLabel = AppFormatters.percent(_confidence);
-    final horizonLabel = _horizonLabel(_horizonDays);
-    return _BondSectionPanel(
-      height: 320,
-      title: 'Distribution des pertes simulées',
-      subtitle:
-          'Paramètres par défaut, seuil $confidenceLabel, horizon $horizonLabel',
-      actions: _BondSimulationSelectors(
-        method: _method,
-        confidence: _confidence,
-        horizonDays: _horizonDays,
-        onMethodChanged: (value) => setState(() => _method = value),
-        onConfidenceChanged: (value) => setState(() => _confidence = value),
-        onHorizonChanged: (value) => setState(() => _horizonDays = value),
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: _BondLossDistributionChart(
-              losses: riskResult.losses,
-              varValue: riskResult.varValue,
-              varLabel: 'VaR $confidenceLabel',
-              worstLoss: riskResult.worstLoss,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _MarketMicroMetric(
-                  label: 'VaR $confidenceLabel',
-                  value: _marketReadableMoney(riskResult.varValue),
-                  color: _marketPrimary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _MarketMicroMetric(
-                  label: 'ES $confidenceLabel',
-                  value: _marketReadableMoney(riskResult.expectedShortfall),
-                  color: _marketPrimary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _MarketMicroMetric(
-                  label: 'Pire perte',
-                  value: _marketReadableMoney(riskResult.worstLoss),
-                  color: _marketPrimary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _MarketMicroMetric(
-                  label: 'Sensibilité taux',
-                  value: _marketReadableMoney(riskResult.rateSensitivity),
-                  color: _marketPrimary,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _BondRiskNotificationButton extends StatefulWidget {
   const _BondRiskNotificationButton({
