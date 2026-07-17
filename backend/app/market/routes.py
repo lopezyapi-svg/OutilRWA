@@ -16,7 +16,6 @@ from fastapi.responses import Response
 
 from app.core.config import settings
 import pandas as pd
-import sqlite3
 from app.market.services import MARKET_CAPITAL_REQUIREMENT_KEY
 from database.connection import database_manager, utcnow_iso
 import os
@@ -170,14 +169,53 @@ def _dates_en_iso(df: "pd.DataFrame", colonnes: list[str]) -> "pd.DataFrame":
     return df
 
 
+def _separer_positions_et_historique(
+    df: "pd.DataFrame",
+    id_col: str,
+    positions_cols: list[str],
+    date_col: str,
+    prix_col: str,
+    hist_cols: list[str],
+) -> tuple["pd.DataFrame", "pd.DataFrame"]:
+    """Sépare un onglet au format long (une ligne = un titre à une date) en
+    (positions dédupliquées, historique des prix datés).
+
+    Les caractéristiques du titre sont répétées sur chaque ligne : seule la
+    première occurrence de chaque identifiant est conservée pour les
+    positions. Les lignes sans Date ni Prix (position sans historique
+    encore fourni) n'alimentent pas l'historique."""
+
+    df = df.dropna(subset=[id_col])
+    positions = (
+        df[[c for c in positions_cols if c in df.columns]]
+        .drop_duplicates(subset=[id_col], keep="first")
+        .reset_index(drop=True)
+    )
+    if date_col in df.columns and prix_col in df.columns:
+        historique = df.dropna(subset=[date_col, prix_col])[hist_cols].reset_index(drop=True)
+    else:
+        historique = pd.DataFrame(columns=hist_cols)
+    return positions, historique
+
+
 @router.post("/upload-var-history")
 async def upload_var_history(file: UploadFile = File(...)) -> dict[str, Any]:
-    """Parse le fichier Excel pour le calcul de la VaR et met à jour la base SQLite."""
+    """Parse le fichier Excel (2 onglets : Obligations, Actions) et écrit
+    les CSV lus par le module de calcul VaR (backend/data/*.csv).
+
+    Chaque onglet est au format long : une ligne = un titre à une date. Les
+    caractéristiques statiques du titre alimentent les positions (première
+    occurrence de l'ID) ; les couples (Date, Prix) alimentent l'historique.
+    Si un portefeuille a déjà été importé via « Importer données de marché »,
+    ses positions restent prioritaires (voir portefeuille_data.py) : ce
+    fichier ne sert alors qu'à fournir l'historique de prix, à condition de
+    couvrir les mêmes identifiants (ISIN / ticker) que ce portefeuille.
+    """
     try:
         content = await file.read()
         import io
 
-        from app.core.runtime_paths import app_data_root
+        from app.var_marche import portefeuille_data
 
         excel_file = io.BytesIO(content)
 
@@ -186,61 +224,117 @@ async def upload_var_history(file: UploadFile = File(...)) -> dict[str, Any]:
             "ID Titre": "isin", "Emetteur": "emetteur", "Devise": "devise",
             "Valeur nominale unitaire": "valeur_nominale", "Coupon (%)": "taux_coupon_pct",
             "Fréquence de paiement des intérêts": "frequence_coupon", "Date d'émission": "date_emission",
-            "Date d'échéance": "date_echeance", "quantités": "quantite", "Prix d'émission": "prix_marche_pct"
+            "Date d'échéance": "date_echeance", "quantités": "quantite",
+            "Date": "date", "Prix de marché (%)": "prix_marche_pct",
         })
-        df_bonds = _dates_en_iso(df_bonds, ["date_emission", "date_echeance"])
-
-        df_hist_bonds = pd.read_excel(excel_file, sheet_name="Historique Prix Obligations")
-        df_hist_bonds = df_hist_bonds.rename(columns={
-            "Date": "date", "ID Titre": "isin", "Prix de marché": "prix_marche_pct"
-        })
-        df_hist_bonds = _dates_en_iso(df_hist_bonds, ["date"])
+        df_bonds = _dates_en_iso(df_bonds, ["date_emission", "date_echeance", "date"])
+        if "frequence_coupon" in df_bonds.columns:
+            # La colonne accepte un libellé (Annuelle, Semestrielle…) comme
+            # dans le formulaire d'import du portefeuille marché ; convertie
+            # ici vers le code numérique attendu à la lecture (1, 2, 4, 12).
+            df_bonds["frequence_coupon"] = df_bonds["frequence_coupon"].apply(
+                lambda v: portefeuille_data.normaliser_frequence_coupon("" if pd.isna(v) else str(v))
+            )
+        df_bonds_positions, df_hist_bonds = _separer_positions_et_historique(
+            df_bonds,
+            id_col="isin",
+            positions_cols=[
+                "isin", "emetteur", "devise", "valeur_nominale", "taux_coupon_pct",
+                "frequence_coupon", "date_emission", "date_echeance", "quantite",
+            ],
+            date_col="date",
+            prix_col="prix_marche_pct",
+            hist_cols=["date", "isin", "prix_marche_pct"],
+        )
 
         df_equities = pd.read_excel(excel_file, sheet_name="Actions")
         df_equities = df_equities.rename(columns={
             "ID Instrument": "ticker", "Émetteur / Société": "libelle",
             "Secteur": "secteur", "Quantité": "quantite",
-            "Cours actuel": "cours_actuel"
+            "Date": "date", "Cours de clôture": "cours_cloture",
         })
+        df_equities = _dates_en_iso(df_equities, ["date"])
+        df_equities_positions, df_hist_equities = _separer_positions_et_historique(
+            df_equities,
+            id_col="ticker",
+            positions_cols=["ticker", "libelle", "secteur", "quantite"],
+            date_col="date",
+            prix_col="cours_cloture",
+            hist_cols=["date", "ticker", "cours_cloture"],
+        )
+        racine = portefeuille_data.repertoire_data()
+        racine.mkdir(parents=True, exist_ok=True)
 
-        df_hist_equities = pd.read_excel(excel_file, sheet_name="Historique Cours Actions")
-        df_hist_equities = df_hist_equities.rename(columns={
-            "Date": "date", "ID Instrument": "ticker", "Cours de clôture": "cours_cloture"
-        })
-        df_hist_equities = _dates_en_iso(df_hist_equities, ["date"])
+        _dataframe_vers_csv(
+            df_bonds_positions,
+            racine / "positions_obligations.csv",
+            colonnes_source=[
+                "isin", "emetteur", "devise", "valeur_nominale", "taux_coupon_pct",
+                "frequence_coupon", "date_emission", "date_echeance", "quantite",
+            ],
+            entetes=[
+                "isin", "emetteur", "devise", "valeur_nominale", "taux_coupon_pct",
+                "frequence_coupon", "date_emission", "date_echeance", "quantite",
+            ],
+        )
+        _dataframe_vers_csv(
+            df_hist_bonds,
+            racine / "historique_prix_obligations.csv",
+            colonnes_source=["date", "isin", "prix_marche_pct"],
+            entetes=["date", "isin", "prix_pct"],
+        )
+        _dataframe_vers_csv(
+            df_equities_positions,
+            racine / "positions_actions.csv",
+            colonnes_source=["ticker", "libelle", "secteur", "quantite"],
+            entetes=["ticker", "libelle", "secteur", "quantite"],
+        )
+        _dataframe_vers_csv(
+            df_hist_equities,
+            racine / "historique_cours_actions.csv",
+            colonnes_source=["date", "ticker", "cours_cloture"],
+            entetes=["date", "ticker", "cours_cloture"],
+        )
 
-        db_path = app_data_root() / "rwa_data.db"
-        with sqlite3.connect(db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM positions_obligations")
-            cursor.execute("DELETE FROM historique_prix_obligations")
-            cursor.execute("DELETE FROM positions_actions")
-            cursor.execute("DELETE FROM historique_cours_actions")
+        portefeuille_data.invalider_cache_series()
 
-            if not df_bonds.empty:
-                cols = ["isin", "emetteur", "devise", "valeur_nominale", "taux_coupon_pct", "frequence_coupon", "date_emission", "date_echeance", "quantite", "prix_marche_pct"]
-                df_bonds[[c for c in cols if c in df_bonds.columns]].to_sql("positions_obligations", conn, if_exists="append", index=False)
-
-            if not df_hist_bonds.empty:
-                df_hist_bonds.to_sql("historique_prix_obligations", conn, if_exists="append", index=False)
-
-            if not df_equities.empty:
-                # Migration : le cours actuel valorise les actions sans historique.
-                colonnes_table = [ligne[1] for ligne in cursor.execute("PRAGMA table_info(positions_actions)")]
-                if colonnes_table and "cours_actuel" not in colonnes_table:
-                    cursor.execute("ALTER TABLE positions_actions ADD COLUMN cours_actuel TEXT")
-                cols = ["ticker", "libelle", "secteur", "quantite", "cours_actuel"]
-                df_equities[[c for c in cols if c in df_equities.columns]].to_sql("positions_actions", conn, if_exists="append", index=False)
-
-            if not df_hist_equities.empty:
-                df_hist_equities.to_sql("historique_cours_actions", conn, if_exists="append", index=False)
-
-        return {"status": "ok", "message": "Historique importé avec succès dans rwa_data.db"}
+        return {
+            "status": "ok",
+            "message": "Historique importé avec succès.",
+            "obligations_positions": int(len(df_bonds_positions)),
+            "obligations_historique": int(len(df_hist_bonds)),
+            "actions_positions": int(len(df_equities_positions)),
+            "actions_historique": int(len(df_hist_equities)),
+        }
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "VAR_HISTORY_UPLOAD_FAILED", "message": str(exc)},
         ) from exc
+
+
+def _dataframe_vers_csv(
+    df: "pd.DataFrame",
+    chemin: Path,
+    *,
+    colonnes_source: list[str],
+    entetes: list[str],
+) -> None:
+    """Écrit un DataFrame en CSV `;`-délimité (format lu par
+    portefeuille_data._lire_csv) : décimales en point, cellules vides pour
+    les valeurs manquantes, en-têtes explicitement renommés (colonnes_source
+    → entetes) pour matcher le nom attendu côté lecture."""
+
+    presentes = [c for c in colonnes_source if c in df.columns]
+    entetes_presentes = [entetes[colonnes_source.index(c)] for c in presentes]
+    df[presentes].to_csv(
+        chemin,
+        sep=";",
+        index=False,
+        header=entetes_presentes,
+        encoding="utf-8",
+        lineterminator="\n",
+    )
 
 
 @router.get("/var-history-template")
@@ -257,11 +351,14 @@ def download_var_history_template() -> Response:
 
 
 def _build_var_history_template() -> bytes:
-    """Classeur Excel de modèle pour l'import de données VaR.
+    """Classeur Excel de modèle pour l'import de l'historique VaR.
 
-    Quatre onglets de données (Obligations, Actions, Historique Prix
-    Obligations, Historique Cours Actions) avec en-têtes formatés et
-    exemples, plus un onglet Instructions.
+    Deux onglets seulement (Obligations, Actions), au format long : une
+    ligne = un titre à une date. Les caractéristiques du titre sont
+    répétées sur chaque ligne ; plusieurs lignes pour un même identifiant,
+    avec des dates différentes, construisent son historique de prix dans
+    le même onglet — pas de correspondance à maintenir entre des onglets
+    séparés positions/historique.
     """
     from io import BytesIO
 
@@ -272,9 +369,6 @@ def _build_var_history_template() -> bytes:
     wb = Workbook()
 
     NAVY = "0F1B3D"
-    BLUE = "1D4ED8"
-    LIGHT_BLUE = "DBEAFE"
-    LIGHT_GREY = "F8FAFC"
     BORDER_CLR = "CBD5E1"
     EXAMPLE_CLR = "FEF3C7"
     thin = Side(style="thin", color=BORDER_CLR)
@@ -305,8 +399,11 @@ def _build_var_history_template() -> bytes:
                 cell.font = ex_font
                 cell.border = thin_b
 
-    def add_note(ws, row, text):
-        cell = ws.cell(row=row, column=1)
+    def add_note(ws, row, text, col=1):
+        # Colonne dédiée (hors de la plage de données) par défaut du côté
+        # appelant : une note écrite dans la colonne 1 (ID) serait relue par
+        # pandas comme une position malformée lors de l'import.
+        cell = ws.cell(row=row, column=col)
         cell.value = text
         cell.font = note_font
 
@@ -320,136 +417,95 @@ def _build_var_history_template() -> bytes:
                         best = max(best, min(len(str(cell.value)) + 2, max_width))
             ws.column_dimensions[letter].width = best
 
-    # ── Obligations ──────────────────────────────────────────────────────
+    # ── Obligations (positions + historique dans le même onglet) ──────────
     ws = wb.active
     ws.title = "Obligations"
     headers_bonds = [
         "ID Titre", "Emetteur", "Devise",
         "Valeur nominale unitaire", "Coupon (%)",
         "Fréquence de paiement des intérêts",
-        "Date d'émission", "Date d'échéance",
-        "quantités", "Prix d'émission",
+        "Date d'émission", "Date d'échéance", "quantités",
+        "Date", "Prix de marché (%)",
     ]
     ws.append(headers_bonds)
     ws.append([
         "OAT-CI-2023-01", "État de Côte d'Ivoire", "XOF",
         10000, 5.75, "Semestrielle",
-        "2023-03-15", "2030-03-15", 150000, 99.5,
+        "2023-03-15", "2030-03-15", 150000,
+        "2025-01-02", 99.8,
+    ])
+    ws.append([
+        "OAT-CI-2023-01", "État de Côte d'Ivoire", "XOF",
+        10000, 5.75, "Semestrielle",
+        "2023-03-15", "2030-03-15", 150000,
+        "2025-01-03", 99.6,
+    ])
+    ws.append([
+        "OAT-CI-2023-01", "État de Côte d'Ivoire", "XOF",
+        10000, 5.75, "Semestrielle",
+        "2023-03-15", "2030-03-15", 150000,
+        "2025-01-06", 100.1,
     ])
     ws.append([
         "OAT-SN-2024-02", "État du Sénégal", "XOF",
         10000, 6.25, "Annuelle",
-        "2024-01-10", "2031-01-10", 200000, 100.0,
+        "2024-01-10", "2031-01-10", 200000,
+        "2025-01-02", 100.3,
+    ])
+    ws.append([
+        "OAT-SN-2024-02", "État du Sénégal", "XOF",
+        10000, 6.25, "Annuelle",
+        "2024-01-10", "2031-01-10", 200000,
+        "2025-01-03", 100.0,
+    ])
+    ws.append([
+        "OAT-SN-2024-02", "État du Sénégal", "XOF",
+        10000, 6.25, "Annuelle",
+        "2024-01-10", "2031-01-10", 200000,
+        "2025-01-06", 99.7,
     ])
     style_header(ws, len(headers_bonds))
-    style_example_rows(ws, 2, 3, len(headers_bonds))
-    add_note(ws, 5, "Les lignes d'exemple ci-dessus (en jaune) sont à supprimer avant l'import.")
-    add_note(ws, 6, "Coupon (%) : en pourcentage annuel (ex: 5.75 pour 5,75 %).")
-    add_note(ws, 7, "Prix d'émission : en pourcentage du nominal (ex: 99.5 pour 99,5 %).")
-    add_note(ws, 8, "Fréquence : Annuelle, Semestrielle, Trimestrielle ou Mensuelle.")
-    add_note(ws, 9, "Dates : format AAAA-MM-JJ ou format Excel date.")
+    style_example_rows(ws, 2, 7, len(headers_bonds))
+    # Notes en colonne 13 (2 colonnes après la dernière donnée, en 11) : une
+    # note écrite dans la colonne 1 (ID Titre) serait relue par pandas comme
+    # une position malformée lors de l'import.
+    notes_col = len(headers_bonds) + 2
+    add_note(ws, 1, "Les lignes d'exemple ci-dessous (en jaune) sont à supprimer avant l'import.", col=notes_col)
+    add_note(ws, 2, "Une ligne = un titre à une date : répétez l'ID Titre sur plusieurs lignes,", col=notes_col)
+    add_note(ws, 3, "avec une Date et un Prix différents, pour construire son historique.", col=notes_col)
+    add_note(ws, 4, "Une ligne sans Date ni Prix est acceptée (position sans historique encore fourni).", col=notes_col)
+    add_note(ws, 5, "Coupon (%) : en pourcentage annuel (ex: 5.75 pour 5,75 %).", col=notes_col)
+    add_note(ws, 6, "Prix de marché : en pourcentage du nominal (ex: 99.5 pour 99,5 %).", col=notes_col)
+    add_note(ws, 7, "Fréquence : Annuelle, Semestrielle, Trimestrielle ou Mensuelle.", col=notes_col)
+    add_note(ws, 8, "Dates : format AAAA-MM-JJ ou format Excel date.", col=notes_col)
+    add_note(ws, 9, "Minimum requis : 30 dates par titre pour une VaR historique fiable.", col=notes_col)
     auto_width(ws, len(headers_bonds))
+    ws.column_dimensions[get_column_letter(notes_col)].width = 68
 
-    # ── Actions ──────────────────────────────────────────────────────────
+    # ── Actions (positions + historique dans le même onglet) ──────────────
     ws2 = wb.create_sheet("Actions")
     headers_equities = [
-        "ID Instrument", "Émetteur / Société", "Secteur",
-        "Quantité", "Cours actuel",
+        "ID Instrument", "Émetteur / Société", "Secteur", "Quantité",
+        "Date", "Cours de clôture",
     ]
     ws2.append(headers_equities)
-    ws2.append([
-        "SNTS.CI", "Sonatel SA", "Télécommunications",
-        5000, 18500,
-    ])
-    ws2.append([
-        "SGBC.CI", "Société Générale CI", "Banque",
-        12000, 9750,
-    ])
+    ws2.append(["SNTS.CI", "Sonatel SA", "Télécommunications", 5000, "2025-01-02", 18400])
+    ws2.append(["SNTS.CI", "Sonatel SA", "Télécommunications", 5000, "2025-01-03", 18550])
+    ws2.append(["SNTS.CI", "Sonatel SA", "Télécommunications", 5000, "2025-01-06", 18500])
+    ws2.append(["SGBC.CI", "Société Générale CI", "Banque", 12000, "2025-01-02", 9700])
+    ws2.append(["SGBC.CI", "Société Générale CI", "Banque", 12000, "2025-01-03", 9800])
+    ws2.append(["SGBC.CI", "Société Générale CI", "Banque", 12000, "2025-01-06", 9750])
     style_header(ws2, len(headers_equities))
-    style_example_rows(ws2, 2, 3, len(headers_equities))
-    add_note(ws2, 5, "Les lignes d'exemple ci-dessus (en jaune) sont à supprimer avant l'import.")
-    add_note(ws2, 6, "Cours actuel : cours de clôture du jour en devise locale (XOF).")
-    add_note(ws2, 7, "Ce cours sert de valorisation de repli quand aucun historique n'est fourni.")
+    style_example_rows(ws2, 2, 7, len(headers_equities))
+    notes_col2 = len(headers_equities) + 2
+    add_note(ws2, 1, "Les lignes d'exemple ci-dessous (en jaune) sont à supprimer avant l'import.", col=notes_col2)
+    add_note(ws2, 2, "Une ligne = un titre à une date : répétez l'ID Instrument sur plusieurs lignes,", col=notes_col2)
+    add_note(ws2, 3, "avec une Date et un Cours différents, pour construire son historique.", col=notes_col2)
+    add_note(ws2, 4, "Une ligne sans Date ni Cours est acceptée (position sans historique encore fourni).", col=notes_col2)
+    add_note(ws2, 5, "Cours de clôture : prix unitaire en devise locale (XOF).", col=notes_col2)
+    add_note(ws2, 6, "Minimum requis : 30 dates par instrument pour une VaR historique fiable.", col=notes_col2)
     auto_width(ws2, len(headers_equities))
-
-    # ── Historique Prix Obligations ───────────────────────────────────────
-    ws3 = wb.create_sheet("Historique Prix Obligations")
-    headers_hist_bonds = ["Date", "ID Titre", "Prix de marché"]
-    ws3.append(headers_hist_bonds)
-    ws3.append(["2025-01-02", "OAT-CI-2023-01", 99.8])
-    ws3.append(["2025-01-03", "OAT-CI-2023-01", 99.6])
-    ws3.append(["2025-01-06", "OAT-CI-2023-01", 100.1])
-    ws3.append(["2025-01-02", "OAT-SN-2024-02", 100.3])
-    ws3.append(["2025-01-03", "OAT-SN-2024-02", 100.0])
-    ws3.append(["2025-01-06", "OAT-SN-2024-02", 99.7])
-    style_header(ws3, len(headers_hist_bonds))
-    style_example_rows(ws3, 2, 7, len(headers_hist_bonds))
-    add_note(ws3, 9, "Les lignes d'exemple ci-dessus (en jaune) sont à supprimer avant l'import.")
-    add_note(ws3, 10, "Prix de marché : en pourcentage du nominal (dirty price).")
-    add_note(ws3, 11, "ID Titre : doit correspondre exactement à l'ID Titre de l'onglet Obligations.")
-    add_note(ws3, 12, "Minimum requis : 30 dates par titre pour une VaR historique fiable.")
-    auto_width(ws3, len(headers_hist_bonds))
-
-    # ── Historique Cours Actions ──────────────────────────────────────────
-    ws4 = wb.create_sheet("Historique Cours Actions")
-    headers_hist_equities = ["Date", "ID Instrument", "Cours de clôture"]
-    ws4.append(headers_hist_equities)
-    ws4.append(["2025-01-02", "SNTS.CI", 18400])
-    ws4.append(["2025-01-03", "SNTS.CI", 18550])
-    ws4.append(["2025-01-06", "SNTS.CI", 18500])
-    ws4.append(["2025-01-02", "SGBC.CI", 9700])
-    ws4.append(["2025-01-03", "SGBC.CI", 9800])
-    ws4.append(["2025-01-06", "SGBC.CI", 9750])
-    style_header(ws4, len(headers_hist_equities))
-    style_example_rows(ws4, 2, 7, len(headers_hist_equities))
-    add_note(ws4, 9, "Les lignes d'exemple ci-dessus (en jaune) sont à supprimer avant l'import.")
-    add_note(ws4, 10, "ID Instrument : doit correspondre exactement à l'ID de l'onglet Actions.")
-    add_note(ws4, 11, "Cours de clôture : prix unitaire en devise locale (XOF).")
-    add_note(ws4, 12, "Minimum requis : 30 dates par instrument pour une VaR historique fiable.")
-    auto_width(ws4, len(headers_hist_equities))
-
-    # ── Instructions ──────────────────────────────────────────────────────
-    ws5 = wb.create_sheet("Instructions")
-    title_font = Font(name="Calibri", bold=True, size=14, color=NAVY)
-    h2_font = Font(name="Calibri", bold=True, size=11, color=BLUE)
-    body_font = Font(name="Calibri", size=10, color="374151")
-
-    instructions = [
-        ("MODÈLE D'IMPORT — HISTORIQUE POUR LE CALCUL DE LA VALUE AT RISK", title_font),
-        ("", None),
-        ("STRUCTURE DU FICHIER", h2_font),
-        ("Ce classeur doit contenir exactement 4 onglets de données :", body_font),
-        ("  1. Obligations — positions obligataires du portefeuille", body_font),
-        ("  2. Actions — positions en actions du portefeuille", body_font),
-        ("  3. Historique Prix Obligations — séries de prix quotidiens", body_font),
-        ("  4. Historique Cours Actions — séries de cours quotidiens", body_font),
-        ("", None),
-        ("RÈGLES IMPORTANTES", h2_font),
-        ("• Les ID Titre / ID Instrument doivent être identiques entre", body_font),
-        ("  les onglets positions et historiques (jointure exacte).", body_font),
-        ("• Les dates doivent être au format AAAA-MM-JJ ou date Excel.", body_font),
-        ("• Tous les montants sont en devise locale (XOF pour la zone UEMOA).", body_font),
-        ("• Le coupon est en pourcentage annuel (5.75 = 5,75 %/an).", body_font),
-        ("• Le prix de marché est en % du nominal (99.5 = 99,5 %).", body_font),
-        ("• L'import remplace entièrement les données existantes.", body_font),
-        ("", None),
-        ("MODES DE CALCUL", h2_font),
-        ("• Avec historique (≥ 30 dates) : VaR empirique (historique,", body_font),
-        ("  paramétrique σ-empirique, Monte-Carlo calibré).", body_font),
-        ("• Sans historique : VaR réglementaire Delta-Normal", body_font),
-        ("  (σ = 3 %/an UEMOA, duration modifiée pour obligations,", body_font),
-        ("  bêta pour actions).", body_font),
-        ("", None),
-        ("EXEMPLES", h2_font),
-        ("Les lignes en jaune dans chaque onglet sont des exemples.", body_font),
-        ("Supprimez-les et remplacez-les par vos données réelles.", body_font),
-    ]
-
-    for i, (text, font) in enumerate(instructions, start=1):
-        cell = ws5.cell(row=i, column=1, value=text)
-        if font:
-            cell.font = font
-    ws5.column_dimensions["A"].width = 65
+    ws2.column_dimensions[get_column_letter(notes_col2)].width = 68
 
     buf = BytesIO()
     wb.save(buf)

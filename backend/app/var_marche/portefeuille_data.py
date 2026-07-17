@@ -193,7 +193,13 @@ _FREQUENCE_COUPON_PAR_LIBELLE = {
 }
 
 
-def _normaliser_frequence_coupon(valeur: str) -> str:
+def normaliser_frequence_coupon(valeur: str) -> str:
+    """Convertit un libellé de fréquence de coupon (numérique ou en toutes
+    lettres : Annuelle, Semestrielle, Trimestrielle, Mensuelle) vers le
+    code numérique attendu par PositionObligation.frequence_coupon (1, 2, 4,
+    12). Fonction publique : réutilisée par la couche d'import Excel (VaR
+    historique) en plus de l'import du portefeuille marché."""
+
     brut = (valeur or "").strip()
     if not brut:
         return "1"
@@ -273,7 +279,7 @@ def _lire_positions_obligations_depuis_import(
                 "devise": str(valeurs.get("Devise") or "XOF"),
                 "valeur_nominale": str(valeurs.get("Valeur nominale unitaire") or "0"),
                 "taux_coupon_pct": str(valeurs.get("Coupon (%)") or "0"),
-                "frequence_coupon": _normaliser_frequence_coupon(
+                "frequence_coupon": normaliser_frequence_coupon(
                     str(valeurs.get("Fréquence de paiement des intérêts") or "")
                 ),
                 "date_emission": date_emission,

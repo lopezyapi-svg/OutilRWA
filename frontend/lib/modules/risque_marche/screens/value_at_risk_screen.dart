@@ -694,9 +694,20 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: _charger,
-                child: const Text('Réessayer'),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _BoutonImportModele(
+                    onImporter: _importerHistorique,
+                    onTelecharger: _telechargerModele,
+                    compact: false,
+                  ),
+                  const SizedBox(width: 10),
+                  OutlinedButton(
+                    onPressed: _charger,
+                    child: const Text('Réessayer'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1405,44 +1416,9 @@ class _PanneauGraphique extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Tooltip(
-              message: 'Télécharger le modèle Excel d\'import',
-              child: InkWell(
-                onTap: onTelechargerModele,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _varBorder),
-                  ),
-                  child: const Icon(
-                    Icons.description_outlined,
-                    size: 15,
-                    color: _varMuted,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Tooltip(
-              message: 'Importer l\'historique',
-              child: InkWell(
-                onTap: onImporterHistorique,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: _varBorder),
-                  ),
-                  child: const Icon(
-                    Icons.upload_file,
-                    size: 15,
-                    color: _varMuted,
-                  ),
-                ),
-              ),
+            _BoutonImportModele(
+              onImporter: onImporterHistorique,
+              onTelecharger: onTelechargerModele,
             ),
             const SizedBox(width: 8),
             Tooltip(
@@ -1504,6 +1480,118 @@ class _PanneauGraphique extends StatelessWidget {
             child: const SizedBox.expand(),
           ),
         ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bouton combiné historique de prix (importer / télécharger le modèle)
+// ---------------------------------------------------------------------------
+
+enum _ActionImportModele { importer, telecharger }
+
+/// Un seul point d'entrée pour l'historique de prix VaR : on clique et on
+/// choisit d'importer un fichier ou de télécharger le modèle Excel vide.
+/// `compact` affiche une icône ronde (utilisée dans l'en-tête du graphique,
+/// une fois une méthode déjà chargée) ; sinon un bouton étiqueté, utilisé
+/// dans l'écran d'erreur/données absentes où c'est la seule action possible.
+class _BoutonImportModele extends StatelessWidget {
+  const _BoutonImportModele({
+    required this.onImporter,
+    required this.onTelecharger,
+    this.compact = true,
+  });
+
+  final VoidCallback onImporter;
+  final VoidCallback onTelecharger;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final bouton = PopupMenuButton<_ActionImportModele>(
+      tooltip: 'Historique de prix',
+      onSelected: (action) {
+        switch (action) {
+          case _ActionImportModele.importer:
+            onImporter();
+          case _ActionImportModele.telecharger:
+            onTelecharger();
+        }
+      },
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: _ActionImportModele.importer,
+          child: _MenuImportModeleItem(
+            icon: Icons.upload_file,
+            label: 'Importer l\'historique',
+          ),
+        ),
+        PopupMenuItem(
+          value: _ActionImportModele.telecharger,
+          child: _MenuImportModeleItem(
+            icon: Icons.description_outlined,
+            label: 'Télécharger le modèle',
+          ),
+        ),
+      ],
+      child: compact
+          ? Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: _varBorder),
+              ),
+              child: const Icon(
+                Icons.upload_file,
+                size: 15,
+                color: _varMuted,
+              ),
+            )
+          : Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: _varBorder),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.upload_file, size: 15, color: _varPrimary),
+                  SizedBox(width: 8),
+                  Text(
+                    'Historique de prix',
+                    style: TextStyle(
+                      color: _varPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(Icons.expand_more, size: 16, color: _varPrimary),
+                ],
+              ),
+            ),
+    );
+    return compact ? Tooltip(message: 'Historique de prix', child: bouton) : bouton;
+  }
+}
+
+class _MenuImportModeleItem extends StatelessWidget {
+  const _MenuImportModeleItem({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: _varMuted),
+        const SizedBox(width: 10),
+        Text(label, style: const TextStyle(fontSize: 13)),
       ],
     );
   }
