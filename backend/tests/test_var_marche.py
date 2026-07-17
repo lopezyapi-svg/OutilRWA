@@ -331,6 +331,69 @@ def test_sans_donnees_erreur_explicite_par_defaut(tmp_path, monkeypatch):
         portefeuille_data.invalider_cache_series()
 
 
+def test_mode_reglementaire_sans_historique_obligations(tmp_path, monkeypatch):
+    """Positions + courbe du jour, sans historique de prix : la série de
+    pertes est vide mais la valorisation et la duration restent disponibles,
+    et les VaR paramétrique et Monte-Carlo produisent une valeur strictement
+    positive (mode réglementaire). Reproduit le parcours utilisateur :
+    import du portefeuille puis « Actualiser la courbe des taux »."""
+
+    (tmp_path / "positions_obligations.csv").write_text(
+        "isin;emetteur;devise;valeur_nominale;taux_coupon_pct;"
+        "frequence_coupon;date_emission;date_echeance;quantite;prix_marche_pct\n"
+        "OB1;Etat CI;XOF;10000;6.0;1;2024-01-30;2031-01-30;1000;\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "historique_taux.csv").write_text(
+        "date;maturite_annees;taux_pct\n"
+        "2026-07-16;0.25;5.2\n2026-07-16;1;5.6\n"
+        "2026-07-16;5;6.1\n2026-07-16;10;6.5\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(portefeuille_data, "app_data_root", lambda: tmp_path)
+    # Neutralise un éventuel portefeuille importé dans le rwa_data.db local :
+    # ce test doit valoriser uniquement les positions CSV de la fixture.
+    monkeypatch.setattr(
+        portefeuille_data, "_lire_valeur_marche_portefeuilles_sqlite", lambda: None
+    )
+    monkeypatch.delenv("VAR_MODE_SIMULATION", raising=False)
+    portefeuille_data.invalider_cache_series()
+    try:
+        serie = portefeuille_data.get_serie_pnl("obligations", 250, 1)
+        assert len(serie.pertes) == 0
+        assert serie.valeur_portefeuille > 0
+        assert serie.duration_modifiee is not None
+        assert serie.duration_modifiee > 0
+        assert any("mode réglementaire" in a for a in serie.avertissements)
+
+        resultat = var_parametrique.calculer(
+            serie.pertes / 1e9,
+            0.99,
+            type_portefeuille="obligations",
+            valeur_portefeuille=serie.valeur_portefeuille / 1e9,
+            duration_modifiee=serie.duration_modifiee,
+            horizon_jours=1,
+            volatilite_reglementaire=0.03,
+        )
+        assert resultat["var"] > 0
+
+        resultat_mc = var_montecarlo.calculer(
+            type_portefeuille="obligations",
+            valeur_portefeuille=serie.valeur_portefeuille / 1e9,
+            pertes_quotidiennes=serie.pertes_quotidiennes / 1e9,
+            niveau_confiance=0.99,
+            horizon_jours=1,
+            nb_simulations=1_000,
+            graine=42,
+            duration_modifiee=serie.duration_modifiee,
+            variations_taux=serie.variations_taux,
+            volatilite_reglementaire=0.03,
+        )
+        assert resultat_mc["var"] > 0
+    finally:
+        portefeuille_data.invalider_cache_series()
+
+
 def test_nouveaux_fichiers_charges_automatiquement(tmp_path, monkeypatch):
     """Le dépôt ou la modification d'un fichier invalide le cache tout seul."""
 

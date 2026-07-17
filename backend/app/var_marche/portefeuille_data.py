@@ -959,6 +959,22 @@ def _construire_serie_valeurs(type_portefeuille: str) -> _SeriePayload:
             )
 
     if not mode_simulation_actif():
+        # Message ciblé : si le portefeuille est bien importé, le blocage
+        # vient de l'absence de source de valorisation, pas de l'import.
+        if type_portefeuille == "obligations" and charger_positions_obligations():
+            raise DonneesAbsentesError(
+                "Portefeuille obligations importé, mais aucune source de "
+                "valorisation disponible. Actualisez la courbe des taux "
+                "(onglet « Courbe des Taux ») pour activer les VaR "
+                "paramétrique et Monte-Carlo, ou importez un historique de "
+                "prix pour la VaR historique."
+            )
+        if type_portefeuille == "actions" and charger_positions_actions():
+            raise DonneesAbsentesError(
+                "Portefeuille actions importé, mais aucun historique de "
+                "cours disponible : importez l'historique des cours pour "
+                "évaluer la Value at Risk."
+            )
         raise DonneesAbsentesError(
             f"Aucune donnée réelle trouvée pour le portefeuille "
             f"{type_portefeuille}. Importez un portefeuille via « Importer "
@@ -1019,8 +1035,23 @@ def get_serie_pnl(
     ) = _serie_valeurs(type_portefeuille)
     valeurs = np.array(valeurs_tuple)
 
+    avertissements = list(avertissements)
     profondeur_disponible = len(valeurs) - 1
-    if profondeur_disponible < fenetre_jours:
+    if profondeur_disponible == 0:
+        # Valorisation du jour disponible (positions + courbe ou prix) mais
+        # aucun historique : la série de pertes est vide. Les VaR
+        # paramétrique et Monte-Carlo basculent alors en mode réglementaire
+        # (volatilité forfaitaire x sensibilité x valeur du portefeuille) ;
+        # la VaR historique, elle, refusera explicitement côté endpoint.
+        message = (
+            f"Aucun historique de valorisation pour le portefeuille "
+            f"{type_portefeuille} : VaR paramétrique et Monte-Carlo "
+            "calculées en mode réglementaire (volatilité forfaitaire). "
+            "La VaR historique nécessite un historique de prix importé."
+        )
+        avertissements.append(message)
+        logger.info(message)
+    elif profondeur_disponible < fenetre_jours:
         raise ErreurDonneesVar(
             f"Profondeur d'historique insuffisante pour le portefeuille "
             f"{type_portefeuille} : {profondeur_disponible} observations "
