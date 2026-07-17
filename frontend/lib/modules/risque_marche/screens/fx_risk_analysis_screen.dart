@@ -1705,6 +1705,20 @@ class _FxKpiSection extends StatelessWidget {
           '${unit.label}';
     }
 
+    // Variante signée : le total de la table ci-dessous affiche déjà la
+    // perte/gain avec son signe (ex. -346 037 069), la carte doit montrer
+    // le même nombre plutôt que sa valeur absolue à côté d'un libellé
+    // « Perte » — sinon les deux se contredisent visuellement. Une perte
+    // qui s'arrondit à zéro à la précision affichée n'affiche pas « -0,0 ».
+    String fmtSigned(double value) {
+      final scaled = value / unit.divisor;
+      final decimals = scaled.abs() >= 100 ? 0 : 1;
+      final rounded = double.parse(scaled.toStringAsFixed(decimals));
+      final normalized = rounded == 0 ? 0.0 : rounded;
+      return '${AppFormatters.decimalNumber(normalized, maxDecimals: decimals)} '
+          '${unit.label}';
+    }
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1721,7 +1735,7 @@ class _FxKpiSection extends StatelessWidget {
           Expanded(
             child: _FxKpiCard(
               label: 'Gain/Perte Global',
-              value: fmt(gain.abs()),
+              value: fmtSigned(gain),
               unit: 'FCFA',
               subtitle: gain >= 0 ? 'Gain net de change sur le portefeuille' : 'Perte nette de change sur le portefeuille',
             ),
