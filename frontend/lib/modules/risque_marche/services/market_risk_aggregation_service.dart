@@ -28,10 +28,18 @@ class AggregatedMarketRiskResult {
 /// de Change (actifs/passifs/achats-ventes à terme, approche standard
 /// BCEAO). `capitalRequirement`/`marketRwa` (getters dérivés) reflètent donc
 /// automatiquement la correction.
+///
+/// Si [fxPositions] est vide (rien saisi dans le formulaire actifs/passifs),
+/// [base] est renvoyé tel quel : une saisie absente ne doit jamais écraser
+/// une exposition change réellement présente dans le portefeuille importé
+/// par un zéro. La substitution ne s'applique que si l'utilisateur a
+/// effectivement saisi au moins une position de change.
 MarketPrudentialCapitalResult applyRealForeignExchangeRisk(
   MarketPrudentialCapitalResult base,
   List<ForeignExchangePosition> fxPositions,
 ) {
+  if (fxPositions.isEmpty) return base;
+
   final fx = calculateForeignExchangeRisk(fxPositions);
   return MarketPrudentialCapitalResult(
     interestRateSpecificRisk: base.interestRateSpecificRisk,
