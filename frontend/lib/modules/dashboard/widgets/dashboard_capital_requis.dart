@@ -131,10 +131,13 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
 
       if ((pos.dy - y).abs() > 18) continue;
 
-      final baseMd = AppFormatters.compactNumber(l.base * rwaVal / 100);
-      final requisMd = AppFormatters.compactNumber(l.requis(rwaVal));
-      final detenuMd = AppFormatters.compactNumber(l.detenu(rwaVal));
-      final surplusMd = AppFormatters.compactNumber(l.surplus(rwaVal));
+      // Même précision que le panneau « Fonds propres réglementaires »
+      // (3 décimales utiles) : le montant détenu doit se lire à l'identique
+      // des deux côtés de l'écran.
+      final baseMd = AppFormatters.decimalNumber(l.base * rwaVal / 100, maxDecimals: 3);
+      final requisMd = AppFormatters.decimalNumber(l.requis(rwaVal), maxDecimals: 3);
+      final detenuMd = AppFormatters.decimalNumber(l.detenu(rwaVal), maxDecimals: 3);
+      final surplusMd = AppFormatters.decimalNumber(l.surplus(rwaVal), maxDecimals: 3);
       final basePct = '${l.base.toStringAsFixed(1)}%';
       final exigPct = '${l.exigence.toStringAsFixed(1)}%';
       final actPct = '${l.actuel.toStringAsFixed(1)}%';
@@ -147,7 +150,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
           [
             _TooltipRow('Seuil minimum strict'.tr(context), basePct),
             const _TooltipRow.divider(),
-            _TooltipRow('Montant équivalent'.tr(context), '$baseMd$unitLabel', isHighlight: true),
+            _TooltipRow('Montant équivalent'.tr(context), '$baseMd $unitLabel', isHighlight: true),
           ],
           pos,
           formula: '(Seuil minimum × Actifs pondérés au risque)'.tr(context),
@@ -166,7 +169,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
             const _TooltipRow.divider(),
             _TooltipRow('Taux global exigé'.tr(context), exigPct, isHighlight: true),
             const _TooltipRow.divider(),
-            _TooltipRow('Montant requis'.tr(context), '$requisMd$unitLabel', isHighlight: true),
+            _TooltipRow('Montant requis'.tr(context), '$requisMd $unitLabel', isHighlight: true),
           ],
           pos,
           formula: '(Taux global exigé × Actifs pondérés au risque)'.tr(context),
@@ -181,13 +184,13 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
         found = _TooltipData(
           context.tr('{{label}} : Fonds propres détenus (en {{unit}})', args: {'label': l.label, 'unit': unitLabel}),
           [
-            _TooltipRow('Montant détenu'.tr(context), '$detenuMd$unitLabel'),
+            _TooltipRow('Montant détenu'.tr(context), '$detenuMd $unitLabel'),
             _TooltipRow('Ratio effectif'.tr(context), actPct, isHighlight: true),
             const _TooltipRow.divider(),
-            _TooltipRow('Montant exigé'.tr(context), '$requisMd$unitLabel'),
+            _TooltipRow('Montant exigé'.tr(context), '$requisMd $unitLabel'),
             _TooltipRow(
               (l.surplus(rwaVal) >= 0 ? 'Excédent de capital' : 'Déficit de capital').tr(context),
-              '$sign$surplusMd$unitLabel',
+              '$sign$surplusMd $unitLabel',
               isHighlight: true,
             ),
           ],
@@ -639,7 +642,7 @@ class _DotPlotPainter extends CustomPainter {
       
       _text(
         canvas,
-        '$signStr${AppFormatters.compactNumber(surplusVal.abs())}$unitLabel',
+        '$signStr${AppFormatters.decimalNumber(surplusVal.abs(), maxDecimals: 3)}$unitLabel',
         Offset(rightMostX + 11, y),
         color: pointColor,
         size: 10,

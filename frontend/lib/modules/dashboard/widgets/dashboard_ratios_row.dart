@@ -318,8 +318,10 @@ class _RatioTile extends StatelessWidget {
     );
   }
 
+  // Jusqu'à 3 décimales, sans zéros de remplissage : 7,5 s'affiche « 7,5 »
+  // (et non « 7,500 », illisible avec la virgule décimale française).
   static String _fr(double v) =>
-      AppFormatters.usefulDecimalNumber(v, decimals: 3);
+      AppFormatters.decimalNumber(v, maxDecimals: 3);
 }
 
 class _DottedLinePainter extends CustomPainter {

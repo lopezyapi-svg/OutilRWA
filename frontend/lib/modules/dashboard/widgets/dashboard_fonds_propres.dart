@@ -23,12 +23,15 @@ class DashboardFondsPropres extends StatelessWidget {
   final DashboardSnapshot data;
   final VoidCallback? onEdit;
 
+  // Jusqu'à 3 décimales utiles, sans zéros de remplissage — même précision
+  // que les tooltips du graphique « Exigences de fonds propres » pour que le
+  // même montant se lise à l'identique partout.
   String _formatAmount(double value, PortfolioAmountUnit unit) {
-    return AppFormatters.usefulDecimalNumber(value / unit.divisor);
+    return AppFormatters.decimalNumber(value / unit.divisor, maxDecimals: 3);
   }
 
   String _formatTotalAmount(double value, PortfolioAmountUnit unit) {
-    return AppFormatters.usefulDecimalNumber(value / unit.divisor);
+    return AppFormatters.decimalNumber(value / unit.divisor, maxDecimals: 3);
   }
 
   String _formatTotalUnit(double value, PortfolioAmountUnit unit) {
