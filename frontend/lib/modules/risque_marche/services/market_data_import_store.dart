@@ -4119,6 +4119,18 @@ DateTime? _dateValue(Object? value) {
     final second = int.tryParse(slashParts[1]);
     final third = int.tryParse(slashParts[2]);
     if (first != null && second != null && third != null) {
+      // Format ISO (AAAA-MM-JJ, ex. "2024-01-30") : le premier segment est
+      // l'année sur 4 chiffres — à ne pas confondre avec un jour. Sans ce
+      // test, "2024-01-30" était lu comme jour=2024/mois=01/année=2030,
+      // ce qui décalait la date réelle de plusieurs années (bug constaté :
+      // maturité totale calculée à ~1 mois quel que soit le titre, alors
+      // que la maturité résiduelle — comparée à la date du jour, un vrai
+      // DateTime non ré-analysé — restait correcte).
+      if (slashParts[0].length == 4) {
+        return DateTime(first, second, third);
+      }
+      // Sinon format européen JJ/MM/AAAA (ou JJ.MM.AAAA) : le dernier
+      // segment porte l'année.
       final year = third < 100 ? 2000 + third : third;
       return DateTime(year, second, first);
     }
