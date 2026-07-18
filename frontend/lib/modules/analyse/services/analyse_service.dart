@@ -106,33 +106,55 @@ class AnalyseService {
     const zone = RegulatoryZone.uemoa;
     final thresholds = _thresholdsFor(zone);
     final now = DateTime.now();
-    final creditRwa = _totalRwa(dashboard);
-    final marketRwa = _estimateMarketRwa(creditRwa);
-    final operationalRwa = _estimateOperationalRwa(creditRwa, crm.summary);
-    final allRwa = creditRwa + marketRwa + operationalRwa;
+    // RWA réels calculés par le backend — mêmes métriques que le tableau de
+    // bord (rwa_credit / rwa_market / rwa_op / rwa). Plus aucune estimation :
+    // ce module affichait auparavant un RWA marché forfaitaire (5 % du
+    // crédit) et un RWA opérationnel heuristique, en contradiction avec les
+    // valeurs affichées partout ailleurs dans l'application.
+    final creditRwa =
+        _metricValue(dashboard, 'rwa_credit', fallback: _totalRwa(dashboard));
+    final marketRwa = _metricValue(dashboard, 'rwa_market');
+    final operationalRwa = _metricValue(dashboard, 'rwa_op');
+    final allRwa = _metricValue(
+      dashboard,
+      'rwa',
+      fallback: creditRwa + marketRwa + operationalRwa,
+    );
     final requiredCapital = allRwa * thresholds.fpeTarget;
     final economicCapital = allRwa * (thresholds.fpeTarget + 0.015);
-    final reportedCapital = _metricValue(dashboard, 'capital');
-    final reportedSolvency = _metricValue(
-      dashboard,
-      'solvabilite',
-      fallback: 0.108,
-    );
-    final fpe = math.max(reportedCapital * 1.32, allRwa * reportedSolvency);
-    final tier1 = fpe * 0.91;
-    final cet1 = fpe * 0.84;
+    // Fonds propres réels (panneau « Fonds propres réglementaires ») ; à
+    // défaut, reconstruction depuis les ratios réels du tableau de bord —
+    // jamais de coefficients inventés (l'ancien moteur posait
+    // FPE = capital × 1,32, Tier 1 = 91 % et CET1 = 84 % des FPE).
+    final fp = dashboard.fondsPropres;
+    final fpe = (fp?.totalFp ?? 0) > 0
+        ? fp!.totalFp
+        : _metricValue(dashboard, 'solvabilite') * allRwa;
+    final tier1 = (fp?.tier1 ?? 0) > 0
+        ? fp!.tier1
+        : _metricValue(dashboard, 'tier1_ratio') * allRwa;
+    final cet1 = (fp?.cet1 ?? 0) > 0
+        ? fp!.cet1
+        : _metricValue(dashboard, 'cet1_ratio') * allRwa;
     final cet1Ratio = _safeRatio(cet1, allRwa);
     final tier1Ratio = _safeRatio(tier1, allRwa);
     final fpeRatio = _safeRatio(fpe, allRwa);
     final conservation = _conservationRequirement(cet1Ratio, thresholds);
+    // Chocs de stress standard appliqués au ratio de solvabilité RÉEL
+    // (hypothèses de scénario : -220 pb macro, -380 pb idiosyncratique,
+    // -520 pb combiné).
     final stressMacro = fpeRatio - 0.022;
     final stressIdiosyncratic = fpeRatio - 0.038;
     final stressCombined = fpeRatio - 0.052;
-    final largestExposure = _largestExposure(dashboard.portfolioOverview);
-    final largeRiskRatio = _safeRatio(largestExposure?.rwa ?? 0, tier1);
-    final largeRisks = dashboard.portfolioOverview
-        .where((item) => _safeRatio(item.rwa, tier1) >= 0.10)
-        .toList(growable: false);
+    // Grands risques : mêmes règles que le tableau de bord (exposition
+    // nette rapportée aux fonds propres effectifs, souverains exclus,
+    // seuil 10 % — liste déjà établie par le backend), et non plus une
+    // approximation en RWA rapportés au Tier 1.
+    final largeRisks = dashboard.grandsRisques;
+    final largestExposure = largeRisks.isEmpty
+        ? null
+        : largeRisks.reduce((a, b) => a.fpRatio >= b.fpRatio ? a : b);
+    final largeRiskRatio = (largestExposure?.fpRatio ?? 0) / 100;
     final topSector = _topDistribution(dashboard.rwaCategoryDistribution);
     final operationalShare = _safeRatio(operationalRwa, allRwa);
     final capitalGap = fpe - requiredCapital;
@@ -209,13 +231,13 @@ class AnalyseService {
     final rootCauses = <String>[
       if (topSector != null)
         'Hausse et concentration des RWA de credit sur ${topSector.label} (${_pct(topSector.percentage)} du RWA credit).',
-      'Le risque de credit represente ${_pct(_safeRatio(creditRwa, allRwa))} des RWA totaux estimes.',
+      'Le risque de credit represente ${_pct(_safeRatio(creditRwa, allRwa))} des RWA totaux.',
       if (operationalShare > 0.09)
         'Le risque operationnel pese ${_pct(operationalShare)}, au-dessus du repere de gestion de 9%.',
       if (dashboard.rwaProjection.length >= 2)
         'La projection RWA montre une variation de ${_pct(_safeRatio(dashboard.rwaProjection.last.value - dashboard.rwaProjection.first.value, dashboard.rwaProjection.first.value))}.',
       if (largeRisks.isNotEmpty)
-        '${largeRisks.length} contrepartie(s) depassent le seuil de grand risque de 10% du Tier 1.',
+        '${largeRisks.length} contrepartie(s) depassent le seuil de grand risque de 10% des fonds propres effectifs.',
     ];
 
     final actions = <RegulatoryAction>[
@@ -307,9 +329,9 @@ class AnalyseService {
         keyValue: _pct(largeRiskRatio),
         keyLabel: largestExposure?.counterparty ?? 'Top client',
         diagnostic:
-            '${largestExposure?.counterparty ?? 'La premiere contrepartie'} represente ${_pct(largeRiskRatio)} du Tier 1.',
+            '${largestExposure?.counterparty ?? 'La premiere contrepartie'} represente ${_pct(largeRiskRatio)} des fonds propres effectifs.',
         cause:
-            '${largeRisks.length} contrepartie(s) atteignent au moins 10% du Tier 1.',
+            '${largeRisks.length} contrepartie(s) atteignent au moins 10% des fonds propres effectifs.',
         recommendation:
             'Ramener la premiere exposition vers 15% du T1 sur 12 mois.',
         icon: Icons.center_focus_strong_rounded,
@@ -718,7 +740,11 @@ class AnalyseService {
         return const _RegulatoryThresholds(
           cet1Minimum: 0.050,
           cet1Target: 0.075,
-          tier1Target: 0.090,
+          // Aligné sur le reste de l'outil : Tier 1 minimum 7,5 %
+          // (paramétrage retenu par l'utilisateur) + coussin de
+          // conservation 2,5 % = 10 % — le tableau de bord affiche le
+          // même seuil global.
+          tier1Target: 0.100,
           fpeMinimum: 0.090,
           fpeTarget: 0.115,
           largeRiskLimit: 0.25,
@@ -790,26 +816,13 @@ class AnalyseService {
         .value;
   }
 
-  double _estimateMarketRwa(double creditRwa) => creditRwa * 0.05;
-
-  double _estimateOperationalRwa(double creditRwa, CrmSummary crmSummary) {
-    final base = crmSummary.totalCapitalAfter > 0
-        ? crmSummary.totalCapitalAfter / 0.09 * 0.18
-        : creditRwa * 0.09;
-    return base.clamp(creditRwa * 0.04, creditRwa * 0.14).toDouble();
-  }
-
+  /// Sensibilité IRRBB estimée par heuristique (aucun module IRRBB dans
+  /// l'outil pour l'instant) : le message affiché la présente explicitement
+  /// comme une estimation.
   double _estimateIrrbbShockRatio(DashboardSnapshot dashboard) {
     final topCountry = _topDistribution(dashboard.countryDistribution);
     final concentration = topCountry?.percentage ?? 0.0;
     return (0.055 + concentration * 0.09).clamp(0.0, 0.24).toDouble();
-  }
-
-  PortfolioRow? _largestExposure(List<PortfolioRow> rows) {
-    if (rows.isEmpty) return null;
-    final sorted = List<PortfolioRow>.from(rows)
-      ..sort((a, b) => b.rwa.compareTo(a.rwa));
-    return sorted.first;
   }
 
   DistributionEntry? _topDistribution(List<DistributionEntry> entries) {

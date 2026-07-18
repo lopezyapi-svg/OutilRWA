@@ -12,7 +12,6 @@ import '../../../core/utils/currency_conversion.dart';
 import '../models/currency_registry.dart';
 import 'market_country_resolver.dart';
 import 'market_data_local_storage.dart' as local_storage;
-import 'market_risk_orchestrator.dart';
 
 const String marketPortfolioSheetName = 'Saisir donnée';
 const String marketEquityPortfolioSheetName = 'Actions';
@@ -2652,9 +2651,6 @@ class MarketDataImportStore {
 
   MarketDataSnapshot get snapshot => snapshotNotifier.value;
 
-  MarketRiskOrchestrator get riskOrchestrator =>
-      MarketRiskOrchestrator.instance;
-
   bool _publishDatasets(
     Map<MarketPortfolioType, MarketPortfolioDataset> datasets, {
     MarketPortfolioType? activeType,
@@ -2681,7 +2677,6 @@ class MarketDataImportStore {
     snapshotNotifier.value = published;
     datasetsNotifier.value = published.datasets;
     datasetNotifier.value = published.activeDataset;
-    MarketRiskOrchestrator.instance.loadFromSnapshot(published);
     if (persist) _schedulePersistDatasets();
     return true;
   }
