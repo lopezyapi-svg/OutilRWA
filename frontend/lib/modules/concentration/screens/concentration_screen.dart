@@ -18,7 +18,7 @@ import 'package:fl_chart/fl_chart.dart';
 const int _counterpartyTopCount = 10;
 const int _issuerResidenceCountryTopCount = 10;
 const int _concentrationViewModelVersion = 5;
-const double _concentrationRadius = 2;
+const double _concentrationRadius = 8;
 const List<String> _counterpartyRatingOrder = [
   'AAA',
   'AA+',
@@ -900,11 +900,6 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     child: Text('Encours brut',
                         style: _tableHeaderStyle(),
                         textAlign: TextAlign.right)),
-                Expanded(
-                    flex: 2,
-                    child: Text('Date d\'échéance',
-                        style: _tableHeaderStyle(),
-                        textAlign: TextAlign.center)),
                 Expanded(
                     flex: 2,
                     child: Text('Provision',

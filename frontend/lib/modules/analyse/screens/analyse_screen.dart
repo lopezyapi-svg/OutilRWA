@@ -177,7 +177,7 @@ class _RegulatoryCard extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(card.icon, color: color, size: 20),
               ),
@@ -425,7 +425,7 @@ class _JsonPreview extends StatelessWidget {
           color: isDark
               ? Colors.black.withValues(alpha: 0.22)
               : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           '{ analysis_id: ${json['analysis_id']}, status: ${json['status']}, diagnostics: ${report.diagnostics.length}, recommendations: ${report.recommendations.length} }',
@@ -558,7 +558,7 @@ class _BarLine extends StatelessWidget {
           ),
           AppSpacing.gapSm,
           ClipRRect(
-            borderRadius: BorderRadius.circular(5),
+            borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: factor.toDouble(),
               minHeight: 16,
@@ -646,7 +646,7 @@ class _StatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Text(

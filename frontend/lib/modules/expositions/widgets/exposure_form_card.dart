@@ -12,7 +12,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../models/exposition_models.dart';
 
-const double _exposureFormRadius = 5;
+const double _exposureFormRadius = 8;
 const double _wizardBorderWidth = 1.0;
 
 bool _isExposureDark(BuildContext context) =>

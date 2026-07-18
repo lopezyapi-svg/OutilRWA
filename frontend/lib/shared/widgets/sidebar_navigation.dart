@@ -368,6 +368,11 @@ const List<_MenuEntry> _sidebarItems = [
     label: 'Risque de Marché',
     children: [
       _MenuEntry.leaf(
+        module: AppModule.risqueMarche,
+        icon: Icons.dashboard_outlined,
+        label: 'Tableau de Bord',
+      ),
+      _MenuEntry.leaf(
         module: AppModule.risqueMarcheCalculPrudentiel,
         icon: Icons.calculate_rounded,
         label: 'Calcul Prudentiel',

@@ -13,7 +13,7 @@ import '../../expositions/models/exposition_models.dart';
 import '../models/rwa_credit_analysis.dart';
 
 
-const double _pageRadius = 3;
+const double _pageRadius = 8;
 const Color _deepBlue = Color(0xFF001F4E);
 const Color _blue700 = Color(0xFF0B4DBA);
 const Color _ink = Color(0xFF0F1B3D);
@@ -1178,7 +1178,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
             );
         return StatefulBuilder(
           builder: (context, setState) {
-            final top5 = showAll ? allCounterparties : allCounterparties.take(5).toList();
+            final top5 = showAll ? allCounterparties : allCounterparties.take(6).toList();
 
             return Dialog(
               backgroundColor: Colors.white,
@@ -1195,7 +1195,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                       children: [
                         Expanded(
                           child: Text(
-                            showAll ? 'TOUTES LES CONTREPARTIES - ${row.label.toUpperCase()}' : 'TOP 5 DES CONTREPARTIES - ${row.label.toUpperCase()}',
+                            showAll ? 'TOUTES LES CONTREPARTIES - ${row.label.toUpperCase()}' : 'TOP 6 DES CONTREPARTIES - ${row.label.toUpperCase()}',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   color: _blue700,
                                   fontWeight: FontWeight.w700,
@@ -1212,7 +1212,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                             textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                           ),
-                          child: Text(showAll ? 'Voir le top 5' : 'Voir tout'),
+                          child: Text(showAll ? 'Voir le top 6' : 'Voir tout'),
                         ),
                         const SizedBox(width: 8),
                         IconButton(
@@ -1405,7 +1405,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                       Expanded(
                                         flex: 4,
                                         child: Text(
-                                          showAll ? 'TOTAL' : 'TOTAL TOP 5',
+                                          showAll ? 'TOTAL' : 'TOTAL TOP 6',
                                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.w900,
@@ -2753,6 +2753,27 @@ class _TopExposuresChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (top5.isEmpty) return const SizedBox();
+    // Une contrepartie sans RWA n'a aucune part à représenter : on ne trace
+    // que celles qui en portent, en conservant leur index d'origine pour
+    // rester synchronisé avec les lignes du tableau.
+    final visible = [
+      for (final entry in top5.asMap().entries)
+        if (entry.value.rwa > 0) entry,
+    ];
+    if (visible.isEmpty) {
+      return const Center(
+        child: Text(
+          'Aucun RWA à répartir :\nles contreparties de cette catégorie sont pondérées à 0 %.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: _muted,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            height: 1.6,
+          ),
+        ),
+      );
+    }
     return BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
@@ -2764,8 +2785,9 @@ class _TopExposuresChart extends StatelessWidget {
                   barTouchResponse != null &&
                   barTouchResponse.spot != null) {
                 final index = barTouchResponse.spot!.touchedBarGroupIndex;
-                if (onSelect != null) {
-                  onSelect!(selectedIndex == index ? null : index);
+                if (onSelect != null && index >= 0 && index < visible.length) {
+                  final originalIndex = visible[index].key;
+                  onSelect!(selectedIndex == originalIndex ? null : originalIndex);
                 }
               }
             },
@@ -2776,7 +2798,7 @@ class _TopExposuresChart extends StatelessWidget {
               getTooltipColor: (group) => _deepBlue,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 return BarTooltipItem(
-                  '${top5[groupIndex].name} : ',
+                  '${top5[group.x.toInt()].name} : ',
                   const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11),
                   children: <TextSpan>[
                     TextSpan(
@@ -2806,7 +2828,7 @@ class _TopExposuresChart extends StatelessWidget {
                           top5[index].name,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: _muted, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: const TextStyle(color: _muted, fontSize: 8, fontWeight: FontWeight.bold),
                         ),
                       ),
                     );
@@ -2853,7 +2875,7 @@ class _TopExposuresChart extends StatelessWidget {
               return const FlLine(color: _line, strokeWidth: 0.3);
             },
           ),
-          barGroups: top5.asMap().entries.map((e) {
+          barGroups: visible.map((e) {
             final isSelected = e.key == selectedIndex;
             return BarChartGroupData(
               x: e.key,

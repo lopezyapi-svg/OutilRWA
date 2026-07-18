@@ -29,7 +29,7 @@ class AnalyseInsightCard extends StatelessWidget {
       padding: AppSpacing.cardInsets,
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
         ),
@@ -91,7 +91,7 @@ class _InsightItem extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: severityColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 insight.icon,

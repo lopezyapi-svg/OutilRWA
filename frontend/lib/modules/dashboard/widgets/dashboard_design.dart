@@ -15,7 +15,7 @@ class Dash {
   Dash._();
 
   /// Rayon des panneaux : net, jamais l'arrondi « SaaS ».
-  static const double radius = 4;
+  static const double radius = 8;
 
   /// Filet fin unique pour bordures et séparateurs.
   static const double hairline = 0.6;

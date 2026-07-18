@@ -1199,8 +1199,8 @@ const Map<String, String> _englishTranslations = {
   'Risques traités': 'Processed exposures',
 
   // --- Dashboard: treemap concentration ---
-  'Concentration des risques — top 10 contreparties':
-      'Risk concentration — top 10 counterparties',
+  'Concentration des risques - top 10 contreparties':
+      'Risk concentration - top 10 counterparties',
   'Groupe A': 'Group A',
   'Groupe B': 'Group B',
   'Groupe C': 'Group C',

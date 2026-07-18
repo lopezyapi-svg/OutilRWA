@@ -26,7 +26,7 @@ class AnalyseChartCard extends StatelessWidget {
       padding: AppSpacing.cardInsets,
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isDark ? AppColors.borderDark : AppColors.borderLight,
         ),

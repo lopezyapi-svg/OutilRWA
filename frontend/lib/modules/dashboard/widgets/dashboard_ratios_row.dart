@@ -256,12 +256,12 @@ class _RatioTile extends StatelessWidget {
                 Text(
                   'Seuil réglementaire :'.tr(context),
                   style: DashText.caption(c, color: c.ink)
-                      .copyWith(fontWeight: FontWeight.w600),
+                      .copyWith(fontWeight: FontWeight.w600, fontSize: 9.5),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   context.tr('Pilier 1 ({{value}}%)', args: {'value': _fr(pilier1)}),
-                  style: DashText.caption(c, color: c.muted),
+                  style: DashText.caption(c, color: c.muted).copyWith(fontSize: 9.5),
                 ),
                 if (coussin > 0) ...[
                   const SizedBox(width: 6),
@@ -269,7 +269,7 @@ class _RatioTile extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     context.tr('Coussin ({{value}}%)', args: {'value': _fr(coussin)}),
-                    style: DashText.caption(c, color: c.muted),
+                    style: DashText.caption(c, color: c.muted).copyWith(fontSize: 9.5),
                   ),
                 ],
               ],
