@@ -816,29 +816,33 @@ class _OngletMethode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final verrouille = methode.verrouille;
+    // Onglet verrouillé : entièrement grisé (fond, icône, libellé estompés)
+    // et non sélectionnable tant qu'aucun historique de prix réel n'est
+    // disponible (cf. décision du 2026-07-17).
+    final couleurGrisee = _varMuted.withValues(alpha: 0.55);
     final onglet = InkWell(
-      // Onglet verrouillé : non sélectionnable tant qu'aucun historique de
-      // prix réel n'est disponible (cf. décision du 2026-07-17).
       onTap: verrouille ? null : onTap,
       borderRadius: BorderRadius.circular(2),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: actif && !verrouille ? Colors.indigo : Colors.transparent,
+          color: verrouille
+              ? _varMuted.withValues(alpha: 0.10)
+              : (actif ? Colors.indigo : Colors.transparent),
           borderRadius: BorderRadius.circular(2),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (verrouille) ...[
-              const Icon(Icons.lock_outline, size: 13, color: _varMuted),
+              Icon(Icons.lock_outline, size: 13, color: couleurGrisee),
               const SizedBox(width: 5),
             ],
             Text(
               methode.libelle,
               style: TextStyle(
                 color: verrouille
-                    ? _varMuted
+                    ? couleurGrisee
                     : (actif ? Colors.white : _varNavy),
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
@@ -852,7 +856,7 @@ class _OngletMethode extends StatelessWidget {
     return Tooltip(
       message: 'Nécessite un historique de prix réel (250 jours minimum) — '
           'indisponible pour le moment.',
-      child: onglet,
+      child: MouseRegion(cursor: SystemMouseCursors.forbidden, child: onglet),
     );
   }
 }
