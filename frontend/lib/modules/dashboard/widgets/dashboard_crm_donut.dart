@@ -118,8 +118,8 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
                         );
                       }).toList(),
                     ),
-                    swapAnimationDuration: const Duration(milliseconds: 500),
-                    swapAnimationCurve: Curves.easeOutQuint,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeOutQuint,
                   ),
                   if (dominantSector != null && touchedIndex == -1)
                     Center(

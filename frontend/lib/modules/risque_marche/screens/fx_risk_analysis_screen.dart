@@ -2376,7 +2376,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                       child: Row(children: [
                         SizedBox(
                             width: colW[0]!,
-                            child: _HCell('TOTAL', TextAlign.left, headerTextLight.copyWith(color: const Color(0xFF1E3A5F), fontSize: 12))),
+                            child: _headerCell('TOTAL', TextAlign.left, headerTextLight.copyWith(color: const Color(0xFF1E3A5F), fontSize: 12))),
                         const _VDiv(),
                         Expanded(
                           child: _syncedMiddle(
@@ -2394,14 +2394,14 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                               const _VDiv(),
                               SizedBox(
                                   width: middleWidths[5], // RWA
-                                  child: _DCell(formatLargeNumber(securities.fold<double>(0, (sum, s) => sum + s.rwa)), cellText.copyWith(fontWeight: FontWeight.w700), align: TextAlign.right)),
+                                  child: _dataCell(formatLargeNumber(securities.fold<double>(0, (sum, s) => sum + s.rwa)), cellText.copyWith(fontWeight: FontWeight.w700), align: TextAlign.right)),
                             ]),
                           ),
                         ),
                         const _VDiv(),
                         SizedBox(
                             width: colW[7]!,
-                            child: _DCell(formatLargeNumber(totalFxGainLoss), cellText.copyWith(fontWeight: FontWeight.w800, color: totalFxGainLoss >= 0 ? _fxSuccess : _fxDanger), align: TextAlign.right)),
+                            child: _dataCell(formatLargeNumber(totalFxGainLoss), cellText.copyWith(fontWeight: FontWeight.w800, color: totalFxGainLoss >= 0 ? _fxSuccess : _fxDanger), align: TextAlign.right)),
                       ]),
                     );
                   }
@@ -2421,30 +2421,30 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
   List<Widget> _buildDataCells(
       FxSecurityAnalysis s, int index, TextStyle baseStyle) {
     return [
-      _DCell(s.titleName, baseStyle),
-      _DCell(s.currency,
+      _dataCell(s.titleName, baseStyle),
+      _dataCell(s.currency,
           baseStyle.copyWith(fontWeight: FontWeight.w600, color: _fxPrimary),
           chip: _fxPrimary.withValues(alpha: 0.08)),
-      _DCell(formatLargeNumber(s.currentValueInXof), baseStyle,
+      _dataCell(formatLargeNumber(s.currentValueInXof), baseStyle,
           align: TextAlign.right),
-      _DCell(
+      _dataCell(
           '1 ${s.currency} = ${formatDecimal(s.initialRate, 2)} XOF',
           baseStyle,
           align: TextAlign.right),
-      _DCell(
+      _dataCell(
           '1 ${s.currency} = ${formatDecimal(s.currentRate, 2)} XOF',
           baseStyle.copyWith(fontWeight: FontWeight.w600),
           align: TextAlign.right),
-      _DCell(
+      _dataCell(
           '${s.currencyVariationPercent >= 0 ? '+' : ''}${formatDecimal(s.currencyVariationPercent, 2)}%',
           baseStyle.copyWith(
               fontWeight: FontWeight.w500,
               color: s.currencyVariationPercent >= 0 ? _fxSuccess : _fxDanger),
           align: TextAlign.right),
-      _DCell(formatLargeNumber(s.rwa),
+      _dataCell(formatLargeNumber(s.rwa),
           baseStyle.copyWith(fontWeight: FontWeight.w600),
           align: TextAlign.right),
-      _DCell(
+      _dataCell(
           formatLargeNumber(s.fxGainLoss),
           baseStyle.copyWith(
               fontWeight: FontWeight.w600,
@@ -2541,7 +2541,7 @@ Alignment _cellAlignment(TextAlign align) => switch (align) {
       _ => Alignment.centerLeft,
     };
 
-Widget _HCell(String text, TextAlign align, TextStyle style) => Container(
+Widget _headerCell(String text, TextAlign align, TextStyle style) => Container(
       height: 40,
       alignment: _cellAlignment(align),
       padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -2553,7 +2553,7 @@ Widget _HCell(String text, TextAlign align, TextStyle style) => Container(
     );
 
 /// Ligne de donnée
-Widget _DCell(String text, TextStyle style,
+Widget _dataCell(String text, TextStyle style,
         {TextAlign align = TextAlign.left, Color? chip, Color? bg}) =>
     Container(
       height: 40,

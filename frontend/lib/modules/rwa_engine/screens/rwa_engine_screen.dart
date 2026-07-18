@@ -20,13 +20,6 @@ const Color _ink = Color(0xFF0F1B3D);
 const Color _muted = Color(0xFF62708C);
 const Color _line = Color(0xFFDCE4F2);
 const Color _soft = Color(0xFFF7F9FD);
-const List<Color> _agentPalette = [
-  Color(0xFF0B4DBA),
-  Color(0xFF2F9E62),
-  Color(0xFFF3B11F),
-  Color(0xFF7662B7),
-  Color(0xFF1595B6),
-];
 
 /// Regroupe les données nécessaires à l'écran : le module d'expositions (pour
 /// l'état vide et l'en-tête) et l'analyse RWA Crédit agrégée côté backend.
