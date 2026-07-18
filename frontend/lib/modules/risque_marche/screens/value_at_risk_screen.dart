@@ -76,7 +76,11 @@ String _md(num valeur, {PortfolioAmountUnit? unit}) {
 String _pourcentage(double fraction) =>
     '${_formatPct2.format(fraction * 100)} %';
 
-enum VarMethode { historique, parametrique, monteCarlo }
+// Paramétrique et Monte-Carlo en tête : elles fonctionnent dès qu'un
+// portefeuille est importé (mode réglementaire), sans historique de prix.
+// Historique en dernier — verrouillée tant qu'aucun historique réel n'est
+// disponible (voir `verrouille` ci-dessous).
+enum VarMethode { parametrique, monteCarlo, historique }
 
 extension on VarMethode {
   String get segment => switch (this) {
@@ -90,6 +94,12 @@ extension on VarMethode {
         VarMethode.parametrique => 'VaR Paramétrique',
         VarMethode.monteCarlo => 'VaR Monte-Carlo',
       };
+
+  /// Verrouillée : nécessite un historique de prix réel (250 jours minimum)
+  /// qu'aucune source disponible ne peut fournir aujourd'hui (cf. décision
+  /// du 2026-07-17 — méthode conservée pour le jour où une vraie série de
+  /// prix sera disponible, mais non sélectionnable en attendant).
+  bool get verrouille => this == VarMethode.historique;
 }
 
 /// Classe d'histogramme reçue du backend.
@@ -223,7 +233,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
 
   static const String _paysCourbeDefaut = "Côte d'Ivoire";
 
-  VarMethode _methode = VarMethode.historique;
+  VarMethode _methode = VarMethode.parametrique;
   String _portefeuille = _portefeuilleDefaut;
   double _confiance = _confianceDefaut;
   int _horizon = _horizonDefaut;
@@ -805,22 +815,31 @@ class _OngletMethode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
+    final verrouille = methode.verrouille;
+    final onglet = InkWell(
+      // Onglet verrouillé : non sélectionnable tant qu'aucun historique de
+      // prix réel n'est disponible (cf. décision du 2026-07-17).
+      onTap: verrouille ? null : onTap,
       borderRadius: BorderRadius.circular(2),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: actif ? Colors.indigo : Colors.transparent,
+          color: actif && !verrouille ? Colors.indigo : Colors.transparent,
           borderRadius: BorderRadius.circular(2),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (verrouille) ...[
+              const Icon(Icons.lock_outline, size: 13, color: _varMuted),
+              const SizedBox(width: 5),
+            ],
             Text(
               methode.libelle,
               style: TextStyle(
-                color: actif ? Colors.white : _varNavy,
+                color: verrouille
+                    ? _varMuted
+                    : (actif ? Colors.white : _varNavy),
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -828,6 +847,12 @@ class _OngletMethode extends StatelessWidget {
           ],
         ),
       ),
+    );
+    if (!verrouille) return onglet;
+    return Tooltip(
+      message: 'Nécessite un historique de prix réel (250 jours minimum) — '
+          'indisponible pour le moment.',
+      child: onglet,
     );
   }
 }
@@ -1472,20 +1497,69 @@ class _PanneauGraphique extends StatelessWidget {
           ),
         const SizedBox(height: 10),
         Expanded(
-          child: CustomPaint(
-            painter: _HistogrammeVarPainter(
-              methode: methode,
-              reponse: reponse,
-              reponsePrecedente: reponsePrecedente,
-              confiance: confiance,
-              unit: unit,
-              xMinFige: axeXMin,
-              xMaxFige: axeXMax,
-            ),
-            child: const SizedBox.expand(),
+          child: _GraphiqueVarInteractif(
+            methode: methode,
+            reponse: reponse,
+            reponsePrecedente: reponsePrecedente,
+            confiance: confiance,
+            unit: unit,
+            xMinFige: axeXMin,
+            xMaxFige: axeXMax,
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Enveloppe interactive du graphique VaR : suit la souris pour afficher un
+/// repère (ligne + point + infobulle) sur la courbe ou l'histogramme au
+/// survol, sans quoi le graphique dessiné au canvas resterait statique.
+class _GraphiqueVarInteractif extends StatefulWidget {
+  const _GraphiqueVarInteractif({
+    required this.methode,
+    required this.reponse,
+    required this.reponsePrecedente,
+    required this.confiance,
+    required this.unit,
+    required this.xMinFige,
+    required this.xMaxFige,
+  });
+
+  final VarMethode methode;
+  final _ReponseVar reponse;
+  final _ReponseVar? reponsePrecedente;
+  final double confiance;
+  final PortfolioAmountUnit unit;
+  final double? xMinFige;
+  final double? xMaxFige;
+
+  @override
+  State<_GraphiqueVarInteractif> createState() =>
+      _GraphiqueVarInteractifState();
+}
+
+class _GraphiqueVarInteractifState extends State<_GraphiqueVarInteractif> {
+  Offset? _survol;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onHover: (event) => setState(() => _survol = event.localPosition),
+      onExit: (_) => setState(() => _survol = null),
+      child: CustomPaint(
+        painter: _HistogrammeVarPainter(
+          methode: widget.methode,
+          reponse: widget.reponse,
+          reponsePrecedente: widget.reponsePrecedente,
+          confiance: widget.confiance,
+          unit: widget.unit,
+          xMinFige: widget.xMinFige,
+          xMaxFige: widget.xMaxFige,
+          survol: _survol,
+        ),
+        child: const SizedBox.expand(),
+      ),
     );
   }
 }
@@ -1616,6 +1690,7 @@ class _HistogrammeVarPainter extends CustomPainter {
     required this.unit,
     required this.xMinFige,
     required this.xMaxFige,
+    this.survol,
   });
 
   final VarMethode methode;
@@ -1631,6 +1706,9 @@ class _HistogrammeVarPainter extends CustomPainter {
   /// les recalculs déplacent alors visiblement la cloche et les seuils.
   final double? xMinFige;
   final double? xMaxFige;
+
+  /// Position locale du curseur (repère de survol), nulle hors interaction.
+  final Offset? survol;
 
   static const double _gauche = 56;
   static const double _droite = 18;
@@ -1710,6 +1788,98 @@ class _HistogrammeVarPainter extends CustomPainter {
     _peindreLigneVar(canvas, zone, xPixel);
     _peindreAxes(canvas, zone, size);
     _peindreLegendeComparaison(canvas, zone);
+    _peindreSurvol(canvas, zone, xMin, xMax, xPixel, yPixel);
+  }
+
+  /// Repère interactif au survol : ligne verticale, point sur la courbe (ou
+  /// la barre) la plus proche, et infobulle avec la valeur pointée. Rien à
+  /// afficher hors de la zone de tracé ou en l'absence de donnée à ce point.
+  void _peindreSurvol(
+    Canvas canvas,
+    Rect zone,
+    double xMin,
+    double xMax,
+    double Function(double) xPixel,
+    double Function(double) yPixel,
+  ) {
+    final position = survol;
+    if (position == null || !zone.contains(position)) return;
+
+    final xValeur = xMin + (position.dx - zone.left) / zone.width * (xMax - xMin);
+    final classe = reponse.histogramme.isNotEmpty ? _classePour(xValeur) : null;
+    final densite =
+        reponse.histogramme.isEmpty ? _densiteInterpolee(xValeur) : null;
+    if (classe == null && densite == null) return;
+
+    final yValeur = classe != null ? classe.effectif.toDouble() : densite!;
+    final xLigne = position.dx;
+    final yPoint = math.max(zone.top, yPixel(yValeur));
+
+    canvas.save();
+    canvas.clipRect(zone);
+    canvas.drawLine(
+      Offset(xLigne, zone.top),
+      Offset(xLigne, zone.bottom),
+      Paint()
+        ..color = _varNavy.withValues(alpha: 0.28)
+        ..strokeWidth = 1,
+    );
+    canvas.restore();
+
+    canvas.drawCircle(Offset(xLigne, yPoint), 4, Paint()..color = _varPrimary);
+    canvas.drawCircle(
+      Offset(xLigne, yPoint),
+      4,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4,
+    );
+
+    final libelle = classe != null
+        ? '${_md(xValeur, unit: unit)} · ${_formatEntier.format(classe.effectif)} obs.'
+        : '${_md(xValeur, unit: unit)} · densité ${densite!.round()}';
+    final largeurEstimee = libelle.length * 6.2 + 18;
+    final xEtiquette = xLigne + largeurEstimee + 10 > zone.right
+        ? xLigne - largeurEstimee - 10
+        : xLigne + 10;
+    _etiquette(
+      canvas,
+      libelle,
+      Offset(
+        math.max(zone.left, math.min(xEtiquette, zone.right - largeurEstimee)),
+        math.max(zone.top - 4, yPoint - 34),
+      ),
+      couleurTexte: _varDeepBlue,
+      couleurBord: _varPrimary.withValues(alpha: 0.6),
+    );
+  }
+
+  /// Classe d'histogramme contenant la valeur donnée, s'il y en a une.
+  _ClasseHistogramme? _classePour(double x) {
+    for (final classe in reponse.histogramme) {
+      if (x >= classe.borneInf && x <= classe.borneSup) return classe;
+    }
+    return null;
+  }
+
+  /// Densité de la courbe normale interpolée linéairement entre les deux
+  /// points encadrant la valeur (la courbe backend est déjà échantillonnée
+  /// finement, l'interpolation reste donc visuellement fidèle).
+  double? _densiteInterpolee(double x) {
+    final points = reponse.courbeNormale;
+    if (points.isEmpty) return null;
+    if (x <= points.first.dx) return points.first.dy;
+    if (x >= points.last.dx) return points.last.dy;
+    for (var i = 0; i < points.length - 1; i++) {
+      final a = points[i];
+      final b = points[i + 1];
+      if (x >= a.dx && x <= b.dx) {
+        final t = (x - a.dx) / (b.dx - a.dx);
+        return a.dy + (b.dy - a.dy) * t;
+      }
+    }
+    return null;
   }
 
   /// Légende discrète du filigrane, uniquement quand il est visible.
@@ -2179,7 +2349,8 @@ class _HistogrammeVarPainter extends CustomPainter {
         ancien.methode != methode ||
         ancien.confiance != confiance ||
         ancien.xMinFige != xMinFige ||
-        ancien.xMaxFige != xMaxFige;
+        ancien.xMaxFige != xMaxFige ||
+        ancien.survol != survol;
   }
 }
 

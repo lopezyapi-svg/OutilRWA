@@ -222,18 +222,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Méthode par défaut : historique -> erreur explicite du backend.
-    expect(
-      find.textContaining('nécessite obligatoirement'),
-      findsWidgets,
-      reason: 'la VaR historique doit afficher son erreur explicite',
-    );
-
-    // Bascule sur la VaR paramétrique.
-    await tester.tap(find.text('VaR Paramétrique'));
-    await tester.pumpAndSettle();
-
-    // Les cartes KPI affichent bien la réponse du backend.
+    // Méthode par défaut : paramétrique (fonctionne sans historique) — pas
+    // historique, verrouillée et placée en dernier tant qu'aucun historique
+    // de prix réel n'est disponible (décision du 2026-07-17).
     expect(find.text('VALEUR DU PORTEFEUILLE'), findsOneWidget);
 
     // Sans observation, la pire perte observée est un tiret, pas un zéro.
@@ -242,8 +233,18 @@ void main() {
     // La VaR et l'ES du backend sont bien affichées sur les cartes KPI.
     expect(find.textContaining('0,1'), findsWidgets);
 
-    // Purge le minuteur de relance automatique déclenché par l'erreur
-    // historique initiale, puis démonte proprement l'écran.
+    // L'onglet Historique est verrouillé (icône cadenas) et ne réagit pas
+    // au tap : rester sur la VaR paramétrique, pas basculer sur l'erreur.
+    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+    await tester.tap(find.text('VaR Historique'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('nécessite obligatoirement'),
+      findsNothing,
+      reason: 'l\'onglet verrouillé ne doit pas déclencher de requête',
+    );
+    expect(find.text('VALEUR DU PORTEFEUILLE'), findsOneWidget);
+
     await tester.pump(const Duration(seconds: 11));
     await tester.pumpWidget(const SizedBox());
   });
