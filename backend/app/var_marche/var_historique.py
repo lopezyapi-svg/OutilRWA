@@ -24,21 +24,25 @@ def construire_histogramme(pertes: np.ndarray, nombre_classes: int = 40) -> list
 
 
 def calculer(pertes: np.ndarray, niveau_confiance: float) -> dict:
-    """VaR historique par quantile empirique (interpolation linéaire)."""
+    """VaR historique par quantile empirique (interpolation linéaire rigoureuse)."""
 
     pertes = np.asarray(pertes, dtype=float)
+    # Filtrer les valeurs invalides (NaN, Inf) pour garantir la robustesse
+    pertes = pertes[np.isfinite(pertes)]
+    
     nombre_observations = len(pertes)
     if nombre_observations == 0:
-        # Garde explicite : sans elle, np.quantile lève une IndexError
-        # obscure. Les routes filtrent déjà ce cas (422), ceci protège
-        # les appels directs au moteur.
         raise ValueError(
-            "La VaR historique exige une série de pertes non vide."
+            "La VaR historique exige une série de pertes valide et non vide."
         )
 
+    # Calcul du quantile empirique (méthode linéaire par défaut)
     var = float(np.quantile(pertes, niveau_confiance))
+    
+    # Expected Shortfall (CVaR) : moyenne des pertes strictement supérieures ou égales à la VaR
     pertes_extremes = pertes[pertes >= var]
-    expected_shortfall = float(pertes_extremes.mean()) if len(pertes_extremes) else var
+    expected_shortfall = float(pertes_extremes.mean()) if len(pertes_extremes) > 0 else var
+    
     pire_perte = float(pertes.max())
     p95 = float(np.quantile(pertes, 0.95))
     p975 = float(np.quantile(pertes, 0.975))

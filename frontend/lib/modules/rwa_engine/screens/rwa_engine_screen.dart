@@ -419,27 +419,29 @@ class _PilotageTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dividerColor = Theme.of(context).dividerColor.withValues(alpha: 0.75);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
 
-    return SizedBox(
-      width: double.infinity,
-      height: 38,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          border: Border(bottom: BorderSide(color: dividerColor)),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            const SizedBox(width: 8),
-            for (var index = 0; index < _tabs.length; index++)
-              _PilotageTabButton(
-                label: _tabs[index],
-                selected: selectedIndex == index,
-                onTap: () => onChanged(index),
-              ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var index = 0; index < _tabs.length; index++)
+                _PilotageTabButton(
+                  label: _tabs[index],
+                  selected: selectedIndex == index,
+                  onTap: () => onChanged(index),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -459,47 +461,48 @@ class _PilotageTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected
-        ? _deepBlue
-        : _deepBlue.withValues(alpha: 0.76);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final textColor = selected
+        ? (isDark ? Colors.white : const Color(0xFF1E293B))
+        : (isDark ? Colors.white70 : const Color(0xFF475569));
 
-    return SizedBox(
-      width: label.startsWith('Analyse')
-          ? 170
-          : label.startsWith('Alertes')
-              ? 165
-              : 195,
-      height: double.infinity,
-      child: InkWell(
-        onTap: onTap,
-        splashColor: _deepBlue.withValues(alpha: 0.06),
-        highlightColor: _deepBlue.withValues(alpha: 0.035),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          height: double.infinity,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: selected ? _deepBlue : Colors.transparent,
-                width: 2,
+    final bgColor = selected
+        ? (isDark ? const Color(0xFF334155) : Colors.white)
+        : Colors.transparent;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        height: 32,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  )
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: textColor,
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                height: 1,
               ),
-            ),
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: color,
-                  fontSize: 12.8,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  height: 1,
-                ),
-          ),
         ),
       ),
     );
@@ -519,7 +522,28 @@ class _AnalysisRwaTab extends StatelessWidget {
       children: [
         _SummaryCardsRow(analysis: analysis),
         const SizedBox(height: 12),
-        _AgentTablePanel(analysis: analysis, view: view),
+        // Hauteur fixe plutôt qu'IntrinsicHeight : le tableau contient un
+        // SingleChildScrollView (LayoutBuilder en interne), et IntrinsicHeight
+        // ne peut pas traverser un LayoutBuilder pour mesurer la hauteur
+        // naturelle ("LayoutBuilder does not support returning intrinsic
+        // dimensions").
+        SizedBox(
+          height: 440,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 65,
+                child: _AgentTablePanel(analysis: analysis, view: view),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 35,
+                child: _AgentRwaChartCard(agents: analysis.agents),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -598,13 +622,12 @@ class _SummaryCardsRow extends StatelessWidget {
 
     return IntrinsicHeight(
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(child: cards[0]),
-          const SizedBox(width: 12.0),
-          Expanded(child: cards[1]),
-          const SizedBox(width: 12.0),
-          Expanded(child: cards[2]),
+          SizedBox(width: 320, child: cards[0]),
+          SizedBox(width: 320, child: cards[1]),
+          SizedBox(width: 320, child: cards[2]),
         ],
       ),
     );
@@ -639,7 +662,7 @@ class _SummaryCardState extends State<_SummaryCard> {
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: _isHovered ? Colors.indigo.withValues(alpha: 0.5) : _line,
           ),
@@ -783,21 +806,11 @@ class _AgentBreakdownSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(
-            flex: 60,
-            child: _AgentContributionTable(
-              agents: analysis.agents,
-              totals: analysis.totals,
-              reconciliationThreshold: analysis.reconciliationThreshold,
-              view: view,
-            ),
-          ),
-        ],
-      ),
+    return _AgentContributionTable(
+      agents: analysis.agents,
+      totals: analysis.totals,
+      reconciliationThreshold: analysis.reconciliationThreshold,
+      view: view,
     );
   }
 }
@@ -1156,6 +1169,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
       builder: (context) {
         bool showAll = false;
         int? selectedIndex;
+        final numTableCtrl = ScrollController();
         final leftTableCtrl = ScrollController();
         final rightTableCtrl = ScrollController();
         void syncTableScroll(ScrollController source, ScrollController target) {
@@ -1163,11 +1177,13 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
           if ((target.offset - source.offset).abs() < 0.5) return;
           target.jumpTo(source.offset);
         }
-        leftTableCtrl.addListener(() => syncTableScroll(leftTableCtrl, rightTableCtrl));
-        rightTableCtrl.addListener(() => syncTableScroll(rightTableCtrl, leftTableCtrl));
+        numTableCtrl.addListener(() { syncTableScroll(numTableCtrl, leftTableCtrl); syncTableScroll(numTableCtrl, rightTableCtrl); });
+        leftTableCtrl.addListener(() { syncTableScroll(leftTableCtrl, numTableCtrl); syncTableScroll(leftTableCtrl, rightTableCtrl); });
+        rightTableCtrl.addListener(() { syncTableScroll(rightTableCtrl, numTableCtrl); syncTableScroll(rightTableCtrl, leftTableCtrl); });
         final headerStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w700,
+              fontSize: 11,
             );
         return StatefulBuilder(
           builder: (context, setState) {
@@ -1224,7 +1240,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                             height: 250,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              border: Border.all(color: _line, width: 1),
+                              border: Border.all(color: _line.withValues(alpha: 0.5), width: 0.5),
                               borderRadius: BorderRadius.circular(2),
                             ),
                             child: Column(
@@ -1251,7 +1267,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                       flex: 55,
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: _line, width: 1),
+                          border: Border.all(color: _line.withValues(alpha: 0.3), width: 0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                         clipBehavior: Clip.antiAlias,
@@ -1264,65 +1280,118 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                               const double rowHeight = 52;
                               const double totalHeight = 46;
                               Color rowBg(int i) => selectedIndex == i
-                                  ? Colors.green.withValues(alpha: 0.15)
+                                  ? Colors.blueGrey.withValues(alpha: 0.15)
                                   : (i % 2 == 0 ? Colors.white : const Color(0xFFF1F5F9));
                               return Row(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
+                                  Container(
+                                    width: 44,
+                                    decoration: BoxDecoration(
+                                      border: Border(right: BorderSide(color: _line.withValues(alpha: 0.3), width: 0.3)),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          height: headerHeight,
+                                          color: _deepBlue,
+                                          alignment: Alignment.center,
+                                          child: Text('N°', style: headerStyle),
+                                        ),
+                                        Expanded(
+                                          child: SingleChildScrollView(
+                                            controller: numTableCtrl,
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                for (var i = 0; i < top5.length; i++)
+                                                  InkWell(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        selectedIndex = selectedIndex == i ? null : i;
+                                                      });
+                                                    },
+                                                    child: Container(
+                                                      height: rowHeight,
+                                                      decoration: BoxDecoration(
+                                                        color: rowBg(i),
+                                                        border: Border(bottom: BorderSide(color: _line.withValues(alpha: 0.3), width: 0.3)),
+                                                      ),
+                                                      alignment: Alignment.center,
+                                                      child: Container(
+                                                        width: 20,
+                                                        height: 20,
+                                                        alignment: Alignment.center,
+                                                        decoration: BoxDecoration(
+                                                          color: _deepBlue.withValues(alpha: 0.1),
+                                                          borderRadius: BorderRadius.circular(4),
+                                                        ),
+                                                        child: Text('${i + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: _deepBlue)),
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        Container(height: totalHeight, color: const Color(0xFF1E3A5F)),
+                                      ],
+                                    ),
+                                  ),
                                   Expanded(
                                     child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: SizedBox(
-                            width: math.max(804.0, constraints.maxWidth - pctColWidth),
-                            child: Column(
-                              children: [
-                                Container(
-                                  height: headerHeight,
-                                  color: _deepBlue,
-                                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                                  child: Row(
-                                    children: [
-                                      Expanded(flex: 4, child: Text('Contrepartie', style: headerStyle)),
-                                      Expanded(flex: 2, child: Text('Exposition', style: headerStyle)),
-                                      Expanded(flex: 2, child: Text('EAD', style: headerStyle)),
-                                      Expanded(flex: 2, child: Text('RWA', style: headerStyle)),
-                                      Expanded(flex: 2, child: Text('Cap. Requis', style: headerStyle)),
-                                    ],
-                                  ),
-                                ),
-                                Builder(
-                                  builder: (context) {
-                                    final rows = <Widget>[
-                                      for (var i = 0; i < top5.length; i++)
-                                        InkWell(
-                                          onTap: () {
-                                            setState(() {
-                                              selectedIndex = selectedIndex == i ? null : i;
-                                            });
-                                          },
-                                          child: Container(
-                                            height: rowHeight,
-                                            decoration: BoxDecoration(
-                                              color: rowBg(i),
-                                              border: const Border(
-                                                bottom: BorderSide(color: _line, width: 1),
+                                      scrollDirection: Axis.horizontal,
+                                      child: SizedBox(
+                                        width: math.max(760.0, constraints.maxWidth - pctColWidth - 44),
+                                        child: Column(
+                                          children: [
+                                            Container(
+                                              height: headerHeight,
+                                              color: _deepBlue,
+                                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(flex: 3, child: Text('Contrepartie', style: headerStyle)),
+                                                  Expanded(flex: 2, child: Text('Exposition', style: headerStyle)),
+                                                  Expanded(flex: 2, child: Text('EAD', style: headerStyle)),
+                                                  Expanded(flex: 2, child: Text('RWA', style: headerStyle)),
+                                                  Expanded(flex: 2, child: Text('Cap. Requis', style: headerStyle)),
+                                                ],
                                               ),
                                             ),
-                                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                  flex: 4,
-                                                  child: Padding(
-                                                    padding: const EdgeInsets.only(right: 16.0),
-                                                    child: Text(
-                                                      top5[i].name,
-                                                      maxLines: 2,
-                                                      overflow: TextOverflow.ellipsis,
-                                                      style: const TextStyle(
-                                                        fontSize: 12,
-                                                        color: _ink,
-                                                        fontWeight: FontWeight.w800,
+                                            Builder(
+                                              builder: (context) {
+                                                final rows = <Widget>[
+                                                  for (var i = 0; i < top5.length; i++)
+                                                    InkWell(
+                                                      onTap: () {
+                                                        setState(() {
+                                                          selectedIndex = selectedIndex == i ? null : i;
+                                                        });
+                                                      },
+                                                      child: Container(
+                                                        height: rowHeight,
+                                                        decoration: BoxDecoration(
+                                                          color: rowBg(i),
+                                                          border: Border(
+                                                            bottom: BorderSide(color: _line.withValues(alpha: 0.3), width: 0.3),
+                                                          ),
+                                                        ),
+                                                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                                                        child: Row(
+                                                          children: [
+                                                            Expanded(
+                                                              flex: 3,
+                                                              child: Padding(
+                                                                padding: const EdgeInsets.only(right: 16.0),
+                                                                child: Text(
+                                                                  top5[i].name,
+                                                                  maxLines: 2,
+                                                                  overflow: TextOverflow.ellipsis,
+                                                                  style: const TextStyle(
+                                                                    fontSize: 11,
+                                                                    color: _ink,
+                                                                    fontWeight: FontWeight.w800,
                                                       ),
                                                     ),
                                                   ),
@@ -1332,7 +1401,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                                   child: Text(
                                                     _formatMoney(top5[i].exposure, maxDecimals: 0),
                                                     style: const TextStyle(
-                                                      fontSize: 12,
+                                                      fontSize: 11,
                                                       color: _deepBlue,
                                                       fontWeight: FontWeight.w700,
                                                     ),
@@ -1343,7 +1412,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                                   child: Text(
                                                     _formatMoney(top5[i].ead, maxDecimals: 0),
                                                     style: const TextStyle(
-                                                      fontSize: 12,
+                                                      fontSize: 11,
                                                       color: _deepBlue,
                                                       fontWeight: FontWeight.w700,
                                                     ),
@@ -1354,7 +1423,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                                   child: Text(
                                                     _formatMoney(top5[i].rwa, maxDecimals: 0),
                                                     style: const TextStyle(
-                                                      fontSize: 12,
+                                                      fontSize: 11,
                                                       color: _deepBlue,
                                                       fontWeight: FontWeight.w700,
                                                     ),
@@ -1365,7 +1434,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                                   child: Text(
                                                     _formatMoney(top5[i].capitalRequired, maxDecimals: 0),
                                                     style: const TextStyle(
-                                                      fontSize: 12,
+                                                      fontSize: 11,
                                                       color: _muted,
                                                       fontWeight: FontWeight.w700,
                                                     ),
@@ -1396,12 +1465,13 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                   child: Row(
                                     children: [
                                       Expanded(
-                                        flex: 4,
+                                        flex: 3,
                                         child: Text(
                                           showAll ? 'TOTAL' : 'TOTAL TOP 6',
                                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.w900,
+                                                fontSize: 11,
                                               ),
                                         ),
                                       ),
@@ -1412,6 +1482,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.w900,
+                                                fontSize: 11,
                                               ),
                                         ),
                                       ),
@@ -1422,6 +1493,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.w900,
+                                                fontSize: 11,
                                               ),
                                         ),
                                       ),
@@ -1432,6 +1504,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.w900,
+                                                fontSize: 11,
                                               ),
                                         ),
                                       ),
@@ -1455,9 +1528,9 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                   ),
                                   Container(
                                     width: pctColWidth,
-                                    decoration: const BoxDecoration(
+                                    decoration: BoxDecoration(
                                       border: Border(
-                                        left: BorderSide(color: _line, width: 1),
+                                        left: BorderSide(color: _line.withValues(alpha: 0.3), width: 0.3),
                                       ),
                                     ),
                                     child: Column(
@@ -1488,16 +1561,16 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                                       width: double.infinity,
                                                       decoration: BoxDecoration(
                                                         color: rowBg(i),
-                                                        border: const Border(
-                                                          bottom: BorderSide(color: _line, width: 1),
+                                                        border: Border(
+                                                          bottom: BorderSide(color: _line.withValues(alpha: 0.5), width: 0.5),
                                                         ),
                                                       ),
                                                       alignment: Alignment.centerRight,
                                                       padding: const EdgeInsets.symmetric(horizontal: 14),
                                                       child: Text(
-                                                        AppFormatters.percent(top5[i].percentage),
+                                                        AppFormatters.percent(top5[i].percentage, decimalDigits: 5),
                                                         style: const TextStyle(
-                                                          fontSize: 12,
+                                                          fontSize: 11,
                                                           color: _blue700,
                                                           fontWeight: FontWeight.w900,
                                                         ),
@@ -1515,10 +1588,11 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                           alignment: Alignment.centerRight,
                                           padding: const EdgeInsets.symmetric(horizontal: 14),
                                           child: Text(
-                                            AppFormatters.percent(top5.fold<double>(0, (s, t) => s + t.percentage)),
+                                            AppFormatters.percent(top5.fold<double>(0, (s, t) => s + t.percentage), decimalDigits: 5),
                                             style: Theme.of(context).textTheme.labelMedium?.copyWith(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.w900,
+                                                  fontSize: 11,
                                                 ),
                                           ),
                                         ),
@@ -1539,7 +1613,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                         child: Container(
                           padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 16),
                           decoration: BoxDecoration(
-                            border: Border.all(color: _line, width: 1),
+                            border: Border.all(color: _line.withValues(alpha: 0.5), width: 0.5),
                             borderRadius: BorderRadius.circular(2),
                           ),
                           child: Column(
@@ -2746,6 +2820,15 @@ class _TopExposuresChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (top5.isEmpty) return const SizedBox();
+    
+    final palette = [
+      Colors.indigo.shade600,
+      Colors.cyan.shade600,
+      Colors.green.shade600,
+      Colors.orange.shade600,
+      Colors.red.shade600,
+      Colors.purple.shade600,
+    ];
     // Une contrepartie sans RWA n'a aucune part à représenter : on ne trace
     // que celles qui en portent, en conservant leur index d'origine pour
     // rester synchronisé avec les lignes du tableau.
@@ -2769,6 +2852,7 @@ class _TopExposuresChart extends StatelessWidget {
     }
     return BarChart(
         BarChartData(
+          backgroundColor: Colors.indigo.withValues(alpha: 0.02),
           alignment: BarChartAlignment.spaceAround,
           maxY: 100,
           barTouchData: BarTouchData(
@@ -2795,7 +2879,7 @@ class _TopExposuresChart extends StatelessWidget {
                   const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11),
                   children: <TextSpan>[
                     TextSpan(
-                      text: '${rod.toY.toInt()}%',
+                      text: AppFormatters.percent(rod.toY / 100, decimalDigits: 5),
                       style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w400, fontSize: 10),
                     ),
                   ],
@@ -2815,13 +2899,26 @@ class _TopExposuresChart extends StatelessWidget {
                       meta: meta,
                       space: 16,
                       angle: -math.pi / 8,
-                      child: SizedBox(
-                        width: 100,
-                        child: Text(
-                          top5[index].name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: _muted, fontSize: 8, fontWeight: FontWeight.bold),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 90),
+                        child: IntrinsicWidth(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                top5[index].name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: _muted, fontSize: 8, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                height: 1.5,
+                                color: palette[index % palette.length],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -2876,14 +2973,172 @@ class _TopExposuresChart extends StatelessWidget {
               barRods: [
                 BarChartRodData(
                   toY: e.value.percentage * 100,
-                  color: isSelected ? Colors.green : _blue700,
+                  color: isSelected ? Colors.blueGrey.shade800 : palette[e.key % palette.length],
                   width: 32,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                  backDrawRodData: BackgroundBarChartRodData(
+                    show: true,
+                    toY: 100,
+                    color: Colors.indigo.withValues(alpha: 0.05),
+                  ),
                 ),
               ],
             );
           }).toList(),
         ),
+    );
+  }
+}
+
+class _AgentRwaChartCard extends StatelessWidget {
+  const _AgentRwaChartCard({required this.agents});
+  final List<RwaCreditAgentRow> agents;
+
+  @override
+  Widget build(BuildContext context) {
+    final validAgents = agents.where((a) => a.rwa > 0).toList()
+      ..sort((a, b) => b.rwa.compareTo(a.rwa));
+    final topAgents = validAgents.take(8).toList();
+    if (topAgents.isEmpty) return const SizedBox();
+
+    final maxRwa = topAgents.first.rwa;
+    final palette = [
+      Colors.indigo.shade600,
+      Colors.cyan.shade600,
+      Colors.green.shade600,
+      Colors.orange.shade600,
+      Colors.red.shade600,
+      Colors.purple.shade600,
+      Colors.teal.shade600,
+      Colors.pink.shade600,
+    ];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'RÉPARTITION DES RWA PAR CATÉGORIE',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: _blue700,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                  letterSpacing: 0,
+                ),
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  for (var i = 0; i < topAgents.length; i++) ...[
+                    Builder(
+                      builder: (context) {
+                        final agent = topAgents[i];
+                        final fraction = maxRwa > 0 ? agent.rwa / maxRwa : 0.0;
+                        final color = palette[i % palette.length];
+                        return _HorizontalBar(
+                          label: agent.label,
+                          value: agent.rwa,
+                          fraction: fraction,
+                          color: color,
+                        );
+                      },
+                    ),
+                    if (i < topAgents.length - 1) const SizedBox(height: 18),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HorizontalBar extends StatelessWidget {
+  const _HorizontalBar({
+    required this.label,
+    required this.value,
+    required this.fraction,
+    required this.color,
+  });
+
+  final String label;
+  final double value;
+  final double fraction;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _deepBlue,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _formatMoney(value, maxDecimals: 0),
+              style: const TextStyle(
+                color: _muted,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutCubic,
+          tween: Tween<double>(begin: 0, end: fraction),
+          builder: (context, value, child) {
+            return Stack(
+              children: [
+                Container(
+                  height: 6,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: value,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }

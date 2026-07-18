@@ -193,9 +193,9 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.left,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.muted,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          color: AppTheme.muted.withValues(alpha: 0.85),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w400,
                           height: 1,
                         ),
                   ),
@@ -222,11 +222,18 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
     final nplRatio = totalGross > 0 ? (encoursNpl / totalGross) : 0.0;
 
     final provisions = defaultExposures.fold<double>(
-        0.0, (sum, e) => sum + e.estimatedProvision);
+        0.0, (sum, e) => sum + e.provisionsAmount);
     final coverageRatio = encoursNpl > 0 ? (provisions / encoursNpl) : 0.0;
     final provisionsTotalRatio =
         totalGross > 0 ? (provisions / totalGross) : 0.0;
     final nplNet = encoursNpl - provisions;
+
+    // Un ratio réel mais minuscule (ex. 68 M de provisions sur 4 245 Md de
+    // portefeuille = 0,0016 %) s'arrondirait à « 0,00 % » : trompeur pour un
+    // rapport prudentiel — on affiche « < 0,01 % » à la place.
+    String pctFin(double ratio) => ratio > 0 && ratio < 0.0001
+        ? '< 0,01%'
+        : AppFormatters.percent(ratio);
 
     Widget buildBaseCard(
         {required Widget child,
@@ -322,7 +329,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Colors.indigo[900],
                       fontWeight: FontWeight.w700,
-                      fontSize: 14)),
+                      fontSize: 12)),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -457,7 +464,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     buildRow(
                         label: 'Ratio NPL',
                         formula: '(Encours NPL / Encours total)',
-                        value: AppFormatters.percent(nplRatio)),
+                        value: pctFin(nplRatio)),
                     buildRow(
                         label: 'Exposition nette',
                         formula: '(Encours NPL - Provisions)',
@@ -493,7 +500,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                       buildRow(
                           label: 'Provisions / Encours total',
                           formula: '(Provisions / Encours total)',
-                          value: AppFormatters.percent(provisionsTotalRatio),
+                          value: pctFin(provisionsTotalRatio),
                           isLast: true),
                     ],
                   ),
@@ -507,32 +514,59 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
       ),
     );
 
+    double bucket1Amount = 0.0;
+    double bucket2Amount = 0.0;
+    double bucket3Amount = 0.0;
+    double bucket4Amount = 0.0;
+    
+    for (final exp in defaultExposures) {
+      if (exp.joursImpayes <= 30) {
+        bucket1Amount += exp.grossAmount;
+      } else if (exp.joursImpayes <= 90) {
+        bucket2Amount += exp.grossAmount;
+      } else if (exp.joursImpayes <= 180) {
+        bucket3Amount += exp.grossAmount;
+      } else {
+        bucket4Amount += exp.grossAmount;
+      }
+    }
+
+    final totalBuckets = bucket1Amount + bucket2Amount + bucket3Amount + bucket4Amount;
+    final safeTotal = totalBuckets > 0 ? totalBuckets : 1.0; // avoid division by zero
+
     final chartEntries = [
       (
         label: '1 – 30 jours',
-        percent: 0.20,
-        amount: encoursNpl * 0.20,
+        percent: bucket1Amount / safeTotal,
+        amount: bucket1Amount,
         color: const Color(0xFF4ADE80)
       ),
       (
         label: '31 – 90 jours',
-        percent: 0.25,
-        amount: encoursNpl * 0.25,
+        percent: bucket2Amount / safeTotal,
+        amount: bucket2Amount,
         color: const Color(0xFF3B82F6)
       ),
       (
         label: '91 – 180 jours',
-        percent: 0.30,
-        amount: encoursNpl * 0.30,
+        percent: bucket3Amount / safeTotal,
+        amount: bucket3Amount,
         color: const Color(0xFFFBBF24)
       ),
       (
         label: '> 180 jours',
-        percent: 0.25,
-        amount: encoursNpl * 0.25,
+        percent: bucket4Amount / safeTotal,
+        amount: bucket4Amount,
         color: const Color(0xFFEF4444)
       ),
     ];
+
+    // Le champ « jours d'impayés » existe dans la base et l'import Excel
+    // (colonne optionnelle Jours_impayes), mais peut n'avoir jamais été
+    // renseigné : tout classer en « 1 – 30 jours » serait alors un faux
+    // confort prudentiel — on affiche un état explicite à la place.
+    final joursRenseignes =
+        defaultExposures.any((exp) => exp.joursImpayes > 0);
 
     final subBlockB = buildBaseCard(
       child: Column(
@@ -543,6 +577,44 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                   color: AppTheme.text,
                   fontWeight: FontWeight.w700,
                   fontSize: 13)),
+          if (defaultExposures.isNotEmpty && !joursRenseignes)
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.info_outline,
+                          size: 28, color: AppTheme.muted),
+                      const SizedBox(height: 10),
+                      Text(
+                        'Jours d\'impayés non renseignés',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(
+                                color: AppTheme.text,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Renseignez la colonne « Jours_impayes » dans '
+                        'l\'import Excel des expositions pour activer '
+                        'ce suivi.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppTheme.muted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
           Expanded(
             child: Center(
               child: Row(
@@ -684,61 +756,92 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                     fontWeight: FontWeight.w700,
                                   ),
                             ),
-                            content: SizedBox(
-                              width: 800,
-                              height: MediaQuery.of(context).size.height * 0.7,
-                              child: Column(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 12),
-                                    decoration: BoxDecoration(
-                                        border: Border(
-                                            bottom: BorderSide(
-                                                color: Theme.of(context)
-                                                    .dividerColor
-                                                    .withValues(alpha: 0.5)))),
-                                    child: Row(
-                                      children: [
-                                        SizedBox(
-                                            width: 24,
-                                            child: Text('#',
-                                                style: _tableHeaderStyle())),
-                                        Expanded(
-                                            flex: 3,
-                                            child: Text('Contrepartie',
-                                                style: _tableHeaderStyle())),
-                                        Expanded(
-                                            flex: 2,
-                                            child: Text('Secteur',
-                                                style: _tableHeaderStyle())),
-                                        Expanded(
-                                            flex: 2,
-                                            child: Text('Encours brut',
-                                                style: _tableHeaderStyle(),
-                                                textAlign: TextAlign.right)),
-                                        Expanded(
-                                            flex: 2,
-                                            child: Text('Provision',
-                                                style: _tableHeaderStyle(),
-                                                textAlign: TextAlign.right)),
-                                        Expanded(
-                                            flex: 2,
-                                            child: Text('Taux couv.',
-                                                style: _tableHeaderStyle(),
-                                                textAlign: TextAlign.right)),
-                                      ],
+                            content: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: 800,
+                                maxHeight: MediaQuery.of(context).size.height * 0.8,
+                              ),
+                              child: Container(
+                                width: 800,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: const Color(0xFFDCE4F2)),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+                                      color: const Color(0xFF001F4E),
+                                      child: IntrinsicHeight(
+                                        child: Row(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          children: [
+                                            Container(
+                                              width: 40,
+                                              padding: const EdgeInsets.only(left: 12, top: 9, bottom: 9),
+                                              alignment: Alignment.centerLeft,
+                                              child: Text('N°', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                                            ),
+                                            Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                            Expanded(
+                                              flex: 4,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                alignment: Alignment.centerLeft,
+                                                child: Text('Contrepartie', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                                              ),
+                                            ),
+                                            Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                            Expanded(
+                                              flex: 3,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                alignment: Alignment.centerLeft,
+                                                child: Text('Secteur', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                                              ),
+                                            ),
+                                            Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                            Expanded(
+                                              flex: 3,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                alignment: Alignment.centerLeft,
+                                                child: Text('Encours brut',
+                                                    style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                                              ),
+                                            ),
+                                            Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                            Expanded(
+                                              flex: 3,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                alignment: Alignment.centerLeft,
+                                                child: Text('Provision',
+                                                    style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                                              ),
+                                            ),
+                                            Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                            Expanded(
+                                              flex: 3,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                alignment: Alignment.centerLeft,
+                                                child: Text('Taux couv.',
+                                                    style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                  Expanded(
-                                    child: ListView.separated(
-                                      addSemanticIndexes: false,
-                                      itemCount: top5Npl.length,
+                                    Container(height: 0.5, color: const Color(0xFFDCE4F2)),
+                                    Flexible(
+                                      child: ListView.separated(
+                                        shrinkWrap: true,
+                                        addSemanticIndexes: false,
+                                        itemCount: top5Npl.length,
                                       separatorBuilder: (context, index) =>
-                                          Divider(
-                                              color: Theme.of(context)
-                                                  .dividerColor
-                                                  .withValues(alpha: 0.3)),
+                                          Container(height: 0.5, color: const Color(0xFFDCE4F2)),
                                       itemBuilder: (context, index) {
                                         final e = top5Npl[index];
                                         final coverageRate = e.grossAmount > 0
@@ -746,102 +849,133 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                                 e.grossAmount)
                                             : 0.0;
 
-                                        return Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 12),
-                                          child: Row(
-                                            children: [
-                                              SizedBox(
-                                                  width: 24,
-                                                  child: Text('${index + 1}',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                              color: AppTheme
-                                                                  .muted,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 12))),
-                                              Expanded(
-                                                  flex: 3,
+                                        return Material(
+                                          color: index.isOdd ? const Color(0xFFF8FAFC) : Colors.white,
+                                          child: IntrinsicHeight(
+                                            child: Row(
+                                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                                              children: [
+                                                Container(
+                                                  width: 32,
+                                                  padding: const EdgeInsets.only(left: 12, top: 9, bottom: 9),
+                                                  alignment: Alignment.centerLeft,
                                                   child: Text(
+                                                    '${index + 1}'.padLeft(2, '0'),
+                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                          color: AppTheme.muted,
+                                                          fontWeight: FontWeight.w800,
+                                                          fontSize: 12,
+                                                        ),
+                                                  ),
+                                                ),
+                                                Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                                Expanded(
+                                                  flex: 4,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Text(
                                                       e.counterpartyName,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                              color:
-                                                                  AppTheme.text,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 12),
-                                                      overflow: TextOverflow
-                                                          .ellipsis)),
-                                              Expanded(
-                                                  flex: 2,
-                                                  child: Text(e.sector,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                              color: AppTheme
-                                                                  .muted,
-                                                              fontSize: 12),
-                                                      overflow: TextOverflow
-                                                          .ellipsis)),
-                                              Expanded(
-                                                  flex: 2,
-                                                  child: Text(
+                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                            color: const Color(0xFF1E293B),
+                                                            fontWeight: FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Text(
+                                                      e.sector,
+                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                            color: AppTheme.muted,
+                                                            fontSize: 12,
+                                                          ),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ),
+                                                Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Text(
                                                       '${_amountMd(e.grossAmount)} ${_amountUnitLabel()}',
-                                                      textAlign:
-                                                          TextAlign.right,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                              color:
-                                                                  AppTheme.text,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 12))),
-                                              Expanded(
-                                                  flex: 2,
-                                                  child: Text(
+                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                            color: const Color(0xFF001F4E),
+                                                            fontWeight: FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Text(
                                                       '${_amountMd(e.estimatedProvision)} ${_amountUnitLabel()}',
-                                                      textAlign:
-                                                          TextAlign.right,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                              color:
-                                                                  AppTheme.text,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 12))),
-                                              Expanded(
-                                                  flex: 2,
-                                                  child: Text(
-                                                      AppFormatters.percent(
-                                                          coverageRate),
-                                                      textAlign:
-                                                          TextAlign.right,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall
-                                                          ?.copyWith(
-                                                              color:
-                                                                  AppTheme.text,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              fontSize: 12))),
-                                            ],
+                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                            color: const Color(0xFF001F4E),
+                                                            fontWeight: FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                                                Expanded(
+                                                  flex: 3,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                                                    alignment: Alignment.centerLeft,
+                                                    child: Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        Text(
+                                                          AppFormatters.percent(coverageRate),
+                                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                                color: const Color(0xFF001F4E),
+                                                                fontWeight: FontWeight.w900,
+                                                                fontSize: 12,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(width: 4),
+                                                        Container(
+                                                          width: 30,
+                                                          height: 4,
+                                                          decoration: BoxDecoration(
+                                                            color: AppTheme.border,
+                                                            borderRadius: BorderRadius.circular(2),
+                                                          ),
+                                                          child: Align(
+                                                            alignment: Alignment.centerLeft,
+                                                            child: Container(
+                                                              width: ((coverageRate * 60).clamp(0, 60).toDouble()) / 2, // scale down bar for smaller cell
+                                                              height: 4,
+                                                              decoration: BoxDecoration(
+                                                                color: AppTheme.danger,
+                                                                borderRadius: BorderRadius.circular(2),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         );
                                       },
@@ -850,7 +984,8 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                 ],
                               ),
                             ),
-                          );
+                          ),
+                        );
                         },
                       );
                     },
@@ -877,40 +1012,68 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
           ),
           // Header
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                    color:
-                        Theme.of(context).dividerColor.withValues(alpha: 0.5)),
-              ),
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                    width: 24, child: Text('#', style: _tableHeaderStyle())),
-                Expanded(
+            padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 0),
+            color: const Color(0xFF001F4E),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    width: 32,
+                    padding: const EdgeInsets.only(left: 12, top: 9, bottom: 9),
+                    alignment: Alignment.centerLeft,
+                    child: Text('N°', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                  ),
+                  Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                  Expanded(
+                    flex: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                      alignment: Alignment.centerLeft,
+                      child: Text('Contrepartie', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                  Expanded(
                     flex: 3,
-                    child: Text('Contrepartie', style: _tableHeaderStyle())),
-                Expanded(
-                    flex: 2,
-                    child: Text('Secteur', style: _tableHeaderStyle())),
-                Expanded(
-                    flex: 2,
-                    child: Text('Encours brut',
-                        style: _tableHeaderStyle(),
-                        textAlign: TextAlign.right)),
-                Expanded(
-                    flex: 2,
-                    child: Text('Provision',
-                        style: _tableHeaderStyle(),
-                        textAlign: TextAlign.right)),
-                Expanded(
-                    flex: 2,
-                    child: Text('Taux de couverture',
-                        style: _tableHeaderStyle(),
-                        textAlign: TextAlign.right)),
-              ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                      alignment: Alignment.centerLeft,
+                      child: Text('Secteur', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                      alignment: Alignment.centerLeft,
+                      child: Text('Encours brut',
+                          style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                      alignment: Alignment.centerLeft,
+                      child: Text('Provision',
+                          style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                      alignment: Alignment.centerLeft,
+                      child: Text('Taux de couverture',
+                          style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           // Rows
@@ -922,109 +1085,133 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                 : 0.0;
             final barWidth = (coverageRate * 60).clamp(0, 60).toDouble();
 
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-              decoration: BoxDecoration(
-                border: i < top5.length - 1
-                    ? Border(
-                        bottom: BorderSide(
-                            color: Theme.of(context)
-                                .dividerColor
-                                .withValues(alpha: 0.3)))
-                    : null,
-              ),
-              child: Row(
-                children: [
-                  SizedBox(
-                      width: 24,
-                      child: Text('${i + 1}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                  color: AppTheme.muted,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12))),
-                  Expanded(
+            return Material(
+              color: i.isOdd ? const Color(0xFFF8FAFC) : Colors.white,
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      width: 32,
+                      padding: const EdgeInsets.only(left: 12, top: 9, bottom: 9),
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '${i + 1}'.padLeft(2, '0'),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.muted,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 12,
+                            ),
+                      ),
+                    ),
+                    Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          e.counterpartyName,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF1E293B),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                    Expanded(
                       flex: 3,
-                      child: Text(e.counterpartyName,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                  color: AppTheme.text,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12),
-                          overflow: TextOverflow.ellipsis)),
-                  Expanded(
-                      flex: 2,
-                      child: Text(e.sector,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(color: AppTheme.muted, fontSize: 12),
-                          overflow: TextOverflow.ellipsis)),
-                  Expanded(
-                      flex: 2,
-                      child: Text(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          e.sector,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.muted,
+                                fontSize: 12,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
                           '${_amountMd(e.grossAmount)} ${_amountUnitLabel()}',
-                          textAlign: TextAlign.right,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                  color: AppTheme.text,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12))),
-                  Expanded(
-                      flex: 2,
-                      child: Text(
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF001F4E),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                        ),
+                      ),
+                    ),
+                    Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                        alignment: Alignment.centerLeft,
+                        child: Text(
                           '${_amountMd(e.estimatedProvision)} ${_amountUnitLabel()}',
-                          textAlign: TextAlign.right,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                  color: AppTheme.text,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12))),
-                  Expanded(
-                    flex: 2,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Text(AppFormatters.percent(coverageRate),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                    color: AppTheme.text,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12)),
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 60,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: AppTheme.border,
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Container(
-                              width: barWidth,
-                              height: 6,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF001F4E),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                        ),
+                      ),
+                    ),
+                    Container(width: 0.5, color: const Color(0xFFDCE4F2)),
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              AppFormatters.percent(coverageRate),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: const Color(0xFF001F4E),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12,
+                                  ),
+                            ),
+                            const SizedBox(width: 4),
+                            Container(
+                              width: 30,
+                              height: 4,
                               decoration: BoxDecoration(
-                                color: AppTheme.danger,
-                                borderRadius: BorderRadius.circular(3),
+                                color: AppTheme.border,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Container(
+                                  width: barWidth / 2, // scale down bar for smaller cell
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.danger,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }),
@@ -1222,27 +1409,29 @@ class _PortfolioTabNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dividerColor = Theme.of(context).dividerColor.withValues(alpha: 0.75);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
 
-    return SizedBox(
-      width: double.infinity,
-      height: 38,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          border: Border(bottom: BorderSide(color: dividerColor)),
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            const SizedBox(width: 8),
-            for (var index = 0; index < _items.length; index++)
-              _PortfolioTabButton(
-                label: _items[index],
-                selected: selectedIndex == index,
-                onTap: () => onChanged(index),
-              ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var index = 0; index < _items.length; index++)
+                _PortfolioTabButton(
+                  label: _items[index],
+                  selected: selectedIndex == index,
+                  onTap: () => onChanged(index),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -1262,53 +1451,48 @@ class _PortfolioTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected
-        ? AppColors.concentrationDeeper
-        : AppColors.concentrationDeeper.withValues(alpha: 0.76);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final textColor = selected
+        ? (isDark ? Colors.white : const Color(0xFF1E293B))
+        : (isDark ? Colors.white70 : const Color(0xFF475569));
 
-    return SizedBox(
-      width: label.startsWith('Analyse')
-          ? 198
-          : label.startsWith('Grands')
-              ? 142
-              : label.startsWith('Alertes')
-                  ? 172
-                  : label.startsWith('Tableau')
-                      ? 172
-                      : 190,
-      height: double.infinity,
-      child: InkWell(
-        onTap: onTap,
-        splashColor: AppColors.concentrationDeeper.withValues(alpha: 0.06),
-        highlightColor: AppColors.concentrationDeeper.withValues(alpha: 0.035),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          height: double.infinity,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: selected
-                    ? AppColors.concentrationDeeper
-                    : Colors.transparent,
-                width: 2,
+    final bgColor = selected
+        ? (isDark ? const Color(0xFF334155) : Colors.white)
+        : Colors.transparent;
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        height: 32,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  )
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: textColor,
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                height: 1,
               ),
-            ),
-          ),
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: color,
-                  fontSize: 12.8,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  height: 1,
-                ),
-          ),
         ),
       ),
     );
@@ -3502,7 +3686,7 @@ class _ZoneDistributionView extends StatelessWidget {
   }
 }
 
-class _ZoneDonutChart extends StatelessWidget {
+class _ZoneDonutChart extends StatefulWidget {
   const _ZoneDonutChart({
     required this.entries,
     required this.colors,
@@ -3516,41 +3700,70 @@ class _ZoneDonutChart extends StatelessWidget {
   final DistributionEntry dominant;
 
   @override
+  State<_ZoneDonutChart> createState() => _ZoneDonutChartState();
+}
+
+class _ZoneDonutChartState extends State<_ZoneDonutChart> {
+  int touchedIndex = -1;
+
+  @override
   Widget build(BuildContext context) {
+    final strokeWidth = widget.size * 0.15;
+    final centerSpaceRadius = (widget.size / 2) - strokeWidth;
+    final totalShare = widget.entries.fold<double>(0.0, (sum, item) => sum + item.percentage);
+
     return SizedBox(
-      width: size,
-      height: size,
+      width: widget.size,
+      height: widget.size,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          CustomPaint(
-            size: Size.square(size),
-            painter: _ZoneDonutPainter(entries: entries, colors: colors),
+          PieChart(
+            PieChartData(
+              pieTouchData: PieTouchData(
+                touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                  setState(() {
+                    if (!event.isInterestedForInteractions ||
+                        pieTouchResponse == null ||
+                        pieTouchResponse.touchedSection == null) {
+                      touchedIndex = -1;
+                      return;
+                    }
+                    touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                  });
+                },
+              ),
+              borderData: FlBorderData(show: false),
+              sectionsSpace: 0,
+              centerSpaceRadius: centerSpaceRadius,
+              sections: widget.entries.asMap().entries.map((e) {
+                final isTouched = e.key == touchedIndex;
+                final radius = isTouched ? strokeWidth * 1.25 : strokeWidth;
+                final share = totalShare <= 0 ? 0.0 : (e.value.percentage / totalShare).clamp(0.0, 1.0);
+                final value = share * 100;
+                return PieChartSectionData(
+                  color: widget.colors[e.key % widget.colors.length],
+                  value: value <= 0 ? 0.0001 : value,
+                  title: '',
+                  radius: radius,
+                );
+              }).toList(),
+            ),
           ),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                AppFormatters.percent(dominant.percentage),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: _geoZoneColor(dominant.label),
-                      fontSize: size < 120 ? 12.5 : 14,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Dominant',
-                maxLines: 1,
+                'Concentration\npar zone\nmonétaire',
+                textAlign: TextAlign.center,
+                maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: AppTheme.muted,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
+                      color: AppTheme.text.withValues(alpha: 0.8),
+                      fontSize: widget.size < 120 ? 8 : 10,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                      letterSpacing: -0.2,
                     ),
               ),
             ],
@@ -3558,49 +3771,6 @@ class _ZoneDonutChart extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _ZoneDonutPainter extends CustomPainter {
-  const _ZoneDonutPainter({
-    required this.entries,
-    required this.colors,
-  });
-
-  final List<DistributionEntry> entries;
-  final List<Color> colors;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final totalShare =
-        entries.fold<double>(0.0, (sum, item) => sum + item.percentage);
-    final strokeWidth = size.shortestSide * 0.15;
-    final rect = Offset.zero & size;
-    final arcRect = rect.deflate(strokeWidth / 2);
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.butt;
-
-    paint.color = AppColors.riskWeightTrack.withValues(alpha: 0.72);
-    canvas.drawArc(arcRect, -math.pi / 2, math.pi * 2, false, paint);
-
-    var startAngle = -math.pi / 2;
-    for (var index = 0; index < entries.length; index++) {
-      final share = totalShare <= 0
-          ? 0.0
-          : (entries[index].percentage / totalShare).clamp(0.0, 1.0);
-      final sweepAngle = share * math.pi * 2;
-      if (sweepAngle <= 0) continue;
-      paint.color = colors[index % colors.length];
-      canvas.drawArc(arcRect, startAngle, sweepAngle, false, paint);
-      startAngle += sweepAngle;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ZoneDonutPainter oldDelegate) {
-    return oldDelegate.entries != entries || oldDelegate.colors != colors;
   }
 }
 
@@ -3885,7 +4055,7 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
                 ),
           ),
           content: SizedBox(
-            width: 500,
+            width: 800,
             height: MediaQuery.of(context).size.height * 0.7,
             child: ListView.separated(
               addSemanticIndexes: false,
@@ -3902,9 +4072,10 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
                 return SizedBox(
                   height: 28,
                   child: _HorizontalShareRow(
-                    label: '${index + 1}. ${row.counterpartyName}',
+                    label: row.counterpartyName,
+                    rank: index + 1,
                     share: row.share,
-                    labelWidth: 200,
+                    labelWidth: 500,
                     color: c,
                     valueColor: c,
                   ),
@@ -3990,34 +4161,42 @@ class _CounterpartyBars extends StatelessWidget {
       return const _EmptyInline();
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final rowHeight = constraints.maxHeight / rows.length;
-        return Column(
-          children: List.generate(rows.length, (index) {
-            final row = rows[index];
-            final t = index / (rows.isEmpty ? 1 : rows.length);
-            final c = t < 0.35
-                ? AppColors.concentrationDeeper
-                : t < 0.7
-                    ? Colors.indigo
-                    : Colors.blue;
-            return SizedBox(
-              height: rowHeight,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2.0),
-                child: _HorizontalShareRow(
-                  label: '${index + 1}. ${row.counterpartyName}',
-                  share: row.share,
-                  labelWidth: 158,
-                  color: c,
-                  valueColor: c,
-                ),
-              ),
-            );
-          }),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final border = isDark ? AppTheme.darkBorder : AppTheme.border;
+
+    return Column(
+      children: List.generate(rows.length * 2 - 1, (i) {
+        if (i.isOdd) {
+          return Divider(
+            height: 1,
+            thickness: 1,
+            color: border.withValues(alpha: 0.5),
+          );
+        }
+        
+        final index = i ~/ 2;
+        final row = rows[index];
+        final t = index / (rows.isEmpty ? 1 : rows.length);
+        final c = t < 0.35
+            ? AppColors.concentrationDeeper
+            : t < 0.7
+                ? Colors.indigo
+                : Colors.blue;
+                
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2.0),
+            child: _HorizontalShareRow(
+              label: row.counterpartyName,
+              rank: index + 1,
+              share: row.share,
+              labelWidth: 260,
+              color: c,
+              valueColor: c,
+            ),
+          ),
         );
-      },
+      }),
     );
   }
 }
@@ -4029,6 +4208,7 @@ class _HorizontalShareRow extends StatefulWidget {
     required this.labelWidth,
     required this.color,
     this.valueColor,
+    this.rank,
   });
 
   final String label;
@@ -4036,6 +4216,7 @@ class _HorizontalShareRow extends StatefulWidget {
   final double labelWidth;
   final Color color;
   final Color? valueColor;
+  final int? rank;
 
   @override
   State<_HorizontalShareRow> createState() => _HorizontalShareRowState();
@@ -4046,6 +4227,7 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final baseShare = widget.share.clamp(0.0, 1.0).toDouble();
     final animatedShare =
         (_hovered ? baseShare * 1.045 : baseShare).clamp(0.0, 1.0).toDouble();
@@ -4080,10 +4262,36 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
                     fontWeight: _hovered ? FontWeight.w700 : FontWeight.w600,
                     height: 1,
                   ),
-              child: Text(
-                widget.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  if (widget.rank != null)
+                    Container(
+                      width: 20,
+                      height: 20,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${widget.rank}',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  if (widget.rank != null)
+                    const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -4152,7 +4360,7 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
                                     height: 1,
                                   ),
                           child: Text(
-                            AppFormatters.percent(widget.share),
+                            AppFormatters.percent(widget.share, decimalDigits: 5),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.right,

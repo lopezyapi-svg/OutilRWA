@@ -94,7 +94,11 @@ class ExposureCreate(BaseModel):
     )
     provisions_amount: float | None = Field(
         default=None,
-        description="Montant exact des provisions.",
+        description="Montant exact des provisions pour la ligne.",
+    )
+    jours_impayes: int = Field(
+        default=0,
+        description="Nombre de jours d'impayés.",
     )
     currency: str = Field(default="XOF", description="Devise source de l'exposition.")
     status: str = Field(default="Active", description="Statut de gestion de l'exposition.")
@@ -205,6 +209,7 @@ class ExposureView(BaseModel):
     on_balance_exposure_amount: float | None = None
     off_balance_exposure_amount: float | None = None
     provisions_amount: float | None = None
+    jours_impayes: int = 0
     exposure_maturity_months: int | None = None
     residual_maturity_months: int | None = None
     country_risk_weight: float | None = None

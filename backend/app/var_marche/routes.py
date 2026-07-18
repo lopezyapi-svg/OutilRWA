@@ -298,37 +298,56 @@ def pays_courbe_disponibles() -> dict[str, Any]:
 
 
 def _ecrire_historique_taux(points: list[dict[str, Any]], jour: str) -> None:
-    """Écrit la courbe (format long) dans historique_taux : table SQLite
-    recréée en date/maturite_annees/taux_pct + CSV pour transparence."""
+    """ACCUMULE la courbe du jour dans historique_taux (CSV lu par la couche
+    VaR + table SQLite de transparence), au lieu d'écraser l'existant.
+
+    Chaque actualisation ajoute une date à l'historique (une réactualisation
+    du même jour remplace uniquement les points de ce jour) : l'historique de
+    courbes se construit donc au fil des actualisations, et la VaR historique
+    se débloque automatiquement une fois la profondeur requise atteinte.
+    L'ancien comportement (DROP TABLE + réécriture du CSV avec un seul jour)
+    remettait la profondeur à 1 à chaque clic sur « Actualiser »."""
 
     import sqlite3
 
     racine = portefeuille_data.repertoire_data()
     racine.mkdir(parents=True, exist_ok=True)
 
+    # Fusion avec l'historique CSV existant : conserve toutes les autres
+    # dates, remplace les points du jour actualisé (idempotent).
+    chemin_csv = racine / "historique_taux.csv"
+    lignes_conservees: list[str] = []
+    if chemin_csv.exists():
+        for ligne in chemin_csv.read_text(encoding="utf-8-sig").splitlines():
+            ligne = ligne.strip()
+            if not ligne or ligne.lower().startswith("date;"):
+                continue
+            if not ligne.startswith(f"{jour};"):
+                lignes_conservees.append(ligne)
+
+    lignes_du_jour = [
+        f"{jour};{point['maturite_annees']};{point['taux_pct']}" for point in points
+    ]
+    toutes = sorted(lignes_conservees + lignes_du_jour)
+    chemin_csv.write_text(
+        "date;maturite_annees;taux_pct\n" + "\n".join(toutes) + "\n",
+        encoding="utf-8",
+    )
+
+    # Table SQLite miroir (transparence/inspection) : reconstruite depuis le
+    # CSV complet — le CSV reste la source lue par portefeuille_data.
     chemin_db = racine / "rwa_data.db"
     with sqlite3.connect(chemin_db) as connexion:
-        connexion.execute("DROP TABLE IF EXISTS historique_taux")
         connexion.execute(
-            "CREATE TABLE historique_taux "
+            "CREATE TABLE IF NOT EXISTS historique_taux "
             "(date TEXT, maturite_annees TEXT, taux_pct TEXT)"
         )
+        connexion.execute("DELETE FROM historique_taux")
         connexion.executemany(
             "INSERT INTO historique_taux(date, maturite_annees, taux_pct) "
             "VALUES (?, ?, ?)",
-            [
-                (jour, str(point["maturite_annees"]), str(point["taux_pct"]))
-                for point in points
-            ],
+            [tuple(ligne.split(";", 2)) for ligne in toutes],
         )
-
-    lignes_csv = ["date;maturite_annees;taux_pct"]
-    lignes_csv += [
-        f"{jour};{point['maturite_annees']};{point['taux_pct']}" for point in points
-    ]
-    (racine / "historique_taux.csv").write_text(
-        "\n".join(lignes_csv) + "\n", encoding="utf-8"
-    )
 
 
 @router.post("/actualiser-courbe")

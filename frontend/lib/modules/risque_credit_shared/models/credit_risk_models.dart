@@ -324,6 +324,8 @@ class ConcentrationExposureDetail {
     required this.lgd,
     required this.estimatedProvision,
     required this.provisionRate,
+    this.joursImpayes = 0,
+    this.provisionsAmount = 0.0,
   });
 
   final String id;
@@ -352,6 +354,8 @@ class ConcentrationExposureDetail {
   final double lgd;
   final double estimatedProvision;
   final double provisionRate;
+  final int joursImpayes;
+  final double provisionsAmount;
 }
 
 class PortfolioQualitySummary {

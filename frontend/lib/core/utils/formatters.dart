@@ -107,11 +107,12 @@ class AppFormatters {
     return '${decimalNumber(value / 1000000, maxDecimals: 0)} M';
   }
 
-  static String percent(num value) {
+  static String percent(num value, {int decimalDigits = 2}) {
     final locale = AppLocalizations.currentLanguage.intlLocale;
-    final formatter = _percentFormatCache.putIfAbsent(locale, () {
+    final key = '$locale:$decimalDigits';
+    final formatter = _percentFormatCache.putIfAbsent(key, () {
       return NumberFormat.decimalPercentPattern(
-          locale: locale, decimalDigits: 2);
+          locale: locale, decimalDigits: decimalDigits);
     });
     return formatter.format(value).replaceAll(RegExp(r'\s+'), '');
   }

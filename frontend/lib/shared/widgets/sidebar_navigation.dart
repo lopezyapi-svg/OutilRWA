@@ -1154,7 +1154,7 @@ class _ExpandedNavTile extends StatelessWidget {
               offset: const Offset(0, 1),
             ),
           ];
-    const tileRadius = AppTheme.radius;
+    const tileRadius = 3.0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
@@ -1193,7 +1193,7 @@ class _ExpandedNavTile extends StatelessWidget {
                             : (isDark
                                 ? const Color(0xFF14233D)
                                 : const Color(0xFFF7FAFF)),
-                        borderRadius: BorderRadius.circular(AppTheme.radius),
+                        borderRadius: BorderRadius.circular(3.0),
                       ),
                       child: Icon(
                         entry.iconFor(selected),

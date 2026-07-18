@@ -131,6 +131,11 @@ IMPORT_SHEET_SPECS: tuple[ExcelSheetSpec, ...] = (
             ),
             _column("Statut", "texte", "Statut de gestion de l'exposition"),
             _column("Provisions", "nombre", "Montant exact des provisions"),
+            _column(
+                "Jours_impayes",
+                "nombre",
+                "Nombre de jours d'impayés (créances en souffrance)",
+            ),
             _column("Commentaire", "texte", "Commentaire de gestion"),
             _column(
                 "Cas_particulier_souverain",

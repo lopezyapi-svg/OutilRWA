@@ -297,6 +297,8 @@ class CreditRiskSubmodulesService {
           lgd: _lgdFromCrm(item),
           estimatedProvision: toXof(estimatedProvision),
           provisionRate: provisionRate,
+          joursImpayes: item.joursImpayes,
+          provisionsAmount: item.provisionsAmount ?? 0.0,
         ),
       );
     }

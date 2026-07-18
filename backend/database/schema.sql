@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS expositions (
     ead REAL NOT NULL DEFAULT 0 CHECK(ead >= 0),
     rwa REAL NOT NULL DEFAULT 0 CHECK(rwa >= 0),
     capital REAL NOT NULL DEFAULT 0 CHECK(capital >= 0),
+    jours_impayes INTEGER NOT NULL DEFAULT 0 CHECK(jours_impayes >= 0),
     commentaire TEXT,
     champs_source_json TEXT NOT NULL DEFAULT '{}',
     cree_le TEXT NOT NULL,

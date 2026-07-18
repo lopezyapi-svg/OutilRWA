@@ -1852,6 +1852,7 @@ class ExposureRecord {
     this.onBalanceExposureAmount,
     this.offBalanceExposureAmount,
     this.provisionsAmount,
+    this.joursImpayes = 0,
     this.exposureMaturityMonths,
     this.residualMaturityMonths,
     this.countryRiskWeight,
@@ -1906,6 +1907,7 @@ class ExposureRecord {
   final double? onBalanceExposureAmount;
   final double? offBalanceExposureAmount;
   final double? provisionsAmount;
+  final int joursImpayes;
   final int? exposureMaturityMonths;
   final int? residualMaturityMonths;
   final double? countryRiskWeight;
@@ -1964,7 +1966,7 @@ class ExposureRecord {
   String get ratingLabel => bucketizeRating(counterparty.rating);
   String get crmModeLabel => crmDetails.mode;
   String get zone => computeZone(counterparty.country);
-  bool get isDefaultLike => status == 'En defaut' || categoryCode == 'i' || (provisionsAmount != null && provisionsAmount! > 0);
+  bool get isDefaultLike => status == 'En defaut' || categoryCode == 'i' || (joursImpayes > 90) || (provisionsAmount != null && provisionsAmount! > 0);
 
   // Montants convertis en XOF, à utiliser pour TOUT calcul agrégé (totaux,
   // parts, densités…). Les champs bruts restent dans la devise d'origine pour
@@ -2026,6 +2028,7 @@ class ExposureRecord {
       offBalanceExposureAmount:
           (json['off_balance_exposure_amount'] as num?)?.toDouble(),
       provisionsAmount: (json['provisions_amount'] as num?)?.toDouble(),
+      joursImpayes: (json['jours_impayes'] as num?)?.toInt() ?? 0,
       exposureMaturityMonths:
           (json['exposure_maturity_months'] as num?)?.toInt(),
       residualMaturityMonths:
@@ -2120,6 +2123,7 @@ class ExposureRecord {
       loanTotalAmount: resolvedLoanTotalAmount,
       onBalanceExposureAmount: resolvedOnBalanceExposureAmount,
       provisionsAmount: provisionsAmount,
+      joursImpayes: joursImpayes,
       currency: currency,
       status: status,
       crmMode: crmDetails.mode == 'Aucune' ? 'Aucune' : crmDetails.mode,
@@ -2221,6 +2225,7 @@ class ExposureDraft {
     required this.loanTotalAmount,
     required this.onBalanceExposureAmount,
     this.provisionsAmount,
+    this.joursImpayes = 0,
     required this.currency,
     required this.status,
     required this.crmMode,
@@ -2279,6 +2284,7 @@ class ExposureDraft {
   final double loanTotalAmount;
   final double onBalanceExposureAmount;
   final double? provisionsAmount;
+  final int joursImpayes;
   final String currency;
   final String status;
   final String crmMode;

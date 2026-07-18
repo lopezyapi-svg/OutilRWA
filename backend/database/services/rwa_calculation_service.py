@@ -1260,6 +1260,7 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
         "source_fields": source_fields,
         "currency": payload.currency or "XOF",
         "status": payload.status or "Active",
+        "jours_impayes": int(payload.jours_impayes or 0),
         "sovereign_special_case": normalize_sovereign_special_case(
             payload.sovereign_special_case,
             fallback_to_legacy=payload.sovereign_preferential_zero_weight,
@@ -1347,6 +1348,7 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
         on_balance_exposure_amount=record.get("on_balance_exposure_amount"),
         off_balance_exposure_amount=record.get("off_balance_exposure_amount"),
         provisions_amount=record.get("provisions_amount"),
+        jours_impayes=int(record.get("jours_impayes") or 0),
         exposure_maturity_months=record.get("exposure_maturity_months"),
         residual_maturity_months=record.get("residual_maturity_months"),
         country_risk_weight=record.get("country_risk_weight"),

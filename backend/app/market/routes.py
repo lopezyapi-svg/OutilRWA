@@ -296,6 +296,39 @@ async def upload_var_history(file: UploadFile = File(...)) -> dict[str, Any]:
             entetes=["date", "ticker", "cours_cloture"],
         )
 
+        # Feuille OPTIONNELLE « Courbe des taux » : historique du facteur de
+        # risque (date, maturité en années, taux %). C'est la voie recommandée
+        # pour débloquer la VaR historique d'un portefeuille obligataire :
+        # quelques milliers de cellules suffisent (250 dates × ~8 maturités)
+        # là où l'historique de prix par titre en demanderait 25 000, et le
+        # moteur revalorise chaque titre sur chaque courbe (actualisation des
+        # flux). Si la feuille est fournie, elle REMPLACE l'historique de
+        # courbes existant ; sinon rien n'est touché.
+        nb_courbe = 0
+        try:
+            df_courbe = pd.read_excel(excel_file, sheet_name="Courbe des taux")
+        except ValueError:
+            df_courbe = None
+        if df_courbe is not None:
+            df_courbe = df_courbe.rename(columns={
+                "Date": "date",
+                "Maturité (années)": "maturite_annees",
+                "Maturite (annees)": "maturite_annees",
+                "Taux (%)": "taux_pct",
+            })
+            df_courbe = _dates_en_iso(df_courbe, ["date"])
+            attendues = {"date", "maturite_annees", "taux_pct"}
+            if attendues.issubset(df_courbe.columns):
+                df_courbe = df_courbe.dropna(subset=["date", "maturite_annees", "taux_pct"])
+                if not df_courbe.empty:
+                    _dataframe_vers_csv(
+                        df_courbe.sort_values(["date", "maturite_annees"]),
+                        racine / "historique_taux.csv",
+                        colonnes_source=["date", "maturite_annees", "taux_pct"],
+                        entetes=["date", "maturite_annees", "taux_pct"],
+                    )
+                    nb_courbe = int(df_courbe["date"].nunique())
+
         portefeuille_data.invalider_cache_series()
 
         return {
@@ -305,6 +338,7 @@ async def upload_var_history(file: UploadFile = File(...)) -> dict[str, Any]:
             "obligations_historique": int(len(df_hist_bonds)),
             "actions_positions": int(len(df_equities_positions)),
             "actions_historique": int(len(df_hist_equities)),
+            "courbe_taux_jours": nb_courbe,
         }
     except Exception as exc:
         raise HTTPException(
@@ -506,6 +540,33 @@ def _build_var_history_template() -> bytes:
     add_note(ws2, 6, "Minimum requis : 250 dates par instrument (fenêtre la plus courte proposée par l'écran VaR).", col=notes_col2)
     auto_width(ws2, len(headers_equities))
     ws2.column_dimensions[get_column_letter(notes_col2)].width = 68
+
+    # ── Courbe des taux (OPTIONNELLE — voie recommandée pour la VaR
+    # historique obligataire : l'historique du facteur de risque remplace
+    # avantageusement l'historique de prix titre par titre) ────────────────
+    ws3 = wb.create_sheet("Courbe des taux")
+    headers_courbe = ["Date", "Maturité (années)", "Taux (%)"]
+    ws3.append(headers_courbe)
+    ws3.append(["2025-01-02", 0.25, 5.20])
+    ws3.append(["2025-01-02", 1, 5.60])
+    ws3.append(["2025-01-02", 5, 6.10])
+    ws3.append(["2025-01-02", 10, 6.50])
+    ws3.append(["2025-01-03", 0.25, 5.22])
+    ws3.append(["2025-01-03", 1, 5.61])
+    ws3.append(["2025-01-03", 5, 6.12])
+    ws3.append(["2025-01-03", 10, 6.49])
+    style_header(ws3, len(headers_courbe))
+    style_example_rows(ws3, 2, 9, len(headers_courbe))
+    notes_col3 = len(headers_courbe) + 2
+    add_note(ws3, 1, "FEUILLE OPTIONNELLE. Les lignes d'exemple (en jaune) sont à supprimer avant l'import.", col=notes_col3)
+    add_note(ws3, 2, "Une ligne = un point de courbe : plusieurs maturités par date, plusieurs dates.", col=notes_col3)
+    add_note(ws3, 3, "C'est la voie RECOMMANDÉE pour la VaR historique obligataire : ~8 maturités", col=notes_col3)
+    add_note(ws3, 4, "par date suffisent, le moteur revalorise chaque titre sur chaque courbe.", col=notes_col3)
+    add_note(ws3, 5, "Taux (%) : en pourcentage annuel (6.10 = 6,10 %). Maturité : en années (0.25 = 3 mois).", col=notes_col3)
+    add_note(ws3, 6, "Minimum requis : 250 dates (fenêtre la plus courte de l'écran VaR).", col=notes_col3)
+    add_note(ws3, 7, "Si cette feuille est remplie, elle REMPLACE l'historique de courbes existant.", col=notes_col3)
+    auto_width(ws3, len(headers_courbe))
+    ws3.column_dimensions[get_column_letter(notes_col3)].width = 72
 
     buf = BytesIO()
     wb.save(buf)

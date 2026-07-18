@@ -85,6 +85,7 @@ _SELECT_EXPOSURES = """
         e.montant_brut      AS gross_amount,
         e.devise            AS currency,
         e.statut            AS status,
+        e.jours_impayes     AS jours_impayes,
         -- Sous-entité souverain
         es.cas_particulier            AS sovereign_special_case,
         es.ponderation_zero_preferentiel AS sovereign_preferential_zero_weight,
@@ -273,6 +274,7 @@ class ExposureRepository:
                     ead,
                     rwa,
                     capital,
+                    jours_impayes,
                     commentaire,
                     champs_source_json,
                     cree_le,
@@ -280,7 +282,7 @@ class ExposureRepository:
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?
                 )
                 ON CONFLICT(id) DO UPDATE SET
                     contrepartie_id      = excluded.contrepartie_id,
@@ -301,6 +303,7 @@ class ExposureRepository:
                     ead                  = excluded.ead,
                     rwa                  = excluded.rwa,
                     capital              = excluded.capital,
+                    jours_impayes        = excluded.jours_impayes,
                     commentaire          = excluded.commentaire,
                     champs_source_json   = excluded.champs_source_json,
                     modifie_le           = excluded.modifie_le
@@ -342,6 +345,7 @@ class ExposureRepository:
                         float(record.get("ead", 0.0) or 0.0),
                         float(record.get("rwa", 0.0) or 0.0),
                         float(record.get("capital", 0.0) or 0.0),
+                        int(record.get("jours_impayes", 0) or 0),
                         record.get("comment"),
                         json.dumps(
                             record.get("source_fields") or {},

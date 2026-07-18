@@ -44,16 +44,18 @@ def _uploader_modele(tmp_path):
     return reponse
 
 
-def test_modele_officiel_a_deux_onglets_seulement():
-    """Le classeur généré ne doit contenir aucun autre onglet (Instructions,
-    Historique séparé…) : uniquement Obligations et Actions."""
+def test_modele_officiel_structure_des_onglets():
+    """Le classeur généré contient exactement les onglets attendus :
+    Obligations, Actions (positions + historique au format long) et la
+    feuille optionnelle Courbe des taux (facteur de risque, voie
+    recommandée pour la VaR historique obligataire)."""
 
     from io import BytesIO
 
     from openpyxl import load_workbook
 
     wb = load_workbook(BytesIO(_build_var_history_template()))
-    assert wb.sheetnames == ["Obligations", "Actions"]
+    assert wb.sheetnames == ["Obligations", "Actions", "Courbe des taux"]
 
 
 def test_upload_modele_officiel_alimente_la_var(tmp_path):
@@ -146,5 +148,76 @@ def test_upload_position_sans_historique_est_conservee(tmp_path):
             assert [p.isin for p in positions] == ["OBSEUL"]
             historique = portefeuille_data.charger_historique_prix_obligations()
             assert historique == {}
+        finally:
+            portefeuille_data.invalider_cache_series()
+
+
+def test_import_courbe_des_taux_remplace_historique(tmp_path):
+    """La feuille optionnelle « Courbe des taux » alimente historique_taux.csv
+    (format long date/maturité/taux lu par la couche VaR) et remplace
+    l'historique existant."""
+
+    reponse = _uploader_modele(tmp_path)
+    assert reponse.status_code == 200
+    corps = reponse.json()
+    # Le modèle officiel contient 2 dates d'exemple sur la feuille courbe.
+    assert corps["courbe_taux_jours"] == 2
+
+    with patch.object(portefeuille_data, "app_data_root", return_value=tmp_path), patch.object(
+        portefeuille_data, "_lire_valeur_marche_portefeuilles_sqlite", return_value=None
+    ):
+        portefeuille_data.invalider_cache_series()
+        try:
+            courbes = portefeuille_data.charger_historique_taux()
+            assert len(courbes) == 2
+            for points in courbes.values():
+                # 4 maturités par date dans l'exemple, triées croissantes.
+                assert len(points) == 4
+                assert points == sorted(points)
+        finally:
+            portefeuille_data.invalider_cache_series()
+
+
+def test_actualisation_courbe_accumule_les_dates(tmp_path, monkeypatch):
+    """_ecrire_historique_taux EMPILE les dates (une par actualisation) au
+    lieu d'écraser : réactualiser le même jour reste idempotent, un jour
+    nouveau augmente la profondeur — c'est ce qui permet à la VaR historique
+    de se débloquer avec le temps."""
+
+    from app.var_marche.routes import _ecrire_historique_taux
+
+    monkeypatch.setattr(portefeuille_data, "app_data_root", lambda: tmp_path)
+
+    points_j1 = [
+        {"maturite_annees": 1, "taux_pct": 5.5},
+        {"maturite_annees": 5, "taux_pct": 6.0},
+    ]
+    points_j2 = [
+        {"maturite_annees": 1, "taux_pct": 5.6},
+        {"maturite_annees": 5, "taux_pct": 6.1},
+    ]
+
+    _ecrire_historique_taux(points_j1, "2026-07-16")
+    _ecrire_historique_taux(points_j2, "2026-07-17")
+    # Réactualisation du même jour avec des taux corrigés : remplace le jour,
+    # sans dupliquer ni toucher aux autres dates.
+    _ecrire_historique_taux(
+        [{"maturite_annees": 1, "taux_pct": 5.65}], "2026-07-17"
+    )
+
+    contenu = (tmp_path / "historique_taux.csv").read_text(encoding="utf-8")
+    lignes = [l for l in contenu.splitlines() if l and not l.startswith("date;")]
+    assert len(lignes) == 3  # 2 points du 16 + 1 point corrigé du 17
+    assert sum(1 for l in lignes if l.startswith("2026-07-16;")) == 2
+    assert sum(1 for l in lignes if l.startswith("2026-07-17;")) == 1
+    assert any("5.65" in l for l in lignes if l.startswith("2026-07-17;"))
+
+    with patch.object(
+        portefeuille_data, "_lire_valeur_marche_portefeuilles_sqlite", return_value=None
+    ):
+        portefeuille_data.invalider_cache_series()
+        try:
+            courbes = portefeuille_data.charger_historique_taux()
+            assert len(courbes) == 2  # 2 dates distinctes accumulées
         finally:
             portefeuille_data.invalider_cache_series()
