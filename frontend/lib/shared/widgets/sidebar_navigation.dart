@@ -535,11 +535,12 @@ class _CompactSidebarLogo extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
-      width: 42,
-      height: 34,
+      width: 50,
+      height: 40,
       child: DesktopAssetImage(
         'assets/images/heymanns_logo.png',
         fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
         color: isDark ? const Color(0xFFEAF1FF) : null,
         colorBlendMode: isDark ? BlendMode.srcIn : null,
         opacity: isDark
@@ -1031,10 +1032,11 @@ class _SidebarServiceCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           SizedBox(
-            height: 58,
+            height: 90,
             child: DesktopAssetImage(
               'assets/images/heymanns_logo.png',
               fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
               color: isDark ? const Color(0xFFEAF1FF) : null,
               colorBlendMode: isDark ? BlendMode.srcIn : null,
               opacity: isDark
