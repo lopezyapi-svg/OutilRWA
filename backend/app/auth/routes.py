@@ -225,7 +225,7 @@ def reinitialiser_mot_de_passe(
     identifiant: str,
     payload: ChangementMotDePasse,
     request: Request,
-) -> None:
+) -> Response:
     """Remplace le mot de passe d'un membre et coupe ses sessions ouvertes."""
 
     _exiger_edition(request)
@@ -239,6 +239,7 @@ def reinitialiser_mot_de_passe(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.put("/comptes/{identifiant}/activation", status_code=status.HTTP_204_NO_CONTENT)
@@ -246,7 +247,7 @@ def changer_activation_compte(
     identifiant: str,
     payload: ChangementActivation,
     request: Request,
-) -> None:
+) -> Response:
     """Active ou desactive un membre.
 
     La desactivation revoque immediatement ses sessions : sans cela, la
@@ -266,3 +267,4 @@ def changer_activation_compte(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(exc),
         ) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
