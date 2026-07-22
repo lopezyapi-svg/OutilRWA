@@ -6,11 +6,23 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
-from app.auth.models import LoginRequest, TokenResponse, UserProfile
+from app.auth.models import (
+    ChangementActivation,
+    ChangementMotDePasse,
+    CompteEquipe,
+    CreationCompte,
+    LoginRequest,
+    TokenResponse,
+    UserProfile,
+)
+from app.auth.repository import auth_repository
 from app.auth.service import (
     AuthenticationError,
     SessionOuverte,
     authentifier,
+    changer_activation,
+    changer_mot_de_passe,
+    creer_compte,
     fermer_session,
     renouveler,
 )
@@ -132,3 +144,125 @@ def profil_courant(request: Request) -> UserProfile:
         identifiant=str(utilisateur["identifiant"]),
         role=str(utilisateur["role"]),
     )
+
+
+def _exiger_edition(request: Request) -> dict:
+    """Refuse la gestion d'equipe a tout compte qui n'edite pas.
+
+    Le garde central impose deja le role « edition » sur les methodes
+    d'ecriture, mais la LISTE des comptes est un GET : sans ce controle
+    explicite, un compte en consultation pourrait enumerer les membres de
+    l'equipe et leurs derniers acces.
+    """
+
+    utilisateur = getattr(request.state, "utilisateur", None)
+    if not utilisateur:
+        if not settings.auth_enabled:
+            return {"identifiant": "local", "role": "edition"}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentification requise.",
+        )
+    if str(utilisateur.get("role")) != "edition":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="La gestion de l'equipe est reservee au role edition.",
+        )
+    return utilisateur
+
+
+@router.get("/comptes", response_model=list[CompteEquipe])
+def lister_comptes(request: Request) -> list[CompteEquipe]:
+    """Liste les membres de l'equipe."""
+
+    _exiger_edition(request)
+    return [
+        CompteEquipe(
+            identifiant=compte["identifiant"],
+            role=compte["role"],
+            nom_complet=compte["nom_complet"],
+            actif=compte["actif"],
+            derniere_connexion=compte["derniere_connexion"],
+        )
+        for compte in auth_repository.list_users()
+    ]
+
+
+@router.post(
+    "/comptes",
+    response_model=CompteEquipe,
+    status_code=status.HTTP_201_CREATED,
+)
+def ajouter_compte(payload: CreationCompte, request: Request) -> CompteEquipe:
+    """Ajoute un membre. Son espace de travail se cree a sa premiere connexion."""
+
+    _exiger_edition(request)
+    try:
+        creer_compte(
+            identifiant=payload.identifiant,
+            mot_de_passe=payload.mot_de_passe,
+            role=payload.role,
+            nom_complet=payload.nom_complet,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    compte = auth_repository.get_user(payload.identifiant)
+    return CompteEquipe(
+        identifiant=compte["identifiant"],
+        role=compte["role"],
+        nom_complet=compte["nom_complet"],
+        actif=compte["actif"],
+        derniere_connexion=compte["derniere_connexion"],
+    )
+
+
+@router.put("/comptes/{identifiant}/mot-de-passe", status_code=status.HTTP_204_NO_CONTENT)
+def reinitialiser_mot_de_passe(
+    identifiant: str,
+    payload: ChangementMotDePasse,
+    request: Request,
+) -> None:
+    """Remplace le mot de passe d'un membre et coupe ses sessions ouvertes."""
+
+    _exiger_edition(request)
+    try:
+        changer_mot_de_passe(
+            identifiant=identifiant,
+            mot_de_passe=payload.mot_de_passe,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+@router.put("/comptes/{identifiant}/activation", status_code=status.HTTP_204_NO_CONTENT)
+def changer_activation_compte(
+    identifiant: str,
+    payload: ChangementActivation,
+    request: Request,
+) -> None:
+    """Active ou desactive un membre.
+
+    La desactivation revoque immediatement ses sessions : sans cela, la
+    personne resterait connectee jusqu'a l'expiration de son jeton.
+    """
+
+    utilisateur = _exiger_edition(request)
+    if identifiant.strip() == str(utilisateur.get("identifiant")) and not payload.actif:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Vous ne pouvez pas desactiver votre propre compte.",
+        )
+    try:
+        changer_activation(identifiant=identifiant, actif=payload.actif)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc

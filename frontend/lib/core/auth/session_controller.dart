@@ -147,6 +147,93 @@ class SessionController extends ChangeNotifier {
     return false;
   }
 
+  Map<String, String> _entetes({bool json = false}) {
+    final entetes = <String, String>{};
+    if (json) entetes['Content-Type'] = 'application/json';
+    final jeton = _accessToken;
+    if (jeton != null && jeton.isNotEmpty) {
+      entetes['Authorization'] = 'Bearer $jeton';
+    }
+    return entetes;
+  }
+
+  /// Liste les membres de l'équipe. Réservé au rôle édition côté serveur.
+  Future<List<Map<String, dynamic>>> listerEquipe() async {
+    final reponse = await _client.get(_uri('/auth/comptes'), headers: _entetes());
+    if (reponse.statusCode != 200) {
+      throw Exception(_messageErreur(reponse, 'Liste indisponible.'));
+    }
+    return (jsonDecode(reponse.body) as List)
+        .cast<Map<String, dynamic>>()
+        .toList();
+  }
+
+  /// Ajoute un membre. Son espace de travail se crée à sa première connexion.
+  Future<String?> ajouterMembre({
+    required String identifiant,
+    required String motDePasse,
+    required String role,
+    String? nomComplet,
+  }) async {
+    try {
+      final reponse = await _client.post(
+        _uri('/auth/comptes'),
+        headers: _entetes(json: true),
+        body: jsonEncode({
+          'identifiant': identifiant,
+          'mot_de_passe': motDePasse,
+          'role': role,
+          if (nomComplet != null && nomComplet.trim().isNotEmpty)
+            'nom_complet': nomComplet.trim(),
+        }),
+      );
+      if (reponse.statusCode == 201) return null;
+      if (reponse.statusCode == 422) {
+        return 'Le mot de passe doit faire au moins 12 caractères.';
+      }
+      return _messageErreur(reponse, 'Ajout impossible.');
+    } catch (_) {
+      return 'Serveur injoignable.';
+    }
+  }
+
+  Future<String?> changerActivation({
+    required String identifiant,
+    required bool actif,
+  }) async {
+    try {
+      final reponse = await _client.put(
+        _uri('/auth/comptes/$identifiant/activation'),
+        headers: _entetes(json: true),
+        body: jsonEncode({'actif': actif}),
+      );
+      if (reponse.statusCode == 204) return null;
+      return _messageErreur(reponse, 'Modification impossible.');
+    } catch (_) {
+      return 'Serveur injoignable.';
+    }
+  }
+
+  Future<String?> reinitialiserMotDePasse({
+    required String identifiant,
+    required String motDePasse,
+  }) async {
+    try {
+      final reponse = await _client.put(
+        _uri('/auth/comptes/$identifiant/mot-de-passe'),
+        headers: _entetes(json: true),
+        body: jsonEncode({'mot_de_passe': motDePasse}),
+      );
+      if (reponse.statusCode == 204) return null;
+      if (reponse.statusCode == 422) {
+        return 'Le mot de passe doit faire au moins 12 caractères.';
+      }
+      return _messageErreur(reponse, 'Modification impossible.');
+    } catch (_) {
+      return 'Serveur injoignable.';
+    }
+  }
+
   Future<void> deconnecter() async {
     try {
       await _client.post(_uri('/auth/logout'));

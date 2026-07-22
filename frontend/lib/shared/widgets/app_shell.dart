@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_module.dart';
 import '../../core/auth/session_scope.dart';
+import '../../modules/auth/widgets/equipe_dialog.dart';
 import '../../core/localization/app_language.dart';
 import '../../core/localization/app_localization.dart';
 import '../../core/theme/app_theme.dart';
@@ -2800,6 +2801,19 @@ class _ZoneCompte extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 4),
+          // La gestion d'équipe n'apparaît qu'aux comptes qui éditent : le
+          // serveur refuse la liste aux autres, inutile de la leur proposer.
+          if (profil.peutEditer)
+            IconButton(
+              iconSize: 18,
+              tooltip: 'Gérer l\'équipe',
+              icon: const Icon(Icons.group_outlined),
+              color: theme.colorScheme.onSurfaceVariant,
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => EquipeDialog(session: session),
+              ),
+            ),
           IconButton(
             iconSize: 18,
             tooltip: 'Se déconnecter',

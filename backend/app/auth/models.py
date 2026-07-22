@@ -37,6 +37,34 @@ class UserProfile(BaseModel):
         return self.role == "edition"
 
 
+class CompteEquipe(BaseModel):
+    """Compte tel qu'il apparait dans la gestion d'equipe."""
+
+    identifiant: str
+    role: Role
+    nom_complet: str | None = None
+    actif: bool = True
+    derniere_connexion: str | None = None
+
+
+class CreationCompte(BaseModel):
+    """Demande d'ajout d'un membre a l'equipe."""
+
+    identifiant: str = Field(min_length=1, max_length=120)
+    # 12 caracteres : ce compte ouvre l'acces a des donnees prudentielles.
+    mot_de_passe: str = Field(min_length=12, max_length=72)
+    role: Role
+    nom_complet: str | None = Field(default=None, max_length=160)
+
+
+class ChangementMotDePasse(BaseModel):
+    mot_de_passe: str = Field(min_length=12, max_length=72)
+
+
+class ChangementActivation(BaseModel):
+    actif: bool
+
+
 class TokenResponse(BaseModel):
     """Jeton d'acces et profil associe.
 
