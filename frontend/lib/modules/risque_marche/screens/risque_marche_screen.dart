@@ -14076,20 +14076,11 @@ class _MarketAnalyticKpiGrid extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Liseré supérieur dégradé institutionnel (Harvard / Wall St Apex)
+            // Liseré supérieur couleur unique Deep Blue
             Container(
               height: 3,
               width: double.infinity,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF1E3A8A), // Deep Navy
-                    Color(0xFF2563EB), // Royal Blue
-                    Color(0xFFD97706), // Harvard Gold / Amber
-                    Color(0xFF059669), // Emerald
-                  ],
-                ),
-              ),
+              color: const Color(0xFF1E3A8A), // Deep Blue
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -14179,25 +14170,25 @@ class _MarketAnalyticKpiItemState extends State<_MarketAnalyticKpiItem> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Badge d'icône d'analyse financière
+            // Badge d'icône d'analyse financière discret et compact
             Container(
-              width: 36,
-              height: 36,
+              width: 26,
+              height: 26,
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
+                color: accent.withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: accent.withValues(alpha: 0.18),
+                  color: accent.withValues(alpha: 0.15),
                   width: 0.8,
                 ),
               ),
               child: Icon(
                 spec.icon ?? Icons.analytics_outlined,
-                size: 17,
+                size: 13,
                 color: accent,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 10),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -21147,13 +21138,19 @@ List<_MarketAnalyticKpiSpec> _marketAnalyticKpis(
   }
   final exposureValueStr = unit.label.isEmpty ? numberText : '$numberText ${unit.label}';
 
+  final cachedStats = isBonds ? _bondDashboardStatsCached(dataset) : null;
+  final modDuration = cachedStats?.modifiedDuration ?? (dataset.weightedResidualYears * 0.9);
+  final ytmValue = cachedStats?.yieldToMaturity ?? dataset.averageCoupon;
+
+  const deepBlue = Color(0xFF1E3A8A);
+
   return [
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Encours total' : 'Valeur de marché',
       value: exposureValueStr,
       subtitle: isBonds ? 'Exposition obligataire globale' : 'Exposition nette globale',
       icon: Icons.account_balance_wallet_outlined,
-      accentColor: const Color(0xFF1E3A8A), // Deep Navy / Wall Street
+      accentColor: deepBlue,
     ),
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Maturité pondérée' : 'Bêta pondéré',
@@ -21162,7 +21159,7 @@ List<_MarketAnalyticKpiSpec> _marketAnalyticKpis(
           : dataset.weightedBeta.toStringAsFixed(2).replaceAll('.', ','),
       subtitle: isBonds ? 'Maturité résiduelle (WAL)' : 'Sensibilité marché (β)',
       icon: isBonds ? Icons.schedule_outlined : Icons.show_chart_outlined,
-      accentColor: const Color(0xFFD97706), // Warm Amber / Harvard Gold
+      accentColor: deepBlue,
     ),
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Coupon moyen' : 'Rendement attendu',
@@ -21171,21 +21168,25 @@ List<_MarketAnalyticKpiSpec> _marketAnalyticKpis(
       ),
       subtitle: isBonds ? 'Taux de coupon pondéré' : 'Espérance de gain (CAPM)',
       icon: Icons.trending_up_outlined,
-      accentColor: const Color(0xFF059669), // Emerald Quantum
+      accentColor: deepBlue,
     ),
     _MarketAnalyticKpiSpec(
-      label: 'Volatilité',
-      value: AppFormatters.percent(dataset.annualizedVolatility),
-      subtitle: isBonds ? 'Risque de taux (σ)' : 'Écart-type annuel (σ)',
-      icon: Icons.graphic_eq_outlined,
-      accentColor: const Color(0xFFDC2626), // Risk Crimson
+      label: isBonds ? 'Rendement actuariel' : 'Volatilité',
+      value: isBonds
+          ? AppFormatters.percent(ytmValue > 0 ? ytmValue : dataset.averageCoupon)
+          : AppFormatters.percent(dataset.annualizedVolatility),
+      subtitle: isBonds ? 'Taux de rendement effectif (YTM)' : 'Écart-type annuel (σ)',
+      icon: isBonds ? Icons.analytics_outlined : Icons.graphic_eq_outlined,
+      accentColor: deepBlue,
     ),
     _MarketAnalyticKpiSpec(
-      label: 'Corrélation',
-      value: _marketCorrelationText(dataset),
-      subtitle: dataset.hasMeasuredCorrelation ? 'Coefficient ρ' : 'Proxy de concentration',
-      icon: Icons.hub_outlined,
-      accentColor: dataset.hasMeasuredCorrelation ? const Color(0xFF7C3AED) : const Color(0xFF64748B),
+      label: isBonds ? 'Sensibilité (Dmod)' : 'Corrélation',
+      value: isBonds
+          ? '${modDuration.toStringAsFixed(1).replaceAll('.', ',')} ans'
+          : _marketCorrelationText(dataset),
+      subtitle: isBonds ? 'Sensibilité taux (+100 bps)' : (dataset.hasMeasuredCorrelation ? 'Coefficient ρ' : 'Proxy de concentration'),
+      icon: isBonds ? Icons.tune_outlined : Icons.hub_outlined,
+      accentColor: deepBlue,
     ),
   ];
 }

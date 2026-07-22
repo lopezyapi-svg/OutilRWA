@@ -18,11 +18,12 @@ import uvicorn
 from app.core.runtime_paths import logs_dir
 from app.main import app
 
+# Volontairement sans "tests" : editer un test ne doit pas redemarrer l'API
+# sous les pieds du client, chaque redemarrage coupant les connexions en cours.
 RELOAD_DIRS = [
     BACKEND_DIR / "app",
     BACKEND_DIR / "database",
     BACKEND_DIR / "scripts",
-    BACKEND_DIR / "tests",
 ]
 RELOAD_EXCLUDES = [
     ".venv/*",

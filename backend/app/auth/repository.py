@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from database.connection import database_manager, utcnow_iso
+from database.connection import base_commune, database_manager, utcnow_iso
 
 
 def _row_to_user(row: Any) -> dict[str, Any]:
@@ -24,7 +24,7 @@ class AuthRepository:
     """Lit et ecrit les comptes applicatifs et leurs sessions."""
 
     def get_user(self, identifiant: str) -> dict[str, Any] | None:
-        with database_manager.read_connection() as connection:
+        with base_commune(), database_manager.read_connection() as connection:
             row = connection.execute(
                 "SELECT * FROM utilisateurs WHERE identifiant = ?",
                 (identifiant.strip(),),
@@ -32,7 +32,7 @@ class AuthRepository:
         return _row_to_user(row) if row else None
 
     def list_users(self) -> list[dict[str, Any]]:
-        with database_manager.read_connection() as connection:
+        with base_commune(), database_manager.read_connection() as connection:
             rows = connection.execute(
                 "SELECT * FROM utilisateurs ORDER BY identifiant"
             ).fetchall()
@@ -47,7 +47,7 @@ class AuthRepository:
         nom_complet: str | None = None,
     ) -> None:
         maintenant = utcnow_iso()
-        with database_manager.transaction() as connection:
+        with base_commune(), database_manager.transaction() as connection:
             connection.execute(
                 """
                 INSERT INTO utilisateurs(
@@ -67,7 +67,7 @@ class AuthRepository:
             )
 
     def update_password(self, *, identifiant: str, mot_de_passe_hash: str) -> bool:
-        with database_manager.transaction() as connection:
+        with base_commune(), database_manager.transaction() as connection:
             cursor = connection.execute(
                 """
                 UPDATE utilisateurs
@@ -79,7 +79,7 @@ class AuthRepository:
             return cursor.rowcount > 0
 
     def set_active(self, *, identifiant: str, actif: bool) -> bool:
-        with database_manager.transaction() as connection:
+        with base_commune(), database_manager.transaction() as connection:
             cursor = connection.execute(
                 "UPDATE utilisateurs SET actif = ?, modifie_le = ? WHERE identifiant = ?",
                 (1 if actif else 0, utcnow_iso(), identifiant.strip()),
@@ -87,7 +87,7 @@ class AuthRepository:
             return cursor.rowcount > 0
 
     def touch_last_login(self, *, utilisateur_id: int) -> None:
-        with database_manager.transaction() as connection:
+        with base_commune(), database_manager.transaction() as connection:
             connection.execute(
                 "UPDATE utilisateurs SET derniere_connexion = ? WHERE id = ?",
                 (utcnow_iso(), utilisateur_id),
@@ -101,7 +101,7 @@ class AuthRepository:
         jeton_hash: str,
         expire_le: datetime,
     ) -> None:
-        with database_manager.transaction() as connection:
+        with base_commune(), database_manager.transaction() as connection:
             connection.execute(
                 """
                 INSERT INTO sessions_utilisateur(
@@ -123,7 +123,7 @@ class AuthRepository:
     def get_active_session(self, *, session_id: str, jeton_hash: str) -> dict[str, Any] | None:
         """Retourne la session si elle existe, n'est pas revoquee et correspond au jeton."""
 
-        with database_manager.read_connection() as connection:
+        with base_commune(), database_manager.read_connection() as connection:
             row = connection.execute(
                 """
                 SELECT id, utilisateur_id, jeton_hash, expire_le, revoque_le
@@ -145,14 +145,14 @@ class AuthRepository:
         }
 
     def revoke_session(self, *, session_id: str) -> None:
-        with database_manager.transaction() as connection:
+        with base_commune(), database_manager.transaction() as connection:
             connection.execute(
                 "UPDATE sessions_utilisateur SET revoque_le = ? WHERE id = ? AND revoque_le IS NULL",
                 (utcnow_iso(), session_id),
             )
 
     def revoke_user_sessions(self, *, utilisateur_id: int) -> None:
-        with database_manager.transaction() as connection:
+        with base_commune(), database_manager.transaction() as connection:
             connection.execute(
                 """
                 UPDATE sessions_utilisateur
@@ -163,7 +163,7 @@ class AuthRepository:
             )
 
     def purge_expired_sessions(self) -> int:
-        with database_manager.transaction() as connection:
+        with base_commune(), database_manager.transaction() as connection:
             cursor = connection.execute(
                 "DELETE FROM sessions_utilisateur WHERE expire_le < ?",
                 (utcnow_iso(),),

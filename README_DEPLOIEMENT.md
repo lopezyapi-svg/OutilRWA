@@ -3,6 +3,64 @@
 Ce document décrit la mise en ligne de l'outil pour un accès par navigateur,
 sans aucune installation sur le poste de l'utilisateur.
 
+Deux voies possibles :
+
+- **[Render](#0-mise-en-ligne-sur-render-le-plus-simple)** — une adresse
+  publique en quelques clics, sans serveur à administrer. À privilégier pour
+  démarrer.
+- **[Docker sur votre serveur](#1-ce-qui-est-déployé)** — pour héberger
+  vous-même, dans les murs de la banque.
+
+---
+
+## 0. Mise en ligne sur Render (le plus simple)
+
+Render construit l'application à partir de votre dépôt GitHub et l'expose sur
+une adresse du type `https://outil-rwa.onrender.com`, accessible du monde
+entier, HTTPS compris. Aucun serveur à administrer.
+
+### Étapes
+
+1. **Publier le code** sur GitHub (`git push`).
+2. Créer un compte sur **render.com** — la connexion par GitHub est la plus
+   directe.
+3. Dans Render : **New → Blueprint**, puis sélectionner le dépôt. Render lit le
+   fichier `render.yaml` et prépare le service tout seul.
+4. Render réclame deux valeurs, qui ne figurent volontairement pas dans le
+   dépôt :
+
+   | Variable | Valeur |
+   |---|---|
+   | `RWA_COMPTE_CONSULTATION_MDP` | Mot de passe de votre supérieur (12 caractères minimum) |
+   | `RWA_COMPTE_EDITION_MDP` | Votre mot de passe |
+
+5. **Deploy**. Le premier déploiement dure une dizaine de minutes : Render
+   construit l'application web puis l'API.
+
+Les deux comptes sont créés au premier démarrage. Le secret de signature des
+jetons est généré par Render, il n'apparaît nulle part dans le code.
+
+### Ce qu'il faut savoir sur l'offre gratuite
+
+- **Mise en veille après 15 minutes sans visite.** Le premier chargement
+  suivant prend une cinquantaine de secondes. L'offre payante (environ 7 $ par
+  mois) supprime cette attente.
+- **Les données reviennent à leur état initial à chaque déploiement.** Le
+  disque n'est pas conservé. C'est sans conséquence pour une démonstration avec
+  le portefeuille d'exemple ; pour saisir des expositions durablement, il faut
+  l'offre payante et un disque persistant.
+- **Vos données sortent du pays.** Render héberge en Europe ou aux États-Unis.
+  Avec des données réelles, c'est une question à valider avec la conformité.
+
+### Changer un mot de passe ensuite
+
+Les variables d'environnement ne servent qu'à la **création** des comptes : un
+compte existant n'est jamais modifié par elles, sinon un mot de passe changé
+serait silencieusement rétabli au redémarrage suivant. Pour le modifier
+ensuite, utiliser la console Render (offre payante) ou recréer le service.
+
+---
+
 ---
 
 ## 1. Ce qui est déployé

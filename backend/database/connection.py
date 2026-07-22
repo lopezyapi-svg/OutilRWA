@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 import re
@@ -25,6 +26,52 @@ SCHEMA_PATH = resource_path("database", "schema.sql")
 MIGRATIONS_DIR = resource_path("database", "migrations")
 
 
+# Espace de travail de la requete en cours.
+#
+# Chaque compte possede sa propre base : ce qu'il importe ne doit jamais
+# apparaitre chez un autre. Le chemin est pose par le garde d'authentification
+# au debut de la requete, et lu ici au moment d'ouvrir la connexion. Ainsi
+# TOUS les depots suivent automatiquement, sans qu'aucune requete SQL n'ait a
+# porter un identifiant d'utilisateur : impossible d'en oublier une.
+#
+# Hors requete (demarrage, taches de fond, application de bureau), la valeur
+# est absente et la base par defaut s'applique.
+_espace_courant: ContextVar[Path | None] = ContextVar("_espace_courant", default=None)
+
+
+def utiliser_espace(chemin: Path | None):
+    """Bascule la base utilisee par le reste de la requete."""
+
+    return _espace_courant.set(chemin)
+
+
+def restaurer_espace(jeton) -> None:
+    _espace_courant.reset(jeton)
+
+
+def espace_courant() -> Path:
+    """Base effectivement utilisee : celle de la requete, sinon la commune."""
+
+    return _espace_courant.get() or DATABASE_PATH
+
+
+@contextmanager
+def base_commune() -> Iterator[None]:
+    """Force la base commune le temps du bloc.
+
+    Les comptes et les sessions n'appartiennent a aucun espace de travail :
+    ils vivent dans la base commune. Sans cette bascule, une deconnexion
+    ecrirait dans l'espace de l'utilisateur et la session ne serait jamais
+    revoquee.
+    """
+
+    jeton = _espace_courant.set(None)
+    try:
+        yield
+    finally:
+        _espace_courant.reset(jeton)
+
+
 def utcnow_iso() -> str:
     return datetime.utcnow().replace(microsecond=0).isoformat()
 
@@ -45,8 +92,11 @@ class DatabaseManager:
 
     def connect(self) -> sqlite3.Connection:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
+        # Le chemin est resolu a CHAQUE connexion, jamais memorise : c'est ce
+        # qui permet a deux requetes simultanees de travailler sur deux
+        # espaces differents sans se marcher dessus.
         connection = sqlite3.connect(
-            self.db_path,
+            espace_courant() if self.db_path == DATABASE_PATH else self.db_path,
             timeout=30,
             check_same_thread=False,
         )

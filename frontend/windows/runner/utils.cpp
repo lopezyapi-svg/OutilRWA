@@ -342,6 +342,12 @@ bool EnsureBackendServerRunning(std::wstring* error_message) {
   }
   ::SetEnvironmentVariableW(L"RWA_API_HOST", kBackendHost);
   ::SetEnvironmentVariableW(L"RWA_API_PORT", L"8000");
+  // L'application de bureau parle a un backend lie a la boucle locale, sans
+  // navigateur ni compte : elle n'a pas d'ecran de connexion et ne porte aucun
+  // jeton. L'authentification, destinee au deploiement web, est donc
+  // explicitement desactivee ici. Le backend refuse de demarrer avec
+  // l'authentification active mais sans secret : ce drapeau evite ce blocage.
+  ::SetEnvironmentVariableW(L"RWA_AUTH_ENABLED", L"0");
   ::SetEnvironmentVariableW(L"RWA_API_LOG_LEVEL", L"warning");
   ::SetEnvironmentVariableW(L"PYTHONUTF8", L"1");
 

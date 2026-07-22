@@ -9,15 +9,18 @@ est protegee sans que personne n'ait a y penser.
 
 from __future__ import annotations
 
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from app.auth.espaces import preparer_espace
 from app.auth.security import (
     InvalidTokenError,
     TYPE_ACCES,
     decode_token,
 )
+from database.connection import restaurer_espace, utiliser_espace
 
 # Le module est importe, pas l'objet : la configuration est relue a chaque
 # requete. Capturer `settings` au chargement figerait l'etat du garde pour
@@ -135,9 +138,19 @@ class AuthGuardMiddleware(BaseHTTPMiddleware):
                     "au role edition.",
                 )
 
+        identifiant = str(charge.get("sub") or "")
         request.state.utilisateur = {
-            "identifiant": charge.get("sub"),
+            "identifiant": identifiant,
             "id": charge.get("uid"),
             "role": role,
         }
-        return await call_next(request)
+
+        # A partir d'ici, toute lecture ou ecriture de donnees metier vise
+        # l'espace de ce compte, et lui seul. Les routes d'authentification
+        # n'en dependent pas : elles rebasculent sur la base commune.
+        espace = await run_in_threadpool(preparer_espace, identifiant)
+        jeton_espace = utiliser_espace(espace)
+        try:
+            return await call_next(request)
+        finally:
+            restaurer_espace(jeton_espace)

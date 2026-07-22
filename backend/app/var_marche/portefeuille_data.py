@@ -953,12 +953,17 @@ def _empreinte_donnees(type_portefeuille: str) -> tuple:
 
 
 def _serie_valeurs(type_portefeuille: str) -> _SeriePayload:
+    # La cle porte l'espace de travail : chaque compte a sa propre base, et
+    # une cle commune servirait a l'un la serie calculee pour l'autre.
+    from database.connection import espace_courant
+
+    cle = f"{espace_courant().name}|{type_portefeuille}"
     empreinte = _empreinte_donnees(type_portefeuille)
-    en_cache = _cache_series.get(type_portefeuille)
+    en_cache = _cache_series.get(cle)
     if en_cache is not None and en_cache[0] == empreinte:
         return en_cache[1]
     serie = _construire_serie_valeurs(type_portefeuille)
-    _cache_series[type_portefeuille] = (empreinte, serie)
+    _cache_series[cle] = (empreinte, serie)
     return serie
 
 
