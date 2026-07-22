@@ -113,8 +113,8 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
     _analysisResult = _computeAnalysis();
     // Restauration des données persistées en arrière-plan : best-effort. Le
     // rendu ne dépend QUE du snapshot courant (cf. `_runAnalysis` rebranché sur
-    // le listener), donc si ce future ne se complète jamais — typiquement en
-    // test widget, où l'I/O fichier de `initialized` n'est pas pompée — l'écran
+    // le listener), donc si ce future ne se complète jamais - typiquement en
+    // test widget, où l'I/O fichier de `initialized` n'est pas pompée - l'écran
     // affiche malgré tout les données disponibles au lieu de rester bloqué sur
     // le spinner.
     _awaitRestore();
@@ -300,7 +300,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          // Tableau — occupe toute la hauteur restante (scroll interne + pied
+          // Tableau - occupe toute la hauteur restante (scroll interne + pied
           // figé) au lieu d'une hauteur fixe qui paraissait coincée en bas.
           Expanded(
             child: Padding(
@@ -461,7 +461,7 @@ FxRiskAnalysisResult _emptyFxRiskAnalysisResult() {
 }
 
 /// Bouton d'information (ⓘ) ouvrant la méthodologie et les formules du risque
-/// de change — placé près du titre du tableau pour rendre les chiffres
+/// de change - placé près du titre du tableau pour rendre les chiffres
 /// (notamment les 0) compréhensibles.
 class _FxInfoButton extends StatelessWidget {
   const _FxInfoButton({required this.result});
@@ -692,7 +692,7 @@ class _FxEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Deux situations bien distinctes — il est important de ne pas les
+    // Deux situations bien distinctes - il est important de ne pas les
     // confondre : « pas de risque de change » est un RÉSULTAT valide (et non une
     // absence de données), car la devise de référence (XOF) ne porte aucun
     // risque de change.
@@ -1708,7 +1708,7 @@ class _FxKpiSection extends StatelessWidget {
     final unit = PortfolioAmountUnitScope.of(context);
     // Précision adaptative : plus la valeur est petite dans l'unité choisie,
     // plus on garde de décimales (jusqu'à 3), afin qu'un basculement d'unité
-    // ne déforme pas le chiffre — 973 M doit se lire « 0,973 Md », pas
+    // ne déforme pas le chiffre - 973 M doit se lire « 0,973 Md », pas
     // « 1 Md ». Les décimales inutiles (zéros de fin) ne s'affichent pas.
     int decimalesPour(double scaled) {
       final abs = scaled.abs();
@@ -1727,7 +1727,7 @@ class _FxKpiSection extends StatelessWidget {
     // Variante signée : le total de la table ci-dessous affiche déjà la
     // perte/gain avec son signe (ex. -346 037 069), la carte doit montrer
     // le même nombre plutôt que sa valeur absolue à côté d'un libellé
-    // « Perte » — sinon les deux se contredisent visuellement. Une perte
+    // « Perte » - sinon les deux se contredisent visuellement. Une perte
     // qui s'arrondit à zéro à la précision affichée n'affiche pas « -0,0 ».
     String fmtSigned(double value) {
       final scaled = value / unit.divisor;
@@ -1765,7 +1765,7 @@ class _FxKpiSection extends StatelessWidget {
               label: 'Exigence FP Change',
               value: fmt(result.capitalRequirement),
               unit: 'FCFA',
-              subtitle: 'Position nette globale × 9 %',
+              subtitle: 'Position nette globale × 8 %',
             ),
           ),
           const SizedBox(width: 10),
@@ -1774,7 +1774,7 @@ class _FxKpiSection extends StatelessWidget {
               label: 'RWA Change',
               value: fmt(result.rwaChange),
               unit: 'FCFA',
-              subtitle: 'Exigence FP × 11,111111',
+              subtitle: 'Exigence FP × 12,5',
             ),
           ),
           const SizedBox(width: 10),
@@ -1955,7 +1955,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
   // tout le corps. Chaque ligne est UN widget unique qui contient à la fois la
   // colonne gauche figée, le milieu et la colonne droite figée ; comme tout
   // partage l'unique position de défilement vertical, les colonnes figées ne
-  // peuvent JAMAIS dériver par rapport au milieu — l'alignement est garanti par
+  // peuvent JAMAIS dériver par rapport au milieu - l'alignement est garanti par
   // construction, sans aucune synchronisation à maintenir. La virtualisation
   // est conservée : seules les lignes visibles sont construites (indispensable
   // pour un portefeuille de plusieurs milliers de titres).
@@ -1970,7 +1970,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
   // Pourquoi c'est essentiel : avec un `LinkedScrollControllerGroup` alimenté
   // par un contrôleur par ligne, le recyclage permanent des lignes par la
   // `ListView` ajoutait/retirait sans fin des contrôleurs au groupe, ce qui
-  // empêchait la file de microtâches de se vider — `pumpAndSettle` ne
+  // empêchait la file de microtâches de se vider - `pumpAndSettle` ne
   // convergeait jamais (timeout) et le défilement saccadait en production.
   final ScrollController _midHSC = ScrollController();
 
@@ -2279,7 +2279,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                             TextAlign.right, headerTextLight)),
                   ]),
                 ),
-                // Body — liste verticale unique et VIRTUALISÉE. Chaque ligne
+                // Body - liste verticale unique et VIRTUALISÉE. Chaque ligne
                 // (_FxSecurityRow) porte la colonne gauche figée, le milieu
                 // défilant et la colonne droite figée ; toutes partagent
                 // l'unique défilement vertical, donc l'alignement des colonnes
@@ -2459,7 +2459,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
 /// Une ligne du corps du tableau.
 ///
 /// Structure : colonne gauche figée · milieu (déjà synchronisé horizontalement
-/// par le parent via [Transform.translate]) · colonne droite figée — le tout
+/// par le parent via [Transform.translate]) · colonne droite figée - le tout
 /// dans UN seul widget, donc partageant l'unique défilement vertical de la
 /// liste (alignement garanti). La ligne ne possède AUCUN [ScrollController] :
 /// elle se contente d'afficher le milieu fourni, ce qui rend le recyclage par

@@ -47,7 +47,17 @@ def list_expositions(search: str | None = None, category: str | None = None) -> 
             "La planification du backfill des maturites Expositions a echoue.",
         )
 
-    return [exposure_record_to_view(item) for item in exposure_repository.list_exposures(search=search, category=category)]
+    exposures = exposure_repository.list_exposures(search=search, category=category)
+    from database.repositories.suivi_versements_repository import suivi_versements_repository
+    reimbursements = suivi_versements_repository.list_all_reimbursements()
+    
+    views = []
+    for item in exposures:
+        view = exposure_record_to_view(item)
+        if view.id in reimbursements:
+            view.actual_reimbursements = reimbursements[view.id]
+        views.append(view)
+    return views
 
 
 def create_exposition(payload: ExposureCreate) -> ExposureView:
@@ -70,6 +80,11 @@ def preview_exposition(payload: ExposureCreate) -> ExposureView:
 def update_exposition(exposure_id: str, payload: ExposureCreate) -> ExposureView:
     """Met à jour une exposition existante et la persiste dans SQLite."""
 
+    from app.expositions.suivi_service import apply_server_side_suivi
+
+    # Le statut prudentiel et les jours d'impayés dérivés appartiennent au
+    # serveur : une édition de formulaire ne peut pas les écraser.
+    payload = apply_server_side_suivi(payload, exposure_id)
     record = build_exposure_record(payload, payload.id or exposure_id)
     record["id"] = exposure_id
     exposure_repository.upsert_exposure(record)

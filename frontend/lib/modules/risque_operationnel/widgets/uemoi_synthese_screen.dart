@@ -135,7 +135,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
                               fontWeight: FontWeight.w500,
                               color: faded ? muted : null)),
                       if (isBic)
-                        Text('Pilotage interne — non déclaratoire',
+                        Text('Pilotage interne - non déclaratoire',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -143,18 +143,18 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
                     ],
                   )),
                   DataCell(Text(
-                      l.disponible ? AppFormatters.currency(l.k) : '—',
+                      l.disponible ? AppFormatters.currency(l.k) : '-',
                       style: TextStyle(
                           color: faded ? muted : null,
                           fontWeight:
                               l.disponible ? FontWeight.w600 : null))),
                   DataCell(Text(
-                      l.disponible ? AppFormatters.currency(l.apr) : '—',
+                      l.disponible ? AppFormatters.currency(l.apr) : '-',
                       style: TextStyle(color: faded ? muted : null))),
                   DataCell(Text(
                       l.disponible
                           ? AppFormatters.currency(l.capitalMin)
-                          : '—',
+                          : '-',
                       style: TextStyle(color: faded ? muted : null))),
                   DataCell(_StatusBadge(ok: l.disponible, muted: muted)),
                 ],

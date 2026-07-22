@@ -20,6 +20,9 @@ const Color _ink = Color(0xFF0F1B3D);
 const Color _muted = Color(0xFF62708C);
 const Color _line = Color(0xFFDCE4F2);
 const Color _soft = Color(0xFFF7F9FD);
+// Texte courant du volet réglementaire : ardoise soutenue, lisible sur fond
+// clair sans l'aspect délavé du gris _muted.
+const Color _slate = Color(0xFF3B4B6B);
 
 /// Regroupe les données nécessaires à l'écran : le module d'expositions (pour
 /// l'état vide et l'en-tête) et l'analyse RWA Crédit agrégée côté backend.
@@ -528,7 +531,7 @@ class _AnalysisRwaTab extends StatelessWidget {
         // naturelle ("LayoutBuilder does not support returning intrinsic
         // dimensions").
         SizedBox(
-          height: 440,
+          height: 320,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -791,7 +794,16 @@ class _AgentTablePanel extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: 12),
-          _AgentBreakdownSection(analysis: analysis, view: view),
+          Expanded(child: _AgentBreakdownSection(analysis: analysis, view: view)),
+          const SizedBox(height: 8),
+          Text(
+            '* Cliquez sur une ligne pour voir le détail des expositions de cet agent économique.',
+            style: TextStyle(
+              color: Colors.amber.shade800,
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
         ],
       ),
     );
@@ -825,7 +837,7 @@ enum _AgentSortKey {
   variation,
 }
 
-const double _agentNumWidth = 120.0;
+const double _agentNumWidth = 50.0;
 
 class _AgentContributionTable extends StatefulWidget {
   const _AgentContributionTable({
@@ -905,9 +917,9 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          height: 320,
-          decoration: BoxDecoration(
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(3),
             border: Border.all(color: _line),
@@ -930,6 +942,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
               _buildTotalRow(context),
             ],
           ),
+        ),
         ),
         if (showWarning) ...[
           const SizedBox(height: 8),
@@ -1027,7 +1040,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
     final labelStyle = Theme.of(context)
         .textTheme
         .labelMedium
-        ?.copyWith(height: 1.25, fontSize: 11);
+        ?.copyWith(height: 1.25, fontSize: 10);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1112,7 +1125,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                 color: color,
                 fontWeight: weight,
                 height: 1.25,
-                fontSize: 11,
+                fontSize: 10,
               ),
         ),
       ),
@@ -1134,7 +1147,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                 color: _deepBlue,
                 fontWeight: FontWeight.w900,
                 height: 1.1,
-                fontSize: 11,
+                fontSize: 10,
               ),
         ),
       ),
@@ -1267,15 +1280,15 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                       flex: 55,
                       child: Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: _line.withValues(alpha: 0.3), width: 0.3),
-                          borderRadius: BorderRadius.circular(2),
+                          border: Border.all(color: _deepBlue, width: 1.0),
+                          borderRadius: BorderRadius.circular(1),
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Material(
                           color: Colors.transparent,
                           child: LayoutBuilder(
                             builder: (context, constraints) {
-                              const double pctColWidth = 96;
+                              const double pctColWidth = 130;
                               const double headerHeight = 40;
                               const double rowHeight = 52;
                               const double totalHeight = 46;
@@ -1670,7 +1683,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
           color: _deepBlue,
           fontWeight: FontWeight.w900,
           height: 1.25,
-          fontSize: 11,
+          fontSize: 10,
         );
     Widget cell(int flex, String text, {bool alignRight = false}) {
       return Expanded(
@@ -1872,13 +1885,14 @@ class _RegulatoryDiagram extends StatelessWidget {
             index: '1',
             title: 'Catégorisation des expositions',
             description:
-                'Affectation de chaque exposition (bilan et hors bilan) à l’une des 11 catégories réglementaires. La catégorie détermine la grille de pondération applicable.',
+                'Affectation de chaque exposition à l’une des 11 catégories réglementaires (souverains, entreprises, détail, etc.). Cette catégorie détermine la pondération et le traitement prudentiel applicables.',
           ),
           _MethodStep(
             index: '2',
             title: 'Calcul de l’exposition en cas de défaut (EAD)',
             description:
-                'Bilan : valeur comptable nette de provisions.\nHors bilan : ERC = Nominal × FCEC.\nEAD avant ARC = Exposition bilan + ERC hors bilan.',
+                'Les encours bilan sont retenus à leur valeur nette. Les engagements hors bilan sont convertis en équivalent risque de crédit via un facteur de conversion (FCEC) propre à leur classe de risque.',
+            child: _EadFormulaStrip(),
           ),
           SizedBox(height: 6),
           _MethodPhaseLabel('Phase 2 : Pondération et atténuation du risque'),
@@ -1886,35 +1900,42 @@ class _RegulatoryDiagram extends StatelessWidget {
             index: '3',
             title: 'Détermination de la pondération applicable',
             description:
-                'La pondération dépend uniquement de la catégorie d’exposition (étape 1) et de la qualité de crédit de la contrepartie, jamais du montant exposé.',
+                'La pondération dépend uniquement de la catégorie d’exposition et de la qualité de crédit de la contrepartie (notation externe, maturité), indépendamment du montant exposé.',
             child: _WeightSourceGrid(),
           ),
           _MethodStep(
             index: '4',
             title: 'Atténuation du risque de crédit (ARC)',
             description:
-                'Ajustement selon la protection de crédit dont bénéficie l’exposition : le collatéral réduit l’EAD, la garantie substitue la pondération.',
+                'La protection doit être juridiquement valide et mobilisable. L’exposition couverte génère un RWA inférieur ou égal à l’exposition non couverte.',
             child: _CrmCaseList(),
           ),
           _MethodStep(
             index: '5',
-            title: 'Calcul de l’APR de crédit',
+            title: 'Traitement des expositions en défaut',
             description:
-                'APR = EAD × Pondération finale, après atténuation du risque de crédit.',
+                'Concerne les créances douteuses, litigieuses (> 90/180 jours) ou restructurées. L’assiette correspond à l’encours net des garanties éligibles et provisions spécifiques.',
+            child: _DefaultCaseList(),
           ),
           SizedBox(height: 6),
-          _MethodPhaseLabel('Phase 3 : Exigences prudentielles'),
+          _MethodPhaseLabel('Phase 3 : Agrégation et exigences prudentielles'),
           _MethodStep(
             index: '6',
-            title: 'Exigences minimales de fonds propres',
+            title: 'Calcul et agrégation des RWA de crédit',
             description:
-                'Capital requis = APR × ratio minimal réglementaire (11,5 % coussin de conservation de 2,5 % inclus).',
+                'RWA = EAD (après ARC) × pondération finale. Ils sont agrégés par catégorie et contrepartie pour former l’assiette d’exigence en fonds propres.',
           ),
           _MethodStep(
             index: '7',
+            title: 'Exigences minimales de fonds propres',
+            description:
+                'Capital requis = RWA × 9 % (norme UMOA). Avec le coussin de conservation de 2,5 %, l’exigence globale s\'élève à 11,5 %.',
+          ),
+          _MethodStep(
+            index: '8',
             title: 'Ratio de solvabilité',
             description:
-                'Fonds propres effectifs / (APR crédit + 12,5 × risque opérationnel + 12,5 × risque de marché)',
+                'Fonds propres effectifs / (RWA crédit + 12,5 × exigence marché + 12,5 × exigence opérationnelle) ≥ 11,5 %, coussin de conservation inclus.',
             emphasized: true,
             isLast: true,
           ),
@@ -1936,10 +1957,10 @@ class _MethodPhaseLabel extends StatelessWidget {
       child: Text(
         label.toUpperCase(),
         style: const TextStyle(
-          color: _muted,
+          color: _blue700,
           fontSize: 10.5,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.6,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.8,
         ),
       ),
     );
@@ -2008,16 +2029,19 @@ class _MethodStep extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
                 decoration: BoxDecoration(
-                  color: emphasized ? _deepBlue : _soft,
-                  borderRadius: BorderRadius.circular(1),
-                  border: Border.all(
-                    color: emphasized ? _deepBlue : _line,
-                    width: 0.6,
-                  ),
+                  color: emphasized ? _deepBlue : Colors.white,
+                  border: emphasized
+                      ? Border.all(color: _deepBlue, width: 0.6)
+                      : const Border(
+                          left: BorderSide(color: _blue700, width: 3),
+                          top: BorderSide(color: _line, width: 0.8),
+                          right: BorderSide(color: _line, width: 0.8),
+                          bottom: BorderSide(color: _line, width: 0.8),
+                        ),
                   boxShadow: const [
                     BoxShadow(
-                      color: Color(0x120A2540),
-                      blurRadius: 10,
+                      color: Color(0x140A2540),
+                      blurRadius: 12,
                       offset: Offset(0, 3),
                     ),
                   ],
@@ -2040,11 +2064,11 @@ class _MethodStep extends StatelessWidget {
                         description,
                         style: TextStyle(
                           color: emphasized
-                              ? Colors.white.withValues(alpha: 0.88)
-                              : _muted,
-                          fontSize: 12.5,
+                              ? Colors.white.withValues(alpha: 0.92)
+                              : _slate,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          height: 1.45,
+                          height: 1.5,
                         ),
                       ),
                     ],
@@ -2084,7 +2108,7 @@ class _WeightSourceGrid extends StatelessWidget {
               Expanded(
                 child: _WeightSourceTile(
                   'Notations OEEC',
-                  'S&P, Moody’s, Fitch, DBRS',
+                  'S&P, Moody’s, Fitch, DBRS, converties en échelons de qualité de crédit harmonisés',
                 ),
               ),
             ],
@@ -2098,7 +2122,7 @@ class _WeightSourceGrid extends StatelessWidget {
               Expanded(
                 child: _WeightSourceTile(
                   'Classification OCE',
-                  'Consensus OCDE sur le risque pays',
+                  'Consensus OCDE sur le risque pays, pour les souverains non notés',
                 ),
               ),
               SizedBox(width: 10),
@@ -2110,6 +2134,11 @@ class _WeightSourceGrid extends StatelessWidget {
               ),
             ],
           ),
+        ),
+        SizedBox(height: 10),
+        _WeightSourceTile(
+          'Garde-fous prudentiels',
+          'Contrepartie non notée : pondération jamais plus favorable que celle de l’État du siège.\nInstitution financière en infraction aux normes de solvabilité : pondération portée à 250 %.\nDégradation du portefeuille au-delà des seuils BCEAO : majoration de la pondération de la catégorie.',
         ),
       ],
     );
@@ -2125,20 +2154,107 @@ class _CrmCaseList extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _WeightSourceTile(
-          'Sans CRM',
+          'Sans protection',
           'Aucun ajustement : RWA = EAD × pondération de la contrepartie.',
         ),
         SizedBox(height: 8),
         _WeightSourceTile(
-          'CRM financée (approche globale)',
-          'Le collatéral décoté (HC, Hfx) réduit l’exposition : EAD ajustée = max(0 ; EVA − CVA).',
+          'Protection financée (approche globale)',
+          'La sûreté décotée réduit l’exposition : E* = max(0 ; E × (1 + HE) − C × (1 − HC − HFX)), où HE est la décote d’exposition, HC la décote de sûreté et HFX la décote de change.',
         ),
         SizedBox(height: 8),
         _WeightSourceTile(
-          'CRM non financée (substitution)',
-          'RWA = part couverte × RW du garant + part non couverte × RW du débiteur.',
+          'Protection non financée (substitution)',
+          'RWA = part couverte × pondération du garant + part non couverte × pondération du débiteur.',
         ),
       ],
+    );
+  }
+}
+
+class _DefaultCaseList extends StatelessWidget {
+  const _DefaultCaseList();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _WeightSourceTile(
+          'Provisions < 20 % de l’encours',
+          'Pondération de 150 % appliquée à l’exposition nette.',
+        ),
+        SizedBox(height: 8),
+        _WeightSourceTile(
+          'Provisions ≥ 20 % de l’encours',
+          'Pondération ramenée à 100 %, l’effort de provisionnement étant jugé suffisant.',
+        ),
+        SizedBox(height: 8),
+        _WeightSourceTile(
+          'Cas particuliers',
+          'Prêt immobilier résidentiel en défaut : 100 %. Contrepartie dont la pondération initiale excède 100 % : cette pondération est conservée.',
+        ),
+      ],
+    );
+  }
+}
+
+/// Chaîne de formation de l’EAD : bilan + équivalent risque de crédit
+/// hors bilan, lus comme une équation.
+class _EadFormulaStrip extends StatelessWidget {
+  const _EadFormulaStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return const IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _WeightSourceTile(
+              'Exposition bilan',
+              'Valeur comptable nette des provisions spécifiques',
+            ),
+          ),
+          _FormulaOperator('+'),
+          Expanded(
+            child: _WeightSourceTile(
+              'ERC hors bilan',
+              'Nominal × FCEC selon la classe de risque de l’engagement',
+            ),
+          ),
+          _FormulaOperator('='),
+          Expanded(
+            child: _WeightSourceTile(
+              'EAD avant ARC',
+              'Assiette soumise à pondération',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FormulaOperator extends StatelessWidget {
+  const _FormulaOperator(this.symbol);
+
+  final String symbol;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 26,
+      child: Center(
+        child: Text(
+          symbol,
+          style: const TextStyle(
+            color: _deepBlue,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2155,9 +2271,9 @@ class _WeightSourceTile extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 58),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFF2F6FC),
         borderRadius: BorderRadius.circular(1),
-        border: Border.all(color: _line, width: 0.6),
+        border: Border.all(color: const Color(0xFFD7E2F2), width: 0.8),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -2167,18 +2283,18 @@ class _WeightSourceTile extends StatelessWidget {
             title,
             style: const TextStyle(
               color: _deepBlue,
-              fontSize: 12.5,
+              fontSize: 11.5,
               fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             detail,
             style: const TextStyle(
-              color: _muted,
-              fontSize: 11.5,
+              color: _slate,
+              fontSize: 10.5,
               fontWeight: FontWeight.w600,
-              height: 1.35,
+              height: 1.4,
             ),
           ),
         ],
@@ -2212,12 +2328,12 @@ class _RegulatorySidePanel extends StatelessWidget {
             _SideTableRow(
               'BMD',
               '0 à 150 %',
-              note: '0 % pour les BMD éligibles',
+              note: '0 % si éligibles ; sinon grille des institutions financières',
             ),
             _SideTableRow(
               'Institutions financières',
               '20 à 150 %',
-              note: 'Selon notation et maturité initiale',
+              note: 'Selon notation et maturité ; 250 % si solvabilité non conforme',
             ),
             _SideTableRow(
               'Entreprises',
@@ -2227,28 +2343,61 @@ class _RegulatorySidePanel extends StatelessWidget {
             _SideTableRow(
               'Clientèle de détail',
               '75 %',
-              note: 'Si critères d’éligibilité satisfaits',
+              note: 'Particulier ou PME ; encours ≤ 150 M FCFA ; portefeuille granulaire',
             ),
             _SideTableRow(
               'Immobilier résidentiel',
               '35 %',
-              note: '100 % si non éligible',
+              note: 'LTV ≤ 90 % et charge de remboursement ≤ 40 % ; sinon 100 %',
             ),
             _SideTableRow(
               'Immobilier commercial',
               '75 %',
-              note: '100 % si non éligible',
+              note: 'LTV ≤ 90 % ; sinon traitement en créance d’entreprise',
             ),
             _SideTableRow(
               'Créances en souffrance',
               '100 à 150 %',
-              note: '150 % si provisions < 20 %',
+              note: '150 % si provisions < 20 % de l’encours',
             ),
             _SideTableRow('Créances à risque élevé', '≥ 150 %'),
             _SideTableRow(
               'Autres actifs',
               '0 à 250 %',
               note: 'Selon la nature de l’actif',
+            ),
+          ],
+        ),
+        SizedBox(height: 14),
+        _SideTableCard(
+          title: 'FCEC DES ENGAGEMENTS HORS BILAN',
+          columnLabel: 'Classe de risque',
+          valueLabel: 'FCEC',
+          rows: [
+            _SideTableRow(
+              'Risque faible',
+              '10 %',
+              note: 'Engagements révocables sans condition ou à caducité automatique',
+            ),
+            _SideTableRow(
+              'Risque mineur',
+              '20 %',
+              note: 'Échéance ≤ 1 an ; crédits documentaires garantis par marchandises',
+            ),
+            _SideTableRow(
+              'Risque moyen',
+              '50 %',
+              note: 'Échéance > 1 an ; garanties de bonne exécution et de soumission',
+            ),
+            _SideTableRow(
+              'Risque élevé',
+              '75 %',
+              note: 'Substituts directs de crédit ; facilités d’émission d’effets',
+            ),
+            _SideTableRow(
+              'Risque très élevé',
+              '100 %',
+              note: 'Pensions, cessions avec recours, achats d’actifs à terme',
             ),
           ],
         ),
@@ -2447,7 +2596,7 @@ class _SideTableCard extends StatelessWidget {
                                 child: Text(
                                   rows[i].note!,
                                   style: const TextStyle(
-                                    color: _muted,
+                                    color: _slate,
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
                                     height: 1.3,
@@ -2620,7 +2769,7 @@ class _TableHeaderText extends StatelessWidget {
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.w900,
-            fontSize: 10,
+            fontSize: 9,
           ),
     );
   }
@@ -2998,19 +3147,14 @@ class _AgentRwaChartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final validAgents = agents.where((a) => a.rwa > 0).toList()
       ..sort((a, b) => b.rwa.compareTo(a.rwa));
-    final topAgents = validAgents.take(8).toList();
-    if (topAgents.isEmpty) return const SizedBox();
+    final top3 = validAgents.take(3).toList();
+    if (top3.isEmpty) return const SizedBox();
 
-    final maxRwa = topAgents.first.rwa;
+    final maxRwa = top3.first.rwa;
     final palette = [
-      Colors.indigo.shade600,
-      Colors.cyan.shade600,
+      Colors.blue.shade500,
       Colors.green.shade600,
-      Colors.orange.shade600,
-      Colors.red.shade600,
-      Colors.purple.shade600,
-      Colors.teal.shade600,
-      Colors.pink.shade600,
+      Colors.indigo.shade400,
     ];
 
     return Container(
@@ -3023,122 +3167,157 @@ class _AgentRwaChartCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'RÉPARTITION DES RWA PAR CATÉGORIE',
+            'TOP 3 CONCENTRATIONS RWA',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: _blue700,
                   fontWeight: FontWeight.w900,
-                  fontSize: 14,
+                  fontSize: 12,
                   letterSpacing: 0,
                 ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  for (var i = 0; i < topAgents.length; i++) ...[
-                    Builder(
-                      builder: (context) {
-                        final agent = topAgents[i];
-                        final fraction = maxRwa > 0 ? agent.rwa / maxRwa : 0.0;
-                        final color = palette[i % palette.length];
-                        return _HorizontalBar(
-                          label: agent.label,
-                          value: agent.rwa,
-                          fraction: fraction,
-                          color: color,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(color: _line),
+              ),
+              child: BarChart(
+                BarChartData(
+                maxY: maxRwa * 1.2,
+                alignment: BarChartAlignment.spaceAround,
+                barTouchData: BarTouchData(
+                  enabled: true,
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => Colors.blueGrey.shade800,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem(
+                        '${top3[group.x.toInt()].label}\n',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: _formatMoney(rod.toY, maxDecimals: 0),
+                            style: const TextStyle(
+                              color: Colors.amber,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 60,
+                      getTitlesWidget: (value, meta) {
+                        if (value < 0 || value >= top3.length) return const SizedBox();
+                        final index = value.toInt();
+                        return SideTitleWidget(
+                          meta: meta,
+                          space: 12,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 80),
+                            child: Text(
+                              top3[index].label,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: _deepBlue,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 9,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
                         );
                       },
                     ),
-                    if (i < topAgents.length - 1) const SizedBox(height: 18),
-                  ],
-                ],
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 50,
+                      interval: maxRwa / 4 > 0 ? maxRwa / 4 : 1,
+                      getTitlesWidget: (value, meta) {
+                        if (value == maxRwa * 1.2) return const SizedBox();
+                        return SideTitleWidget(
+                          meta: meta,
+                          space: 8,
+                          child: Text(
+                            _formatMoney(value, maxDecimals: 0),
+                            style: const TextStyle(
+                              color: _muted,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: const Border(
+                    bottom: BorderSide(color: _line, width: 1.5),
+                    left: BorderSide(color: _line, width: 1.5),
+                  ),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: maxRwa / 4 > 0 ? maxRwa / 4 : 1,
+                  getDrawingHorizontalLine: (value) {
+                    return const FlLine(color: _line, strokeWidth: 0.5, dashArray: [4, 4]);
+                  },
+                ),
+                barGroups: top3.asMap().entries.map((e) {
+                  return BarChartGroupData(
+                    x: e.key,
+                    barRods: [
+                      BarChartRodData(
+                        toY: e.value.rwa,
+                        color: palette[e.key % palette.length],
+                        width: 70,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: maxRwa * 1.2,
+                          color: palette[e.key % palette.length].withValues(alpha: 0.05),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
               ),
+            ),
+          ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            ' ',
+            style: TextStyle(
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _HorizontalBar extends StatelessWidget {
-  const _HorizontalBar({
-    required this.label,
-    required this.value,
-    required this.fraction,
-    required this.color,
-  });
-
-  final String label;
-  final double value;
-  final double fraction;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: _deepBlue,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              _formatMoney(value, maxDecimals: 0),
-              style: const TextStyle(
-                color: _muted,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeOutCubic,
-          tween: Tween<double>(begin: 0, end: fraction),
-          builder: (context, value, child) {
-            return Stack(
-              children: [
-                Container(
-                  height: 6,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                FractionallySizedBox(
-                  widthFactor: value,
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
     );
   }
 }

@@ -31,6 +31,16 @@
 
   <title>Risk management</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Configuration lue au démarrage, sans recompilation.
+    Par défaut l'application appelle « /api » : le proxy inverse sert
+    l'application et l'API sous le même domaine. Décommenter et adapter
+    uniquement si le backend est hébergé sur un autre domaine.
+  -->
+  <script>
+    // window.RWA_CONFIG = { RWA_API_BASE_URL: "https://api.exemple.ci" };
+  </script>
 </head>
 <body>
   <!--

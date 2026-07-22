@@ -1,5 +1,13 @@
 // Modèles Dart du module Risque Opérationnel.
 
+/// Conversion d'une exigence de fonds propres en équivalent RWA.
+///
+/// Le dispositif fixe ce multiplicateur à 12,5 dans la définition même du
+/// ratio de solvabilité, indépendamment du ratio minimal de 9 % : ce sont deux
+/// notions distinctes, et les confondre donne 1/0,09 = 11,11, soit un RWA
+/// sous-évalué de 11 %. Le backend et le paramétrage en base appliquent 12,5.
+const double kMultiplicateurRwaReglementaire = 12.5;
+
 // SQLite stocke les booléens en INTEGER (0/1) ou parfois REAL (0.0/1.0)
 bool _jBool(dynamic v) => v is bool ? v : (v is num ? v != 0 : false);
 
@@ -497,7 +505,7 @@ class RoDashboardData {
       );
 }
 
-// ─── BIC — Approche Standard CRR3 ────────────────────────────────────────────
+// ─── BIC - Approche Standard CRR3 ────────────────────────────────────────────
 
 class OpRiskInput {
   const OpRiskInput({
@@ -714,7 +722,7 @@ class OpRiskCalculResult {
       );
 }
 
-// ─── BLOC A1 — AIB ────────────────────────────────────────────────────────────
+// ─── BLOC A1 - AIB ────────────────────────────────────────────────────────────
 
 class PnbAnnuelView {
   const PnbAnnuelView({
@@ -777,7 +785,7 @@ class AibCalculResult {
       );
 }
 
-// ─── BLOC A2 — AS ─────────────────────────────────────────────────────────────
+// ─── BLOC A2 - AS ─────────────────────────────────────────────────────────────
 
 class BetaLigneView {
   const BetaLigneView({required this.ligneMetier, required this.beta, required this.description});
@@ -924,7 +932,7 @@ class SyntheseResult {
       );
 }
 
-// ─── Décision de pilotage — Analyse et reporting (dispositif UEMOA) ─────────
+// ─── Décision de pilotage - Analyse et reporting (dispositif UEMOA) ─────────
 
 class DecisionCritere {
   const DecisionCritere({

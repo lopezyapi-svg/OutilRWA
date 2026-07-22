@@ -37,12 +37,13 @@ class Settings:
 
     app_name: str = "Risk management API"
     app_version: str = "0.1.0"
-    # Ratio de solvabilite minimum reglementaire UMOA (Capital / RWA total) :
-    # 11,5 %. Ne pas confondre avec le pourcentage RWA (9 %, cf.
-    # app/core/bceao_calculations.py) utilise pour convertir une exigence de
-    # fonds propres marche/operationnel en equivalent RWA — ce sont deux
-    # notions distinctes. Parametrable via l'environnement.
-    capital_ratio: float = float(os.getenv("MINIMUM_CAPITAL_RATIO", "0.115"))
+    # Exigence minimale de fonds propres UMOA (Dispositif prudentiel, §91c) :
+    # les fonds propres effectifs doivent couvrir au moins 9 % des risques
+    # ponderes. Le coussin de conservation de 2,5 % (§92) est une exigence
+    # DISTINCTE, portee separement (CONSERVATION_BUFFER) : l'exigence globale
+    # coussin inclus est de 11,5 %. Le « capital minimum reglementaire » d'une
+    # exposition est donc RWA x 9 %. Parametrable via l'environnement.
+    capital_ratio: float = float(os.getenv("MINIMUM_CAPITAL_RATIO", "0.09"))
     # Seuil de tolerance pour le controle de reconciliation du tableau RWA.
     rwa_reconciliation_threshold: float = float(
         os.getenv("RWA_RECONCILIATION_THRESHOLD", "0.005")
@@ -52,6 +53,41 @@ class Settings:
         "RWA_ANALYSIS_SCOPE_LABEL",
         "Portefeuille consolidé — risque de crédit",
     )
+    # --- Authentification -------------------------------------------------
+    # Desactivee par defaut : le poste de travail lance le backend en local sur
+    # la boucle locale, sans navigateur ni compte. Le deploiement web l'active
+    # explicitement (docker-compose), avec un secret obligatoire.
+    auth_enabled: bool = os.getenv("RWA_AUTH_ENABLED", "0").strip().lower() in {
+        "1",
+        "true",
+        "oui",
+        "yes",
+    }
+    # Jamais de valeur par defaut : un secret code en dur signerait des jetons
+    # forgeables par quiconque lit le depot.
+    jwt_secret: str = os.getenv("RWA_JWT_SECRET", "")
+    jwt_algorithm: str = "HS256"
+    # Le jeton d'acces vit en memoire vive du navigateur : court, il limite la
+    # fenetre d'exploitation en cas de vol.
+    access_token_minutes: int = int(os.getenv("RWA_ACCESS_TOKEN_MINUTES", "60"))
+    # Le jeton de renouvellement vit dans un cookie HttpOnly illisible par le
+    # JavaScript ; sa duree couvre une journee de travail.
+    refresh_token_hours: int = int(os.getenv("RWA_REFRESH_TOKEN_HOURS", "12"))
+    refresh_cookie_name: str = os.getenv("RWA_REFRESH_COOKIE_NAME", "rwa_refresh")
+    # Chemin du cookie tel que le voit le NAVIGATEUR. Derriere un proxy qui
+    # prefixe l'API (« /api »), il vaut « /api/auth » : sans cela, le cookie
+    # n'est jamais renvoye et la session est perdue a chaque rechargement.
+    refresh_cookie_path: str = os.getenv("RWA_REFRESH_COOKIE_PATH", "/auth")
+    # Cookie restreint au HTTPS. Uniquement desactivable pour un essai local en
+    # http, jamais en production.
+    refresh_cookie_secure: bool = os.getenv(
+        "RWA_REFRESH_COOKIE_SECURE",
+        "1",
+    ).strip().lower() in {"1", "true", "oui", "yes"}
+    # Origines autorisees pour les appels navigateur, separees par des virgules.
+    # Vide = seule la boucle locale est acceptee (comportement historique).
+    allowed_origins: str = os.getenv("RWA_ALLOWED_ORIGINS", "")
+
     yield_curve_ai_endpoint: str = os.getenv("YIELD_CURVE_AI_ENDPOINT", "")
     yield_curve_ai_api_key: str = os.getenv(
         "YIELD_CURVE_AI_API_KEY",

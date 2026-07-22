@@ -1,4 +1,4 @@
-﻿// Ecran principal du module Risque Opérationnel — 10 vues.
+// Ecran principal du module Risque Opérationnel - 10 vues.
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -57,7 +57,7 @@ const _kMuted = AppTheme.muted;
 
 /// Formate un montant FCFA avec la même unité (M / Md) ET la même écriture
 /// que les cartes du Dashboard Crédit ("913,5Md" : nombre compact à
-/// précision adaptative, sans espace avant l'unité) — voir
+/// précision adaptative, sans espace avant l'unité) - voir
 /// `AppFormatters.compactNumber` utilisé par `DashboardRwaDonut`.
 String _roAmount(BuildContext context, double value) {
   final unit = PortfolioAmountUnitScope.maybeOf(context);
@@ -90,7 +90,7 @@ String _roTrim(double value, {int maxDecimals = 4}) {
 
 /// Assombrit une couleur de statut trop claire (ex. l'orange d'alerte) pour
 /// que les chiffres des cartes du dashboard restent bien lisibles sur fond
-/// clair — la teinte est conservée, seule la luminosité est réduite.
+/// clair - la teinte est conservée, seule la luminosité est réduite.
 Color _roReadable(Color c) {
   final hsl = HSLColor.fromColor(c);
   if (hsl.lightness <= 0.5) return c;
@@ -131,40 +131,40 @@ const _statutsPlan = ['A faire', 'En cours', 'Terminé', 'Abandonné'];
 
 const _artExplanations = <String, String>{
   'Art. 313':
-      'Gestion du risque opérationnel — dispositif d\'identification, de mesure,\n'
+      'Gestion du risque opérationnel - dispositif d\'identification, de mesure,\n'
       'de surveillance et de contrôle obligatoire (Instruction UMOA).\n\n'
       'Mesure du risque (matrice 5×5) :\n'
       '  Score = Impact × Probabilité   (échelle 1 – 5)\n'
       '  Zone rouge : Score ≥ 15   |   Zone orange : 8 – 14\n'
       '  Piliers : Identification → Mesure → Surveillance → Contrôle',
   'Art. 313.b':
-      'Déclaration des incidents opérationnels — tout incident significatif\n'
+      'Déclaration des incidents opérationnels - tout incident significatif\n'
       'doit être documenté (cause racine, pertes) avec suivi formel imposé.\n\n'
       'Calcul de la perte nette :\n'
       '  Perte nette = Perte brute − Récupérations\n'
       '  Récupérations : assurance + provisions + reversements\n'
       '  Délai de déclaration : ≤ J+5 ouvrés après détection',
   'Art. 313.c':
-      'Plans d\'actions correctives et préventives — documentés, assignés\n'
+      'Plans d\'actions correctives et préventives - documentés, assignés\n'
       'à un responsable avec échéance et taux d\'avancement obligatoires.\n\n'
       'Indicateurs de suivi :\n'
       '  Avancement (%) = (Actions terminées / Actions totales) × 100\n'
       '  Taux global = Σ avancement_i / n   (n = nb plans actifs)\n'
       '  Retard = Date_échéance − Date_aujourd\'hui  < 0 → en retard',
   'Art. 314':
-      'Contrôle interne — dispositif permanent et périodique obligatoire.\n'
+      'Contrôle interne - dispositif permanent et périodique obligatoire.\n'
       'Conservation des documents : ≥ 7 ans (exigence UMOA).\n\n'
       'Efficacité du contrôle :\n'
       '  Taux de conformité = (Contrôles conformes / Contrôles réalisés) × 100\n'
       '  Couverture = Nb processus contrôlés / Nb processus totaux × 100\n'
       '  Fréquences : permanent (quotidien/hebdo) | périodique (mensuel/annuel)',
   'Art. 89':
-      'Calcul des RWA opérationnels — méthode Indicateur de Base (BIA).\n\n'
+      'Calcul des RWA opérationnels - méthode Indicateur de Base (BIA).\n\n'
       'Formule BIA :\n'
       '  Capital minimal = α × PNBmoy₃\n'
       '  α = 15 %   (coefficient réglementaire BCEAO)\n'
       '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
-      '  RWA_opérationnel = Capital minimal ÷ 9 %   (facteur 11,111111)',
+      '  RWA_opérationnel = Capital minimal × 12,5   (multiplicateur réglementaire)',
   'Art. 301/307':
       'Exigences minimales en fonds propres (dispositif prudentiel BCEAO).\n\n'
       'Ratios réglementaires :\n'
@@ -173,7 +173,7 @@ const _artExplanations = <String, String>{
       '  RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
       '  Coussin de conservation : + 2,5 % des RWA (si applicable)',
   'Art. 545':
-      'Stress testing — simulations de scénarios de crise pour évaluer\n'
+      'Stress testing - simulations de scénarios de crise pour évaluer\n'
       'la résilience du dispositif de gestion des risques.\n\n'
       'Scénarios types et formule d\'impact :\n'
       '  S1 : Optimiste  |  S2 : Neutre  |  S3 : Pessimiste  |  S4 : Crise\n'
@@ -184,7 +184,7 @@ const _artExplanations = <String, String>{
       'Rapport annuel sur le dispositif de gestion des risques opérationnels,\n'
       'transmis à la Commission Bancaire de l\'UMOA.\n\n'
       'Indicateurs clés à reporter :\n'
-      '  • RWA opérationnel = K_BIA × 11,111111   (avec K_BIA = 15 % × PNBmoy₃)\n'
+      '  • RWA opérationnel = K_BIA × 12,5   (avec K_BIA = 15 % × PNBmoy₃)\n'
       '  • Pertes totales nettes = Σ (Perte brute − Récupérations)\n'
       '  • Taux couverture plans = Actions terminées / Total plans × 100\n'
       '  • Résultats stress tests : ΔFP sous S3 et S4',
@@ -234,13 +234,13 @@ class RisqueOperationnelScreen extends StatelessWidget {
         OperationalRiskView.historique   => _HistoriqueView(api: api),
         OperationalRiskView.kri          => _RoPageWrapper(
           title: 'KRI',
-          subtitle: 'Indicateurs clés de risque — surveillance continue (Art. 313)',
+          subtitle: 'Indicateurs clés de risque - surveillance continue (Art. 313)',
           artRef: 'Art. 313',
           child: _KriView(api: api),
         ),
         OperationalRiskView.cartographie => _RoPageWrapper(
           title: 'Cartographie des risques',
-          subtitle: 'Identification et évaluation — matrice 5×5 (Art. 313)',
+          subtitle: 'Identification et évaluation - matrice 5×5 (Art. 313)',
           artRef: 'Art. 313',
           child: _CartographieView(api: api),
         ),
@@ -916,9 +916,9 @@ class _RoDashboardHeader extends StatelessWidget {
           const SizedBox(width: 16),
           Tooltip(
             excludeFromSemantics: true,
-            message: 'Dashboard Opérationnel — Art. 313 & 89 UMOA\n\n'
-                'Capital minimum = 15 % × PNB moyen positif (BIA — Art. 89)\n'
-                'RWA = Capital minimum × 11,111111 (facteur prudentiel)\n'
+            message: 'Dashboard Opérationnel - Art. 313 & 89 UMOA\n\n'
+                'Capital minimum = 15 % × PNB moyen positif (BIA - Art. 89)\n'
+                'RWA = Capital minimum × 12,5 (multiplicateur réglementaire)\n'
                 'Statut : Conforme si les seuils prudentiels sont respectés',
             preferBelow: false,
             decoration: BoxDecoration(
@@ -1026,7 +1026,7 @@ class _RoDashboardIconButton extends StatelessWidget {
   }
 }
 
-// ─── Dashboard — barre de KPI épinglée ───────────────────────────────────────
+// ─── Dashboard - barre de KPI épinglée ───────────────────────────────────────
 
 class _RoDashSummaryItem extends StatefulWidget {
   const _RoDashSummaryItem({
@@ -1134,7 +1134,7 @@ class _RoDashSummaryRow extends StatelessWidget {
         label: 'RWA opérationnel',
         value: _roAmount(context, data.widget1.aprRisqueOp),
         color: AppColors.prudentialSolvency,
-        subtitle: 'Capital minimum × 11,111111',
+        subtitle: 'Capital minimum × 12,5',
       ),
       (
         label: 'Statut réglementaire',
@@ -1278,13 +1278,13 @@ class _RoHeroStatCardState extends State<_RoHeroStatCard> {
   }
 }
 
-// ─── VIEW 2 : SIMULATION DE CRISE — Art. 545 PIEAFP ─────────────────────────
+// ─── VIEW 2 : SIMULATION DE CRISE - Art. 545 PIEAFP ─────────────────────────
 
 class _SimulationCriseView extends StatefulWidget {
   const _SimulationCriseView({required this.api, this.embedded = false});
   final RwaApiService api;
   /// Quand true, masque le titre de page (déjà porté par l'onglet parent,
-  /// ex : le hub "CCR3 / Dispositif UEMOI") — utilisé quand ce widget est
+  /// ex : le hub "CCR3 / Dispositif UEMOI") - utilisé quand ce widget est
   /// intégré comme onglet plutôt qu'affiché comme écran autonome.
   final bool embedded;
   @override
@@ -1531,7 +1531,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
         children: [
           PageHeader(
             title: 'Simulation de crise',
-            subtitle: 'Stress testing PIEAFP — scénarios de vulnérabilité (Art. 545)',
+            subtitle: 'Stress testing PIEAFP - scénarios de vulnérabilité (Art. 545)',
             titleFontSize: 26,
             subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo('Art. 545'),
@@ -1575,7 +1575,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
   );
 }
 
-// ─── Simulation de Crise — data model ─────────────────────────────────────────
+// ─── Simulation de Crise - data model ─────────────────────────────────────────
 
 class _CriseScResult {
   const _CriseScResult({
@@ -1619,10 +1619,10 @@ class _CriseResultsPanel extends StatelessWidget {
     final statusIcon  = allPass ? Icons.verified_rounded
         : nonePass ? Icons.dangerous_rounded : Icons.warning_amber_rounded;
     final statusText  = allPass
-        ? 'Profil résilient — tous les scénarios sont couverts'
+        ? 'Profil résilient - tous les scénarios sont couverts'
         : nonePass
-            ? 'Profil vulnérable — aucun scénario n\'est couvert'
-            : '$passCount / ${results.length} scénarios couverts — exposition partielle';
+            ? 'Profil vulnérable - aucun scénario n\'est couvert'
+            : '$passCount / ${results.length} scénarios couverts - exposition partielle';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1683,7 +1683,7 @@ class _CriseScenarioCard extends StatelessWidget {
     final cardBg   = isDark ? const Color(0xFF0E1E33) : Colors.white;
     final border   = isDark ? const Color(0xFF1E3455) : const Color(0xFFDDE7F5);
     final ratioOk  = r.aprStresses > 0 ? r.ratio >= r.seuil : true;
-    final ratioStr = r.aprStresses > 0 ? '${(r.ratio * 100).toStringAsFixed(1)} %' : '—';
+    final ratioStr = r.aprStresses > 0 ? '${(r.ratio * 100).toStringAsFixed(1)} %' : '-';
     final ratioProgress = r.aprStresses > 0
         ? (r.ratio / (r.seuil * 1.5)).clamp(0.0, 1.0)
         : 1.0;
@@ -1925,7 +1925,7 @@ class _PertesViewState extends State<_PertesView> {
           children: [
             Expanded(
               child: Text(
-                'Base de pertes historiques — calcul RWA BIA (Art. 89)',
+                'Base de pertes historiques - calcul RWA BIA (Art. 89)',
                 style: TextStyle(
                   fontSize: 12.5,
                   color: isDark ? const Color(0xFF9FB0CE) : const Color(0xFF6B7FA8),
@@ -2170,7 +2170,7 @@ class _PertesTop5Card extends StatelessWidget {
               Container(width: 3, height: 16, decoration: BoxDecoration(
                 color: _kDanger, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 10),
-              const Expanded(child: Text('Top 5 — Incidents par perte nette',
+              const Expanded(child: Text('Top 5 - Incidents par perte nette',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
               if (top5.isEmpty)
                 const Text('Aucun incident', style: TextStyle(fontSize: 11, color: _kMuted))
@@ -2485,9 +2485,9 @@ class _PertesSummaryBar extends StatelessWidget {
             ),
             Tooltip(
               excludeFromSemantics: true,
-              message: 'Pertes opérationnelles — Art. 313.b & 89 UMOA\n\n'
+              message: 'Pertes opérationnelles - Art. 313.b & 89 UMOA\n\n'
                   'Perte brute : Σ perte_brute (exposition totale avant atténuation)\n'
-                  'Perte nette : Σ (perte_brute − perte_récupérée) — base calcul BIA\n'
+                  'Perte nette : Σ (perte_brute − perte_récupérée) - base calcul BIA\n'
                   'Taux récup. : (Σ récupérée / Σ brute) × 100\n'
                   'Significatives : incidents dépassant le seuil de significativité\n'
                   'Moy./incident : Σ perte_nette / nombre d\'incidents',
@@ -2683,7 +2683,7 @@ class _KriViewState extends State<_KriView> {
                     decoration: const InputDecoration(labelText: 'Indicateur', isDense: true),
                     items: availableKris.map((k) => DropdownMenuItem(
                       value: k.definition.id,
-                      child: Text('${k.definition.id} — ${k.definition.nom}'),
+                      child: Text('${k.definition.id} - ${k.definition.nom}'),
                     )).toList(),
                     onChanged: (value) {
                       if (value == null) return;
@@ -2813,7 +2813,7 @@ class _KriViewState extends State<_KriView> {
           (curr == 'alerte' || curr == 'critique')) {
         final label = curr == 'critique' ? 'CRITIQUE' : 'ALERTE';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('$label — ${kri.definition.nom} a franchi un seuil'),
+          content: Text('$label - ${kri.definition.nom} a franchi un seuil'),
           duration: const Duration(seconds: 6),
           behavior: SnackBarBehavior.floating,
         ));
@@ -3193,9 +3193,9 @@ class _KriBanner extends StatelessWidget {
       color: borderColor);
 
     final headline = critique > 0
-        ? '$critique KRI CRITIQUE${critique > 1 ? 'S' : ''} — ACTION IMMÉDIATE REQUISE'
+        ? '$critique KRI CRITIQUE${critique > 1 ? 'S' : ''} - ACTION IMMÉDIATE REQUISE'
         : alerte > 0
-            ? '$alerte KRI EN ALERTE — SURVEILLANCE RENFORCÉE'
+            ? '$alerte KRI EN ALERTE - SURVEILLANCE RENFORCÉE'
             : total == 0 ? 'AUCUN KRI CONFIGURÉ'
             : nonRens == total ? 'SAISIR LES PREMIÈRES VALEURS POUR ACTIVER LA SURVEILLANCE'
             : 'TOUS LES KRI DANS LES SEUILS';
@@ -3954,19 +3954,19 @@ class _CartographieSummaryBar extends StatelessWidget {
         label: 'Niveau faible',
         value: '$faible',
         color: _kSuccess,
-        subtitle: 'P×I ≤ 4 — surveillance standard',
+        subtitle: 'P×I ≤ 4 - surveillance standard',
       ),
       (
         label: 'Niveau élevé',
         value: '$eleve',
         color: const Color(0xFFF97316),
-        subtitle: 'P×I 10–16 — plan recommandé',
+        subtitle: 'P×I 10–16 - plan recommandé',
       ),
       (
         label: 'Niveau critique',
         value: '$critique',
         color: _kDanger,
-        subtitle: 'P×I > 16 — action immédiate',
+        subtitle: 'P×I > 16 - action immédiate',
       ),
     ];
 
@@ -3983,11 +3983,11 @@ class _CartographieSummaryBar extends StatelessWidget {
             ),
             Tooltip(
               excludeFromSemantics: true,
-              message: 'Cartographie des risques — Art. 313 UMOA\n\n'
+              message: 'Cartographie des risques - Art. 313 UMOA\n\n'
                   'Score = Probabilité × Impact (matrice 5×5)\n'
-                  'Faible : P×I ≤ 4 — surveillance standard\n'
-                  'Élevé  : P×I 10–16 — plan d\'action recommandé\n'
-                  'Critique : P×I > 16 — action immédiate obligatoire',
+                  'Faible : P×I ≤ 4 - surveillance standard\n'
+                  'Élevé  : P×I 10–16 - plan d\'action recommandé\n'
+                  'Critique : P×I > 16 - action immédiate obligatoire',
               preferBelow: false,
               decoration: BoxDecoration(
                 color: const Color(0xFF1E293B),
@@ -5416,7 +5416,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                     color: const Color(0xFF1E88E5),
                     label: 'Excel',
                     badge: '.xlsx',
-                    description: 'Tableur éditable — formules, filtres et tri',
+                    description: 'Tableur éditable - formules, filtres et tri',
                     value: 'excel',
                   ),
                   const SizedBox(height: 10),
@@ -5492,7 +5492,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
     );
     sheet.updateCell(
       CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
-      TextCellValue('Historique Événements — Risque Opérationnel$_periodeLabel'),
+      TextCellValue('Historique Événements - Risque Opérationnel$_periodeLabel'),
       cellStyle: base(bg: cBlueDark, fg: cWhite, bold: true, size: 13, hAlign: HorizontalAlign.Center),
     );
     sheet.setMergedCellStyle(
@@ -5572,7 +5572,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
           padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: const pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.all(pw.Radius.circular(4))),
           child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-            pw.Text('Historique Événements — Risque Opérationnel',
+            pw.Text('Historique Événements - Risque Opérationnel',
               style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.white, font: fontBold)),
             pw.Text(dateStr, style: pw.TextStyle(fontSize: 9, color: const PdfColor.fromInt(0xFFB0C4D8), font: fontNormal)),
           ]),
@@ -5620,7 +5620,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
         pw.SizedBox(height: 12),
         pw.Divider(color: PdfColors.grey300),
         pw.SizedBox(height: 4),
-        pw.Text('Document généré le $dateStr — Outil RWA — ${items.length} entrée(s)',
+        pw.Text('Document généré le $dateStr - Outil RWA - ${items.length} entrée(s)',
           style: mutedStyle, textAlign: pw.TextAlign.center),
       ],
     ));
@@ -5649,7 +5649,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
         children: [
           PageHeader(
             title: 'Historique événements',
-            subtitle: 'Journal de traçabilité (Art. 314) — 7 ans UMOA',
+            subtitle: 'Journal de traçabilité (Art. 314) - 7 ans UMOA',
             titleFontSize: 26,
             subtitleFontSize: 12.5,
             subtitleSuffix: _artInfo('Art. 314'),
@@ -5671,7 +5671,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                       children: [
                         const Icon(Icons.lock_outline, size: 14, color: _kMuted),
                         const SizedBox(width: 6),
-                        const Text('Journal non modifiable — conservation 7 ans (UMOA)',
+                        const Text('Journal non modifiable - conservation 7 ans (UMOA)',
                             style: TextStyle(fontSize: 12, color: _kMuted)),
                         const Spacer(),
                         // Date début
@@ -5805,7 +5805,7 @@ class _RegistreView extends StatefulWidget {
   const _RegistreView({required this.api, this.embedded = false});
   final RwaApiService api;
   /// Quand true, remplace le grand titre de page par une simple barre
-  /// d'actions (Import/Export) — utilisé quand ce widget est intégré comme
+  /// d'actions (Import/Export) - utilisé quand ce widget est intégré comme
   /// onglet du hub "CCR3 / Dispositif UEMOI" plutôt qu'affiché en écran
   /// autonome depuis le menu.
   final bool embedded;
@@ -5890,7 +5890,7 @@ class _RegistreViewState extends State<_RegistreView> {
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Modifier — ${edit.reference}',
+                Text('Modifier - ${edit.reference}',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 const Text('Mise à jour conforme Art. 313.b UMOA',
                   style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
@@ -6212,7 +6212,7 @@ class _RegistreViewState extends State<_RegistreView> {
                     label: 'Excel',
                     badge: '.xlsx',
                     description:
-                        'Tableur éditable — formules, filtres et tri',
+                        'Tableur éditable - formules, filtres et tri',
                     value: 'excel',
                   ),
                   const SizedBox(height: 10),
@@ -6305,7 +6305,7 @@ class _RegistreViewState extends State<_RegistreView> {
     );
     sheet.updateCell(
       CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: 0),
-      TextCellValue('Registre des Pertes Opérationnelles — Risque Opérationnel BCEAO'),
+      TextCellValue('Registre des Pertes Opérationnelles - Risque Opérationnel BCEAO'),
       cellStyle: baseStyle(
         bg: cBlueDark, fg: cWhite, bold: true, size: 13,
         hAlign: HorizontalAlign.Center,
@@ -6332,7 +6332,7 @@ class _RegistreViewState extends State<_RegistreView> {
       ('Récupéré (FCFA)',            false, 18.0),
       ('Perte nette (FCFA)',         true,  18.0),
       ('Capital 15 % (FCFA)',        true,  18.0),
-      ('RWA ×11,111111 (FCFA)',      true,  18.0),
+      ('RWA ×12,5 (FCFA)',      true,  18.0),
       ('Statut',                     false, 14.0),
     ];
 
@@ -6360,7 +6360,7 @@ class _RegistreViewState extends State<_RegistreView> {
       totalRec   += i.perteRecuperee;
       totalNette += i.perteNette;
       totalKro   += i.perteNette * 0.15;
-      totalApr   += i.perteNette * 0.15 * (1 / 0.09);
+      totalApr   += i.perteNette * 0.15 * kMultiplicateurRwaReglementaire;
     }
     const totRow = 2;
     final totLabels = <int, String>{0: 'TOTAL (${items.length} incidents)'};
@@ -6387,7 +6387,7 @@ class _RegistreViewState extends State<_RegistreView> {
     for (int r = 0; r < items.length; r++) {
       final i   = items[r];
       final kro = i.perteNette * 0.15;
-      final apr = kro * (1 / 0.09);
+      final apr = kro * kMultiplicateurRwaReglementaire;
       final bg  = r.isEven ? cWhite : cRowAlt;
       final rowIdx = r + 3;
 
@@ -6435,7 +6435,7 @@ class _RegistreViewState extends State<_RegistreView> {
   }
 
   Future<void> _savePdf(List<RoIncident> items, String ts) async {
-    // ── Polices (IBM Plex Sans — supporte tout le Latin étendu) ─────────
+    // ── Polices (IBM Plex Sans - supporte tout le Latin étendu) ─────────
     final fontNormal = pw.Font.ttf(
       await rootBundle.load('assets/fonts/IBMPlexSans-Regular.ttf'));
     final fontBold = pw.Font.ttf(
@@ -6465,7 +6465,7 @@ class _RegistreViewState extends State<_RegistreView> {
     final totalRec   = items.fold(0.0, (s, i) => s + i.perteRecuperee);
     final totalNette = items.fold(0.0, (s, i) => s + i.perteNette);
     final totalKro   = totalNette * 0.15;
-    final totalApr   = totalKro  * (1 / 0.09);
+    final totalApr   = totalKro  * kMultiplicateurRwaReglementaire;
     final nbSignif   = items.where((i) => i.significatif).length;
 
     String fmt(double v) {
@@ -6536,12 +6536,12 @@ class _RegistreViewState extends State<_RegistreView> {
     // ── Données du tableau ───────────────────────────────────────────────
     const tableHeaders = [
       'Réf.', 'Date', 'Ligne de métier', "Type d'évén.",
-      'Perte brute', 'Récupéré', 'Perte nette', 'Capital min. (15 %)', 'RWA ×11,111111', 'Statut',
+      'Perte brute', 'Récupéré', 'Perte nette', 'Capital min. (15 %)', 'RWA ×12,5', 'Statut',
     ];
 
     final tableRows = items.map((i) {
       final kro = i.perteNette * 0.15;
-      final apr = kro * (1 / 0.09);
+      final apr = kro * kMultiplicateurRwaReglementaire;
       return [
         i.reference,
         i.dateOccurrence,
@@ -6576,7 +6576,7 @@ class _RegistreViewState extends State<_RegistreView> {
         child: pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('Registre des Pertes — Risque Opérationnel BCEAO',
+            pw.Text('Registre des Pertes - Risque Opérationnel BCEAO',
               style: mutedStyle),
             pw.Text('Export du $dateStr', style: mutedStyle),
           ],
@@ -6591,7 +6591,7 @@ class _RegistreViewState extends State<_RegistreView> {
         child: pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('Confidentiel — Usage interne', style: mutedStyle),
+            pw.Text('Confidentiel - Usage interne', style: mutedStyle),
             pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}',
               style: mutedStyle),
           ],
@@ -6617,7 +6617,7 @@ class _RegistreViewState extends State<_RegistreView> {
                   color: PdfColors.white)),
               pw.SizedBox(height: 4),
               pw.Text(
-                'Art. 313, 314, 545, 546 — UMOA/BCEAO  ·  Généré le $dateStr',
+                'Art. 313, 314, 545, 546 - UMOA/BCEAO  ·  Généré le $dateStr',
                 style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey300)),
             ],
           ),
@@ -6635,7 +6635,7 @@ class _RegistreViewState extends State<_RegistreView> {
         ]),
         kpiRow([
           ('Capital minimum (15 %)', '${fmt(totalKro)} FCFA', accentBg),
-          ('RWA — Risque opérationnel',   '${fmt(totalApr)} FCFA', accentBg),
+          ('RWA - Risque opérationnel',   '${fmt(totalApr)} FCFA', accentBg),
           ('Taux de récupération',
             totalBrut > 0 ? '${(totalRec / totalBrut * 100).toStringAsFixed(1)} %' : '0 %',
             null),
@@ -6683,7 +6683,7 @@ class _RegistreViewState extends State<_RegistreView> {
         pw.Divider(color: PdfColors.grey300),
         pw.SizedBox(height: 4),
         pw.Text(
-          'Document généré le $dateStr — Outil RWA — Confidentiel',
+          'Document généré le $dateStr - Outil RWA - Confidentiel',
           style: mutedStyle,
           textAlign: pw.TextAlign.center,
         ),
@@ -6739,7 +6739,7 @@ class _RegistreViewState extends State<_RegistreView> {
     );
   }
 
-  // Boutons Import / Exporter dans l'en-tête de page — même style (couleur,
+  // Boutons Import / Exporter dans l'en-tête de page - même style (couleur,
   // taille) que ceux du tableau Expositions.
   Widget _buildRegistreHeaderButtons() {
     return Row(
@@ -6782,7 +6782,7 @@ class _RegistreViewState extends State<_RegistreView> {
     );
   }
 
-  // Panneau de filtres — même habillage (fond, bordure, ombre) que le panneau
+  // Panneau de filtres - même habillage (fond, bordure, ombre) que le panneau
   // de contrôles du tableau Expositions.
   Widget _buildRegistreFilterPanel(bool isDark) {
     final panelBorderColor = isDark ? const Color(0xFF22304B) : const Color(0xFFDDE7F6);
@@ -6886,7 +6886,7 @@ class _RegistreViewState extends State<_RegistreView> {
     final cBrute = cached.fold(0.0, (s, i) => s + i.perteBrute);
     final cNette = cached.fold(0.0, (s, i) => s + i.perteNette);
     final cKro   = cNette * 0.15;
-    final cApr   = cKro * (1 / 0.09);
+    final cApr   = cKro * kMultiplicateurRwaReglementaire;
 
     // Tout (filtres + tableau + KPI) est regroupé dans UNE seule carte, comme
     // sur le tableau Expositions (SectionCard unique englobant l'ensemble).
@@ -6956,7 +6956,7 @@ class _RegistreViewState extends State<_RegistreView> {
                           final rowIndex = entry.key;
                           final i = entry.value;
                           final kro = i.perteNette * 0.15;
-                          final apr = kro * (1 / 0.09);
+                          final apr = kro * kMultiplicateurRwaReglementaire;
                           // Alternance de fond des lignes, comme sur le
                           // tableau Expositions.
                           final rowBg = rowIndex.isEven
@@ -7065,7 +7065,7 @@ class _RegistreViewState extends State<_RegistreView> {
       CreditStatCard(
         label: 'Perte nette',
         value: AppFormatters.currency(nette),
-        helper: 'Base de calcul BIA — Art. 313.b UMOA',
+        helper: 'Base de calcul BIA - Art. 313.b UMOA',
         icon: Icons.account_balance_outlined,
         color: _kDanger,
       ),
@@ -7079,7 +7079,7 @@ class _RegistreViewState extends State<_RegistreView> {
       CreditStatCard(
         label: 'RWA opérationnel',
         value: AppFormatters.currency(apr),
-        helper: 'Capital minimum × 11,111111',
+        helper: 'Capital minimum × 12,5',
         icon: Icons.bar_chart_outlined,
         color: AppColors.marketNeutral,
       ),
@@ -7147,7 +7147,7 @@ class _RegistreViewState extends State<_RegistreView> {
 
 }
 
-// ─── CCR3 / Dispositif UEMOI — hub à onglets (ancien "Import de données",
+// ─── CCR3 / Dispositif UEMOI - hub à onglets (ancien "Import de données",
 // extrait pour que le registre des pertes redevienne l'écran direct de
 // l'entrée "Import données" du menu) ──────────────────────────────────────
 
@@ -7210,7 +7210,7 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
                     child: Row(
                       children: List.generate(_tabDefs.length, (i) {
                         // "Dispositif UEMOI" temporairement désactivé (non
-                        // fonctionnel pour le moment) — onglet grisé, non
+                        // fonctionnel pour le moment) - onglet grisé, non
                         // cliquable, sans effet visuel de sélection.
                         final isDisabled = _disabledTopTabs.contains(i);
                         final isSelected = !isDisabled && _selectedTab == i;
@@ -7338,7 +7338,7 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
       case 0: return UemoiAibScreen(api: widget.api);
       case 1: return UemoiAsScreen(api: widget.api);
       case 2: return _CorepTabView(api: widget.api, isDark: isDark);
-      case 3: return _buildUemoiPlaceholder(isDark, 'Tableau de bord & indicateurs', 'Pilier 2 PIEAFP — indicateurs agrégés', Icons.dashboard_outlined, 'BLOC C');
+      case 3: return _buildUemoiPlaceholder(isDark, 'Tableau de bord & indicateurs', 'Pilier 2 PIEAFP - indicateurs agrégés', Icons.dashboard_outlined, 'BLOC C');
       case 4: return UemoiSyntheseScreen(api: widget.api);
       case 5: return _RegistreView(api: widget.api, embedded: true);
       case 6: return _SimulationCriseView(api: widget.api, embedded: true);
@@ -7379,7 +7379,7 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
       _Ccr3TabView(api: widget.api, isDark: isDark, hideAnalyseRapideTab: true);
 }
 
-// ─── CRR3-COREP — Onglet BIC avec saisie directe du PNB ──────────────────────
+// ─── CRR3-COREP - Onglet BIC avec saisie directe du PNB ──────────────────────
 
 class _CorepTabView extends StatefulWidget {
   const _CorepTabView({required this.api, required this.isDark});
@@ -7489,7 +7489,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
       if (mounted) {
         setState(() { _result = refreshed; _saving = false; _view = 1; });
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('PNB sauvegardé — résultats mis à jour'),
+          content: Text('PNB sauvegardé - résultats mis à jour'),
           backgroundColor: Color(0xFF14A44D),
         ));
       }
@@ -7703,7 +7703,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
 
     return Column(
       children: [
-        // 3 cartes exercices (N-2, N-1, N) — même gabarit que "Fonds Propres"
+        // 3 cartes exercices (N-2, N-1, N) - même gabarit que "Fonds Propres"
         LayoutBuilder(builder: (context, constraints) {
           final narrow = constraints.maxWidth < 720;
           final cards = [
@@ -7911,7 +7911,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Plafond ILDC actif — ABS(IC) > AC × seuil.',
+                  'Plafond ILDC actif - ABS(IC) > AC × seuil.',
                   style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -8014,7 +8014,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
         }),
         const SizedBox(height: AppTheme.pageGap),
         CreditDataTableCard(
-          title: 'Analyse rapide — BIC (CRR3) vs BIA',
+          title: 'Analyse rapide - BIC (CRR3) vs BIA',
           columns: const [
             DataColumn(label: Text('Bloc')),
             DataColumn(label: Text('Indicateur')),
@@ -8036,7 +8036,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
     );
   }
 
-  // ── Vue Décision — Analyse et reporting (dispositif UEMOA) ────────────────────
+  // ── Vue Décision - Analyse et reporting (dispositif UEMOA) ────────────────────
 
   Color _decisionColor(String niveau) {
     switch (niveau) {
@@ -8128,7 +8128,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
 
         // ── Organe de reporting ──────────────────────────────────────────────
         SectionCard(
-          title: 'Organe de reporting recommandé (Art. 313.b — seuils Pilier 2)',
+          title: 'Organe de reporting recommandé (Art. 313.b - seuils Pilier 2)',
           child: Row(children: [
             const Icon(Icons.account_balance_outlined, size: 20, color: _kAccent),
             const SizedBox(width: 10),
@@ -8161,7 +8161,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${c.code} — ${c.libelle}',
+                  Text('${c.code} - ${c.libelle}',
                       style: const TextStyle(fontWeight: FontWeight.w600)),
                   Text(c.commentaire,
                       maxLines: 1,
@@ -8239,7 +8239,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
               subtitle: 'Multiplicateur et taux de change',
               color: const Color(0xFF475569),
               children: [
-                UemoiFormField(label: 'Multiplicateur REA', controller: _pMultRea, hint: '11.111111'),
+                UemoiFormField(label: 'Multiplicateur REA', controller: _pMultRea, hint: '12.5'),
                 UemoiFormField(label: 'Taux EUR→FCFA', controller: _pTauxConv, hint: '655.957'),
               ],
             ),
@@ -8280,7 +8280,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
 }
 
 
-// ─── CCR3 — Onglet BIC CRR3 ──────────────────────────────────────────────────
+// ─── CCR3 - Onglet BIC CRR3 ──────────────────────────────────────────────────
 
 class _Ccr3TabView extends StatefulWidget {
   const _Ccr3TabView({
@@ -8291,11 +8291,11 @@ class _Ccr3TabView extends StatefulWidget {
   });
   final RwaApiService api;
   final bool isDark;
-  /// Quand true, seul l'onglet "Analyse rapide" est accessible — Résultats,
+  /// Quand true, seul l'onglet "Analyse rapide" est accessible - Résultats,
   /// Saisie et Paramètres sont masqués (saisie/config à faire depuis UEMOI).
   final bool onlyAnalyseRapide;
   /// Quand true, le bouton "Analyse rapide" est masqué (les autres onglets
-  /// restent accessibles) — utilisé sur l'écran Import de données.
+  /// restent accessibles) - utilisé sur l'écran Import de données.
   final bool hideAnalyseRapideTab;
 
   @override
@@ -8309,13 +8309,13 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
   String? _error;
   bool _saving = false;
 
-  // Année N (dernier exercice clos) — modifiable par l'utilisateur
+  // Année N (dernier exercice clos) - modifiable par l'utilisateur
   int _anneeN = DateTime.now().year - 1;
 
   OpRiskCalculResult? _result;
 
   // Toutes les années ayant des postes BIC/CCR3 enregistrés en base (saisie
-  // ou import Excel), sans se limiter à la fenêtre N-2/N-1/N de _result —
+  // ou import Excel), sans se limiter à la fenêtre N-2/N-1/N de _result -
   // alimente l'onglet "Données importées" pour qu'un exercice importé hors
   // de cette fenêtre reste malgré tout consultable.
   List<OpRiskInput> _allImportedInputs = [];
@@ -8460,7 +8460,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       if (mounted) {
         setState(() { _result = refreshed; _saving = false; _view = 1; });
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Données sauvegardées — résultats mis à jour'),
+          content: Text('Données sauvegardées - résultats mis à jour'),
           backgroundColor: Color(0xFF14A44D),
         ));
       }
@@ -8638,7 +8638,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           const SizedBox(width: 6),
           Text('BIC / CRR3', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
           const SizedBox(width: 8),
-          // Sélecteur d'années — cliquer sur − / + pour changer l'exercice N
+          // Sélecteur d'années - cliquer sur − / + pour changer l'exercice N
           Container(
             decoration: BoxDecoration(
               color: _kAccent.withValues(alpha: 0.08),
@@ -8676,7 +8676,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             tab(3, Icons.tune_outlined, 'Paramètres'),
           ],
           const Spacer(),
-          // Bouton "Import" retiré de cette barre — redondant avec le
+          // Bouton "Import" retiré de cette barre - redondant avec le
           // bouton "Importer" déjà présent dans l'onglet "Données importées".
         ],
       ),
@@ -8780,7 +8780,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           ),
         ),
         const SizedBox(height: 10),
-        // Tableau saisie — une section = un bloc distinct
+        // Tableau saisie - une section = un bloc distinct
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -8894,7 +8894,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
 
     // Toutes les années réellement enregistrées en base (saisie ou import),
     // avec repli sur la fenêtre N-2/N-1/N si la liste complète n'a pas encore
-    // été chargée — pour qu'un exercice importé hors de cette fenêtre reste
+    // été chargée - pour qu'un exercice importé hors de cette fenêtre reste
     // consultable ici, quel que soit l'onglet Excel/l'année d'où il vient.
     final displayInputs = _allImportedInputs.isNotEmpty ? _allImportedInputs : r.inputs;
     final years = displayInputs.map((e) => e.annee).toList();
@@ -8924,7 +8924,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         border: Border.all(color: _border),
       ),
       child: Text(
-        v == 0 ? '—' : _fcfa(v),
+        v == 0 ? '-' : _fcfa(v),
         style: TextStyle(fontSize: 12, color: v == 0 ? _muted : _txt, fontWeight: FontWeight.w600),
         overflow: TextOverflow.ellipsis,
       ),
@@ -8946,7 +8946,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
               Expanded(
                 child: Text(
                   displayInputs.isEmpty
-                      ? 'Aucun exercice BIC/CCR3 enregistré pour le moment — '
+                      ? 'Aucun exercice BIC/CCR3 enregistré pour le moment - '
                         'importez un fichier Excel ou saisissez les postes dans l\'onglet Saisie.'
                       : 'Tous les exercices enregistrés (saisie manuelle ou import Excel) : '
                         '${years.join(' · ')}. En bleu : les exercices utilisés par le calcul '
@@ -9273,13 +9273,13 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1 — KPI cards
+          // 1 - KPI cards
           _buildArKpiRow(r),
           const SizedBox(height: 12),
-          // 2 — Composition BI
+          // 2 - Composition BI
           _buildBiCompositionCard(r),
           const SizedBox(height: 12),
-          // 3 — OFR + REA comparaison côte à côte
+          // 3 - OFR + REA comparaison côte à côte
           LayoutBuilder(builder: (_, bc) {
             final side = (bc.maxWidth - 12) / 2;
             final c = DashColors.of(context);
@@ -9296,7 +9296,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             ]);
           }),
           const SizedBox(height: 12),
-          // 4 — Position tranche (les 2 cartes côte à côte, même hauteur)
+          // 4 - Position tranche (les 2 cartes côte à côte, même hauteur)
           LayoutBuilder(builder: (_, bc) {
             final side = (bc.maxWidth - 12) / 2;
             return IntrinsicHeight(
@@ -9545,7 +9545,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                     Expanded(flex: endFlex, child: Container(color: _border.withValues(alpha: 0.5))),
                   ]),
                 ),
-                // Marqueur de position BI — positionnement par fraction (Align
+                // Marqueur de position BI - positionnement par fraction (Align
                 // dans Positioned.fill) pour ne pas dépendre de LayoutBuilder,
                 // qui ne supporte pas le calcul de hauteur intrinsèque.
                 Positioned.fill(
@@ -9618,7 +9618,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     );
   }
 
-  // Ancienne version de la carte de position (barre unique 3 zones + point) —
+  // Ancienne version de la carte de position (barre unique 3 zones + point) -
   // remise en plus de la nouvelle "Position Tranche BIC", à la demande de
   // l'utilisateur, sans supprimer cette dernière.
   Widget _buildTranchePositionCardLegacy(OpRiskCalculResult r) {
@@ -9651,8 +9651,8 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           Text('Position du BI dans la grille de tranches',
               style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _txt)),
           const SizedBox(height: 12),
-          // Barre de position (positionnement par fraction — Align dans
-          // Positioned.fill — pour ne pas dépendre de LayoutBuilder, qui ne
+          // Barre de position (positionnement par fraction - Align dans
+          // Positioned.fill - pour ne pas dépendre de LayoutBuilder, qui ne
           // supporte pas le calcul de hauteur intrinsèque).
           Stack(clipBehavior: Clip.none, children: [
             // Fond 3 zones colorées
@@ -9744,7 +9744,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             RichText(text: TextSpan(children: [
               TextSpan(text: 'BI = ${_roAmount(context, bi)}',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: biColor)),
-              TextSpan(text: '  —  Tranche $t  (${_roPct(biRel / (t == 1 ? s1Rel : t == 2 ? s2Rel : 1) * 100)} % du seuil)',
+              TextSpan(text: '  -  Tranche $t  (${_roPct(biRel / (t == 1 ? s1Rel : t == 2 ? s2Rel : 1) * 100)} % du seuil)',
                   style: TextStyle(fontSize: 11, color: _muted)),
             ])),
           ]),
@@ -9855,7 +9855,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                 paramField(_pSeuil1, 'Seuil 1 (FCFA)  ≈ 1 Md EUR', '655957000000'),
                 paramField(_pSeuil2, 'Seuil 2 (FCFA)  ≈ 30 Mds EUR', '19678710000000'),
                 paramField(_pTauxConv, 'Taux conversion EUR → FCFA', '655.957'),
-                paramField(_pMultRea, 'Multiplicateur REA', '11.111111'),
+                paramField(_pMultRea, 'Multiplicateur REA', '12.5'),
                 const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -10013,7 +10013,7 @@ class _BicBarPainter extends CustomPainter {
 }
 
 
-// ─── Wizard — Déclarer un incident opérationnel ───────────────────────────────
+// ─── Wizard - Déclarer un incident opérationnel ───────────────────────────────
 
 class _RoIncidentWizardDialog extends StatefulWidget {
   const _RoIncidentWizardDialog({required this.api});
@@ -10028,20 +10028,20 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
   static const int _totalSteps = 4;
   bool _submitting = false;
 
-  // Étape 1 — Identification
+  // Étape 1 - Identification
   final _dateCtrl = TextEditingController();
   String _ligne = _lignesMetier.first;
   String _type = _typesEvenement.first;
 
-  // Étape 2 — Description
+  // Étape 2 - Description
   final _descCtrl = TextEditingController();
   String _causeRacine = _causesRacine.first;
 
-  // Étape 3 — Impact
+  // Étape 3 - Impact
   final _brutCtrl = TextEditingController();
   final _recupCtrl = TextEditingController();
 
-  // Étape 4 — Validation
+  // Étape 4 - Validation
   String _statut = _statutsIncident.first;
 
   final _step1Key = GlobalKey<FormState>();
@@ -10138,7 +10138,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Déclarer un incident', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                        Text('Risque opérationnel — Art. 313 BCEAO', style: TextStyle(fontSize: 11, color: _kMuted)),
+                        Text('Risque opérationnel - Art. 313 BCEAO', style: TextStyle(fontSize: 11, color: _kMuted)),
                       ],
                     ),
                   ),
@@ -10228,7 +10228,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         _wizBanner(
           icon: Icons.badge_outlined,
           title: 'Identification de l\'incident',
-          subtitle: 'Art. 313.b — Déclarez dans les 5 jours ouvrés suivant la détection',
+          subtitle: 'Art. 313.b - Déclarez dans les 5 jours ouvrés suivant la détection',
         ),
         const SizedBox(height: 16),
         UemoiFormCard(
@@ -10327,7 +10327,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         _wizBanner(
           icon: Icons.account_balance_wallet_outlined,
           title: 'Impact financier',
-          subtitle: 'Art. 89 — Perte nette = Perte brute − Récupérations. Saisir en FCFA.',
+          subtitle: 'Art. 89 - Perte nette = Perte brute − Récupérations. Saisir en FCFA.',
         ),
         const SizedBox(height: 16),
         UemoiFormCard(
@@ -10360,7 +10360,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
             if (brut == 0) return const SizedBox.shrink();
             final nette = brut - recup;
             final kBia = nette * 0.15;
-            final apr = kBia * (1 / 0.09);
+            final apr = kBia * kMultiplicateurRwaReglementaire;
             return Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -10375,7 +10375,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                     children: [
                       Icon(Icons.calculate_outlined, size: 13, color: _kBlue),
                       SizedBox(width: 6),
-                      Text('Estimation BIA (Art. 89) — indicative', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kBlue)),
+                      Text('Estimation BIA (Art. 89) - indicative', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kBlue)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -10416,13 +10416,13 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
           subtitle: 'Vérifiez les informations avant validation',
           color: _kSuccess,
           children: [
-            _recap('Date d\'occurrence', _dateCtrl.text.isEmpty ? '—' : _dateCtrl.text),
+            _recap('Date d\'occurrence', _dateCtrl.text.isEmpty ? '-' : _dateCtrl.text),
             _recap('Ligne de métier', _ligne),
             _recap('Type d\'événement', _type),
             _recap('Cause racine', _causeRacine),
             _recap('Description', () {
               final s = _descCtrl.text.trim();
-              return s.length > 90 ? '${s.substring(0, 87)}…' : (s.isEmpty ? '—' : s);
+              return s.length > 90 ? '${s.substring(0, 87)}…' : (s.isEmpty ? '-' : s);
             }()),
             const Divider(height: 16),
             _recap('Perte brute', AppFormatters.currency(brut)),
@@ -10904,7 +10904,7 @@ class _RoLineChartPainter extends CustomPainter {
   bool shouldRepaint(covariant _RoLineChartPainter old) => old.dataBlue != dataBlue;
 }
 
-// ─── Suivi des incidents — mini-dashboard ────────────────────────────────────
+// ─── Suivi des incidents - mini-dashboard ────────────────────────────────────
 
 class _IncidentsDashSection extends StatelessWidget {
   const _IncidentsDashSection({required this.data, required this.isWide});

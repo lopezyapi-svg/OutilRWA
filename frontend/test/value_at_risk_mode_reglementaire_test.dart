@@ -228,7 +228,7 @@ void main() {
     expect(find.text('VALEUR DU PORTEFEUILLE'), findsOneWidget);
 
     // Sans observation, la pire perte observée est un tiret, pas un zéro.
-    expect(find.text('—'), findsOneWidget);
+    expect(find.text('-'), findsOneWidget);
 
     // La VaR et l'ES du backend sont bien affichées sur les cartes KPI.
     expect(find.textContaining('0,1'), findsWidgets);

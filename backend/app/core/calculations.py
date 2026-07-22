@@ -11,16 +11,21 @@ from app.core.config import settings
 # CONSTANTES REGLEMENTAIRES UMOA / BALE III
 # ============================================================================
 
-# Ratios minimaux réglementaires UMOA (Bâle III adapté)
-MIN_CET1_RATIO = 0.05  # 5% - Common Equity Tier 1
-MIN_TIER1_RATIO = 0.075  # 7.5% - Tier 1 Capital
-MIN_SOLVENCY_RATIO = 0.09  # 9% - Ratio de solvabilité total minimum, SANS coussin (CAR)
+# Ratios minimaux réglementaires UMOA (Dispositif prudentiel, §91)
+MIN_CET1_RATIO = 0.05  # 5% - fonds propres de base durs (CET1)
+MIN_TIER1_RATIO = 0.06  # 6% - fonds propres de base (T1)
+MIN_SOLVENCY_RATIO = 0.09  # 9% - fonds propres effectifs (FPE), SANS coussin
 MIN_LEVERAGE_RATIO = 0.03  # 3% - Ratio de levier
 
-# Ratio de capital minimum réglementaire UMOA par défaut (9 %, ratio de
-# solvabilité total minimum, sans coussin). Paramétrable via
-# settings.capital_ratio. Le ratio CIBLE avec coussin de conservation
-# (2,5 %) est de 11,5 % — géré séparément côté écran ICAAP UEMOA/CEMAC.
+# Coussin de conservation (§92) : 2,5 % des RWA en CET1, au-delà des minima.
+CONSERVATION_BUFFER = 0.025
+# Exigence globale de solvabilité, coussin de conservation inclus : 11,5 %.
+GLOBAL_SOLVENCY_REQUIREMENT = MIN_SOLVENCY_RATIO + CONSERVATION_BUFFER
+
+# Ratio de capital minimum réglementaire UMOA par défaut (9 %, exigence
+# minimale de fonds propres §91c, sans coussin). Paramétrable via
+# settings.capital_ratio. L'exigence globale avec coussin de conservation
+# (2,5 %) est de 11,5 % — GLOBAL_SOLVENCY_REQUIREMENT.
 DEFAULT_CAPITAL_RATIO = settings.capital_ratio
 
 # Seuils de concentration (HHI - Herfindahl-Hirschman Index)
@@ -83,17 +88,38 @@ def _normalize_currency_code(currency: str) -> str:
     return normalized or "XOF"
 
 
+# Libelles des echelons de notation du dispositif prudentiel. Les cles
+# ("AAA/AA", "BB/B"...) sont internes au moteur et servent d'index dans les
+# grilles de ponderation : elles n'ont jamais vocation a etre lues par un
+# utilisateur, qui attend l'echelon reglementaire complet.
+PRUDENTIAL_RATING_LABELS: dict[str, str] = {
+    "AAA/AA": "AAA à AA-",
+    "A": "A+ à A-",
+    "BBB": "BBB+ à BBB-",
+    "BB/B": "BB+ à B-",
+    "< B-": "Inférieur à B-",
+    "Non noté": "Non noté",
+}
+
+# Chemin inverse : un libelle d'echelon deja affiche doit retrouver son bucket.
+_RATING_LABEL_TO_BUCKET: dict[str, str] = {
+    label.upper(): bucket for bucket, label in PRUDENTIAL_RATING_LABELS.items()
+}
+
+
 def bucketize_rating(rating: str) -> str:
     """Mappe une notation vers un bucket prudentiel simple.
 
     Entree:
-        rating: notation libre recue dans les donnees.
+        rating: notation libre recue dans les donnees, ou libelle d'echelon.
     Sortie:
         Le bucket de notation exploitable par les referentiels.
     """
 
     # La notation libre est normalisee avant d'etre comparee aux buckets internes.
     normalized = rating.strip().upper()
+    if normalized in _RATING_LABEL_TO_BUCKET:
+        return _RATING_LABEL_TO_BUCKET[normalized]
     if normalized == "AAA/AA":
         return "AAA/AA"
     if normalized == "BB/B":
@@ -109,6 +135,13 @@ def bucketize_rating(rating: str) -> str:
     if normalized == "< B-":
         return "< B-"
     return "Non noté"
+
+
+def prudential_rating_label(rating: str) -> str:
+    """Libelle d'echelon a afficher pour une notation quelconque."""
+
+    bucket = bucketize_rating(rating)
+    return PRUDENTIAL_RATING_LABELS.get(bucket, bucket)
 
 
 def calculate_ead(nominal_amount: float, ccf: float = 1.0) -> float:
@@ -253,7 +286,7 @@ def calculate_tier1_ratio(tier1_capital: float, rwa: float) -> float:
         Tier 1 Ratio = Tier 1 Capital / RWA
 
     Seuil réglementaire UMOA:
-        Minimum 7,5% (MIN_TIER1_RATIO)
+        Minimum 6% (MIN_TIER1_RATIO)
 
     Entrees:
         tier1_capital: montant total du capital Tier 1.
@@ -264,8 +297,8 @@ def calculate_tier1_ratio(tier1_capital: float, rwa: float) -> float:
         Retourne 0.0 si RWA est nul.
 
     Exemple:
-        >>> calculate_tier1_ratio(tier1_capital=750_000, rwa=10_000_000)
-        0.075  # 7,5%
+        >>> calculate_tier1_ratio(tier1_capital=600_000, rwa=10_000_000)
+        0.06  # 6%
     """
     return safe_ratio(tier1_capital, rwa)
 

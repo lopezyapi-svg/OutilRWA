@@ -1,5 +1,5 @@
 /// Service de calcul du risque de change conforme BCEAO
-/// Approche standard: Position nette globale × 9%
+/// Approche standard: Position nette globale × 8%
 library;
 
 import 'dart:math' as math;
@@ -72,8 +72,8 @@ class ForeignExchangeRiskResult {
   final double
       totalShortPositions; // Somme des positions négatives (valeur absolue)
   final double globalNetPosition; // MAX(longues, courtes)
-  final double capitalRequirement; // Position_Nette_Globale × 9%
-  final double marketRwa; // Capital_Requirement × 11,111111 (1 / 0,09)
+  final double capitalRequirement; // Position_Nette_Globale × 8%
+  final double marketRwa; // Capital_Requirement × 12,5
 }
 
 /// Calcule le risque de change conformément à l'approche standard BCEAO
@@ -96,11 +96,13 @@ ForeignExchangeRiskResult calculateForeignExchangeRisk(
   // Position nette globale = MAX(longues, courtes)
   final globalNetPosition = math.max(totalLong, totalShort);
 
-  // Exigence de fonds propres = Position_Nette_Globale × 9%
-  final capitalRequirement = globalNetPosition * 0.09;
+  // Exigence de fonds propres pour risque de change = 8 % de la position
+  // nette globale (dispositif prudentiel UMOA).
+  final capitalRequirement = globalNetPosition * 0.08;
 
-  // RWA = Exigence_FP × 11,111111 (1 / 0,09)
-  final marketRwa = capitalRequirement * (1 / 0.09);
+  // Équivalent RWA = Exigence_FP × 12,5 (multiplicateur réglementaire de
+  // l'assiette du ratio de solvabilité).
+  final marketRwa = capitalRequirement * 12.5;
 
   return ForeignExchangeRiskResult(
     positions: positions,

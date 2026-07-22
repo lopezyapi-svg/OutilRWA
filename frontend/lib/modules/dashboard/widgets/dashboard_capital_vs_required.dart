@@ -9,7 +9,7 @@ import 'dashboard_design.dart';
 /// Capital détenu vs capital requis, par strate de fonds propres.
 ///
 /// Barres bicolores en monochrome navy (détenu = navy plein, requis = navy
-/// clair), surplus en texte de statut — pas de pastille colorée.
+/// clair), surplus en texte de statut - pas de pastille colorée.
 class DashboardCapitalVsRequired extends StatelessWidget {
   const DashboardCapitalVsRequired({super.key});
 

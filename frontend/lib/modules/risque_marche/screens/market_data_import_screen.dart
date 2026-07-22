@@ -244,7 +244,7 @@ class _MarketDataImportDialogState extends State<_MarketDataImportDialog> {
         // Détecte le type de portefeuille (Obligations / Actions / complet) à
         // partir des feuilles réellement présentes dans le fichier déposé,
         // plutôt que de dépendre du scope actuellement sélectionné dans la
-        // boîte de dialogue — évite de valider un fichier Actions contre la
+        // boîte de dialogue - évite de valider un fichier Actions contre la
         // structure Obligations (ou l'inverse) simplement parce que
         // l'utilisateur n'a pas cliqué sur le bon onglet avant de déposer.
         final probes = await Future.wait([

@@ -63,11 +63,29 @@ CREATE TABLE IF NOT EXISTS expositions (
     rwa REAL NOT NULL DEFAULT 0 CHECK(rwa >= 0),
     capital REAL NOT NULL DEFAULT 0 CHECK(capital >= 0),
     jours_impayes INTEGER NOT NULL DEFAULT 0 CHECK(jours_impayes >= 0),
+    statut_prudentiel TEXT NOT NULL DEFAULT 'saine',
+    declassement_manuel INTEGER NOT NULL DEFAULT 0,
+    declassement_motif TEXT,
+    declassement_le TEXT,
     commentaire TEXT,
     champs_source_json TEXT NOT NULL DEFAULT '{}',
     cree_le TEXT NOT NULL,
     modifie_le TEXT NOT NULL,
     FOREIGN KEY(contrepartie_id) REFERENCES contreparties(id) ON DELETE CASCADE
+);
+
+-- Suivi mensuel des versements (une ligne par exposition et par mois)
+CREATE TABLE IF NOT EXISTS suivi_versements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exposition_id TEXT NOT NULL,
+    periode TEXT NOT NULL CHECK(length(periode) = 7),
+    statut TEXT NOT NULL CHECK(statut IN ('verse', 'impaye')),
+    montant_verse REAL CHECK(montant_verse IS NULL OR montant_verse >= 0),
+    commentaire TEXT,
+    cree_le TEXT NOT NULL,
+    modifie_le TEXT NOT NULL,
+    UNIQUE(exposition_id, periode),
+    FOREIGN KEY(exposition_id) REFERENCES expositions(id) ON DELETE CASCADE
 );
 
 -- Sous-entités MERISE par type prudentiel (relation 1:0-1 avec expositions)

@@ -617,14 +617,12 @@ double lookupUnratedCounterpartyRiskWeight({
 }
 
 bool _shouldApplyUnratedCounterpartyCountryFloor(String categoryCode) {
-  switch (categoryCode) {
-    case 'a':
-    case 'k':
-    case 'l':
-      return false;
-    default:
-      return true;
-  }
+  // Le dispositif prudentiel ne prévoit ce plancher que pour les entreprises
+  // non notées : leur pondération ne peut être plus favorable que celle de
+  // l'État du siège. Les autres catégories conservent leur pondération
+  // « non noté » propre (BMD 50 %, IF 50 %/20 %, détail 75 %, immobilier
+  // 35 %/75 %...), qui ne doit pas être écrasée.
+  return categoryCode == 'e';
 }
 
 double applyUnratedCounterpartyCountryFloor(
@@ -641,8 +639,7 @@ double applyUnratedCounterpartyCountryFloor(
   }
   final countryWeight =
       lookupCountryRatingRiskWeight(countryRating ?? 'Non noté');
-  final floor = countryWeight > 1.0 ? countryWeight : 1.0;
-  return riskWeight > floor ? riskWeight : floor;
+  return riskWeight > countryWeight ? riskWeight : countryWeight;
 }
 
 const String bankInstitutionEquivalentRulesCase = 'equivalent_umoa_rules';
@@ -858,15 +855,13 @@ double lookupDefaultedExposureRiskWeight(
   if (isResidentialMortgageInDefault == true) {
     return 1.0;
   }
-  if (isResidentialMortgageInDefault == false) {
-    if (provisionAtLeastTwentyPercent == true) {
-      return 1.0;
-    }
-    if (provisionAtLeastTwentyPercent == false) {
-      return 1.5;
-    }
+  if (provisionAtLeastTwentyPercent == true) {
+    return 1.0;
   }
-  return resolvedInitialRiskWeight;
+  // Provisions inférieures à 20 % de l'encours, ou niveau de provisionnement
+  // non renseigné : le dispositif impose 150 % ; l'hypothèse prudente
+  // s'applique tant que l'effort de provisionnement n'est pas démontré.
+  return 1.5;
 }
 
 String? coerceBankInstitutionCase(String? value) {
@@ -893,8 +888,32 @@ String? coerceBankInstitutionCase(String? value) {
   return null;
 }
 
+/// Retourne la date d'octroi seulement si elle est cohérente : un octroi
+/// postérieur à l'échéance ou à la date d'analyse est une erreur de saisie ;
+/// la maturité initiale devient alors indéterminée et le calcul retombe sur
+/// le traitement long terme, prudent.
+DateTime? resolveCoherentGrantDate(
+  DateTime? grantDate,
+  DateTime? maturityDate, [
+  DateTime? analysisDate,
+]) {
+  if (grantDate == null) {
+    return null;
+  }
+  if (maturityDate != null && grantDate.isAfter(maturityDate)) {
+    return null;
+  }
+  if (analysisDate != null && grantDate.isAfter(analysisDate)) {
+    return null;
+  }
+  return grantDate;
+}
+
 bool hasShortInitialMaturity(DateTime? grantDate, DateTime? maturityDate) {
   if (grantDate == null || maturityDate == null) {
+    return false;
+  }
+  if (grantDate.isAfter(maturityDate)) {
     return false;
   }
   return computeInitialMaturityMonths(grantDate, maturityDate) <= 3;
@@ -989,12 +1008,12 @@ double lookupPrudentialRiskWeight(
       )) {
     return finalize(0.0);
   }
-  if (categoryCode == 'a' && ratingBucket == 'Non noté') {
-    return lookupUnratedCounterpartyRiskWeight(
-      countryRating: countryRating,
-      oceEstablished: sovereignOceEstablished,
-      oceNote: sovereignOceNote,
-    );
+  // Souverain non noté : la classification OCE peut être utilisée quand elle
+  // est établie ; sinon la grille s'applique (non noté : 100 %).
+  if (categoryCode == 'a' &&
+      ratingBucket == 'Non noté' &&
+      sovereignOceEstablished) {
+    return finalize(lookupSovereignOceRiskWeight(sovereignOceNote));
   }
   if (categoryCode == 'b' &&
       hasPublicBodyPreferentialUemoaCase(
@@ -1016,13 +1035,8 @@ double lookupPrudentialRiskWeight(
       sovereignOceNote: sovereignOceNote,
     );
   }
-  if (categoryCode == 'b' && ratingBucket == 'Non noté') {
-    return lookupUnratedCounterpartyRiskWeight(
-      countryRating: countryRating,
-      oceEstablished: sovereignOceEstablished,
-      oceNote: sovereignOceNote,
-    );
-  }
+  // Organisme public non noté : pondération de la grille (100 %), pas de
+  // substitution par la notation du pays.
   if (categoryCode == 'c' &&
       hasBmdPriorityZeroWeightCase(
         bmdHighQualityCase: bmdHighQualityCase,
@@ -1032,13 +1046,7 @@ double lookupPrudentialRiskWeight(
       )) {
     return finalize(0.0);
   }
-  if (categoryCode == 'c' && ratingBucket == 'Non noté') {
-    return lookupUnratedCounterpartyRiskWeight(
-      countryRating: countryRating,
-      oceEstablished: sovereignOceEstablished,
-      oceNote: sovereignOceNote,
-    );
-  }
+  // BMD non notée hors cas préférentiels : pondération de la grille (50 %).
   if (categoryCode == 'd') {
     final resolvedBankInstitutionCase =
         coerceBankInstitutionCase(bankInstitutionCase);
@@ -1048,31 +1056,17 @@ double lookupPrudentialRiskWeight(
     if (resolvedBankInstitutionCase == bankInstitutionWeakPrudentialCase) {
       return finalize(2.5);
     }
-    if (ratingBucket == 'Non noté') {
-      return lookupUnratedCounterpartyRiskWeight(
-        countryRating: countryRating,
-        oceEstablished: sovereignOceEstablished,
-        oceNote: sovereignOceNote,
-      );
-    }
-    if (resolvedBankInstitutionCase == bankInstitutionEligibleCategoriesCase) {
-      return finalize(lookupBankInstitutionRiskWeight(
-        rating,
-        isShortInitialMaturity:
-            hasShortInitialMaturity(grantDate, maturityDate),
-      ));
-    }
+    // Cas général (grilles du dispositif) : la pondération dépend de la
+    // notation ET de la maturité initiale (seuil de 3 mois), y compris pour
+    // les non notées (50 % à plus de 3 mois, 20 % à 3 mois ou moins).
+    return finalize(lookupBankInstitutionRiskWeight(
+      rating,
+      isShortInitialMaturity: hasShortInitialMaturity(grantDate, maturityDate),
+    ));
   }
   if (categoryCode == 'e') {
-    if (ratingBucket == 'Non noté' &&
-        enterpriseExceedsBceaoDegradationThreshold != true &&
-        enterprisePrudentialProcedure != true) {
-      return lookupUnratedCounterpartyRiskWeight(
-        countryRating: countryRating,
-        oceEstablished: sovereignOceEstablished,
-        oceNote: sovereignOceNote,
-      );
-    }
+    // Entreprise non notée : 100 % (grille), avec plancher à la pondération
+    // de l'État du siège appliqué par finalize.
     return finalize(lookupEnterpriseRiskWeight(
       rating,
       enterpriseExceedsBceaoDegradationThreshold:
@@ -1853,6 +1847,7 @@ class ExposureRecord {
     this.offBalanceExposureAmount,
     this.provisionsAmount,
     this.joursImpayes = 0,
+    this.actualReimbursements = const {},
     this.exposureMaturityMonths,
     this.residualMaturityMonths,
     this.countryRiskWeight,
@@ -1872,6 +1867,10 @@ class ExposureRecord {
     required this.capital,
     required this.comment,
     required this.status,
+    this.statutPrudentiel = 'saine',
+    this.declassementManuel = false,
+    this.declassementMotif,
+    this.declassementLe,
     required this.crmDetails,
     required this.sovereignSpecialCase,
     required this.sovereignPreferentialZeroWeight,
@@ -1908,6 +1907,7 @@ class ExposureRecord {
   final double? offBalanceExposureAmount;
   final double? provisionsAmount;
   final int joursImpayes;
+  final Map<DateTime, double> actualReimbursements;
   final int? exposureMaturityMonths;
   final int? residualMaturityMonths;
   final double? countryRiskWeight;
@@ -1927,6 +1927,10 @@ class ExposureRecord {
   final double capital;
   final String comment;
   final String status;
+  final String statutPrudentiel;
+  final bool declassementManuel;
+  final String? declassementMotif;
+  final String? declassementLe;
   final ExposureCrmDetails crmDetails;
   final String sovereignSpecialCase;
   final bool sovereignPreferentialZeroWeight;
@@ -1967,6 +1971,19 @@ class ExposureRecord {
   String get crmModeLabel => crmDetails.mode;
   String get zone => computeZone(counterparty.country);
   bool get isDefaultLike => status == 'En defaut' || categoryCode == 'i' || (joursImpayes > 90) || (provisionsAmount != null && provisionsAmount! > 0);
+
+  bool get isDouteuse => statutPrudentiel == 'douteuse';
+  bool get isImpayee => statutPrudentiel == 'impayee';
+  String get statutPrudentielLabel {
+    switch (statutPrudentiel) {
+      case 'douteuse':
+        return 'Douteuse';
+      case 'impayee':
+        return 'Impayée';
+      default:
+        return 'Saine';
+    }
+  }
 
   // Montants convertis en XOF, à utiliser pour TOUT calcul agrégé (totaux,
   // parts, densités…). Les champs bruts restent dans la devise d'origine pour
@@ -2011,6 +2028,21 @@ class ExposureRecord {
             'coverage_percent': crmCoveragePercent,
           },
     );
+
+    final Map<DateTime, double> parsedActualReimbursements = {};
+    if (json['actual_reimbursements'] != null) {
+      final map = json['actual_reimbursements'] as Map<String, dynamic>;
+      for (final entry in map.entries) {
+        try {
+          final parts = entry.key.split('-'); // format "YYYY-MM"
+          if (parts.length >= 2) {
+            final monthKey = DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
+            parsedActualReimbursements[monthKey] = (entry.value as num).toDouble();
+          }
+        } catch (_) {}
+      }
+    }
+
     return ExposureRecord(
       id: json['id'] as String,
       analysisDate: DateTime.parse(json['analysis_date'] as String),
@@ -2029,6 +2061,7 @@ class ExposureRecord {
           (json['off_balance_exposure_amount'] as num?)?.toDouble(),
       provisionsAmount: (json['provisions_amount'] as num?)?.toDouble(),
       joursImpayes: (json['jours_impayes'] as num?)?.toInt() ?? 0,
+      actualReimbursements: parsedActualReimbursements,
       exposureMaturityMonths:
           (json['exposure_maturity_months'] as num?)?.toInt(),
       residualMaturityMonths:
@@ -2052,6 +2085,10 @@ class ExposureRecord {
       capital: (json['capital'] as num).toDouble(),
       comment: (json['comment'] ?? '') as String,
       status: (json['status'] ?? 'Active') as String,
+      statutPrudentiel: (json['statut_prudentiel'] ?? 'saine') as String,
+      declassementManuel: (json['declassement_manuel'] ?? false) as bool,
+      declassementMotif: json['declassement_motif'] as String?,
+      declassementLe: json['declassement_le'] as String?,
       crmDetails: crmDetails,
       sovereignSpecialCase: coerceSovereignSpecialCase(
         json['sovereign_special_case'] as String?,
@@ -2479,7 +2516,11 @@ double _lookupOriginalRiskWeightForDraft(ExposureDraft draft) {
         draft.defaultedExposureResidentialMortgageInDefault,
     defaultedExposureProvisionAtLeastTwentyPercent:
         draft.defaultedExposureProvisionAtLeastTwentyPercent,
-    grantDate: draft.grantDate,
+    grantDate: resolveCoherentGrantDate(
+      draft.grantDate,
+      draft.maturityDate,
+      draft.analysisDate,
+    ),
     maturityDate: draft.maturityDate,
   );
 }
@@ -2530,7 +2571,8 @@ double lookupFinancedCrmHfx({
   }
   final isFcfaEuroPair = (exposure == 'FCFA' && collateral == 'EUR') ||
       (exposure == 'EUR' && collateral == 'FCFA');
-  return isFcfaEuroPair ? 0.0 : 0.09;
+  // Décote réglementaire pour asymétrie de devises (approche globale) : 8 %.
+  return isFcfaEuroPair ? 0.0 : 0.08;
 }
 
 String _normalizeFinancedCrmMaturityBucket(String value) {
@@ -2766,8 +2808,10 @@ FinancedCrmSnapshot computeFinancedCrmSnapshot(ExposureDraft draft) {
   final onBalanceAmount = _resolvedOnBalanceAmountForDraft(draft);
   final offBalanceCcfAmount = _resolvedOffBalanceCcfAmountForDraft(draft);
   final exposureAmount = onBalanceAmount + offBalanceCcfAmount;
+  // Valeur ajustée de l'exposition : VAE = E × (1 + De). La décote
+  // d'exposition De est nulle pour les prêts classiques.
   const he = 0.0;
-  final eva = exposureAmount * (1 - he);
+  final eva = exposureAmount * (1 + he);
 
   _FinancedCrmCollateralOutcome outcome;
   if (financedCrmCollateralIsBasket(draft.collateralType) &&
@@ -2827,16 +2871,24 @@ FinancedCrmSnapshot computeFinancedCrmSnapshot(ExposureDraft draft) {
     );
   }
 
-  final eadBilanAmount = outcome.eligible
-      ? (onBalanceAmount * (1 - he) - outcome.cva)
-          .clamp(0.0, double.infinity)
-          .toDouble()
-      : onBalanceAmount;
-  final eadHbCcfAmount = outcome.eligible
-      ? (offBalanceCcfAmount * (1 - he) - outcome.cva)
-          .clamp(0.0, double.infinity)
-          .toDouble()
-      : offBalanceCcfAmount;
+  // E* = max(0 ; VAE − VAS) : la valeur ajustée de la sûreté est déduite UNE
+  // SEULE FOIS de l'exposition totale (bilan + hors bilan), puis le solde est
+  // réparti au prorata des composantes pour l'affichage.
+  final evaEb = onBalanceAmount * (1 + he);
+  final evaHb = offBalanceCcfAmount * (1 + he);
+  final evaTotal = evaEb + evaHb;
+  final double eadBilanAmount;
+  final double eadHbCcfAmount;
+  if (outcome.eligible) {
+    final eadTotalAfterCrm =
+        (evaTotal - outcome.cva).clamp(0.0, double.infinity).toDouble();
+    final allocationRatio = evaTotal > 0 ? eadTotalAfterCrm / evaTotal : 0.0;
+    eadBilanAmount = evaEb * allocationRatio;
+    eadHbCcfAmount = evaHb * allocationRatio;
+  } else {
+    eadBilanAmount = onBalanceAmount;
+    eadHbCcfAmount = offBalanceCcfAmount;
+  }
   final eadAfterFinancedCrm =
       (eadBilanAmount + eadHbCcfAmount).clamp(0.0, double.infinity).toDouble();
   final rwaFinal =

@@ -162,14 +162,16 @@ class MarketPrudentialCapitalResult {
   double get commodityRisk => commodityDirectionalRisk + commodityBasisRisk;
   double get capitalRequirement =>
       interestRateRisk + equityRisk + foreignExchangeRisk + commodityRisk;
-  double get marketRwa => capitalRequirement * (1 / 0.09); // 11,111111
+  // Équivalent RWA = exigence de fonds propres × 12,5 (multiplicateur
+  // réglementaire de l'assiette du ratio de solvabilité UMOA).
+  double get marketRwa => capitalRequirement * 12.5;
 }
 
 MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
   required Iterable<MarketPortfolioRecord> records,
   Iterable<MarketCommodityPosition> commodityPositions = const [],
-  // Art. 399 : risque spécifique actions ramené à 4 % (au lieu de 9 %) lorsque
-  // le portefeuille est jugé liquide et bien diversifié (approbation Commission
+  // Risque spécifique actions ramené à 4 % (au lieu de 8 %) lorsque le
+  // portefeuille est jugé liquide et bien diversifié (approbation Commission
   // Bancaire requise). Désactivé par défaut.
   bool equityPortfolioLiquidAndDiversified = false,
 }) {
@@ -200,10 +202,10 @@ MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
   return MarketPrudentialCapitalResult(
     interestRateSpecificRisk: interestSpecific,
     interestRateGeneralRisk: interestGeneral,
-    // Risque spécifique : (9% ou 4%) × Σ|net par émetteur| (Art. 398-399)
+    // Risque spécifique : (8 % ou 4 %) × Σ|net par émetteur|
     equitySpecificRisk: equityPosition.specificRiskTotal,
-    // Risque général : 9% × Σ|net par marché national/régional| (Art. 400-401)
-    equityGeneralRisk: equityPosition.generalRiskBase * 0.09,
+    // Risque général : 8 % × Σ|net par marché national/régional|
+    equityGeneralRisk: equityPosition.generalRiskBase * 0.08,
     foreignExchangeRisk: _marketForeignExchangeRisk(marketRecords),
     commodityDirectionalRisk: commodityMeasure.netPosition.abs() * 0.15,
     commodityBasisRisk: commodityMeasure.grossPosition * 0.03,
@@ -533,7 +535,9 @@ _MarketEquityRiskMeasure _marketEquityRiskMeasure(
     specificBase += value;
     final isLiquid =
         isLiquidByIssuer[issuerKey] == true || globalLiquidDiversified;
-    specificTotal += value * (isLiquid ? 0.04 : 0.09);
+    // 8 % du net par émetteur, ramené à 4 % si le portefeuille est jugé
+    // liquide et bien diversifié (sur approbation de la Commission Bancaire).
+    specificTotal += value * (isLiquid ? 0.04 : 0.08);
   }
 
   final generalBase =
@@ -572,7 +576,9 @@ _MarketPositionMeasure _marketCommodityPositionMeasure(
 }
 
 double _marketForeignExchangeRisk(List<MarketPortfolioRecord> records) {
-  return _marketForeignExchangeGlobalNetPosition(records) * 0.09;
+  // Exigence de fonds propres pour risque de change : 8 % de la position
+  // nette globale en devises.
+  return _marketForeignExchangeGlobalNetPosition(records) * 0.08;
 }
 
 double _marketForeignExchangeGlobalNetPosition(
@@ -610,9 +616,17 @@ double _marketPrudentialRecordPositionValue(MarketPortfolioRecord record) {
   };
 }
 
+/// Valeur de marché d'une ligne, convertie en XOF au taux courant du
+/// référentiel partagé. Les ventilations affichées s'appuient dessus afin de
+/// reposer exactement sur les montants qui servent au calcul de l'exigence de
+/// fonds propres : une devise valorisée à un taux différent ferait diverger le
+/// tableau de bord de l'exigence qu'il est censé expliquer.
+double marketRecordValueXof(MarketPortfolioRecord record) =>
+    _marketPrudentialRecordPositionValue(record);
+
 /// Taux courant vers XOF pour une devise : lu dans le référentiel partagé
 /// (CurrencyRegistry), tenu à jour par l'écran Risque de Change (saisie
-/// manuelle ou cotation en ligne) — pas la table figée de
+/// manuelle ou cotation en ligne) - pas la table figée de
 /// currency_conversion.dart, jamais actualisée, qui ferait diverger les
 /// exigences de fonds propres (Taux/Actions/Change) de ce tableau de bord
 /// par rapport aux mêmes montants recalculés sur l'écran Risque de Change.
@@ -689,15 +703,15 @@ double _getSpecificRiskWeight(
                 ? 0.0100
                 : // 6 à 24 mois = 1%
                 0.0160, // > 24 mois = 1.6%
-        _MarketCreditQuality.bbToB => 0.0800, // BB+ à B- = 9%
+        _MarketCreditQuality.bbToB => 0.0800, // BB+ à B- = 8%
         _MarketCreditQuality.belowB => 0.1200, // < B- = 12%
-        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 9%
+        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 8%
       };
 
     case _MarketSpecificCategory.eligibleDebt:
       // Tableau 16: Titres éligibles (cf infra)
       if (quality == _MarketCreditQuality.bbToB) {
-        return 0.0800; // BB+ à BB- = 9%
+        return 0.0800; // BB+ à BB- = 8%
       }
       // Tous autres (AAA-BBB- + multilatéraux sans notation)
       return residualYears < 0.5
@@ -711,13 +725,13 @@ double _getSpecificRiskWeight(
     case _MarketSpecificCategory.otherDebt:
       // Autres émetteurs (ni souverains, ni éligibles) : traités comme les
       // entreprises de qualité inférieure selon l'approche standard crédit
-      // (Art. 357, Titre IV). Pondération conservatrice de 9 %.
+      // (Art. 357, Titre IV). Pondération conservatrice de 8 %.
       return switch (quality) {
         _MarketCreditQuality.aaaToAa => 0.0000, // AAA à A- = 0%
-        _MarketCreditQuality.aToBbb => 0.0800, // A+ à BBB- = 9% (Art. 357)
-        _MarketCreditQuality.bbToB => 0.0800, // BB+ à BB- = 9%
+        _MarketCreditQuality.aToBbb => 0.0800, // A+ à BBB- = 8% (Art. 357)
+        _MarketCreditQuality.bbToB => 0.0800, // BB+ à BB- = 8%
         _MarketCreditQuality.belowB => 0.1200, // Sous BB- = 12%
-        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 9%
+        _MarketCreditQuality.unrated => 0.0800, // Sans notation = 8%
       };
   }
 }
@@ -1304,7 +1318,46 @@ class MarketPortfolioRecord {
   }
 
   double get dividendYield => _percentNumber('Rendement dividende (%)');
-  double get acquisitionPrice => _number('Prix d\'acquisition');
+
+  /// Prix de revient unitaire. Le modèle d'import nomme la colonne « Prix
+  /// d'achat unitaire » : ne lire que « Prix d'acquisition » renvoyait 0 pour
+  /// tous les portefeuilles au format standard (plus/moins-values latentes
+  /// nulles à l'écran comme dans les exports).
+  double get acquisitionPrice {
+    final explicit = _numberAny(const [
+      'Prix d\'acquisition',
+      'Prix d\'achat unitaire',
+      'Prix d\'achat',
+      'PRU',
+    ]);
+    if (explicit > 0) return explicit;
+    final cost = _number('Coût d\'acquisition');
+    final quantityValue = shares;
+    if (cost > 0 && quantityValue > 0) return cost / quantityValue;
+    return 0;
+  }
+
+  /// Coût de revient total de la ligne (prix de revient × quantité).
+  double get acquisitionCost {
+    final explicit = _number('Coût d\'acquisition');
+    if (explicit > 0) return explicit;
+    final unit = acquisitionPrice;
+    final quantityValue = shares;
+    return unit > 0 && quantityValue > 0 ? unit * quantityValue : 0;
+  }
+
+  /// Plus ou moins-value latente de la ligne : colonne importée si elle est
+  /// renseignée, sinon (cours actuel − prix de revient) × quantité. Retourne 0
+  /// quand le prix de revient est absent : rien n'est extrapolé.
+  double get latentGain {
+    final explicit = _number('Plus/(moins)-value latente');
+    if (explicit != 0) return explicit;
+    final unit = acquisitionPrice;
+    final current = marketPrice;
+    final quantityValue = shares;
+    if (unit <= 0 || current <= 0 || quantityValue <= 0) return 0;
+    return (current - unit) * quantityValue;
+  }
   bool get isLiquidAndDiversified {
     final val =
         _text('Liquide et diversifié (Oui/Non)', fallback: '').toLowerCase();
@@ -1496,6 +1549,34 @@ String _marketDatasetContentSignature(MarketPortfolioDataset dataset) {
   return hash.toRadixString(16).padLeft(8, '0');
 }
 
+/// Plus ou moins-value latente consolidée d'un émetteur.
+class MarketIssuerLatentPnl {
+  const MarketIssuerLatentPnl({
+    required this.issuer,
+    required this.gain,
+    required this.cost,
+  });
+
+  final String issuer;
+  final double gain;
+  final double cost;
+
+  /// Variation rapportée au coût de revient. 0 si le coût est inconnu.
+  double get variation => cost <= 0 ? 0 : gain / cost;
+}
+
+/// Corrélation intra-portefeuille et provenance de la valeur : une corrélation
+/// déduite de la concentration ne se lit pas comme une corrélation observée.
+class _MarketCorrelationEstimate {
+  const _MarketCorrelationEstimate({
+    required this.value,
+    required this.measured,
+  });
+
+  final double value;
+  final bool measured;
+}
+
 class MarketPortfolioDataset {
   MarketPortfolioDataset({
     required this.portfolioType,
@@ -1538,10 +1619,27 @@ class MarketPortfolioDataset {
       _computePortfolioHistoricalReturns();
   late final double annualizedVolatility = _computeAnnualizedVolatility();
   late final double expectedReturn = _computeExpectedReturn();
-  late final double correlationProxy = _computeCorrelationProxy();
+  late final _MarketCorrelationEstimate _correlationEstimate =
+      _computeCorrelationEstimate();
+
+  /// Corrélation moyenne intra-portefeuille. Mesurée quand au moins deux
+  /// séries de prix se recoupent dans le temps ; sinon approchée.
+  double get correlationProxy => _correlationEstimate.value;
+
+  /// Vrai seulement si la corrélation provient de séries de prix observées.
+  /// Faux, elle est déduite de la concentration et ne doit pas être présentée
+  /// comme une mesure.
+  bool get hasMeasuredCorrelation => _correlationEstimate.measured;
   late final double concentrationRatio = _computeConcentrationRatio();
   late final double totalLatentGain = _computeTotalLatentGain();
+  late final double totalAcquisitionCost = _computeTotalAcquisitionCost();
+  late final double totalMarketValueXof = _computeTotalMarketValueXof();
   late final String dominantIssuer = _computeDominantIssuer();
+
+  /// Rendement latent du portefeuille = plus/moins-value latente rapportée au
+  /// coût de revient. 0 si aucun prix de revient n'a été importé.
+  double get latentReturn =>
+      totalAcquisitionCost <= 0 ? 0 : totalLatentGain / totalAcquisitionCost;
   late final List<double> scenarioReturns = _computeScenarioReturns();
   late final List<double> scenarioLosses = _computeScenarioLosses();
   late final double scenarioVar99 = _computeScenarioVar99();
@@ -1641,13 +1739,123 @@ class MarketPortfolioDataset {
     if (portfolioType != MarketPortfolioType.equities) return 0.0;
     var totalGain = 0.0;
     for (final record in records) {
-      final acqPrice = record.acquisitionPrice;
-      final currentPrice = record.marketPrice;
-      if (acqPrice > 0 && currentPrice > 0) {
-        totalGain += (currentPrice - acqPrice) * record.shares;
-      }
+      totalGain += record.latentGain;
     }
     return totalGain;
+  }
+
+  /// Plus et moins-values latentes consolidées par émetteur, classées par
+  /// montant décroissant en valeur absolue. Un émetteur porté par plusieurs
+  /// lignes du fichier n'occupe qu'un rang.
+  late final List<MarketIssuerLatentPnl> latentPnlByIssuer =
+      _computeLatentPnlByIssuer();
+
+  List<MarketIssuerLatentPnl> _computeLatentPnlByIssuer() {
+    if (portfolioType != MarketPortfolioType.equities) {
+      return const <MarketIssuerLatentPnl>[];
+    }
+    final gainByIssuer = <String, double>{};
+    final costByIssuer = <String, double>{};
+    for (final record in records) {
+      final gain = record.latentGain;
+      if (gain == 0) continue;
+      final issuer =
+          record.issuer.trim().isEmpty ? 'Non renseigné' : record.issuer.trim();
+      gainByIssuer.update(issuer, (previous) => previous + gain,
+          ifAbsent: () => gain);
+      costByIssuer.update(
+        issuer,
+        (previous) => previous + record.acquisitionCost,
+        ifAbsent: () => record.acquisitionCost,
+      );
+    }
+    return [
+      for (final entry in gainByIssuer.entries)
+        MarketIssuerLatentPnl(
+          issuer: entry.key,
+          gain: entry.value,
+          cost: costByIssuer[entry.key] ?? 0,
+        ),
+    ]..sort((a, b) => b.gain.abs().compareTo(a.gain.abs()));
+  }
+
+  double _computeTotalMarketValueXof() {
+    var total = 0.0;
+    for (final record in records) {
+      total += marketRecordValueXof(record);
+    }
+    return math.max(0.0, total).toDouble();
+  }
+
+  /// Valeur de marché (XOF) relevant du portefeuille de négociation, seule
+  /// assiette de l'exigence de fonds propres actions.
+  late final double tradingBookValueXof = _computeBookValueXof(trading: true);
+
+  /// Valeur de marché (XOF) du portefeuille bancaire, hors assiette.
+  late final double bankingBookValueXof = _computeBookValueXof(trading: false);
+
+  double _computeBookValueXof({required bool trading}) {
+    var total = 0.0;
+    for (final record in records) {
+      if (record.isTradingBook != trading) continue;
+      total += marketRecordValueXof(record);
+    }
+    return total;
+  }
+
+  /// Valeur de marché (XOF) ventilée par devise de cotation.
+  late final Map<String, double> valueByCurrencyXof =
+      _computeValueByCurrencyXof();
+
+  Map<String, double> _computeValueByCurrencyXof() {
+    final byCurrency = <String, double>{};
+    for (final record in records) {
+      final value = marketRecordValueXof(record);
+      if (value <= 0) continue;
+      byCurrency.update(
+        normalizeCurrencyCode(record.currency),
+        (previous) => previous + value,
+        ifAbsent: () => value,
+      );
+    }
+    return Map.unmodifiable(byCurrency);
+  }
+
+  /// Part de la valeur de marché libellée dans une devise autre que le XOF :
+  /// c'est elle qui porte la charge de change.
+  double get foreignCurrencyValueXof =>
+      totalMarketValueXof - (valueByCurrencyXof['XOF'] ?? 0);
+
+  /// Dividende annuel attendu (XOF) = rendement dividende de chaque ligne
+  /// appliqué à sa valeur de marché. 0 si la colonne n'est pas renseignée.
+  late final double expectedDividendIncomeXof =
+      _computeExpectedDividendIncomeXof();
+
+  double _computeExpectedDividendIncomeXof() {
+    if (portfolioType != MarketPortfolioType.equities) return 0.0;
+    var total = 0.0;
+    for (final record in records) {
+      final value = marketRecordValueXof(record);
+      final rate = record.dividendYield;
+      if (value <= 0 || rate <= 0) continue;
+      total += value * rate;
+    }
+    return total;
+  }
+
+  /// Rendement dividende pondéré par la valeur de marché : le portage réel du
+  /// portefeuille, les lignes sans dividende comprises.
+  double get weightedDividendYield => totalMarketValueXof <= 0
+      ? 0
+      : expectedDividendIncomeXof / totalMarketValueXof;
+
+  double _computeTotalAcquisitionCost() {
+    if (portfolioType != MarketPortfolioType.equities) return 0.0;
+    var total = 0.0;
+    for (final record in records) {
+      total += math.max(0.0, record.acquisitionCost);
+    }
+    return total;
   }
 
   double _computeAverageCoupon() {
@@ -1768,9 +1976,14 @@ class MarketPortfolioDataset {
     return (0.45 + 0.25 * concentrationRatio).clamp(0.0, 0.9).toDouble();
   }
 
-  double _computeCorrelationProxy() {
+  _MarketCorrelationEstimate _computeCorrelationEstimate() {
     final seriesByInstrument = _computeInstrumentReturnSeriesByDate();
-    if (seriesByInstrument.length < 2) return _equityCorrelationFallback();
+    if (seriesByInstrument.length < 2) {
+      return _MarketCorrelationEstimate(
+        value: _equityCorrelationFallback(),
+        measured: false,
+      );
+    }
     final exposureByKey = <String, double>{};
     for (final record in records) {
       final key = record.returnSeriesKey;
@@ -1809,9 +2022,16 @@ class MarketPortfolioDataset {
         weightTotal += pairWeight;
       }
     }
-    return weightTotal <= 0
-        ? _equityCorrelationFallback()
-        : weightedCorrelation / weightTotal;
+    if (weightTotal <= 0) {
+      return _MarketCorrelationEstimate(
+        value: _equityCorrelationFallback(),
+        measured: false,
+      );
+    }
+    return _MarketCorrelationEstimate(
+      value: weightedCorrelation / weightTotal,
+      measured: true,
+    );
   }
 
   double _computeConcentrationRatio() {
@@ -2755,6 +2975,42 @@ class MarketDataImportStore {
     _publishDatasetWithRecords(current, records);
   }
 
+  /// Applique plusieurs corrections de lignes en une seule publication.
+  ///
+  /// Chaque appel à [updateRecord] recalcule la signature de contenu de tout
+  /// le portefeuille et déclenche une sauvegarde : boucler dessus ligne par
+  /// ligne coûte O(N²) sur le thread UI. Les traitements de masse doivent
+  /// passer par ici.
+  void updateRecords(
+    MarketPortfolioType portfolioType,
+    Map<int, Map<String, Object?>> patches,
+  ) {
+    if (patches.isEmpty) return;
+    final current = snapshotNotifier.value.datasets[portfolioType];
+    if (current == null) return;
+    final records = current.records.toList(growable: true);
+    var changed = false;
+    for (final entry in patches.entries) {
+      final index = entry.key;
+      if (index < 0 || index >= records.length) continue;
+      final normalizedValues = {
+        ...records[index].values,
+        ...entry.value,
+      };
+      _normalizeMarketRowValues(
+        normalizedValues,
+        portfolioType: portfolioType,
+      );
+      records[index] = MarketPortfolioRecord(
+        portfolioType: portfolioType,
+        values: normalizedValues,
+      );
+      changed = true;
+    }
+    if (!changed) return;
+    _publishDatasetWithRecords(current, records);
+  }
+
   void removeRecord(MarketPortfolioType portfolioType, int index) {
     final current = snapshotNotifier.value.datasets[portfolioType];
     if (current == null || index < 0 || index >= current.records.length) {
@@ -2864,7 +3120,7 @@ class MarketDataImportStore {
     // colonne ID sur les actions) provoquait l'effet inverse : de nouvelles
     // lignes légitimes étaient silencieusement écrasées et la base semblait
     // ne plus grossir. Conséquence assumée : réimporter deux fois le même
-    // fichier en mode "Compléter la base" double bien les lignes — utilisez
+    // fichier en mode "Compléter la base" double bien les lignes - utilisez
     // "Remplacer la base" si ce n'est pas l'effet recherché.
     final records = append && current != null
         ? [...current.records, ...parsed.records]
@@ -3037,16 +3293,27 @@ class MarketDataImportStore {
     }
   }
 
+  /// Regroupe les rafales de mutations en une seule sauvegarde : sans ce
+  /// délai, chaque ligne modifiée sérialise et renvoie le payload complet.
+  static const Duration _persistDebounce = Duration(milliseconds: 400);
+  Timer? _persistDebounceTimer;
+
   void _schedulePersistDatasets() {
     _hasLocalMutation = true;
-    unawaited(
-      _persistDatasets().catchError((Object error, StackTrace stackTrace) {
-        debugPrint('Persist market datasets failed: $error');
-      }),
-    );
+    _persistDebounceTimer?.cancel();
+    _persistDebounceTimer = Timer(_persistDebounce, () {
+      _persistDebounceTimer = null;
+      unawaited(
+        _persistDatasets().catchError((Object error, StackTrace stackTrace) {
+          debugPrint('Persist market datasets failed: $error');
+        }),
+      );
+    });
   }
 
   Future<void> _persistDatasets() async {
+    _persistDebounceTimer?.cancel();
+    _persistDebounceTimer = null;
     final activeDataset = snapshotNotifier.value.activeDataset;
     final payload = <String, Object?>{
       'version': _marketDataImportStorageVersion,
@@ -4115,12 +4382,12 @@ DateTime? _dateValue(Object? value) {
     final third = int.tryParse(slashParts[2]);
     if (first != null && second != null && third != null) {
       // Format ISO (AAAA-MM-JJ, ex. "2024-01-30") : le premier segment est
-      // l'année sur 4 chiffres — à ne pas confondre avec un jour. Sans ce
+      // l'année sur 4 chiffres - à ne pas confondre avec un jour. Sans ce
       // test, "2024-01-30" était lu comme jour=2024/mois=01/année=2030,
       // ce qui décalait la date réelle de plusieurs années (bug constaté :
       // maturité totale calculée à ~1 mois quel que soit le titre, alors
-      // que la maturité résiduelle — comparée à la date du jour, un vrai
-      // DateTime non ré-analysé — restait correcte).
+      // que la maturité résiduelle - comparée à la date du jour, un vrai
+      // DateTime non ré-analysé - restait correcte).
       if (slashParts[0].length == 4) {
         return DateTime(first, second, third);
       }

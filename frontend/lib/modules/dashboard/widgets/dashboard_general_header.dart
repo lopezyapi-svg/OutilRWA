@@ -5,7 +5,7 @@ import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/formatters.dart';
 import 'dashboard_design.dart';
 
-/// Masthead du dashboard prudentiel — barre claire raffinée.
+/// Masthead du dashboard prudentiel - barre claire raffinée.
 ///
 /// Surface blanche structurée : monogramme navy plein, sur-titre tracé (cadre
 /// réglementaire), pastille de conformité (statut = seule couleur), contrôle de

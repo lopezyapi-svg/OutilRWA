@@ -3,6 +3,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:file_selector/file_selector.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -22,8 +24,8 @@ import '../../../shared/widgets/page_header.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../../referentiels/models/referentiels_models.dart';
 import '../models/exposition_models.dart';
-import '../widgets/excel_import_dialog.dart';
 import '../widgets/exposure_form_card.dart';
+import '../widgets/suivi_versements_dialog.dart';
 
 enum _ExposureTableMode { full, dense, compact, minimal }
 
@@ -54,21 +56,17 @@ class ExpositionsScreen extends StatefulWidget {
 }
 
 class _ExpositionsScreenState extends State<ExpositionsScreen> {
-  static const double _mainTableMinWidth = 4300;
+  static const double _mainTableMinWidth = 3000;
+  static const double _fixedStatutColumnWidth = 130;
   static const double _fixedIdColumnWidth = 128;
-  static const double _fixedActionsColumnWidth = 112;
+  static const double _fixedEncoursColumnWidth = 140;
+  static const double _fixedActionsColumnWidth = 146;
   static const double _controlGap = 8;
   static const double _filterControlHeight = 30;
   static const double _optionControlHeight = 34;
   static const double _textFilterControlHeight = 44;
-  static const double _screenBorderRadius = 8;
-  static const double _tableRowHeight = 44;
-  static const ExposureSummary _emptySummary = ExposureSummary(
-    totalExpositions: 0,
-    totalEad: 0,
-    totalRwa: 0,
-    totalCapital: 0,
-  );
+  static const double _screenBorderRadius = 3;
+  static const double _tableRowHeight = 36;
   static const String _filterId = 'id';
   static const String _filterCounterparty = 'counterparty';
   static const String _filterCountry = 'country';
@@ -100,7 +98,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
   List<ExposureRecord> _allRows = const [];
   List<ExposureRecord> _visibleRows = const [];
-  ExposureSummary _visibleSummary = _emptySummary;
   List<String> _ratings = prudentialRatings;
   String _categoryFilter = 'Toutes';
   String _zoneFilter = 'Toutes';
@@ -108,11 +105,12 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   String _crmFilter = 'Toutes';
   String _displayCurrency = 'XOF';
   String _activeFilterKey = _filterCounterparty;
+  int _currentTabIndex = 0;
+  int _selectedEvolutionChartIndex = 0;
   late Set<String> _visibleColumnKeys;
   String? _sortColumnKey = 'counterparty';
   bool _sortAscending = true;
   String? _selectedExposureId;
-  bool _isImporting = false;
   bool _isDeleting = false;
   bool _isExporting = false;
   bool _hasLoadedReferentiels = false;
@@ -124,7 +122,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     _visibleColumnKeys = _defaultVisibleColumnKeys();
     _displayCurrency =
         normalizeCurrencyCode(widget.displayCurrencyListenable.value);
-    widget.displayCurrencyListenable.addListener(_handleDisplayCurrencyChanged);
+    widget.displayCurrencyListenable
+        .addListener(_handleDisplayCurrencyChanged);
     _tableVerticalController.addListener(_syncTableVerticalScrollFromMain);
     _fixedLeadingVerticalController
         .addListener(_syncTableVerticalScrollFromLeading);
@@ -241,7 +240,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         return LayoutBuilder(
           builder: (context, constraints) {
             return Padding(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.all(15.0),
               child: Stack(
                 children: [
                   Column(
@@ -264,33 +263,78 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                                 ? 1760.0
                                 : areaConstraints.maxWidth;
                             return Align(
-                              alignment: Alignment.topCenter,
+                              alignment: Alignment.bottomCenter,
                               child: SizedBox(
                                 width: sectionWidth,
                                 height: areaConstraints.maxHeight,
                                 child: SectionCard(
                                   title: '',
-                                  child: Expanded(
-                                    child: Column(
-                                      children: [
+                                  padding: const EdgeInsets.all(10),
+                                  child: Column(
+                                    children: [
+                                      _buildTabSelector(context),
+                                      if (_currentTabIndex == 2)
+                                        Expanded(
+                                          child: _buildEvolutionRemboursementsView(context),
+                                        )
+                                      else ...[
                                         _buildControlsPanel(
                                           context,
                                         ),
-                                        const SizedBox(height: 0),
+                                        const SizedBox(height: 10),
                                         Expanded(
                                           child: _buildScrollableExposureTable(
                                             context,
                                             _visibleRows,
                                           ),
                                         ),
-                                        const SizedBox(height: 3),
-                                        _buildCompactSummaryCards(
-                                          context,
-                                          _visibleSummary,
-                                          _visibleRows.length,
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 8.0, left: 4.0, right: 16.0),
+                                          child: Row(
+                                            children: [
+                                              Container(width: 12, height: 12, decoration: BoxDecoration(color: const Color(0xFFFFECEC), border: Border.all(color: Colors.red.shade200, width: 0.5), borderRadius: BorderRadius.circular(2))),
+                                              const SizedBox(width: 4),
+                                              const Text('Expirée', style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.amber)),
+                                              const SizedBox(width: 8),
+                                              Text('|', style: TextStyle(fontSize: 12, color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[600] : Colors.grey[400])),
+                                              const SizedBox(width: 8),
+                                              Container(width: 12, height: 12, decoration: BoxDecoration(color: const Color(0xFFE6F9EE), border: Border.all(color: Colors.green.shade200, width: 0.5), borderRadius: BorderRadius.circular(2))),
+                                              const SizedBox(width: 4),
+                                              const Text('Entièrement remboursée', style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.amber)),
+                                              const SizedBox(width: 8),
+                                              Text('|', style: TextStyle(fontSize: 12, color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[600] : Colors.grey[400])),
+                                              const SizedBox(width: 8),
+                                              Builder(
+                                                builder: (ctx) {
+                                                  final activesCount = _visibleRows.where((r) {
+                                                    if (r.grossAmount <= 0) return false;
+                                                    final rm = r.residualMaturityMonths ?? _durationInMonths(r.analysisDate, r.maturityDate);
+                                                    if (rm <= 0) return false;
+                                                    return true;
+                                                  }).length;
+                                                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                                                  final style = TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w500,
+                                                    fontStyle: FontStyle.italic,
+                                                    color: isDark ? Colors.blue[300] : const Color(0xFF1E3A8A), // Deep blue
+                                                  );
+                                                  return Row(
+                                                    children: [
+                                                      Text("Nombre total d'expositions : ${_visibleRows.length}", style: style),
+                                                      const SizedBox(width: 8),
+                                                      Text('|', style: style.copyWith(color: isDark ? Colors.grey[600] : Colors.grey[400])),
+                                                      const SizedBox(width: 8),
+                                                      Text("Nombre d'expositions actives : $activesCount", style: style),
+                                                    ],
+                                                  );
+                                                },
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ],
-                                    ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -324,24 +368,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        _buildHeaderActionButton(
-          label: _isImporting
-              ? context.tr('Importation...')
-              : context.tr('Import'),
-          icon: Icons.file_upload_outlined,
-          iconWidget: _isImporting
-              ? const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : null,
-          onPressed: isScreenBusy ? null : _showImportDialog,
-          color: const Color(0xFF1E88E5),
-        ),
         _buildHeaderActionButton(
           label: _isExporting
               ? context.tr('Exportation...')
@@ -400,9 +426,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   String? get _screenBusyMessage {
     if (_isDeleting) {
       return 'Suppression des expositions en cours...';
-    }
-    if (_isImporting) {
-      return 'Importation des expositions en cours...';
     }
     if (_isExporting) {
       return 'Exportation des expositions en cours...';
@@ -625,9 +648,28 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(
+                  Container(
                     width: trailingWidth,
                     height: constraints.maxHeight,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: isDark
+                              ? const Color(0xFF304764)
+                              : const Color(0xFFD6E0EF),
+                          width: 1,
+                        ),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.20 : 0.06,
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(-3, 0),
+                        ),
+                      ],
+                    ),
                     child: Column(
                       children: [
                         _buildStickyTableHeader(
@@ -710,203 +752,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     );
   }
 
-  Widget _buildCompactSummaryCards(
-    BuildContext context,
-    ExposureSummary summary,
-    int visibleCount,
-  ) {
-    final rwAverage = summary.totalEad == 0
-        ? 0.0
-        : (summary.totalRwa / summary.totalEad) * 100;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const gap = 8.0;
-        const cardHeight = 42.0;
-        const countCardWidth = 132.0;
-
-        if (constraints.maxWidth >= 780) {
-          return SizedBox(
-            width: double.infinity,
-            child: Row(
-              children: [
-                SizedBox(
-                  width: countCardWidth,
-                  height: cardHeight,
-                  child: _buildCompactSummaryCard(
-                    context,
-                    label: 'Expositions',
-                    value: '$visibleCount',
-                    detail: 'Expositions affichées',
-                    color: AppTheme.sidebarLight,
-                  ),
-                ),
-                const SizedBox(width: gap),
-                Expanded(
-                  child: SizedBox(
-                    height: cardHeight,
-                    child: _buildCompactSummaryCard(
-                      context,
-                      label: 'Exposition totale brute',
-                      value: _formatDisplayAmount(summary.totalExpositions),
-                      detail: 'Périmètre filtré',
-                      color: AppTheme.sidebarLight,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: gap),
-                Expanded(
-                  child: SizedBox(
-                    height: cardHeight,
-                    child: _buildCompactSummaryCard(
-                      context,
-                      label: 'RWA crédit',
-                      value: _formatDisplayAmount(summary.totalRwa),
-                      detail: 'RW ${rwAverage.toStringAsFixed(0)}%',
-                      color: AppTheme.success,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: gap),
-                Expanded(
-                  child: SizedBox(
-                    height: cardHeight,
-                    child: _buildCompactSummaryCard(
-                      context,
-                      label: 'Capital requis',
-                      value: _formatDisplayAmount(summary.totalCapital),
-                      detail: 'Exigence réglementaire',
-                      color: AppTheme.warning,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final cardWidth = constraints.maxWidth >= 460
-            ? (constraints.maxWidth - gap) / 2
-            : constraints.maxWidth;
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            SizedBox(
-              width: cardWidth,
-              height: cardHeight,
-              child: _buildCompactSummaryCard(
-                context,
-                label: 'Expositions',
-                value: '$visibleCount',
-                detail: 'Expositions affichées',
-                color: AppTheme.sidebarLight,
-              ),
-            ),
-            SizedBox(
-              width: cardWidth,
-              height: cardHeight,
-              child: _buildCompactSummaryCard(
-                context,
-                label: 'Exposition totale brute',
-                value: _formatDisplayAmount(summary.totalExpositions),
-                detail: 'Périmètre filtré',
-                color: AppTheme.sidebarLight,
-              ),
-            ),
-            SizedBox(
-              width: cardWidth,
-              height: cardHeight,
-              child: _buildCompactSummaryCard(
-                context,
-                label: 'RWA crédit',
-                value: _formatDisplayAmount(summary.totalRwa),
-                detail: 'RW ${rwAverage.toStringAsFixed(0)}%',
-                color: AppTheme.success,
-              ),
-            ),
-            SizedBox(
-              width: cardWidth,
-              height: cardHeight,
-              child: _buildCompactSummaryCard(
-                context,
-                label: 'Capital requis',
-                value: _formatDisplayAmount(summary.totalCapital),
-                detail: 'Exigence réglementaire',
-                color: AppTheme.warning,
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildCompactSummaryCard(
-    BuildContext context, {
-    required String label,
-    required String value,
-    required String detail,
-    required Color color,
-  }) {
-    return Tooltip(
-      message: detail.tr(context),
-      waitDuration: const Duration(milliseconds: 350),
-      child: Container(
-        height: double.infinity,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.98),
-          borderRadius: BorderRadius.circular(_screenBorderRadius),
-          border: Border.all(color: color.withValues(alpha: 0.24)),
-        ),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(3, 8, 3, 7),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    label.tr(context).toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppTheme.text,
-                      fontFamily: AppTheme.fontFamily,
-                      fontSize: 6.8,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      value.tr(context),
-                      maxLines: 1,
-                      style: TextStyle(
-                        color: color,
-                        fontFamily: AppTheme.fontFamily,
-                        fontSize: 11.4,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0,
-                        height: 1,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   static const List<String> _fullTableColumnKeys = [
     'id',
@@ -922,6 +768,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     'category',
     'rw',
     'loan_total',
+    'encours_restant',
     'on_balance_amount',
     'off_balance_amount',
     'source_currency',
@@ -935,7 +782,20 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     'rwa_hb',
     'rwa',
     'capital',
+    'statut',
     'actions',
+  ];
+
+  static const List<String> _importedColumnKeys = [
+    'id', 'grant_date', 'maturity_date', 'exposure_maturity', 'residual_maturity',
+    'counterparty', 'counterparty_rating', 'country', 'country_rating', 'country_rw',
+    'category', 'rw', 'loan_total', 'encours_restant', 'on_balance_amount', 'off_balance_amount',
+    'source_currency', 'crm_exists', 'crm_type', 'actions',
+  ];
+
+  static const List<String> _calculatedColumnKeys = [
+    'id', 'counterparty', 'encours_restant', 'ead_bilan', 'ead_hb', 'ead_hb_ccf', 'ead_total',
+    'rwa_eb', 'rwa_hb', 'rwa', 'capital', 'statut', 'actions',
   ];
 
   static const List<String> _denseTableColumnKeys = [
@@ -972,33 +832,35 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   ];
 
   static const List<double> _mainTableWidthWeights = [
-    0.82,
-    0.98,
-    1.02,
-    1.12,
-    1.12,
-    1.48,
-    1.12,
-    1.08,
-    1.08,
-    0.95,
-    1.32,
-    0.92,
-    1.20,
-    1.20,
-    1.20,
-    0.60,
-    0.86,
-    0.94,
-    1.02,
-    1.02,
-    1.02,
-    1.02,
-    1.02,
-    1.08,
-    1.08,
-    1.10,
-    0.72,
+    0.20, // 0  id
+    0.20, // 1  grant_date
+    0.20, // 2  maturity_date
+    0.20, // 3  exposure_maturity
+    0.20, // 4  residual_maturity
+    0.45, // 5  counterparty
+    0.20, // 6  counterparty_rating
+    0.20, // 7  country
+    0.20, // 8  country_rating
+    0.20, // 9  country_rw
+    0.45, // 10 category
+    0.20, // 11 rw
+    0.20, // 12 loan_total
+    0.20, // 13 encours_restant
+    0.20, // 14 on_balance_amount
+    0.20, // 14 off_balance_amount
+    0.20, // 15 source_currency
+    0.20, // 16 crm_exists
+    0.20, // 17 crm_type
+    0.20, // 18 ead_bilan
+    0.20, // 19 ead_hb
+    0.20, // 20 ead_hb_ccf
+    0.20, // 21 ead_total
+    0.20, // 22 rwa_eb
+    0.20, // 23 rwa_hb
+    0.20, // 24 rwa
+    0.20, // 25 capital
+    0.20, // 26 statut
+    0.20, // 27 actions
   ];
 
   static const List<double> _denseTableWidthWeights = [
@@ -1048,7 +910,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   List<String> _tableColumnKeysForMode(_ExposureTableMode mode) {
     switch (mode) {
       case _ExposureTableMode.full:
-        return _fullTableColumnKeys;
+        return _currentTabIndex == 0 ? _importedColumnKeys : _calculatedColumnKeys;
       case _ExposureTableMode.dense:
         return _denseTableColumnKeys;
       case _ExposureTableMode.compact:
@@ -1061,7 +923,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   List<double> _tableWeightsForMode(_ExposureTableMode mode) {
     switch (mode) {
       case _ExposureTableMode.full:
-        return _mainTableWidthWeights;
+        final keys = _tableColumnKeysForMode(mode);
+        return keys.map((k) => _mainTableWidthWeights[_fullTableColumnKeys.indexOf(k)]).toList(growable: false);
       case _ExposureTableMode.dense:
         return _denseTableWidthWeights;
       case _ExposureTableMode.compact:
@@ -1084,7 +947,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   bool _isTrailingFixedTableColumn(String key) {
-    return key == 'actions';
+    return key == 'encours_restant' || key == 'statut' || key == 'actions';
   }
 
   bool _isLockedTableColumn(String key) {
@@ -1105,6 +968,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   double? _fixedTableColumnWidth(String key) {
     return switch (key) {
       'id' => _fixedIdColumnWidth,
+      'encours_restant' => _fixedEncoursColumnWidth,
+      'statut' => _fixedStatutColumnWidth,
       'actions' => _fixedActionsColumnWidth,
       _ => null,
     };
@@ -1291,13 +1156,21 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     TextAlign textAlign = TextAlign.left,
     TextStyle? style,
   }) {
-    final fullValue = AppFormatters.currency(value, currencyCode: currencyCode);
-    final compactValue = AppFormatters.compactNumber(value);
+    final unit = PortfolioAmountUnitScope.maybeOf(context);
+    final scaledValue = value / unit.divisor;
+    
+    String compactValueStr = AppFormatters.decimalNumber(scaledValue, maxDecimals: 1);
+    if (value > 0 && (compactValueStr == '0' || compactValueStr == '-0')) {
+      compactValueStr = '< 0,1';
+    } else if (value < 0 && (compactValueStr == '0' || compactValueStr == '-0')) {
+      compactValueStr = '> -0,1';
+    }
+    
+    final compactValue = '$compactValueStr ${unit.label}';
     return _tableFittedContent(
       width: width,
       text: compactValue,
       style: style ?? _tableCellStyle,
-      tooltip: fullValue,
       alignment: alignment,
       textAlign: textAlign,
     );
@@ -1361,11 +1234,25 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     return (row.finalRw * 100).clamp(0.0, double.infinity).toDouble();
   }
 
-  Color _tableRowBackgroundColor(int index, {required bool isSelected}) {
+  Color _tableRowBackgroundColor(int index, {required bool isSelected, ExposureRecord? row}) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     if (isSelected) {
       return isDark ? const Color(0xFF243B63) : const Color(0xFFDCEBFF);
     }
+    
+    if (row != null) {
+      // Exposition entièrement remboursée (encours = 0)
+      if (row.grossAmount <= 0) {
+        return isDark ? const Color(0xFF1B3A2A) : const Color(0xFFE6F9EE);
+      }
+      // Exposition expirée (maturité résiduelle <= 0)
+      final residualMaturity = row.residualMaturityMonths ?? _durationInMonths(row.analysisDate, row.maturityDate);
+      if (residualMaturity <= 0) {
+        return isDark ? const Color(0xFF4A2B2B) : const Color(0xFFFFECEC);
+      }
+    }
+
     final isEven = index.isEven;
     if (isDark) {
       return isEven ? const Color(0xFF111D33) : const Color(0xFF16243C);
@@ -1569,9 +1456,20 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   String _exposureMaturityLabel(ExposureRecord row) {
+    // Octroi incohérent (postérieur à l'échéance ou à la date d'analyse) ou
+    // absent : la maturité initiale est indéterminée, on affiche un tiret
+    // plutôt qu'un faux « 0 mois ».
+    final coherentGrant = resolveCoherentGrantDate(
+      row.grantDate,
+      row.maturityDate,
+      row.analysisDate,
+    );
+    if (coherentGrant == null) {
+      return '-';
+    }
     return _formatDurationMonths(
       row.exposureMaturityMonths ??
-          _durationInMonths(row.grantDate, row.maturityDate),
+          _durationInMonths(coherentGrant, row.maturityDate),
     );
   }
 
@@ -1609,6 +1507,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   String _columnLabelForKey(String key, _ExposureTableMode mode) {
+    final String currencySuffix = (_displayCurrency == 'Origine' || _displayCurrency.toUpperCase() == 'ORIGINE') 
+        ? '' 
+        : ' (en $_displayCurrencyLabel)';
+
     switch (key) {
       case 'actions':
         return 'Actions';
@@ -1643,35 +1545,39 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'rating':
         return 'Notation';
       case 'gross':
-        return 'Montant_exposition_brut';
+        return 'Montant_exposition_brut$currencySuffix';
       case 'loan_total':
-        return 'PRÊT TOTAL';
+        return 'PRÊT TOTAL$currencySuffix';
+      case 'encours_restant':
+        return 'Encours restant$currencySuffix';
       case 'on_balance_amount':
-        return 'Montant exposition brut au bilan';
+        return 'Exposition au bilan$currencySuffix';
       case 'off_balance_amount':
-        return "Montant d'exposition au HB";
+        return 'Exposition au hors bilan$currencySuffix';
       case 'crm_exists':
         return 'CRM existe';
       case 'crm_type':
         return 'Type CRM';
       case 'ead_bilan':
-        return 'EAD bilan';
+        return 'Exposure at Default (En bilan)$currencySuffix';
       case 'ead_hb':
-        return 'EAD HB';
+        return 'Exposure at Default (Hors bilan)$currencySuffix';
       case 'ead_hb_ccf':
-        return 'EAD HB ccf';
+        return 'Exposure at Default (Hors bilan ccf)$currencySuffix';
       case 'ead_total':
-        return 'EAD Total';
+        return 'Exposure at Default Total$currencySuffix';
       case 'rw':
         return 'Pondération (RW)';
       case 'rwa_eb':
-        return 'RWA EB';
+        return 'RWA (En bilan)$currencySuffix';
       case 'rwa_hb':
-        return 'RWA HB';
+        return 'RWA (Hors bilan)$currencySuffix';
       case 'rwa':
-        return 'RWA crédit';
+        return 'RWA crédit$currencySuffix';
       case 'capital':
-        return 'Capital min req';
+        return 'Capital minimum requis$currencySuffix';
+      case 'statut':
+        return 'Statut';
       case 'crm':
         return 'CRM';
       default:
@@ -1717,6 +1623,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'rating':
       case 'gross':
       case 'loan_total':
+      case 'encours_restant':
       case 'on_balance_amount':
       case 'off_balance_amount':
       case 'crm_exists':
@@ -1750,16 +1657,9 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         );
 
         return Container(
-          height: 40,
+          height: 36,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF2A518A),
-                Color(0xFF23477A),
-              ],
-            ),
+            color: const Color(0xFF001F4E),
             border: Border(
               bottom: BorderSide(
                 color: Colors.white.withValues(alpha: 0.10),
@@ -1769,12 +1669,16 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           child: Row(
             children: List<Widget>.generate(columnKeys.length, (index) {
               final key = columnKeys[index];
+              final width = fittedWidths[index];
+              final needsRightBorder = key == 'encours_restant' || key == 'statut';
+              final innerWidth = needsRightBorder ? (width > 1 ? width - 1 : width) : width;
               return _buildStickyHeaderCell(
-                width: fittedWidths[index],
+                width: innerWidth,
                 label: _columnLabelForKey(key, mode),
                 sortKey: _sortKeyForColumn(key),
                 alignment: _columnAlignment(key),
                 textAlign: _columnTextAlign(key),
+                needsRightBorder: needsRightBorder,
               );
             }),
           ),
@@ -1789,6 +1693,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     required Alignment alignment,
     required TextAlign textAlign,
     String? sortKey,
+    bool needsRightBorder = false,
   }) {
     final isSortable = sortKey != null;
     final isSorted = isSortable && _sortColumnKey == sortKey;
@@ -1796,9 +1701,17 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         ? Icons.arrow_upward_rounded
         : Icons.arrow_downward_rounded;
 
-    return SizedBox(
+    return Container(
       width: width,
       height: 40,
+      decoration: needsRightBorder ? BoxDecoration(
+        border: Border(
+          right: BorderSide(
+            color: Colors.white.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
+      ) : null,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -1808,33 +1721,30 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             child: Row(
               children: [
                 Expanded(
-                  child: Tooltip(
-                    message: label,
-                    child: Align(
-                      alignment: alignment,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              label,
-                              style: _tableHeadingStyle,
-                              textAlign: textAlign,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                            ),
+                  child: Align(
+                    alignment: alignment,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            label,
+                            style: _tableHeadingStyle,
+                            textAlign: textAlign,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
                           ),
-                          if (isSortable && isSorted) ...[
-                            const SizedBox(width: 4),
-                            Icon(
-                              arrowIcon,
-                              size: 15,
-                              color: Colors.white,
-                            ),
-                          ],
+                        ),
+                        if (isSortable && isSorted) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            arrowIcon,
+                            size: 15,
+                            color: Colors.white,
+                          ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ),
@@ -1857,6 +1767,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     final rowColor = _tableRowBackgroundColor(
       rowIndex,
       isSelected: isSelected,
+      row: row,
     );
     final borderColor = isSelected
         ? (isDark ? const Color(0xFF5B7DB0) : const Color(0xFF8AB8FF))
@@ -1881,7 +1792,25 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             children: List<Widget>.generate(columnKeys.length, (index) {
               final key = columnKeys[index];
               final width = fittedWidths[index];
-              final cell = _tableCellForKey(row, key, width);
+              final needsRightBorder = key == 'encours_restant' || key == 'statut';
+              final innerWidth = needsRightBorder ? (width > 1 ? width - 1 : width) : width;
+              final cellContent = _tableCellForKey(row, key, innerWidth);
+              
+              Widget cell = cellContent;
+              if (needsRightBorder) {
+                cell = Container(
+                  width: width,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      right: BorderSide(
+                        color: isDark ? const Color(0xFF304764) : const Color(0xFFD6E0EF),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: cellContent,
+                );
+              }
 
               if (key == 'actions') {
                 return SizedBox(
@@ -1975,25 +1904,31 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'gross':
         return _tableAmountText(
           _convertRowAmount(row.grossAmount, row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'loan_total':
         return _tableAmountText(
           _convertRowAmount(_loanTotalAmountValue(row), row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
+          width: width,
+        );
+      case 'encours_restant':
+        return _tableAmountText(
+          _convertRowAmount(row.grossAmount, row.currency),
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'on_balance_amount':
         return _tableAmountText(
           _convertRowAmount(_onBalanceAmountValue(row), row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'off_balance_amount':
         return _tableAmountText(
           _convertRowAmount(_offBalanceAmountValue(row), row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'crm_exists':
@@ -2003,25 +1938,25 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'ead_bilan':
         return _tableAmountText(
           _convertRowAmount(_eadBilanAmountValue(row), row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'ead_hb':
         return _tableAmountText(
           _convertRowAmount(_eadHbAmountValue(row), row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'ead_hb_ccf':
         return _tableAmountText(
           _convertRowAmount(_eadHbCcfAmountValue(row), row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'ead_total':
         return _tableAmountText(
           _convertRowAmount(_eadTotalAmountValue(row), row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'rw':
@@ -2041,27 +1976,29 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       case 'rwa_eb':
         return _tableAmountText(
           _convertRowAmount(_rwaEbAmountValue(row), row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'rwa_hb':
         return _tableAmountText(
           _convertRowAmount(_rwaHbAmountValue(row), row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'rwa':
         return _tableAmountText(
           _convertRowAmount(row.rwa, row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
       case 'capital':
         return _tableAmountText(
           _convertRowAmount(row.capital, row.currency),
-          currencyCode: _displayCurrency,
+          currencyCode: _displayCurrency == 'Origine' ? row.currency : _displayCurrency,
           width: width,
         );
+      case 'statut':
+        return _tableStatutCell(row, width);
       case 'crm':
         return _tableText(
             _compactCrmValue(row.crmModeLabel.tr(context)), width);
@@ -2070,8 +2007,61 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     }
   }
 
+  Widget _tableStatutCell(ExposureRecord row, double width) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    late final Color background;
+    late final Color foreground;
+    switch (row.statutPrudentiel) {
+      case 'douteuse':
+        background = isDark ? const Color(0xFF4A1D22) : const Color(0xFFFBE7E7);
+        foreground = isDark ? const Color(0xFFFF9B9B) : const Color(0xFFB3261E);
+        break;
+      case 'impayee':
+        background = isDark ? const Color(0xFF4A3A15) : const Color(0xFFFBF1D9);
+        foreground = isDark ? const Color(0xFFF0C368) : const Color(0xFF8A6100);
+        break;
+      default:
+        background = isDark ? const Color(0xFF16351F) : const Color(0xFFE4F3E8);
+        foreground = isDark ? const Color(0xFF7FD79A) : const Color(0xFF1B7A3D);
+    }
+    final label = row.statutPrudentielLabel;
+    final showsDays = row.isImpayee && row.joursImpayes > 0;
+    return Container(
+      width: width,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (row.declassementManuel) ...[
+              Icon(CupertinoIcons.lock_fill, size: 10, color: foreground),
+              const SizedBox(width: 3),
+            ],
+            Flexible(
+              child: Text(
+                showsDays ? '$label · ${row.joursImpayes} j' : label,
+                overflow: TextOverflow.ellipsis,
+                style: _tableCellStyle.copyWith(
+                  color: foreground,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _tableActionsCell(ExposureRecord row, double width) {
-    final isDisabled = _isImporting || _isDeleting;
+    final isDisabled = _isDeleting;
     final iconColor = Theme.of(context).brightness == Brightness.dark
         ? const Color(0xFFEAF1FF)
         : AppTheme.text;
@@ -2090,6 +2080,17 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          _tableActionIconButton(
+            icon: CupertinoIcons.calendar_badge_plus,
+            color: AppTheme.accent,
+            enabled: !isDisabled,
+            onPressed: () {
+              _selectExposureRow(row);
+              _openSuiviPanel(row);
+            },
+            semanticLabel: "Suivi des versements de l'exposition ${row.id}",
+          ),
+          const SizedBox(width: 3),
           _tableActionIconButton(
             icon: CupertinoIcons.pencil,
             color: iconColor,
@@ -2114,6 +2115,21 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _openSuiviPanel(ExposureRecord row) async {
+    final changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => SuiviVersementsDialog(
+        api: widget.api,
+        exposureId: row.id,
+        counterpartyName: row.counterparty.name,
+      ),
+    );
+    if (changed == true && mounted) {
+      await _refresh();
+    }
   }
 
   Widget _tableActionIconButton({
@@ -2157,6 +2173,40 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       }
       _recomputeVisibleView();
     });
+  }
+
+  Widget _buildTabSelector(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12.0),
+        child: CupertinoSlidingSegmentedControl<int>(
+          groupValue: _currentTabIndex,
+          children: {
+            0: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Text('Données importées', style: TextStyle(fontSize: 13, fontWeight: _currentTabIndex == 0 ? FontWeight.w600 : FontWeight.w500)),
+            ),
+            1: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Text('Indicateurs calculés', style: TextStyle(fontSize: 13, fontWeight: _currentTabIndex == 1 ? FontWeight.w600 : FontWeight.w500)),
+            ),
+            2: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Text('Evolution des remboursements', style: TextStyle(fontSize: 13, fontWeight: _currentTabIndex == 2 ? FontWeight.w600 : FontWeight.w500)),
+            ),
+          },
+          onValueChanged: (int? value) {
+            if (value != null && value != _currentTabIndex) {
+              setState(() {
+                _currentTabIndex = value;
+                _recomputeVisibleView();
+              });
+            }
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildControlsPanel(BuildContext context) {
@@ -2620,7 +2670,8 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
 
         return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
-            final selectedKeys = _normalizeVisibleColumnKeys(draftKeys);
+            final currentTabKeys = _currentTabIndex == 0 ? _importedColumnKeys : _calculatedColumnKeys;
+            final selectedKeys = _normalizeVisibleColumnKeys(draftKeys).where((k) => currentTabKeys.contains(k)).toList();
             final selectedCount = selectedKeys.length;
 
             return AlertDialog(
@@ -2654,7 +2705,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                     ),
                   ),
                   Text(
-                    '$selectedCount/${_fullTableColumnKeys.length}',
+                    '$selectedCount/${currentTabKeys.length}',
                     style: TextStyle(
                       color: mutedColor,
                       fontFamily: AppTheme.fontFamily,
@@ -2686,21 +2737,18 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                         ),
                         TextButton(
                           onPressed: () => setDialogState(() {
-                            draftKeys
-                              ..clear()
-                              ..addAll(_fullTableColumnKeys);
+                            draftKeys.addAll(currentTabKeys);
                           }),
                           child: Text('Tout afficher'.tr(context)),
                         ),
                         TextButton(
                           onPressed: () => setDialogState(() {
-                            draftKeys
-                              ..clear()
-                              ..addAll(
-                                _fullTableColumnKeys.where(
-                                  _isLockedTableColumn,
-                                ),
-                              );
+                            draftKeys.removeAll(currentTabKeys);
+                            draftKeys.addAll(
+                              currentTabKeys.where(
+                                _isLockedTableColumn,
+                              ),
+                            );
                           }),
                           child: Text('Réduire'.tr(context)),
                         ),
@@ -2719,13 +2767,13 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                         ),
                         child: ListView.separated(addSemanticIndexes: false,
                           padding: const EdgeInsets.symmetric(vertical: 6),
-                          itemCount: _fullTableColumnKeys.length,
+                          itemCount: currentTabKeys.length,
                           separatorBuilder: (_, __) => Divider(
                             height: 1,
                             color: borderColor.withValues(alpha: 0.58),
                           ),
                           itemBuilder: (context, index) {
-                            final key = _fullTableColumnKeys[index];
+                            final key = currentTabKeys[index];
                             final locked = _isLockedTableColumn(key);
                             final checked = locked || draftKeys.contains(key);
 
@@ -2786,7 +2834,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                 ),
                 FilledButton(
                   onPressed: () =>
-                      Navigator.of(dialogContext).pop(selectedKeys),
+                      Navigator.of(dialogContext).pop(draftKeys),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppTheme.accent,
                     foregroundColor: Colors.white,
@@ -3188,7 +3236,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   void _recomputeVisibleView() {
     final rows = _buildVisibleRows();
     _visibleRows = rows;
-    _visibleSummary = _summarize(rows);
     if (_selectedExposureId != null &&
         rows.every((row) => row.id != _selectedExposureId)) {
       _selectedExposureId = null;
@@ -3269,6 +3316,10 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
             _convertRowAmount(_loanTotalAmountValue(left), left.currency)
                 .compareTo(_convertRowAmount(
                     _loanTotalAmountValue(right), right.currency)),
+          'encours_restant' =>
+            _convertRowAmount(left.grossAmount, left.currency)
+                .compareTo(_convertRowAmount(
+                    right.grossAmount, right.currency)),
           'on_balance_amount' =>
             _convertRowAmount(_onBalanceAmountValue(left), left.currency)
                 .compareTo(_convertRowAmount(
@@ -3318,21 +3369,6 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
     return rows;
   }
 
-  ExposureSummary _summarize(List<ExposureRecord> rows) {
-    return ExposureSummary(
-      totalExpositions: rows.fold<double>(
-          0,
-          (sum, item) =>
-              sum +
-              _convertRowAmount(_loanTotalAmountValue(item), item.currency)),
-      totalEad: rows.fold<double>(
-          0, (sum, item) => sum + _convertRowAmount(item.ead, item.currency)),
-      totalRwa: rows.fold<double>(
-          0, (sum, item) => sum + _convertRowAmount(item.rwa, item.currency)),
-      totalCapital: rows.fold<double>(0,
-          (sum, item) => sum + _convertRowAmount(item.capital, item.currency)),
-    );
-  }
 
   double _convertAmountForDisplay(double amount, String sourceCurrency) {
     return convertAmount(
@@ -3549,7 +3585,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   }
 
   Future<void> _deleteSingleExposure(ExposureRecord row) async {
-    if (_isDeleting || _isImporting) {
+    if (_isDeleting) {
       return;
     }
 
@@ -4109,6 +4145,11 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           _formatDisplayAmount(
               _convertRowAmount(_loanTotalAmountValue(row), row.currency)),
         );
+      case 'encours_restant':
+        return _pdfTableCell(
+          _formatDisplayAmount(
+              _convertRowAmount(row.grossAmount, row.currency)),
+        );
       case 'on_balance_amount':
         return _pdfTableCell(
           _formatDisplayAmount(
@@ -4163,8 +4204,554 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         return _pdfTableCell(
           _formatDisplayAmount(_convertRowAmount(row.capital, row.currency)),
         );
+      case 'statut':
+        return _pdfTableCell(
+          row.isImpayee && row.joursImpayes > 0
+              ? '${row.statutPrudentielLabel} (${row.joursImpayes} j)'
+              : row.statutPrudentielLabel,
+          color: _pdfStatutColor(row.statutPrudentiel),
+          fontWeight: pw.FontWeight.bold,
+        );
       default:
         return _pdfTableCell('');
+    }
+  }
+
+  Widget _buildEvolutionRemboursementsView(BuildContext context) {
+    final now = DateTime.now();
+    
+    final List<DateTime> last12Months = List.generate(12, (index) {
+      return DateTime(now.year, now.month - 11 + index);
+    });
+
+    // Data for Chart 1: Reimbursements received per month
+    final Map<DateTime, double> reimbursementsPerMonth = {};
+    for (final month in last12Months) {
+      reimbursementsPerMonth[month] = 0.0;
+    }
+    
+    for (final row in _visibleRows) {
+      if (row.actualReimbursements.isNotEmpty) {
+        // 1. Si les données réelles de la BD sont présentes, on les utilise directement
+        for (final entry in row.actualReimbursements.entries) {
+          final monthKey = DateTime(entry.key.year, entry.key.month, 1);
+          if (reimbursementsPerMonth.containsKey(monthKey)) {
+            reimbursementsPerMonth[monthKey] = reimbursementsPerMonth[monthKey]! + entry.value;
+          }
+        }
+      }
+    }
+    final sortedReimbursementKeys = last12Months;
+    
+    // Data for Chart 2: Number of obligations per month over last 12 months
+    final List<int> obligationsPerMonth = [];
+    for (final month in last12Months) {
+      final firstDayOfThisMonth = DateTime(month.year, month.month, 1);
+      final firstDayOfNextMonth = DateTime(month.year, month.month + 1, 1);
+      int count = 0;
+      for (final row in _visibleRows) {
+        final gDate = row.grantDate ?? DateTime(2000, 1, 1);
+        final mDate = row.maturityDate ?? DateTime(2100, 1, 1);
+        
+        // Une exposition est "en vie" durant ce mois si :
+        // 1. Elle a été octroyée AVANT le 1er du mois suivant (donc octroyée ce mois-ci ou avant)
+        // 2. Elle n'est PAS arrivée à échéance AVANT le 1er de ce mois (donc elle expire ce mois-ci ou après)
+        if (gDate.isBefore(firstDayOfNextMonth) && !mDate.isBefore(firstDayOfThisMonth)) {
+          count++;
+        }
+      }
+      obligationsPerMonth.add(count);
+    }
+    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFF2F6FF) : const Color(0xFF13203A);
+    final gridColor = isDark ? const Color(0xFF304764) : const Color(0xFFE2E8F0);
+
+    final chartDropdown = Container(
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: isDark ? const Color(0xFF304764) : const Color(0xFFDDE7F6)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: _selectedEvolutionChartIndex,
+          icon: Icon(Icons.arrow_drop_down, color: textColor, size: 20),
+          dropdownColor: isDark ? const Color(0xFF101C32) : Colors.white,
+          style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w500),
+          isDense: true,
+          items: const [
+            DropdownMenuItem(
+              value: 0,
+              child: Text('Évolution des remboursements (XOF)'),
+            ),
+            DropdownMenuItem(
+              value: 1,
+              child: Text("Nombre d'expositions (12 derniers mois)"),
+            ),
+          ],
+          onChanged: (value) {
+            if (value != null && value != _selectedEvolutionChartIndex) {
+              setState(() {
+                _selectedEvolutionChartIndex = value;
+              });
+            }
+          },
+        ),
+      ),
+    );
+
+    double maxReimbursement = 0;
+    if (reimbursementsPerMonth.isNotEmpty) {
+      maxReimbursement = reimbursementsPerMonth.values.reduce((a, b) => a > b ? a : b);
+    }
+    double maxObligations = 0;
+    if (obligationsPerMonth.isNotEmpty) {
+      maxObligations = obligationsPerMonth.reduce((a, b) => a > b ? a : b).toDouble();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _selectedEvolutionChartIndex == 0 
+                      ? 'Évolution des remboursements (XOF)' 
+                      : "Nombre d'expositions",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+                  ),
+                  if (_selectedEvolutionChartIndex != 0)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        'Sur les 12 derniers mois',
+                        style: TextStyle(fontSize: 12, color: AppTheme.muted, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                ],
+              ),
+              chartDropdown,
+            ],
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 400),
+                child: _selectedEvolutionChartIndex == 0 
+                  ? (sortedReimbursementKeys.isEmpty
+                      ? Center(child: Text('Aucune donnée de remboursement', style: TextStyle(color: textColor)))
+                      : Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            BarChart(
+                              BarChartData(
+                                alignment: BarChartAlignment.spaceAround,
+                                maxY: maxReimbursement * 1.2,
+                                barTouchData: const BarTouchData(enabled: false),
+                                titlesData: FlTitlesData(
+                                  bottomTitles: AxisTitles(
+                                    axisNameWidget: Text('Mois', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textColor)),
+                                    axisNameSize: 22,
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      interval: 1,
+                                      reservedSize: 70,
+                                      getTitlesWidget: (value, meta) {
+                                        if (value % 1 != 0) return const SizedBox.shrink();
+                                        if (value.toInt() >= 0 && value.toInt() < sortedReimbursementKeys.length) {
+                                          final date = sortedReimbursementKeys[value.toInt()];
+                                          String monthStr = DateFormat.MMMM('fr').format(date);
+                                          monthStr = monthStr[0].toUpperCase() + monthStr.substring(1);
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Container(width: 1, height: 4, color: textColor.withValues(alpha: 0.5)),
+                                              const SizedBox(height: 20),
+                                              Padding(
+                                                padding: const EdgeInsets.only(right: 16.0),
+                                                child: Transform.rotate(
+                                                  angle: -0.5,
+                                                  child: Text('$monthStr ${date.year}', style: TextStyle(fontSize: 10, color: textColor)),
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        }
+                                        return const Text('');
+                                      },
+                                    ),
+                                  ),
+                                  leftTitles: AxisTitles(
+                                    axisNameWidget: Text('Montant remboursé', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textColor)),
+                                    axisNameSize: 22,
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      reservedSize: 55,
+                                      getTitlesWidget: (value, meta) {
+                                        String label = value.toInt().toString();
+                                        if (value >= 1000000000) {
+                                          label = '${(value / 1000000000).toStringAsFixed(1).replaceAll('.0', '')} Md';
+                                        } else if (value >= 1000000) {
+                                          label = '${(value / 1000000).toStringAsFixed(1).replaceAll('.0', '')} M';
+                                        } else if (value >= 1000) {
+                                          label = '${(value / 1000).toStringAsFixed(1).replaceAll('.0', '')} k';
+                                        }
+                                        return Text(label, style: TextStyle(fontSize: 10, color: textColor));
+                                      },
+                                    ),
+                                  ),
+                                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                ),
+                                gridData: FlGridData(
+                                  show: true, 
+                                  drawVerticalLine: false,
+                                  getDrawingHorizontalLine: (value) => FlLine(color: gridColor, strokeWidth: 0.5, dashArray: [5, 5]),
+                                ),
+                                borderData: FlBorderData(
+                                  show: true,
+                                  border: Border(
+                                    bottom: BorderSide(color: textColor.withValues(alpha: 0.5), width: 1),
+                                    left: BorderSide(color: textColor.withValues(alpha: 0.5), width: 1),
+                                    right: BorderSide.none,
+                                    top: BorderSide.none,
+                                  ),
+                                ),
+                                barGroups: sortedReimbursementKeys.asMap().entries.map((e) {
+                                  final date = e.value;
+                                  final isCurrentMonth = date.year == DateTime.now().year && date.month == DateTime.now().month;
+                                  return BarChartGroupData(
+                                    x: e.key,
+                                    barRods: [
+                                      BarChartRodData(
+                                        toY: reimbursementsPerMonth[e.value]!.toDouble(),
+                                        color: isCurrentMonth ? Colors.amber : const Color(0xFF0D47A1),
+                                        width: 40,
+                                        borderRadius: BorderRadius.zero,
+                                      ),
+                                    ],
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                            LineChart(
+                          LineChartData(
+                            lineTouchData: LineTouchData(
+                              touchTooltipData: LineTouchTooltipData(
+                                maxContentWidth: 200,
+                                tooltipBorder: BorderSide(color: textColor.withValues(alpha: 0.2), width: 1),
+                                tooltipBorderRadius: BorderRadius.circular(8),
+                                fitInsideHorizontally: true,
+                                fitInsideVertically: true,
+                                getTooltipColor: (touchedSpot) => Theme.of(context).cardColor,
+                                getTooltipItems: (touchedSpots) {
+                                  return touchedSpots.map((LineBarSpot touchedSpot) {
+                                    final date = sortedReimbursementKeys[touchedSpot.x.toInt()];
+                                    String monthStr = DateFormat.MMMM('fr').format(date);
+                                    monthStr = monthStr[0].toUpperCase() + monthStr.substring(1);
+                                    final valStr = touchedSpot.y.toStringAsFixed(0).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => '\u00A0');
+                                    return LineTooltipItem(
+                                      '$monthStr ${date.year}\n',
+                                      TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
+                                      children: [
+                                        TextSpan(
+                                          text: '$valStr\u00A0XOF',
+                                          style: const TextStyle(color: Color(0xFF1E88E5), fontWeight: FontWeight.w600, fontSize: 14),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList();
+                                },
+                              ),
+                              getTouchLineEnd: (barData, spotIndex) => double.infinity,
+                              getTouchedSpotIndicator: (LineChartBarData barData, List<int> spotIndexes) {
+                                return spotIndexes.map((index) {
+                                  return TouchedSpotIndicatorData(
+                                    FlLine(color: const Color(0xFF1E88E5).withValues(alpha: 0.5), strokeWidth: 1, dashArray: [4, 4]),
+                                    FlDotData(
+                                      show: true,
+                                      getDotPainter: (spot, percent, barData, index) {
+                                        return FlDotCirclePainter(radius: 4, color: Colors.white, strokeWidth: 2, strokeColor: const Color(0xFF1E88E5));
+                                      },
+                                    ),
+                                  );
+                                }).toList();
+                              },
+                            ),
+                            minX: -0.5,
+                            maxX: sortedReimbursementKeys.length - 0.5,
+                            minY: 0,
+                            maxY: maxReimbursement * 1.2,
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: sortedReimbursementKeys.asMap().entries.map((e) {
+                                  return FlSpot(e.key.toDouble(), reimbursementsPerMonth[e.value]!.toDouble());
+                                }).toList(),
+                                isCurved: false,
+                                color: const Color(0xFF1E88E5),
+                                barWidth: 1.5,
+                                dotData: FlDotData(
+                                  show: true,
+                                  getDotPainter: (spot, percent, barData, index) {
+                                    return FlDotCirclePainter(
+                                      radius: 2.5,
+                                      color: const Color(0xFF1E88E5),
+                                      strokeWidth: 2,
+                                      strokeColor: Colors.white,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                            titlesData: FlTitlesData(
+                              bottomTitles: AxisTitles(
+                                axisNameWidget: const SizedBox.shrink(),
+                                axisNameSize: 22,
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  interval: 1,
+                                  reservedSize: 70,
+                                  getTitlesWidget: (value, meta) => const SizedBox.shrink(),
+                                ),
+                              ),
+                              leftTitles: AxisTitles(
+                                axisNameWidget: const SizedBox.shrink(),
+                                axisNameSize: 22,
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 55,
+                                  getTitlesWidget: (value, meta) => const SizedBox.shrink(),
+                                ),
+                              ),
+                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            ),
+                            gridData: const FlGridData(show: false),
+                            borderData: FlBorderData(show: false),
+                          ),
+                        ),
+
+                          ],
+                        ))
+                  : Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        BarChart(
+                          BarChartData(
+                            barTouchData: BarTouchData(
+                              enabled: false,
+                              touchTooltipData: BarTouchTooltipData(
+                                tooltipBorder: const BorderSide(color: Colors.transparent, width: 0),
+                                tooltipPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                tooltipMargin: 8,
+                                getTooltipColor: (group) => Colors.transparent,
+                                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                  final valStr = rod.toY.toStringAsFixed(0).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ' ');
+                                  return BarTooltipItem(
+                                    valStr,
+                                    const TextStyle(color: Color(0xFF0D47A1), fontWeight: FontWeight.bold, fontSize: 10),
+                                  );
+                                },
+                              ),
+                            ),
+                            maxY: maxObligations * 1.2,
+                            barGroups: last12Months.asMap().entries.map((e) {
+                              final date = e.value;
+                              final isCurrentMonth = date.year == DateTime.now().year && date.month == DateTime.now().month;
+                              return BarChartGroupData(
+                                x: e.key,
+                                showingTooltipIndicators: const [],
+                                barRods: [
+                                  BarChartRodData(
+                                    toY: obligationsPerMonth[e.key].toDouble(),
+                                    color: isCurrentMonth ? Colors.amber : const Color(0xFF0D47A1),
+                                    width: 16,
+                                    borderRadius: BorderRadius.zero,
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                            titlesData: FlTitlesData(
+                              bottomTitles: AxisTitles(
+                                axisNameWidget: Text('Mois', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textColor)),
+                                axisNameSize: 22,
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  interval: 1,
+                                  reservedSize: 70,
+                                  getTitlesWidget: (value, meta) {
+                                    if (value % 1 != 0) return const SizedBox.shrink();
+                                    if (value.toInt() >= 0 && value.toInt() < last12Months.length) {
+                                      final date = last12Months[value.toInt()];
+                                      String monthStr = DateFormat.MMMM('fr').format(date);
+                                      monthStr = monthStr[0].toUpperCase() + monthStr.substring(1);
+                                      return Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(width: 1, height: 4, color: textColor.withValues(alpha: 0.5)),
+                                          const SizedBox(height: 20),
+                                          Padding(
+                                            padding: const EdgeInsets.only(right: 16.0),
+                                            child: Transform.rotate(
+                                              angle: -0.5,
+                                              child: Text('$monthStr ${date.year}', style: TextStyle(fontSize: 10, color: textColor)),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                    return const Text('');
+                                  },
+                                ),
+                              ),
+                              leftTitles: AxisTitles(
+                                axisNameWidget: Text('Nombre d\'expositions', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: textColor)),
+                                axisNameSize: 22,
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 40,
+                                  getTitlesWidget: (value, meta) {
+                                    String label = value.toInt().toString();
+                                    if (value >= 1000000) {
+                                      label = '${(value / 1000000).toStringAsFixed(1)} M';
+                                    } else if (value >= 1000) {
+                                      label = '${(value / 1000).toStringAsFixed(0)} k';
+                                    }
+                                    return Text(label, style: TextStyle(fontSize: 10, color: textColor));
+                                  },
+                                ),
+                              ),
+                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            ),
+                            gridData: FlGridData(
+                              show: true, 
+                              drawVerticalLine: false,
+                              getDrawingHorizontalLine: (value) => FlLine(color: gridColor, strokeWidth: 0.5, dashArray: [5, 5]),
+                            ),
+                            borderData: FlBorderData(
+                              show: true,
+                              border: Border(
+                                bottom: BorderSide(color: textColor.withValues(alpha: 0.5), width: 1),
+                                left: BorderSide(color: textColor.withValues(alpha: 0.5), width: 1),
+                                right: BorderSide.none,
+                                top: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        BarChart(
+                          BarChartData(
+                            barTouchData: BarTouchData(
+                              enabled: true,
+                              handleBuiltInTouches: true,
+                              touchTooltipData: BarTouchTooltipData(
+                                tooltipBorder: BorderSide(color: textColor.withValues(alpha: 0.2), width: 1),
+                                tooltipPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                tooltipMargin: 8,
+                                getTooltipColor: (group) => Theme.of(context).cardColor,
+                                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                  final date = last12Months[group.x];
+                                  const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+                                  final monthStr = months[date.month - 1];
+                                  final valStr = rod.toY.toStringAsFixed(0).replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (m) => ' ');
+                                  return BarTooltipItem(
+                                    '$monthStr ${date.year}\n',
+                                    TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 12),
+                                    children: [
+                                      TextSpan(
+                                        text: '$valStr expositions',
+                                        style: const TextStyle(color: Color(0xFF0D47A1), fontWeight: FontWeight.w600, fontSize: 14),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                            maxY: maxObligations * 1.2,
+                            barGroups: last12Months.asMap().entries.map((e) {
+                              return BarChartGroupData(
+                                x: e.key,
+                                barRods: [
+                                  BarChartRodData(
+                                    toY: obligationsPerMonth[e.key].toDouble(),
+                                    color: Colors.transparent,
+                                    width: 16,
+                                    borderRadius: BorderRadius.zero,
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                            titlesData: FlTitlesData(
+                              bottomTitles: AxisTitles(
+                                axisNameWidget: const SizedBox.shrink(),
+                                axisNameSize: 22,
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  interval: 1,
+                                  reservedSize: 70,
+                                  getTitlesWidget: (value, meta) => const SizedBox.shrink(),
+                                ),
+                              ),
+                              leftTitles: AxisTitles(
+                                axisNameWidget: const SizedBox.shrink(),
+                                axisNameSize: 22,
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  reservedSize: 40,
+                                  getTitlesWidget: (value, meta) => const SizedBox.shrink(),
+                                ),
+                              ),
+                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            ),
+                            gridData: const FlGridData(show: false),
+                            borderData: FlBorderData(show: false),
+                          ),
+                        ),
+                      ],
+                    ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(width: 16, height: 16, color: Colors.amber),
+              const SizedBox(width: 8),
+              Text('Mois actuel', style: TextStyle(color: textColor, fontSize: 12)),
+              const SizedBox(width: 24),
+              Container(width: 16, height: 16, color: const Color(0xFF0D47A1)),
+              const SizedBox(width: 8),
+              Text('Mois précédents', style: TextStyle(color: textColor, fontSize: 12)),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  PdfColor _pdfStatutColor(String statut) {
+    switch (statut) {
+      case 'douteuse':
+        return const PdfColor.fromInt(0xFFB3261E);
+      case 'impayee':
+        return const PdfColor.fromInt(0xFF8A6100);
+      default:
+        return const PdfColor.fromInt(0xFF1B7A3D);
     }
   }
 
@@ -4191,38 +4778,4 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         '${twoDigits(now.hour)}${twoDigits(now.minute)}${twoDigits(now.second)}';
   }
 
-  Future<void> _showImportDialog() async {
-    Map<String, dynamic>? successfulImportResult;
-    setState(() => _isImporting = true);
-    try {
-      successfulImportResult = await showExcelImportDialog(
-        context,
-        api: widget.api,
-        onImportApplied: _queueRefresh,
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isImporting = false);
-      }
-    }
-    if (!mounted || successfulImportResult == null) {
-      return;
-    }
-    final rejectedRows =
-        (successfulImportResult['rejected_rows'] as num?)?.toInt() ?? 0;
-    final importedRows =
-        (successfulImportResult['imported_rows'] as num?)?.toInt() ?? 0;
-    final updatedRows =
-        (successfulImportResult['updated_rows'] as num?)?.toInt() ?? 0;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppTheme.success,
-        content: Text(
-          rejectedRows > 0
-              ? 'Import terminé. $rejectedRows exposition(s) rejetée(s), $importedRows importée(s), $updatedRows mise(s) à jour.'
-              : 'Import terminé avec succès.',
-        ),
-      ),
-    );
-  }
 }

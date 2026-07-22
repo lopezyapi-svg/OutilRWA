@@ -88,7 +88,7 @@ class FxRateService {
       response = await _client.get(_endpointBuilder(base)).timeout(timeout);
     } on TimeoutException {
       throw FxRateException(
-          'Délai dépassé — vérifiez votre connexion Internet.');
+          'Délai dépassé - vérifiez votre connexion Internet.');
     } catch (_) {
       throw FxRateException(
           'Pas de connexion Internet ou source indisponible.');

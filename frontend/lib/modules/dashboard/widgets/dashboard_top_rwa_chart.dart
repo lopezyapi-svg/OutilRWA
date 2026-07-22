@@ -42,54 +42,69 @@ class DashboardTopRwaChart extends StatelessWidget {
 
     final maxAmount = top5.map((e) => e.amount).fold<double>(0.0, math.max);
 
+    final c = DashColors.of(context);
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: top5.map((entry) {
-            final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
-            final valScaled = entry.amount / amountUnit.divisor;
-            final formatted = AppFormatters.decimalNumber(valScaled, maxDecimals: 2);
-            final suffix = amountUnit.label;
-            return Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 2.0),
-                alignment: Alignment.bottomCenter,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    '$formatted $suffix',
-                    style: DashText.caption(DashColors.of(context), color: DashColors.of(context).muted)
-                        .copyWith(fontSize: 10, fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
         Expanded(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: top5.asMap().entries.map((mapEntry) {
-              final index = mapEntry.key;
-              final entry = mapEntry.value;
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                  child: _VerticalBarItem(
-                    entry: entry,
-                    maxAmount: maxAmount,
-                    color: _barColors[index % _barColors.length],
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: c.ink.withValues(alpha: 0.2), width: 1.5),
+                bottom: BorderSide(color: c.ink.withValues(alpha: 0.2), width: 1.5),
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: top5.map((entry) {
+                    final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
+                    final valScaled = entry.amount / amountUnit.divisor;
+                    final formatted = AppFormatters.decimalNumber(valScaled, maxDecimals: 2);
+                    final suffix = amountUnit.label;
+                    return Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                        alignment: Alignment.bottomCenter,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '$formatted $suffix',
+                            style: DashText.caption(c, color: const Color(0xFF1E3A8A))
+                                .copyWith(fontSize: 9, fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: top5.asMap().entries.map((mapEntry) {
+                      final index = mapEntry.key;
+                      final entry = mapEntry.value;
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                          child: _VerticalBarItem(
+                            entry: entry,
+                            maxAmount: maxAmount,
+                            color: _barColors[index % _barColors.length],
+                          ),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ),
-              );
-            }).toList(),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,8 +116,8 @@ class DashboardTopRwaChart extends StatelessWidget {
                 child: Text(
                   _cleanLabel(entry.label).tr(context),
                   textAlign: TextAlign.center,
-                  style: DashText.caption(DashColors.of(context), color: DashColors.of(context).ink)
-                      .copyWith(fontWeight: FontWeight.w500, fontSize: 11),
+                  style: DashText.caption(c, color: const Color(0xFF1E3A8A))
+                      .copyWith(fontWeight: FontWeight.w500, fontSize: 9.5),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -162,7 +177,7 @@ class _VerticalBarItemState extends State<_VerticalBarItem> {
                       height: maxHeight,
                       decoration: BoxDecoration(
                         color: widget.color.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.zero,
                       ),
                     ),
                     AnimatedContainer(
@@ -172,7 +187,7 @@ class _VerticalBarItemState extends State<_VerticalBarItem> {
                       height: barHeight,
                       decoration: BoxDecoration(
                         color: widget.color,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.zero,
                         boxShadow: _isHovered ? [BoxShadow(color: widget.color.withValues(alpha: 0.4), blurRadius: 4, offset: const Offset(0, -2))] : [],
                       ),
                     ),
@@ -180,7 +195,7 @@ class _VerticalBarItemState extends State<_VerticalBarItem> {
                   bottom: barHeight + 4,
                   child: Text(
                     '${AppFormatters.decimalNumber(percentage, maxDecimals: 1)}%',
-                    style: DashText.caption(c, color: widget.color).copyWith(fontWeight: FontWeight.w700, fontSize: 11),
+                    style: DashText.caption(c, color: const Color(0xFF1E3A8A)).copyWith(fontWeight: FontWeight.w700, fontSize: 9.5),
                   ),
                 ),
               ],

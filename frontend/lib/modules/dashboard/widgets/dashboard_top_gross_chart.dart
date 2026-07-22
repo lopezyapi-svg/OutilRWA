@@ -95,7 +95,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
               Expanded(
                 child: Text(
                   _cleanLabel(widget.entry.label).tr(context),
-                  style: DashText.caption(c, color: _isHovered ? widget.color : c.ink).copyWith(fontWeight: FontWeight.w600),
+                  style: DashText.caption(c, color: _isHovered ? widget.color : const Color(0xFF1E3A8A)).copyWith(fontWeight: FontWeight.w600, fontSize: 10),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -103,7 +103,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
               const SizedBox(width: 8),
               Text(
                 '$formattedAmount $suffix',
-                style: DashText.caption(c, color: _isHovered ? widget.color : c.muted).copyWith(fontWeight: _isHovered ? FontWeight.w600 : FontWeight.w500),
+                style: DashText.caption(c, color: _isHovered ? widget.color : const Color(0xFF1E3A8A)).copyWith(fontWeight: FontWeight.bold, fontSize: 10),
                 textAlign: TextAlign.right,
                 maxLines: 1,
               ),
@@ -127,7 +127,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
                       height: 16,
                       decoration: BoxDecoration(
                         color: widget.color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.zero,
                       ),
                     ),
                     AnimatedContainer(
@@ -137,7 +137,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
                       height: 16,
                       decoration: BoxDecoration(
                         color: widget.color,
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.zero,
                         boxShadow: _isHovered ? [BoxShadow(color: widget.color.withValues(alpha: 0.3), blurRadius: 4, offset: const Offset(0, 2))] : [],
                       ),
                     ),
@@ -149,7 +149,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
                       child: Center(
                         child: Text(
                           '${AppFormatters.decimalNumber(percentage, maxDecimals: 1)}%',
-                          style: DashText.caption(c, color: c.navy).copyWith(fontWeight: FontWeight.w700, fontSize: 10),
+                          style: DashText.caption(c, color: const Color(0xFF1E3A8A)).copyWith(fontWeight: FontWeight.w700, fontSize: 9.5),
                         ),
                       ),
                     ),

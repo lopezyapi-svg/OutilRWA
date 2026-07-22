@@ -12,12 +12,14 @@ class SectionCard extends StatelessWidget {
     required this.child,
     this.trailing,
     this.titleStyle,
+    this.padding,
   });
 
   final String title;
   final Widget child;
   final Widget? trailing;
   final TextStyle? titleStyle;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +29,8 @@ class SectionCard extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Flexible doit rester enfant direct d'un Flex — on insère le padding à l'intérieur.
-        const pad = EdgeInsets.all(AppTheme.spacing);
+        // Flexible doit rester enfant direct d'un Flex - on insère le padding à l'intérieur.
+        final pad = padding ?? const EdgeInsets.all(AppTheme.spacing);
         Widget content;
         if (child is Flexible) {
           final f = child as Flexible;

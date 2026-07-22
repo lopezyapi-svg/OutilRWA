@@ -31,6 +31,28 @@ class PortfolioRow(BaseModel):
     ead: float
     rwa: float
     capital: float
+    # Detail de la technique d'attenuation, en XOF comme le reste de la ligne.
+    # Sans ces champs, le detail par CRM ne peut montrer ni la surete retenue,
+    # ni le garant, ni l'effet reel de la garantie sur l'exigence.
+    # Echelon prudentiel deduit de la notation : il designe la ligne de grille
+    # qui fixe la ponderation, il ne remplace pas la note de la contrepartie.
+    rating_band: str = ""
+    guarantor_rating_band: str = ""
+    crm_label: str = ""
+    crm_coverage_percent: float = 0.0
+    collateral_type: str = ""
+    collateral_value: float = 0.0
+    collateral_value_after_haircut: float = 0.0
+    collateral_haircut: float = 0.0
+    crm_eligible: bool = True
+    crm_ineligibility_reason: str = ""
+    guarantor_name: str = ""
+    guarantor_category: str = ""
+    guarantor_rating: str = ""
+    guarantor_risk_weight: float = 0.0
+    original_risk_weight: float = 0.0
+    final_risk_weight: float = 0.0
+    rwa_before_crm: float = 0.0
 
 class TopExposure(BaseModel):
     counterparty: str

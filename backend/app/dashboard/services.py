@@ -7,7 +7,11 @@ from datetime import date, datetime
 import math
 import unicodedata
 
-from app.core.calculations import convert_currency_amount, safe_ratio
+from app.core.calculations import (
+    calculate_capital,
+    convert_currency_amount,
+    safe_ratio,
+)
 from app.core.bceao_calculations import (
     calculate_fonds_propres,
     evaluate_ratios
@@ -133,7 +137,12 @@ def _normalize_row(row: ExposureView) -> dict[str, object]:
     return {
         "row": row,
         "category": normalize_exposure_category_label(row.counterparty.category),
-        "rating": normalize_exposure_rating_label(row.counterparty.rating),
+        # La note de la contrepartie est une donnee de la ligne : l'echelon
+        # prudentiel qui en decoule est un regroupement de lecture, pas une
+        # notation. Confondre les deux revient a dire qu'une contrepartie
+        # notee BBB- « n'a pas de note precise ».
+        "rating": _rating_display(row.counterparty.rating),
+        "rating_band": normalize_exposure_rating_label(row.counterparty.rating),
         "crm_mode": normalize_exposure_crm_mode(row.crm_type, row.crm_details),
         "gross_amount": gross_amount,
         "on_balance_exposure_amount": on_balance_amount,
@@ -141,6 +150,63 @@ def _normalize_row(row: ExposureView) -> dict[str, object]:
         "ead": ead,
         "rwa": rwa,
         "capital": capital,
+    }
+
+def _rating_display(rating: str) -> str:
+    """Notation telle qu'elle a ete saisie, sans regroupement."""
+
+    return str(rating or "").strip() or "Non noté"
+
+def _crm_snapshot(row: ExposureView, *, ead_xof: float) -> dict[str, object]:
+    """Detaille la technique d'attenuation d'une ligne, en XOF.
+
+    Le RWA « avant CRM » est reconstitue a partir du gain d'exposition mesure
+    par le moteur (`crm_gain`, nul hors CRM financee) : EAD avant CRM =
+    EAD + gain, pondere au poids du debiteur. La comparaison avec le RWA
+    retenu rend visible une garantie sans effet, voire defavorable lorsque le
+    garant est pondere plus lourdement que le debiteur.
+    """
+
+    details = row.crm_details
+    collateral_currency = details.collateral_currency or row.currency
+    collateral_value = convert_currency_amount(
+        details.collateral_value,
+        from_currency=collateral_currency,
+        to_currency=_DISPLAY_CURRENCY,
+    )
+    collateral_after_haircut = convert_currency_amount(
+        details.cva,
+        from_currency=collateral_currency,
+        to_currency=_DISPLAY_CURRENCY,
+    )
+    crm_gain = convert_currency_amount(
+        details.crm_gain,
+        from_currency=row.currency,
+        to_currency=_DISPLAY_CURRENCY,
+    )
+    return {
+        "crm_label": details.label or row.crm_type,
+        "crm_coverage_percent": round(float(details.coverage_percent or 0.0), 4),
+        "collateral_type": details.collateral_type if details.collateral_value else "",
+        "collateral_value": round(collateral_value, 2),
+        "collateral_value_after_haircut": round(collateral_after_haircut, 2),
+        "collateral_haircut": round(float(details.hc or 0.0) + float(details.hfx or 0.0), 4),
+        "crm_eligible": bool(details.eligible),
+        "crm_ineligibility_reason": details.eligibility_reason,
+        "guarantor_name": details.guarantor_name,
+        "guarantor_category": details.guarantor_category,
+        "guarantor_rating": details.guarantor_rating,
+        # L'echelon accompagne la note du garant comme celle du debiteur :
+        # c'est lui qui designe la ligne de grille, donc la ponderation.
+        "guarantor_rating_band": normalize_exposure_rating_label(
+            details.guarantor_rating
+        )
+        if details.guarantor_rating
+        else "",
+        "guarantor_risk_weight": round(float(details.guarantor_risk_weight or 0.0), 4),
+        "original_risk_weight": round(float(row.original_rw or 0.0), 4),
+        "final_risk_weight": round(float(row.final_rw or 0.0), 4),
+        "rwa_before_crm": round((ead_xof + crm_gain) * float(row.original_rw or 0.0), 2),
     }
 
 def _text_key(value: str) -> str:
@@ -162,11 +228,18 @@ def _canonical_country_label(value: str) -> str:
     return aliases.get(normalized, value.strip())
 
 def _is_defaulted_exposure(row: ExposureView, category: str) -> bool:
+    # Le statut prudentiel fait foi : une ligne déclassée par ses impayés
+    # (>= 90 jours) ou par décision motivée est en défaut, quel que soit le
+    # statut de gestion hérité de l'import, resté « Sain ». L'ignorer
+    # sous-estimerait le taux de créances en souffrance du portefeuille.
+    if row.statut_prudentiel == "douteuse":
+        return True
     status_key = _text_key(row.status)
     category_key = _text_key(category)
     raw_category_key = _text_key(row.counterparty.category)
     return (
         "defaut" in status_key
+        or "souffrance" in status_key
         or "defaut" in category_key
         or "souffrance" in category_key
         or "defaut" in raw_category_key
@@ -344,10 +417,18 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     # CALCULATIONS BCEAO
     fp_calc = calculate_fonds_propres(fp_data)
     rm_calc = resolve_market_capital(rm_data)
-    # RWA Opérationnel = OFR CRR3 (Approche Standard / BIC), issu de la saisie
+    # RWA Opérationnel = REA CRR3 (Approche Standard / BIC), issu de la saisie
     # ou de l'import Excel BIC/CCR3 — remplace l'ancienne approche indicateur
     # de base (AIB) simplifiée qui n'était plus représentative.
-    rwa_operationnel = _calcul_bic_crr3().ofr_crr3
+    #
+    # C'est bien `rea_crr3` (= OFR × 12,5) qu'il faut agréger ici, pas
+    # `ofr_crr3` : ce dernier est l'exigence de FONDS PROPRES, donc déjà nette
+    # du multiplicateur. L'utiliser comme RWA revenait à lui réappliquer les
+    # 9 % du ratio et divisait l'exigence opérationnelle par 12,5 (le risque
+    # opérationnel tombait à 0 % du RWA total). Même convention que la
+    # synthèse du module Risque Opérationnel (apr = rea_crr3) et que le
+    # risque de marché (rwa_marche = capital requis × 12,5).
+    rwa_operationnel = _calcul_bic_crr3().rea_crr3
 
     fp_detail = FondsPropresDetail(
         capital_ordinaire=fp_data.get("capital_ordinaire", 0.0),
@@ -377,7 +458,10 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     # RWA Total = Crédit + Marché + Opérationnel
     rwa_total = rwa_credit + rwa_operationnel + rm_calc["rwa_marche"]
 
-    capital_total = sum(float(row["capital"]) for row in exposure_rows)
+    # Exigence de fonds propres du portefeuille : elle porte sur le RWA total
+    # (crédit + marché + opérationnel), pas sur le seul risque de crédit, et
+    # se distingue des fonds propres effectivement détenus.
+    capital_requis = calculate_capital(rwa_total)
     risk_ratio = safe_ratio(rwa_total, gross_total if gross_total > 0 else ead_total)
     
     default_gross_total = sum(
@@ -406,6 +490,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
             country=row["row"].counterparty.country,
             category=row["category"],
             rating=row["rating"],
+            rating_band=row["rating_band"],
             crm_type=row["crm_mode"],
             gross_amount=round(float(row["gross_amount"]), 2),
             on_balance_exposure_amount=round(
@@ -419,6 +504,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
             ead=round(float(row["ead"]), 2),
             rwa=round(float(row["rwa"]), 2),
             capital=round(float(row["capital"]), 2),
+            **_crm_snapshot(row["row"], ead_xof=float(row["ead"])),
         )
         for row in exposure_rows
     ]
@@ -431,7 +517,9 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     for item in exposure_rows:
         row = item["row"]
         category = str(item["category"])
-        rating = str(item["rating"])
+        # La repartition se lit par echelon : seize notations distinctes
+        # feraient un graphique illisible, sans rapport avec la grille.
+        rating = str(item["rating_band"])
         crm_mode = str(item["crm_mode"])
         category_buckets[category] += float(item["gross_amount"])
         rwa_category_buckets[category] += float(item["rwa"])
@@ -478,6 +566,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         _build_metric("risque_residuel", "Risque residuel", residual_risk),
         _build_metric("rwa", "RWA Total", rwa_total),
         _build_metric("capital", "Capital Total (FPE)", fp_calc["total_capital"]),
+        _build_metric("capital_requis", "Exigence de fonds propres", capital_requis),
         _build_metric("taux_risque", "Taux de risque", risk_ratio),
         _build_metric("taux_defaut", "Taux de defaut", default_rate),
         _build_metric("solvabilite", "Ratio Solvabilite Globale", ratios["solvency"]["value"] / 100.0),

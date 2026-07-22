@@ -28,7 +28,7 @@ abstract class ForeignExchangeRepository {
 }
 
 /// Implémentation en mémoire, avec persistance optionnelle vers le backend
-/// SQL (voir [configureSqlBackend]) — même mécanisme que
+/// SQL (voir [configureSqlBackend]) - même mécanisme que
 /// `MarketDataImportStore.configureSqlBackend`.
 class InMemoryForeignExchangeRepository implements ForeignExchangeRepository {
   final Map<String, ForeignExchangePosition> _positions = {};
@@ -55,7 +55,7 @@ class InMemoryForeignExchangeRepository implements ForeignExchangeRepository {
 
   /// Branche ce repository sur le backend SQL : restaure les positions
   /// persistées au premier appel, puis persiste toute mutation ultérieure.
-  /// Idempotent — les appels suivants renvoient le même futur.
+  /// Idempotent - les appels suivants renvoient le même futur.
   Future<void> configureSqlBackend(RwaApiService api) {
     final existing = _restoreFuture;
     if (existing != null) return existing;
@@ -78,7 +78,7 @@ class InMemoryForeignExchangeRepository implements ForeignExchangeRepository {
         _notifyListeners();
       }
       // Rien de persisté : le portefeuille de change reste VIDE. Outil
-      // prudentiel : aucune position fictive n'est jamais injectée — seules
+      // prudentiel : aucune position fictive n'est jamais injectée - seules
       // les positions réellement saisies ou importées par l'utilisateur sont
       // affichées et prises en compte dans le calcul.
     } catch (error) {

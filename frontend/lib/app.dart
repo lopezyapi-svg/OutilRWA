@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/app_module.dart';
+import 'core/auth/session_controller.dart';
+import 'core/auth/session_scope.dart';
 import 'core/localization/app_language.dart';
 import 'core/localization/app_localization.dart';
 import 'core/services/rwa_api_service.dart';
@@ -30,6 +32,7 @@ import 'modules/risque_marche/screens/risque_marche_screen.dart';
 import 'modules/risque_marche/services/market_capital_requirement_persister.dart';
 import 'modules/risque_marche/services/market_data_import_store.dart';
 import 'modules/risque_operationnel/screens/risque_operationnel_screen.dart';
+import 'modules/auth/screens/login_screen.dart';
 import 'modules/rwa_engine/screens/rwa_engine_screen.dart';
 import 'modules/vue_ensemble/screens/vue_ensemble_screen.dart';
 import 'modules/welcome/screens/welcome_screen.dart';
@@ -46,7 +49,26 @@ class RwaApp extends StatefulWidget {
 
 /// Etat interne qui mémorise le module courant et le mode de thème.
 class _RwaAppState extends State<RwaApp> {
-  final RwaApiService _api = RwaApiService();
+  /// Session partagée par toute l'application. Elle interroge le même backend
+  /// que les appels métier : une seconde résolution d'URL finirait par
+  /// diverger de la première.
+  late final SessionController _session = SessionController(
+    baseUrl: RwaApiService.resolveDefaultBaseUrl(),
+  );
+
+  /// Le service métier lit le jeton à chaque appel et sait rejouer une requête
+  /// après un renouvellement : l'expiration d'un jeton reste invisible pour
+  /// l'utilisateur, tant que sa session de renouvellement tient.
+  late final RwaApiService _api = RwaApiService(
+    tokenProvider: () => _session.accessToken,
+    onUnauthorized: () async {
+      final renouvele = await _session.renouveler();
+      if (!renouvele) {
+        _session.invalider();
+      }
+      return renouvele;
+    },
+  );
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final ValueNotifier<String> _portfolioDisplayCurrency = ValueNotifier<String>(
     'XOF',
@@ -69,6 +91,7 @@ class _RwaAppState extends State<RwaApp> {
   void initState() {
     super.initState();
     AppLocalizations.setCurrentLanguage(_appLanguage.value);
+    unawaited(_session.initialiser());
     PortfolioAmountUnitPreference.current = _portfolioAmountUnit.value;
     _portfolioAmountUnit.addListener(_handleAmountUnitChanged);
     _appLanguage.addListener(_handleLanguageChanged);
@@ -95,7 +118,13 @@ class _RwaAppState extends State<RwaApp> {
       builder: (context, appLanguage, _) {
         AppLocalizations.setCurrentLanguage(appLanguage);
 
-        return AppLocalizationScope(
+        // La portée de session enveloppe MaterialApp, et non son contenu :
+        // les boîtes de dialogue sont construites par le navigateur, au-dessus
+        // de `home`. Placée plus bas, la session leur serait invisible et les
+        // actions d'édition y resteraient affichées.
+        return SessionScope(
+          controller: _session,
+          child: AppLocalizationScope(
           notifier: _appLanguage,
           child: MaterialApp(
             navigatorKey: _navigatorKey,
@@ -115,7 +144,43 @@ class _RwaAppState extends State<RwaApp> {
               accentColor: _primaryColor,
             ),
             themeMode: _themeMode,
-            home: PortfolioCurrencyScope(
+            home: AnimatedBuilder(
+              animation: _session,
+              builder: (context, _) => _buildPorte(),
+            ),
+          ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Porte d'entrée : vérification, connexion, ou application.
+  ///
+  /// Tant que la session n'est pas tranchée, rien de l'application n'est
+  /// construit : aucun appel API ne part avant de savoir au nom de qui.
+  Widget _buildPorte() {
+    switch (_session.etat) {
+      case SessionState.verification:
+        return const Scaffold(
+          backgroundColor: Color(0xFFF4F6FA),
+          body: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+        );
+      case SessionState.deconnecte:
+        return LoginScreen(session: _session);
+      case SessionState.connecte:
+        return _buildApplication();
+    }
+  }
+
+  Widget _buildApplication() {
+    return PortfolioCurrencyScope(
               notifier: _portfolioDisplayCurrency,
               child: PortfolioAmountUnitScope(
                 notifier: _portfolioAmountUnit,
@@ -149,10 +214,6 @@ class _RwaAppState extends State<RwaApp> {
                         ),
                 ),
               ),
-            ),
-          ),
-        );
-      },
     );
   }
 

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localization.dart';
 import 'dashboard_design.dart';
 
-/// Jauge de conformité « grands risques » — plus forte exposition vs limite.
+/// Jauge de conformité « grands risques » - plus forte exposition vs limite.
 ///
 /// Zones de la jauge = couleurs de statut institutionnelles (conforme / sous
 /// surveillance / dépassement). Aiguille et chiffres en encre.
@@ -28,7 +28,7 @@ class DashboardComplianceGauge extends StatelessWidget {
 
     return DashPanel(
       height: 280,
-      title: 'Conformité grands risques — plus forte exposition'.tr(context),
+      title: 'Conformité grands risques - plus forte exposition'.tr(context),
       unit: 'En % des fonds propres'.tr(context),
       child: Row(
         children: [

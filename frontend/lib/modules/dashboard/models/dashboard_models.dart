@@ -70,7 +70,25 @@ class PortfolioRow {
     required this.ead,
     required this.rwa,
     required this.capital,
-  }) : _onBalanceExposureAmount = onBalanceExposureAmount;
+    this.ratingBand = '',
+    this.guarantorRatingBand = '',
+    this.crmLabel = '',
+    this.crmCoveragePercent = 0.0,
+    this.collateralType = '',
+    this.collateralValue = 0.0,
+    this.collateralValueAfterHaircut = 0.0,
+    this.collateralHaircut = 0.0,
+    this.crmEligible = true,
+    this.crmIneligibilityReason = '',
+    this.guarantorName = '',
+    this.guarantorCategory = '',
+    this.guarantorRating = '',
+    this.guarantorRiskWeight = 0.0,
+    this.originalRiskWeight = 0.0,
+    this.finalRiskWeight = 0.0,
+    double? rwaBeforeCrm,
+  })  : _onBalanceExposureAmount = onBalanceExposureAmount,
+        _rwaBeforeCrm = rwaBeforeCrm;
 
   final String id;
   final DateTime? analysisDate;
@@ -86,6 +104,28 @@ class PortfolioRow {
   final double rwa;
   final double capital;
 
+  /// Échelon prudentiel déduit de la notation : il désigne la ligne de grille
+  /// qui fixe la pondération, il ne remplace pas la note de la contrepartie.
+  final String ratingBand;
+  final String guarantorRatingBand;
+
+  /// Détail de la technique d'atténuation, en XOF comme le reste de la ligne.
+  final String crmLabel;
+  final double crmCoveragePercent;
+  final String collateralType;
+  final double collateralValue;
+  final double collateralValueAfterHaircut;
+  final double collateralHaircut;
+  final bool crmEligible;
+  final String crmIneligibilityReason;
+  final String guarantorName;
+  final String guarantorCategory;
+  final String guarantorRating;
+  final double guarantorRiskWeight;
+  final double originalRiskWeight;
+  final double finalRiskWeight;
+  final double? _rwaBeforeCrm;
+
   double get onBalanceExposureAmount {
     final value = _onBalanceExposureAmount;
     if (value != null) return value;
@@ -94,6 +134,16 @@ class PortfolioRow {
     }
     return math.max(0.0, grossAmount - offBalanceExposureAmount);
   }
+
+  /// RWA qu'aurait porté la ligne sans sa technique d'atténuation.
+  ///
+  /// Un backend plus ancien ne sert pas le champ : on retombe alors sur le RWA
+  /// retenu, ce qui affiche un effet CRM nul plutôt qu'un gain inventé.
+  double get rwaBeforeCrm => _rwaBeforeCrm ?? rwa;
+
+  /// Économie de RWA obtenue par la CRM. Négative quand la garantie dégrade
+  /// la pondération (garant plus lourdement pondéré que le débiteur).
+  double get crmRwaSaving => rwaBeforeCrm - rwa;
 
   factory PortfolioRow.fromJson(Map<String, dynamic> json) {
     final grossAmount = (json['gross_amount'] as num).toDouble();
@@ -119,6 +169,28 @@ class PortfolioRow {
       ead: (json['ead'] as num).toDouble(),
       rwa: (json['rwa'] as num).toDouble(),
       capital: (json['capital'] as num).toDouble(),
+      ratingBand: (json['rating_band'] ?? '') as String,
+      guarantorRatingBand: (json['guarantor_rating_band'] ?? '') as String,
+      crmLabel: (json['crm_label'] ?? '') as String,
+      crmCoveragePercent:
+          (json['crm_coverage_percent'] as num?)?.toDouble() ?? 0.0,
+      collateralType: (json['collateral_type'] ?? '') as String,
+      collateralValue: (json['collateral_value'] as num?)?.toDouble() ?? 0.0,
+      collateralValueAfterHaircut:
+          (json['collateral_value_after_haircut'] as num?)?.toDouble() ?? 0.0,
+      collateralHaircut:
+          (json['collateral_haircut'] as num?)?.toDouble() ?? 0.0,
+      crmEligible: (json['crm_eligible'] as bool?) ?? true,
+      crmIneligibilityReason: (json['crm_ineligibility_reason'] ?? '') as String,
+      guarantorName: (json['guarantor_name'] ?? '') as String,
+      guarantorCategory: (json['guarantor_category'] ?? '') as String,
+      guarantorRating: (json['guarantor_rating'] ?? '') as String,
+      guarantorRiskWeight:
+          (json['guarantor_risk_weight'] as num?)?.toDouble() ?? 0.0,
+      originalRiskWeight:
+          (json['original_risk_weight'] as num?)?.toDouble() ?? 0.0,
+      finalRiskWeight: (json['final_risk_weight'] as num?)?.toDouble() ?? 0.0,
+      rwaBeforeCrm: (json['rwa_before_crm'] as num?)?.toDouble(),
     );
   }
 }

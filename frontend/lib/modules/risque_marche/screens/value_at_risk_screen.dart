@@ -78,7 +78,7 @@ String _pourcentage(double fraction) =>
 
 // Paramétrique et Monte-Carlo en tête : elles fonctionnent dès qu'un
 // portefeuille est importé (mode réglementaire), sans historique de prix.
-// Historique en dernier — verrouillée tant qu'aucun historique réel n'est
+// Historique en dernier - verrouillée tant qu'aucun historique réel n'est
 // disponible (voir `verrouille` ci-dessous).
 enum VarMethode { parametrique, monteCarlo, historique }
 
@@ -97,7 +97,7 @@ extension on VarMethode {
 
   /// Verrouillée : nécessite un historique de prix réel (250 jours minimum)
   /// qu'aucune source disponible ne peut fournir aujourd'hui (cf. décision
-  /// du 2026-07-17 — méthode conservée pour le jour où une vraie série de
+  /// du 2026-07-17 - méthode conservée pour le jour où une vraie série de
   /// prix sera disponible, mais non sélectionnable en attendant).
   bool get verrouille => this == VarMethode.historique;
 }
@@ -269,7 +269,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   void initState() {
     super.initState();
     // Duration de référence : celle du tableau de bord Sensibilité si déjà
-    // calculée, sinon null — le backend applique alors sa propre duration
+    // calculée, sinon null - le backend applique alors sa propre duration
     // (mêmes conventions : flux amortis pondérés par le capital restant dû)
     // et la renvoie pour affichage.
     _durationModifiee = ValueAtRiskScreen.lastDashboardDurationModifiee;
@@ -431,7 +431,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   }
 
   /// [nouveauContexte] : la distribution de référence change (méthode,
-  /// portefeuille, nouvel import) — l'axe figé et la comparaison
+  /// portefeuille, nouvel import) - l'axe figé et la comparaison
   /// avant/après repartent de zéro.
   Future<void> _charger({bool nouveauContexte = false}) async {
     final numero = ++_requeteEnCours;
@@ -469,7 +469,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
       final nouvelle = _ReponseVar.fromJson(json);
       // Changement de référentiel implicite : une valeur de portefeuille ou
       // une source de données différente signifie que le book a changé
-      // (nouvel import, CRD recalculé, courbe actualisée) — le cadrage et
+      // (nouvel import, CRD recalculé, courbe actualisée) - le cadrage et
       // la comparaison repartent alors de la nouvelle distribution.
       final ancienne = _reponse;
       final contexteChange = nouveauContexte ||
@@ -486,7 +486,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
 
         // Axe figé : initialisé sur la première distribution du contexte,
         // puis étendu seulement si les données réelles (histogramme, VaR,
-        // IC) le débordent — la cloche théorique, elle, est écrêtée au
+        // IC) le débordent - la cloche théorique, elle, est écrêtée au
         // tracé pour que les variations de paramètres restent visibles.
         if (contexteChange) {
           _axeXMin = null;
@@ -854,7 +854,7 @@ class _OngletMethode extends StatelessWidget {
     );
     if (!verrouille) return onglet;
     return Tooltip(
-      message: 'Nécessite un historique de prix réel (250 jours minimum) — '
+      message: 'Nécessite un historique de prix réel (250 jours minimum) - '
           'indisponible pour le moment.',
       child: MouseRegion(cursor: SystemMouseCursors.forbidden, child: onglet),
     );
@@ -1305,7 +1305,7 @@ class _CarteKpi extends StatelessWidget {
           const SizedBox(height: 8),
           valeur == null
               ? const Text(
-                  '—',
+                  '-',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

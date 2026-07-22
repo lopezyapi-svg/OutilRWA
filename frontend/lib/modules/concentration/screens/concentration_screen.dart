@@ -230,7 +230,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
 
     // Un ratio réel mais minuscule (ex. 68 M de provisions sur 4 245 Md de
     // portefeuille = 0,0016 %) s'arrondirait à « 0,00 % » : trompeur pour un
-    // rapport prudentiel — on affiche « < 0,01 % » à la place.
+    // rapport prudentiel - on affiche « < 0,01 % » à la place.
     String pctFin(double ratio) => ratio > 0 && ratio < 0.0001
         ? '< 0,01%'
         : AppFormatters.percent(ratio);
@@ -279,18 +279,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppTheme.text,
                               fontWeight: FontWeight.w600,
-                              fontSize: 11)),
-                      if (formula != null) ...[
-                        const SizedBox(height: 2),
-                        Text(formula,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                    color: AppTheme.muted.withValues(alpha: 0.6),
-                                    fontSize: 10,
-                                    fontStyle: FontStyle.italic)),
-                      ],
+                              fontSize: 12.5)),
                     ],
                   ),
                 ),
@@ -299,7 +288,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.indigo[900],
                         fontWeight: FontWeight.w700,
-                        fontSize: 12)),
+                        fontSize: 13.5)),
               ],
             ),
           ),
@@ -308,7 +297,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Divider(
                   height: 1,
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.3)),
+                  color: const Color(0xFFDCE4F2)),
             ),
         ],
       );
@@ -480,9 +469,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                   decoration: BoxDecoration(
                     border: Border(
                       left: BorderSide(
-                          color: Theme.of(context)
-                              .dividerColor
-                              .withValues(alpha: 0.5)),
+                          color: const Color(0xFFDCE4F2)),
                     ),
                   ),
                   child: buildSubCard(
@@ -536,25 +523,25 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
 
     final chartEntries = [
       (
-        label: '1 – 30 jours',
+        label: '1 à 30 j',
         percent: bucket1Amount / safeTotal,
         amount: bucket1Amount,
         color: const Color(0xFF4ADE80)
       ),
       (
-        label: '31 – 90 jours',
+        label: '31 à 90 j',
         percent: bucket2Amount / safeTotal,
         amount: bucket2Amount,
         color: const Color(0xFF3B82F6)
       ),
       (
-        label: '91 – 180 jours',
+        label: '91 à 180 j',
         percent: bucket3Amount / safeTotal,
         amount: bucket3Amount,
         color: const Color(0xFFFBBF24)
       ),
       (
-        label: '> 180 jours',
+        label: 'Plus de 180 j',
         percent: bucket4Amount / safeTotal,
         amount: bucket4Amount,
         color: const Color(0xFFEF4444)
@@ -564,7 +551,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
     // Le champ « jours d'impayés » existe dans la base et l'import Excel
     // (colonne optionnelle Jours_impayes), mais peut n'avoir jamais été
     // renseigné : tout classer en « 1 – 30 jours » serait alors un faux
-    // confort prudentiel — on affiche un état explicite à la place.
+    // confort prudentiel - on affiche un état explicite à la place.
     final joursRenseignes =
         defaultExposures.any((exp) => exp.joursImpayes > 0);
 
@@ -619,17 +606,20 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
             child: Center(
               child: Row(
                 children: [
-                  SizedBox(
-                    width: 110,
-                    height: 110,
-                    child: _AnimatedDonutChart(
-                      entries: chartEntries
-                          .map((e) => (e.percent, e.color))
-                          .toList(),
+                  Expanded(
+                    flex: 5,
+                    child: SizedBox(
+                      height: 160,
+                      child: _AnimatedVerticalBarChart(
+                        entries: chartEntries
+                            .map((e) => (e.percent, e.color))
+                            .toList(),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 32),
+                  const SizedBox(width: 16),
                   Expanded(
+                    flex: 4,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -659,7 +649,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                               fontWeight: FontWeight.w500)),
                                 ),
                                 Text(
-                                    '${(chartEntries[i].percent * 100).toInt()} %',
+                                    '${(chartEntries[i].percent * 100) > 0 && (chartEntries[i].percent * 100) < 1 ? '< 1' : (chartEntries[i].percent * 100).toInt()} %',
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelSmall
@@ -668,8 +658,8 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                             fontSize: 11,
                                             fontWeight: FontWeight.w700)),
                                 const SizedBox(width: 12),
-                                SizedBox(
-                                  width: 60,
+                                Container(
+                                  alignment: Alignment.centerRight,
                                   child: Text(
                                       '${_amountMd(chartEntries[i].amount)} ${_amountUnitLabel()}',
                                       textAlign: TextAlign.right,
@@ -777,7 +767,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                           crossAxisAlignment: CrossAxisAlignment.stretch,
                                           children: [
                                             Container(
-                                              width: 40,
+                                              width: 50,
                                               padding: const EdgeInsets.only(left: 12, top: 9, bottom: 9),
                                               alignment: Alignment.centerLeft,
                                               child: Text('N°', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
@@ -791,15 +781,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                                 child: Text('Contrepartie', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                                               ),
                                             ),
-                                            Container(width: 0.5, color: const Color(0xFFDCE4F2)),
-                                            Expanded(
-                                              flex: 3,
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                                                alignment: Alignment.centerLeft,
-                                                child: Text('Secteur', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
-                                              ),
-                                            ),
+
                                             Container(width: 0.5, color: const Color(0xFFDCE4F2)),
                                             Expanded(
                                               flex: 3,
@@ -856,7 +838,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                               crossAxisAlignment: CrossAxisAlignment.stretch,
                                               children: [
                                                 Container(
-                                                  width: 32,
+                                                  width: 50,
                                                   padding: const EdgeInsets.only(left: 12, top: 9, bottom: 9),
                                                   alignment: Alignment.centerLeft,
                                                   child: Text(
@@ -885,22 +867,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                                     ),
                                                   ),
                                                 ),
-                                                Container(width: 0.5, color: const Color(0xFFDCE4F2)),
-                                                Expanded(
-                                                  flex: 3,
-                                                  child: Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                                                    alignment: Alignment.centerLeft,
-                                                    child: Text(
-                                                      e.sector,
-                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                            color: AppTheme.muted,
-                                                            fontSize: 12,
-                                                          ),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ),
+
                                                 Container(width: 0.5, color: const Color(0xFFDCE4F2)),
                                                 Expanded(
                                                   flex: 3,
@@ -939,38 +906,13 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                                   child: Container(
                                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                                                     alignment: Alignment.centerLeft,
-                                                    child: Row(
-                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                      children: [
-                                                        Text(
-                                                          AppFormatters.percent(coverageRate),
-                                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                                color: const Color(0xFF001F4E),
-                                                                fontWeight: FontWeight.w900,
-                                                                fontSize: 12,
-                                                              ),
-                                                        ),
-                                                        const SizedBox(width: 4),
-                                                        Container(
-                                                          width: 30,
-                                                          height: 4,
-                                                          decoration: BoxDecoration(
-                                                            color: AppTheme.border,
-                                                            borderRadius: BorderRadius.circular(2),
+                                                    child: Text(
+                                                      AppFormatters.percent(coverageRate),
+                                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                            color: const Color(0xFF001F4E),
+                                                            fontWeight: FontWeight.w900,
+                                                            fontSize: 12,
                                                           ),
-                                                          child: Align(
-                                                            alignment: Alignment.centerLeft,
-                                                            child: Container(
-                                                              width: ((coverageRate * 60).clamp(0, 60).toDouble()) / 2, // scale down bar for smaller cell
-                                                              height: 4,
-                                                              decoration: BoxDecoration(
-                                                                color: AppTheme.danger,
-                                                                borderRadius: BorderRadius.circular(2),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
                                                     ),
                                                   ),
                                                 ),
@@ -1033,15 +975,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                       child: Text('Contrepartie', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                     ),
                   ),
-                  Container(width: 0.5, color: const Color(0xFFDCE4F2)),
-                  Expanded(
-                    flex: 3,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                      alignment: Alignment.centerLeft,
-                      child: Text('Secteur', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
-                    ),
-                  ),
+
                   Container(width: 0.5, color: const Color(0xFFDCE4F2)),
                   Expanded(
                     flex: 3,
@@ -1083,7 +1017,6 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
             final coverageRate = e.grossAmount > 0
                 ? (e.estimatedProvision / e.grossAmount)
                 : 0.0;
-            final barWidth = (coverageRate * 60).clamp(0, 60).toDouble();
 
             return Material(
               color: i.isOdd ? const Color(0xFFF8FAFC) : Colors.white,
@@ -1121,22 +1054,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                         ),
                       ),
                     ),
-                    Container(width: 0.5, color: const Color(0xFFDCE4F2)),
-                    Expanded(
-                      flex: 3,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          e.sector,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppTheme.muted,
-                                fontSize: 12,
-                              ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
+
                     Container(width: 0.5, color: const Color(0xFFDCE4F2)),
                     Expanded(
                       flex: 3,
@@ -1175,38 +1093,13 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                         alignment: Alignment.centerLeft,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              AppFormatters.percent(coverageRate),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: const Color(0xFF001F4E),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 12,
-                                  ),
-                            ),
-                            const SizedBox(width: 4),
-                            Container(
-                              width: 30,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: AppTheme.border,
-                                borderRadius: BorderRadius.circular(2),
+                        child: Text(
+                          AppFormatters.percent(coverageRate),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: const Color(0xFF001F4E),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
                               ),
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Container(
-                                  width: barWidth / 2, // scale down bar for smaller cell
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.danger,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ),
                     ),
@@ -1902,7 +1795,10 @@ List<ConcentrationAlert> _alerts({
   required List<ConcentrationTrendPoint> trends,
 }) {
   final alerts = <ConcentrationAlert>[];
-  final ownFundsEstimate = totalRwa * 0.09 * 1.42;
+  // Fonds propres estimés en l'absence de saisie des fonds propres réels :
+  // hypothèse d'un établissement au niveau de l'exigence globale de
+  // solvabilité UMOA (9 % + coussin de conservation 2,5 % = 11,5 % des RWA).
+  final ownFundsEstimate = totalRwa * 0.115;
 
   if (sectorRows.isNotEmpty && sectorRows.first.share > 0.25) {
     alerts.add(
@@ -3493,7 +3389,7 @@ class _ModeSwitchButton extends StatelessWidget {
       waitDuration: const Duration(milliseconds: 300),
       child: InkWell(
         onTap: item.onTap,
-        borderRadius: BorderRadius.circular(_concentrationRadius),
+        borderRadius: BorderRadius.circular(3),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
@@ -3501,7 +3397,7 @@ class _ModeSwitchButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: background,
-            borderRadius: BorderRadius.circular(_concentrationRadius),
+            borderRadius: BorderRadius.circular(3),
             border: Border.all(
               color: item.selected
                   ? AppColors.concentrationPrimary
@@ -3774,56 +3670,98 @@ class _ZoneDonutChartState extends State<_ZoneDonutChart> {
   }
 }
 
-class _AnimatedDonutChart extends StatefulWidget {
+class _AnimatedVerticalBarChart extends StatefulWidget {
   final List<(double percent, Color color)> entries;
-  const _AnimatedDonutChart({required this.entries});
+  const _AnimatedVerticalBarChart({required this.entries});
 
   @override
-  State<_AnimatedDonutChart> createState() => _AnimatedDonutChartState();
+  State<_AnimatedVerticalBarChart> createState() => _AnimatedVerticalBarChartState();
 }
 
-class _AnimatedDonutChartState extends State<_AnimatedDonutChart> {
-  int touchedIndex = -1;
-
+class _AnimatedVerticalBarChartState extends State<_AnimatedVerticalBarChart> {
   @override
   Widget build(BuildContext context) {
-    final total = widget.entries.fold<double>(0, (sum, item) => sum + item.$1);
-
-    return PieChart(
-      PieChartData(
-        pieTouchData: PieTouchData(
-          touchCallback: (FlTouchEvent event, pieTouchResponse) {
-            setState(() {
-              if (!event.isInterestedForInteractions ||
-                  pieTouchResponse == null ||
-                  pieTouchResponse.touchedSection == null) {
-                touchedIndex = -1;
-                return;
-              }
-              touchedIndex =
-                  pieTouchResponse.touchedSection!.touchedSectionIndex;
-            });
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: 100,
+        barTouchData: const BarTouchData(enabled: false),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                final index = value.toInt();
+                if (index < 0 || index >= widget.entries.length) {
+                  return const SizedBox.shrink();
+                }
+                const shortLabels = ['1-30', '31-90', '91-180', '>180'];
+                return Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    shortLabels[index],
+                    style: const TextStyle(fontSize: 9, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+                  ),
+                );
+              },
+              reservedSize: 24,
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (double value, TitleMeta meta) {
+                if (value % 25 != 0) return const SizedBox.shrink();
+                return Text(
+                  '${value.toInt()}%',
+                  style: const TextStyle(fontSize: 9, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                );
+              },
+              reservedSize: 32,
+              interval: 25,
+            ),
+          ),
+        ),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: 25,
+          getDrawingHorizontalLine: (value) {
+            return const FlLine(color: Color(0xFFE2E8F0), strokeWidth: 0.5, dashArray: [4, 4]);
           },
         ),
-        borderData: FlBorderData(show: false),
-        sectionsSpace: 2,
-        centerSpaceRadius: 16,
-        sections: widget.entries.asMap().entries.map((e) {
-          final isTouched = e.key == touchedIndex;
-          final radius = isTouched ? 36.0 : 30.0;
-          final percentage =
-              total > 0 ? '${(e.value.$1 / total * 100).round()}%' : '0%';
-
-          return PieChartSectionData(
-            color: e.value.$2,
-            value: e.value.$1 <= 0 ? 0.0001 : e.value.$1,
-            title: isTouched ? percentage : '',
-            radius: radius,
-            titleStyle: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+        borderData: FlBorderData(
+          show: true,
+          border: const Border(
+            bottom: BorderSide(color: Color(0xFF94A3B8), width: 0.5),
+            left: BorderSide(color: Color(0xFF94A3B8), width: 0.5),
+            top: BorderSide.none,
+            right: BorderSide.none,
+          ),
+        ),
+        barGroups: widget.entries.asMap().entries.map((e) {
+          final percent = e.value.$1 * 100;
+          return BarChartGroupData(
+            x: e.key,
+            barRods: [
+              BarChartRodData(
+                toY: percent <= 0 ? 0.5 : percent,
+                color: e.value.$2,
+                width: 14,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(3),
+                  topRight: Radius.circular(3),
+                ),
+                backDrawRodData: BackgroundBarChartRodData(
+                  show: true,
+                  toY: 100,
+                  color: e.value.$2.withValues(alpha: 0.08),
+                ),
+              ),
+            ],
           );
         }).toList(),
       ),

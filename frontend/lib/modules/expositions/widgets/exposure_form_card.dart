@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
@@ -12,7 +13,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../models/exposition_models.dart';
 
-const double _exposureFormRadius = 8;
+const double _exposureFormRadius = 2;
 const double _wizardBorderWidth = 1.0;
 
 bool _isExposureDark(BuildContext context) =>
@@ -362,15 +363,15 @@ class ExposureFormCard extends StatefulWidget {
 class _ExposureFormCardState extends State<ExposureFormCard> {
   static const List<String> _supportedCurrencies = ['XOF', 'EUR', 'USD'];
   static const String _bmdCriteriaTooltip =
-      '(a) excellente notation long terme (majoritairement AAA)\n'
-      '(b) actionnariat composé en grande partie de souverains ≥ AA- ou financement surtout par capital versé\n'
-      '(c) fort soutien des actionnaires\n'
-      '(d) niveau adéquat de capital et de liquidité\n'
-      '(e) politiques de crédit et gestion des risques prudentes';
+      'excellente notation long terme (majoritairement AAA)\n'
+      'actionnariat composé en grande partie de souverains ≥ AA- ou financement surtout par capital versé\n'
+      'fort soutien des actionnaires\n'
+      'niveau adéquat de capital et de liquidité\n'
+      'politiques de crédit et gestion des risques prudentes';
   static const String _bmdCdeCriteriaTooltip =
-      '(c) fort soutien des actionnaires\n'
-      '(d) niveau adéquat de capital et de liquidité\n'
-      '(e) politiques de crédit et gestion des risques prudentes';
+      'fort soutien des actionnaires\n'
+      'niveau adéquat de capital et de liquidité\n'
+      'politiques de crédit et gestion des risques prudentes';
   static const String _bmdInstitutionsTooltip =
       'BIRD : Banque internationale pour la reconstruction et le développement\n'
       'SFI : Société financière internationale\n'
@@ -1746,10 +1747,6 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
         isDark ? AppTheme.darkText : const Color(0xFF153B7A);
     final summaryBodyColor =
         isDark ? const Color(0xFFD7E2F4) : const Color(0xFF5A709A);
-    final summaryIconBackground =
-        isDark ? const Color(0xFF1A2D48) : const Color(0xFFF4F7FF);
-    final summaryIconBorder =
-        isDark ? const Color(0xFF3F5C89) : const Color(0xFFBFD0F3);
     const summaryAccentStart = Color(0xFF3B82F6);
     const summaryAccentEnd = Color(0xFF0B3D91);
 
@@ -1763,7 +1760,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           colors: summaryBackground,
           stops: const [0.0, 0.52, 1.0],
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(_exposureFormRadius),
         border: Border.all(
           color: summaryShellBorderColor,
           width: 1,
@@ -1842,24 +1839,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: summaryIconBackground,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: summaryIconBorder,
-                                    width: 1,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.insights_rounded,
-                                  size: 22,
-                                  color: Color(0xFF2563EB),
-                                ),
-                              ),
-                              const SizedBox(width: 3),
+
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1927,8 +1907,8 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                     ],
                   ),
                   borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    topRight: Radius.circular(8),
+                    topLeft: Radius.circular(_exposureFormRadius),
+                    topRight: Radius.circular(_exposureFormRadius),
                   ),
                 ),
               ),
@@ -2370,6 +2350,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 ),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                ],
                 validator: _amountValidator,
                 onChanged: _handleFinancialAmountsChanged,
               ),
@@ -2387,6 +2370,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 ),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                ],
                 validator: _onBalanceAmountValidator,
                 onChanged: _handleFinancialAmountsChanged,
               ),
@@ -2404,6 +2390,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 ),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                ],
                 onChanged: _handleFinancialAmountsChanged,
               ),
             ),
@@ -4314,6 +4303,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
           child: TextFormField(
             controller: _coveredAmountController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+            ],
             decoration: _fieldDecoration(
               context,
               hint: context.tr('Montant couvert'),
@@ -4470,6 +4462,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                         ),
                         keyboardType: const TextInputType.numberWithOptions(
                             decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                        ],
                         validator: _crmMode == 'CRM financee'
                             ? _amountValidator
                             : null,
@@ -4735,12 +4730,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
   }) {
     final isDark = _isExposureDark(context);
     final cardPadding = compact ? 8.0 : 12.0;
-    final iconBoxSize = compact ? 22.0 : 28.0;
-    final iconSize = compact ? 12.0 : 14.0;
-    final horizontalGap = compact ? 7.0 : 10.0;
     final valueGap = compact ? 1.0 : 4.0;
-    final labelFontSize = compact ? 8.7 : null;
-    final valueFontSize = compact ? 9.9 : null;
+    final labelFontSize = compact ? 10.5 : null;
+    final valueFontSize = compact ? 10.5 : null;
     final labelMaxLines = compact ? 2 : 1;
     return Container(
       padding: EdgeInsets.all(cardPadding),
@@ -4752,16 +4744,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: iconBoxSize,
-            height: iconBoxSize,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(_exposureFormRadius),
-            ),
-            child: Icon(icon, size: iconSize, color: accent),
-          ),
-          SizedBox(width: horizontalGap),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4937,6 +4920,9 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                   decoration: _fieldDecoration(context),
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                  ],
                   onChanged: (value) => _updateBasketItem(
                     index,
                     FinancedCrmBasketItem(
@@ -5162,7 +5148,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       icon: icon,
       inlineTooltip: inlineTooltip?.tr(context),
       placeInlineTooltipBeforeTitle: placeInlineTooltipBeforeTitle,
-      hideLeadingIcon: hideLeadingIcon,
+      hideLeadingIcon: true,
       iconTooltip: iconTooltip?.tr(context),
       tooltipTitle: tooltipTitle.tr(context),
       tooltipMaxWidth: tooltipMaxWidth,
@@ -6392,10 +6378,10 @@ class _CompactFieldCard extends StatelessWidget {
     required this.icon,
     this.inlineTooltip,
     this.placeInlineTooltipBeforeTitle = false,
-    this.hideLeadingIcon = false,
+    this.hideLeadingIcon = true,
     this.iconTooltip,
     this.tooltipTitle = 'Critères',
-    this.tooltipMaxWidth = 350,
+    this.tooltipMaxWidth = 600,
     this.subtitleColor,
     this.hideHeader = false,
     required this.child,
@@ -6555,11 +6541,11 @@ class _CompactFieldCard extends StatelessWidget {
       preferBelow: false,
       verticalOffset: 18,
       textAlign: TextAlign.start,
-      padding: const EdgeInsets.fromLTRB(5, 3, 4, 3),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1C34),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(2),
         border: Border.all(color: const Color(0xFF2D4B7A), width: 1),
         boxShadow: const [
           BoxShadow(
@@ -6649,8 +6635,8 @@ class _CompactFieldCard extends StatelessWidget {
                                   .labelMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.w500,
-                                    color: _wizardBodyTitleColor(context),
-                                    fontSize: 10.8,
+                                    color: isDark ? const Color(0xFF93C5FD) : const Color(0xFF0B3D91),
+                                    fontSize: 12.0,
                                   ),
                             ),
                           ),
@@ -6832,6 +6818,7 @@ class _CrmChoiceStepScreen extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 320),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: double.infinity,
@@ -7324,10 +7311,8 @@ class _HeroKpiCard extends StatelessWidget {
     final cardPadding = compact
         ? const EdgeInsets.fromLTRB(7, 7, 7, 7)
         : const EdgeInsets.fromLTRB(9, 8, 9, 8);
-    final iconSize = compact ? 10.0 : 11.0;
-    final iconBoxSize = compact ? 20.0 : 22.0;
-    final labelFontSize = compact ? 7.6 : 8.2;
-    final valueFontSize = compact ? 9.2 : 10.2;
+    final labelFontSize = compact ? 9.0 : 10.0;
+    final valueFontSize = compact ? 10.5 : 11.5;
     final highlightBackground =
         isDark ? const Color(0xFF1D4ED8) : const Color(0xFF3B82F6);
     const highlightLabelColor = Color(0xFFDCE9FF);
@@ -7357,12 +7342,12 @@ class _HeroKpiCard extends StatelessWidget {
         : compact
             ? (isDark ? const Color(0x22000000) : const Color(0x160B3D91))
             : (isDark ? const Color(0x22000000) : const Color(0x080F172A));
-    final cardRadius = compact ? 6.0 : _exposureFormRadius;
+    final cardRadius = compact ? 2.0 : _exposureFormRadius;
     final labelColor = highlighted
         ? highlightLabelColor
-        : compact && !isDark
-            ? const Color(0xFF5B6F98)
-            : _wizardMutedColor(context);
+        : isDark
+            ? const Color(0xFF93C5FD)
+            : const Color(0xFF0B3D91);
     final valueColor = highlighted
         ? highlightValueColor
         : compact && !isDark
@@ -7391,36 +7376,6 @@ class _HeroKpiCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Container(
-            width: iconBoxSize,
-            height: iconBoxSize,
-            decoration: BoxDecoration(
-              color: highlighted ? null : accent.withAlpha(compact ? 24 : 26),
-              gradient: highlighted
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Colors.white.withValues(alpha: isDark ? 0.18 : 0.22),
-                        Colors.white.withValues(alpha: isDark ? 0.08 : 0.12),
-                      ],
-                    )
-                  : null,
-              border: highlighted
-                  ? Border.all(
-                      color:
-                          Colors.white.withValues(alpha: isDark ? 0.10 : 0.14),
-                    )
-                  : null,
-              borderRadius: BorderRadius.circular(cardRadius),
-            ),
-            child: Icon(
-              icon,
-              size: iconSize,
-              color: highlighted ? Colors.white : accent,
-            ),
-          ),
-          SizedBox(width: compact ? 7 : 8),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -7541,7 +7496,7 @@ class _ModeChoiceCard extends StatelessWidget {
         : (isDark ? const Color(0x22000000) : const Color(0x0D94A3B8));
     return SizedBox(
       width: 206,
-      height: 86,
+      height: 50,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(5),
@@ -7570,44 +7525,26 @@ class _ModeChoiceCard extends StatelessWidget {
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? accent.withValues(alpha: 0.12)
-                      : (isDark
-                          ? const Color(0xFF1A2A45)
-                          : const Color(0xFFF4F7FB)),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: selected
-                      ? accent
-                      : accent.withValues(alpha: isDark ? 0.92 : 0.82),
-                ),
-              ),
-              const SizedBox(width: 3),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            color: _wizardBodyTitleColor(context),
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13.5,
-                          ),
-                    ),
-                    if (subtitle.trim().isNotEmpty) ...[
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: _wizardBodyTitleColor(context),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13.5,
+                        ),
+                  ),
+                  if (subtitle.trim().isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
                         subtitle,
+                        textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -7620,7 +7557,6 @@ class _ModeChoiceCard extends StatelessWidget {
                     ],
                   ],
                 ),
-              ),
               const SizedBox(width: 8),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 220),

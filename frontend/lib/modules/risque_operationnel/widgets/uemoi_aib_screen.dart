@@ -68,7 +68,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
               key: formKey,
               child: UemoiFormCard(
                 title: initial == null ? 'Nouvel exercice' : 'Exercice ${initial.annee}',
-                subtitle: 'Indicateur de Base — BCEAO',
+                subtitle: 'Indicateur de Base - BCEAO',
                 color: AppTheme.accent,
                 children: [
                   UemoiFormField(
@@ -220,7 +220,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
           _buildStatGrid(r),
           AppSpacing.gapMd,
           CreditDataTableCard(
-            title: 'PNB annuel (N-2, N-1, N) — Indicateur de Base',
+            title: 'PNB annuel (N-2, N-1, N) - Indicateur de Base',
             emptyMessage: 'Aucun exercice saisi. Ajoutez le PNB des 3 derniers exercices.',
             toolbar: CreditModuleToolbar(
               searchController: _searchCtrl,
@@ -251,7 +251,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
                               style: const TextStyle(
                                   color: AppTheme.success, fontWeight: FontWeight.w500))
                           : const Text('Exclu (négatif)', style: TextStyle(color: AppTheme.muted))),
-                      DataCell(Text(a.sourceDocument.isEmpty ? '—' : a.sourceDocument)),
+                      DataCell(Text(a.sourceDocument.isEmpty ? '-' : a.sourceDocument)),
                       DataCell(Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -281,21 +281,21 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
     final stats = [
       CreditStatCard(
         label: 'K_IB (Exigence)',
-        value: insuffisant ? '—' : AppFormatters.currency(r.kIb),
+        value: insuffisant ? '-' : AppFormatters.currency(r.kIb),
         helper: 'Capital risque opérationnel',
         icon: Icons.shield_outlined,
         color: AppTheme.accent,
       ),
       CreditStatCard(
         label: 'APR Opérationnel',
-        value: insuffisant ? '—' : AppFormatters.currency(r.aprAib),
+        value: insuffisant ? '-' : AppFormatters.currency(r.aprAib),
         helper: 'RWA risque opérationnel',
         icon: Icons.assessment_outlined,
         color: AppColors.prudentialCapital,
       ),
       CreditStatCard(
         label: 'Capital minimal (9 %)',
-        value: insuffisant ? '—' : AppFormatters.currency(r.capitalMinAib),
+        value: insuffisant ? '-' : AppFormatters.currency(r.capitalMinAib),
         helper: 'Capital minimum requis',
         icon: Icons.account_balance_outlined,
         color: AppTheme.success,

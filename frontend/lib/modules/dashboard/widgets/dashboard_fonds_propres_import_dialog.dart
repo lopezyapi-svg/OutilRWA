@@ -2,7 +2,7 @@
 //
 // Contrairement à l'import BIC/CCR3, il n'y a pas de dimension "année" ici :
 // le modèle représente UNE seule photo des fonds propres, et l'import
-// remplace entièrement les valeurs actuellement enregistrées — exactement
+// remplace entièrement les valeurs actuellement enregistrées - exactement
 // comme le fait le formulaire "Mettre à jour" (DashboardFondsPropresDialog).
 //
 // Format attendu : un onglet avec 3 colonnes "Groupe" / "Poste" / "Valeur".

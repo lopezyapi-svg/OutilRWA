@@ -64,8 +64,57 @@ void main() {
       final result = applyRealForeignExchangeRisk(base, positions);
 
       expect(result.foreignExchangeGlobalNetPosition, 500000000);
-      expect(result.foreignExchangeRisk, 500000000 * 0.09);
+      // Risque de change : 8 % de la position nette globale (Art. 417).
+      expect(result.foreignExchangeRisk, 500000000 * 0.08);
       expect(result.foreignExchangeRisk, isNot(base.foreignExchangeRisk));
+    });
+  });
+
+  group('équivalent RWA des composantes marché', () {
+    tearDown(() {
+      // Le store est un singleton : ne pas laisser fuiter le jeu de test.
+      MarketDataImportStore.instance.snapshotNotifier.value =
+          MarketDataSnapshot.empty;
+    });
+
+    test(
+        'taux, actions et change partagent le multiplicateur 12,5 : leur somme '
+        'reste additionnable', () {
+      // Actions XOF de 100 M : spécifique 8 M + général 8 M = 16 M d'exigence.
+      final equities = MarketPortfolioDataset(
+        portfolioType: MarketPortfolioType.equities,
+        fileName: 'test.xlsx',
+        importedAt: DateTime(2026, 7, 21),
+        headers: const ['Émetteur / Société', 'Devise', 'Valeur de marché'],
+        records: [
+          MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.equities,
+            values: const {
+              'Émetteur / Société': 'Société cotée',
+              'Devise': 'XOF',
+              'Valeur de marché': 100000000,
+            },
+          ),
+        ],
+      );
+      MarketDataImportStore.instance.snapshotNotifier.value =
+          MarketDataSnapshot.fromDatasets(
+        {MarketPortfolioType.equities: equities},
+        activeType: MarketPortfolioType.equities,
+      );
+
+      final result = MarketRiskAggregationService().calculateAggregatedRisk(
+        fxPositions: const [],
+        marketStore: MarketDataImportStore.instance,
+      );
+
+      // 16 M × 12,5 = 200 M, et non 16 M ÷ 0,09 = 177,8 M : mélanger les deux
+      // conversions rendrait le total incohérent avec sa composante change.
+      expect(result.actionsRwa, closeTo(200000000, 0.01));
+      expect(
+        result.totalMarketRwa,
+        closeTo(result.tauxRwa + result.actionsRwa + 0.0, 0.01),
+      );
     });
   });
 }

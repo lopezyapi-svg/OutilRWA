@@ -45,11 +45,20 @@ def _mode_simulation_pour_les_series(tmp_path_factory):
     reproductibles : la couche de données est isolée dans un répertoire
     vide pour que d'éventuelles données réelles présentes sur la machine
     (portefeuille importé dans rwa_data.db, courbe UMOA actualisée)
-    n'interfèrent pas avec les fixtures."""
+    n'interfèrent pas avec les fixtures.
+
+    L'isolation doit couvrir la base : le portefeuille marché importé depuis
+    l'application est lu dans `metadonnees_app` et prime sur les CSV. Sans
+    cette bascule, un import fait par l'utilisateur remplace les portefeuilles
+    des fixtures et fait échouer des tests qui ne portent pas sur ses données.
+    """
+
+    from database.connection import database_manager
 
     patchs = pytest.MonkeyPatch()
     racine_vide = tmp_path_factory.mktemp("var_data_isolees")
     patchs.setattr(portefeuille_data, "app_data_root", lambda: racine_vide)
+    patchs.setattr(database_manager, "db_path", racine_vide / "var_isolee.db")
     patchs.setenv("VAR_MODE_SIMULATION", "1")
     patchs.delenv("VAR_POSTGRES_DSN", raising=False)
     portefeuille_data.invalider_cache_series()

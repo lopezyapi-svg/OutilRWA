@@ -64,6 +64,10 @@ class ExposureCrmDetails(BaseModel):
     guarantor_rating: str = Field(default="", description="Notation du garant.")
     guarantor_country: str = Field(default="", description="Pays du garant.")
     guarantor_country_rating: str = Field(default="", description="Notation souveraine du pays du garant.")
+    guarantor_risk_weight: float = Field(
+        default=0.0,
+        description="Ponderation prudentielle substituee sur la part couverte.",
+    )
     coverage_percent: float = Field(default=0.0, description="Part couverte entre 0 et 1.")
 
 
@@ -88,6 +92,14 @@ class ExposureCreate(BaseModel):
         default=None,
         description="Montant de l'exposition au bilan.",
     )
+    initial_on_balance_amount: float | None = Field(
+        default=None,
+        description=(
+            "Encours bilan d'origine, avant amortissement par les versements. "
+            "Sert de base immuable au suivi des remboursements ; par défaut "
+            "égal à l'encours bilan à la création."
+        ),
+    )
     off_balance_exposure_amount: float | None = Field(
         default=None,
         description="Montant de l'exposition hors bilan.",
@@ -102,6 +114,18 @@ class ExposureCreate(BaseModel):
     )
     currency: str = Field(default="XOF", description="Devise source de l'exposition.")
     status: str = Field(default="Active", description="Statut de gestion de l'exposition.")
+    declassement_manuel: bool = Field(
+        default=False,
+        description="Déclassement manuel anticipé en créance douteuse (géré côté serveur).",
+    )
+    declassement_motif: str | None = Field(
+        default=None,
+        description="Motif du déclassement manuel.",
+    )
+    declassement_le: str | None = Field(
+        default=None,
+        description="Horodatage du déclassement manuel.",
+    )
     sovereign_special_case: str = Field(
         default="",
         description="Type specifique d'exposition souveraine beneficant prioritairement d'une ponderation nulle.",
@@ -207,6 +231,7 @@ class ExposureView(BaseModel):
     gross_amount: float
     loan_total_amount: float | None = None
     on_balance_exposure_amount: float | None = None
+    initial_on_balance_amount: float | None = None
     off_balance_exposure_amount: float | None = None
     provisions_amount: float | None = None
     jours_impayes: int = 0
@@ -221,6 +246,10 @@ class ExposureView(BaseModel):
     rwa_hb_amount: float | None = None
     currency: str = "XOF"
     status: str = "Active"
+    statut_prudentiel: str = "saine"
+    declassement_manuel: bool = False
+    declassement_motif: str | None = None
+    declassement_le: str | None = None
     sovereign_special_case: str = ""
     sovereign_preferential_zero_weight: bool = False
     sovereign_oce_established: bool = False
@@ -246,6 +275,7 @@ class ExposureView(BaseModel):
     crm_type: str
     crm_coverage_percent: float
     crm_details: ExposureCrmDetails = Field(default_factory=ExposureCrmDetails)
+    actual_reimbursements: dict[str, float] = Field(default_factory=dict)
     original_rw: float
     final_rw: float
     ead: float

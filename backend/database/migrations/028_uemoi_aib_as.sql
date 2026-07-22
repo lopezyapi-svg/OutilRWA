@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS op_pnb_annuel (
 CREATE TABLE IF NOT EXISTS op_parametres_aib (
     id                    INTEGER PRIMARY KEY CHECK(id = 1),
     alpha                 REAL    NOT NULL DEFAULT 0.15,   -- art. 301 coefficient 15 %
-    multiplicateur_rwa    REAL    NOT NULL DEFAULT 11.111111,   -- art. 1466 (1 / 0.09)
+    multiplicateur_rwa    REAL    NOT NULL DEFAULT 12.5,         -- 12,5 : multiplicateur reglementaire (paragraphe 90)
     ratio_solvabilite_min REAL    NOT NULL DEFAULT 0.09    -- Titre III
 );
 INSERT OR IGNORE INTO op_parametres_aib (id) VALUES (1);
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS op_parametres_as (
     as_autorisee           INTEGER NOT NULL DEFAULT 0,   -- 0 = FALSE, 1 = TRUE
     date_autorisation      TEXT    NOT NULL DEFAULT '',
     reference_autorisation TEXT    NOT NULL DEFAULT '',
-    multiplicateur_rwa     REAL    NOT NULL DEFAULT 11.111111,
+    multiplicateur_rwa     REAL    NOT NULL DEFAULT 12.5,        -- 12,5 : multiplicateur reglementaire (paragraphe 90)
     ratio_solvabilite_min  REAL    NOT NULL DEFAULT 0.09
 );
 INSERT OR IGNORE INTO op_parametres_as (id) VALUES (1);

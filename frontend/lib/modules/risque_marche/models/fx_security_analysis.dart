@@ -58,7 +58,7 @@ class FxSecurityAnalysis {
     return ((currentRate - initialRate) / initialRate) * 100;
   }
 
-  /// Gain ou perte de change en XOF — effet de change PUR.
+  /// Gain ou perte de change en XOF - effet de change PUR.
   /// Calcul: Position en devise × (Taux_Actuel − Taux_Initial).
   /// La variation de PRIX du titre (émission → valeur actuelle en devise)
   /// n'entre pas ici : à taux de change inchangé, le gain/perte de change
@@ -185,8 +185,8 @@ class FxRiskAnalysisResult {
   final double
       globalNetPosition; // Position nette globale = MAX(longues, courtes)
   final double
-      capitalRequirement; // Exigence FP Change = globalNetPosition × 9%
-  final double rwaChange; // RWA Change = capitalRequirement × 11,111111 (1/0,09)
+      capitalRequirement; // Exigence FP Change = globalNetPosition × 8%
+  final double rwaChange; // RWA Change = capitalRequirement × 12,5 (§90)
   final double marketRiskContribution; // Contribution au risque de marché (%)
   final DateTime analysisDate;
 

@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
+import '../models/ro_models.dart' show kMultiplicateurRwaReglementaire;
 import '../../../shared/utils/file_save.dart';
 
 // ─── Colonnes et valeurs attendues ────────────────────────────────────────────
@@ -354,7 +355,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     }
     if (excel.tables.isEmpty) throw Exception('Aucune feuille trouvée.');
 
-    // Cherche la feuille "Incidents" — lookup explicitement null-safe
+    // Cherche la feuille "Incidents" - lookup explicitement null-safe
     SpreadsheetTable? sheet;
     for (final key in excel.tables.keys) {
       if (key.toLowerCase().contains('incident')) {
@@ -1707,7 +1708,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
                   size: 14, color: AppTheme.danger),
               const SizedBox(width: 6),
               Text(
-                '${errors.length} ligne(s) invalide(s) — seront ignorées à l\'import',
+                '${errors.length} ligne(s) invalide(s) - seront ignorées à l\'import',
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppTheme.danger,
@@ -1746,7 +1747,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
     final totalNette =
         valid.fold(0.0, (s, r) => s + r.perteBrute - r.perteRecuperee);
     final kBia = totalNette * 0.15;
-    final apr = kBia * (1 / 0.09);
+    final apr = kBia * kMultiplicateurRwaReglementaire;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1788,12 +1789,12 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
               const SizedBox(width: 10),
               Expanded(child: _biaKpi('Capital 15 %', _fmtCurrency(kBia))),
               const SizedBox(width: 10),
-              Expanded(child: _biaKpi('APR x11,111111', _fmtCurrency(apr))),
+              Expanded(child: _biaKpi('APR x12,5', _fmtCurrency(apr))),
             ],
           ),
           const SizedBox(height: 10),
           Text(
-            'Calcul indicatif sur les lignes valides: capital minimal = 15 % des pertes nettes, APR = capital minimal x 11,111111.',
+            'Calcul indicatif sur les lignes valides: capital minimal = 15 % des pertes nettes, APR = capital minimal x 12,5.',
             style: TextStyle(
               fontSize: 10.5,
               color: _muted,

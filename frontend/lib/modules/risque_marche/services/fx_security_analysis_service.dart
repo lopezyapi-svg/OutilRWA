@@ -13,7 +13,7 @@ import 'market_data_import_store.dart';
 /// Service pour analyser le risque de change au niveau des titres.
 ///
 /// Outil prudentiel : le service ne travaille QUE sur les données réellement
-/// importées — aucune donnée de démonstration, aucun repli fabriqué.
+/// importées - aucune donnée de démonstration, aucun repli fabriqué.
 class FxSecurityAnalysisService {
   FxSecurityAnalysisService({
     CurrencyRegistry? currencyRegistry,
@@ -111,7 +111,7 @@ class FxSecurityAnalysisService {
   /// Détermine si un titre est exposé au risque de change.
   ///
   /// Seuls les titres libellés en devise ÉTRANGÈRE sont exposés : la devise de
-  /// référence de l'outil (XOF — ainsi que XAF/FCFA repliés sur XOF par
+  /// référence de l'outil (XOF - ainsi que XAF/FCFA repliés sur XOF par
   /// [normalizeCurrencyCode]) ne porte par définition AUCUN risque de change.
   /// Les titres XOF sont donc EXCLUS de l'analyse de change : un portefeuille
   /// de titres achetés ne génère que des positions LONGUES en devise.
@@ -265,11 +265,13 @@ class FxSecurityAnalysisService {
     final globalNetPosition =
         math.max(totalLongPositions, totalShortPositions).toDouble();
 
-    // Exigence de fonds propres = Position_Nette_Globale × 9%
-    final capitalRequirement = globalNetPosition * 0.09;
+    // Exigence de fonds propres pour risque de change = 8 % de la position
+    // nette globale (dispositif prudentiel UMOA).
+    final capitalRequirement = globalNetPosition * 0.08;
 
-    // RWA Change = Exigence_FP × 11,111111 (1 / 0,09)
-    final rwaChange = capitalRequirement * (1 / 0.09);
+    // Équivalent RWA = Exigence_FP × 12,5 (multiplicateur réglementaire de
+    // l'assiette du ratio de solvabilité).
+    final rwaChange = capitalRequirement * 12.5;
 
     final marketRiskContribution =
         totalExposure > 0 ? (capitalRequirement / totalExposure) * 100 : 0.0;

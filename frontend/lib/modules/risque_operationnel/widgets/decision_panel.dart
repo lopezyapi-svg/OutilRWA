@@ -1,4 +1,4 @@
-// Panneau de décision de pilotage — réutilisable dans les onglets
+// Panneau de décision de pilotage - réutilisable dans les onglets
 // A1 (AIB), A2 (AS) et B1 (BIC/Pilotage interne) du Dispositif UEMOI.
 import 'package:flutter/material.dart';
 
@@ -10,7 +10,7 @@ import '../models/ro_models.dart';
 class DecisionPanel extends StatefulWidget {
   const DecisionPanel({super.key, required this.loader});
 
-  /// Fonction de chargement de l'analyse — appelée à l'initialisation et
+  /// Fonction de chargement de l'analyse - appelée à l'initialisation et
   /// à chaque rafraîchissement manuel.
   final Future<DecisionPilotageResult> Function() loader;
 
@@ -71,7 +71,7 @@ class _DecisionPanelState extends State<DecisionPanel> {
 
     if (_loading && _decision == null) {
       return const SectionCard(
-        title: 'Décision de pilotage — Analyse et reporting (UEMOA)',
+        title: 'Décision de pilotage - Analyse et reporting (UEMOA)',
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
           child: Center(child: CircularProgressIndicator()),
@@ -81,7 +81,7 @@ class _DecisionPanelState extends State<DecisionPanel> {
 
     if (_error != null && _decision == null) {
       return SectionCard(
-        title: 'Décision de pilotage — Analyse et reporting (UEMOA)',
+        title: 'Décision de pilotage - Analyse et reporting (UEMOA)',
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Impossible de charger l\'analyse de pilotage',
               style: Theme.of(context).textTheme.bodyMedium),
@@ -104,7 +104,7 @@ class _DecisionPanelState extends State<DecisionPanel> {
     final color = _niveauColor(d.niveauGlobal);
 
     return SectionCard(
-      title: 'Décision de pilotage — Analyse et reporting (UEMOA)',
+      title: 'Décision de pilotage - Analyse et reporting (UEMOA)',
       trailing: IconButton(
         icon: const Icon(Icons.refresh, size: 18),
         tooltip: 'Rafraîchir l\'analyse',
@@ -182,7 +182,7 @@ class _DecisionPanelState extends State<DecisionPanel> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     Expanded(
-                      child: Text('${c.code} — ${c.libelle}',
+                      child: Text('${c.code} - ${c.libelle}',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w600)),
                     ),

@@ -1,6 +1,7 @@
 import 'formatters.dart';
 
 enum PortfolioAmountUnit {
+  thousand('k', 1000),
   million('M', 1000000),
   billion('Md', 1000000000);
 
@@ -95,13 +96,56 @@ String formatCurrencyInDisplayUnit(
   required PortfolioAmountUnit amountUnit,
   int maxDecimals = 2,
 }) {
+  return formatCurrencyWithAutoUnit(
+    amount,
+    fromCurrency: fromCurrency,
+    toCurrency: toCurrency,
+    amountUnit: amountUnit,
+    maxDecimals: maxDecimals,
+  );
+}
+
+String formatCurrencyWithAutoUnit(
+  double amount, {
+  String fromCurrency = 'XOF',
+  required String toCurrency,
+  required PortfolioAmountUnit amountUnit,
+  int maxDecimals = 2,
+}) {
   final converted = convertCurrencyAmount(
     amount,
     fromCurrency: fromCurrency,
     toCurrency: toCurrency,
   );
-  final scaled = converted / amountUnit.divisor;
-  return '${AppFormatters.decimalNumber(scaled, maxDecimals: maxDecimals)} ${amountUnit.label} ${displayCurrencyLabel(toCurrency)}';
+  
+  if (converted == 0) {
+    return '0 ${amountUnit.label} ${displayCurrencyLabel(toCurrency)}';
+  }
+
+  bool roundsToZero(double val) {
+    return double.parse(val.abs().toStringAsFixed(maxDecimals)) == 0.0;
+  }
+  
+  PortfolioAmountUnit unitToUse = amountUnit;
+  if (unitToUse == PortfolioAmountUnit.billion && roundsToZero(converted / unitToUse.divisor)) {
+    unitToUse = PortfolioAmountUnit.million;
+  }
+  if (unitToUse == PortfolioAmountUnit.million && roundsToZero(converted / unitToUse.divisor)) {
+    unitToUse = PortfolioAmountUnit.thousand;
+  }
+  
+  final scaled = converted / unitToUse.divisor;
+  if (roundsToZero(scaled)) {
+     String thresholdStr;
+     if (maxDecimals <= 0) {
+       thresholdStr = '1';
+     } else {
+       thresholdStr = '0.${'0' * (maxDecimals - 1)}1';
+     }
+     return '< $thresholdStr ${unitToUse.label} ${displayCurrencyLabel(toCurrency)}';
+  }
+
+  return '${AppFormatters.decimalNumber(scaled, maxDecimals: maxDecimals)} ${unitToUse.label} ${displayCurrencyLabel(toCurrency)}';
 }
 
 /// Formate un montant de devise de manière compacte (sans devise de départ).

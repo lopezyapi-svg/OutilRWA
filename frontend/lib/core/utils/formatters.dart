@@ -19,12 +19,13 @@ class AppFormatters {
     final upper = currencyCode.toUpperCase();
     final locale =
         upper == 'USD' ? 'en_US' : AppLocalizations.currentLanguage.intlLocale;
-    final key = '$locale:$upper';
+    final key = '$locale:$upper:v3';
     final formatter = _currencyFormatCache.putIfAbsent(key, () {
       return NumberFormat.currency(
         locale: locale,
-        symbol: _currencySymbol(currencyCode),
+        symbol: currencySymbol(currencyCode),
         decimalDigits: 0,
+        customPattern: '#,##0 \u00a4',
       );
     });
     return formatter.format(value);
@@ -99,6 +100,21 @@ class AppFormatters {
     }
   }
 
+  static String compactAmount(num value) {
+    final amount = value.toDouble();
+    final absolute = amount.abs();
+    if (absolute == 0) return '0';
+    if (absolute >= 1000000000) {
+      return '${decimalNumber(amount / 1000000000, maxDecimals: 2)} Md';
+    } else if (absolute >= 1000000) {
+      return '${decimalNumber(amount / 1000000, maxDecimals: 2)} M';
+    } else if (absolute >= 1000) {
+      return '${decimalNumber(amount / 1000, maxDecimals: 2)} k';
+    } else {
+      return decimalNumber(amount, maxDecimals: 2);
+    }
+  }
+
   static String integer(num value) => _plainNumber().format(value.round());
 
   /// Formate un montant (exprime dans l'unite de base, ex. XOF) en millions
@@ -126,7 +142,7 @@ class AppFormatters {
     return formatter.format(value);
   }
 
-  static String _currencySymbol(String currencyCode) {
+  static String currencySymbol(String currencyCode) {
     switch (currencyCode.toUpperCase()) {
       case 'XOF':
       case 'XAF':

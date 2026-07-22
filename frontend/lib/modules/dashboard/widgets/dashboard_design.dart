@@ -27,7 +27,7 @@ class Dash {
   static const List<FontFeature> tabular = [FontFeature.tabularFigures()];
 }
 
-/// Statut prudentiel d'une métrique — seule chose qui porte de la couleur.
+/// Statut prudentiel d'une métrique - seule chose qui porte de la couleur.
 enum DashStatus { conforme, sousCible, sousMinimum, neutre }
 
 /// Palette résolue selon le thème clair/sombre.
@@ -165,7 +165,7 @@ extension DashStatusX on DashStatus {
       case DashStatus.sousMinimum:
         return 'Sous le minimum';
       case DashStatus.neutre:
-        return '—';
+        return '-';
     }
   }
 }

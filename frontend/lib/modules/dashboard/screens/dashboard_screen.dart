@@ -80,7 +80,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final rwaMetric = DashboardMetric(key: 'rwa', label: 'RWA crédit', value: rwaCredit, variation: '', trend: []);
         final grossMetric = _metric(metrics, 'encours');
         final defaultRateMetric = _metric(metrics, 'taux_defaut');
-        final capitalMetric = DashboardMetric(key: 'capital', label: 'Capital', value: rwaMetric.value * 0.09, variation: '', trend: []);
+        // L'exigence de fonds propres vient du serveur, qui détient le taux
+        // réglementaire : la recalculer ici en dupliquerait la formule et la
+        // figerait à une valeur qui pourrait diverger du moteur.
+        final capitalMetric = _metric(metrics, 'capital_requis');
         final residualRiskMetric = _metric(metrics, 'risque_residuel');
         final crmMetric = _metric(metrics, 'crm');
 
@@ -172,6 +175,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           grossCategoryEntries: data.categoryDistribution,
                           rwaCategoryEntries: data.rwaCategoryDistribution,
                           crmEntries: enrichedCrmEntries,
+                          portfolioOverview: data.portfolioOverview,
                           coveredRatio: grossMetric.value > 0
                               ? crmMetric.value / grossMetric.value
                               : 0.0,

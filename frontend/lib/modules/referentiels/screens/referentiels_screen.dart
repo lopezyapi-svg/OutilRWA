@@ -177,6 +177,12 @@ class ReferentielsScreen extends StatelessWidget {
                                         portfolioAmountUnit.value = value,
                                     options: const [
                                       _ChoiceItem(
+                                        value: PortfolioAmountUnit.thousand,
+                                        title: 'Mille',
+                                        description: 'Affichage en k.',
+                                        icon: CupertinoIcons.number,
+                                      ),
+                                      _ChoiceItem(
                                         value: PortfolioAmountUnit.million,
                                         title: 'Million',
                                         description: 'Affichage en M.',

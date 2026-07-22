@@ -1,6 +1,6 @@
 /// Calcule et persiste automatiquement le RWA/capital requis "Risque de
 /// Marché" (Taux + Actions + vrai risque de Change) dès que les données
-/// sources changent — imports obligations/actions ou positions de change —
+/// sources changent - imports obligations/actions ou positions de change -
 /// sans dépendre de la visite d'un écran de synthèse particulier. Alimente
 /// la carte "Risque de Marché" du Dashboard via `/market/capital-requirement`.
 library;

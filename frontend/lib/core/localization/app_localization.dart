@@ -522,7 +522,7 @@ const Map<String, String> _englishTranslations = {
   'Risque eleve': 'High-risk',
   'Créances à risque élevé': 'High-risk exposures',
   // Libellés prudentiels de catégorie sans préfixe lettre (le préfixe
-  // "(a) ", "(b) "... a été retiré partout dans l'appli — voir
+  // "(a) ", "(b) "... a été retiré partout dans l'appli - voir
   // CATEGORY_OPTIONS dans rwa_calculation_service.py et exposureCategories
   // dans exposition_models.dart).
   'Organismes pub. hors Adm c':
@@ -582,7 +582,11 @@ const Map<String, String> _englishTranslations = {
       'Does this exposure concern an MDB meeting the following criteria?',
   'Notation élevée, soutien actionnarial fort, capital et liquidité solides, gestion des risques prudente.':
       'High rating, strong shareholder support, solid capital and liquidity, prudent risk management.',
-  '(a) excellente notation long terme (majoritairement AAA)\n(b) actionnariat composé en grande partie de souverains ≥ AA- ou financement surtout par capital versé\n(c) fort soutien des actionnaires\n(d) niveau adéquat de capital et de liquidité\n(e) politiques de crédit et gestion des risques prudentes':
+  'excellente notation long terme (majoritairement AAA)\n'
+  'actionnariat composé en grande partie de souverains ≥ AA- ou financement surtout par capital versé\n'
+  'fort soutien des actionnaires\n'
+  'niveau adéquat de capital et de liquidité\n'
+  'politiques de crédit et gestion des risques prudentes':
       '(a) excellent long-term rating (mostly AAA)\n(b) shareholding largely made up of sovereigns rated AA- or above, or financing mainly through paid-in capital\n(c) strong shareholder support\n(d) adequate capital and liquidity levels\n(e) prudent credit policies and risk management',
   'L’exposition concerne-t-elle une BMD des États de l’UEMOA libellée et financée en FCFA ?':
       'Does this exposure concern an MDB of WAEMU States denominated and funded in FCFA?',
@@ -969,8 +973,8 @@ const Map<String, String> _englishTranslations = {
   'Registre des incidents et pertes opérationnelles, ligne par ligne.':
       'Register of operational incidents and losses, line by line.',
   'BIC / CCR3': 'BIC / CCR3',
-  'Formulaire de saisie de l\'indicateur d\'activité — un onglet Excel par exercice.':
-      'Business indicator input form — one Excel tab per fiscal year.',
+  'Formulaire de saisie de l\'indicateur d\'activité - un onglet Excel par exercice.':
+      'Business indicator input form - one Excel tab per fiscal year.',
 
   // --- Dashboard: import Fonds Propres ---
   'Modèle enregistré.': 'Template saved.',
@@ -1131,8 +1135,8 @@ const Map<String, String> _englishTranslations = {
   'Coussin ({{value}}%)': 'Buffer ({{value}}%)',
 
   // --- Dashboard: jauge de conformité grands risques ---
-  'Conformité grands risques — plus forte exposition':
-      'Large exposures compliance — highest exposure',
+  'Conformité grands risques - plus forte exposition':
+      'Large exposures compliance - highest exposure',
   'En % des fonds propres': 'As % of own funds',
   'Plus forte exposition': 'Highest exposure',
   'LIMITE RÉGLEMENTAIRE': 'REGULATORY LIMIT',
@@ -1175,7 +1179,7 @@ const Map<String, String> _englishTranslations = {
       'CAPITAL REQUIREMENTS BY RISK TYPE',
   'Capital Requis': 'Required Capital',
   'Aucune donnée disponible': 'No data available',
-  '{{count}} exposition(s)': '{{count}} exposure(s)',
+  '{{count}} expositions': '{{count}} exposures',
 
   // --- Dashboard: top metrics grid ---
   'Exposition brute': 'Gross exposure',

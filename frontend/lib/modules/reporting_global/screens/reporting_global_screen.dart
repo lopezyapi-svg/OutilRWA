@@ -1,4 +1,4 @@
-// Écran de génération du rapport global — synthèse consolidée du Dashboard,
+// Écran de génération du rapport global - synthèse consolidée du Dashboard,
 // du Risque Crédit, du Risque de Marché et du Risque Opérationnel dans un
 // même document PDF réglementaire (UMOA/BCEAO).
 import 'dart:async';
@@ -70,7 +70,7 @@ const _artExplanations = <String, String>{
           '  Capital minimal = α × PNBmoy₃\n'
           '  α = 15 %   (coefficient réglementaire BCEAO)\n'
           '  PNBmoy₃ = Σ PNBᵢ (positifs) / n   sur 3 derniers exercices\n'
-          '  RWA_opérationnel = Capital minimal ÷ 9 %   (facteur 11,111111)',
+          '  RWA_opérationnel = Capital minimal × 12,5   (multiplicateur réglementaire)',
   'Art. 301/307':
       'Exigences minimales en fonds propres (dispositif prudentiel BCEAO).\n\n'
           'Ratios réglementaires :\n'
@@ -217,7 +217,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
   bool _generating = false;
   String? _savedFileName;
   // Confirmation temporaire (grande, au centre) affichée juste après la
-  // génération, puis qui disparaît toute seule — remplace le bandeau vert
+  // génération, puis qui disparaît toute seule - remplace le bandeau vert
   // plein écran et le petit badge permanent qui ne plaisaient pas.
   bool _showSuccessToast = false;
   Timer? _successTimer;
@@ -450,9 +450,9 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
     final dateStr =
         '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
     // La police de base utilisée par le PDF ne sait pas afficher le tiret
-    // cadratin « — » (il ressort comme un carré/tofu) — on le remplace par
+    // cadratin « - » (il ressort comme un carré/tofu) - on le remplace par
     // un tiret simple partout dans le texte injecté dans le document.
-    final periodePdf = _periodeLabel.replaceAll('—', '-');
+    final periodePdf = _periodeLabel.replaceAll('-', '-');
 
     const mutedStyle = pw.TextStyle(fontSize: 8.5, color: mutedCol);
     const bodyStyle = pw.TextStyle(fontSize: 9);
@@ -509,9 +509,10 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
               const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
         );
 
-    // Décomposition du capital requis marché — taux / actions / change (FX),
-    // même formule REA = Capital × 1/9% que le reste de l'outil.
-    const reaMultiplier = 1 / 0.09;
+    // Décomposition du capital requis marché - taux / actions / change (FX).
+    // Conversion en équivalent RWA : multiplicateur réglementaire de 12,5
+    // (assiette du ratio de solvabilité du dispositif prudentiel UMOA).
+    const reaMultiplier = 12.5;
     final marketTotal = marketResult.capitalRequirement;
     String marketShare(double component) => marketTotal > 0
         ? '${(component / marketTotal * 100).toStringAsFixed(1)} %'
@@ -619,7 +620,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
 
         // ── 2. RISQUE CRÉDIT ─────────────────────────────────────────────────
         // Note : ExposureSummary.totalExpositions est en réalité le total de
-        // l'exposition brute (montant, pas un décompte) — voir
+        // l'exposition brute (montant, pas un décompte) - voir
         // expositions_screen.dart::_summarize et expositions/services.py::
         // get_exposition_summary. Le vrai nombre de lignes vient du portefeuille
         // complet du dashboard (globalDash.portfolioOverview), comme sur l'écran
@@ -674,7 +675,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
         ),
         pw.SizedBox(height: 12),
 
-        // ── 4. SYNTHÈSE GÉNÉRALE — RISQUE OPÉRATIONNEL ───────────────────────
+        // ── 4. SYNTHÈSE GÉNÉRALE - RISQUE OPÉRATIONNEL ───────────────────────
         sectionBanner('4. SYNTHÈSE GÉNÉRALE - RISQUE OPÉRATIONNEL  '),
         kpiGrid([
           (
@@ -801,7 +802,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
 
   /// Grande confirmation temporaire, centrée en haut de l'écran, qui apparaît
   /// après la génération puis disparaît toute seule après quelques secondes
-  /// (voir _generateAndSave / _successTimer) — remplace le bandeau vert et le
+  /// (voir _generateAndSave / _successTimer) - remplace le bandeau vert et le
   /// petit badge permanent qui ne convenaient pas.
   Widget _buildSuccessToastOverlay(BuildContext context) {
     return Positioned(

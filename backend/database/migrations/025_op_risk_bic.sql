@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS op_risk_parametres (
     -- seuil2 = 30 Mds EUR × 655,957 = 19 678 710 000 000 FCFA
     seuil1_fcfa           REAL    NOT NULL DEFAULT 655957000000,
     seuil2_fcfa           REAL    NOT NULL DEFAULT 19678710000000,
-    multiplicateur_rea    REAL    NOT NULL DEFAULT 11.111111,
+    multiplicateur_rea    REAL    NOT NULL DEFAULT 12.5,      -- 12,5 : multiplicateur reglementaire (paragraphe 90)
     taux_conversion_eur_fcfa REAL NOT NULL DEFAULT 655.957
 );
 

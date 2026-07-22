@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_module.dart';
+import '../../core/auth/session_scope.dart';
 import '../../core/localization/app_localization.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -59,9 +60,18 @@ class SidebarNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Un compte en consultation n'a rien à faire dans le module d'import :
+    // toutes ses actions finiraient en refus du serveur. L'entrée disparaît
+    // donc du menu plutôt que de mener à un cul-de-sac.
+    final items = SessionScope.peutEditer(context)
+        ? _sidebarItems
+        : _sidebarItems
+            .where((entry) => entry.module != AppModule.importations)
+            .toList(growable: false);
+
     final sidebar = compact
         ? _CompactSidebar(
-            items: _sidebarItems,
+            items: items,
             selectedModule: selectedModule,
             onSelectModule: onSelectModule,
             onSelectSettingsSection: onSelectSettingsSection,
@@ -70,7 +80,7 @@ class SidebarNavigation extends StatelessWidget {
             headerTrailing: headerTrailing,
           )
         : _ExpandedSidebar(
-            items: _sidebarItems,
+            items: items,
             selectedModule: selectedModule,
             onSelectModule: onSelectModule,
             onSelectSettingsSection: onSelectSettingsSection,
@@ -111,7 +121,7 @@ class _MenuEntry {
   final bool selectable;
   final String? settingsSectionId;
   /// Quand true, l'entrée est grisée et non cliquable (temporairement
-  /// désactivée) — elle reste visible dans le menu mais n'a aucun effet.
+  /// désactivée) - elle reste visible dans le menu mais n'a aucun effet.
   final bool disabled;
 
   bool get hasChildren => children.isNotEmpty;
@@ -244,7 +254,7 @@ const List<_MenuEntry> _riskCreditChildren = [
 ];
 
 // "Import données" et "Simulation de crise" ont été déplacés à l'intérieur
-// du hub "CCR3 / Dispositif UEMOI" (onglets supplémentaires) — ils ne sont
+// du hub "CCR3 / Dispositif UEMOI" (onglets supplémentaires) - ils ne sont
 // plus des entrées séparées de ce sous-menu.
 const List<_MenuEntry> _operationalRiskChildren = [
   _MenuEntry.leaf(

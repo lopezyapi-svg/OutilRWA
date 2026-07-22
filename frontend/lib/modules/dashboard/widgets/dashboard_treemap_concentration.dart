@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localization.dart';
 import 'dashboard_design.dart';
 
-/// Concentration des risques — top 10 contreparties, en treemap.
+/// Concentration des risques - top 10 contreparties, en treemap.
 ///
 /// Pavés en nuances de navy ordonnées par taille (le plus exposé = navy le
 /// plus profond). Aucune couleur catégorielle arbitraire.

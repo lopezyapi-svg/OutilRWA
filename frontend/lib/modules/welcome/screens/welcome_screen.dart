@@ -259,7 +259,7 @@ class _WelcomeContent extends StatelessWidget {
               color: isDark
                   ? const Color(0xFF0F1B31).withValues(alpha: 0.86)
                   : Colors.white.withValues(alpha: 0.88),
-              borderRadius: BorderRadius.circular(AppTheme.radius),
+              borderRadius: BorderRadius.zero,
               boxShadow: [
                 BoxShadow(
                   color: isDark

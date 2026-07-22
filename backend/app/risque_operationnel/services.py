@@ -6,6 +6,7 @@ import logging
 import uuid
 from datetime import date, datetime, timedelta
 
+from app.core.config import settings
 from database.connection import database_manager, utcnow_iso
 
 logger = logging.getLogger(__name__)
@@ -957,7 +958,9 @@ def get_dashboard() -> DashboardData:
         ).fetchone()["total"] or 0
         # K_IB simplifié : 15% de la moyenne des pertes sur 3 ans (proxy)
         k_ib = total_pertes * 0.15
-        apr = k_ib * (1 / 0.09)
+        # Conversion en équivalent RWA : multiplicateur réglementaire de 12,5
+        # (assiette du ratio de solvabilité, §90 du dispositif prudentiel).
+        apr = k_ib * 12.5
 
         # Widget 2
         inc_mois = conn.execute(
@@ -1629,7 +1632,8 @@ def get_synthese() -> SyntheseResult:
         bic = calcul_bic()
         lignes.append(SyntheseLigne(
             methode="BIC — CRR3 Pilotage interne",
-            k=bic.ofr_crr3, apr=bic.rea_crr3, capital_min=bic.rea_crr3 * 0.09,
+            k=bic.ofr_crr3, apr=bic.rea_crr3,
+            capital_min=bic.rea_crr3 * settings.capital_ratio,
             disponible=not bic.donnees_insuffisantes,
         ))
         ofr_bic = bic.ofr_crr3 if not bic.donnees_insuffisantes else None

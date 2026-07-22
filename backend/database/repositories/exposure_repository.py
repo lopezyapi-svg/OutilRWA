@@ -86,6 +86,10 @@ _SELECT_EXPOSURES = """
         e.devise            AS currency,
         e.statut            AS status,
         e.jours_impayes     AS jours_impayes,
+        e.statut_prudentiel AS statut_prudentiel,
+        e.declassement_manuel AS declassement_manuel,
+        e.declassement_motif  AS declassement_motif,
+        e.declassement_le     AS declassement_le,
         -- Sous-entité souverain
         es.cas_particulier            AS sovereign_special_case,
         es.ponderation_zero_preferentiel AS sovereign_preferential_zero_weight,
@@ -275,6 +279,10 @@ class ExposureRepository:
                     rwa,
                     capital,
                     jours_impayes,
+                    statut_prudentiel,
+                    declassement_manuel,
+                    declassement_motif,
+                    declassement_le,
                     commentaire,
                     champs_source_json,
                     cree_le,
@@ -282,7 +290,7 @@ class ExposureRepository:
                 ) VALUES (
                     ?, ?, ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
                 ON CONFLICT(id) DO UPDATE SET
                     contrepartie_id      = excluded.contrepartie_id,
@@ -304,6 +312,10 @@ class ExposureRepository:
                     rwa                  = excluded.rwa,
                     capital              = excluded.capital,
                     jours_impayes        = excluded.jours_impayes,
+                    statut_prudentiel    = excluded.statut_prudentiel,
+                    declassement_manuel  = excluded.declassement_manuel,
+                    declassement_motif   = excluded.declassement_motif,
+                    declassement_le      = excluded.declassement_le,
                     commentaire          = excluded.commentaire,
                     champs_source_json   = excluded.champs_source_json,
                     modifie_le           = excluded.modifie_le
@@ -346,6 +358,10 @@ class ExposureRepository:
                         float(record.get("rwa", 0.0) or 0.0),
                         float(record.get("capital", 0.0) or 0.0),
                         int(record.get("jours_impayes", 0) or 0),
+                        str(record.get("statut_prudentiel") or "saine"),
+                        _bool_to_int(bool(record.get("declassement_manuel"))),
+                        record.get("declassement_motif"),
+                        record.get("declassement_le"),
                         record.get("comment"),
                         json.dumps(
                             record.get("source_fields") or {},
@@ -736,6 +752,10 @@ class ExposureRepository:
                 (target_id, source_id),
             )
         connection.execute(
+            "UPDATE suivi_versements SET exposition_id = ? WHERE exposition_id = ?",
+            (target_id, source_id),
+        )
+        connection.execute(
             "UPDATE crm_financee SET exposition_id = ? WHERE exposition_id = ?",
             (target_id, source_id),
         )
@@ -898,6 +918,9 @@ class ExposureRepository:
                 "coverage_percent": float(row.get("crm_coverage_percent", 0.0) or 0.0),
             }
             guarantor_rw = float(row.get("guarantor_rw", 0.0) or 0.0)
+            # Pondération substituée sur la part couverte : sans elle, un lecteur
+            # ne peut pas savoir si la garantie allège réellement l'exigence.
+            crm_details["guarantor_risk_weight"] = guarantor_rw
         else:
             crm_details = {
                 "mode": "Aucune",
@@ -923,6 +946,11 @@ class ExposureRepository:
             "source_fields": source_fields,
             "currency": str(row.get("currency") or "XOF"),
             "status": str(row.get("status") or "Active"),
+            "jours_impayes": int(row.get("jours_impayes") or 0),
+            "statut_prudentiel": str(row.get("statut_prudentiel") or "saine"),
+            "declassement_manuel": bool(row.get("declassement_manuel")),
+            "declassement_motif": row.get("declassement_motif"),
+            "declassement_le": row.get("declassement_le"),
             "sovereign_special_case": str(row.get("sovereign_special_case") or ""),
             "sovereign_preferential_zero_weight": bool(
                 row.get("sovereign_preferential_zero_weight")

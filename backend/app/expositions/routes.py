@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.validators.excel_import_validator import ExcelImportValidationError
+from app.expositions import suivi_service
 from app.expositions.models import ExposureCreate, ExposureSummary, ExposureView
 from app.expositions.services import (
     build_expositions_excel_export,
@@ -45,6 +46,29 @@ class ExposureDeleteRequest(BaseModel):
 
     ids: list[str]
     reindex_ids: bool = False
+
+
+class VersementRequest(BaseModel):
+    """Marquage mensuel d'un versement reçu ou d'un impayé."""
+
+    periode: str
+    statut: str
+    montant_verse: float | None = None
+    commentaire: str | None = None
+
+
+class DeclassementRequest(BaseModel):
+    """Déclassement manuel en créance douteuse (motif obligatoire)."""
+
+    motif: str
+
+
+def _suivi_error_to_http(exc: Exception) -> HTTPException:
+    if isinstance(exc, suivi_service.ExpositionIntrouvableError):
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    if isinstance(exc, suivi_service.LeveeDeclassementRefuseeError):
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.get("", response_model=list[ExposureView])
@@ -126,6 +150,66 @@ async def import_from_uploaded_excel(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.payload) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/{exposure_id}/suivi")
+def get_suivi_exposition(exposure_id: str) -> dict[str, object]:
+    """Retourne le suivi mensuel des versements et le statut prudentiel."""
+
+    try:
+        return suivi_service.get_suivi(exposure_id)
+    except suivi_service.ExpositionIntrouvableError as exc:
+        raise _suivi_error_to_http(exc) from exc
+
+
+@router.post("/{exposure_id}/suivi/versements")
+def post_versement(exposure_id: str, payload: VersementRequest) -> dict[str, object]:
+    """Enregistre le versement (ou l'impayé) d'un mois et recalcule la ligne."""
+
+    try:
+        return suivi_service.record_versement(
+            exposure_id,
+            periode=payload.periode,
+            statut=payload.statut,
+            montant_verse=payload.montant_verse,
+            commentaire=payload.commentaire,
+        )
+    except (
+        suivi_service.ExpositionIntrouvableError,
+        suivi_service.SuiviValidationError,
+    ) as exc:
+        raise _suivi_error_to_http(exc) from exc
+
+
+@router.post("/{exposure_id}/declassement")
+def post_declassement(
+    exposure_id: str, payload: DeclassementRequest
+) -> dict[str, object]:
+    """Déclasse manuellement une exposition en créance douteuse."""
+
+    try:
+        return suivi_service.declasser_exposition(exposure_id, motif=payload.motif)
+    except (
+        suivi_service.ExpositionIntrouvableError,
+        suivi_service.SuiviValidationError,
+    ) as exc:
+        raise _suivi_error_to_http(exc) from exc
+
+
+@router.post("/{exposure_id}/declassement/levee")
+def post_levee_declassement(
+    exposure_id: str, payload: DeclassementRequest
+) -> dict[str, object]:
+    """Lève un déclassement manuel après apurement des arriérés."""
+
+    try:
+        return suivi_service.lever_declassement(exposure_id, motif=payload.motif)
+    except (
+        suivi_service.ExpositionIntrouvableError,
+        suivi_service.SuiviValidationError,
+        suivi_service.LeveeDeclassementRefuseeError,
+    ) as exc:
+        raise _suivi_error_to_http(exc) from exc
 
 
 @router.put("/{exposure_id}", response_model=ExposureView)

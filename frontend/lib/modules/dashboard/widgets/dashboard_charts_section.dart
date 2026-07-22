@@ -15,6 +15,7 @@ class DashboardChartsSection extends StatefulWidget {
     required this.rwaCategoryEntries,
     required this.crmEntries,
     required this.coveredRatio,
+    required this.portfolioOverview,
   });
 
   final String displayCurrency;
@@ -22,6 +23,7 @@ class DashboardChartsSection extends StatefulWidget {
   final List<DistributionEntry> rwaCategoryEntries;
   final List<DistributionEntry> crmEntries;
   final double coveredRatio; // Kept for API compatibility
+  final List<PortfolioRow> portfolioOverview;
 
   @override
   State<DashboardChartsSection> createState() => _DashboardChartsSectionState();
@@ -46,6 +48,7 @@ class _DashboardChartsSectionState extends State<DashboardChartsSection> {
 
         final donutChart = DashboardCrmDonut(
           entries: widget.crmEntries,
+          portfolioOverview: widget.portfolioOverview,
         );
 
         final eadPanel = DashPanel(

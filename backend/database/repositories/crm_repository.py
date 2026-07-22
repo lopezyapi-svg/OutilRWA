@@ -6,6 +6,7 @@ from contextlib import nullcontext
 import json
 from typing import Any
 
+from app.core.calculations import calculate_capital
 from database.connection import database_manager
 
 _SQLITE_CHUNK_SIZE = 400
@@ -267,9 +268,11 @@ class CrmRepository:
                 guarantor_rw = float(row["guarantor_rw"] or 0.0)
 
             rwa_before = round(float(row["ead"] or 0.0) * float(row["borrower_rw"] or 0.0), 2)
-            capital_before = round(rwa_before * 0.09, 2)
+            capital_before = calculate_capital(rwa_before)
             rwa_after = round(float(row["rwa"] or 0.0), 2)
-            capital_after = round(float(row["capital"] or 0.0), 2)
+            # Recalculé au taux courant plutôt que lu en base : les montants
+            # persistés peuvent dater d'un ancien paramétrage du ratio.
+            capital_after = calculate_capital(rwa_after)
 
             items.append(
                 {

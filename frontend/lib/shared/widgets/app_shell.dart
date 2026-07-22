@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_module.dart';
+import '../../core/auth/session_scope.dart';
 import '../../core/localization/app_language.dart';
 import '../../core/localization/app_localization.dart';
 import '../../core/theme/app_theme.dart';
@@ -2322,6 +2323,14 @@ class _PortfolioAmountUnitPicker extends StatelessWidget {
           ),
           itemBuilder: (context) => [
             _buildAmountUnitMenuItem(
+              unit: PortfolioAmountUnit.thousand,
+              title: 'Mille',
+              detail: 'k',
+              selected: selectedUnit == PortfolioAmountUnit.thousand,
+              isDark: isDark,
+              accentColor: Theme.of(context).colorScheme.primary,
+            ),
+            _buildAmountUnitMenuItem(
               unit: PortfolioAmountUnit.million,
               title: 'Million',
               detail: 'M',
@@ -2743,10 +2752,60 @@ class _TopBar extends StatelessWidget {
                 ),
           ),
           const Spacer(),
+          const _ZoneCompte(),
           _HeaderIconButton(
             icon: CupertinoIcons.circle_grid_3x3_fill,
             accent: Theme.of(context).colorScheme.primary,
             onPressed: onReturnToWelcome,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Identité de la session et sortie, dans l'en-tête.
+///
+/// N'apparaît que lorsque le backend impose une authentification : sur un
+/// poste de travail local, il n'y a ni compte ni déconnexion possible.
+class _ZoneCompte extends StatelessWidget {
+  const _ZoneCompte();
+
+  @override
+  Widget build(BuildContext context) {
+    final session = SessionScope.maybeOf(context);
+    if (session == null || !session.authentificationRequise) {
+      return const SizedBox.shrink();
+    }
+    final profil = session.profil;
+    if (profil == null) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(right: AppTheme.spacing),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const BandeauConsultation(),
+          const SizedBox(width: 10),
+          Text(
+            profil.nomComplet?.trim().isNotEmpty == true
+                ? profil.nomComplet!
+                : profil.identifiant,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            iconSize: 18,
+            tooltip: 'Se déconnecter',
+            icon: const Icon(Icons.logout_outlined),
+            color: theme.colorScheme.onSurfaceVariant,
+            onPressed: session.deconnecter,
           ),
         ],
       ),

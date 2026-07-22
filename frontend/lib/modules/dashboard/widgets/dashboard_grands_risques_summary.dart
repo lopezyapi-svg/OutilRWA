@@ -90,7 +90,7 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
           const SizedBox(height: 4),
           _IndicatorRow(
             label: 'Concentration maximale'.tr(context),
-            value: totalRisques == 0 ? '—' : '${maxRatio.toStringAsFixed(1)} %',
+            value: totalRisques == 0 ? '-' : '${maxRatio.toStringAsFixed(1)} %',
             valueColor: maxRatio > 25
                 ? c.sousMinimum
                 : maxRatio >= 20
@@ -99,11 +99,11 @@ class DashboardGrandsRisquesSummary extends StatelessWidget {
           ),
           _IndicatorRow(
             label: 'Concentration moyenne'.tr(context),
-            value: totalRisques == 0 ? '—' : '${avgRatio.toStringAsFixed(1)} %',
+            value: totalRisques == 0 ? '-' : '${avgRatio.toStringAsFixed(1)} %',
           ),
           _IndicatorRow(
             label: 'Taux de conformité'.tr(context),
-            value: tauxConformite == null ? '—' : '${tauxConformite.toStringAsFixed(0)} %',
+            value: tauxConformite == null ? '-' : '${tauxConformite.toStringAsFixed(0)} %',
             valueColor: tauxConformite == null
                 ? null
                 : tauxConformite >= 100

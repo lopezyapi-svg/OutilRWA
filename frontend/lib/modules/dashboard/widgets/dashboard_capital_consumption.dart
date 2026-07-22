@@ -18,21 +18,29 @@ class DashboardCapitalConsumption extends StatelessWidget {
     final c = DashColors.of(context);
     final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
 
-    // Get raw data in XOF from metrics
-    double rwaXof = 3180.0 * 1000000000;
-    double capitalRequisXof = 254.4 * 1000000000;
-    double capitalDetenuXof = 450.0 * 1000000000;
-    double solvabilite = 0.1415; // 14.15% fallback
+    // Aucune valeur de démonstration : sans données, la tuile affiche zéro
+    // plutôt que des montants inventés qui passeraient pour réels.
+    double capitalRequisXof = 0;
+    double capitalDetenuXof = 0;
+    double solvabilite = 0;
 
     if (data != null && data!.metrics.isNotEmpty) {
-      final rwaMetric = data!.metrics.firstWhere((m) => m.key == 'rwa', orElse: () => DashboardMetric(key: 'rwa', label: 'RWA', value: rwaXof, variation: '', trend: const []));
-      final capitalMetric = data!.metrics.firstWhere((m) => m.key == 'capital', orElse: () => DashboardMetric(key: 'capital', label: 'Capital', value: capitalRequisXof, variation: '', trend: const []));
-      final solvabiliteMetric = data!.metrics.firstWhere((m) => m.key == 'solvabilite', orElse: () => DashboardMetric(key: 'solvabilite', label: 'Solvabilité', value: solvabilite, variation: '', trend: const []));
-      
-      rwaXof = rwaMetric.value;
-      capitalRequisXof = capitalMetric.value;
-      solvabilite = solvabiliteMetric.value;
-      capitalDetenuXof = solvabilite * rwaXof;
+      double metric(String key) =>
+          data!.metrics
+              .firstWhere(
+                (m) => m.key == key,
+                orElse: () => DashboardMetric(
+                    key: key, label: key, value: 0, variation: '', trend: const []),
+              )
+              .value;
+
+      // Exigence réglementaire d'un côté, fonds propres effectivement détenus
+      // de l'autre. Les confondre - ou déduire les fonds propres de
+      // « solvabilité × RWA », qui les redonne à l'arrondi près - affichait un
+      // excédent systématiquement nul.
+      capitalRequisXof = metric('capital_requis');
+      capitalDetenuXof = metric('capital');
+      solvabilite = metric('solvabilite');
     }
 
     // Convert to requested currency and scale to unit

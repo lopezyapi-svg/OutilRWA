@@ -10,7 +10,7 @@ import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
 
-/// Adéquation des fonds propres — graphique de points (écart au minimum).
+/// Adéquation des fonds propres - graphique de points (écart au minimum).
 ///
 /// Pour chaque compartiment : ○ capital minimal requis (exigence × RWA) vs
 /// ● fonds propres détenus, sur un axe commun en Md (devise). L'écart entre les
@@ -88,7 +88,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
 
     return [
       _CapLine('CET1'.tr(context), base: 5.0, coussin: 2.5, actuel: actuelPct(fp?.cet1, cet1Metric)),
-      _CapLine('Tier 1'.tr(context), base: 7.5, coussin: 2.5, actuel: actuelPct(fp?.tier1, t1Metric)),
+      _CapLine('Tier 1'.tr(context), base: 6.0, coussin: 2.5, actuel: actuelPct(fp?.tier1, t1Metric)),
       _CapLine('Solvabilité'.tr(context), base: 9.0, coussin: 2.5, actuel: actuelPct(fp?.totalFp, solvMetric)),
     ];
   }
@@ -199,6 +199,24 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
         );
         foundRow = i;
         foundDot = 2;
+        break;
+      }
+      
+      // Coussin line (intervalle bleu clair)
+      if (pos.dx >= xb && pos.dx <= xr) {
+        final coussinMd = AppFormatters.decimalNumber(l.coussin * rwaVal / 100, maxDecimals: 3);
+        found = _TooltipData(
+          context.tr('{{label}} : Coussin de conservation (en {{unit}})', args: {'label': l.label, 'unit': unitLabel}),
+          [
+            _TooltipRow('Taux du coussin'.tr(context), coussinPct),
+            const _TooltipRow.divider(),
+            _TooltipRow('Montant équivalent'.tr(context), '$coussinMd $unitLabel', isHighlight: true),
+          ],
+          pos,
+          formula: '(Taux du coussin × Actifs pondérés au risque)'.tr(context),
+        );
+        foundRow = i;
+        foundDot = 3;
         break;
       }
     }
@@ -474,7 +492,7 @@ class _LegendShapePainter extends CustomPainter {
         ..lineTo(center.dx, center.dy + 4.5)
         ..lineTo(center.dx - 4.5, center.dy)
         ..close();
-      canvas.drawPath(p, Paint()..color = const Color(0xFFF59E0B)); // Ambre
+      canvas.drawPath(p, Paint()..color = const Color(0xFF10B981)); // Vert
     } else if (type == 3) { // Circle (Détenus)
       canvas.drawCircle(center, 4, Paint()..color = customColor ?? const Color(0xFF8B5CF6));
     }
@@ -631,7 +649,7 @@ class _DotPlotPainter extends CustomPainter {
         ..lineTo(vXr, y + 5)
         ..lineTo(vXr - 5, y)
         ..close();
-      canvas.drawPath(pathGlob, Paint()..color = const Color(0xFFF59E0B));
+      canvas.drawPath(pathGlob, Paint()..color = const Color(0xFF10B981));
 
       // Marqueur Fonds propres détenus (point coloré)
       canvas.drawCircle(Offset(xd, y), 4, Paint()..color = pointColor);

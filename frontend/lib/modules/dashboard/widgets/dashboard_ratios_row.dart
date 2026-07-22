@@ -9,7 +9,7 @@ import 'dashboard_design.dart';
 ///
 /// Tuiles plates à filet fin : sur-titre tracé, chiffre-héros tabulaire,
 /// minimum réglementaire en légende, point de statut. Aucun icon-box teinté,
-/// aucune pastille décorative — la couleur ne porte que le statut.
+/// aucune pastille décorative - la couleur ne porte que le statut.
 class DashboardRatiosRow extends StatelessWidget {
   const DashboardRatiosRow({super.key, required this.data});
 

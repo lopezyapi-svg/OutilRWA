@@ -5,16 +5,22 @@ from typing import Any
 # ============================================================================
 # CONSTANTES REGLEMENTAIRES UMOA / BALE III (Titre III & X)
 # ============================================================================
-MIN_CET1_RATIO = 0.05       # 5%
-MIN_TIER1_RATIO = 0.075     # 7,5%
-MIN_SOLVENCY_RATIO = 0.09   # 9% — minimum SANS coussin (cible avec coussin = 11,5 %, cf. CONSERVATION_BUFFER)
+MIN_CET1_RATIO = 0.05       # 5% (§91a)
+MIN_TIER1_RATIO = 0.06      # 6% (§91b)
+MIN_SOLVENCY_RATIO = 0.09   # 9% — minimum SANS coussin (§91c ; exigence globale avec coussin = 11,5 %)
 MIN_LEVERAGE_RATIO = 0.03   # 3%
 
 # Coussin de conservation (Titre III, section IV, Paragraphe 92)
 CONSERVATION_BUFFER = 0.025 # 2.5%
 
-# Multiplicateur RWA = 1 / ratio de solvabilité minimum (9% => 11.111111...)
-RWA_MULTIPLIER = 1 / MIN_SOLVENCY_RATIO
+# Multiplicateur réglementaire des exigences de fonds propres marché et
+# opérationnel dans l'assiette du ratio de solvabilité (§90) :
+# Ratio = FP / (APR crédit + 12,5 × risque op + 12,5 × risque marché).
+RWA_MULTIPLIER = 12.5
+
+# Exigence de fonds propres pour risque de change : 8 % de la position nette
+# globale en devises (§417).
+FX_CAPITAL_CHARGE_RATE = 0.08
 
 
 def calculate_fonds_propres(fp_data: dict[str, float]) -> dict[str, float]:
@@ -90,8 +96,8 @@ def calculate_risque_marche(marche_data: dict[str, float]) -> dict[str, float]:
     Calcule le RWA Marché (Titre VI).
     """
     position_nette = marche_data.get("position_nette_change", 0.0)
-    
-    exigence = abs(position_nette) * MIN_SOLVENCY_RATIO
+
+    exigence = abs(position_nette) * FX_CAPITAL_CHARGE_RATE
 
     rwa_marche = exigence * RWA_MULTIPLIER
     

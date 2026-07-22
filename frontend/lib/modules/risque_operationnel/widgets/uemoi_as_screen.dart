@@ -160,7 +160,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
           // Saisie PNB par ligne
           UemoiFormCard(
             title: 'PNB par ligne de métier',
-            subtitle: 'Approche Standard — saisie annuelle par ligne de métier BCEAO',
+            subtitle: 'Approche Standard - saisie annuelle par ligne de métier BCEAO',
             color: AppTheme.accent,
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
               ...[DateTime.now().year - 2, DateTime.now().year - 1, DateTime.now().year].map((y) =>

@@ -2,9 +2,12 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import '../../modules/crm/models/crm_models.dart';
 import '../../modules/dashboard/models/dashboard_models.dart';
 import '../../modules/expositions/models/exposition_models.dart';
+import '../../modules/expositions/models/suivi_versements_models.dart';
 import '../../modules/hors_bilan/models/hors_bilan_models.dart';
 import '../../modules/rapports/models/report_models.dart';
 import '../../modules/referentiels/models/referentiels_models.dart';
@@ -24,6 +27,17 @@ String _resolveDefaultApiBaseUrl() {
   const buildBaseUrl = String.fromEnvironment('RWA_API_BASE_URL');
   if (buildBaseUrl.isNotEmpty) {
     return buildBaseUrl;
+  }
+
+  // Dans un navigateur, l'API est servie par le meme domaine que
+  // l'application, derriere le proxy inverse : une adresse relative evite
+  // toute origine croisee, donc tout CORS, et suit le domaine sans
+  // reconstruction. `window.RWA_CONFIG` permet de pointer ailleurs si besoin.
+  if (kIsWeb) {
+    // Adresse absolue construite sur l'origine de la page : elle suit le
+    // domaine sans reconstruction, et evite les surprises des URL relatives
+    // selon le client HTTP du navigateur.
+    return '${Uri.base.origin}/api';
   }
 
   final runtimeHost =
@@ -52,10 +66,20 @@ class RwaApiService {
   RwaApiService({
     String? baseUrl,
     ApiClient? client,
+    String? Function()? tokenProvider,
+    Future<bool> Function()? onUnauthorized,
   }) : _client = client ??
             ApiClient(
               baseUrl: baseUrl ?? _resolveDefaultApiBaseUrl(),
+              tokenProvider: tokenProvider,
+              onUnauthorized: onUnauthorized,
             );
+
+  /// URL de l'API telle que résolue par défaut.
+  ///
+  /// Exposée pour que la session s'adresse exactement au même backend que les
+  /// appels métier : deux résolutions séparées finiraient par diverger.
+  static String resolveDefaultBaseUrl() => _resolveDefaultApiBaseUrl();
 
   final ApiClient _client;
   final StreamController<int> _portfolioRefreshController =
@@ -222,7 +246,7 @@ class RwaApiService {
       'capital_requis': capitalRequis,
     });
     // Le RWA Marché stocké ici alimente directement rwa_total côté dashboard
-    // (resolve_market_capital) — même raison d'invalidation que pour le BIC.
+    // (resolve_market_capital) - même raison d'invalidation que pour le BIC.
     _dashboardFuture = null;
   }
 
@@ -581,6 +605,59 @@ class RwaApiService {
     return ExposureRecord.fromJson(response);
   }
 
+  Future<ExpositionSuivi> fetchExpositionSuivi(String exposureId) async {
+    final response = Map<String, dynamic>.from(
+      await _client.get('/expositions/$exposureId/suivi') as Map,
+    );
+    return ExpositionSuivi.fromJson(response);
+  }
+
+  Future<ExpositionSuivi> recordVersement(
+    String exposureId, {
+    required String periode,
+    required String statut,
+    double? montantVerse,
+    String? commentaire,
+  }) async {
+    final response = Map<String, dynamic>.from(
+      await _client.post('/expositions/$exposureId/suivi/versements', {
+        'periode': periode,
+        'statut': statut,
+        if (montantVerse != null) 'montant_verse': montantVerse,
+        if (commentaire != null && commentaire.isNotEmpty)
+          'commentaire': commentaire,
+      }) as Map,
+    );
+    _notifyPortfolioChanged();
+    return ExpositionSuivi.fromJson(response);
+  }
+
+  Future<ExpositionSuivi> declasserExposition(
+    String exposureId, {
+    required String motif,
+  }) async {
+    final response = Map<String, dynamic>.from(
+      await _client.post('/expositions/$exposureId/declassement', {
+        'motif': motif,
+      }) as Map,
+    );
+    _notifyPortfolioChanged();
+    return ExpositionSuivi.fromJson(response);
+  }
+
+  Future<ExpositionSuivi> leverDeclassement(
+    String exposureId, {
+    required String motif,
+  }) async {
+    final response = Map<String, dynamic>.from(
+      await _client.post('/expositions/$exposureId/declassement/levee', {
+        'motif': motif,
+      }) as Map,
+    );
+    _notifyPortfolioChanged();
+    return ExpositionSuivi.fromJson(response);
+  }
+
   Future<Map<String, dynamic>> deleteExposures(
     List<String> ids, {
     bool reindexIds = false,
@@ -766,7 +843,7 @@ class RwaApiService {
     return 'CP${(max + 1).toString().padLeft(3, '0')}';
   }
 
-  // ── BIC — Approche Standard CRR3 ────────────────────────────────────────────
+  // ── BIC - Approche Standard CRR3 ────────────────────────────────────────────
 
   Future<OpRiskInput> fetchBicInput(int annee) async {
     final json = await _client.get('/risque-operationnel/bic/inputs/$annee')
@@ -827,7 +904,7 @@ class RwaApiService {
     return OpRiskCalculResult.fromJson(json);
   }
 
-  // ── UEMOI — AIB (Approche Indicateur de Base) ────────────────────────────────
+  // ── UEMOI - AIB (Approche Indicateur de Base) ────────────────────────────────
 
   Future<List<PnbAnnuelView>> fetchPnbAnnuel() async {
     final list =
@@ -872,7 +949,7 @@ class RwaApiService {
     return DecisionPilotageResult.fromJson(json);
   }
 
-  // ── UEMOI — AS (Approche Standard) ───────────────────────────────────────────
+  // ── UEMOI - AS (Approche Standard) ───────────────────────────────────────────
 
   Future<List<BetaLigneView>> fetchBetaLignes() async {
     final list = await _client.get('/risque-operationnel/as/beta-lignes')
@@ -931,7 +1008,7 @@ class RwaApiService {
     return DecisionPilotageResult.fromJson(json);
   }
 
-  // ── UEMOI — Seuils + Synthèse ─────────────────────────────────────────────────
+  // ── UEMOI - Seuils + Synthèse ─────────────────────────────────────────────────
 
   Future<ParametresSeuils> fetchPertesSeuils() async {
     final json = await _client.get('/risque-operationnel/pertes/seuils')

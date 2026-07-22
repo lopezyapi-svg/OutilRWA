@@ -90,7 +90,7 @@ const Color _marketDashboardDeepBlue = Color(0xFF234A84);
 
 /// Rampe séquentielle bleu-navy (institutionnelle) pour les répartitions par
 /// magnitude (notation, pays, zone, émetteurs). Le rang le plus élevé porte la
-/// teinte la plus foncée ; la clarté croît régulièrement — pas d'arc-en-ciel.
+/// teinte la plus foncée ; la clarté croît régulièrement - pas d'arc-en-ciel.
 const List<Color> _marketSequentialBlues = [
   Color(0xFF0A2A5E),
   Color(0xFF123A73),
@@ -4120,7 +4120,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
         unit: PortfolioAmountUnitPreference.current.label,
         icon: CupertinoIcons.arrow_merge,
         color: _marketSuccess,
-        formula: r'RWA=K \times 11.11',
+        formula: r'RWA=K \times 12{,}5',
         detail: 'Équivalent des actifs pondérés des risques pour les actions.',
         caption: 'Pondération réglementaire',
         category: 'Réglementaire',
@@ -4173,18 +4173,19 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
             'Permet d\'apprécier l\'ampleur potentielle des fluctuations du portefeuille.',
       ),
       _BondKeyIndicatorSpec(
-        label: 'Concentration (Top 5)',
+        label: 'Poids du premier émetteur',
         value: _bondIndicatorPercent(dataset.concentrationRatio),
         unit: '',
         icon: CupertinoIcons.chart_pie_fill,
         color: _marketCyan,
-        formula: r'C_5=\frac{\sum_{i=1}^5 E_i}{\sum_i E_i}',
-        detail: 'Poids cumulé des 5 plus grandes positions du portefeuille.',
+        formula: r'C=\frac{\max_i E_i}{\sum_i E_i}',
+        detail:
+            'Part de l\'émetteur le plus lourd dans l\'exposition totale.',
         caption: 'Risque idiosyncratique',
         category: 'Diversification',
-        method: 'Poids cumulé',
+        method: 'Exposition maximale rapportée au total',
         reading:
-            'Mesure la concentration du risque sur les principales lignes.',
+            'Mesure la concentration du risque sur la principale contrepartie.',
       ),
       _BondKeyIndicatorSpec(
         label: 'Émetteur Dominant',
@@ -6874,7 +6875,7 @@ class _MarketCrdEvolutionHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Capital Restant Dû — Profil d’amortissement'.toUpperCase(),
+                'Capital Restant Dû - Profil d’amortissement'.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -8248,12 +8249,12 @@ class _BondKeyIndicatorSpec {
         unit: PortfolioAmountUnitPreference.current.label,
         icon: CupertinoIcons.chart_pie_fill,
         color: _marketDanger,
-        formula: r'RWA_{marché}=K_{marché}\times11{,}111111',
+        formula: r'RWA_{marché}=K_{marché}\times12{,}5',
         detail:
-            'Conversion de l’exigence de fonds propres marché en actifs pondérés, avec l’inverse du ratio minimal de 9 %.',
+            'Conversion de l’exigence de fonds propres marché en actifs pondérés, au multiplicateur réglementaire de 12,5.',
         caption: 'Actifs pondérés marché',
         category: 'Prudentiel',
-        method: 'Exigence multipliée par 11,111111',
+        method: 'Exigence multipliée par 12,5',
         reading:
             'Équivalent en actifs pondérés intégrable directement au ratio de solvabilité global.',
       ),
@@ -11124,7 +11125,7 @@ class _BondZoneRadarProfileChartState
                                   const RadarEntry(value: 100),
                                 ],
                               ),
-                              // Portfolio dataset — palette de base. entryRadius reste à 0 :
+                              // Portfolio dataset - palette de base. entryRadius reste à 0 :
                               // fl_chart l'applique à tous les sommets à la fois ; seul le
                               // sommet survolé est marqué (via l'overlay du Stack).
                               RadarDataSet(
@@ -13817,15 +13818,7 @@ class _MarketDashboardState extends State<_MarketDashboard> {
     final isDark = _isMarketDark(context);
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.dashboard_rounded, color: Color(0xFF3B82F6), size: 24),
-        ),
-        const SizedBox(width: 16),
+
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -13843,7 +13836,8 @@ class _MarketDashboardState extends State<_MarketDashboard> {
             Text(
               'Aperçu graphique du portefeuille',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
                 fontWeight: FontWeight.w500,
                 color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
               ),
@@ -13883,12 +13877,19 @@ class _MarketDashboardState extends State<_MarketDashboard> {
                 ],
               ),
               const SizedBox(height: 12),
+              const _GlobalMarketKpiCards(),
+              const SizedBox(height: 12),
               Expanded(
                 child: SingleChildScrollView(
                   key: const PageStorageKey('market_dashboard'),
-                  child: _MarketDashboardVisualisation(
-                    datasets: snapshot.datasets,
-                    selectedType: _selectedVisualisationType,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _MarketDashboardVisualisation(
+                        datasets: snapshot.datasets,
+                        selectedType: _selectedVisualisationType,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -13932,13 +13933,20 @@ class _MarketDashboardVisualisation extends StatelessWidget {
                 const SizedBox(height: 3),
                 _MarketVisualTwoColumnLayout(
                   left: _MarketConcentrationPanel(dataset: source),
-                  right: _MarketScenarioRiskPanel(dataset: source),
+                  right: _MarketEquityLatentPnlPanel(dataset: source),
                 ),
                 const SizedBox(height: 3),
                 _MarketVisualTwoColumnLayout(
                   left: _MarketRiskSignalPanel(dataset: source),
                   right: _MarketAllocationPanel(dataset: source),
                 ),
+                const SizedBox(height: 3),
+                _MarketVisualTwoColumnLayout(
+                  left: _MarketEquityAccountingScopePanel(dataset: source),
+                  right: _MarketEquityCurrencyPanel(dataset: source),
+                ),
+                const SizedBox(height: 3),
+                _MarketEquityDividendPanel(dataset: source),
               ],
             ],
           ),
@@ -14035,16 +14043,6 @@ class _MarketVisualTwoColumnLayout extends StatelessWidget {
   }
 }
 
-class _MarketAnalyticKpiSpec {
-  const _MarketAnalyticKpiSpec({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-}
-
 class _MarketAnalyticKpiGrid extends StatelessWidget {
   const _MarketAnalyticKpiGrid({required this.dataset});
 
@@ -14052,100 +14050,198 @@ class _MarketAnalyticKpiGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final specs = _marketAnalyticKpis(dataset);
+    final specs = _marketAnalyticKpis(dataset, context);
     final isDark = _isMarketDark(context);
     final border = _marketBorderFor(context);
+    final surface = isDark ? const Color(0xFF1E293B) : Colors.white;
 
     return Container(
       width: double.infinity,
-      height: 180, // Vraiment très grande hauteur pour la carte
       decoration: BoxDecoration(
-        color: isDark ? Colors.white.withValues(alpha: 0.03) : _marketSurface,
-        borderRadius: BorderRadius.circular(3),
-        border: Border.all(color: border),
+        color: surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border.withValues(alpha: 0.8), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : const Color(0xFF1E3A5F).withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Container(
-          constraints: BoxConstraints(
-              minWidth: MediaQuery.of(context).size.width -
-                  48), // Pour étaler sur la largeur si possible
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              for (final spec in specs)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _MarketAnalyticKpiItem(spec: spec),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Liseré supérieur dégradé institutionnel (Harvard / Wall St Apex)
+            Container(
+              height: 3,
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF1E3A8A), // Deep Navy
+                    Color(0xFF2563EB), // Royal Blue
+                    Color(0xFFD97706), // Harvard Gold / Amber
+                    Color(0xFF059669), // Emerald
+                  ],
                 ),
-            ],
-          ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          for (var i = 0; i < specs.length; i++) ...[
+                            if (i > 0)
+                              Container(
+                                height: 42,
+                                width: 1,
+                                margin: const EdgeInsets.symmetric(horizontal: 8),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      border.withValues(alpha: 0.1),
+                                      border.withValues(alpha: 0.5),
+                                      border.withValues(alpha: 0.1),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            _MarketAnalyticKpiItem(spec: specs[i]),
+                          ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _MarketAnalyticKpiItem extends StatelessWidget {
+class _MarketAnalyticKpiItem extends StatefulWidget {
   const _MarketAnalyticKpiItem({required this.spec});
 
   final _MarketAnalyticKpiSpec spec;
 
   @override
+  State<_MarketAnalyticKpiItem> createState() => _MarketAnalyticKpiItemState();
+}
+
+class _MarketAnalyticKpiItemState extends State<_MarketAnalyticKpiItem> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final text = _marketTextFor(context);
     final muted = _marketMutedFor(context);
+    final spec = widget.spec;
+    final accent = spec.accentColor ?? _marketDashboardDeepBlue;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Fin liseré navy pour la structure
-        Container(
-          width: 4,
-          height: 48,
-          decoration: BoxDecoration(
-            color: _marketDashboardDeepBlue,
-            borderRadius: BorderRadius.circular(2),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: _isHovered
+              ? accent.withValues(alpha: 0.05)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: _isHovered
+                ? accent.withValues(alpha: 0.22)
+                : Colors.transparent,
+            width: 1,
           ),
         ),
-        const SizedBox(width: 16),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              spec.label.tr(context).toUpperCase(),
-              style: TextStyle(
-                color: muted,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                height: 1,
-                letterSpacing: 0.5,
+            // Badge d'icône d'analyse financière
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.18),
+                  width: 0.8,
+                ),
+              ),
+              child: Icon(
+                spec.icon ?? Icons.analytics_outlined,
+                size: 17,
+                color: accent,
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              spec.value,
-              style: TextStyle(
-                color: text,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                height: 1,
-              ),
+            const SizedBox(width: 14),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  spec.label.tr(context).toUpperCase(),
+                  style: TextStyle(
+                    color: muted,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.7,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  spec.value,
+                  style: TextStyle(
+                    color: text,
+                    fontSize: 18.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                    height: 1,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                if (spec.subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    spec.subtitle!.tr(context),
+                    style: TextStyle(
+                      color: muted.withValues(alpha: 0.8),
+                      fontSize: 9.0,
+                      fontWeight: FontWeight.w500,
+                      height: 1,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -14195,18 +14291,37 @@ class _GlobalMarketKpiCards extends StatelessWidget {
 
     final totalExposure = bondsExposure + equitiesExposure;
 
-    return SizedBox(
-      height: 320,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: _buildCardContainer(context, _buildKpiItem(context, 'Encours total', 'Valeur globale (Actions + Obligations)', totalExposure))),
-          const SizedBox(height: 12),
-          Expanded(child: _buildCardContainer(context, _buildKpiItem(context, 'Obligations', 'Total des encours obligataires', bondsExposure))),
-          const SizedBox(height: 12),
-          Expanded(child: _buildCardContainer(context, _buildKpiItem(context, 'Actions', 'Total des encours actions', equitiesExposure))),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 600) {
+          return SizedBox(
+            height: 320,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _buildCardContainer(context, _buildKpiItem(context, 'Encours total', 'Valeur globale (Actions + Obligations)', totalExposure))),
+                const SizedBox(height: 12),
+                Expanded(child: _buildCardContainer(context, _buildKpiItem(context, 'Obligations', 'Total des encours obligataires', bondsExposure))),
+                const SizedBox(height: 12),
+                Expanded(child: _buildCardContainer(context, _buildKpiItem(context, 'Actions', 'Total des encours actions', equitiesExposure))),
+              ],
+            ),
+          );
+        }
+        return SizedBox(
+          height: 100,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildCardContainer(context, _buildKpiItem(context, 'Encours total', 'Valeur globale (Actions + Obligations)', totalExposure))),
+              const SizedBox(width: 12),
+              Expanded(child: _buildCardContainer(context, _buildKpiItem(context, 'Obligations', 'Total des encours obligataires', bondsExposure))),
+              const SizedBox(width: 12),
+              Expanded(child: _buildCardContainer(context, _buildKpiItem(context, 'Actions', 'Total des encours actions', equitiesExposure))),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -14312,86 +14427,63 @@ class _BondInstitutionalDashboardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 980;
-              final ratingPanel = _BondRatingPanel(stats: stats);
-              if (compact) {
-                return Column(
-                  children: [
-                    const _GlobalMarketKpiCards(),
-                    const SizedBox(height: 20),
-                    ratingPanel,
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _MarketAnalyticKpiGrid(dataset: stats.dataset),
+        const SizedBox(height: 12),
+        _BondRatingPanel(stats: stats),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 980;
+            final countryZone = _BondCountryZonePanel(stats: stats);
+            final issuers = _BondIssuerConcentrationPanel(stats: stats);
+            if (compact) {
+              return Column(
                 children: [
-                  const Expanded(flex: 20, child: _GlobalMarketKpiCards()),
-                  const SizedBox(width: 20),
-                  Expanded(flex: 80, child: ratingPanel),
+                  countryZone,
+                  const SizedBox(height: 12),
+                  issuers,
                 ],
               );
-            },
-          ),
-          const SizedBox(height: 20),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 980;
-              final countryZone = _BondCountryZonePanel(stats: stats);
-              final issuers = _BondIssuerConcentrationPanel(stats: stats);
-              if (compact) {
-                return Column(
-                  children: [
-                    countryZone,
-                    const SizedBox(height: 20),
-                    issuers,
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 55, child: countryZone),
+                const SizedBox(width: 12),
+                Expanded(flex: 45, child: issuers),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 12),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 980;
+            final maturity = _BondMaturityPanel(stats: stats);
+            final scatter = _BondCouponMaturityPanel(stats: stats);
+            if (compact) {
+              return Column(
                 children: [
-                  Expanded(flex: 55, child: countryZone),
-                  const SizedBox(width: 20),
-                  Expanded(flex: 45, child: issuers),
+                  maturity,
+                  const SizedBox(height: 12),
+                  scatter,
                 ],
               );
-            },
-          ),
-          const SizedBox(height: 20),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final compact = constraints.maxWidth < 980;
-              final maturity = _BondMaturityPanel(stats: stats);
-              final scatter = _BondCouponMaturityPanel(stats: stats);
-              if (compact) {
-                return Column(
-                  children: [
-                    maturity,
-                    const SizedBox(height: 20),
-                    scatter,
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(flex: 1, child: maturity),
-                  const SizedBox(width: 20),
-                  Expanded(flex: 1, child: scatter),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 1, child: maturity),
+                const SizedBox(width: 12),
+                Expanded(flex: 1, child: scatter),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -15708,8 +15800,8 @@ class _BondRatingBarChartPainter extends CustomPainter {
         canvas.drawRRect(
           RRect.fromRectAndCorners(
             glowRect,
-            topLeft: const Radius.circular(AppTheme.radius),
-            topRight: const Radius.circular(AppTheme.radius),
+            topLeft: const Radius.circular(1),
+            topRight: const Radius.circular(1),
           ),
           Paint()
             ..isAntiAlias = true
@@ -15724,10 +15816,8 @@ class _BondRatingBarChartPainter extends CustomPainter {
       canvas.drawRRect(
         RRect.fromRectAndCorners(
           rect,
-          topLeft:
-              Radius.circular(isHovered ? AppTheme.radius : AppTheme.radius),
-          topRight:
-              Radius.circular(isHovered ? AppTheme.radius : AppTheme.radius),
+          topLeft: const Radius.circular(1),
+          topRight: const Radius.circular(1),
         ),
         barPaint,
       );
@@ -18251,16 +18341,34 @@ class _MarketConcentrationPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entries = _marketTopExposureEntries(dataset, limit: 5);
+    final all = _marketTopExposureEntries(dataset, limit: _marketNoLimit);
+    final entries = all.take(5).toList(growable: false);
     final isBonds = dataset.portfolioType == MarketPortfolioType.bonds;
     return _MarketVisualPanel(
-      title: isBonds ? 'Émetteurs obligataires' : 'Top positions actions',
-      subtitle: isBonds
-          ? '${dataset.dominantIssuer} pèse ${AppFormatters.percent(dataset.concentrationRatio)}'
-          : 'Top 5 par poids de marché',
-      child: isBonds
-          ? _MarketIssuerCardList(entries: entries)
-          : _MarketEquityRankedBars(entries: entries),
+      title: isBonds ? 'Émetteurs obligataires' : 'Positions actions',
+      action: _marketDistributionAction(
+        context,
+        all: all,
+        shown: entries.length,
+        title: isBonds ? 'Émetteurs obligataires' : 'Positions actions',
+        unit: 'émetteur',
+        columnLabel: 'Émetteur',
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _MarketPanelExtractNote(
+            shown: entries.length,
+            total: all.length,
+            singular: 'émetteur',
+            plural: 'émetteurs',
+            criterion: 'poids de marché',
+          ),
+          isBonds
+              ? _MarketIssuerCardList(entries: entries)
+              : _MarketEquityRankedBars(entries: entries),
+        ],
+      ),
     );
   }
 }
@@ -18273,26 +18381,52 @@ class _MarketAllocationPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isBonds = dataset.portfolioType == MarketPortfolioType.bonds;
-    final entries = dataset.portfolioType == MarketPortfolioType.bonds
+    final all = isBonds
         ? _marketGroupedEntries(
             dataset,
             (record) => record.rating.isEmpty ? 'Non noté' : record.rating,
-            limit: 5,
+            limit: _marketNoLimit,
           )
         : _marketGroupedEntries(
             dataset,
             (record) => _marketRecordText(record, 'Secteur', 'Non renseigné'),
-            limit: 5,
+            limit: _marketNoLimit,
           );
+    final entries = all.take(5).toList(growable: false);
+    final unit = isBonds ? 'notation' : 'secteur';
 
     return _MarketVisualPanel(
       title: isBonds ? 'Structure de notation' : 'Répartition sectorielle',
       subtitle: isBonds
           ? 'Poids des qualités de crédit'
           : 'Poids des secteurs en valeur de marché',
-      child: isBonds
-          ? _MarketDonutBreakdown(entries: entries)
-          : SizedBox(height: 221, child: _BondRatingBarChart(entries: entries)),
+      action: _marketDistributionAction(
+        context,
+        all: all,
+        shown: entries.length,
+        title: isBonds ? 'Structure de notation' : 'Répartition sectorielle',
+        unit: unit,
+        columnLabel: isBonds ? 'Notation' : 'Secteur',
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _MarketPanelExtractNote(
+            shown: entries.length,
+            total: all.length,
+            singular: unit,
+            plural: isBonds ? 'notations' : 'secteurs',
+            feminine: isBonds,
+            criterion: 'poids de marché',
+          ),
+          isBonds
+              ? _MarketDonutBreakdown(entries: entries)
+              : SizedBox(
+                  height: 221,
+                  child: _BondRatingBarChart(entries: entries),
+                ),
+        ],
+      ),
     );
   }
 }
@@ -18721,68 +18855,1434 @@ class _MarketDonutPainter extends CustomPainter {
   }
 }
 
-class _MarketScenarioRiskPanel extends StatelessWidget {
-  const _MarketScenarioRiskPanel({required this.dataset});
+/// Plus et moins-values latentes du portefeuille actions.
+///
+/// Remplace l'ancien panneau de chocs simulés : celui-ci affichait une série
+/// pseudo-aléatoire à graine fixe et une « VaR 99 % » qui, sur un échantillon
+/// de cette taille, valait toujours la perte maximale. La VaR est traitée dans
+/// son propre onglet ; ce panneau ne montre que des montants issus du fichier
+/// importé (cours actuel, prix de revient, quantité).
+class _MarketEquityLatentPnlPanel extends StatelessWidget {
+  const _MarketEquityLatentPnlPanel({required this.dataset});
 
   final MarketPortfolioDataset dataset;
 
   @override
   Widget build(BuildContext context) {
-    final returns = dataset.scenarioReturns;
-    final var99 = dataset.scenarioVar99;
-    final worst = dataset.scenarioWorstLoss;
+    // Consolidation par émetteur assurée par le modèle : un même émetteur
+    // porté par plusieurs lignes du fichier n'occupe qu'un rang.
+    final lines = [
+      for (final entry in dataset.latentPnlByIssuer)
+        _MarketLatentPnlLine(
+          label: entry.issuer,
+          gain: entry.gain,
+          cost: entry.cost,
+        ),
+    ];
+
+    var gainTotal = 0.0;
+    var lossTotal = 0.0;
+    for (final line in lines) {
+      if (line.gain > 0) {
+        gainTotal += line.gain;
+      } else {
+        lossTotal += line.gain.abs();
+      }
+    }
+
+    final total = dataset.totalLatentGain;
+    final hasData = lines.isNotEmpty;
+    const shown = 5;
 
     return _MarketVisualPanel(
-      title: dataset.portfolioType == MarketPortfolioType.bonds
-          ? 'Pertes obligataires simulées'
-          : 'Chocs actions simulés',
-      subtitle:
-          'VaR 99% ${_marketCompactMoney(var99)} · perte max ${_marketCompactMoney(worst)}',
+      title: 'Plus et moins-values latentes',
+      subtitle: hasData
+          ? '${_marketSignedMoney(total)} · rendement latent ${AppFormatters.percent(dataset.latentReturn)}'
+          : 'Prix de revient absent du fichier importé',
+      action: lines.length <= shown
+          ? null
+          : _MarketGhostButton(
+              label: 'Voir les ${lines.length} émetteurs',
+              onPressed: () => _MarketDetailDialog.show(
+                context,
+                title: 'Plus et moins-values latentes',
+                subtitle: '${lines.length} émetteurs · '
+                    'plus-values ${_marketCompactMoney(gainTotal)} · '
+                    'moins-values ${_marketCompactMoney(lossTotal)}',
+                columns: const [
+                  _MarketDetailColumn('Émetteur', flex: 6),
+                  _MarketDetailColumn('Coût de revient', flex: 4, right: true),
+                  _MarketDetailColumn('Latent', flex: 4, right: true),
+                  _MarketDetailColumn('Variation', flex: 3, right: true),
+                ],
+                rows: [
+                  for (final line in lines)
+                    [
+                      _MarketDetailCell(line.label),
+                      _MarketDetailCell(
+                        line.cost <= 0
+                            ? 'Non renseigné'
+                            : _marketCompactMoney(line.cost),
+                      ),
+                      _MarketDetailCell(
+                        _marketSignedMoney(line.gain),
+                        color:
+                            line.gain >= 0 ? _marketSuccess : _marketDanger,
+                        strong: true,
+                      ),
+                      _MarketDetailCell(
+                        line.cost <= 0
+                            ? 'Non calculable'
+                            : AppFormatters.percent(line.variation),
+                      ),
+                    ],
+                ],
+              ),
+            ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _MarketPanelExtractNote(
+            shown: math.min(shown, lines.length),
+            total: lines.length,
+            singular: 'émetteur',
+            plural: 'émetteurs',
+            criterion: 'montant latent',
+            visible: hasData,
+          ),
           SizedBox(
-            height:
-                dataset.portfolioType == MarketPortfolioType.bonds ? 92 : 175,
-            child: Padding(
-              padding: EdgeInsets.all(
-                  dataset.portfolioType == MarketPortfolioType.bonds
-                      ? 0.0
-                      : 20.0),
-              child: CustomPaint(
-                painter: _MarketScenarioSparkPainter(
-                  returns: returns,
-                  color: dataset.portfolioType == MarketPortfolioType.bonds
-                      ? _marketPrimary
-                      : _marketSuccess,
-                  danger: _marketDanger,
-                  isDark: _isMarketDark(context),
-                ),
-              ),
-            ),
+            height: 168,
+            child: hasData
+                ? _MarketLatentPnlTable(
+                    lines: lines.take(shown).toList(growable: false),
+                  )
+                : const _MarketPanelEmptyNote(
+                    message: 'Renseignez le prix de revient des lignes pour '
+                        'suivre les plus et moins-values',
+                  ),
           ),
           const SizedBox(height: 3),
           Row(
             children: [
               Expanded(
                 child: _MarketMicroMetric(
-                  label: 'VaR 99%',
-                  value: _marketCompactMoney(var99),
-                  color: _marketDanger,
+                  label: 'Plus-values latentes',
+                  value: _marketCompactMoney(gainTotal),
+                  color: _marketSuccess,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _MarketMicroMetric(
-                  label: 'Pire perte',
-                  value: _marketCompactMoney(worst),
-                  color: _marketWarning,
+                  label: 'Moins-values latentes',
+                  value: _marketCompactMoney(lossTotal),
+                  color: _marketDanger,
                 ),
               ),
             ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MarketLatentPnlLine {
+  const _MarketLatentPnlLine({
+    required this.label,
+    required this.gain,
+    required this.cost,
+  });
+
+  final String label;
+  final double gain;
+  final double cost;
+
+  /// Variation rapportée au coût de revient de la ligne.
+  double get variation => cost <= 0 ? 0 : gain / cost;
+}
+
+class _MarketLatentPnlTable extends StatelessWidget {
+  const _MarketLatentPnlTable({required this.lines});
+
+  final List<_MarketLatentPnlLine> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final border = _marketBorderFor(context);
+    final isDark = _isMarketDark(context);
+
+    Widget headerCell(String label, int flex, {bool right = false}) => Expanded(
+          flex: flex,
+          child: Text(
+            label.tr(context),
+            textAlign: right ? TextAlign.right : TextAlign.left,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 8.6,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 20,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          decoration: const BoxDecoration(
+            color: _marketDashboardDeepBlue,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(_marketTileRadius)),
+          ),
+          child: Row(
+            children: [
+              headerCell('Position', 5),
+              headerCell('Latent', 3, right: true),
+              headerCell('Variation', 2, right: true),
+            ],
+          ),
+        ),
+        Expanded(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: border),
+                right: BorderSide(color: border),
+                bottom: BorderSide(color: border),
+              ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(_marketTileRadius),
+              ),
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < lines.length; i++)
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9),
+                      color: i.isOdd
+                          ? (isDark
+                              ? Colors.white.withValues(alpha: 0.02)
+                              : _marketSurfaceSoft)
+                          : Colors.transparent,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: Text(
+                              lines[i].label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: text,
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              _marketSignedMoney(lines[i].gain),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: lines[i].gain >= 0
+                                    ? _marketSuccess
+                                    : _marketDanger,
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              lines[i].cost <= 0
+                                  ? '-'
+                                  : AppFormatters.percent(lines[i].variation),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: muted,
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Montant signé : le formateur préfixe déjà le « − » des valeurs négatives,
+/// seul le « + » des plus-values reste à ajouter.
+String _marketSignedMoney(double value) {
+  final text = _marketCompactMoney(value);
+  return value > 0 ? '+$text' : text;
+}
+
+/// Rayon des tableaux et tuiles du tableau de bord marché.
+const double _marketTileRadius = 4;
+
+/// Ligne d'une ventilation du portefeuille actions (périmètre, devise).
+class _MarketBreakdownRow {
+  const _MarketBreakdownRow({
+    required this.label,
+    required this.amount,
+    required this.share,
+    required this.accent,
+    this.note = '',
+  });
+
+  final String label;
+  final double amount;
+  final double share;
+  final Color accent;
+
+  /// Précision affichée sous le libellé (périmètre prudentiel, cours retenu).
+  final String note;
+}
+
+/// Tableau de ventilation : en-tête navy, lignes alternées, liseré d'accent.
+/// Partagé par les panneaux « Périmètre comptable » et « Exposition par
+/// devise » pour que les deux se lisent exactement de la même façon.
+class _MarketBreakdownTable extends StatelessWidget {
+  const _MarketBreakdownTable({
+    required this.rows,
+    required this.firstColumnLabel,
+  });
+
+  final List<_MarketBreakdownRow> rows;
+  final String firstColumnLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final border = _marketBorderFor(context);
+    final isDark = _isMarketDark(context);
+
+    Widget headerCell(String label, int flex, {bool right = false}) => Expanded(
+          flex: flex,
+          child: Text(
+            label.tr(context),
+            textAlign: right ? TextAlign.right : TextAlign.left,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 8.6,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 20,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          decoration: const BoxDecoration(
+            color: _marketDashboardDeepBlue,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(_marketTileRadius),
+            ),
+          ),
+          child: Row(
+            children: [
+              headerCell(firstColumnLabel, 5),
+              headerCell('Valeur de marché', 3, right: true),
+              headerCell('Poids', 2, right: true),
+            ],
+          ),
+        ),
+        Expanded(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: border),
+                right: BorderSide(color: border),
+                bottom: BorderSide(color: border),
+              ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(_marketTileRadius),
+              ),
+            ),
+            child: Column(
+              children: [
+                // Hauteur de ligne fixe : une ventilation à deux entrées ne
+                // doit pas étirer ses lignes sur toute la hauteur du panneau.
+                for (var i = 0; i < rows.length; i++)
+                  SizedBox(
+                    height: 29,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9),
+                      color: i.isOdd
+                          ? (isDark
+                              ? Colors.white.withValues(alpha: 0.02)
+                              : _marketSurfaceSoft)
+                          : Colors.transparent,
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 2,
+                            height: 20,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: rows[i].accent,
+                              borderRadius:
+                                  BorderRadius.circular(_marketTileRadius),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 5,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  rows[i].label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: text,
+                                    fontSize: 10.4,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.1,
+                                  ),
+                                ),
+                                if (rows[i].note.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    rows[i].note,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: muted,
+                                      fontSize: 8.6,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Text(
+                              _marketCompactMoney(rows[i].amount),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: text,
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              AppFormatters.percent(rows[i].share),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: muted,
+                                fontSize: 10.4,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// État vide d'un panneau de ventilation : indique la colonne manquante
+/// plutôt que d'afficher un zéro qui passerait pour une mesure.
+class _MarketPanelEmptyNote extends StatelessWidget {
+  const _MarketPanelEmptyNote({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Text(
+          message,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: _marketMutedFor(context),
+            fontSize: 11,
+            height: 1.35,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Limite conventionnelle « pas de troncature » passée aux regroupements : le
+/// panneau tronque lui-même après avoir compté l'ensemble des entrées.
+const int _marketNoLimit = 1 << 20;
+
+/// Commande « voir tout » d'une ventilation classée, quand le panneau n'en
+/// montre qu'un extrait. Retourne null si tout est déjà affiché.
+Widget? _marketDistributionAction(
+  BuildContext context, {
+  required List<_MarketDistributionEntry> all,
+  required int shown,
+  required String title,
+  required String unit,
+  required String columnLabel,
+}) {
+  if (all.length <= shown) return null;
+  final total = all.fold<double>(0, (sum, entry) => sum + entry.amount);
+  return _MarketGhostButton(
+    label: 'Voir les ${all.length} ${unit}s',
+    onPressed: () => _MarketDetailDialog.show(
+      context,
+      title: title,
+      subtitle: '${all.length} ${unit}s · ${_marketCompactMoney(total)} '
+          'au total',
+      columns: [
+        _MarketDetailColumn(columnLabel, flex: 6),
+        const _MarketDetailColumn('Valeur de marché', flex: 4, right: true),
+        const _MarketDetailColumn('Poids', flex: 3, right: true),
+      ],
+      rows: [
+        for (final entry in all)
+          [
+            _MarketDetailCell(entry.label),
+            _MarketDetailCell(
+              _marketCompactMoney(entry.amount),
+              strong: true,
+            ),
+            _MarketDetailCell(AppFormatters.percent(entry.share)),
+          ],
+      ],
+    ),
+  );
+}
+
+/// Commande « voir tout » d'une ventilation, quand le panneau n'en montre
+/// qu'un extrait. Retourne null si tout est déjà affiché.
+Widget? _marketBreakdownAction(
+  BuildContext context, {
+  required List<_MarketBreakdownRow> all,
+  required int shown,
+  required String title,
+  required String unit,
+  required String columnLabel,
+}) {
+  if (all.length <= shown) return null;
+  final total = all.fold<double>(0, (sum, row) => sum + row.amount);
+  return _MarketGhostButton(
+    label: 'Voir les ${all.length} ${unit}s',
+    onPressed: () => _MarketDetailDialog.show(
+      context,
+      title: title,
+      subtitle: '${all.length} ${unit}s · ${_marketCompactMoney(total)} '
+          'au total',
+      columns: [
+        _MarketDetailColumn(columnLabel, flex: 6),
+        const _MarketDetailColumn('Précision', flex: 5),
+        const _MarketDetailColumn('Valeur de marché', flex: 4, right: true),
+        const _MarketDetailColumn('Poids', flex: 3, right: true),
+      ],
+      rows: [
+        for (final row in all)
+          [
+            _MarketDetailCell(row.label),
+            _MarketDetailCell(row.note, color: _marketMutedFor(context)),
+            _MarketDetailCell(
+              _marketCompactMoney(row.amount),
+              strong: true,
+            ),
+            _MarketDetailCell(AppFormatters.percent(row.share)),
+          ],
+      ],
+    ),
+  );
+}
+
+/// Mention de troncature d'un panneau : combien de lignes sont affichées, sur
+/// combien, et selon quel critère de classement. Un extrait non annoncé se lit
+/// comme un portefeuille complet.
+class _MarketPanelExtractNote extends StatelessWidget {
+  const _MarketPanelExtractNote({
+    required this.shown,
+    required this.total,
+    required this.singular,
+    required this.plural,
+    required this.criterion,
+    this.feminine = false,
+    this.visible = true,
+  });
+
+  final int shown;
+  final int total;
+
+  /// Nom de l'objet classé, au singulier puis au pluriel : le français ne se
+  /// pluralise pas en accolant un « s » à la fin d'un groupe nominal
+  /// (« lignes distributrices », pas « ligne distributrices »).
+  final String singular;
+  final String plural;
+
+  /// Critère de tri annoncé (« poids de marché », « montant latent »).
+  final String criterion;
+
+  /// Accord du participe « classé » avec le nom porté par la mention.
+  final bool feminine;
+
+  final bool visible;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!visible || total <= 0) return const SizedBox.shrink();
+    final count = shown >= total ? total : shown;
+    final noun = count > 1 ? plural : singular;
+    final ranked = '${feminine ? 'classée' : 'classé'}${count > 1 ? 's' : ''}';
+    final label = shown >= total
+        ? '$total $noun, $ranked par $criterion'
+        : '$shown $noun sur $total, $ranked par $criterion';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: _marketMutedFor(context).withValues(alpha: 0.86),
+          fontSize: 9.2,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+}
+
+/// Colonne d'un tableau de détail.
+class _MarketDetailColumn {
+  const _MarketDetailColumn(this.label, {this.flex = 3, this.right = false});
+
+  final String label;
+  final int flex;
+  final bool right;
+}
+
+/// Cellule d'un tableau de détail.
+class _MarketDetailCell {
+  const _MarketDetailCell(this.value, {this.color, this.strong = false});
+
+  final String value;
+  final Color? color;
+  final bool strong;
+}
+
+/// Fenêtre de détail d'un panneau : le même tableau, sans troncature.
+///
+/// Un panneau du tableau de bord n'affiche qu'un extrait classé ; cette
+/// fenêtre donne l'intégralité des lignes, avec le total, pour que l'extrait
+/// reste lisible sans jamais cacher le reste du portefeuille.
+class _MarketDetailDialog extends StatelessWidget {
+  const _MarketDetailDialog({
+    required this.title,
+    required this.subtitle,
+    required this.columns,
+    required this.rows,
+  });
+
+  final String title;
+  final String subtitle;
+  final List<_MarketDetailColumn> columns;
+  final List<List<_MarketDetailCell>> rows;
+
+  static Future<void> show(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required List<_MarketDetailColumn> columns,
+    required List<List<_MarketDetailCell>> rows,
+  }) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => _MarketDetailDialog(
+        title: title,
+        subtitle: subtitle,
+        columns: columns,
+        rows: rows,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final border = _marketBorderFor(context);
+    final isDark = _isMarketDark(context);
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 940, maxHeight: 640),
+        child: Container(
+          decoration: BoxDecoration(
+            color: _marketSurfaceFor(context),
+            border: Border.all(color: border.withValues(alpha: 0.86)),
+            borderRadius: BorderRadius.circular(_marketTileRadius),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.32 : 0.10),
+                blurRadius: 30,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title.tr(context),
+                            style: TextStyle(
+                              color: text,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle.tr(context),
+                            style: TextStyle(
+                              color: muted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    _MarketGhostButton(
+                      label: 'Fermer',
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                height: 24,
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: const BoxDecoration(
+                  color: _marketDashboardDeepBlue,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(_marketTileRadius),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    for (final column in columns)
+                      Expanded(
+                        flex: column.flex,
+                        child: Text(
+                          column.label.tr(context),
+                          textAlign:
+                              column.right ? TextAlign.right : TextAlign.left,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(color: border),
+                      right: BorderSide(color: border),
+                      bottom: BorderSide(color: border),
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(_marketTileRadius),
+                    ),
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: rows.length,
+                    itemBuilder: (context, index) {
+                      final row = rows[index];
+                      return Container(
+                        height: 30,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        color: index.isOdd
+                            ? (isDark
+                                ? Colors.white.withValues(alpha: 0.02)
+                                : _marketSurfaceSoft)
+                            : Colors.transparent,
+                        child: Row(
+                          children: [
+                            for (var i = 0; i < columns.length; i++)
+                              Expanded(
+                                flex: columns[i].flex,
+                                child: Text(
+                                  i < row.length ? row[i].value : '',
+                                  textAlign: columns[i].right
+                                      ? TextAlign.right
+                                      : TextAlign.left,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: i < row.length
+                                        ? (row[i].color ?? text)
+                                        : text,
+                                    fontSize: 10.8,
+                                    fontWeight:
+                                        i < row.length && row[i].strong
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Commande sobre du tableau de bord : texte navy cerné, sans icône.
+class _MarketGhostButton extends StatelessWidget {
+  const _MarketGhostButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = _isMarketDark(context)
+        ? Colors.white.withValues(alpha: 0.82)
+        : _marketDashboardDeepBlue;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(_marketTileRadius),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_marketTileRadius),
+            border: Border.all(color: accent.withValues(alpha: 0.32)),
+          ),
+          child: Text(
+            label.tr(context),
+            style: TextStyle(
+              color: accent,
+              fontSize: 9.6,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Libellé court et lisible d'une intention comptable. Les fichiers importés
+/// portent des libellés longs du type « Trading, portefeuille de négociation »
+/// dont seule la tête est conservée ici.
+String _equityAccountingLabel(String intent) {
+  final raw = intent.trim();
+  if (raw.isEmpty) return 'Intention non renseignée';
+  final normalized = _marketNormalizeTag(raw);
+  if (normalized.contains('TRADING') ||
+      normalized.contains('HFT') ||
+      normalized.contains('FVTPL') ||
+      normalized.contains('NEGOCIATION') ||
+      normalized.contains('TRANSACTION')) {
+    return 'Portefeuille de négociation';
+  }
+  if (normalized.contains('PARTICIPATION')) {
+    return 'Titres de participation';
+  }
+  if (normalized.contains('AFS') ||
+      normalized.contains('FVOCI') ||
+      normalized.contains('DISPONIBLE')) {
+    return 'Titres disponibles à la vente';
+  }
+  if (normalized.contains('HTM') ||
+      normalized.contains('AMORTI') ||
+      normalized.contains('JUSQU')) {
+    return 'Titres détenus jusqu\'à échéance';
+  }
+  return raw.split(RegExp(r'\s[-‐-―]\s')).first.trim();
+}
+
+/// Ventilation du portefeuille actions par intention comptable.
+///
+/// Seules les positions du portefeuille de négociation entrent dans
+/// l'exigence de fonds propres actions : ce panneau montre quelle part de la
+/// valeur de marché est réellement dans l'assiette, information que l'écran
+/// de calcul prudentiel ne donne pas puisqu'il n'affiche que le résultat.
+class _MarketEquityAccountingScopePanel extends StatelessWidget {
+  const _MarketEquityAccountingScopePanel({required this.dataset});
+
+  final MarketPortfolioDataset dataset;
+
+  @override
+  Widget build(BuildContext context) {
+    final byIntent = <String, double>{};
+    final tradingByIntent = <String, bool>{};
+    for (final record in dataset.records) {
+      final value = marketRecordValueXof(record);
+      if (value <= 0) continue;
+      final label = _equityAccountingLabel(record.accountingIntent);
+      byIntent.update(label, (previous) => previous + value,
+          ifAbsent: () => value);
+      tradingByIntent[label] = record.isTradingBook;
+    }
+
+    final tradingTotal = dataset.tradingBookValueXof;
+    final bankingTotal = dataset.bankingBookValueXof;
+    final total = dataset.totalMarketValueXof;
+    final sorted = byIntent.entries.toList(growable: false)
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final allRows = [
+      for (final entry in sorted)
+        _MarketBreakdownRow(
+          label: entry.key,
+          amount: entry.value,
+          share: total <= 0 ? 0 : entry.value / total,
+          accent: (tradingByIntent[entry.key] ?? true)
+              ? _marketWarning
+              : _marketPrimary,
+          note: (tradingByIntent[entry.key] ?? true)
+              ? 'Dans l\'assiette de l\'exigence'
+              : 'Hors assiette de l\'exigence',
+        ),
+    ];
+    final rows = allRows.take(5).toList(growable: false);
+
+    return _MarketVisualPanel(
+      title: 'Périmètre comptable',
+      subtitle: total <= 0
+          ? 'Aucune position valorisée'
+          : 'Assiette de négociation ${AppFormatters.percent(tradingTotal / total)} de la valeur de marché',
+      action: _marketBreakdownAction(
+        context,
+        all: allRows,
+        shown: rows.length,
+        title: 'Périmètre comptable',
+        unit: 'intention',
+        columnLabel: 'Intention comptable',
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _MarketPanelExtractNote(
+            shown: rows.length,
+            total: allRows.length,
+            singular: 'intention',
+            plural: 'intentions',
+            feminine: true,
+            criterion: 'valeur de marché',
+          ),
+          SizedBox(
+            height: 168,
+            child: rows.isEmpty
+                ? const _MarketPanelEmptyNote(
+                    message: 'Renseignez la colonne « Intention comptable » '
+                        'pour distinguer les positions soumises à l\'exigence',
+                  )
+                : _MarketBreakdownTable(
+                    rows: rows,
+                    firstColumnLabel: 'Intention comptable',
+                  ),
+          ),
+          const SizedBox(height: 3),
+          Row(
+            children: [
+              Expanded(
+                child: _MarketMicroMetric(
+                  label: 'Portefeuille de négociation',
+                  value: _marketCompactMoney(tradingTotal),
+                  color: _marketWarning,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MarketMicroMetric(
+                  label: 'Portefeuille bancaire',
+                  value: _marketCompactMoney(bankingTotal),
+                  color: _marketPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ventilation du portefeuille actions par devise de cotation.
+///
+/// Les montants sont convertis au taux courant du référentiel partagé, celui
+/// qui sert au calcul des exigences : la part hors XOF lue ici est donc bien
+/// celle qui porte la charge de change.
+class _MarketEquityCurrencyPanel extends StatelessWidget {
+  const _MarketEquityCurrencyPanel({required this.dataset});
+
+  final MarketPortfolioDataset dataset;
+
+  static const List<Color> _accents = [
+    _marketDashboardDeepBlue,
+    _marketCyan,
+    _marketViolet,
+    _marketWarning,
+    _marketSuccess,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final lineCount = <String, int>{};
+    for (final record in dataset.records) {
+      if (marketRecordValueXof(record) <= 0) continue;
+      lineCount.update(
+        normalizeCurrencyCode(record.currency),
+        (previous) => previous + 1,
+        ifAbsent: () => 1,
+      );
+    }
+
+    final byCurrency = dataset.valueByCurrencyXof;
+    final total = dataset.totalMarketValueXof;
+    final localTotal = byCurrency['XOF'] ?? 0;
+    final foreignTotal = dataset.foreignCurrencyValueXof;
+
+    final sorted = byCurrency.entries.toList(growable: false)
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final allRows = <_MarketBreakdownRow>[
+      for (var i = 0; i < sorted.length; i++)
+        _MarketBreakdownRow(
+          label: sorted[i].key,
+          amount: sorted[i].value,
+          share: total <= 0 ? 0 : sorted[i].value / total,
+          accent: sorted[i].key == 'XOF'
+              ? _marketDashboardDeepBlue
+              : _accents[(i + 1) % _accents.length],
+          note: sorted[i].key == 'XOF'
+              ? 'Devise de référence'
+              : '${lineCount[sorted[i].key]} ligne'
+                  '${(lineCount[sorted[i].key] ?? 0) > 1 ? 's' : ''} convertie'
+                  '${(lineCount[sorted[i].key] ?? 0) > 1 ? 's' : ''} au taux courant',
+        ),
+    ];
+    final rows = allRows.take(5).toList(growable: false);
+
+    return _MarketVisualPanel(
+      title: 'Exposition par devise',
+      subtitle: total <= 0
+          ? 'Aucune position valorisée'
+          : foreignTotal <= 0
+              ? 'Portefeuille intégralement libellé en XOF'
+              : 'Part hors XOF ${AppFormatters.percent(foreignTotal / total)}, soumise à la charge de change',
+      action: _marketBreakdownAction(
+        context,
+        all: allRows,
+        shown: rows.length,
+        title: 'Exposition par devise',
+        unit: 'devise',
+        columnLabel: 'Devise',
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _MarketPanelExtractNote(
+            shown: rows.length,
+            total: allRows.length,
+            singular: 'devise',
+            plural: 'devises',
+            feminine: true,
+            criterion: 'valeur de marché',
+          ),
+          SizedBox(
+            height: 168,
+            child: rows.isEmpty
+                ? const _MarketPanelEmptyNote(
+                    message: 'Aucune valeur de marché exploitable dans le '
+                        'fichier importé',
+                  )
+                : _MarketBreakdownTable(
+                    rows: rows,
+                    firstColumnLabel: 'Devise',
+                  ),
+          ),
+          const SizedBox(height: 3),
+          Row(
+            children: [
+              Expanded(
+                child: _MarketMicroMetric(
+                  label: 'Exposition en XOF',
+                  value: _marketCompactMoney(localTotal),
+                  color: _marketDashboardDeepBlue,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _MarketMicroMetric(
+                  label: 'Exposition en devises',
+                  value: _marketCompactMoney(foreignTotal),
+                  color: _marketCyan,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Revenu de dividendes attendu du portefeuille actions.
+///
+/// Rendement dividende (colonne du fichier) appliqué à la valeur de marché de
+/// chaque ligne. C'est le portage du portefeuille actions, pendant du coupon
+/// moyen affiché côté obligations.
+class _MarketEquityDividendPanel extends StatelessWidget {
+  const _MarketEquityDividendPanel({required this.dataset});
+
+  final MarketPortfolioDataset dataset;
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = <_MarketDividendLine>[];
+    for (final record in dataset.records) {
+      final value = marketRecordValueXof(record);
+      final rate = record.dividendYield;
+      if (value <= 0 || rate <= 0) continue;
+      lines.add(
+        _MarketDividendLine(
+          label: _equityName(record),
+          sector: _marketRecordText(record, 'Secteur', 'Non renseigné'),
+          marketValue: value,
+          rate: rate,
+          income: value * rate,
+        ),
+      );
+    }
+
+    lines.sort((a, b) => b.income.compareTo(a.income));
+    final incomeTotal = dataset.expectedDividendIncomeXof;
+    final weightedRate = dataset.weightedDividendYield;
+    final contributors = lines.take(6).toList(growable: false);
+
+    return _MarketVisualPanel(
+      title: 'Revenu de dividendes attendu',
+      subtitle: lines.isEmpty
+          ? 'Colonne « Rendement dividende (%) » absente ou nulle'
+          : 'Rendement dividende pondéré ${AppFormatters.percent(weightedRate)} · '
+              'dividende annuel estimé ${_marketCompactMoney(incomeTotal)}',
+      action: lines.length <= contributors.length
+          ? null
+          : _MarketGhostButton(
+              label: 'Voir les ${lines.length} lignes',
+              onPressed: () => _MarketDetailDialog.show(
+                context,
+                title: 'Revenu de dividendes attendu',
+                subtitle: '${lines.length} lignes distributrices · '
+                    '${_marketCompactMoney(incomeTotal)} par an',
+                columns: const [
+                  _MarketDetailColumn('Position', flex: 6),
+                  _MarketDetailColumn('Secteur', flex: 4),
+                  _MarketDetailColumn('Valeur de marché', flex: 4, right: true),
+                  _MarketDetailColumn('Rendement', flex: 2, right: true),
+                  _MarketDetailColumn('Dividende attendu', flex: 4,
+                      right: true),
+                ],
+                rows: [
+                  for (final line in lines)
+                    [
+                      _MarketDetailCell(line.label),
+                      _MarketDetailCell(
+                        line.sector,
+                        color: _marketMutedFor(context),
+                      ),
+                      _MarketDetailCell(
+                        _marketCompactMoney(line.marketValue),
+                      ),
+                      _MarketDetailCell(AppFormatters.percent(line.rate)),
+                      _MarketDetailCell(
+                        _marketCompactMoney(line.income),
+                        color: _marketSuccess,
+                        strong: true,
+                      ),
+                    ],
+                ],
+              ),
+            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _MarketPanelExtractNote(
+            shown: contributors.length,
+            total: lines.length,
+            singular: 'ligne distributrice',
+            plural: 'lignes distributrices',
+            feminine: true,
+            criterion: 'dividende attendu',
+            visible: lines.isNotEmpty,
+          ),
+          SizedBox(
+            height: lines.isEmpty ? 96 : 22.0 + contributors.length * 27.0,
+            child: lines.isEmpty
+                ? const _MarketPanelEmptyNote(
+                    message: 'Renseignez le rendement dividende des lignes '
+                        'pour suivre le portage du portefeuille actions',
+                  )
+                : _MarketDividendTable(lines: contributors),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MarketDividendLine {
+  const _MarketDividendLine({
+    required this.label,
+    required this.sector,
+    required this.marketValue,
+    required this.rate,
+    required this.income,
+  });
+
+  final String label;
+  final String sector;
+  final double marketValue;
+  final double rate;
+  final double income;
+}
+
+class _MarketDividendTable extends StatelessWidget {
+  const _MarketDividendTable({required this.lines});
+
+  final List<_MarketDividendLine> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = _marketTextFor(context);
+    final muted = _marketMutedFor(context);
+    final border = _marketBorderFor(context);
+    final isDark = _isMarketDark(context);
+
+    Widget headerCell(String label, int flex, {bool right = false}) => Expanded(
+          flex: flex,
+          child: Text(
+            label.tr(context),
+            textAlign: right ? TextAlign.right : TextAlign.left,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 8.6,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          height: 22,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: const BoxDecoration(
+            color: _marketDashboardDeepBlue,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(_marketTileRadius),
+            ),
+          ),
+          child: Row(
+            children: [
+              headerCell('Position', 6),
+              headerCell('Secteur', 4),
+              headerCell('Valeur de marché', 4, right: true),
+              headerCell('Rendement', 2, right: true),
+              headerCell('Dividende attendu', 4, right: true),
+            ],
+          ),
+        ),
+        Expanded(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: border),
+                right: BorderSide(color: border),
+                bottom: BorderSide(color: border),
+              ),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(_marketTileRadius),
+              ),
+            ),
+            child: Column(
+              children: [
+                for (var i = 0; i < lines.length; i++)
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      color: i.isOdd
+                          ? (isDark
+                              ? Colors.white.withValues(alpha: 0.02)
+                              : _marketSurfaceSoft)
+                          : Colors.transparent,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 6,
+                            child: Text(
+                              lines[i].label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: text,
+                                fontSize: 10.6,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 4,
+                            child: Text(
+                              lines[i].sector,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: muted,
+                                fontSize: 10.2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 4,
+                            child: Text(
+                              _marketCompactMoney(lines[i].marketValue),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: text,
+                                fontSize: 10.6,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              AppFormatters.percent(lines[i].rate),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: muted,
+                                fontSize: 10.6,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 4,
+                            child: Text(
+                              _marketCompactMoney(lines[i].income),
+                              textAlign: TextAlign.right,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: _marketSuccess,
+                                fontSize: 10.6,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -18795,26 +20295,24 @@ class _MarketRiskSignalPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isBonds = dataset.portfolioType == MarketPortfolioType.bonds;
+    if (!isBonds) return _buildEquityProfile(context);
 
     return _MarketVisualPanel(
-      title: isBonds ? 'Maturité et portage' : 'Profil bêta / rendement',
-      subtitle: isBonds
-          ? '${dataset.weightedResidualYears.toStringAsFixed(1).replaceAll('.', ',')} ans pondérés · coupon ${AppFormatters.percent(dataset.averageCoupon)}'
-          : 'Bêta ${dataset.weightedBeta.toStringAsFixed(2).replaceAll('.', ',')} · rendement ${AppFormatters.percent(dataset.expectedReturn)}',
+      title: 'Maturité et portage',
+      subtitle:
+          '${dataset.weightedResidualYears.toStringAsFixed(1).replaceAll('.', ',')} ans pondérés · coupon ${AppFormatters.percent(dataset.averageCoupon)}',
       child: Column(
         children: [
           SizedBox(
             height: 104,
-            child: isBonds
-                ? CustomPaint(
-                    painter: _MarketMaturityLadderPainter(
-                      records: dataset.records,
-                      color: _marketPrimary,
-                      muted: _marketBorderFor(context),
-                      text: _marketMutedFor(context),
-                    ),
-                  )
-                : _MarketEquityRiskReturnProfile(dataset: dataset),
+            child: CustomPaint(
+              painter: _MarketMaturityLadderPainter(
+                records: dataset.records,
+                color: _marketPrimary,
+                muted: _marketBorderFor(context),
+                text: _marketMutedFor(context),
+              ),
+            ),
           ),
           const SizedBox(height: 3),
           _MarketRiskTileGrid(
@@ -18828,15 +20326,13 @@ class _MarketRiskSignalPanel extends StatelessWidget {
                       color: _marketCyan,
                     ),
                     _MarketRiskTileData(
-                      label: 'Concentration',
+                      label: 'Premier émetteur',
                       value: AppFormatters.percent(dataset.concentrationRatio),
                       color: _marketWarning,
                     ),
                     _MarketRiskTileData(
                       label: 'Corrélation',
-                      value: dataset.correlationProxy
-                          .toStringAsFixed(2)
-                          .replaceAll('.', ','),
+                      value: _marketCorrelationText(dataset),
                       color: _marketViolet,
                     ),
                     _MarketRiskTileData(
@@ -18874,6 +20370,82 @@ class _MarketRiskSignalPanel extends StatelessWidget {
                       color: _marketDashboardDeepBlue,
                     ),
                   ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Côté actions, les quatre tuiles reprenaient mot pour mot le bandeau de
+  /// KPI (volatilité, bêta, rendement, corrélation). Elles ont été retirées au
+  /// profit du détail par émetteur, seule information que le bandeau ne porte
+  /// pas.
+  Widget _buildEquityProfile(BuildContext context) {
+    final all = _marketRankedEquityRecords(dataset);
+    const shown = 7;
+    final visible = math.min(shown, all.length);
+
+    return _MarketVisualPanel(
+      title: 'Profil bêta et rendement par émetteur',
+      subtitle:
+          'Bêta pondéré ${dataset.weightedBeta.toStringAsFixed(2).replaceAll('.', ',')} · rendement attendu ${AppFormatters.percent(dataset.expectedReturn)}',
+      action: all.length <= shown
+          ? null
+          : _MarketGhostButton(
+              label: 'Voir les ${all.length} lignes',
+              onPressed: () => _MarketDetailDialog.show(
+                context,
+                title: 'Profil bêta et rendement par émetteur',
+                subtitle: '${all.length} lignes valorisées, classées par poids '
+                    'de marché',
+                columns: const [
+                  _MarketDetailColumn('Émetteur', flex: 6),
+                  _MarketDetailColumn('Valeur de marché', flex: 4, right: true),
+                  _MarketDetailColumn('Bêta', flex: 2, right: true),
+                  _MarketDetailColumn('Rendement', flex: 3, right: true),
+                ],
+                rows: [
+                  for (final record in all)
+                    [
+                      _MarketDetailCell(_equityName(record)),
+                      _MarketDetailCell(
+                        _marketCompactMoney(record.exposureAmount),
+                        strong: true,
+                      ),
+                      _MarketDetailCell(
+                        (record.beta > 0 ? record.beta : dataset.weightedBeta)
+                            .toStringAsFixed(2)
+                            .replaceAll('.', ','),
+                      ),
+                      _MarketDetailCell(
+                        AppFormatters.percent(
+                          _marketEquityResolvedReturn(
+                            record,
+                            dataset.expectedReturn,
+                          ),
+                        ),
+                      ),
+                    ],
+                ],
+              ),
+            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _MarketPanelExtractNote(
+            shown: visible,
+            total: all.length,
+            singular: 'ligne',
+            plural: 'lignes',
+            feminine: true,
+            criterion: 'poids de marché',
+          ),
+          SizedBox(
+            height: 20.0 + visible * 26.0,
+            child: _MarketEquityRiskReturnProfile(
+              dataset: dataset,
+              limit: shown,
+            ),
           ),
         ],
       ),
@@ -18932,7 +20504,7 @@ class _MarketRiskTileGrid extends StatelessWidget {
                     color: item.color.withValues(
                       alpha: _isMarketDark(context) ? 0.13 : 0.055,
                     ),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(_marketTileRadius),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -18946,7 +20518,7 @@ class _MarketRiskTileGrid extends StatelessWidget {
                           height: double.infinity,
                           decoration: BoxDecoration(
                             color: item.color,
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(_marketTileRadius),
                           ),
                         ),
                         const SizedBox(width: 7),
@@ -19010,10 +20582,24 @@ double _marketEquityResolvedReturn(
   return value.isFinite ? value.clamp(-0.20, 0.35).toDouble() : fallback;
 }
 
+/// Lignes actions valorisées, classées par poids de marché décroissant.
+List<MarketPortfolioRecord> _marketRankedEquityRecords(
+  MarketPortfolioDataset dataset,
+) {
+  return dataset.records
+      .where((record) => record.exposureAmount > 0)
+      .toList(growable: false)
+    ..sort((a, b) => b.exposureAmount.compareTo(a.exposureAmount));
+}
+
 class _MarketEquityRiskReturnProfile extends StatelessWidget {
-  const _MarketEquityRiskReturnProfile({required this.dataset});
+  const _MarketEquityRiskReturnProfile({
+    required this.dataset,
+    this.limit = 5,
+  });
 
   final MarketPortfolioDataset dataset;
+  final int limit;
 
   @override
   Widget build(BuildContext context) {
@@ -19025,11 +20611,8 @@ class _MarketEquityRiskReturnProfile extends StatelessWidget {
     // Tableau par émetteur, lisible et institutionnel (bêta = risque,
     // rendement attendu), classé par poids de marché décroissant. Remplace
     // l'ancien nuage de points illisible.
-    final rows = (dataset.records
-            .where((record) => record.exposureAmount > 0)
-            .toList(growable: false)
-          ..sort((a, b) => b.exposureAmount.compareTo(a.exposureAmount)))
-        .take(5)
+    final rows = _marketRankedEquityRecords(dataset)
+        .take(limit)
         .toList(growable: false);
 
     if (rows.isEmpty) {
@@ -19065,7 +20648,7 @@ class _MarketEquityRiskReturnProfile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 9),
           decoration: const BoxDecoration(
             color: _marketDashboardDeepBlue,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(2)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(_marketTileRadius)),
           ),
           child: Row(
             children: [
@@ -19084,7 +20667,7 @@ class _MarketEquityRiskReturnProfile extends StatelessWidget {
                 bottom: BorderSide(color: border),
               ),
               borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(2),
+                bottom: Radius.circular(_marketTileRadius),
               ),
             ),
             child: Column(
@@ -19339,13 +20922,18 @@ void _paintChartTooltip(
 class _MarketVisualPanel extends StatelessWidget {
   const _MarketVisualPanel({
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.child,
+    this.action,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final Widget child;
+
+  /// Commande alignée à droite du titre, réservée à l'ouverture du détail
+  /// complet quand le panneau n'affiche qu'un extrait.
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -19359,7 +20947,7 @@ class _MarketVisualPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: _marketSurfaceSoftFor(context)
             .withValues(alpha: _isMarketDark(context) ? 0.50 : 0.72),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(_marketTileRadius),
         border: Border.all(
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
@@ -19368,28 +20956,46 @@ class _MarketVisualPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title.tr(context),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: text,
-              fontSize: 13.2,
-              fontWeight: FontWeight.w500,
-              height: 1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle.tr(context),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: muted,
-              fontSize: 10.2,
-              fontWeight: FontWeight.w500,
-              height: 1,
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title.tr(context),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: text,
+                        fontSize: 13.2,
+                        fontWeight: FontWeight.w500,
+                        height: 1,
+                      ),
+                    ),
+                    if (subtitle != null && subtitle!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle!.tr(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: muted,
+                          fontSize: 10.2,
+                          fontWeight: FontWeight.w500,
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (action != null) ...[
+                const SizedBox(width: 12),
+                action!,
+              ],
+            ],
           ),
           const SizedBox(height: 3),
           child,
@@ -19477,7 +21083,7 @@ class _MarketMicroMetric extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(_marketTileRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -19510,126 +21116,86 @@ class _MarketMicroMetric extends StatelessWidget {
   }
 }
 
-class _MarketScenarioSparkPainter extends CustomPainter {
-  const _MarketScenarioSparkPainter({
-    required this.returns,
-    required this.color,
-    required this.danger,
-    required this.isDark,
+class _MarketAnalyticKpiSpec {
+  const _MarketAnalyticKpiSpec({
+    required this.label,
+    required this.value,
+    this.subtitle,
+    this.icon,
+    this.accentColor,
   });
 
-  final List<double> returns;
-  final Color color;
-  final Color danger;
-  final bool isDark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = (isDark ? Colors.white : _marketBorder).withValues(alpha: 0.42)
-      ..strokeWidth = 0.7;
-    for (final fraction in [0.25, 0.5, 0.75]) {
-      final y = size.height * fraction;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
-
-    if (returns.length < 2) return;
-    final sample = returns.length > 180
-        ? [
-            for (var index = 0; index < 180; index++)
-              returns[(index * (returns.length - 1) / 179).round()]
-          ]
-        : returns;
-    final minValue = sample.reduce(math.min);
-    final maxValue = sample.reduce(math.max);
-    final span =
-        (maxValue - minValue).abs() < 0.000001 ? 0.000001 : maxValue - minValue;
-
-    final path = Path();
-    for (var index = 0; index < sample.length; index++) {
-      final x =
-          sample.length == 1 ? 0.0 : index / (sample.length - 1) * size.width;
-      final y = size.height - ((sample[index] - minValue) / span) * size.height;
-      if (index == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-
-    final fillPath = Path.from(path)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-    final fill = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          color.withValues(alpha: 0.16),
-          color.withValues(alpha: 0.01),
-        ],
-      ).createShader(Offset.zero & size);
-    canvas.drawPath(fillPath, fill);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0,
-    );
-
-    final zeroY = size.height - ((0 - minValue) / span) * size.height;
-    if (zeroY >= 0 && zeroY <= size.height) {
-      canvas.drawLine(
-        Offset(0, zeroY),
-        Offset(size.width, zeroY),
-        Paint()
-          ..color = danger.withValues(alpha: 0.28)
-          ..strokeWidth = 1,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _MarketScenarioSparkPainter oldDelegate) {
-    return oldDelegate.returns != returns ||
-        oldDelegate.color != color ||
-        oldDelegate.danger != danger ||
-        oldDelegate.isDark != isDark;
-  }
+  final String label;
+  final String value;
+  final String? subtitle;
+  final IconData? icon;
+  final Color? accentColor;
 }
 
 List<_MarketAnalyticKpiSpec> _marketAnalyticKpis(
   MarketPortfolioDataset dataset,
+  BuildContext context,
 ) {
   final isBonds = dataset.portfolioType == MarketPortfolioType.bonds;
+  final unit = PortfolioAmountUnitScope.of(context);
+  final scaled = dataset.totalExposure / unit.divisor;
+  final absScaled = scaled.abs();
+  final decimals = absScaled >= 100 ? 0 : (absScaled >= 1 ? 1 : 2);
+  var numberText = AppFormatters.decimalNumber(scaled, maxDecimals: decimals);
+  if (dataset.totalExposure != 0 && numberText == '0' && unit.divisor >= 1000000000) {
+    numberText = dataset.totalExposure.isNegative ? '>-1' : '< 1';
+  }
+  final exposureValueStr = unit.label.isEmpty ? numberText : '$numberText ${unit.label}';
+
   return [
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Encours total' : 'Valeur de marché',
-      value: _marketReadableMoney(dataset.totalExposure),
+      value: exposureValueStr,
+      subtitle: isBonds ? 'Exposition obligataire globale' : 'Exposition nette globale',
+      icon: Icons.account_balance_wallet_outlined,
+      accentColor: const Color(0xFF1E3A8A), // Deep Navy / Wall Street
     ),
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Maturité pondérée' : 'Bêta pondéré',
       value: isBonds
           ? '${dataset.weightedResidualYears.toStringAsFixed(1).replaceAll('.', ',')} ans'
           : dataset.weightedBeta.toStringAsFixed(2).replaceAll('.', ','),
+      subtitle: isBonds ? 'Maturité résiduelle (WAL)' : 'Sensibilité marché (β)',
+      icon: isBonds ? Icons.schedule_outlined : Icons.show_chart_outlined,
+      accentColor: const Color(0xFFD97706), // Warm Amber / Harvard Gold
     ),
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Coupon moyen' : 'Rendement attendu',
       value: AppFormatters.percent(
         isBonds ? dataset.averageCoupon : dataset.expectedReturn,
       ),
+      subtitle: isBonds ? 'Taux de coupon pondéré' : 'Espérance de gain (CAPM)',
+      icon: Icons.trending_up_outlined,
+      accentColor: const Color(0xFF059669), // Emerald Quantum
     ),
     _MarketAnalyticKpiSpec(
       label: 'Volatilité',
       value: AppFormatters.percent(dataset.annualizedVolatility),
+      subtitle: isBonds ? 'Risque de taux (σ)' : 'Écart-type annuel (σ)',
+      icon: Icons.graphic_eq_outlined,
+      accentColor: const Color(0xFFDC2626), // Risk Crimson
     ),
     _MarketAnalyticKpiSpec(
       label: 'Corrélation',
-      value: dataset.correlationProxy.toStringAsFixed(2).replaceAll('.', ','),
+      value: _marketCorrelationText(dataset),
+      subtitle: dataset.hasMeasuredCorrelation ? 'Coefficient ρ' : 'Proxy de concentration',
+      icon: Icons.hub_outlined,
+      accentColor: dataset.hasMeasuredCorrelation ? const Color(0xFF7C3AED) : const Color(0xFF64748B),
     ),
   ];
+}
+
+/// Corrélation affichée seulement lorsqu'elle est mesurée sur des séries de
+/// prix. Sans historique, le modèle la déduit de la concentration : ce n'est
+/// pas une mesure et l'afficher comme telle induirait en erreur.
+String _marketCorrelationText(MarketPortfolioDataset dataset) {
+  if (!dataset.hasMeasuredCorrelation) return 'Non mesurée';
+  return dataset.correlationProxy.toStringAsFixed(2).replaceAll('.', ',');
 }
 
 List<_MarketDistributionEntry> _bondGroupedEntries(
@@ -20289,30 +21855,45 @@ class _MarketPortfolioDetailsTableState
     });
   }
 
+  static final RegExp _generatedIdPattern = RegExp(r'^CP(\d+)$');
+
   void _assignMissingIDs() {
+    // Seuls les portefeuilles qui possèdent réellement la colonne sont
+    // concernés : les obligations sont identifiées par « ID Titre » et
+    // n'ont pas d'« ID Instrument » à compléter.
+    if (!widget.portfolioType.requiredHeaders.contains('ID Instrument')) {
+      return;
+    }
+
     int maxIdNum = 0;
     for (final record in widget.records) {
       final id = record.values['ID Instrument']?.toString().trim() ?? '';
-      final match = RegExp(r'^CP(\d+)$').firstMatch(id);
+      final match = _generatedIdPattern.firstMatch(id);
       if (match != null) {
         final num = int.parse(match.group(1)!);
         if (num > maxIdNum) maxIdNum = num;
       }
     }
 
+    // Une seule publication pour tout le lot : un updateRecord par ligne
+    // recalcule la signature du portefeuille entier et redéclenche une
+    // sauvegarde à chaque itération.
+    final patches = <int, Map<String, Object?>>{};
     for (int i = 0; i < widget.records.length; i++) {
       final record = widget.records[i];
       final id = record.values['ID Instrument']?.toString().trim() ?? '';
       if (!id.startsWith('CP') || id == '-' || id.isEmpty) {
         maxIdNum++;
-        final newId = 'CP${maxIdNum.toString().padLeft(3, '0')}';
-        MarketDataImportStore.instance.updateRecord(
-          widget.portfolioType,
-          i,
-          {...record.values, 'ID Instrument': newId},
-        );
+        patches[i] = {
+          'ID Instrument': 'CP${maxIdNum.toString().padLeft(3, '0')}',
+        };
       }
     }
+    if (patches.isEmpty) return;
+    MarketDataImportStore.instance.updateRecords(
+      widget.portfolioType,
+      patches,
+    );
   }
 
   @override
@@ -21446,7 +23027,7 @@ List<_MarketColumnGroup> _marketColumnGroups(
 
 String _marketColumnDisplayLabel(String header) {
   return switch (header) {
-    'ID Titre' => 'ID Titre',
+    'ID Titre' => 'ID Instrument',
     'Date d\'analyse' => 'Date d\'analyse',
     'Pays émetteur' => 'Pays émetteur',
     'Pays / marché' => 'Pays / marché',
@@ -22116,24 +23697,14 @@ class _MarketPortfolioActionsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = _isMarketDark(context);
-    final accent = portfolioType == MarketPortfolioType.bonds
-        ? _marketPrimary
-        : _marketSuccess;
-    final headerBg = isDark
-        ? Color.alphaBlend(
-            accent.withValues(alpha: 0.32),
-            const Color(0xFF0F1B31),
-          )
-        : accent.withValues(alpha: 0.18);
     return Container(
       height: _MarketPortfolioDetailsTable._headerHeight,
       alignment: Alignment.center,
-      color: headerBg,
+      color: _marketDashboardDeepBlue,
       child: const Text(
         'ACTIONS',
         style: TextStyle(
-          color: _marketDashboardDeepBlue,
+          color: Colors.white,
           fontSize: 9.4,
           fontWeight: FontWeight.w500,
           letterSpacing: 1.4,
@@ -22256,20 +23827,9 @@ class _MarketPortfolioHeaderRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = _isMarketDark(context);
-    final accent = portfolioType == MarketPortfolioType.bonds
-        ? _marketPrimary
-        : _marketSuccess;
-    final headerBg = isDark
-        ? Color.alphaBlend(
-            accent.withValues(alpha: 0.32),
-            const Color(0xFF0F1B31),
-          )
-        : accent.withValues(alpha: 0.18);
-
     return Container(
       height: _MarketPortfolioDetailsTable._headerHeight,
-      color: headerBg,
+      color: _marketDashboardDeepBlue,
       child: Row(
         children: [
           for (final header in headers)
@@ -22335,7 +23895,7 @@ class _MarketPortfolioHeaderCell extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   softWrap: true,
                   style: TextStyle(
-                    color: sorted ? _marketPrimary : _marketDashboardDeepBlue,
+                    color: sorted ? _marketPrimary : Colors.white,
                     fontSize: 10.2,
                     fontWeight: sorted ? FontWeight.w800 : FontWeight.w700,
                     height: 1.22,
@@ -22348,7 +23908,7 @@ class _MarketPortfolioHeaderCell extends StatelessWidget {
                 size: sorted ? 11 : 10,
                 color: sorted
                     ? _marketPrimary
-                    : _marketDashboardDeepBlue.withValues(alpha: 0.42),
+                    : Colors.white.withValues(alpha: 0.5),
               ),
             ],
           ),
@@ -22743,7 +24303,7 @@ class _MarketPortfolioCell extends StatelessWidget {
 }
 
 double _marketPortfolioColumnWidth(String header) {
-  if (header == 'ID Titre') return 118;
+  if (header == 'ID Titre') return 150;
   if (header == 'Date d\'analyse') return 145;
   if (header == 'ID Instrument') return 150;
   if (header == 'Ticker') return 110;
@@ -22762,7 +24322,7 @@ double _marketPortfolioColumnWidth(String header) {
   if (header == 'Dividende par action') return 180;
   if (header == 'Rendement dividende (%)') return 205;
   if (header == 'P/E') return 100;
-  if (header == 'Bêta') return 100;
+  if (header == 'Bêta') return 140;
   if (header == 'La pire notation externe') return 230;
   if (header.contains('Notation externe')) return 220;
   if (header.contains('Prix de remboursement')) return 220;
@@ -24027,7 +25587,7 @@ class _VarEmptyChartState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Liseré d'accent sobre — pas de pictogramme.
+              // Liseré d'accent sobre - pas de pictogramme.
               Container(
                 width: 44,
                 height: 3,
@@ -25102,7 +26662,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
         children: [
           Row(
             children: [
-              // Liseré navy — pas de pictogramme.
+              // Liseré navy - pas de pictogramme.
               Container(
                 width: 3,
                 height: 16,
@@ -25232,7 +26792,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
           ),
           child: Row(
             children: [
-              // Liseré navy — pas de pictogramme.
+              // Liseré navy - pas de pictogramme.
               Container(
                 width: 3,
                 height: 15,
@@ -25495,7 +27055,7 @@ class _VarMiniKpiCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Liseré d'accent — pas d'icône, palette de base.
+          // Liseré d'accent - pas d'icône, palette de base.
           Container(
             width: 2.5,
             height: double.infinity,
@@ -29690,7 +31250,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
     final totalGeneral = _totalGeneral;
 
     final exigenceFP = totalSpecific + totalGeneral;
-    final rwa = exigenceFP * (1 / 0.09); // 11,111111
+    final rwa = exigenceFP * 12.5; // multiplicateur réglementaire 12,5
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, AppTheme.pageGap, 0, 0),
@@ -29760,7 +31320,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
     if (isSpecific) {
       for (final d in specificData) {
         final exigence = d.position * d.weight;
-        final rwa = exigence * (1 / 0.09);
+        final rwa = exigence * 12.5;
         final issuerName = d.record.issuer.trim();
         final label = issuerName.isNotEmpty && issuerName != 'Non renseigné'
             ? issuerName
@@ -29772,7 +31332,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
         final years = d.record.residualMaturityMonths / 12;
         final weight = marketGeneralRiskWeight(years, d.record.coupon);
         final exigence = d.position * weight;
-        final rwa = exigence * (1 / 0.09);
+        final rwa = exigence * 12.5;
         final issuerName = d.record.issuer.trim();
         final label = issuerName.isNotEmpty && issuerName != 'Non renseigné'
             ? issuerName
@@ -30169,13 +31729,13 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                                         ? _totalRow(
                                             'Total Risque Spécifique',
                                             _fmt(totalSpecific),
-                                            _fmt(totalSpecific * (1 / 0.09)),
+                                            _fmt(totalSpecific * 12.5),
                                             isFixed: false,
                                           )
                                         : _totalRow(
                                             'Exigence Risque Général',
                                             _fmt(totalGeneral),
-                                            _fmt(totalGeneral * (1 / 0.09)),
+                                            _fmt(totalGeneral * 12.5),
                                             isFixed: false,
                                           ),
                                   ],
@@ -30430,8 +31990,8 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           case 6: // Exigence
             cmp = (a.position * a.weight).compareTo(b.position * b.weight);
           case 7: // RWA
-            final rwaA = (a.position * a.weight) * (1 / 0.09);
-            final rwaB = (b.position * b.weight) * (1 / 0.09);
+            final rwaA = (a.position * a.weight) * 12.5;
+            final rwaB = (b.position * b.weight) * 12.5;
             cmp = rwaA.compareTo(rwaB);
           default:
             cmp = 0;
@@ -30455,7 +32015,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
         final pos = entry.position;
         final w = entry.weight;
         final exigence = pos * w;
-        final rwa = exigence * (1 / 0.09); // 11,111111
+        final rwa = exigence * 12.5; // multiplicateur réglementaire 12,5
         final categoryLabel = marketSpecificDebtRiskCategoryLabel(r);
         final isEven = i % 2 == 0;
         final selected = _selectedRowIndex == i;
@@ -30579,10 +32139,10 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
           case 6: // RWA
             final rwaA = (a.position *
                     marketGeneralRiskWeight(yearsA, a.record.coupon)) *
-                (1 / 0.09);
+                12.5;
             final rwaB = (b.position *
                     marketGeneralRiskWeight(yearsB, b.record.coupon)) *
-                (1 / 0.09);
+                12.5;
             cmp = rwaA.compareTo(rwaB);
           default:
             cmp = 0;
@@ -30610,7 +32170,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
             : years.toStringAsFixed(1);
         final w = marketGeneralRiskWeight(years, r.coupon);
         final exigence = pos * w;
-        final rwa = exigence * (1 / 0.09); // 11,111111
+        final rwa = exigence * 12.5; // multiplicateur réglementaire 12,5
         final isEven = i % 2 == 0;
         final selected = _selectedRowIndex == i;
         final isLast = i == data.length - 1;
@@ -30870,7 +32430,7 @@ class _TauxSummaryRow extends StatelessWidget {
   }
 }
 
-/// Barre de cartes KPI moderne partagée — dispose des cartes espacées et
+/// Barre de cartes KPI moderne partagée - dispose des cartes espacées et
 /// place un bouton d'information aligné dans la gouttière de gauche.
 class _SummaryCardsBar extends StatelessWidget {
   const _SummaryCardsBar({required this.tooltip, required this.children});
@@ -31261,7 +32821,7 @@ class _MarketRwaStructureCardState extends State<_MarketRwaStructureCard> {
                   for (var i = 0; i < segments.length; i++)
                     BarChartGroupData(
                       x: i,
-                      showingTooltipIndicators: const [0],
+                      showingTooltipIndicators: const [],
                       barRods: [
                         BarChartRodData(
                           toY: segments[i].value <= 0
@@ -31762,7 +33322,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: const Text(
-                  'Position_Nette_Globale = MAX(Total_Longues ; Total_Courtes)\n\nExigence_FP_Change = Position_Nette_Globale × 9 %\n\nRWA_Change = Exigence_FP_Change × 11,111111',
+                  'Position_Nette_Globale = MAX(Total_Longues ; Total_Courtes)\n\nExigence_FP_Change = Position_Nette_Globale × 8 %\n\nRWA_Change = Exigence_FP_Change × 12,5',
                   style: TextStyle(fontFamily: 'monospace', fontSize: 12),
                 ),
               ),
@@ -32133,7 +33693,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
           _buildCalculationLine(
             context,
             label: 'Exigence FP Change',
-            formula: 'PNG (${_fmt(fx.globalNetPosition)}) × 9 %',
+            formula: 'PNG (${_fmt(fx.globalNetPosition)}) × 8 %',
             value: _fmt(fx.capitalRequirement),
             valueColor: Colors.orange[700],
             isBold: true,
@@ -32143,7 +33703,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
           _buildCalculationLine(
             context,
             label: 'RWA Change',
-            formula: '${_fmt(fx.capitalRequirement)} × 11,111111',
+            formula: '${_fmt(fx.capitalRequirement)} × 12,5',
             value: _fmt(fx.marketRwa),
             valueColor: Colors.red[700],
             isBold: true,
@@ -32692,7 +34252,7 @@ class _ActionRiskScreenState extends State<_ActionRiskScreen> {
     final specific = result.equitySpecificRisk;
     final exigence = result.equityRisk;
     final general = exigence - specific;
-    final rwa = exigence * (1 / 0.09); // 11,111111
+    final rwa = exigence * 12.5; // multiplicateur réglementaire 12,5
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppTheme.pagePadding, AppTheme.pageGap,
@@ -32702,18 +34262,18 @@ class _ActionRiskScreenState extends State<_ActionRiskScreen> {
           _GenericSummaryRow(
             showInfo: false,
             tooltipContent: '''
-Risque Actions — Dispositif prudentiel UEMOA
+Risque Actions - Dispositif prudentiel UEMOA
 
 Le risque actions capture l'impact des variations des cours des actions et titres de propriété détenus.
 
 Position brute = Σ |valeur de marché| de chaque ligne
 Position nette = Σ valeur signée (longues → courtes)
 
-Risque Spécifique = Position brute × 9 %
-Risque Général    = |Position nette| × 9 %
+Risque Spécifique = Position brute × 8 %
+Risque Général    = |Position nette| × 8 %
 
 Exigence FP Actions = Risque Spécifique + Risque Général
-RWA Actions = Exigence FP Actions × 11,111111 (DISPRUD UMOA, Art. 395-401)''',
+RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
             // Ordre de lecture = chaîne du calcul prudentiel : chaque
             // position est suivie du risque qu'elle engendre, puis viennent
             // les agrégats (exigence, RWA).
@@ -32726,7 +34286,7 @@ RWA Actions = Exigence FP Actions × 11,111111 (DISPRUD UMOA, Art. 395-401)''',
               _SummaryItemData(
                   label: 'Risque spécifique (9%)',
                   value: _fcfa(specific),
-                  subtitle: 'Position brute × 9%'),
+                  subtitle: 'Position brute × 8 %'),
               _SummaryItemData(
                   label: 'Position Nette',
                   value: _fcfa(net),
@@ -32734,7 +34294,7 @@ RWA Actions = Exigence FP Actions × 11,111111 (DISPRUD UMOA, Art. 395-401)''',
               _SummaryItemData(
                   label: 'Risque général (9%)',
                   value: _fcfa(general),
-                  subtitle: '|Position nette| × 9%'),
+                  subtitle: '|Position nette| × 8 %'),
               _SummaryItemData(
                   label: 'Exigence FP Actions',
                   value: _fcfa(exigence),
@@ -33191,13 +34751,13 @@ class _EquityPortfolioTableState extends State<_EquityPortfolioTable> {
   double _signed(({String name, bool short, double value}) l) =>
       l.short ? -l.value : l.value;
   double _lineSpecific(({String name, bool short, double value}) l) =>
-      l.value * 0.09;
+      l.value * 0.08;
   double _lineGeneral(({String name, bool short, double value}) l) =>
-      _signed(l) * 0.09;
+      _signed(l) * 0.08;
   double _lineExigence(({String name, bool short, double value}) l) =>
       _lineSpecific(l) + _lineGeneral(l);
   double _lineRwa(({String name, bool short, double value}) l) =>
-      _lineExigence(l) * (1 / 0.09);
+      _lineExigence(l) * 12.5;
 
   /// Montant signé : « → » préfixé pour les positions courtes.
   String _signedAmount(double v) =>
@@ -33309,7 +34869,7 @@ class _EquityPortfolioTableState extends State<_EquityPortfolioTable> {
   }
 
   /// Cellules défilantes d'une ligne : sens, position brute, risque
-  /// spécifique, position nette, risque général, exigence FP — la même
+  /// spécifique, position nette, risque général, exigence FP - la même
   /// chaîne que les cartes KPI.
   Widget _middleRow(int index, bool isLast, bool isDark, List<double> widths) {
     final hasData = index < widget.lines.length;
@@ -33405,10 +34965,10 @@ class _EquityPortfolioTableState extends State<_EquityPortfolioTable> {
         // Totaux de pied : chaque colonne retombe sur sa carte KPI.
         final grossTotal = widget.lines.fold<double>(0, (s, l) => s + l.value);
         final netTotal = widget.lines.fold<double>(0, (s, l) => s + _signed(l));
-        final specTotal = grossTotal * 0.09;
-        final genTotal = netTotal * 0.09;
+        final specTotal = grossTotal * 0.08;
+        final genTotal = netTotal * 0.08;
         final exigenceTotal = specTotal + genTotal;
-        final rwaTotal = exigenceTotal * (1 / 0.09);
+        final rwaTotal = exigenceTotal * 12.5;
         Widget footAmount(double width, String text) => SizedBox(
               width: width,
               child: Padding(
@@ -33758,16 +35318,16 @@ class _MarketPortfolioAnalysisScreenState
                       _GenericSummaryRow(
                         showInfo: false,
                         tooltipContent: '''
-Exigence Fonds Propres Marché — Dispositif prudentiel UEMOA
+Exigence Fonds Propres Marché - Dispositif prudentiel UEMOA
 
 L'exigence de fonds propres pour risque de marché est la somme des exigences par type de risque :
 
 • Exigence FP Taux    : Spécifique + Général (obligations)
 • Exigence FP Actions : 9 % position brute + 9 % position nette
-• Exigence FP Change  : 9 % de la position nette globale (max longues/courtes)
+• Exigence FP Change  : 8 % de la position nette globale (max longues/courtes)
 
 Exigence FP Marché = Σ exigences par risque
-RWA Marché = Exigence FP Marché × 11,111111''',
+RWA Marché = Exigence FP Marché × 12,5''',
                         items: [
                           _SummaryItemData(
                               label: 'Encours total',
@@ -33815,16 +35375,16 @@ RWA Marché = Exigence FP Marché × 11,111111''',
                       _GenericSummaryRow(
                         showInfo: false,
                         tooltipContent: '''
-Exigence Fonds Propres Marché — Dispositif prudentiel UEMOA
+Exigence Fonds Propres Marché - Dispositif prudentiel UEMOA
 
 L'exigence de fonds propres pour risque de marché est la somme des exigences par type de risque :
 
 • Exigence FP Taux    : Spécifique + Général (obligations)
 • Exigence FP Actions : 9 % position brute + 9 % position nette
-• Exigence FP Change  : 9 % de la position nette globale (max longues/courtes)
+• Exigence FP Change  : 8 % de la position nette globale (max longues/courtes)
 
 Exigence FP Marché = Σ exigences par risque
-RWA Marché = Exigence FP Marché × 11,111111''',
+RWA Marché = Exigence FP Marché × 12,5''',
                         items: [
                           _SummaryItemData(
                               label: 'Encours total',
@@ -33867,17 +35427,17 @@ RWA Marché = Exigence FP Marché × 11,111111''',
                           final chart = _MarketGlobalRiskBarChart(
                             tauxRisque: totalBondsExposure,
                             tauxExigence: r.interestRateRisk,
-                            tauxRwa: r.interestRateRisk * (1 / 0.09),
+                            tauxRwa: r.interestRateRisk * 12.5,
                             actionsRisque: r.equityGrossPosition + r.equityNetPosition,
                             actionsExigence: r.equityRisk,
-                            actionsRwa: r.equityRisk * (1 / 0.09),
+                            actionsRwa: r.equityRisk * 12.5,
                             changeRisque: r.foreignExchangeGlobalNetPosition,
                             changeExigence: r.foreignExchangeRisk,
-                            changeRwa: r.foreignExchangeRisk * (1 / 0.09),
+                            changeRwa: r.foreignExchangeRisk * 12.5,
                           );
 
                           // Concentration Top 5 : regroupée par ÉMETTEUR (pas
-                          // par ligne de titre isolée) — c'est la notion
+                          // par ligne de titre isolée) - c'est la notion
                           // réglementaire de concentration (grands risques,
                           // exposition par contrepartie), obligations et
                           // actions confondues dans un même classement.
@@ -33989,7 +35549,7 @@ class _MarketGlobalRiskBarChartState extends State<_MarketGlobalRiskBarChart> {
 
     const colorExigence = Color(0xFF06B6D4); // Cyan
     const colorRisque = Color(0xFF312E81); // Indigo foncé
-    const colorRwa = Color(0xFFF59E0B); // Orange
+    const colorRwa = Color(0xFF10B981); // Vert
 
     final maxVal = [
       widget.tauxRisque,
@@ -34126,7 +35686,7 @@ class _MarketGlobalRiskBarChartState extends State<_MarketGlobalRiskBarChart> {
               final showBadge = !isHovered && value > 0;
 
               return Container(
-                width: 36,
+                width: 24,
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 child: Stack(
                   clipBehavior: Clip.none,
@@ -34136,10 +35696,10 @@ class _MarketGlobalRiskBarChartState extends State<_MarketGlobalRiskBarChart> {
                       duration: const Duration(milliseconds: 200),
                       curve: Curves.easeOutCubic,
                       height: barHeight,
-                      width: 36,
+                      width: 24,
                       decoration: BoxDecoration(
                         color: barColor,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(1)),
                         boxShadow: isGroupHovered && !shouldGrayOut
                             ? [
                                 BoxShadow(
@@ -34153,8 +35713,7 @@ class _MarketGlobalRiskBarChartState extends State<_MarketGlobalRiskBarChart> {
                     ),
                     Positioned(
                       bottom: barHeight + 4,
-                      left: -2,
-                      right: -2,
+                      width: 44, // Allow badge to be wider than the 24px bar
                       child: AnimatedOpacity(
                         duration: const Duration(milliseconds: 150),
                         opacity: showBadge ? (shouldGrayOut ? 0.3 : 1.0) : 0.0,
@@ -34164,7 +35723,7 @@ class _MarketGlobalRiskBarChartState extends State<_MarketGlobalRiskBarChart> {
                             padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
                             decoration: BoxDecoration(
                               color: color.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(3),
+                              borderRadius: BorderRadius.circular(1),
                             ),
                             child: FittedBox(
                               fit: BoxFit.scaleDown,
@@ -34310,7 +35869,7 @@ class _MarketGlobalRiskBarChartState extends State<_MarketGlobalRiskBarChart> {
 }
 
 /// Top 5 de concentration du portefeuille de marché, par ÉMETTEUR (pas par
-/// ligne de titre isolée — regrouper plusieurs lignes du même émetteur est
+/// ligne de titre isolée - regrouper plusieurs lignes du même émetteur est
 /// la notion réglementaire de concentration/grands risques), obligations et
 /// actions mêlées dans un même classement et différenciées par couleur.
 /// Information absente du reste de l'écran : les tuiles et le graphique
@@ -34333,11 +35892,10 @@ class _MarketTop5ConcentrationChart extends StatelessWidget {
     final text = isDark ? const Color(0xFFF8FAFC) : const Color(0xFF0F172A);
     final muted = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    // Rampe navy monochrome : cohérente avec le registre institutionnel de
-    // l'application. Obligations en foncé, Actions en clair — seule
-    // différenciation demandée, pas de palette arc-en-ciel.
-    const colorObligation = Color(0xFF0F172A);
-    const colorAction = Color(0xFF60A5FA);
+    // Teintes douces et institutionnelles : non agressives et distinctes
+    // du graphique voisin.
+    const colorObligation = Color(0xFF0284C7); // Bleu acier / Teal apaisant
+    const colorAction = Color(0xFF7C3AED); // Violet / Améthyste doux
 
     final expositionTop5 = lignes.fold<double>(0.0, (a, l) => a + l.valeur);
     final partTop5 =
@@ -34454,7 +36012,7 @@ class _MarketTop5ConcentrationChart extends StatelessWidget {
                                   height: 18,
                                   decoration: BoxDecoration(
                                     color: muted.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(3),
+                                    borderRadius: BorderRadius.circular(1),
                                   ),
                                 ),
                                 FractionallySizedBox(
@@ -34464,7 +36022,7 @@ class _MarketTop5ConcentrationChart extends StatelessWidget {
                                     height: 18,
                                     decoration: BoxDecoration(
                                       color: couleur,
-                                      borderRadius: BorderRadius.circular(3),
+                                      borderRadius: BorderRadius.circular(1),
                                     ),
                                   ),
                                 ),

@@ -7,7 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
 
-/// Structure des fonds propres réglementaires — décomposition par tier.
+/// Structure des fonds propres réglementaires - décomposition par tier.
 ///
 /// Design premium : barre de composition visuelle globale, suivie d'une
 /// liste épurée avec des indicateurs colorés pour une lecture instantanée.
@@ -23,7 +23,7 @@ class DashboardFondsPropres extends StatelessWidget {
   final DashboardSnapshot data;
   final VoidCallback? onEdit;
 
-  // Jusqu'à 3 décimales utiles, sans zéros de remplissage — même précision
+  // Jusqu'à 3 décimales utiles, sans zéros de remplissage - même précision
   // que les tooltips du graphique « Exigences de fonds propres » pour que le
   // même montant se lise à l'identique partout.
   String _formatAmount(double value, PortfolioAmountUnit unit) {

@@ -22,8 +22,8 @@ class AggregatedMarketRiskResult {
   final double fxContributionPercent; // Contribution FX au RWA total (%)
 }
 
-/// Remplace le risque de change de [base] — approximation tirée de la
-/// colonne devise des titres obligations/actions importés — par le vrai
+/// Remplace le risque de change de [base] - approximation tirée de la
+/// colonne devise des titres obligations/actions importés - par le vrai
 /// risque de change calculé sur les positions saisies dans l'onglet Risque
 /// de Change (actifs/passifs/achats-ventes à terme, approche standard
 /// BCEAO). `capitalRequirement`/`marketRwa` (getters dérivés) reflètent donc
@@ -60,6 +60,13 @@ MarketPrudentialCapitalResult applyRealForeignExchangeRisk(
     commodityNetPosition: base.commodityNetPosition,
   );
 }
+
+/// Conversion d'une exigence de fonds propres marché en équivalent RWA (§90).
+///
+/// Le dispositif retient 12,5 - l'inverse de 8 % - et non l'inverse du ratio
+/// de solvabilité de 9 %. Les composantes taux, actions et change doivent
+/// partager ce multiplicateur, faute de quoi leur somme n'a plus de sens.
+const double _rwaEquivalentMultiplier = 12.5;
 
 /// Service pour calculer les KPI agrégés du risque de marché
 class MarketRiskAggregationService {
@@ -110,8 +117,9 @@ class MarketRiskAggregationService {
     final capital = store.dataset?.prudentialCapital;
     if (capital == null) return 0.0;
     // interestRateRisk = interestRateSpecificRisk + interestRateGeneralRisk
-    // RWA = capital × 11,111111 (1 / 0,09)
-    return capital.interestRateRisk * (1 / 0.09);
+    // Équivalent RWA = exigence × 12,5, comme les composantes change et
+    // actions : additionner des conversions différentes fausserait le total.
+    return capital.interestRateRisk * _rwaEquivalentMultiplier;
   }
 
   /// Récupère le RWA Actions du store
@@ -119,6 +127,6 @@ class MarketRiskAggregationService {
     final capital = store.dataset?.prudentialCapital;
     if (capital == null) return 0.0;
     // equityRisk = equitySpecificRisk + equityGeneralRisk
-    return capital.equityRisk * (1 / 0.09);
+    return capital.equityRisk * _rwaEquivalentMultiplier;
   }
 }

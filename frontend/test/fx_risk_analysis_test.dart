@@ -157,9 +157,10 @@ void main() {
       expect(usd.currentValueInXof, 62500.0);
       expect(usd.fxGainLoss, closeTo(4500.0, 0.0001));
 
-      // Position nette globale = 62 500 (long USD) ; FP = ×9 % ; RWA = ÷9 % (×11,11)
+      // Position nette globale = 62 500 (long USD) ; exigence = ×8 % (Art. 417) ;
+      // équivalent RWA = exigence ×12,5 (§90), soit la position elle-même.
       expect(result.globalNetPosition, closeTo(62500.0, 0.0001));
-      expect(result.capitalRequirement, closeTo(5625.0, 0.0001));
+      expect(result.capitalRequirement, closeTo(5000.0, 0.0001));
       expect(result.rwaChange, closeTo(62500.0, 0.0001));
     });
 

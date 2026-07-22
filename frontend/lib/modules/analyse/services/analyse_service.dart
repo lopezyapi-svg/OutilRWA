@@ -106,7 +106,7 @@ class AnalyseService {
     const zone = RegulatoryZone.uemoa;
     final thresholds = _thresholdsFor(zone);
     final now = DateTime.now();
-    // RWA réels calculés par le backend — mêmes métriques que le tableau de
+    // RWA réels calculés par le backend - mêmes métriques que le tableau de
     // bord (rwa_credit / rwa_market / rwa_op / rwa). Plus aucune estimation :
     // ce module affichait auparavant un RWA marché forfaitaire (5 % du
     // crédit) et un RWA opérationnel heuristique, en contradiction avec les
@@ -123,7 +123,7 @@ class AnalyseService {
     final requiredCapital = allRwa * thresholds.fpeTarget;
     final economicCapital = allRwa * (thresholds.fpeTarget + 0.015);
     // Fonds propres réels (panneau « Fonds propres réglementaires ») ; à
-    // défaut, reconstruction depuis les ratios réels du tableau de bord —
+    // défaut, reconstruction depuis les ratios réels du tableau de bord -
     // jamais de coefficients inventés (l'ancien moteur posait
     // FPE = capital × 1,32, Tier 1 = 91 % et CET1 = 84 % des FPE).
     final fp = dashboard.fondsPropres;
@@ -148,7 +148,7 @@ class AnalyseService {
     final stressCombined = fpeRatio - 0.052;
     // Grands risques : mêmes règles que le tableau de bord (exposition
     // nette rapportée aux fonds propres effectifs, souverains exclus,
-    // seuil 10 % — liste déjà établie par le backend), et non plus une
+    // seuil 10 % - liste déjà établie par le backend), et non plus une
     // approximation en RWA rapportés au Tier 1.
     final largeRisks = dashboard.grandsRisques;
     final largestExposure = largeRisks.isEmpty
@@ -742,7 +742,7 @@ class AnalyseService {
           cet1Target: 0.075,
           // Aligné sur le reste de l'outil : Tier 1 minimum 7,5 %
           // (paramétrage retenu par l'utilisateur) + coussin de
-          // conservation 2,5 % = 10 % — le tableau de bord affiche le
+          // conservation 2,5 % = 10 % - le tableau de bord affiche le
           // même seuil global.
           tier1Target: 0.100,
           fpeMinimum: 0.090,

@@ -373,7 +373,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                   icon: Icons.account_balance_outlined,
                   title: 'BIC / CCR3',
                   subtitle:
-                      'Formulaire de saisie de l\'indicateur d\'activité — un onglet Excel par exercice.',
+                      'Formulaire de saisie de l\'indicateur d\'activité - un onglet Excel par exercice.',
                   color: AppTheme.accent,
                   value: 'ccr3',
                 ),

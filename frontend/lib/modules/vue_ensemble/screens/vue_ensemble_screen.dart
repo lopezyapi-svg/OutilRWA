@@ -71,7 +71,7 @@ class _VueEnsembleScreenState extends State<VueEnsembleScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          context.tr('Export du tableau de bord — bientôt disponible'),
+          context.tr('Export du tableau de bord - bientôt disponible'),
         ),
       ),
     );

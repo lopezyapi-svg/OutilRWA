@@ -319,9 +319,10 @@ void main() {
         result.interestRateGeneralRisk,
         moreOrLessEquals(32500000, epsilon: 0.01),
       );
+      // Équivalent RWA = exigence × 12,5 (§90), et non 1/0,09.
       expect(
         result.marketRwa,
-        moreOrLessEquals(361111111.11, epsilon: 0.01),
+        moreOrLessEquals(406250000, epsilon: 0.01),
       );
     });
 
@@ -341,9 +342,11 @@ void main() {
 
       final result = calculateMarketPrudentialCapital(records: [record]);
 
-      expect(result.equitySpecificRisk, 9000000);
-      expect(result.equityGeneralRisk, 9000000);
-      expect(result.capitalRequirement, 18000000);
+      // Actions : 8 % du net par émetteur (Art. 399) + 8 % du net par marché
+      // (Art. 401). L'équivalent RWA vaut la position elle-même, 8 % × 12,5 = 1.
+      expect(result.equitySpecificRisk, 8000000);
+      expect(result.equityGeneralRisk, 8000000);
+      expect(result.capitalRequirement, 16000000);
       expect(result.marketRwa, moreOrLessEquals(200000000, epsilon: 0.01));
     });
 
@@ -364,7 +367,8 @@ void main() {
       final result = calculateMarketPrudentialCapital(records: [record]);
 
       expect(result.foreignExchangeGlobalNetPosition, 600000);
-      expect(result.foreignExchangeRisk, 54000);
+      // Change : 8 % de la position nette globale (Art. 417).
+      expect(result.foreignExchangeRisk, 48000);
     });
 
     test('excludes banking-book (HTM) bonds from interest rate risk (Art. 321)',
@@ -420,8 +424,8 @@ void main() {
         equityPortfolioLiquidAndDiversified: true,
       );
 
-      expect(result.equitySpecificRisk, 4000000); // 4% × 100M (Art. 399)
-      expect(result.equityGeneralRisk, 9000000); // général reste à 9%
+      expect(result.equitySpecificRisk, 4000000); // 4 % × 100M (Art. 399)
+      expect(result.equityGeneralRisk, 8000000); // général reste à 8 % (Art. 401)
     });
 
     test('nets equity positions per issuer (specific) and per market (general)',
@@ -446,8 +450,8 @@ void main() {
 
       final result = calculateMarketPrudentialCapital(records: [long, short]);
 
-      // Spécifique : Σ|net par émetteur| = 200M → 18M (Art. 399)
-      expect(result.equitySpecificRisk, 18000000);
+      // Spécifique : Σ|net par émetteur| = 200M → 8 % = 16M (Art. 399)
+      expect(result.equitySpecificRisk, 16000000);
       // Général : net du marché XOF = +100M − 100M = 0 → 0 (Art. 401)
       expect(result.equityGeneralRisk, 0);
     });

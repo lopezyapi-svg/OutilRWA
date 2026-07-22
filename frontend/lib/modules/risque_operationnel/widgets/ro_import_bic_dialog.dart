@@ -2,7 +2,7 @@
 //
 // Format attendu : UN ONGLET (feuille) PAR EXERCICE. Le nom de l'onglet est
 // l'année concernée (ex : "2024"), et chaque feuille contient deux colonnes,
-// "Poste" et "Valeur" — il n'y a donc jamais de mélange ni d'ambiguïté entre
+// "Poste" et "Valeur" - il n'y a donc jamais de mélange ni d'ambiguïté entre
 // les données de plusieurs exercices : chacun est physiquement séparé dans
 // sa propre feuille. Le fichier peut contenir n'importe quel nombre
 // d'onglets/exercices (pas forcément 3) ; les onglets sans année reconnue
@@ -52,7 +52,7 @@ const _bicLabels = [
   // Doit être identique au libellé généré par le modèle Excel
   // (BIC_INPUT_FIELDS côté backend), sinon la colonne "Poste" ne matche
   // jamais et le PNB reste systématiquement à 0 après import.
-  'PNB (BIA — si non calculé automatiquement)',
+  'PNB (BIA - si non calculé automatiquement)',
 ];
 
 // ─── Point d'entrée ───────────────────────────────────────────────────────────
@@ -90,11 +90,11 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
   Map<String, dynamic>? _importResult; // {"imported": [annees...], "errors": [...]}
 
   // Années effectivement trouvées dans le fichier (une colonne "Année" par
-  // ligne, pas un en-tête générique) — triées, modifiables individuellement,
+  // ligne, pas un en-tête générique) - triées, modifiables individuellement,
   // et on peut en ajouter/retirer manuellement.
   List<int> _years = [];
 
-  // Contrôleurs [fieldIndex][yearColIndex] — reconstruits à chaque parsing
+  // Contrôleurs [fieldIndex][yearColIndex] - reconstruits à chaque parsing
   // ou ajout/suppression d'exercice, puisque le nombre d'années est variable.
   List<List<TextEditingController>> _ctrl = [];
   bool _rowsReady = false;
@@ -266,9 +266,9 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
       if (_norm(_bicLabels[i]) == n) return i;
     }
     // Le PNB est référencé sous plusieurs libellés selon l'écran (« PNB
-    // (Produit Net Bancaire) » dans l'onglet Saisie, « PNB (BIA — si non
+    // (Produit Net Bancaire) » dans l'onglet Saisie, « PNB (BIA - si non
     // calculé automatiquement) » dans le modèle Excel). Un fichier créé à la
-    // main avec l'un ou l'autre libellé — ou juste « PNB » — doit matcher
+    // main avec l'un ou l'autre libellé - ou juste « PNB » - doit matcher
     // dans tous les cas, sans quoi le poste reste systématiquement à 0 après
     // import (symptôme : la colonne PNB n'affiche que des tirets).
     if (n == 'pnb' || n.startsWith('pnb_')) {
@@ -412,7 +412,7 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
           if (!matched.contains(i)) _bicLabels[i],
       ];
       if (missing.isNotEmpty) {
-        warnings.add('Exercice $annee — postes absents (laissés à 0) : ${missing.join(', ')}');
+        warnings.add('Exercice $annee - postes absents (laissés à 0) : ${missing.join(', ')}');
       }
     }
     return warnings;
@@ -1193,7 +1193,7 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
   }
 
   // Largeurs FIXES (plutôt que Flex) : avec beaucoup d'exercices, les
-  // colonnes ne doivent pas se comprimer jusqu'à devenir illisibles — le
+  // colonnes ne doivent pas se comprimer jusqu'à devenir illisibles - le
   // tableau devient plus large que le dialogue et défile horizontalement
   // (voir SingleChildScrollView ci-dessous), en plus du défilement vertical
   // déjà en place au niveau de l'écran de prévisualisation.
@@ -1240,7 +1240,7 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
   TableRow _tHeader() {
     // Rétréci via FittedBox : avec beaucoup d'exercices, chaque colonne
     // devient étroite (largeur flexible) et ce cluster de 3 boutons + année
-    // ne doit jamais déborder (cause du RenderFlex overflow observé) — on le
+    // ne doit jamais déborder (cause du RenderFlex overflow observé) - on le
     // laisse donc se redimensionner proportionnellement plutôt que de fixer
     // des tailles qui ne rentrent plus.
     Widget yearCell(int yi) => Padding(

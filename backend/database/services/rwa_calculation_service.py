@@ -6,7 +6,12 @@ from datetime import date
 import re
 from typing import Any
 
-from app.core.calculations import bucketize_rating, calculate_capital, convert_currency_amount
+from app.core.calculations import (
+    bucketize_rating,
+    calculate_capital,
+    convert_currency_amount,
+    prudential_rating_label,
+)
 from app.expositions.models import (
     Counterparty,
     ExposureCreate,
@@ -258,7 +263,12 @@ def lookup_country_rating_risk_weight(country_rating: str) -> float:
 
 
 def should_apply_unrated_counterparty_country_floor(category_code: str) -> bool:
-    return category_code not in {"a", "k"}
+    # Le dispositif prudentiel (§134) ne prévoit ce plancher que pour les
+    # entreprises non notées : leur pondération ne peut être plus favorable
+    # que celle de l'État du siège. Les autres catégories ont leur propre
+    # pondération « non noté » (BMD 50 %, IF 50 %/20 %, détail 75 %,
+    # immobilier 35 %/75 %...) qui ne doit pas être écrasée.
+    return category_code == "e"
 
 
 def apply_unrated_counterparty_country_floor(
@@ -273,8 +283,7 @@ def apply_unrated_counterparty_country_floor(
     if bucketize_rating(rating) != "Non noté":
         return risk_weight
     country_weight = lookup_country_rating_risk_weight(country_rating or "Non noté")
-    floor = max(1.0, country_weight)
-    return max(risk_weight, floor)
+    return max(risk_weight, country_weight)
 
 
 def infer_off_balance_risk_level_from_factor(factor: float | None) -> str | None:
@@ -341,6 +350,30 @@ def compute_initial_maturity_months(
     return max(months, 0)
 
 
+def resolve_coherent_grant_date(
+    grant_date: date | None,
+    maturity_date: date | None,
+    analysis_date: date | None = None,
+) -> date | None:
+    """Retourne la date d'octroi seulement si elle est cohérente.
+
+    Une date d'octroi postérieure à l'échéance ou à la date d'analyse traduit
+    une erreur de saisie ou d'import : la maturité initiale qui en découlerait
+    serait fausse (et pourrait accorder à tort le traitement court terme
+    préférentiel des institutions financières). Dans ce cas, l'octroi est
+    ignoré : la maturité initiale devient indéterminée et le calcul retombe
+    sur le traitement long terme, prudent.
+    """
+
+    if grant_date is None:
+        return None
+    if maturity_date is not None and grant_date > maturity_date:
+        return None
+    if analysis_date is not None and grant_date > analysis_date:
+        return None
+    return grant_date
+
+
 def has_short_initial_maturity(
     grant_date: date | None, maturity_date: date | None
 ) -> bool:
@@ -405,6 +438,56 @@ def lookup_commercial_real_estate_risk_weight(
     return 0.75 if commercial_real_estate_eligible is True else 1.0
 
 
+STATUT_PRUDENTIEL_SAINE = "saine"
+STATUT_PRUDENTIEL_IMPAYEE = "impayee"
+STATUT_PRUDENTIEL_DOUTEUSE = "douteuse"
+JOURS_IMPAYES_SEUIL_SOUFFRANCE = 90
+
+
+def resolve_statut_prudentiel(
+    *,
+    jours_impayes: int,
+    declassement_manuel: bool,
+    category_code: str | None = None,
+) -> str:
+    """Statut de vie de l'exposition : saine, impayée (< 90 j) ou douteuse."""
+
+    # Une ligne classée d'emblée en « créances en souffrance » (catégorie i)
+    # est douteuse par construction, même sans historique d'impayés saisi :
+    # l'annoncer « saine » contredirait la pondération qu'elle subit déjà.
+    if category_code == "i":
+        return STATUT_PRUDENTIEL_DOUTEUSE
+    if declassement_manuel:
+        return STATUT_PRUDENTIEL_DOUTEUSE
+    if jours_impayes >= JOURS_IMPAYES_SEUIL_SOUFFRANCE:
+        return STATUT_PRUDENTIEL_DOUTEUSE
+    if jours_impayes > 0:
+        return STATUT_PRUDENTIEL_IMPAYEE
+    return STATUT_PRUDENTIEL_SAINE
+
+
+def resolve_defaulted_provision_threshold(payload: "ExposureCreate") -> bool | None:
+    """Provisions >= 20 % de l'encours ; None quand le niveau est inconnu."""
+
+    if payload.defaulted_exposure_provision_at_least_twenty_percent is not None:
+        return payload.defaulted_exposure_provision_at_least_twenty_percent
+    provisions = payload.provisions_amount
+    if provisions is None:
+        return None
+    # Le taux de provisionnement se mesure sur l'encours effectivement porté au
+    # bilan, pas sur l'engagement total : inclure la part hors bilan non tirée
+    # diluerait artificiellement l'effort de provisionnement et maintiendrait
+    # la ligne à 150 % alors qu'elle est couverte à plus de 20 %.
+    base = float(
+        payload.on_balance_exposure_amount
+        if payload.on_balance_exposure_amount is not None
+        else (payload.gross_amount or 0.0)
+    )
+    if base <= 0:
+        return None
+    return float(provisions) >= 0.20 * base
+
+
 def lookup_defaulted_exposure_risk_weight(
     initial_risk_weight: float | None,
     *,
@@ -416,12 +499,12 @@ def lookup_defaulted_exposure_risk_weight(
         return resolved_initial_risk_weight
     if is_residential_mortgage_in_default is True:
         return 1.0
-    if is_residential_mortgage_in_default is False:
-        if provision_at_least_twenty_percent is True:
-            return 1.0
-        if provision_at_least_twenty_percent is False:
-            return 1.5
-    return resolved_initial_risk_weight
+    if provision_at_least_twenty_percent is True:
+        return 1.0
+    # Provisions inférieures à 20 % de l'encours, ou niveau de provisionnement
+    # non renseigné : le dispositif impose 150 % ; l'hypothèse prudente
+    # s'applique tant que l'effort de provisionnement n'est pas démontré.
+    return 1.5
 
 
 def normalize_sovereign_special_case(
@@ -535,13 +618,15 @@ def lookup_prudential_risk_weight(
             return finalize(1.0)
         if resolved_bank_case == BANK_INSTITUTION_WEAK_PRUDENTIAL_CASE:
             return finalize(2.5)
-        if resolved_bank_case == BANK_INSTITUTION_ELIGIBLE_CATEGORIES_CASE:
-            return finalize(lookup_bank_institution_risk_weight(
-                rating,
-                is_short_initial_maturity=has_short_initial_maturity(
-                    grant_date, maturity_date
-                ),
-            ))
+        # Cas général (grilles T6/T7 du dispositif) : la pondération dépend de
+        # la notation ET de la maturité initiale (seuil de 3 mois), y compris
+        # pour les non notées (50 % à plus de 3 mois, 20 % à 3 mois ou moins).
+        return finalize(lookup_bank_institution_risk_weight(
+            rating,
+            is_short_initial_maturity=has_short_initial_maturity(
+                grant_date, maturity_date
+            ),
+        ))
     if category_code == "e":
         return finalize(lookup_enterprise_risk_weight(
             rating,
@@ -663,7 +748,8 @@ def lookup_financed_crm_hfx(exposure_currency: str, collateral_currency: str) ->
         exposure == "EUR" and collateral == "FCFA"
     ):
         return 0.0
-    return 0.09
+    # Décote réglementaire pour asymétrie de devises (approche globale) : 8 %.
+    return 0.08
 
 
 def _lookup_financed_crm_debt_haircut(
@@ -868,9 +954,12 @@ def compute_financed_crm_details(
     )
     basket_items = list(crm_details.get("basket_items") or [])
 
+    # Valeur ajustée de l'exposition : VAE = E × (1 + De). La décote
+    # d'exposition De est nulle pour les prêts classiques (elle ne joue que
+    # pour les titres prêtés dans les opérations assimilables aux pensions).
     he = 0.0
-    eva_eb = max(0.0, on_balance_exposure_amount) * (1 - he)
-    eva_hb = max(0.0, ead_hb_ccf_before_crm) * (1 - he)
+    eva_eb = max(0.0, on_balance_exposure_amount) * (1 + he)
+    eva_hb = max(0.0, ead_hb_ccf_before_crm) * (1 + he)
     eva = eva_eb + eva_hb
 
     if collateral_type == "Panier d actifs" and basket_items:
@@ -929,8 +1018,13 @@ def compute_financed_crm_details(
         cva = float(outcome["cva"]) if eligible else 0.0
 
     if eligible:
-        ead_bilan_amount = max(0.0, eva_eb - cva)
-        ead_hb_ccf_amount = max(0.0, eva_hb - cva)
+        # E* = max(0 ; VAE − VAS) : la valeur ajustée de la sûreté est déduite
+        # UNE SEULE FOIS de l'exposition totale (bilan + hors bilan), puis le
+        # solde est réparti au prorata des composantes pour l'affichage.
+        ead_total_after_crm = max(0.0, eva - cva)
+        allocation_ratio = ead_total_after_crm / eva if eva > 0 else 0.0
+        ead_bilan_amount = eva_eb * allocation_ratio
+        ead_hb_ccf_amount = eva_hb * allocation_ratio
     else:
         ead_bilan_amount = max(0.0, on_balance_exposure_amount)
         ead_hb_ccf_amount = max(0.0, ead_hb_ccf_before_crm)
@@ -995,7 +1089,14 @@ def normalize_exposure_category_label(category: str) -> str:
 
 
 def normalize_exposure_rating_label(rating: str) -> str:
-    return bucketize_rating(rating)
+    """Echelon de notation tel qu'il doit apparaitre a l'ecran.
+
+    Les tableaux de bord affichaient le bucket interne ("BB/B", "AAA/AA") :
+    ce vocabulaire de code n'existe dans aucun texte prudentiel et n'a rien a
+    faire sous les yeux d'un lecteur.
+    """
+
+    return prudential_rating_label(rating)
 
 
 def normalize_exposure_crm_mode(crm_type: str, crm_details: Any | None = None) -> str:
@@ -1034,6 +1135,17 @@ def resolve_exposure_components(
         if payload.on_balance_exposure_amount is not None
         else gross_amount
     )
+    # Encours bilan d'origine : base immuable du suivi des remboursements. Les
+    # lignes antérieures au suivi n'en ont pas ; il est alors initialisé à
+    # l'encours bilan courant (aucun versement encore enregistré).
+    initial_on_balance_amount = max(
+        float(
+            payload.initial_on_balance_amount
+            if payload.initial_on_balance_amount is not None
+            else on_balance_exposure_amount
+        ),
+        on_balance_exposure_amount,
+    )
     off_balance_exposure_amount = (
         float(payload.off_balance_exposure_amount)
         if payload.off_balance_exposure_amount is not None
@@ -1052,6 +1164,7 @@ def resolve_exposure_components(
     return {
         "loan_total_amount": loan_total_amount,
         "on_balance_exposure_amount": max(0.0, on_balance_exposure_amount),
+        "initial_on_balance_amount": max(0.0, initial_on_balance_amount),
         "off_balance_exposure_amount": max(0.0, off_balance_exposure_amount),
         "resolved_off_balance_risk_level": resolved_off_balance_risk_level,
         "off_balance_fcec": off_balance_fcec,
@@ -1074,8 +1187,13 @@ def crm_details_payload(payload: ExposureCreate) -> dict[str, Any]:
     crm_details["collateral_type"] = str(
         crm_details.get("collateral_type") or "Liquidités dans la même devise"
     )
+    # La devise de l'exposition fait foi. Le detail CRM porte « XOF » par
+    # defaut du modele : conservee sur une ligne en EUR ou en USD, elle faisait
+    # convertir la surete vers le XOF alors que l'exposition restait dans sa
+    # devise, si bien qu'un collateral de 173 400 EUR effacait une exposition
+    # du meme ordre (EAD et RWA ramenes a zero).
     crm_details["exposure_currency"] = str(
-        crm_details.get("exposure_currency") or payload.currency or "XOF"
+        payload.currency or crm_details.get("exposure_currency") or "XOF"
     )
     if crm_mode == "CRM non financee":
         country_rating = str(crm_details.get("guarantor_country_rating") or "")
@@ -1130,9 +1248,26 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
         enterprise_prudential_procedure=payload.enterprise_prudential_procedure,
         enterprise_investment_firm_without_banking_law=
             payload.enterprise_investment_firm_without_banking_law,
-        grant_date=payload.grant_date,
+        grant_date=resolve_coherent_grant_date(
+            payload.grant_date, payload.maturity_date, payload.analysis_date
+        ),
         maturity_date=payload.maturity_date,
     )
+    statut_prudentiel = resolve_statut_prudentiel(
+        jours_impayes=int(payload.jours_impayes or 0),
+        declassement_manuel=bool(payload.declassement_manuel),
+        category_code=category_code,
+    )
+    if statut_prudentiel == STATUT_PRUDENTIEL_DOUTEUSE and category_code != "i":
+        # Exposition déclassée (>= 90 j d'impayés ou déclassement manuel) :
+        # pondérée comme une créance en souffrance sans perdre sa catégorie
+        # d'origine (code g = prêt garanti par l'immobilier résidentiel).
+        original_rw = lookup_defaulted_exposure_risk_weight(
+            original_rw,
+            is_residential_mortgage_in_default=category_code == "g",
+            provision_at_least_twenty_percent=
+                resolve_defaulted_provision_threshold(payload),
+        )
     final_rw = original_rw
     ead_bilan_amount = on_balance_exposure_amount
     ead_hb_ccf_amount = ead_hb_ccf_before_crm
@@ -1167,8 +1302,17 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
         guarantor_rw = lookup_prudential_risk_weight(guarantor_category["code"], guarantor_rating)
         covered_ead = ead * effective_coverage
         uncovered_ead = max(0.0, ead - covered_ead)
-        rwa = (uncovered_ead * original_rw) + (covered_ead * guarantor_rw)
-        final_rw = 0.0 if ead == 0 else max(0.0, min(rwa / ead, 1.5))
+        rwa_apres_substitution = (uncovered_ead * original_rw) + (
+            covered_ead * guarantor_rw
+        )
+        # Une technique d'attenuation ne peut pas rendre l'exigence plus lourde
+        # que la meme exposition non garantie : la reconnaissance de la
+        # protection est une faculte, aucune banque ne declare une garantie qui
+        # la penalise. Quand le garant est ponderé plus lourdement que le
+        # debiteur, la substitution n'est donc pas retenue — la garantie reste
+        # tracee, sans effet sur le RWA.
+        rwa = min(rwa_apres_substitution, ead * original_rw)
+        final_rw = 0.0 if ead == 0 else max(0.0, rwa / ead)
         rwa_eb_amount = ead_bilan_amount * final_rw
         rwa_hb_amount = ead_hb_ccf_amount * final_rw
     else:
@@ -1204,9 +1348,16 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
     metrics = compute_metrics(payload, category["code"], crm_details)
     crm_details["coverage_percent"] = metrics["effective_coverage"]
     crm_details["haircut"] = metrics["haircut"]
+    crm_details["guarantor_risk_weight"] = metrics["guarantor_rw"]
+    coherent_grant_date = resolve_coherent_grant_date(
+        payload.grant_date, payload.maturity_date, payload.analysis_date
+    )
+    # Maturité initiale affichée uniquement quand les dates sont cohérentes :
+    # un octroi postérieur à l'échéance ou à la date d'analyse produirait une
+    # maturité fausse (ex. « 0 mois » avec une maturité résiduelle positive).
     exposure_maturity_months = (
-        compute_initial_maturity_months(payload.grant_date, payload.maturity_date)
-        if payload.grant_date is not None and payload.maturity_date is not None
+        compute_initial_maturity_months(coherent_grant_date, payload.maturity_date)
+        if coherent_grant_date is not None and payload.maturity_date is not None
         else None
     )
     residual_maturity_months = (
@@ -1218,6 +1369,7 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
     source_fields = {
         "loan_total_amount": exposure_components["loan_total_amount"],
         "on_balance_exposure_amount": exposure_components["on_balance_exposure_amount"],
+        "initial_on_balance_amount": exposure_components["initial_on_balance_amount"],
         "off_balance_exposure_amount": exposure_components["off_balance_exposure_amount"],
         "provisions_amount": payload.provisions_amount,
         "exposure_maturity_months": exposure_maturity_months,
@@ -1261,6 +1413,14 @@ def build_exposure_record(payload: ExposureCreate, exposure_id: str) -> dict[str
         "currency": payload.currency or "XOF",
         "status": payload.status or "Active",
         "jours_impayes": int(payload.jours_impayes or 0),
+        "statut_prudentiel": resolve_statut_prudentiel(
+            jours_impayes=int(payload.jours_impayes or 0),
+            declassement_manuel=bool(payload.declassement_manuel),
+            category_code=category["code"],
+        ),
+        "declassement_manuel": bool(payload.declassement_manuel),
+        "declassement_motif": payload.declassement_motif,
+        "declassement_le": payload.declassement_le,
         "sovereign_special_case": normalize_sovereign_special_case(
             payload.sovereign_special_case,
             fallback_to_legacy=payload.sovereign_preferential_zero_weight,
@@ -1360,6 +1520,16 @@ def exposure_record_to_view(record: dict[str, Any]) -> ExposureView:
         rwa_hb_amount=record.get("rwa_hb_amount"),
         currency=record.get("currency", "XOF"),
         status=record.get("status", "Active"),
+        statut_prudentiel=str(
+            record.get("statut_prudentiel")
+            or resolve_statut_prudentiel(
+                jours_impayes=int(record.get("jours_impayes") or 0),
+                declassement_manuel=bool(record.get("declassement_manuel")),
+            )
+        ),
+        declassement_manuel=bool(record.get("declassement_manuel")),
+        declassement_motif=record.get("declassement_motif"),
+        declassement_le=record.get("declassement_le"),
         sovereign_special_case=normalize_sovereign_special_case(
             str(record.get("sovereign_special_case") or ""),
             fallback_to_legacy=bool(
