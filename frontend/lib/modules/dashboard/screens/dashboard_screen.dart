@@ -83,7 +83,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // L'exigence de fonds propres vient du serveur, qui détient le taux
         // réglementaire : la recalculer ici en dupliquerait la formule et la
         // figerait à une valeur qui pourrait diverger du moteur.
-        final capitalMetric = _metric(metrics, 'capital_requis');
+        // Exigence du seul risque de crédit : la tuile l'annonce comme
+        // « RWA Crédit × 9 % ». L'exigence totale (marché et opérationnel
+        // compris) reste servie par « capital_requis », affichée ailleurs.
+        final capitalMetric = _metric(metrics, 'capital_credit');
         final residualRiskMetric = _metric(metrics, 'risque_residuel');
         final crmMetric = _metric(metrics, 'crm');
 

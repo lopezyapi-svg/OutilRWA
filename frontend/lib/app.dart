@@ -80,7 +80,10 @@ class _RwaAppState extends State<RwaApp> {
   final ValueNotifier<AppLanguage> _appLanguage = ValueNotifier<AppLanguage>(
     AppLanguage.francais,
   );
-  AppModule _selectedModule = AppModule.vueEnsemble;
+  // Un espace neuf est vide : le premier geste attendu est un import, pas la
+  // lecture d'un tableau de bord sans chiffres. L'application s'ouvre donc sur
+  // « Importations ».
+  AppModule _selectedModule = AppModule.importations;
   ThemeMode _themeMode = ThemeMode.light;
   String _fontFamily = AppTheme.defaultFontFamily;
   Color _primaryColor = AppTheme.accent;
@@ -247,7 +250,7 @@ class _RwaAppState extends State<RwaApp> {
 
   void _openHome() {
     setState(() {
-      _selectedModule = AppModule.vueEnsemble;
+      _selectedModule = AppModule.importations;
       _showWelcomeScreen = false;
     });
   }

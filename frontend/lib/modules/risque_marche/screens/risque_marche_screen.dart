@@ -18877,11 +18877,26 @@ class _MarketEquityLatentPnlPanel extends StatelessWidget {
 
     return _MarketVisualPanel(
       title: 'Plus et moins-values latentes',
-      subtitle: null,
+      subtitleWidget: hasData
+          ? Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                'Top ${math.min(shown, lines.length)} des plus fortes variations latentes',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: _marketMutedFor(context).withValues(alpha: 0.86),
+                  fontSize: 9.2,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            )
+          : null,
       action: lines.length <= shown
           ? null
           : _MarketGhostButton(
-              label: 'Voir les ${lines.length} émetteurs',
+              label: 'Voir tout',
               onPressed: () => _MarketDetailDialog.show(
                 context,
                 title: 'Plus et moins-values latentes',
@@ -18921,14 +18936,6 @@ class _MarketEquityLatentPnlPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _MarketPanelExtractNote(
-            shown: math.min(shown, lines.length),
-            total: lines.length,
-            singular: 'émetteur',
-            plural: 'émetteurs',
-            criterion: 'montant latent',
-            visible: hasData,
-          ),
           SizedBox(
             height: 168,
             child: hasData
@@ -19350,7 +19357,7 @@ Widget? _marketDistributionAction(
   if (all.length <= shown) return null;
   final total = all.fold<double>(0, (sum, entry) => sum + entry.amount);
   return _MarketGhostButton(
-    label: 'Voir les ${all.length} ${unit}s',
+    label: 'Voir tout',
     onPressed: () => _MarketDetailDialog.show(
       context,
       title: title,
@@ -19389,7 +19396,7 @@ Widget? _marketBreakdownAction(
   if (all.length <= shown) return null;
   final total = all.fold<double>(0, (sum, row) => sum + row.amount);
   return _MarketGhostButton(
-    label: 'Voir les ${all.length} ${unit}s',
+    label: 'Voir tout',
     onPressed: () => _MarketDetailDialog.show(
       context,
       title: title,
@@ -19535,6 +19542,7 @@ class _MarketDetailDialog extends StatelessWidget {
     final muted = _marketMutedFor(context);
     final border = _marketBorderFor(context);
     final isDark = _isMarketDark(context);
+    final selectedIndices = <int>{};
 
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
@@ -19642,48 +19650,68 @@ class _MarketDetailDialog extends StatelessWidget {
                       bottom: Radius.circular(_marketTileRadius),
                     ),
                   ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    padding: EdgeInsets.zero,
-                    itemCount: rows.length,
-                    itemBuilder: (context, index) {
-                      final row = rows[index];
-                      return Container(
-                        height: 30,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        color: index.isOdd
-                            ? (isDark
-                                ? Colors.white.withValues(alpha: 0.02)
-                                : _marketSurfaceSoft)
-                            : Colors.transparent,
-                        child: Row(
-                          children: [
-                            for (var i = 0; i < columns.length; i++)
-                              Expanded(
-                                flex: columns[i].flex,
-                                child: Text(
-                                  i < row.length ? row[i].value : '',
-                                  textAlign: columns[i].right
-                                      ? TextAlign.right
-                                      : TextAlign.left,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: i < row.length
-                                        ? (row[i].color ?? text)
-                                        : text,
-                                    fontSize: 10.8,
-                                    fontWeight:
-                                        i < row.length && row[i].strong
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                  ),
+                  child: SelectionArea(
+                    child: StatefulBuilder(
+                      builder: (context, setState) {
+                        return ListView.builder(
+                          shrinkWrap: true,
+                          padding: EdgeInsets.zero,
+                          itemCount: rows.length,
+                          itemBuilder: (context, index) {
+                            final row = rows[index];
+                            final isSelected = selectedIndices.contains(index);
+                            return InkWell(
+                              onTap: () {
+                                setState(() {
+                                  if (isSelected) {
+                                    selectedIndices.remove(index);
+                                  } else {
+                                    selectedIndices.add(index);
+                                  }
+                                });
+                              },
+                              child: Container(
+                                height: 30,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                color: isSelected
+                                    ? _marketPrimary.withValues(alpha: isDark ? 0.25 : 0.12)
+                                    : index.isOdd
+                                        ? (isDark
+                                            ? Colors.white.withValues(alpha: 0.02)
+                                            : _marketSurfaceSoft)
+                                        : Colors.transparent,
+                                child: Row(
+                                  children: [
+                                    for (var i = 0; i < columns.length; i++)
+                                      Expanded(
+                                        flex: columns[i].flex,
+                                        child: Text(
+                                          i < row.length ? row[i].value : '',
+                                          textAlign: columns[i].right
+                                              ? TextAlign.right
+                                              : TextAlign.left,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: i < row.length
+                                                ? (row[i].color ?? text)
+                                                : text,
+                                            fontSize: 10.8,
+                                            fontWeight:
+                                                i < row.length && row[i].strong
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ),
-                          ],
-                        ),
-                      );
-                    },
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -20032,7 +20060,7 @@ class _MarketEquityDividendPanel extends StatelessWidget {
       action: lines.length <= contributors.length
           ? null
           : _MarketGhostButton(
-              label: 'Voir les ${lines.length} lignes',
+              label: 'Voir tout',
               onPressed: () => _MarketDetailDialog.show(
                 context,
                 title: 'Revenu de dividendes attendu',
@@ -20371,7 +20399,7 @@ class _MarketRiskSignalPanel extends StatelessWidget {
       action: all.length <= shown
           ? null
           : _MarketGhostButton(
-              label: 'Voir les ${all.length} lignes',
+              label: 'Voir tout',
               onPressed: () => _MarketDetailDialog.show(
                 context,
                 title: 'Profil bêta et rendement par émetteur',
@@ -21602,11 +21630,11 @@ String _marketRecordText(
 }
 
 String _marketCompactMoney(double value) {
-  return _marketMoneyText(value, displayCurrency: 'XOF');
+  return _marketMoneyText(value, displayCurrency: 'XOF', showCurrency: false);
 }
 
 String _marketReadableMoney(double value) {
-  return _marketMoneyText(value, displayCurrency: 'XOF');
+  return _marketMoneyText(value, displayCurrency: 'XOF', showCurrency: false);
 }
 
 extension _MarketTableSortKeyX on _MarketTableSortKey {

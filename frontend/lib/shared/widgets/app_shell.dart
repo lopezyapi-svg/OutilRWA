@@ -102,7 +102,7 @@ class AppShell extends StatefulWidget {
 /// Etat interne qui pilote la sidebar et la top bar.
 class _AppShellState extends State<AppShell> {
   static const double _screenSpacing = 0.0;
-  bool _isSidebarOverlayOpen = false;
+  bool _isSidebarOverlayOpen = true;
   String? _activeSettingsSectionId;
 
   @override
