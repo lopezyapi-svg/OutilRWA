@@ -2789,8 +2789,6 @@ class _ZoneCompte extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const BandeauConsultation(),
-          const SizedBox(width: 10),
           Text(
             profil.nomComplet?.trim().isNotEmpty == true
                 ? profil.nomComplet!
@@ -2803,7 +2801,7 @@ class _ZoneCompte extends StatelessWidget {
           const SizedBox(width: 4),
           // La gestion d'équipe n'apparaît qu'aux comptes qui éditent : le
           // serveur refuse la liste aux autres, inutile de la leur proposer.
-          if (profil.peutEditer)
+          if (profil.peutGererEquipe)
             IconButton(
               iconSize: 18,
               tooltip: 'Gérer l\'équipe',

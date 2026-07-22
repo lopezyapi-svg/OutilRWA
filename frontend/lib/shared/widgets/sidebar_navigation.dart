@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_module.dart';
-import '../../core/auth/session_scope.dart';
 import '../../core/localization/app_localization.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
@@ -60,14 +59,10 @@ class SidebarNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Un compte en consultation n'a rien à faire dans le module d'import :
-    // toutes ses actions finiraient en refus du serveur. L'entrée disparaît
-    // donc du menu plutôt que de mener à un cul-de-sac.
-    final items = SessionScope.peutEditer(context)
-        ? _sidebarItems
-        : _sidebarItems
-            .where((entry) => entry.module != AppModule.importations)
-            .toList(growable: false);
+    // Le menu est le même pour tous : chaque compte importe dans son propre
+    // espace, sans jamais toucher aux données d'un autre. Masquer l'import à
+    // certains les empêcherait de travailler sur leurs propres chiffres.
+    const items = _sidebarItems;
 
     final sidebar = compact
         ? _CompactSidebar(

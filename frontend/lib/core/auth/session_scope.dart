@@ -18,16 +18,26 @@ class SessionScope extends InheritedNotifier<SessionController> {
 
   /// Droit d'écriture de l'utilisateur courant.
   ///
-  /// Hors de toute session (tests de widgets, application de bureau montée
-  /// sans portée), la réponse est « oui » : l'absence d'authentification
-  /// signifie un usage local, pas un utilisateur bridé. C'est le serveur qui
-  /// tranche de toute façon — ce drapeau ne fait que masquer l'inutile.
+  /// Chaque compte travaille dans son propre espace : l'écriture est ouverte à
+  /// tous. Hors de toute session (application de bureau, tests de widgets), la
+  /// réponse reste « oui » — l'absence d'authentification signifie un usage
+  /// local, pas un utilisateur bridé.
   static bool peutEditer(BuildContext context) {
     final controller = maybeOf(context);
     if (controller == null || !controller.authentificationRequise) {
       return true;
     }
     return controller.peutEditer;
+  }
+
+  /// Droit de gérer les comptes de l'équipe. Réservé au rôle « edition » :
+  /// les comptes sont communs, contrairement aux données.
+  static bool peutGererEquipe(BuildContext context) {
+    final controller = maybeOf(context);
+    if (controller == null || !controller.authentificationRequise) {
+      return true;
+    }
+    return controller.profil?.peutGererEquipe ?? false;
   }
 }
 
@@ -58,13 +68,16 @@ class EditionSeulement extends StatelessWidget {
   }
 }
 
-/// Bandeau discret rappelant que le compte est en lecture seule.
+/// Bandeau discret rappelant le rôle du compte connecté.
+///
+/// Il ne signale plus une restriction d'écriture — chacun travaille dans son
+/// espace — mais l'absence de droits sur les comptes de l'équipe.
 class BandeauConsultation extends StatelessWidget {
   const BandeauConsultation({super.key});
 
   @override
   Widget build(BuildContext context) {
-    if (SessionScope.peutEditer(context)) {
+    if (SessionScope.peutGererEquipe(context)) {
       return const SizedBox.shrink();
     }
     final theme = Theme.of(context);

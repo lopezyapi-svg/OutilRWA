@@ -1,6 +1,7 @@
-// Le rôle « consultation » ne doit jamais se voir proposer une action que le
-// serveur refusera. Le masquage n'est pas une protection — le garde du backend
-// l'est — mais une interface qui propose des impasses n'est pas utilisable.
+// Chaque compte travaille dans son propre espace de données : l'écriture est
+// ouverte à tous, et ce qu'un compte importe n'apparaît jamais chez un autre.
+// Seule la gestion des comptes reste réservée au rôle « edition », parce que
+// les comptes, eux, sont communs à tous les espaces.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -91,12 +92,16 @@ void main() {
 
       expect(controller.etat, SessionState.connecte);
       expect(controller.accessToken, 'jeton');
-      expect(controller.peutEditer, isFalse);
+      // Chaque compte travaille dans son propre espace : l'écriture lui est
+      // ouverte, quel que soit son rôle.
+      expect(controller.peutEditer, isTrue);
+      expect(controller.profil!.peutGererEquipe, isFalse);
     });
 
-    test('un rôle inconnu ne donne pas le droit d\'écrire', () async {
+    test('un rôle inconnu ne gère pas les comptes de l\'équipe', () async {
       final controller = await _sessionAvecRole('administrateur_fantaisie');
-      expect(controller.peutEditer, isFalse);
+      expect(controller.peutEditer, isTrue);
+      expect(controller.profil!.peutGererEquipe, isFalse);
     });
 
     test('la déconnexion efface le jeton conservé en mémoire', () async {
@@ -111,8 +116,11 @@ void main() {
   });
 
   group('masquage des actions', () {
-    testWidgets('une action d\'édition disparaît en consultation',
+    testWidgets('l\'import reste offert à un compte en consultation',
         (tester) async {
+      // Chaque compte importe dans son propre espace : masquer l'import
+      // l'empêcherait de travailler sur ses propres chiffres, sans rien
+      // protéger chez les autres.
       final session = await _sessionAvecRole('consultation');
       await tester.pumpWidget(
         _sous(
@@ -122,7 +130,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Importer un fichier'), findsNothing);
+      expect(find.text('Importer un fichier'), findsOneWidget);
       session.dispose();
     });
 
@@ -159,6 +167,8 @@ void main() {
       await tester.pumpWidget(_sous(lecture, const BandeauConsultation()));
       await tester.pump();
       expect(find.text('Consultation'), findsOneWidget);
+      // Le bandeau signale l'absence de droits sur les comptes, pas une
+      // restriction d'écriture.
 
       final edition = await _sessionAvecRole('edition');
       await tester.pumpWidget(_sous(edition, const BandeauConsultation()));

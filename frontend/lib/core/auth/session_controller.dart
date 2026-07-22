@@ -18,9 +18,14 @@ class SessionProfile {
   final String role;
   final String? nomComplet;
 
-  /// Un rôle inconnu ne donne jamais le droit d'écrire : en cas de doute, on
-  /// retombe sur la consultation, jamais sur l'édition.
-  bool get peutEditer => role == 'edition';
+  /// Tout compte connecté travaille dans son propre espace : importer ou
+  /// corriger n'affecte personne d'autre. Le rôle ne bride donc plus
+  /// l'écriture des données.
+  bool get peutEditer => true;
+
+  /// Gérer l'équipe reste réservé : les comptes sont communs à tous les
+  /// espaces, contrairement aux données. Un rôle inconnu n'y donne pas droit.
+  bool get peutGererEquipe => role == 'edition';
 
   factory SessionProfile.fromJson(Map<String, dynamic> json) {
     return SessionProfile(

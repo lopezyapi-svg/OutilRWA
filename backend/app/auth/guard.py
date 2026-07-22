@@ -74,18 +74,8 @@ def _est_fichier_application(chemin: str) -> bool:
         return True
     return chemin.startswith(PREFIXES_APPLICATION_WEB)
 
-# Methodes qui ne modifient rien : accessibles aux deux roles.
+# Methodes qui ne modifient rien.
 METHODES_LECTURE: frozenset[str] = frozenset({"GET", "HEAD", "OPTIONS"})
-
-# Rares ecritures ouvertes a la consultation. Elles ne touchent pas aux donnees
-# prudentielles : elles produisent un document a partir de l'existant. Un
-# superieur doit pouvoir sortir un export ou un rapport sans droit d'edition.
-ECRITURES_AUTORISEES_EN_CONSULTATION: frozenset[str] = frozenset(
-    {
-        "/expositions/export/excel",
-        "/rapports",
-    }
-)
 
 
 def _refus(status_code: int, message: str) -> JSONResponse:
@@ -127,16 +117,15 @@ class AuthGuardMiddleware(BaseHTTPMiddleware):
             return _refus(401, str(exc))
 
         role = str(charge.get("role") or "")
-        if request.method not in METHODES_LECTURE:
-            autorise = role == "edition" or (
-                role == "consultation" and chemin in ECRITURES_AUTORISEES_EN_CONSULTATION
-            )
-            if not autorise:
-                return _refus(
-                    403,
-                    "Votre compte est en consultation : cette action est reservee "
-                    "au role edition.",
-                )
+        # Chaque compte ecrit dans SON espace, et nulle part ailleurs : importer
+        # un fichier ou corriger une exposition n'affecte donc personne
+        # d'autre. Interdire l'ecriture a la consultation n'aurait plus rien
+        # protege -- cela aurait seulement empeche quelqu'un de travailler sur
+        # ses propres donnees.
+        #
+        # Ce qui reste reserve au role « edition » est la gestion de l'equipe,
+        # verifiee explicitement par les routes concernees : elle porte sur les
+        # comptes, qui sont communs, et non sur un espace de travail.
 
         identifiant = str(charge.get("sub") or "")
         request.state.utilisateur = {

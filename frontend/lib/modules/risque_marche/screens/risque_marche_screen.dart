@@ -14170,25 +14170,8 @@ class _MarketAnalyticKpiItemState extends State<_MarketAnalyticKpiItem> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Badge d'icône d'analyse financière discret et compact
-            Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: accent.withValues(alpha: 0.15),
-                  width: 0.8,
-                ),
-              ),
-              child: Icon(
-                spec.icon ?? Icons.analytics_outlined,
-                size: 13,
-                color: accent,
-              ),
-            ),
-            const SizedBox(width: 10),
+            // Icône supprimée selon la demande
+
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -14197,7 +14180,7 @@ class _MarketAnalyticKpiItemState extends State<_MarketAnalyticKpiItem> {
                 Text(
                   spec.label.tr(context).toUpperCase(),
                   style: TextStyle(
-                    color: muted,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.indigo.shade300 : Colors.indigo,
                     fontSize: 9.5,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.7,
@@ -18336,25 +18319,32 @@ class _MarketConcentrationPanel extends StatelessWidget {
     final entries = all.take(5).toList(growable: false);
     final isBonds = dataset.portfolioType == MarketPortfolioType.bonds;
     return _MarketVisualPanel(
-      title: isBonds ? 'Émetteurs obligataires' : 'Positions actions',
+      title: isBonds ? 'Principaux émetteurs obligataires' : 'Principaux émetteurs actions',
+      subtitleWidget: Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          'Top ${entries.length} des plus grandes expositions',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: _marketMutedFor(context).withValues(alpha: 0.86),
+            fontSize: 9.2,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
       action: _marketDistributionAction(
         context,
         all: all,
         shown: entries.length,
-        title: isBonds ? 'Émetteurs obligataires' : 'Positions actions',
+        title: isBonds ? 'Principaux émetteurs obligataires' : 'Principaux émetteurs actions',
         unit: 'émetteur',
         columnLabel: 'Émetteur',
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _MarketPanelExtractNote(
-            shown: entries.length,
-            total: all.length,
-            singular: 'émetteur',
-            plural: 'émetteurs',
-            criterion: 'poids de marché',
-          ),
           isBonds
               ? _MarketIssuerCardList(entries: entries)
               : _MarketEquityRankedBars(entries: entries),
@@ -18887,9 +18877,7 @@ class _MarketEquityLatentPnlPanel extends StatelessWidget {
 
     return _MarketVisualPanel(
       title: 'Plus et moins-values latentes',
-      subtitle: hasData
-          ? '${_marketSignedMoney(total)} · rendement latent ${AppFormatters.percent(dataset.latentReturn)}'
-          : 'Prix de revient absent du fichier importé',
+      subtitle: null,
       action: lines.length <= shown
           ? null
           : _MarketGhostButton(
@@ -19468,7 +19456,7 @@ class _MarketPanelExtractNote extends StatelessWidget {
     final ranked = '${feminine ? 'classée' : 'classé'}${count > 1 ? 's' : ''}';
     final label = shown >= total
         ? '$total $noun, $ranked par $criterion'
-        : '$shown $noun sur $total, $ranked par $criterion';
+        : 'Top $shown $noun, $ranked par $criterion';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -20914,12 +20902,14 @@ class _MarketVisualPanel extends StatelessWidget {
   const _MarketVisualPanel({
     required this.title,
     this.subtitle,
+    this.subtitleWidget,
     required this.child,
     this.action,
   });
 
   final String title;
   final String? subtitle;
+  final Widget? subtitleWidget;
   final Widget child;
 
   /// Commande alignée à droite du titre, réservée à l'ouverture du détail
@@ -20961,12 +20951,15 @@ class _MarketVisualPanel extends StatelessWidget {
                       style: TextStyle(
                         color: text,
                         fontSize: 13.2,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700, // En gras selon la demande
                         height: 1,
                       ),
                     ),
-                    if (subtitle != null && subtitle!.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                    if (subtitleWidget != null) ...[
+                      const SizedBox(height: 2),
+                      subtitleWidget!,
+                    ] else if (subtitle != null && subtitle!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
                       Text(
                         subtitle!.tr(context),
                         maxLines: 1,
@@ -21155,7 +21148,7 @@ List<_MarketAnalyticKpiSpec> _marketAnalyticKpis(
     _MarketAnalyticKpiSpec(
       label: isBonds ? 'Maturité pondérée' : 'Bêta pondéré',
       value: isBonds
-          ? '${dataset.weightedResidualYears.toStringAsFixed(1).replaceAll('.', ',')} ans'
+          ? '${(dataset.weightedResidualYears * 12).toStringAsFixed(1).replaceAll('.', ',')} mois'
           : dataset.weightedBeta.toStringAsFixed(2).replaceAll('.', ','),
       subtitle: isBonds ? 'Maturité résiduelle (WAL)' : 'Sensibilité marché (β)',
       icon: isBonds ? Icons.schedule_outlined : Icons.show_chart_outlined,

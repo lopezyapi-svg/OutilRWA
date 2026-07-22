@@ -109,20 +109,27 @@ def test_la_consultation_lit_le_tableau_de_bord(client):
     assert client.get("/dashboard", headers=_entete(jeton)).status_code == 200
 
 
-def test_la_consultation_ne_peut_pas_ecrire(client):
+def test_la_consultation_ecrit_dans_son_propre_espace(client):
+    """Chaque compte dispose de sa base : l'ecriture n'affecte que lui.
+
+    Interdire l'ecriture a la consultation n'aurait plus rien protege -- cela
+    aurait seulement empeche quelqu'un de travailler sur ses propres chiffres.
+    """
+
     jeton = _connexion(client, "test_lecture")
     reponse = client.put(
         "/dashboard/fonds-propres",
         headers=_entete(jeton),
         json={"capital_ordinaire": 1.0},
     )
-    assert reponse.status_code == 403
+    assert reponse.status_code not in (401, 403)
 
 
-def test_la_consultation_ne_peut_pas_supprimer(client):
+def test_la_consultation_ne_gere_pas_les_comptes(client):
+    """Ce qui reste reserve : les comptes, communs a tous les espaces."""
+
     jeton = _connexion(client, "test_lecture")
-    reponse = client.delete("/expositions/EXP-2026-00001", headers=_entete(jeton))
-    assert reponse.status_code == 403
+    assert client.get("/auth/comptes", headers=_entete(jeton)).status_code == 403
 
 
 def test_l_edition_franchit_le_garde(client):
@@ -190,15 +197,15 @@ def test_la_deconnexion_revoque_la_session(client):
     assert client.post("/auth/refresh").status_code == 401
 
 
-def test_toutes_les_routes_mutantes_sont_couvertes_par_le_garde():
-    """Aucune route ne doit pouvoir echapper au controle de role.
+def test_aucune_route_metier_n_echappe_a_l_authentification():
+    """Une route mutante hors du perimetre du garde serait ouverte a tous.
 
-    Le garde raisonne par methode HTTP : ce test verifie qu'il n'existe pas de
-    route mutante hors du perimetre, et que la liste des ecritures ouvertes a
-    la consultation reste courte et intentionnelle.
+    Le garde exige un jeton valide sur tout appel : ce releve verifie qu'il
+    reste des routes mutantes a proteger, et qu'aucune ne se cache sous un
+    prefixe qui contournerait le controle.
     """
 
-    from app.auth.guard import ECRITURES_AUTORISEES_EN_CONSULTATION
+    from app.auth.guard import CHEMINS_PUBLICS
     from app.main import app
 
     mutantes = {
@@ -208,16 +215,9 @@ def test_toutes_les_routes_mutantes_sont_couvertes_par_le_garde():
         if methode in {"POST", "PUT", "DELETE", "PATCH"}
         and not route.path.startswith("/auth")
     }
-    assert mutantes, "Le relevé des routes mutantes ne doit pas etre vide."
+    assert mutantes, "Le releve des routes mutantes ne doit pas etre vide."
 
-    chemins_autorises = {
-        chemin for _, chemin in mutantes
-    } & ECRITURES_AUTORISEES_EN_CONSULTATION
-    assert chemins_autorises == ECRITURES_AUTORISEES_EN_CONSULTATION, (
-        "Une ecriture ouverte a la consultation ne correspond plus a aucune "
-        "route : la liste doit etre mise a jour explicitement."
-    )
-    assert len(ECRITURES_AUTORISEES_EN_CONSULTATION) <= 3, (
-        "La liste des ecritures ouvertes a la consultation s'allonge : chaque "
-        "ajout doit etre une decision, pas une commodite."
+    exposees = {chemin for _, chemin in mutantes} & set(CHEMINS_PUBLICS)
+    assert not exposees, (
+        f"Ces routes modifient des donnees sans exiger de jeton : {exposees}"
     )
