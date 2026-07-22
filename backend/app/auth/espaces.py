@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 import re
 import shutil
+import sqlite3
 from threading import Lock
 
 from app.core.runtime_paths import app_data_root, seed_data_path
@@ -44,6 +45,62 @@ def chemin_espace(identifiant: str) -> Path:
     return _ESPACES_DIR / f"{nom_de_fichier(identifiant)}.db"
 
 
+# Tables conservees dans un espace neuf : le dispositif prudentiel lui-meme.
+# Grilles de ponderation, facteurs de conversion, notations, definitions
+# d'indicateurs, parametres de calcul. Les vider rendrait tout calcul
+# impossible.
+#
+# Tout le reste est efface. C'est volontairement l'inverse d'une liste de
+# tables a vider : une table de donnees ajoutee demain serait alors oubliee, et
+# un nouvel utilisateur decouvrirait le portefeuille de demonstration dans son
+# espace. Ici, l'oubli se traduit par une table vide -- visible et sans
+# consequence sur les donnees d'autrui.
+_TABLES_REFERENCE: frozenset[str] = frozenset(
+    {
+        "schema_migrations",
+        "metadonnees_app",
+        "ccf_references",
+        "rating_references",
+        "risk_weight_references",
+        "ro_kri_definitions",
+        "op_beta_lignes",
+        "op_parametres_aib",
+        "op_parametres_as",
+        "op_parametres_seuils",
+        "op_risk_parametres",
+    }
+)
+
+
+def _vider_donnees_metier(chemin: Path) -> None:
+    """Efface tout ce qui appartient a un utilisateur, garde le dispositif.
+
+    Un espace neuf doit etre entierement vide : expositions, contreparties,
+    garanties, fonds propres, positions de marche, incidents operationnels.
+    Sans cela, le nouvel arrivant croirait consulter un portefeuille reel
+    alors qu'il regarde le jeu de demonstration.
+    """
+
+    connexion = sqlite3.connect(chemin)
+    try:
+        connexion.execute("PRAGMA foreign_keys = OFF")
+        tables = [
+            str(ligne[0])
+            for ligne in connexion.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+            )
+        ]
+        for table in tables:
+            if table in _TABLES_REFERENCE:
+                continue
+            connexion.execute(f'DELETE FROM "{table}"')
+        connexion.commit()
+        connexion.execute("VACUUM")
+    finally:
+        connexion.close()
+
+
 def _source_de_depart() -> Path:
     """Base servant de point de depart a un nouvel espace.
 
@@ -59,8 +116,13 @@ def _source_de_depart() -> Path:
 def preparer_espace(identifiant: str) -> Path:
     """Retourne l'espace du compte, en le creant au besoin.
 
-    Un nouvel espace part du jeu de demonstration : un espace vide afficherait
-    une application sans le moindre chiffre, illisible au premier coup d'oeil.
+    Un espace neuf est ENTIEREMENT vide de donnees : chacun part de zero et
+    importe les siennes. Seul le dispositif prudentiel (grilles, parametres)
+    est conserve, sans quoi aucun calcul ne serait possible.
+
+    La structure est reprise de la base de reference plutot que reconstruite
+    depuis le schema : la chaine de migrations s'appuie sur des tables
+    heritees et ne sait plus produire une base neuve a elle seule.
     """
 
     chemin = chemin_espace(identifiant)
@@ -75,9 +137,9 @@ def preparer_espace(identifiant: str) -> Path:
             source = _source_de_depart()
             if source.exists():
                 shutil.copy2(source, chemin)
+                _vider_donnees_metier(chemin)
                 logger.info(
-                    "Espace de travail cree pour « %s » a partir du jeu de "
-                    "demonstration.",
+                    "Espace de travail vierge cree pour « %s ».",
                     identifiant,
                 )
 

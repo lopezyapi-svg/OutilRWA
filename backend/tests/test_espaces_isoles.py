@@ -28,13 +28,11 @@ def _compter_expositions() -> int:
         )
 
 
-def _supprimer_une_exposition() -> str:
-    with database_manager.transaction() as connexion:
-        identifiant = str(
-            connexion.execute("SELECT id FROM expositions LIMIT 1").fetchone()[0]
+def _compter_contreparties() -> int:
+    with database_manager.read_connection() as connexion:
+        return int(
+            connexion.execute("SELECT COUNT(*) FROM contreparties").fetchone()[0]
         )
-        connexion.execute("DELETE FROM expositions WHERE id = ?", (identifiant,))
-    return identifiant
 
 
 @pytest.mark.parametrize(
@@ -53,48 +51,42 @@ def test_un_identifiant_ne_peut_pas_sortir_du_dossier(saisi, attendu):
     assert chemin_espace(saisi).parent == chemin_espace("autre").parent
 
 
-def test_deux_comptes_ne_partagent_pas_leurs_donnees(tmp_path, monkeypatch):
+def test_ce_qu_un_compte_saisit_reste_chez_lui():
+    """Le coeur de l'isolation : une ecriture ne franchit pas les espaces."""
+
     espace_a = preparer_espace("compte_essai_a")
     espace_b = preparer_espace("compte_essai_b")
     assert espace_a != espace_b
 
     jeton = utiliser_espace(espace_a)
     try:
-        total_a = _compter_expositions()
-        supprimee = _supprimer_une_exposition()
-        apres_a = _compter_expositions()
+        with database_manager.transaction() as connexion:
+            connexion.execute(
+                """
+                INSERT INTO contreparties(
+                    id, nom, pays, notation_pays, categorie_standard,
+                    categorie_prudentielle, notation, cree_le, modifie_le
+                )
+                VALUES('CP_ESSAI', 'Contrepartie A', 'Togo', 'BB',
+                       'Entreprises', 'Entreprises', 'BBB',
+                       '2026-01-01', '2026-01-01')
+                """
+            )
+        chez_a = _compter_contreparties()
     finally:
         restaurer_espace(jeton)
 
-    assert apres_a == total_a - 1
+    assert chez_a == 1
 
     jeton = utiliser_espace(espace_b)
     try:
-        # La suppression faite chez A ne doit pas se voir chez B.
-        with database_manager.read_connection() as connexion:
-            presente = connexion.execute(
-                "SELECT COUNT(*) FROM expositions WHERE id = ?", (supprimee,)
-            ).fetchone()[0]
+        chez_b = _compter_contreparties()
     finally:
         restaurer_espace(jeton)
 
-    assert presente == 1, (
-        "Une exposition supprimee dans un espace a disparu d'un autre : les "
+    assert chez_b == 0, (
+        "Une contrepartie saisie dans un espace apparait dans un autre : les "
         "comptes partagent la meme base."
-    )
-
-
-def test_un_nouvel_espace_part_du_jeu_de_demonstration():
-    espace = preparer_espace("compte_essai_c")
-    jeton = utiliser_espace(espace)
-    try:
-        total = _compter_expositions()
-    finally:
-        restaurer_espace(jeton)
-
-    assert total > 0, (
-        "Un espace neuf sans aucune exposition afficherait une application "
-        "vide, illisible au premier coup d'oeil."
     )
 
 
@@ -120,3 +112,60 @@ def test_les_comptes_restent_dans_la_base_commune():
 def test_hors_requete_la_base_commune_s_applique():
     # Application de bureau et taches de fond : aucun espace n'est pose.
     assert espace_courant() == DATABASE_PATH
+
+
+def test_un_espace_neuf_est_entierement_vide():
+    """Un nouvel arrivant ne doit trouver aucune donnee, d'aucun module.
+
+    Un espace pre-rempli du jeu de demonstration laisse croire a un
+    portefeuille reel : credit, marche et operationnel doivent partir de zero.
+    """
+
+    import sqlite3
+
+    from app.auth.espaces import _TABLES_REFERENCE
+
+    espace = preparer_espace("compte_neuf_essai")
+    connexion = sqlite3.connect(espace)
+    try:
+        tables = [
+            str(ligne[0])
+            for ligne in connexion.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+            )
+        ]
+        peuplees = {
+            table: connexion.execute(
+                f'SELECT COUNT(*) FROM "{table}"'
+            ).fetchone()[0]
+            for table in tables
+            if table not in _TABLES_REFERENCE
+        }
+    finally:
+        connexion.close()
+
+    restantes = {table: n for table, n in peuplees.items() if n}
+    assert not restantes, (
+        f"Ces tables portent encore des donnees dans un espace neuf : "
+        f"{restantes}. Une table de donnees ajoutee depuis doit etre videe, "
+        "ou declaree comme table de reference si elle porte le dispositif."
+    )
+
+
+def test_le_dispositif_prudentiel_survit_a_la_purge():
+    """Vider les grilles rendrait tout calcul impossible."""
+
+    import sqlite3
+
+    espace = preparer_espace("compte_neuf_essai")
+    connexion = sqlite3.connect(espace)
+    try:
+        for table in ("risk_weight_references", "ccf_references", "rating_references"):
+            n = connexion.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0]
+            assert n > 0, (
+                f"La table de reference « {table} » est vide : aucune "
+                "ponderation ne pourrait plus etre determinee."
+            )
+    finally:
+        connexion.close()
