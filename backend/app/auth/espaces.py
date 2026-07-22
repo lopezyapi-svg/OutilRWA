@@ -59,6 +59,13 @@ _TABLES_REFERENCE: frozenset[str] = frozenset(
     {
         "schema_migrations",
         "metadonnees_app",
+        # Grilles lues par l'ecran Referentiels.
+        "baremes_ponderation",
+        "baremes_ccf",
+        "references_notation",
+        "references_pays_souverains",
+        # Memes grilles sous leur nom d'avant le renommage de 2021 : elles
+        # servent de source au rapatriement joue au demarrage.
         "ccf_references",
         "rating_references",
         "risk_weight_references",

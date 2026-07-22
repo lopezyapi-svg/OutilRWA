@@ -251,10 +251,74 @@ class DatabaseManager:
                 return True
         return False
 
+    # Renommages de la migration 021 restés sans effet : (table française,
+    # table anglaise d'origine, colonnes françaises, colonnes anglaises).
+    _REFERENTIELS_A_REPRENDRE: tuple[tuple[str, str, str, str], ...] = (
+        (
+            "baremes_ponderation",
+            "risk_weight_references",
+            "id, segment, notation, ponderation, approche",
+            "id, segment, rating, risk_weight, approach",
+        ),
+        (
+            "baremes_ccf",
+            "ccf_references",
+            "id, type_engagement, ccf",
+            "id, engagement_type, ccf",
+        ),
+        (
+            "references_notation",
+            "rating_references",
+            "id, libelle, description, ordre_tri",
+            "id, label, description, sort_order",
+        ),
+    )
+
+    def _reprendre_referentiels_orphelins(
+        self, connection: sqlite3.Connection
+    ) -> None:
+        """Rapatrie les référentiels restés dans les tables d'avant 2021.
+
+        `schema.sql` s'exécute AVANT les migrations et crée déjà les tables
+        françaises. Le « ALTER TABLE ... RENAME TO » de la migration 021
+        échouait donc sur « une table de ce nom existe déjà » — erreur que le
+        moteur ignore volontairement pour rendre les migrations rejouables.
+
+        Le renommage devait pourtant emporter les données : elles sont restées
+        dans les tables anglaises, invisibles de l'écran Référentiels qui lit
+        les françaises. Le moteur de calcul, lui, porte ses propres grilles :
+        rien ne signalait la perte.
+        """
+
+        tables_presentes = {
+            str(ligne["name"]).lower()
+            for ligne in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+
+        for cible, source, colonnes_cible, colonnes_source in (
+            self._REFERENTIELS_A_REPRENDRE
+        ):
+            if cible not in tables_presentes or source not in tables_presentes:
+                continue
+            # On ne remplit que le vide : une table déjà alimentée fait foi,
+            # y compris si elle a été corrigée à la main depuis.
+            deja = connection.execute(
+                f'SELECT COUNT(*) FROM "{cible}"'
+            ).fetchone()[0]
+            if deja:
+                continue
+            connection.execute(
+                f'INSERT INTO "{cible}"({colonnes_cible}) '
+                f'SELECT {colonnes_source} FROM "{source}"'
+            )
+
     def _ensure_runtime_compatibility(self, connection: sqlite3.Connection) -> None:
         # Note : les colonnes de type prudentiel ont été déplacées dans leurs
         # sous-tables respectives par la migration 019. La migration 021 a renommé
         # toutes les tables et colonnes en français.
+        self._reprendre_referentiels_orphelins(connection)
         self._ensure_table_column(
             connection,
             table_name="expositions",

@@ -169,3 +169,47 @@ def test_le_dispositif_prudentiel_survit_a_la_purge():
             )
     finally:
         connexion.close()
+
+
+def test_un_espace_neuf_expose_les_referentiels():
+    """Les grilles doivent survivre a la purge ET etre lisibles par l'ecran.
+
+    Elles existent sous deux noms dans la base : celui d'avant le renommage
+    de 2021 et le nom francais actuel. Les deux doivent etre conserves, sinon
+    l'ecran Referentiels d'un nouvel arrivant reste vide.
+    """
+
+    from database.repositories.referential_repository import referential_repository
+
+    espace = preparer_espace("compte_referentiels_essai")
+    jeton = utiliser_espace(espace)
+    try:
+        assert referential_repository.list_risk_weight_references(), (
+            "Aucune ponderation visible dans un espace neuf."
+        )
+        assert referential_repository.list_ccf_references()
+        assert referential_repository.list_rating_references()
+    finally:
+        restaurer_espace(jeton)
+
+
+def test_l_orm_ne_porte_que_des_donnees_de_reference():
+    """Garde-fou sur le seul chemin qui echappe a l'isolation.
+
+    Le moteur SQLAlchemy est lie a la base commune au chargement du module :
+    il ne suit pas l'espace de la requete. C'est sans consequence tant qu'il
+    ne sert que le dispositif prudentiel, identique pour tous. Le jour ou un
+    modele porterait des donnees d'utilisateur, celles-ci seraient lues dans
+    la base commune et partagees par tous les comptes.
+    """
+
+    from app.auth.espaces import _TABLES_REFERENCE
+    from database.orm import Base
+
+    tables_orm = set(Base.metadata.tables)
+    hors_reference = tables_orm - set(_TABLES_REFERENCE)
+    assert not hors_reference, (
+        f"Ces tables sont lues par l'ORM, donc dans la base commune, alors "
+        f"qu'elles ne sont pas declarees comme reference : {hors_reference}. "
+        "Elles seraient partagees entre tous les comptes."
+    )
