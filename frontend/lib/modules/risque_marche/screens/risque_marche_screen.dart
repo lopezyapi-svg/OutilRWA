@@ -21171,21 +21171,21 @@ List<_MarketAnalyticKpiSpec> _marketAnalyticKpis(
       accentColor: deepBlue,
     ),
     _MarketAnalyticKpiSpec(
-      label: isBonds ? 'Rendement actuariel' : 'Volatilité',
+      label: isBonds ? 'Rendement actuariel' : 'Rendement latent',
       value: isBonds
           ? AppFormatters.percent(ytmValue > 0 ? ytmValue : dataset.averageCoupon)
-          : AppFormatters.percent(dataset.annualizedVolatility),
-      subtitle: isBonds ? 'Taux de rendement effectif (YTM)' : 'Écart-type annuel (σ)',
-      icon: isBonds ? Icons.analytics_outlined : Icons.graphic_eq_outlined,
+          : AppFormatters.percent(dataset.latentReturn),
+      subtitle: isBonds ? 'Taux de rendement effectif (YTM)' : 'Plus-value sur coût d\'acquisition',
+      icon: isBonds ? Icons.analytics_outlined : Icons.savings_outlined,
       accentColor: deepBlue,
     ),
     _MarketAnalyticKpiSpec(
-      label: isBonds ? 'Sensibilité (Dmod)' : 'Corrélation',
+      label: isBonds ? 'Sensibilité (Dmod)' : 'Concentration max',
       value: isBonds
           ? '${modDuration.toStringAsFixed(1).replaceAll('.', ',')} ans'
-          : _marketCorrelationText(dataset),
-      subtitle: isBonds ? 'Sensibilité taux (+100 bps)' : (dataset.hasMeasuredCorrelation ? 'Coefficient ρ' : 'Proxy de concentration'),
-      icon: isBonds ? Icons.tune_outlined : Icons.hub_outlined,
+          : AppFormatters.percent(dataset.concentrationRatio),
+      subtitle: isBonds ? 'Sensibilité taux (+100 bps)' : 'Poids de l\'émetteur principal',
+      icon: isBonds ? Icons.tune_outlined : Icons.pie_chart_outline,
       accentColor: deepBlue,
     ),
   ];

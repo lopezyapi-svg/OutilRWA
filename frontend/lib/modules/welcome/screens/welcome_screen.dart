@@ -90,56 +90,9 @@ class _WelcomeMainArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final stacked = constraints.maxWidth < 980;
-        final content = _WelcomeContent(
-          isDark: isDark,
-          onOpenHome: onOpenHome,
-        );
-        final insightCard = _WelcomeInsightCarousel(isDark: isDark);
-
-        if (stacked) {
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(height: 650, child: content),
-              const SizedBox(height: 5),
-              SizedBox(height: 384, child: insightCard),
-            ],
-          );
-        }
-
-        const desktopCardHeight = 600.0;
-
-        return Stack(
-          children: [
-            Positioned.fill(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 7,
-                    child: SizedBox(height: desktopCardHeight, child: content),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child:
-                        SizedBox(height: desktopCardHeight, child: insightCard),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              left: constraints.maxWidth * 0.7 - 9,
-              top: 0,
-              bottom: 0,
-              width: 18,
-              child: const _WelcomeCardSeparator(),
-            ),
-          ],
-        );
-      },
+    return _WelcomeContent(
+      isDark: isDark,
+      onOpenHome: onOpenHome,
     );
   }
 }
@@ -279,8 +232,31 @@ class _WelcomeContent extends StatelessWidget {
                 mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
                 children: [
                   topContent,
-                  if (compact) const SizedBox(height: 6) else const Spacer(),
-                  _WelcomeBrandInsideCard(isDark: isDark, compact: compact),
+                  if (compact) ...[
+                    const SizedBox(height: 12),
+                    const _WelcomeBrandAdStrip(),
+                    const SizedBox(height: 12),
+                    _WelcomeBrandInsideCard(isDark: isDark, compact: compact),
+                  ] else ...[
+                    const Spacer(),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const Expanded(
+                          flex: 6,
+                          child: _WelcomeBrandAdStrip(),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          flex: 4,
+                          child: _WelcomeBrandInsideCard(
+                            isDark: isDark,
+                            compact: compact,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -887,13 +863,11 @@ class _WelcomeBrandInsideCard extends StatelessWidget {
     final color = isDark ? const Color(0xFF9FB2D6) : const Color(0xFF52647F);
     final year = DateTime.now().year;
 
-    return Transform.translate(
-      offset: Offset(compact ? 24 : 68, 0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            "© $year Heymann's Inc. Tous droits réservés.",
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "© $year Heymann's Inc. Tous droits réservés.",
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             softWrap: false,
@@ -934,8 +908,7 @@ class _WelcomeBrandInsideCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 }
 
@@ -952,36 +925,32 @@ class _WelcomeBrandAdStrip extends StatelessWidget {
 
     return Container(
       height: 58,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: isDark
             ? const Color(0xFF15243D).withValues(alpha: 0.72)
-            : const Color(0xFFF6F9FD),
-        borderRadius: BorderRadius.zero,
+            : const Color(0xFFF4F7FC),
+        borderRadius: BorderRadius.circular(1),
+        // Bordure supprimée
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 84,
-            height: 30,
-            child: ClipRect(
-              child: Transform.scale(
-                scale: 1.34,
-                child: const DesktopAssetImage(
-                  'assets/images/heymanns_logo.png',
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.high,
-                ),
-              ),
+          const SizedBox(
+            width: 100,
+            height: 42, // Pleine hauteur dispo (58 - 16)
+            child: DesktopAssetImage(
+              'assets/images/heymanns_logo.png',
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.high,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Container(
             width: 1,
             height: 28,
-            color: isDark ? const Color(0xFF2E466C) : const Color(0xFFD8E5F7),
+            color: isDark ? const Color(0xFF2E466C) : const Color(0xFFCBD5E1),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -993,23 +962,23 @@ class _WelcomeBrandAdStrip extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   softWrap: false,
                   style: TextStyle(
-                    color: textColor,
-                    fontSize: 10.8,
-                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.indigo[100] : Colors.indigo, // Indigo plus clair
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
                     height: 1,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   "Leader de l'ALM et du Risk management en Afrique subsaharienne",
-                  maxLines: 3,
-                  overflow: TextOverflow.clip,
-                  softWrap: true,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
                   style: TextStyle(
                     color: mutedColor,
-                    fontSize: 9.0,
+                    fontSize: 9.8,
                     fontWeight: FontWeight.w500,
-                    height: 1.16,
+                    height: 1.15,
                   ),
                 ),
               ],
