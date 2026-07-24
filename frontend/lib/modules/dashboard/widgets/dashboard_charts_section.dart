@@ -34,16 +34,25 @@ class _DashboardChartsSectionState extends State<DashboardChartsSection> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Nombre d'expositions par catégorie : les entrées des deux Top 5
+        // sont agrégées côté serveur sur ce même libellé de catégorie.
+        final exposureCounts = <String, int>{};
+        for (final row in widget.portfolioOverview) {
+          exposureCounts[row.category] = (exposureCounts[row.category] ?? 0) + 1;
+        }
+
         final grossContent = DashboardTopGrossChart(
           key: const ValueKey('grossChart'),
           entries: widget.grossCategoryEntries,
           displayCurrency: widget.displayCurrency,
+          exposureCounts: exposureCounts,
         );
 
         final rwaContent = DashboardTopRwaChart(
           key: const ValueKey('rwaChart'),
           entries: widget.rwaCategoryEntries,
           displayCurrency: widget.displayCurrency,
+          exposureCounts: exposureCounts,
         );
 
         final donutChart = DashboardCrmDonut(

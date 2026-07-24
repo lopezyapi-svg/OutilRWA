@@ -533,6 +533,16 @@ const Map<String, String> _englishTranslations = {
   "Prêts garantis par l'immo C": 'Commercial real-estate secured loans',
   'Créances en souffrance': 'Past-due exposures',
   'Autres actifs': 'Other assets',
+  // Libellés complets sans aucune abréviation (FULL_AGENT_LABELS côté
+  // backend) : utilisés par les infobulles des graphiques du dashboard.
+  'Organismes publics hors Administration centrale':
+      'Public-sector entities outside central administration',
+  'Banques multilatérales de développement':
+      'Multilateral development banks',
+  "Prêts garantis par l'immobilier résidentiel":
+      'Residential real-estate secured loans',
+  "Prêts garantis par l'immobilier commercial":
+      'Commercial real-estate secured loans',
   '{{title}} - {{count}} ligne(s), affichage des {{preview}} premiere(s)':
       '{{title}} - {{count}} row(s), showing the first {{preview}}',
   'Infos calcul': 'Calculation info',
@@ -950,8 +960,8 @@ const Map<String, String> _englishTranslations = {
 
   // --- Module Importations ---
   'Gestion des Importations': 'Import Management',
-  'Importez et consolidez les données d\'exposition par catégorie pour le calcul des risques pondérés (RWA).':
-      'Import and consolidate exposure data by category for risk-weighted assets (RWA) calculation.',
+  'Veuillez procéder à l\'importation de vos données afin de réaliser vos analyses.':
+      'Please import your data in order to carry out your analyses.',
   'Risque de Crédit': 'Credit Risk',
   'Données risque de crédit chargées avec succès':
       'Credit risk data loaded successfully',
@@ -1180,6 +1190,9 @@ const Map<String, String> _englishTranslations = {
   'Capital Requis': 'Required Capital',
   'Aucune donnée disponible': 'No data available',
   '{{count}} expositions': '{{count}} exposures',
+  'Part: {{value}}%': 'Share: {{value}}%',
+  'Exposition totale: {{value}}': 'Total exposure: {{value}}',
+  'RWA: {{value}}': 'RWA: {{value}}',
 
   // --- Dashboard: top metrics grid ---
   'Exposition brute': 'Gross exposure',

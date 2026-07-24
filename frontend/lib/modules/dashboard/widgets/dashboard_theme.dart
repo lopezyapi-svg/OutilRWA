@@ -195,6 +195,43 @@ String dashboardExposureLabel(String raw) {
   return AppLocalizations.translate(_canonicalExposureLabel(raw));
 }
 
+/// Libellé complet, sans aucune abréviation, aligné sur FULL_AGENT_LABELS du
+/// backend : sert aux infobulles quand l'affichage compact tronque le nom.
+String dashboardExposureFullLabel(String raw) {
+  switch (_canonicalExposureLabel(raw)) {
+    case 'souverains':
+      return AppLocalizations.translate('Souverains');
+    case 'organismes pub. hors Adm c':
+      return AppLocalizations.translate(
+          'Organismes publics hors Administration centrale');
+    case 'Expositions sur les BMD':
+      return AppLocalizations.translate(
+          'Banques multilatérales de développement');
+    case 'institutions financières':
+      return AppLocalizations.translate('Institutions financières');
+    case 'entreprises':
+      return AppLocalizations.translate('Entreprises');
+    case 'clientèle de détail':
+      return AppLocalizations.translate('Clientèle de détail');
+    case "prêts garantis par l'immo R":
+      return AppLocalizations.translate(
+          "Prêts garantis par l'immobilier résidentiel");
+    case "prêts garantis par l'immo C":
+      return AppLocalizations.translate(
+          "Prêts garantis par l'immobilier commercial");
+    case 'créances en souffrance':
+      return AppLocalizations.translate('Créances en souffrance');
+    case 'créances à risque élevé':
+      return AppLocalizations.translate('Créances à risque élevé');
+    case 'autres actifs':
+      return AppLocalizations.translate('Autres actifs');
+    case 'Hors bilan':
+      return AppLocalizations.translate('Hors bilan');
+    default:
+      return dashboardExposureLabel(raw);
+  }
+}
+
 String _canonicalCrmLabel(String raw) {
   switch (_normalizeDashboardText(raw)) {
     case 'crm finance':

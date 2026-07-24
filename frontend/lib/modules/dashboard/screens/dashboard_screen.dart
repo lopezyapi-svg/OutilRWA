@@ -80,13 +80,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final rwaMetric = DashboardMetric(key: 'rwa', label: 'RWA crédit', value: rwaCredit, variation: '', trend: []);
         final grossMetric = _metric(metrics, 'encours');
         final defaultRateMetric = _metric(metrics, 'taux_defaut');
-        // L'exigence de fonds propres vient du serveur, qui détient le taux
-        // réglementaire : la recalculer ici en dupliquerait la formule et la
-        // figerait à une valeur qui pourrait diverger du moteur.
-        // Exigence du seul risque de crédit : la tuile l'annonce comme
-        // « RWA Crédit × 9 % ». L'exigence totale (marché et opérationnel
-        // compris) reste servie par « capital_requis », affichée ailleurs.
-        final capitalMetric = _metric(metrics, 'capital_credit');
+        // Exigence du seul risque de crédit, dérivée du même RWA que la tuile
+        // voisine : les deux tuiles restent cohérentes entre elles quel que
+        // soit l'état du snapshot serveur. L'exigence totale (marché et
+        // opérationnel compris) reste servie par « capital_requis ».
+        final capitalMetric = DashboardMetric(
+          key: 'capital_credit',
+          label: 'Capital requis (crédit)',
+          value: rwaCredit * 0.09,
+          variation: '',
+          trend: const [],
+        );
         final residualRiskMetric = _metric(metrics, 'risque_residuel');
         final crmMetric = _metric(metrics, 'crm');
 
