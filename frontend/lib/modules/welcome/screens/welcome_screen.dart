@@ -373,7 +373,7 @@ class _WelcomeCopy extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Calcul des actifs pondérés des risques de crédit, de marché et opérationnel, suivi des fonds propres et des ratios prudentiels réglementaires.',
+          'Une interface conçue pour suivre les RWA, le capital minimum et les indicateurs clés avec une lecture claire, fiable et professionnelle.',
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
           softWrap: true,
