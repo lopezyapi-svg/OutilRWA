@@ -1,11 +1,13 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/utils/file_save.dart';
+import '../../../shared/widgets/import/shared_import_layout.dart';
 
 Future<Map<String, dynamic>?> showExcelImportDialog(
   BuildContext context, {
@@ -312,385 +314,100 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
         !_isInspecting &&
         _selectedBytes != null &&
         inspection?['valid'] == true;
-    final headerTitleColor =
-        _isDark ? const Color(0xFFF5F8FD) : const Color(0xFF1F3558);
-    final headerIconStart =
-        _isDark ? const Color(0xFF2C74E8) : const Color(0xFF2E6BDA);
-    final headerIconEnd =
-        _isDark ? const Color(0xFF16A6A0) : const Color(0xFF1FAFA7);
 
-    return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      backgroundColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1120, maxHeight: 860),
-        child: Container(
-          decoration: BoxDecoration(
-            color: _background,
-            borderRadius: BorderRadius.circular(AppTheme.radius),
-            border: Border.all(color: _border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: _isDark ? 0.34 : 0.14),
-                blurRadius: 28,
-                offset: const Offset(0, 12),
-              ),
-            ],
+    return SharedImportDialogCard(
+      maxWidth: 1120,
+      maxHeight: 660,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SharedImportHeader(
+            title: 'Importation de données',
+            isImporting: _isImporting,
+            onClose: () => Navigator.of(context).pop(),
           ),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(5, 4, 3, 3),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [headerIconStart, headerIconEnd],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: [
-                          BoxShadow(
-                            color: headerIconStart.withValues(alpha: 0.22),
-                            blurRadius: 14,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.cloud_upload_rounded,
-                        color: Colors.white,
-                        size: 20,
+          Divider(height: 1, color: _border),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(5, 5, 5, 3),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildImportZone(),
+                  const SizedBox(height: 4),
+                  if (showInspectionPanel) ...[
+                    SharedImportSectionCard(
+                      key: const ValueKey('inspection_panel'),
+                      icon: CupertinoIcons.check_mark_circled,
+                      title: 'Vérification du fichier',
+                      child: _buildInspectionPanel(
+                        fileName: selectedName,
+                        fileSize: selectedSize,
+                        inspection: inspection,
+                        errors: errors,
+                        isInspecting: _isInspecting,
                       ),
                     ),
-                    const SizedBox(width: 3),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Importation de données',
-                            style: TextStyle(
-                              color: headerTitleColor,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _isImporting
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      icon: Icon(Icons.close, color: _muted),
-                    ),
+                    const SizedBox(height: 4),
                   ],
-                ),
-              ),
-              Divider(height: 1, color: _border),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(5, 5, 5, 3),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildImportZone(),
-                      const SizedBox(height: 4),
-                      if (showInspectionPanel) ...[
-                        _buildSectionCard(
-                          key: const ValueKey('inspection_panel'),
-                          icon: Icons.fact_check_outlined,
-                          title: 'Vérification du fichier',
-                          child: _buildInspectionPanel(
-                            fileName: selectedName,
-                            fileSize: selectedSize,
-                            inspection: inspection,
-                            errors: errors,
-                            isInspecting: _isInspecting,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                      ],
-                      _buildExpectedFormatSection(
-                        key: ValueKey(
-                          showInspectionPanel
-                              ? 'expected_format_under_inspection'
-                              : 'expected_format_panel',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (_isImporting)
-                        _buildSectionCard(
-                          icon: Icons.sync,
-                          title: 'Importation en cours',
-                          child: _buildImportProgress(),
-                        ),
-                      if (_isImporting) const SizedBox(height: 4),
-                    ],
+                  _buildExpectedFormatSection(
+                    key: ValueKey(
+                      showInspectionPanel
+                          ? 'expected_format_under_inspection'
+                          : 'expected_format_panel',
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  if (_isImporting)
+                    SharedImportSectionCard(
+                      icon: CupertinoIcons.arrow_2_circlepath,
+                      title: 'Importation en cours',
+                      child: _buildImportProgress(),
+                    ),
+                  if (_isImporting) const SizedBox(height: 4),
+                ],
               ),
-              Divider(height: 1, color: _border),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(5, 3, 5, 4),
-                child: Row(
-                  children: [
-                    TextButton(
-                      onPressed: _isImporting
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Fermer'),
-                    ),
-                    const Spacer(),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 290),
-                      child: _buildInlineModeSelector(),
-                    ),
-                    const SizedBox(width: 3),
-                    FilledButton.icon(
-                      onPressed: canImport ? _runImport : null,
-                      icon: _isImporting
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Icon(Icons.play_arrow_rounded, size: 16),
-                      label: Text(_isImporting ? 'Importation…' : 'Valider'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.success,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppTheme.radius),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          Divider(height: 1, color: _border),
+          SharedImportFooter(
+            isImporting: _isImporting,
+            onClose: () => Navigator.of(context).pop(),
+            canValidate: canImport,
+            onRunImport: _runImport,
+            centerWidget: _buildInlineModeSelector(),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildImportZone() {
-    final zoneBackground =
-        _isDark ? const Color(0xFF121C2B) : const Color(0xFFF8FAFD);
-    final zoneBorder = _isDragging
-        ? _accent
-        : (_isDark ? const Color(0xFF2A3850) : const Color(0xFFDCE5F0));
-    final zoneIconBackground = _isDragging
-        ? Color.lerp(zoneBackground, _accent, 0.32)!
-        : (_isDark ? const Color(0xFF21314A) : const Color(0xFFE8EEF8));
-    final zoneIconColor = _isDragging
-        ? Colors.white
-        : (_isDark ? const Color(0xFFD9E5FA) : _accent);
-    final actionBackground =
-        _isDark ? const Color(0xFF1C2A40) : const Color(0xFFEEF3FA);
-    final actionForeground =
-        _isDark ? const Color(0xFFF4F7FC) : const Color(0xFF2A436A);
-    final selectedFileName = _selectedFile?.name;
-    final headline = _isDragging
-        ? 'Relâchez pour charger le fichier'
-        : 'Cliquez pour sélectionner votre fichier';
-    final subtitle = _isInspecting
-        ? 'Analyse du classeur en cours…'
-        : selectedFileName != null
-            ? 'Fichier chargé : $selectedFileName'
-            : 'Format accepté : .xlsx. Utilisez la sélection de fichier pour importer.';
-
-    return DropTarget(
-      onDragDone: (details) async {
-        if (mounted) {
-          setState(() => _isDragging = false);
-        }
-        await _handleDroppedFiles(details.files);
-      },
-      onDragEntered: (_) {
-        if (!_isImporting) {
-          setState(() => _isDragging = true);
-        }
-      },
-      onDragExited: (_) {
-        if (mounted) {
-          setState(() => _isDragging = false);
-        }
-      },
-      child: _buildSectionCard(
-        icon: Icons.upload_file_outlined,
-        title: 'Zone d’import',
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _isInspecting || _isImporting ? null : _pickFile,
-            borderRadius: BorderRadius.circular(8),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              decoration: BoxDecoration(
-                color: _isDragging
-                    ? Color.lerp(zoneBackground, _accent, 0.09)
-                    : zoneBackground,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: zoneBorder,
-                  width: _isDragging ? 1.3 : 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: _isDark ? 0.12 : 0.04,
-                    ),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isCompact = constraints.maxWidth < 860;
-                  final summary = Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 160),
-                        child: Text(
-                          headline,
-                          key: ValueKey<String>(headline),
-                          style: TextStyle(
-                            color: _text,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: -0.1,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: _muted,
-                          fontSize: 11,
-                          height: 1.3,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 9),
-                      Wrap(
-                        spacing: 7,
-                        runSpacing: 7,
-                        children: [
-                          _buildImportHintChip(
-                            icon: Icons.ads_click_rounded,
-                            label: 'Sélection manuelle',
-                          ),
-                          _buildImportHintChip(
-                            icon: Icons.description_outlined,
-                            label: '.xlsx',
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-
-                  final actionButton = FilledButton.icon(
-                    onPressed: _isInspecting || _isImporting ? null : _pickFile,
-                    icon: _isInspecting
-                        ? const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.white,
-                              ),
-                            ),
-                          )
-                        : const Icon(Icons.folder_open_rounded, size: 16),
-                    label: Text(
-                      _isInspecting ? 'Vérification…' : 'Choisir un fichier',
-                    ),
-                    style: FilledButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                      elevation: 0,
-                      backgroundColor: actionBackground,
-                      foregroundColor: actionForeground,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 11,
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 11.2,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                  );
-
-                  final iconBadge = Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      color: zoneIconBackground,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      _isDragging
-                          ? Icons.file_download_done_rounded
-                          : Icons.cloud_upload_rounded,
-                      color: zoneIconColor,
-                      size: 24,
-                    ),
-                  );
-
-                  return isCompact
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                iconBadge,
-                                const SizedBox(width: 3),
-                                Expanded(child: summary),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            actionButton,
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            iconBadge,
-                            const SizedBox(width: 4),
-                            Expanded(child: summary),
-                            const SizedBox(width: 4),
-                            actionButton,
-                          ],
-                        );
-                },
-              ),
-            ),
-          ),
-        ),
+    return SharedImportSectionCard(
+      icon: CupertinoIcons.doc_text,
+      title: 'Zone d’import',
+      child: SharedImportDropZone(
+        selectedFile: _selectedFile,
+        isDragging: _isDragging,
+        isInspecting: _isInspecting,
+        isImporting: _isImporting,
+        onPickFile: _pickFile,
+        onDragEntered: () {
+          if (!_isImporting) {
+            setState(() => _isDragging = true);
+          }
+        },
+        onDragExited: () {
+          if (mounted) {
+            setState(() => _isDragging = false);
+          }
+        },
+        onDroppedFiles: (files) async {
+          if (mounted) {
+            setState(() => _isDragging = false);
+          }
+          await _handleDroppedFiles(files);
+        },
       ),
     );
   }
@@ -729,90 +446,28 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
   }
 
   Widget _buildExpectedFormatSection({Key? key}) {
-    final buttonBackground =
-        _isDark ? const Color(0xFF243027) : const Color(0xFFF3F1EA);
-    final buttonBorder =
-        _isDark ? const Color(0xFF3D5344) : const Color(0xFFE0D8C9);
-    final buttonForeground =
-        _isDark ? const Color(0xFFF4F7F3) : const Color(0xFF2E3740);
-    final downloadBackground =
-        _isDark ? const Color(0xFF1D2635) : const Color(0xFFF1F4F8);
-    final downloadBorder =
-        _isDark ? const Color(0xFF334257) : const Color(0xFFD7E0EA);
-    final downloadForeground =
-        _isDark ? const Color(0xFFF2F6FC) : const Color(0xFF263445);
-
     return Column(
       key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
           children: [
-            SizedBox(
-              width: 156,
-              height: 34,
-              child: FilledButton.icon(
-                onPressed: () =>
-                    setState(() => _showExpectedFormat = !_showExpectedFormat),
-                icon: Icon(
-                  _showExpectedFormat
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  size: 16,
-                ),
-                label: const Text('Format attendu'),
-                style: FilledButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: buttonBackground,
-                  foregroundColor: buttonForeground,
-                  elevation: 0,
-                  alignment: Alignment.centerLeft,
-                  textStyle: const TextStyle(
-                    fontSize: 11.2,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 3, vertical: 6.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    side: BorderSide(color: buttonBorder),
-                  ),
-                ),
-              ),
+            SharedExpectedActionButton(
+              icon: _showExpectedFormat
+                  ? CupertinoIcons.chevron_up
+                  : CupertinoIcons.chevron_down,
+              label: 'Format attendu',
+              selected: _showExpectedFormat,
+              onPressed: () => setState(() => _showExpectedFormat = !_showExpectedFormat),
             ),
-            const SizedBox(width: 3),
-            SizedBox(
-              width: 182,
-              height: 34,
-              child: FilledButton.icon(
-                onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
-                icon: _isDownloadingTemplate
-                    ? const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download_outlined, size: 15),
-                label: const Text('Télécharger le modèle'),
-                style: FilledButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  backgroundColor: downloadBackground,
-                  foregroundColor: downloadForeground,
-                  elevation: 0,
-                  textStyle: const TextStyle(
-                    fontSize: 10.8,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 7,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                    side: BorderSide(color: downloadBorder),
-                  ),
-                ),
-              ),
+            SharedExpectedActionButton(
+              icon: CupertinoIcons.arrow_down_doc,
+              label: _isDownloadingTemplate
+                  ? 'Préparation du modèle'
+                  : 'Télécharger le modèle',
+              onPressed: _isDownloadingTemplate ? null : _downloadTemplate,
             ),
           ],
         ),
@@ -1937,48 +1592,4 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
     );
   }
 
-  Widget _buildSectionCard({
-    Key? key,
-    required IconData icon,
-    required String title,
-    required Widget child,
-    Widget? trailing,
-  }) {
-    return Container(
-      key: key,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: _background,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(color: _border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: _text, size: 17),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: _text,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              if (trailing != null) ...[
-                const SizedBox(width: 3),
-                trailing,
-              ],
-            ],
-          ),
-          const SizedBox(height: 3),
-          child,
-        ],
-      ),
-    );
-  }
 }

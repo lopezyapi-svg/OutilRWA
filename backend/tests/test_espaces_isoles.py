@@ -58,8 +58,22 @@ def test_ce_qu_un_compte_saisit_reste_chez_lui():
     espace_b = preparer_espace("compte_essai_b")
     assert espace_a != espace_b
 
+    # Les espaces survivent d'une execution a l'autre : le test efface sa
+    # propre trace avant d'ecrire, sans quoi il echouerait au second passage
+    # sur une contrainte d'unicite.
+    for espace in (espace_a, espace_b):
+        jeton = utiliser_espace(espace)
+        try:
+            with database_manager.transaction() as connexion:
+                connexion.execute(
+                    "DELETE FROM contreparties WHERE id = 'CP_ESSAI'"
+                )
+        finally:
+            restaurer_espace(jeton)
+
     jeton = utiliser_espace(espace_a)
     try:
+        avant_a = _compter_contreparties()
         with database_manager.transaction() as connexion:
             connexion.execute(
                 """
@@ -76,15 +90,18 @@ def test_ce_qu_un_compte_saisit_reste_chez_lui():
     finally:
         restaurer_espace(jeton)
 
-    assert chez_a == 1
+    assert chez_a == avant_a + 1
 
     jeton = utiliser_espace(espace_b)
     try:
-        chez_b = _compter_contreparties()
+        with database_manager.read_connection() as connexion:
+            presente_chez_b = connexion.execute(
+                "SELECT COUNT(*) FROM contreparties WHERE id = 'CP_ESSAI'"
+            ).fetchone()[0]
     finally:
         restaurer_espace(jeton)
 
-    assert chez_b == 0, (
+    assert presente_chez_b == 0, (
         "Une contrepartie saisie dans un espace apparait dans un autre : les "
         "comptes partagent la meme base."
     )
@@ -213,3 +230,52 @@ def test_l_orm_ne_porte_que_des_donnees_de_reference():
         f"qu'elles ne sont pas declarees comme reference : {hors_reference}. "
         "Elles seraient partagees entre tous les comptes."
     )
+
+
+def test_un_espace_neuf_n_herite_d_aucune_exigence_de_marche():
+    """Zero exposition doit donner zero exigence, dans tous les modules.
+
+    L'exigence du risque de marche et le portefeuille de marche vivent dans
+    `metadonnees_app`, aux cotes de cles purement techniques. Conserver la
+    table entiere faisait apparaitre 204 Md de RWA marche -- et un capital
+    requis de 18,42 Md -- dans un espace vide de toute exposition.
+    """
+
+    import sqlite3
+
+    from app.auth.espaces import _CLES_METADONNEES_TECHNIQUES
+
+    espace = preparer_espace("compte_marche_essai")
+    connexion = sqlite3.connect(espace)
+    try:
+        cles = {
+            str(ligne[0])
+            for ligne in connexion.execute("SELECT cle FROM metadonnees_app")
+        }
+    finally:
+        connexion.close()
+
+    restantes = cles - set(_CLES_METADONNEES_TECHNIQUES)
+    assert not restantes, (
+        f"Ces metadonnees sont heritees de la demonstration : {restantes}. "
+        "Une cle porteuse de donnees doit etre purgee, une cle technique "
+        "declaree explicitement."
+    )
+
+
+def test_le_recalcul_ne_repart_pas_de_zero_dans_un_espace_neuf():
+    """La version des regles reste, sinon chaque espace rejoue un recalcul."""
+
+    import sqlite3
+
+    espace = preparer_espace("compte_marche_essai")
+    connexion = sqlite3.connect(espace)
+    try:
+        valeur = connexion.execute(
+            "SELECT valeur FROM metadonnees_app WHERE cle = ?",
+            ("exposure_calc_rules_version",),
+        ).fetchone()
+    finally:
+        connexion.close()
+
+    assert valeur is not None and str(valeur[0]).strip()

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/utils/file_save.dart';
+import '../../../shared/widgets/import/shared_import_layout.dart';
 import '../services/market_data_import_store.dart';
 
 enum _MarketImportScope { bonds, equities, both }
@@ -410,7 +411,7 @@ class _MarketDataImportDialogState extends State<_MarketDataImportDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1180, maxHeight: 860),
+        constraints: const BoxConstraints(maxWidth: 1180, maxHeight: 660),
         child: _ImportWorkspaceCard(
           selectedFile: _selectedFile,
           selectedFileSize: _selectedBytes?.lengthInBytes,
@@ -493,71 +494,21 @@ class _ImportWorkspaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(color: colors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: colors.isDark ? 0.24 : 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+    return SharedImportDialogCard(
+      maxWidth: 1180,
+      maxHeight: 660,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(5, 4, 5, 4),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF2F6EEA), Color(0xFF12A7B4)],
-                    ),
-                    borderRadius: BorderRadius.circular(AppTheme.radius),
-                  ),
-                  child: const Icon(
-                    CupertinoIcons.cloud_upload_fill,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'Importation de données',
-                    style: TextStyle(
-                      color: colors.text,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: isImporting ? null : onClose,
-                  icon: Icon(
-                    CupertinoIcons.xmark,
-                    color: colors.muted,
-                    size: 20,
-                  ),
-                  splashRadius: 19,
-                ),
-              ],
-            ),
+          SharedImportHeader(
+            title: 'Importation de données',
+            isImporting: isImporting,
+            onClose: onClose,
           ),
           Divider(height: 1, color: colors.border),
-          Flexible(
+          Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(5, 5, 5, 4),
               child: Column(
@@ -568,12 +519,11 @@ class _ImportWorkspaceCard extends StatelessWidget {
                     onChanged: onScopeChanged,
                   ),
                   const SizedBox(height: 4),
-                  _ImportSectionCard(
+                  SharedImportSectionCard(
                     icon: CupertinoIcons.doc_text,
                     title: 'Zone d’import',
-                    child: _ImportDropZone(
+                    child: SharedImportDropZone(
                       selectedFile: selectedFile,
-                      scope: scope,
                       isDragging: isDragging,
                       isInspecting: isInspecting,
                       isImporting: isImporting,
@@ -589,7 +539,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        _ExpectedActionButton(
+                        SharedExpectedActionButton(
                           icon: showExpectedFormat
                               ? CupertinoIcons.chevron_up
                               : CupertinoIcons.chevron_down,
@@ -597,7 +547,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                           selected: showExpectedFormat,
                           onPressed: onToggleExpectedFormat,
                         ),
-                        _ExpectedActionButton(
+                        SharedExpectedActionButton(
                           icon: CupertinoIcons.arrow_down_doc,
                           label: isDownloadingTemplate
                               ? 'Préparation du modèle'
@@ -619,7 +569,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
                               ),
                               scope: scope,
                             )
-                          : _SecondaryDropTarget(
+                          : SharedSecondaryDropTarget(
                               key: const ValueKey('secondary-drop-zone'),
                               isDragging: isDragging,
                               onPickFile: onPickFile,
@@ -640,44 +590,14 @@ class _ImportWorkspaceCard extends StatelessWidget {
             ),
           ),
           Divider(height: 1, color: colors.border),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(5, 3, 5, 4),
-            child: Row(
-              children: [
-                TextButton(
-                  onPressed: isImporting ? null : onClose,
-                  child: const Text('Fermer'),
-                ),
-                const Spacer(),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 230),
-                  child: _ImportModeSelector(
-                    value: mode,
-                    onChanged: onModeChanged,
-                  ),
-                ),
-                const SizedBox(width: 3),
-                FilledButton.icon(
-                  onPressed: canValidate ? onRunImport : null,
-                  icon: isImporting
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(CupertinoIcons.play_fill, size: 14),
-                  label: Text(isImporting ? 'Importation…' : 'Valider'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.accent,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFE1E5EC),
-                    disabledForegroundColor: const Color(0xFF98A2B3),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radius),
-                    ),
-                  ),
-                ),
-              ],
+          SharedImportFooter(
+            isImporting: isImporting,
+            onClose: onClose,
+            canValidate: canValidate,
+            onRunImport: onRunImport,
+            centerWidget: _ImportModeSelector(
+              value: mode,
+              onChanged: onModeChanged,
             ),
           ),
         ],
@@ -686,197 +606,7 @@ class _ImportWorkspaceCard extends StatelessWidget {
   }
 }
 
-class _ImportDropZone extends StatelessWidget {
-  const _ImportDropZone({
-    required this.selectedFile,
-    required this.scope,
-    required this.isDragging,
-    required this.isInspecting,
-    required this.isImporting,
-    required this.onPickFile,
-    required this.onDragEntered,
-    required this.onDragExited,
-    required this.onDroppedFiles,
-  });
 
-  final XFile? selectedFile;
-  final _MarketImportScope scope;
-  final bool isDragging;
-  final bool isInspecting;
-  final bool isImporting;
-  final VoidCallback onPickFile;
-  final VoidCallback onDragEntered;
-  final VoidCallback onDragExited;
-  final Future<void> Function(List<XFile> files) onDroppedFiles;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
-    final selectedName = selectedFile?.name;
-    final headline = isDragging
-        ? 'Relâchez pour charger le fichier'
-        : 'Cliquez pour sélectionner votre fichier';
-    final subtitle = isInspecting
-        ? 'Analyse du classeur RiskManagement en cours…'
-        : selectedName == null
-            ? 'Format accepté : .xlsx. Utilisez la sélection de fichier pour importer.'
-            : 'Fichier chargé : $selectedName';
-
-    return DropTarget(
-      onDragDone: (details) async {
-        onDragExited();
-        await onDroppedFiles(details.files);
-      },
-      onDragEntered: (_) {
-        if (!isImporting) onDragEntered();
-      },
-      onDragExited: (_) => onDragExited(),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isInspecting || isImporting ? null : onPickFile,
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            decoration: BoxDecoration(
-              color: isDragging
-                  ? AppTheme.accent.withValues(alpha: 0.045)
-                  : colors.softSurface,
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-              border: Border.all(
-                color: isDragging ? AppTheme.accent : colors.border,
-                width: isDragging ? 1.25 : 1,
-              ),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < 760;
-                final fileIcon = Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: AppTheme.accent.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(AppTheme.radius),
-                  ),
-                  child: const Icon(
-                    CupertinoIcons.cloud_upload_fill,
-                    color: AppTheme.accent,
-                    size: 27,
-                  ),
-                );
-                final textBlock = Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        headline,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colors.text,
-                          fontSize: 13.2,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        subtitle,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colors.muted,
-                          fontSize: 10.8,
-                          height: 1.32,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Wrap(
-                        spacing: 7,
-                        runSpacing: 7,
-                        children: [
-                          const _HintChip(
-                            icon: CupertinoIcons.cursor_rays,
-                            label: 'Sélection manuelle',
-                          ),
-                          const _HintChip(
-                            icon: CupertinoIcons.doc,
-                            label: '.xlsx',
-                          ),
-                          _HintChip(
-                            icon: CupertinoIcons.table,
-                            label: scope.sheetLabel,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-                final button = FilledButton.icon(
-                  onPressed: isInspecting || isImporting ? null : onPickFile,
-                  icon: isInspecting
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(CupertinoIcons.folder, size: 16),
-                  label: Text(
-                      isInspecting ? 'Vérification…' : 'Choisir un fichier'),
-                  style: FilledButton.styleFrom(
-                    elevation: 0,
-                    backgroundColor: colors.actionSurface,
-                    foregroundColor: colors.actionText,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 11,
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 11.2,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radius),
-                    ),
-                  ),
-                );
-
-                if (isCompact) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          fileIcon,
-                          const SizedBox(width: 4),
-                          textBlock,
-                        ],
-                      ),
-                      const SizedBox(height: 3),
-                      button,
-                    ],
-                  );
-                }
-
-                return Row(
-                  children: [
-                    fileIcon,
-                    const SizedBox(width: 4),
-                    textBlock,
-                    const SizedBox(width: 4),
-                    button,
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _ExpectedWorkbookPanel extends StatelessWidget {
   const _ExpectedWorkbookPanel({
@@ -888,7 +618,7 @@ class _ExpectedWorkbookPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
     final types = scope.portfolioTypes;
 
     return Container(
@@ -982,7 +712,7 @@ class _FileVerificationPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
     final allValid =
         inspections.isNotEmpty && inspections.every((item) => item.valid);
     final statusColor = allValid ? AppTheme.success : AppTheme.danger;
@@ -1018,7 +748,7 @@ class _FileVerificationPanel extends StatelessWidget {
     final statSurface =
         colors.isDark ? const Color(0xFF111D30) : const Color(0xFFFBFCFE);
 
-    return _ImportSectionCard(
+    return SharedImportSectionCard(
       icon: CupertinoIcons.doc_text,
       title: 'Vérification du fichier',
       child: Container(
@@ -1190,7 +920,7 @@ class _VerificationMetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
     final showAccentDot = color != AppTheme.accent;
 
     return Container(
@@ -1273,7 +1003,7 @@ class _VerificationItemChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
     final iconColor = valid ? AppTheme.success : AppTheme.danger;
     final background = valid
         ? (colors.isDark ? const Color(0xFF13241E) : const Color(0xFFF3FBF7))
@@ -1335,146 +1065,9 @@ class _VerificationItemChip extends StatelessWidget {
   }
 }
 
-class _SecondaryDropTarget extends StatelessWidget {
-  const _SecondaryDropTarget({
-    super.key,
-    required this.isDragging,
-    required this.onPickFile,
-    required this.onDragEntered,
-    required this.onDragExited,
-    required this.onDroppedFiles,
-  });
 
-  final bool isDragging;
-  final VoidCallback onPickFile;
-  final VoidCallback onDragEntered;
-  final VoidCallback onDragExited;
-  final Future<void> Function(List<XFile> files) onDroppedFiles;
 
-  @override
-  Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
 
-    return DropTarget(
-      onDragDone: (details) async {
-        onDragExited();
-        await onDroppedFiles(details.files);
-      },
-      onDragEntered: (_) => onDragEntered(),
-      onDragExited: (_) => onDragExited(),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPickFile,
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            height: 188,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: isDragging
-                  ? AppTheme.accent.withValues(alpha: 0.045)
-                  : colors.surface,
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-              border: Border.all(
-                color: isDragging ? AppTheme.accent : colors.border,
-                width: isDragging ? 1.25 : 1,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 58,
-                  height: 58,
-                  decoration: BoxDecoration(
-                    color: AppTheme.accent.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(AppTheme.radius),
-                    border: Border.all(
-                      color: AppTheme.accent.withValues(alpha: 0.18),
-                    ),
-                  ),
-                  child: const Icon(
-                    CupertinoIcons.doc_text_fill,
-                    color: AppTheme.accent,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  isDragging
-                      ? 'Relâchez pour charger le fichier'
-                      : 'Sélectionnez votre fichier ici',
-                  style: TextStyle(
-                    color: colors.text,
-                    fontSize: 12.4,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'Cliquez pour choisir un fichier .xlsx',
-                  style: TextStyle(
-                    color: colors.muted,
-                    fontSize: 10.8,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ImportSectionCard extends StatelessWidget {
-  const _ImportSectionCard({
-    required this.icon,
-    required this.title,
-    required this.child,
-  });
-
-  final IconData icon;
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        border: Border.all(color: colors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 15, color: colors.text),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  color: colors.text,
-                  fontSize: 13.2,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 3),
-          child,
-        ],
-      ),
-    );
-  }
-}
 
 class _ImportPortfolioTypeSelector extends StatelessWidget {
   const _ImportPortfolioTypeSelector({
@@ -1487,7 +1080,7 @@ class _ImportPortfolioTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
 
     return Container(
       width: double.infinity,
@@ -1548,7 +1141,7 @@ class _ImportPortfolioTypeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
     final accent = scope.accent;
     final icon = scope.icon;
 
@@ -1588,51 +1181,7 @@ class _ImportPortfolioTypeButton extends StatelessWidget {
   }
 }
 
-class _ExpectedActionButton extends StatelessWidget {
-  const _ExpectedActionButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-    this.selected = false,
-  });
 
-  final IconData icon;
-  final String label;
-  final VoidCallback? onPressed;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
-    final bg = selected ? const Color(0xFFF5F2EA) : colors.actionSurface;
-    final border = selected ? const Color(0xFFE0D8C9) : colors.border;
-
-    return SizedBox(
-      height: 36,
-      child: FilledButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 15),
-        label: Text(label),
-        style: FilledButton.styleFrom(
-          elevation: 0,
-          backgroundColor: bg,
-          foregroundColor: colors.actionText,
-          disabledBackgroundColor: colors.actionSurface,
-          disabledForegroundColor: colors.muted,
-          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
-          textStyle: const TextStyle(
-            fontSize: 11.2,
-            fontWeight: FontWeight.w500,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppTheme.radius),
-            side: BorderSide(color: border),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _ImportModeSelector extends StatelessWidget {
   const _ImportModeSelector({
@@ -1645,7 +1194,7 @@ class _ImportModeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
     final label =
         value == 'replace' ? 'Remplacer la base' : 'Compléter la base';
 
@@ -1730,7 +1279,7 @@ class _ImportModeMenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
-  final _ImportColors colors;
+  final SharedImportColors colors;
 
   @override
   Widget build(BuildContext context) {
@@ -1831,7 +1380,7 @@ class _ExpectedChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
     final (bg, fg, border) = switch (tone) {
       _ExpectedChipTone.sheet => (
           AppTheme.accent.withValues(alpha: 0.09),
@@ -1885,7 +1434,7 @@ class _HintChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _ImportColors.of(context);
+    final colors = SharedImportColors.of(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
@@ -1912,38 +1461,4 @@ class _HintChip extends StatelessWidget {
   }
 }
 
-class _ImportColors {
-  const _ImportColors({
-    required this.isDark,
-    required this.surface,
-    required this.softSurface,
-    required this.actionSurface,
-    required this.actionText,
-    required this.border,
-    required this.text,
-    required this.muted,
-  });
 
-  final bool isDark;
-  final Color surface;
-  final Color softSurface;
-  final Color actionSurface;
-  final Color actionText;
-  final Color border;
-  final Color text;
-  final Color muted;
-
-  static _ImportColors of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return _ImportColors(
-      isDark: isDark,
-      surface: isDark ? const Color(0xFF101B31) : Colors.white,
-      softSurface: isDark ? const Color(0xFF14233D) : const Color(0xFFF8FAFD),
-      actionSurface: isDark ? const Color(0xFF1C2A40) : const Color(0xFFEEF3FA),
-      actionText: isDark ? const Color(0xFFF4F7FC) : const Color(0xFF243B63),
-      border: isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5),
-      text: isDark ? AppTheme.darkText : AppTheme.text,
-      muted: isDark ? AppTheme.darkMuted : AppTheme.muted,
-    );
-  }
-}

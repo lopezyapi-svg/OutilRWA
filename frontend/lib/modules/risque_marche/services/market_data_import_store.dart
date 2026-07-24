@@ -642,6 +642,16 @@ double _marketPrudentialBondPositionValue(MarketPortfolioRecord record) {
   return value * _tauxCourantVersXof(record.currency);
 }
 
+/// Capital restant dû d'une obligation, converti en XOF au taux courant.
+double _bondOutstandingCapitalXof(MarketPortfolioRecord record) =>
+    _bondOutstandingCapital(record) * _tauxCourantVersXof(record.currency);
+
+/// Taux courant vers le XOF d'une devise, exposé aux écrans pour qu'ils
+/// convertissent leurs propres agrégats avec le taux du moteur prudentiel et
+/// non avec une table figée.
+double marketCurrentRateToXof(String currencyCode) =>
+    _tauxCourantVersXof(currencyCode);
+
 double _marketPrudentialEquityPositionValue(MarketPortfolioRecord record) {
   final value = record.valuationAmount > 0
       ? record.valuationAmount
@@ -1167,7 +1177,10 @@ class MarketPortfolioRecord {
       );
   String get issuerCountry => _text('Pays émetteur', fallback: '').trim();
   String get issuerCountryIso3 => _marketCountryIso3(issuerCountry);
-  String get issuerAnalysisKey => _marketIssuerAnalysisKey(this);
+  /// Clé de regroupement par émetteur. Mémoïsée : la normalisation du nom
+  /// (repli des accents, retrait des formes juridiques) est parcourue à chaque
+  /// agrégation, pour chaque ligne.
+  late final String issuerAnalysisKey = _marketIssuerAnalysisKey(this);
   String get issuerAnalysisLabel => _marketIssuerAnalysisLabel(this);
 
   /// Code ISO3 du marché national/régional du titre (Art. 400-401).
@@ -1181,7 +1194,8 @@ class MarketPortfolioRecord {
   /// Position relevant du portefeuille de négociation (Art. 316(b), 321).
   /// HTM/AFS relèvent du portefeuille bancaire ; intention inconnue = incluse
   /// par prudence (la charge taux/actions s'applique alors).
-  bool get isTradingBook => _marketIsTradingBookIntent(accountingIntent);
+  late final bool isTradingBook =
+      _marketIsTradingBookIntent(accountingIntent);
   String get titleId => _text('ID Titre', fallback: '').trim();
   String get instrumentType =>
       _text('Type d\'instrument', fallback: 'Instrument');
@@ -1209,8 +1223,8 @@ class MarketPortfolioRecord {
   DateTime? get maturityDate => _dateValue(values['Date d\'échéance']);
   DateTime get resolvedAnalysisDate =>
       _marketDateOnly(analysisDate ?? _marketToday());
-  bool get isActiveAtAnalysisDate => _bondIsActiveAtAnalysisDate(this);
-  bool get isMaturedAtAnalysisDate => _bondIsMaturedAtAnalysisDate(this);
+  late final bool isActiveAtAnalysisDate = _bondIsActiveAtAnalysisDate(this);
+  late final bool isMaturedAtAnalysisDate = _bondIsMaturedAtAnalysisDate(this);
 
   double get nominalUnit => _number('Valeur nominale unitaire');
   double get quantity => _number('quantités');
@@ -1266,7 +1280,13 @@ class MarketPortfolioRecord {
   double get bondModifiedDuration => _bondModifiedDuration(this);
   double get bondCashflowPresentValue => _bondCashflowPresentValue(this);
   double get bondCashflowConvexity => _bondCashflowConvexity(this);
-  double get resolvedCapitalRemainingDue => _bondOutstandingCapital(this);
+  /// Capital restant dû, reconstruit depuis le profil d'amortissement.
+  ///
+  /// Mémoïsé : la reconstruction (échéancier, annuité constante) coûtait à
+  /// elle seule l'essentiel du temps d'ouverture du tableau de bord, car elle
+  /// était refaite à chaque lecture, et chaque panneau la relit pour toutes
+  /// les lignes.
+  late final double resolvedCapitalRemainingDue = _bondOutstandingCapital(this);
   double get capitalAlreadyRepaid {
     final initialCapital = _bondInitialCapital(this);
     if (initialCapital <= 0) return 0;
@@ -1415,7 +1435,11 @@ class MarketPortfolioRecord {
     return '';
   }
 
-  double get exposureAmount {
+  /// Exposition de la ligne. Mémoïsée : plusieurs sondages de colonnes avec
+  /// analyse de texte, relus par chaque tri et chaque agrégation.
+  late final double exposureAmount = _computeExposureAmount();
+
+  double _computeExposureAmount() {
     if (portfolioType == MarketPortfolioType.equities) {
       if (marketValue > 0) return marketValue;
       final acquisitionCost = _number('Coût d\'acquisition');
@@ -1429,6 +1453,15 @@ class MarketPortfolioRecord {
     if (nominalUnit > 0 && quantity > 0) return nominalUnit * quantity;
     return 0;
   }
+
+  /// Exposition de la ligne convertie en XOF au taux courant.
+  ///
+  /// Toute agrégation d'un portefeuille multidevises passe par ici : sommer
+  /// des montants libellés en EUR, USD et XOF sans conversion ne produit
+  /// aucune grandeur interprétable, et faisait diverger les totaux affichés
+  /// des exigences de fonds propres, elles calculées en XOF.
+  double get exposureAmountXof =>
+      exposureAmount * _tauxCourantVersXof(currency);
 
   String _text(String key, {required String fallback}) {
     final value = values[key];
@@ -1547,6 +1580,25 @@ String _marketDatasetContentSignature(MarketPortfolioDataset dataset) {
         : '${metricsDate.year}-${metricsDate.month}-${metricsDate.day}',
   );
   return hash.toRadixString(16).padLeft(8, '0');
+}
+
+/// Profil de risque et de rendement consolidé d'un émetteur.
+class MarketIssuerRiskProfile {
+  const MarketIssuerRiskProfile({
+    required this.issuer,
+    required this.marketValue,
+    required this.beta,
+    required this.dividendYield,
+  });
+
+  final String issuer;
+  final double marketValue;
+
+  /// Bêta pondéré par la valeur de marché des lignes de cet émetteur.
+  final double beta;
+
+  /// Rendement dividende pondéré de la même façon.
+  final double dividendYield;
 }
 
 /// Plus ou moins-value latente consolidée d'un émetteur.
@@ -1746,8 +1798,8 @@ class MarketPortfolioDataset {
       (sum, record) =>
           sum +
           (portfolioType == MarketPortfolioType.bonds
-              ? _bondOutstandingCapital(record)
-              : record.exposureAmount),
+              ? _bondOutstandingCapitalXof(record)
+              : record.exposureAmountXof),
     );
     return math.max(0.0, total).toDouble();
   }
@@ -1773,11 +1825,26 @@ class MarketPortfolioDataset {
     }
     final gainByIssuer = <String, double>{};
     final costByIssuer = <String, double>{};
+    // Émetteurs dont au moins une ligne a bougé : eux seuls figurent dans un
+    // état de plus et moins-values. Le critère porte sur les LIGNES, pas sur
+    // leur somme — deux lignes qui se compensent restent deux mouvements
+    // réels, et l'émetteur garde sa place avec un résultat net nul.
+    final emetteursAvecMouvement = <String>{};
+    // Même clé canonique que les classements d'exposition : sans elle, un
+    // émetteur écrit de deux façons apparaissait deux fois ici alors qu'il
+    // n'occupait qu'un rang là-bas.
+    final graphies = <String, List<String>>{};
     for (final record in records) {
       final gain = record.latentGain;
-      if (gain == 0) continue;
-      final issuer =
-          record.issuer.trim().isEmpty ? 'Non renseigné' : record.issuer.trim();
+      final issuer = marketIssuerCanonicalKey(record.issuer);
+      graphies.putIfAbsent(issuer, () => <String>[]).add(record.issuer.trim());
+      if (gain != 0) {
+        emetteursAvecMouvement.add(issuer);
+      }
+      // Une ligne au pair apporte zéro au résultat, mais elle a bien coûté
+      // quelque chose. L'écarter retirait son coût de revient du dénominateur
+      // et surévaluait la variation : deux lignes de 1 M dont une au pair
+      // affichaient +10 % au lieu de +5 %.
       gainByIssuer.update(issuer, (previous) => previous + gain,
           ifAbsent: () => gain);
       costByIssuer.update(
@@ -1786,14 +1853,72 @@ class MarketPortfolioDataset {
         ifAbsent: () => record.acquisitionCost,
       );
     }
+    gainByIssuer.removeWhere(
+      (issuer, _) => !emetteursAvecMouvement.contains(issuer),
+    );
     return [
       for (final entry in gainByIssuer.entries)
         MarketIssuerLatentPnl(
-          issuer: entry.key,
+          issuer: marketIssuerPreferredLabel(
+            graphies[entry.key] ?? const <String>[],
+          ),
           gain: entry.value,
           cost: costByIssuer[entry.key] ?? 0,
         ),
     ]..sort((a, b) => b.gain.abs().compareTo(a.gain.abs()));
+  }
+
+  /// Profils par émetteur, classés par valeur de marché décroissante.
+  ///
+  /// Le tableau de bord affichait les LIGNES du fichier sous un titre « par
+  /// émetteur » : un émetteur portant trois lignes occupait trois rangs, avec
+  /// trois bêtas différents, ce qui se lisait comme trois sociétés.
+  late final List<MarketIssuerRiskProfile> riskProfileByIssuer =
+      _computeRiskProfileByIssuer();
+
+  List<MarketIssuerRiskProfile> _computeRiskProfileByIssuer() {
+    if (portfolioType != MarketPortfolioType.equities) {
+      return const <MarketIssuerRiskProfile>[];
+    }
+    final valueByIssuer = <String, double>{};
+    final betaNumerator = <String, double>{};
+    final yieldNumerator = <String, double>{};
+
+    for (final record in records) {
+      final value = record.exposureAmountXof;
+      if (value <= 0) continue;
+      final issuer =
+          record.issuer.trim().isEmpty ? 'Non renseigné' : record.issuer.trim();
+      valueByIssuer.update(issuer, (p) => p + value, ifAbsent: () => value);
+      if (record.beta > 0) {
+        betaNumerator.update(
+          issuer,
+          (p) => p + record.beta * value,
+          ifAbsent: () => record.beta * value,
+        );
+      }
+      if (record.dividendYield > 0) {
+        yieldNumerator.update(
+          issuer,
+          (p) => p + record.dividendYield * value,
+          ifAbsent: () => record.dividendYield * value,
+        );
+      }
+    }
+
+    return [
+      for (final entry in valueByIssuer.entries)
+        MarketIssuerRiskProfile(
+          issuer: entry.key,
+          marketValue: entry.value,
+          beta: entry.value <= 0
+              ? 0
+              : (betaNumerator[entry.key] ?? 0) / entry.value,
+          dividendYield: entry.value <= 0
+              ? 0
+              : (yieldNumerator[entry.key] ?? 0) / entry.value,
+        ),
+    ]..sort((a, b) => b.marketValue.compareTo(a.marketValue));
   }
 
   double _computeTotalMarketValueXof() {
@@ -1939,7 +2064,7 @@ class MarketPortfolioDataset {
       0,
       (sum, record) {
         final beta = record.beta > 0 ? record.beta : 1.0;
-        return sum + beta * math.max(0.0, record.exposureAmount).toDouble();
+        return sum + beta * math.max(0.0, record.exposureAmountXof).toDouble();
       },
     );
     return (betaTotal / totalExposure).clamp(0.55, 2.2).toDouble();
@@ -1964,12 +2089,13 @@ class MarketPortfolioDataset {
       return mean * 252;
     }
     if (portfolioType == MarketPortfolioType.equities) {
-      final weightedInput =
-          _weightedPositiveAverage((record) => record.expectedReturnInput);
-      if (weightedInput > 0) {
-        return weightedInput;
-      }
-      return 0;
+      // Pondération sur l'ensemble du portefeuille : les lignes qui ne
+      // déclarent aucun rendement comptent pour zéro au lieu d'être écartées
+      // du calcul. Les écarter revenait à faire porter le rendement des seules
+      // lignes rémunératrices à tout le portefeuille.
+      return _weightedPortfolioAverage(
+        (record) => record.expectedReturnInput,
+      );
     }
     var numerator = 0.0;
     var denominator = 0.0;
@@ -2004,7 +2130,7 @@ class MarketPortfolioDataset {
     final exposureByKey = <String, double>{};
     for (final record in records) {
       final key = record.returnSeriesKey;
-      final exposure = math.max(0.0, record.exposureAmount).toDouble();
+      final exposure = math.max(0.0, record.exposureAmountXof).toDouble();
       if (key.isEmpty || exposure <= 0) continue;
       exposureByKey.update(key, (value) => value + exposure,
           ifAbsent: () => exposure);
@@ -2056,8 +2182,8 @@ class MarketPortfolioDataset {
     final byIssuer = <String, double>{};
     for (final record in records) {
       final exposure = portfolioType == MarketPortfolioType.bonds
-          ? _bondOutstandingCapital(record)
-          : record.exposureAmount;
+          ? _bondOutstandingCapitalXof(record)
+          : record.exposureAmountXof;
       if (exposure <= 0) continue;
       byIssuer.update(
         portfolioType == MarketPortfolioType.bonds
@@ -2077,8 +2203,8 @@ class MarketPortfolioDataset {
     final labelsByKey = <String, String>{};
     for (final record in records) {
       final exposure = portfolioType == MarketPortfolioType.bonds
-          ? _bondOutstandingCapital(record)
-          : record.exposureAmount;
+          ? _bondOutstandingCapitalXof(record)
+          : record.exposureAmountXof;
       if (exposure <= 0) continue;
       final key = portfolioType == MarketPortfolioType.bonds
           ? record.issuerAnalysisKey
@@ -2152,7 +2278,7 @@ class MarketPortfolioDataset {
     if (portfolioType != MarketPortfolioType.bonds) return const [];
     final losses = <double>[];
     for (final record in records) {
-      final exposure = math.max(0.0, record.exposureAmount).toDouble();
+      final exposure = math.max(0.0, record.exposureAmountXof).toDouble();
       final duration = _bondModifiedDuration(record);
       if (exposure <= 0 || duration <= 0) continue;
       final loss = duration * exposure * 0.01;
@@ -2224,11 +2350,34 @@ class MarketPortfolioDataset {
     var denominator = 0.0;
     for (final record in records) {
       final value = pick(record);
-      final weight = math.max(0.0, record.exposureAmount).toDouble();
+      final weight = math.max(0.0, record.exposureAmountXof).toDouble();
       if (value > 0 && weight > 0) {
         numerator += value * weight;
         denominator += weight;
       }
+    }
+    return denominator <= 0 ? 0 : numerator / denominator;
+  }
+
+  /// Moyenne pondérée sur TOUT le portefeuille valorisé : une ligne sans
+  /// valeur déclarée compte pour zéro au numérateur mais conserve son poids au
+  /// dénominateur.
+  ///
+  /// C'est la différence avec [_weightedPositiveAverage], qui écarte ces
+  /// lignes des deux côtés du quotient et surévalue donc le résultat. Pour un
+  /// rendement de portefeuille, la seconde forme est fausse : un portefeuille
+  /// dont la moitié des lignes ne distribue rien ne rapporte pas autant que
+  /// celui dont toutes les lignes distribuent.
+  double _weightedPortfolioAverage(double Function(MarketPortfolioRecord) pick) {
+    if (records.isEmpty) return 0;
+    var numerator = 0.0;
+    var denominator = 0.0;
+    for (final record in records) {
+      final weight = math.max(0.0, record.exposureAmountXof).toDouble();
+      if (weight <= 0) continue;
+      denominator += weight;
+      final value = pick(record);
+      if (value > 0 && value.isFinite) numerator += value * weight;
     }
     return denominator <= 0 ? 0 : numerator / denominator;
   }
@@ -2541,37 +2690,142 @@ bool _marketIsTradingBookIntent(String intent) {
   return true;
 }
 
+/// Table de repli des caractères accentués, appliquée en un seul passage.
+///
+/// La chaîne de dix-huit `replaceAll` allouait autant de chaînes
+/// intermédiaires par appel, et recompilait deux expressions régulières. Ce
+/// chemin est parcouru des dizaines de fois par ligne de portefeuille.
+const Map<int, String> _marketFoldedRunes = {
+  0xE0: 'a',
+  0xE2: 'a',
+  0xE4: 'a',
+  0xE9: 'e',
+  0xE8: 'e',
+  0xEA: 'e',
+  0xEB: 'e',
+  0xEE: 'i',
+  0xEF: 'i',
+  0xF4: 'o',
+  0xF6: 'o',
+  0xF9: 'u',
+  0xFB: 'u',
+  0xFC: 'u',
+  0xE7: 'c',
+  0x2018: "'",
+  0x2019: "'",
+};
+
 String _foldMarketText(String value) {
-  return value
-      .toLowerCase()
-      .replaceAll('à', 'a')
-      .replaceAll('â', 'a')
-      .replaceAll('ä', 'a')
-      .replaceAll('é', 'e')
-      .replaceAll('è', 'e')
-      .replaceAll('ê', 'e')
-      .replaceAll('ë', 'e')
-      .replaceAll('î', 'i')
-      .replaceAll('ï', 'i')
-      .replaceAll('ô', 'o')
-      .replaceAll('ö', 'o')
-      .replaceAll('ù', 'u')
-      .replaceAll('û', 'u')
-      .replaceAll('ü', 'u')
-      .replaceAll('ç', 'c')
-      .replaceAll(RegExp(r'[\u2019\u2018]'), "'")
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
+  if (value.isEmpty) return '';
+  final lower = value.toLowerCase();
+  final buffer = StringBuffer();
+  var pendingSpace = false;
+  var hasContent = false;
+
+  for (final rune in lower.runes) {
+    final chunk = _marketFoldedRunes[rune] ?? String.fromCharCode(rune);
+    // Espaces normalisés au vol : toute suite d'espaces devient un espace
+    // simple, et les espaces de bord ne sont jamais écrits.
+    if (chunk.trim().isEmpty) {
+      if (hasContent) pendingSpace = true;
+      continue;
+    }
+    if (pendingSpace) {
+      buffer.write(' ');
+      pendingSpace = false;
+    }
+    buffer.write(chunk);
+    hasContent = true;
+  }
+  return buffer.toString();
 }
 
 String _marketCountryIso3(String country) {
   return marketCountryIso3FromText(country);
 }
 
+/// Clé canonique d'un nom d'émetteur, pour le regroupement.
+///
+/// Le regroupement par émetteur portait sur le nom BRUT, comparé caractère
+/// par caractère. Toute variation d'écriture créait un émetteur de plus :
+/// « NOKOUE CIMENTS S.A. », « Nokoué Ciments SA » et « Nokoué  Ciments sa »
+/// comptaient pour trois. Le sens de l'erreur est le plus gênant — une
+/// exposition scindée SOUS-ESTIME la concentration, et une contrepartie qui
+/// pèse 12 % passe pour deux lignes à 6 %, sous le seuil d'attention.
+///
+/// La clé neutralise donc la casse, les accents, la ponctuation, les espaces
+/// multiples et les formes juridiques. Elle ne sert qu'à rapprocher : le nom
+/// affiché reste celui du fichier (voir [marketIssuerPreferredLabel]).
+String marketIssuerCanonicalKey(String nom) {
+  var normalise = nom.trim().toUpperCase();
+  if (normalise.isEmpty) return 'NON RENSEIGNE';
+
+  const accents = {
+    'À': 'A', 'Á': 'A', 'Â': 'A', 'Ã': 'A', 'Ä': 'A', 'Å': 'A',
+    'È': 'E', 'É': 'E', 'Ê': 'E', 'Ë': 'E',
+    'Ì': 'I', 'Í': 'I', 'Î': 'I', 'Ï': 'I',
+    'Ò': 'O', 'Ó': 'O', 'Ô': 'O', 'Õ': 'O', 'Ö': 'O',
+    'Ù': 'U', 'Ú': 'U', 'Û': 'U', 'Ü': 'U',
+    'Ç': 'C', 'Ñ': 'N', 'Ý': 'Y',
+  };
+  accents.forEach((accentue, simple) {
+    normalise = normalise.replaceAll(accentue, simple);
+  });
+
+  // Points et apostrophes SUPPRIMÉS sans espace : « S.A. » doit devenir
+  // « SA », un seul mot, sinon le retrait des formes juridiques ne le
+  // reconnaît pas. Les séparateurs, eux, deviennent des espaces.
+  normalise = normalise.replaceAll(RegExp(r"[.'’]"), '');
+  normalise = normalise.replaceAll(RegExp(r"[,;:\-_/\()\[\]]"), ' ');
+  normalise = normalise.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+  // Formes juridiques en fin de nom : elles varient d'un fichier à l'autre
+  // sans désigner une entité différente. Retirées uniquement en SUFFIXE —
+  // « SA » au milieu d'un nom peut en faire partie.
+  //
+  // « GROUPE » et « HOLDING » n'y figurent PAS : ils distinguent des entités
+  // juridiques réelles. Confondre « Sanaga Utilities Holding » et « Sanaga
+  // Utilities » surestimerait la concentration — l'erreur inverse de celle
+  // qu'on corrige, et tout aussi fausse.
+  const formesJuridiques = {
+    'SA', 'SAS', 'SARL', 'SASU', 'SNC', 'SCS', 'SCA', 'GIE',
+    'SUARL', 'EURL', 'LTD', 'LLC', 'PLC', 'INC', 'CORP', 'NV', 'BV',
+    'AG', 'GMBH', 'SPA', 'SRL',
+  };
+  var mots = normalise.split(' ').where((mot) => mot.isNotEmpty).toList();
+  while (mots.length > 1 && formesJuridiques.contains(mots.last)) {
+    mots = mots.sublist(0, mots.length - 1);
+  }
+  final cle = mots.join(' ');
+  return cle.isEmpty ? 'NON RENSEIGNE' : cle;
+}
+
+/// Nom retenu pour l'affichage parmi les graphies rencontrées.
+///
+/// La plus fréquente l'emporte — c'est la convention de la maison — et la
+/// plus longue départage : « Nokoué Ciments SA » plutôt que « Nokoué
+/// Ciments ». Le fichier n'est jamais réécrit.
+String marketIssuerPreferredLabel(Iterable<String> graphies) {
+  final frequences = <String, int>{};
+  for (final graphie in graphies) {
+    final propre = graphie.trim();
+    if (propre.isEmpty) continue;
+    frequences.update(propre, (n) => n + 1, ifAbsent: () => 1);
+  }
+  if (frequences.isEmpty) return 'Non renseigné';
+  final classees = frequences.entries.toList()
+    ..sort((a, b) {
+      final parFrequence = b.value.compareTo(a.value);
+      if (parFrequence != 0) return parFrequence;
+      final parLongueur = b.key.length.compareTo(a.key.length);
+      if (parLongueur != 0) return parLongueur;
+      return a.key.compareTo(b.key);
+    });
+  return classees.first.key;
+}
+
 String _marketIssuerAnalysisKey(MarketPortfolioRecord record) {
-  final issuer = record.issuer.trim();
-  final normalizedIssuer =
-      issuer.isEmpty || issuer == 'Non renseigné' ? 'Non renseigné' : issuer;
+  final normalizedIssuer = marketIssuerCanonicalKey(record.issuer);
   final countryCode = record.issuerCountryIso3;
   if (countryCode.isEmpty) return normalizedIssuer;
   return '$countryCode|$normalizedIssuer';

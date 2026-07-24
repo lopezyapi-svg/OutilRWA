@@ -79,7 +79,7 @@ String _pourcentage(double fraction) =>
 // Paramétrique et Monte-Carlo en tête : elles fonctionnent dès qu'un
 // portefeuille est importé (mode réglementaire), sans historique de prix.
 // Historique en dernier - verrouillée tant qu'aucun historique réel n'est
-// disponible (voir `verrouille` ci-dessous).
+// disponible (voir `sansCalculPossible` ci-dessous).
 enum VarMethode { parametrique, monteCarlo, historique }
 
 extension on VarMethode {
@@ -95,11 +95,13 @@ extension on VarMethode {
         VarMethode.monteCarlo => 'VaR Monte-Carlo',
       };
 
-  /// Verrouillée : nécessite un historique de prix réel (250 jours minimum)
-  /// qu'aucune source disponible ne peut fournir aujourd'hui (cf. décision
-  /// du 2026-07-17 - méthode conservée pour le jour où une vraie série de
-  /// prix sera disponible, mais non sélectionnable en attendant).
-  bool get verrouille => this == VarMethode.historique;
+  /// Sans calcul possible aujourd'hui : aucune source disponible ne fournit
+  /// la série de prix observés (250 séances minimum) que la méthode exige.
+  ///
+  /// L'onglet reste NAVIGABLE : il expose la méthodologie et un cas chiffré,
+  /// au lieu d'un cadenas qui n'explique rien. Il ne déclenche simplement
+  /// aucun appel de calcul.
+  bool get sansCalculPossible => this == VarMethode.historique;
 }
 
 /// Classe d'histogramme reçue du backend.
@@ -434,6 +436,18 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   /// portefeuille, nouvel import) - l'axe figé et la comparaison
   /// avant/après repartent de zéro.
   Future<void> _charger({bool nouveauContexte = false}) async {
+    // La VaR historique n'interroge pas le serveur : elle n'a pas de série de
+    // prix à exploiter et affiche sa méthodologie. Lancer l'appel produisait
+    // un 422 présenté comme une panne.
+    if (_methode.sansCalculPossible) {
+      _relanceAutomatique?.cancel();
+      setState(() {
+        _chargement = false;
+        _erreur = null;
+        _donneesAbsentes = false;
+      });
+      return;
+    }
     final numero = ++_requeteEnCours;
     setState(() {
       _chargement = true;
@@ -666,6 +680,9 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   }
 
   Widget _contenuPrincipal() {
+    if (_methode.sansCalculPossible) {
+      return const _PanneauVarHistoriqueMethodologie();
+    }
     final reponse = _reponse;
     if (_erreur != null && reponse == null) {
       return _CarteVar(
@@ -708,15 +725,22 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                // L'import d'un historique de prix ne concerne QUE la VaR
+                // historique. Le proposer sur une panne paramétrique ou
+                // Monte-Carlo envoyait l'utilisateur chercher un fichier qui
+                // n'aurait rien changé : ces deux méthodes partent d'une
+                // volatilité, pas d'une série observée.
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _BoutonImportModele(
-                      onImporter: _importerHistorique,
-                      onTelecharger: _telechargerModele,
-                      compact: false,
-                    ),
-                    const SizedBox(width: 10),
+                    if (_donneesAbsentes) ...[
+                      _BoutonImportModele(
+                        onImporter: _importerHistorique,
+                        onTelecharger: _telechargerModele,
+                        compact: false,
+                      ),
+                      const SizedBox(width: 10),
+                    ],
                     OutlinedButton(
                       onPressed: _charger,
                       child: const Text('Réessayer'),
@@ -815,48 +839,63 @@ class _OngletMethode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final verrouille = methode.verrouille;
-    // Onglet verrouillé : entièrement grisé (fond, icône, libellé estompés)
-    // et non sélectionnable tant qu'aucun historique de prix réel n'est
-    // disponible (cf. décision du 2026-07-17).
-    final couleurGrisee = _varMuted.withValues(alpha: 0.55);
+    // L'onglet sans calcul possible reste NAVIGABLE : il mène à la
+    // méthodologie et au cas chiffré. Il se distingue par une pastille
+    // « Méthodologie », pas par un cadenas qui laissait croire à une
+    // fonctionnalité bridée.
+    final sansCalcul = methode.sansCalculPossible;
     final onglet = InkWell(
-      onTap: verrouille ? null : onTap,
+      onTap: onTap,
       borderRadius: BorderRadius.circular(2),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: verrouille
-              ? _varMuted.withValues(alpha: 0.10)
-              : (actif ? Colors.indigo : Colors.transparent),
-          borderRadius: BorderRadius.circular(2),
+          color: actif ? Colors.indigo : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (verrouille) ...[
-              Icon(Icons.lock_outline, size: 13, color: couleurGrisee),
-              const SizedBox(width: 5),
-            ],
             Text(
               methode.libelle,
               style: TextStyle(
-                color: verrouille
-                    ? couleurGrisee
-                    : (actif ? Colors.white : _varNavy),
+                color: actif ? Colors.white : _varNavy,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),
             ),
+            if (sansCalcul) ...[
+              const SizedBox(width: 7),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: actif
+                      ? Colors.white.withValues(alpha: 0.22)
+                      : _varMuted.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  'Méthodologie',
+                  style: TextStyle(
+                    color: actif ? Colors.white : _varMuted,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
-    if (!verrouille) return onglet;
+    if (!sansCalcul) return onglet;
     return Tooltip(
-      message: 'Nécessite un historique de prix réel (250 jours minimum) - '
-          'indisponible pour le moment.',
-      child: MouseRegion(cursor: SystemMouseCursors.forbidden, child: onglet),
+      message: 'Aucune série de prix observés n\'est disponible : cet onglet '
+          'expose la méthode et un cas chiffré.',
+      child: onglet,
     );
   }
 }
@@ -2383,6 +2422,618 @@ class _CarteVar extends StatelessWidget {
         border: Border.all(color: _varBorder),
       ),
       child: child,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// VaR historique : méthodologie et cas chiffré
+// ---------------------------------------------------------------------------
+
+/// Panneau de la VaR historique, en l'absence de série de prix réelle.
+///
+/// Décision assumée : plutôt qu'un écran d'erreur ou une distribution
+/// fabriquée, la méthode est exposée pour ce qu'elle est, avec un cas chiffré
+/// entièrement vérifiable à la main. Un lecteur qui n'a jamais calculé de VaR
+/// doit pouvoir refaire les lignes ci-dessous sur un coin de table et
+/// retrouver le même nombre.
+///
+/// Les nombres du cas ne sont PAS le portefeuille : ce sont des données
+/// d'illustration, et l'écran le dit.
+class _PanneauVarHistoriqueMethodologie extends StatelessWidget {
+  const _PanneauVarHistoriqueMethodologie();
+
+  /// Dix pires séances d'un échantillon fictif de 250, en millions de FCFA,
+  /// classées de la perte la plus lourde à la plus légère.
+  static const List<double> _pertesTriees = [
+    412,
+    388,
+    351,
+    297,
+    264,
+    241,
+    228,
+    219,
+    203,
+    197,
+  ];
+
+  static const int _nbSeances = 250;
+  static const double _confiance = 0.99;
+
+  /// Rang du quantile : 250 x (1 - 99 %) = 2,5, arrondi au supérieur.
+  static int get _rang => (_nbSeances * (1 - _confiance)).ceil();
+
+  static double get _var => _pertesTriees[_rang - 1];
+
+  /// Perte moyenne au-delà de la VaR : moyenne des rangs 1 à [_rang].
+  static double get _perteMoyenneAuDela {
+    final retenues = _pertesTriees.take(_rang).toList(growable: false);
+    return retenues.reduce((a, b) => a + b) / retenues.length;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _CarteVar(
+            padding: EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Méthode de la VaR historique',
+                  style: TextStyle(
+                    color: _varNavy,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Aucune loi de probabilité n\'est supposée. On observe ce '
+                  'que le portefeuille a réellement perdu, séance après '
+                  'séance, puis on lit directement dans cette série le seuil '
+                  'qui n\'a été dépassé que dans 1 % des cas.',
+                  style: TextStyle(
+                    color: _varMuted,
+                    fontSize: 12.5,
+                    height: 1.5,
+                  ),
+                ),
+                SizedBox(height: 16),
+                _EtapeMethodologie(
+                  numero: 1,
+                  titre: 'Reconstituer la série des variations',
+                  texte: 'Pour chaque séance de la fenêtre, on revalorise le '
+                      'portefeuille ACTUEL avec les prix de la veille, puis '
+                      'avec ceux du jour. La différence est le gain ou la '
+                      'perte qu\'il aurait subi ce jour-là. La composition ne '
+                      'change jamais : seuls les prix bougent.',
+                ),
+                _EtapeMethodologie(
+                  numero: 2,
+                  titre: 'Classer les pertes, de la plus lourde à la plus '
+                      'légère',
+                  texte: 'Les gains restent dans la série mais se retrouvent '
+                      'en fin de classement : ils ne jouent aucun rôle dans '
+                      'le seuil de perte.',
+                ),
+                _EtapeMethodologie(
+                  numero: 3,
+                  titre: 'Lire la perte au rang correspondant au seuil',
+                  texte: 'À 99 % sur 250 séances, le rang vaut '
+                      '250 × (1 − 0,99) = 2,5, arrondi à 3. La VaR est la '
+                      'troisième perte du classement. Arrondir vers le haut '
+                      'est le choix prudent : il retient une perte plus '
+                      'lourde, jamais plus légère.',
+                ),
+                SizedBox(height: 4),
+                _EncadreFormule(
+                  formule: 'VaR = perte de rang ⌈n × (1 − c)⌉',
+                  legende: 'n = nombre de séances observées, '
+                      'c = niveau de confiance',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          _CarteVar(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Cas chiffré, de bout en bout',
+                        style: TextStyle(
+                          color: _varNavy,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _varOrange.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'Données d\'illustration',
+                        style: TextStyle(
+                          color: Color(0xFFB45309),
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Portefeuille de 12,4 Md FCFA, fenêtre de 250 séances, '
+                  'niveau de confiance 99 %. Voici les dix pires séances de '
+                  'la fenêtre, en millions de FCFA :',
+                  style: TextStyle(
+                    color: _varMuted,
+                    fontSize: 12.5,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _TableauPertesClassees(
+                  pertes: _pertesTriees,
+                  rangRetenu: _rang,
+                ),
+                const SizedBox(height: 14),
+                const _EncadreFormule(
+                  formule: 'Rang = ⌈250 × (1 − 0,99)⌉ = ⌈2,5⌉ = 3',
+                  legende: 'La VaR est donc la 3ᵉ perte du classement',
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ResultatCas(
+                        libelle: 'VaR 99 % à 1 jour',
+                        valeur: '${_var.toStringAsFixed(0)} M FCFA',
+                        note: '3ᵉ perte du classement',
+                        couleur: _varDanger,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ResultatCas(
+                        libelle: 'Perte moyenne au-delà du seuil',
+                        valeur:
+                            '${_perteMoyenneAuDela.toStringAsFixed(0)} M FCFA',
+                        note: 'Moyenne des rangs 1 à 3',
+                        couleur: _varOrange,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'Lecture : sur les 250 séances observées, deux seulement ont '
+                  'coûté plus de ${_var.toStringAsFixed(0)} M FCFA. Un jour de '
+                  'marché sur cent, la perte dépasse ce seuil ; ces jours-là, '
+                  'elle s\'est élevée à '
+                  '${_perteMoyenneAuDela.toStringAsFixed(0)} M FCFA en '
+                  'moyenne. La VaR dit à partir de quel montant on entre dans '
+                  'le 1 % défavorable, jamais jusqu\'où la perte peut aller : '
+                  'c\'est le rôle de la seconde mesure.',
+                  style: const TextStyle(
+                    color: _varNavy,
+                    fontSize: 12.5,
+                    height: 1.55,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const _CarteVar(
+            padding: EdgeInsets.all(18),
+            color: _varSurfaceSoft,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ce que la méthode exige, et pourquoi elle est inactive ici',
+                  style: TextStyle(
+                    color: _varNavy,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 10),
+                _PointExigence(
+                  texte: 'Une série de prix observés, une valeur par séance et '
+                      'par titre. Les titres publics de la zone étant émis par '
+                      'adjudication et non cotés en continu, cette série '
+                      'n\'existe pas dans les fichiers dont nous disposons.',
+                ),
+                _PointExigence(
+                  texte: 'Une profondeur suffisante : 250 séances au minimum. '
+                      'En deçà, le rang du quantile tombe sur les toutes '
+                      'premières observations et la VaR se confond avec la '
+                      'perte maximale de l\'échantillon.',
+                ),
+                _PointExigence(
+                  texte: 'Une composition figée sur toute la fenêtre. Une '
+                      'ligne entrée en portefeuille il y a trois mois n\'a pas '
+                      'd\'historique sur les neuf précédents : elle doit être '
+                      'reconstituée à partir d\'un titre de référence, ou '
+                      'écartée.',
+                ),
+                SizedBox(height: 12),
+                Text(
+                  'Tant que ces conditions ne sont pas réunies, l\'onglet '
+                  'reste inactif. Publier un quantile calculé sur une série '
+                  'reconstituée reviendrait à présenter comme observé un '
+                  'chiffre qui ne l\'est pas. Les VaR paramétrique et '
+                  'Monte-Carlo, elles, n\'ont pas besoin d\'historique : elles '
+                  'partent d\'une volatilité et d\'une hypothèse de '
+                  'distribution, et restent disponibles.',
+                  style: TextStyle(
+                    color: _varMuted,
+                    fontSize: 12.5,
+                    height: 1.55,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EtapeMethodologie extends StatelessWidget {
+  const _EtapeMethodologie({
+    required this.numero,
+    required this.titre,
+    required this.texte,
+  });
+
+  final int numero;
+  final String titre;
+  final String texte;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: _varDeepBlue,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '$numero',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titre,
+                  style: const TextStyle(
+                    color: _varNavy,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  texte,
+                  style: const TextStyle(
+                    color: _varMuted,
+                    fontSize: 12.3,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EncadreFormule extends StatelessWidget {
+  const _EncadreFormule({required this.formule, required this.legende});
+
+  final String formule;
+  final String legende;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _varDeepBlue.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(4),
+        border: const Border(
+          left: BorderSide(color: _varDeepBlue, width: 2.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            formule,
+            style: const TextStyle(
+              color: _varNavy,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            legende,
+            style: const TextStyle(
+              color: _varMuted,
+              fontSize: 11.5,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Classement des pertes, la ligne du quantile mise en évidence.
+class _TableauPertesClassees extends StatelessWidget {
+  const _TableauPertesClassees({
+    required this.pertes,
+    required this.rangRetenu,
+  });
+
+  final List<double> pertes;
+  final int rangRetenu;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: _varBorder),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Container(
+            height: 26,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            color: _varDeepBlue,
+            child: const Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    'Rang',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 4,
+                  child: Text(
+                    'Perte de la séance',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    'Position par rapport au seuil',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (var i = 0; i < pertes.length; i++)
+            Container(
+              height: 28,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              color: i + 1 == rangRetenu
+                  ? _varDanger.withValues(alpha: 0.09)
+                  : (i.isOdd ? _varSurfaceSoft : Colors.transparent),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      '${i + 1}',
+                      style: TextStyle(
+                        color: i + 1 == rangRetenu ? _varDanger : _varNavy,
+                        fontSize: 12,
+                        fontWeight: i + 1 == rangRetenu
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 4,
+                    child: Text(
+                      '${pertes[i].toStringAsFixed(0)} M',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: i + 1 == rangRetenu ? _varDanger : _varNavy,
+                        fontSize: 12,
+                        fontWeight: i + 1 == rangRetenu
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 5,
+                    child: Text(
+                      i + 1 < rangRetenu
+                          ? 'Au-delà du seuil'
+                          : i + 1 == rangRetenu
+                              ? 'Seuil retenu : VaR 99 %'
+                              : 'En deçà du seuil',
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: i + 1 == rangRetenu ? _varDanger : _varMuted,
+                        fontSize: 11,
+                        fontWeight: i + 1 == rangRetenu
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultatCas extends StatelessWidget {
+  const _ResultatCas({
+    required this.libelle,
+    required this.valeur,
+    required this.note,
+    required this.couleur,
+  });
+
+  final String libelle;
+  final String valeur;
+  final String note;
+  final Color couleur;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: couleur.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            libelle,
+            style: const TextStyle(
+              color: _varMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            valeur,
+            style: TextStyle(
+              color: couleur,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              height: 1,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            note,
+            style: const TextStyle(
+              color: _varMuted,
+              fontSize: 10.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PointExigence extends StatelessWidget {
+  const _PointExigence({required this.texte});
+
+  final String texte;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 4,
+            height: 4,
+            margin: const EdgeInsets.only(top: 7, right: 10),
+            decoration: const BoxDecoration(
+              color: _varPrimary,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              texte,
+              style: const TextStyle(
+                color: _varMuted,
+                fontSize: 12.3,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
