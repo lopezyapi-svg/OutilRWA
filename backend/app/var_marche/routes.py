@@ -23,7 +23,11 @@ from app.var_marche.portefeuille_data import DonneesAbsentesError, ErreurDonnees
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/var", tags=["Value at Risk"])
+# Prefixe SANS « /api », comme tous les autres routeurs. PrefixeApiMiddleware
+# retire « /api » avant le routage : un routeur declare sur « /api/var »
+# recevait donc « /var/... » et ne repondait jamais, ni sur « /api/var/... »
+# (prefixe retire avant comparaison) ni sur « /var/... » (route inconnue).
+router = APIRouter(prefix="/var", tags=["Value at Risk"])
 
 _MILLIARD_FCFA = 1e9
 
