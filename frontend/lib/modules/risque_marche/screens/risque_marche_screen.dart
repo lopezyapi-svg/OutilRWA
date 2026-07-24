@@ -15,7 +15,6 @@ import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:marquee/marquee.dart';
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
@@ -25,6 +24,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/hover_scroll_text.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../dashboard/models/dashboard_models.dart';
 import '../repositories/foreign_exchange_repository.dart';
@@ -32452,8 +32452,7 @@ class _TauxSummaryRow extends StatelessWidget {
             child: _TauxSummaryItem(
                 label: 'RWA Taux',
                 value: rwa,
-                subtitle: 'Équivalent en actifs pondérés des risques',
-                useMarquee: true)),
+                subtitle: 'Équivalent en actifs pondérés des risques')),
         const SizedBox(width: 10),
         Expanded(
             child: _TauxSummaryItem(
@@ -32545,11 +32544,9 @@ class _TauxSummaryItem extends StatefulWidget {
     required this.label,
     required this.value,
     this.subtitle,
-    this.useMarquee = false,
   });
   final String label, value;
   final String? subtitle;
-  final bool useMarquee;
   @override
   State<_TauxSummaryItem> createState() => _TauxSummaryItemState();
 }
@@ -32668,43 +32665,16 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
             ),
             if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
               const Spacer(),
-              if (widget.useMarquee)
-                SizedBox(
-                  height: 12,
-                  child: Marquee(
-                    text: widget.subtitle!,
-                    style: const TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
-                      color: _ink,
-                      height: 1,
-                    ),
-                    scrollAxis: Axis.horizontal,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    blankSpace: 30.0,
-                    velocity: 30.0,
-                    pauseAfterRound: const Duration(seconds: 1),
-                    accelerationDuration: const Duration(milliseconds: 500),
-                    accelerationCurve: Curves.linear,
-                    decelerationDuration: const Duration(milliseconds: 500),
-                    decelerationCurve: Curves.easeOut,
-                  ),
-                )
-              else
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    widget.subtitle!,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
-                      color: _ink,
-                      height: 1,
-                    ),
-                  ),
+              HoverScrollText(
+                text: widget.subtitle!,
+                hovered: _hovered,
+                style: const TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w600,
+                  color: _ink,
+                  height: 1,
                 ),
+              ),
             ],
           ],
         ),
@@ -33213,11 +33183,9 @@ class _SummaryItemData {
     required this.label,
     required this.value,
     this.subtitle,
-    this.useMarquee = false,
   });
   final String label, value;
   final String? subtitle;
-  final bool useMarquee;
 }
 
 class _GenericSummaryRow extends StatelessWidget {
@@ -33242,8 +33210,7 @@ class _GenericSummaryRow extends StatelessWidget {
           child: _TauxSummaryItem(
               label: items[i].label,
               value: items[i].value,
-              subtitle: items[i].subtitle,
-              useMarquee: items[i].useMarquee),
+              subtitle: items[i].subtitle),
         ),
       );
     }
@@ -34316,8 +34283,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
               _SummaryItemData(
                   label: 'Position brute',
                   value: _fcfa(gross),
-                  subtitle: 'Somme des valeurs absolues des positions',
-                  useMarquee: true),
+                  subtitle: 'Somme des valeurs absolues des positions'),
               _SummaryItemData(
                   label: 'Risque spécifique (9%)',
                   value: _fcfa(specific),
@@ -34339,8 +34305,7 @@ RWA Actions = Exigence FP Actions × 12,5 (DISPRUD UMOA, Art. 395-401)''',
                   label: 'RWA Actions',
                   value: _fcfa(rwa),
                   subtitle:
-                      '\u00c9quivalent en actifs pond\u00e9r\u00e9s des risques',
-                  useMarquee: true),
+                      '\u00c9quivalent en actifs pond\u00e9r\u00e9s des risques'),
             ],
           ),
           const SizedBox(height: 3),
@@ -35368,8 +35333,7 @@ RWA Marché = Exigence FP Marché × 12,5''',
                               label: 'Encours total',
                               value: _fcfa(totalExposure),
                               subtitle:
-                                  'Exposition brute globale (Actions + Obligations)',
-                              useMarquee: true),
+                                  'Exposition brute globale (Actions + Obligations)'),
                           _SummaryItemData(
                               label: 'Exigence FP Taux',
                               value: _fcfa(r.interestRateRisk),
@@ -35425,8 +35389,7 @@ RWA Marché = Exigence FP Marché × 12,5''',
                               label: 'Encours total',
                               value: _fcfa(totalExposure),
                               subtitle:
-                                  'Exposition brute globale (Actions + Obligations)',
-                              useMarquee: true),
+                                  'Exposition brute globale (Actions + Obligations)'),
                           _SummaryItemData(
                               label: 'Exigence FP Taux',
                               value: _fcfa(r.interestRateRisk),
