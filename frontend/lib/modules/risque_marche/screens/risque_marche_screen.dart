@@ -14656,10 +14656,10 @@ class _BondDashboardStats {
     final topFiveAmount = issuerEntries
         .take(5)
         .fold<double>(0, (sum, entry) => sum + entry.amount);
-    final hasHistoricalReturns = dataset.scenarioReturns.isNotEmpty;
+    final hasHistoricalReturns = dataset.observedReturns.isNotEmpty;
     final returnLossSeries = hasHistoricalReturns
         ? ([
-            for (final value in dataset.scenarioReturns)
+            for (final value in dataset.observedReturns)
               -value * dataset.portfolioValue,
           ]..sort())
         : const <double>[];
@@ -30019,6 +30019,11 @@ class _HistoricalVarResult {
     final insufficientHistoryNote = availableHistory > 0
         ? ' · historique réel : $availableHistory obs. (< $_minHistoricalObservations)'
         : '';
+    // Repli sans aucune observation : le dire explicitement, sinon « Proxy de
+    // marché » laisse croire à un historique tronqué plutôt qu'inexistant.
+    final proxyOriginNote = availableHistory > 0
+        ? insufficientHistoryNote
+        : ' · aucune série de prix importée, distribution paramétrique';
 
     if (portfolio.curveShockLosses.isNotEmpty) {
       final sourceLosses = _sampleLossWindow(
@@ -30123,7 +30128,7 @@ class _HistoricalVarResult {
         losses: proxyLosses,
         bins: _LossBin.build(proxyLosses, 32),
         isProxy: true,
-        sourceLabel: 'Proxy de marché$insufficientHistoryNote',
+        sourceLabel: 'Proxy de marché$proxyOriginNote',
       );
     }
 
@@ -30687,7 +30692,10 @@ class _VarPortfolioContext {
     required MarketPortfolioType portfolioType,
   }) {
     if (dataset != null && dataset.records.isNotEmpty) {
-      final importedLosses = dataset.scenarioLosses;
+      // `observedLosses` / `observedReturns` sont vides quand le portefeuille
+      // n'a pas de série de prix : la distribution paramétrique reconstruite
+      // n'alimente ni la VaR historique ni le rééchantillonnage empirique.
+      final importedLosses = dataset.observedLosses;
       final derivedVolatility = dataset.annualizedVolatility > 0
           ? dataset.annualizedVolatility
           : _annualizedVolatilityFromLosses(
@@ -30698,7 +30706,7 @@ class _VarPortfolioContext {
         portfolioType: portfolioType,
         portfolioValue: dataset.portfolioValue,
         parametricPortfolioValue: dataset.parametricRiskValue,
-        historicalReturns: dataset.scenarioReturns,
+        historicalReturns: dataset.observedReturns,
         importedLosses: importedLosses,
         volatility: derivedVolatility,
         durationYears: dataset.parametricModifiedDuration > 0
@@ -30722,7 +30730,7 @@ class _VarPortfolioContext {
         : (stats.capitalRemainingDue > 0
             ? stats.capitalRemainingDue
             : dataset.portfolioValue);
-    final importedLosses = dataset.scenarioLosses;
+    final importedLosses = dataset.observedLosses;
     final derivedVolatility = dataset.annualizedVolatility > 0
         ? dataset.annualizedVolatility
         : stats.curveShockVolatility > 0
@@ -30738,7 +30746,7 @@ class _VarPortfolioContext {
       portfolioType: MarketPortfolioType.bonds,
       portfolioValue: portfolioValue,
       parametricPortfolioValue: portfolioValue,
-      historicalReturns: dataset.scenarioReturns,
+      historicalReturns: dataset.observedReturns,
       importedLosses: importedLosses,
       curveShockLosses: stats.curveShockLosses,
       curveShockVolatility: stats.curveShockVolatility,
@@ -30891,18 +30899,23 @@ double _standardDeviation(List<double> values) {
 
 double _quantile(List<double> sortedValues, double confidence) {
   if (sortedValues.isEmpty) return 0;
-  final index =
-      (confidence * sortedValues.length).ceil().clamp(1, sortedValues.length) -
-          1;
-  return math.max(0, sortedValues[index.toInt()]);
+  return math.max(0.0, _rawQuantile(sortedValues, confidence));
 }
 
+/// Quantile par interpolation linéaire entre les deux valeurs encadrantes.
+/// L'indexation entière `ceil(n × c) − 1` renvoyait le maximum de
+/// l'échantillon dès que n ≤ 1 / (1 − c) — tout échantillon de 100 valeurs ou
+/// moins à 99 % —, confondant le seuil VaR avec la pire perte de la série.
 double _rawQuantile(List<double> sortedValues, double confidence) {
   if (sortedValues.isEmpty) return 0;
-  final index =
-      (confidence * sortedValues.length).ceil().clamp(1, sortedValues.length) -
-          1;
-  return sortedValues[index.toInt()];
+  if (sortedValues.length == 1) return sortedValues.first;
+  final position =
+      confidence.clamp(0.0, 1.0) * (sortedValues.length - 1).toDouble();
+  final lower = position.floor();
+  final upper = math.min(lower + 1, sortedValues.length - 1);
+  final weight = position - lower;
+  return sortedValues[lower] +
+      (sortedValues[upper] - sortedValues[lower]) * weight;
 }
 
 double _normalPdf(double value) {
