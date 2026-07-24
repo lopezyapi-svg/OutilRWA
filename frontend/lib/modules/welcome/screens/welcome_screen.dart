@@ -831,9 +831,10 @@ class _OpenHomeButton extends StatelessWidget {
       child: FilledButton.icon(
         onPressed: onPressed,
         icon: const Icon(CupertinoIcons.square_grid_2x2_fill, size: 17),
-        // Le bouton ouvre le module « Gestion des imports » : il le nomme,
-        // plutôt qu'un « accueil » qui n'existe pas dans l'outil.
-        label: const Text('Accéder à la gestion des imports'),
+        // Le bouton fait franchir le seuil de l'outil, il le dit en deux
+        // mots. Nommer le module d'arrivée serait à la fois plus long et plus
+        // fragile : ce point d'entrée peut changer.
+        label: const Text('Entrer dans l’outil'),
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF123A73),
           foregroundColor: Colors.white,

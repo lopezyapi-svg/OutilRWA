@@ -21,7 +21,7 @@ void main() {
     // Ancre stable de la page : le titre et le bouton d'entrée. Le libellé
     // « Essentiels métier » appartenait à la version précédente du carrousel.
     expect(find.text('Risk management'), findsOneWidget);
-    expect(find.text('Accéder à la gestion des imports'), findsOneWidget);
+    expect(find.text('Entrer dans l’outil'), findsOneWidget);
     expect(find.byType(SingleChildScrollView), findsNothing);
 
     await tester.pump(const Duration(seconds: 6));
