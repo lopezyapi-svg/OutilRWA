@@ -373,7 +373,7 @@ class _WelcomeCopy extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Une interface conçue pour suivre les RWA, le capital minimum et les indicateurs clés avec une lecture claire, fiable et professionnelle.',
+          'Calcul des actifs pondérés des risques de crédit, de marché et opérationnel, suivi des fonds propres et des ratios prudentiels réglementaires.',
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
           softWrap: true,
@@ -831,7 +831,9 @@ class _OpenHomeButton extends StatelessWidget {
       child: FilledButton.icon(
         onPressed: onPressed,
         icon: const Icon(CupertinoIcons.square_grid_2x2_fill, size: 17),
-        label: const Text('Accéder à l’accueil'),
+        // Le bouton ouvre le module « Gestion des imports » : il le nomme,
+        // plutôt qu'un « accueil » qui n'existe pas dans l'outil.
+        label: const Text('Accéder à la gestion des imports'),
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF123A73),
           foregroundColor: Colors.white,
