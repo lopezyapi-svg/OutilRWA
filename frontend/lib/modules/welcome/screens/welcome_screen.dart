@@ -831,10 +831,9 @@ class _OpenHomeButton extends StatelessWidget {
       child: FilledButton.icon(
         onPressed: onPressed,
         icon: const Icon(CupertinoIcons.square_grid_2x2_fill, size: 17),
-        // Le bouton fait franchir le seuil de l'outil, il le dit en deux
-        // mots. Nommer le module d'arrivée serait à la fois plus long et plus
-        // fragile : ce point d'entrée peut changer.
-        label: const Text('Entrer dans l’outil'),
+        // Deux mots pour l'action, sans nommer le module d'arrivée : ce point
+        // d'entrée peut changer, le libellé resterait vrai.
+        label: const Text('Ouvrir l’outil'),
         style: FilledButton.styleFrom(
           backgroundColor: const Color(0xFF123A73),
           foregroundColor: Colors.white,
