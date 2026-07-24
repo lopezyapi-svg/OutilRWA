@@ -15,9 +15,30 @@ class DashboardRatiosRow extends StatelessWidget {
 
   final DashboardSnapshot data;
 
+  /// Minima du dispositif prudentiel UMOA et coussin de conservation, en
+  /// points de pourcentage. Définis une seule fois : les deux dispositions
+  /// (colonne étroite et rangée large) affichaient auparavant des seuils
+  /// recopiés, libres de diverger l'un de l'autre.
+  static const double _coussinConservation = 2.50;
+  static const List<_RatioSpec> _specs = [
+    _RatioSpec(label: 'Ratio CET1', pilier1: 5.00),
+    _RatioSpec(label: 'Ratio Tier 1', pilier1: 6.00),
+    _RatioSpec(label: 'Ratio de solvabilité', pilier1: 9.00),
+    // Le ratio de levier n'est pas adossé au coussin de conservation.
+    _RatioSpec(label: 'Ratio de Levier', pilier1: 3.00, coussin: 0.00),
+  ];
+
+  List<double> _values(_DashboardRatios ratios) => [
+        ratios.cet1,
+        ratios.tier1,
+        ratios.solvabilite,
+        ratios.levier,
+      ];
+
   @override
   Widget build(BuildContext context) {
     final ratios = _DashboardRatios.from(data);
+    final values = _values(ratios);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -25,29 +46,15 @@ class DashboardRatiosRow extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _RatioTile(
-                  label: 'Ratio CET1',
-                  value: ratios.cet1,
-                  pilier1: 5.00,
-                  coussin: 2.50),
-              const SizedBox(height: 8),
-              _RatioTile(
-                  label: 'Ratio Tier 1',
-                  value: ratios.tier1,
-                  pilier1: 7.50,
-                  coussin: 2.50),
-              const SizedBox(height: 8),
-              _RatioTile(
-                  label: 'Ratio de solvabilité',
-                  value: ratios.solvabilite,
-                  pilier1: 9.00,
-                  coussin: 2.50),
-              const SizedBox(height: 8),
-              _RatioTile(
-                  label: 'Ratio de Levier',
-                  value: ratios.levier,
-                  pilier1: 3.00,
-                  coussin: 0.00),
+              for (var i = 0; i < _specs.length; i++) ...[
+                if (i > 0) const SizedBox(height: 8),
+                _RatioTile(
+                  label: _specs[i].label,
+                  value: values[i],
+                  pilier1: _specs[i].pilier1,
+                  coussin: _specs[i].coussin ?? _coussinConservation,
+                ),
+              ],
             ],
           );
         }
@@ -55,43 +62,39 @@ class DashboardRatiosRow extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: _RatioTile(
-                    label: 'Ratio CET1',
-                    value: ratios.cet1,
-                    pilier1: 5.00,
-                    coussin: 2.50),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _RatioTile(
-                    label: 'Ratio Tier 1',
-                    value: ratios.tier1,
-                    pilier1: 7.50,
-                    coussin: 2.50),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _RatioTile(
-                    label: 'Ratio de solvabilité',
-                    value: ratios.solvabilite,
-                    pilier1: 9.00,
-                    coussin: 2.50),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _RatioTile(
-                    label: 'Ratio de Levier',
-                    value: ratios.levier,
-                    pilier1: 3.00,
-                    coussin: 0.00),
-              ),
+              for (var i = 0; i < _specs.length; i++) ...[
+                if (i > 0) const SizedBox(width: 8),
+                Expanded(
+                  child: _RatioTile(
+                    label: _specs[i].label,
+                    value: values[i],
+                    pilier1: _specs[i].pilier1,
+                    coussin: _specs[i].coussin ?? _coussinConservation,
+                  ),
+                ),
+              ],
             ],
           ),
         );
       },
     );
   }
+}
+
+/// Seuil réglementaire d'un ratio : minimum du pilier 1, et coussin de
+/// conservation lorsqu'il s'y ajoute.
+class _RatioSpec {
+  const _RatioSpec({
+    required this.label,
+    required this.pilier1,
+    this.coussin,
+  });
+
+  final String label;
+  final double pilier1;
+
+  /// `null` : coussin de conservation de droit commun.
+  final double? coussin;
 }
 
 class _DashboardRatios {
@@ -303,13 +306,24 @@ class _RatioTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 6),
-              Text(
-                '${ecart >= 0 ? "+" : ""}${_fr(ecart)} pts',
-                style: DashText.value(
-                  c,
-                  color: c.status(status),
-                  weight: FontWeight.w700,
-                ).copyWith(fontSize: 12),
+              // Aux tuiles étroites, badge et écart réunis dépassaient de
+              // quelques pixels : la rangée affichait alors les hachures de
+              // débordement. L'écart cède le peu qu'il faut plutôt que de
+              // déborder.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${ecart >= 0 ? "+" : ""}${_fr(ecart)} pts',
+                    maxLines: 1,
+                    style: DashText.value(
+                      c,
+                      color: c.status(status),
+                      weight: FontWeight.w700,
+                    ).copyWith(fontSize: 12),
+                  ),
+                ),
               ),
             ],
           ),

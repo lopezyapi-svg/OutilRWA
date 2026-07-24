@@ -740,11 +740,8 @@ class AnalyseService {
         return const _RegulatoryThresholds(
           cet1Minimum: 0.050,
           cet1Target: 0.075,
-          // Aligné sur le reste de l'outil : Tier 1 minimum 7,5 %
-          // (paramétrage retenu par l'utilisateur) + coussin de
-          // conservation 2,5 % = 10 % - le tableau de bord affiche le
-          // même seuil global.
-          tier1Target: 0.100,
+          // Tier 1 minimum 6 % + coussin de conservation 2,5 % = 8,5 %.
+          tier1Target: 0.085,
           fpeMinimum: 0.090,
           fpeTarget: 0.115,
           largeRiskLimit: 0.25,

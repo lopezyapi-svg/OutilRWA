@@ -168,7 +168,7 @@ const _artExplanations = <String, String>{
   'Art. 301/307':
       'Exigences minimales en fonds propres (dispositif prudentiel BCEAO).\n\n'
       'Ratios réglementaires :\n'
-      '  Ratio Tier 1 = Fonds propres de catégorie 1 / RWA total  ≥ 7,5 %\n'
+      '  Ratio Tier 1 = Fonds propres de catégorie 1 / RWA total  ≥ 6 %\n'
       '  Ratio global = Fonds propres totaux / RWA total   ≥ 9 %\n'
       '  RWA total = RWA_crédit + RWA_marché + RWA_opérationnel\n'
       '  Coussin de conservation : + 2,5 % des RWA (si applicable)',
