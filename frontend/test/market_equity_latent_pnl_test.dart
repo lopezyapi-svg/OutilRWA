@@ -304,4 +304,93 @@ void main() {
       expect(dataset.weightedDividendYield, 0);
     });
   });
+
+  group('Profil de risque consolide par emetteur', () {
+    test(
+        'un émetteur portant plusieurs lignes n\'occupe qu\'un rang, '
+        'avec un bêta pondéré par la valeur de marché', () {
+      final portefeuille = _dataset([
+        _equity({
+          'Emetteur': 'Atlantis Maritime SA',
+          'Quantité': 1000,
+          'Cours actuel': 10000,
+          'Bêta': 1.0,
+          'Rendement dividende (%)': 6,
+        }),
+        _equity({
+          'Emetteur': 'Atlantis Maritime SA',
+          'Quantité': 3000,
+          'Cours actuel': 10000,
+          'Bêta': 1.4,
+          'Rendement dividende (%)': 2,
+        }),
+        _equity({
+          'Emetteur': 'Nokoué Ciments SA',
+          'Quantité': 500,
+          'Cours actuel': 10000,
+          'Bêta': 0.8,
+        }),
+      ]);
+
+      final profils = portefeuille.riskProfileByIssuer;
+
+      // Deux emetteurs pour trois lignes : le tableau annoncait « par
+      // emetteur » tout en listant les lignes.
+      expect(profils.length, 2);
+      expect(profils.first.issuer, 'Atlantis Maritime SA');
+      expect(profils.first.marketValue, 40000000);
+
+      // (1,0 x 10 + 1,4 x 30) / 40 = 1,30
+      expect(profils.first.beta, moreOrLessEquals(1.30, epsilon: 1e-9));
+      // (6 % x 10 + 2 % x 30) / 40 = 3 %
+      expect(profils.first.dividendYield, moreOrLessEquals(0.03, epsilon: 1e-9));
+    });
+
+    test('le classement suit la valeur de marche consolidee', () {
+      final portefeuille = _dataset([
+        _equity({
+          'Emetteur': 'PETITE A',
+          'Quantité': 100,
+          'Cours actuel': 10000,
+        }),
+        _equity({
+          'Emetteur': 'PETITE A',
+          'Quantité': 100,
+          'Cours actuel': 10000,
+        }),
+        _equity({
+          'Emetteur': 'GROSSE B',
+          'Quantité': 150,
+          'Cours actuel': 10000,
+        }),
+      ]);
+
+      // 200 lignes cumulees contre 150 : la consolidation fait passer
+      // PETITE A devant, alors que ligne par ligne elle etait derriere.
+      expect(portefeuille.riskProfileByIssuer.first.issuer, 'PETITE A');
+    });
+
+    test('une ligne sans beta ne fausse pas la moyenne de son emetteur', () {
+      final portefeuille = _dataset([
+        _equity({
+          'Emetteur': 'A',
+          'Quantité': 1000,
+          'Cours actuel': 10000,
+          'Bêta': 1.2,
+        }),
+        _equity({
+          'Emetteur': 'A',
+          'Quantité': 1000,
+          'Cours actuel': 10000,
+        }),
+      ]);
+
+      // La ligne sans beta ne contribue pas au numerateur mais pese au
+      // denominateur : 1,2 x 10 / 20 = 0,6.
+      expect(
+        portefeuille.riskProfileByIssuer.first.beta,
+        moreOrLessEquals(0.6, epsilon: 1e-9),
+      );
+    });
+  });
 }

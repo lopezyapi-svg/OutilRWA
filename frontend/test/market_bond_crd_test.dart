@@ -162,8 +162,27 @@ void main() {
       );
 
       expect(record.issuerCountryIso3, 'CIV');
-      expect(record.issuerAnalysisKey, 'CIV|Trésor public');
+      // La clé est CANONIQUE : casse, accents et ponctuation neutralisés,
+      // pour que deux graphies du même émetteur ne comptent pas double dans
+      // les classements de concentration.
+      expect(record.issuerAnalysisKey, 'CIV|TRESOR PUBLIC');
+      // Le libellé, lui, reste le nom du fichier : la clé ne s'affiche pas.
       expect(record.issuerAnalysisLabel, 'Trésor public (CIV)');
+    });
+
+    test('deux graphies du même émetteur partagent la clé d\'analyse', () {
+      MarketPortfolioRecord bon(String emetteur) => MarketPortfolioRecord(
+            portfolioType: MarketPortfolioType.bonds,
+            values: {
+              'Pays émetteur': 'Côte d\'Ivoire',
+              'Emetteur': emetteur,
+            },
+          );
+
+      expect(
+        bon('TRESOR PUBLIC S.A.').issuerAnalysisKey,
+        bon('Trésor public SA').issuerAnalysisKey,
+      );
     });
 
     test('zero coupon profile does not create coupon cashflows', () {

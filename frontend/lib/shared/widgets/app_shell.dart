@@ -2054,6 +2054,13 @@ class _WorkspaceTopBar extends StatelessWidget {
               // La marque reste à gauche pour ancrer la lecture de l'application.
               const _ShellBrand(),
               const Spacer(),
+              // Identité de session et gestion d'équipe. L'application a DEUX
+              // barres d'en-tête — celle-ci pour le poste de travail, _TopBar
+              // pour les écrans étroits. Les deux doivent porter la zone
+              // compte, sinon la gestion d'équipe n'apparaît que sur l'une
+              // des deux : c'est ce qui la rendait visible au téléphone et
+              // introuvable sur ordinateur.
+              const _ZoneCompte(),
               _HeaderIconButton(
                 icon: CupertinoIcons.circle_grid_3x3_fill,
                 accent: Theme.of(context).colorScheme.primary,
@@ -2743,14 +2750,21 @@ class _TopBar extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: AppTheme.spacing),
-          Text(
-            selectedModule.title.tr(context),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: isDark
-                      ? const Color(0xFFF2F6FF)
-                      : const Color(0xFF1E2337),
-                ),
+          // Le titre cède la place avant que la barre ne déborde : sur un
+          // téléphone, « Risque Opérationnel » et les commandes de compte ne
+          // tiennent pas ensemble, et ce sont les commandes qui comptent.
+          Flexible(
+            child: Text(
+              selectedModule.title.tr(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: isDark
+                        ? const Color(0xFFF2F6FF)
+                        : const Color(0xFF1E2337),
+                  ),
+            ),
           ),
           const Spacer(),
           const _ZoneCompte(),
@@ -2784,21 +2798,36 @@ class _ZoneCompte extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
+    // Sur écran étroit, seules les commandes subsistent : le nom du compte et
+    // le badge de rôle poussaient la barre au-delà de sa largeur. Perdre le
+    // nom est sans gravité — l'utilisateur sait qui il est ; perdre l'accès à
+    // l'équipe ne l'est pas.
+    final etroit = MediaQuery.sizeOf(context).width < 700;
     return Padding(
       padding: const EdgeInsets.only(right: AppTheme.spacing),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            profil.nomComplet?.trim().isNotEmpty == true
-                ? profil.nomComplet!
-                : profil.identifiant,
-            style: theme.textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: theme.colorScheme.onSurfaceVariant,
+          if (!etroit) ...
+          [
+            const BandeauConsultation(),
+            const SizedBox(width: 10),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 180),
+              child: Text(
+                profil.nomComplet?.trim().isNotEmpty == true
+                    ? profil.nomComplet!
+                    : profil.identifiant,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(width: 4),
+            const SizedBox(width: 4),
+          ],
           // La gestion d'équipe n'apparaît qu'aux comptes qui éditent : le
           // serveur refuse la liste aux autres, inutile de la leur proposer.
           if (profil.peutGererEquipe)

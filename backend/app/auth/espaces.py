@@ -58,6 +58,7 @@ def chemin_espace(identifiant: str) -> Path:
 _TABLES_REFERENCE: frozenset[str] = frozenset(
     {
         "schema_migrations",
+        # Conservee, mais nettoyee cle par cle : voir _CLES_METADONNEES_TECHNIQUES.
         "metadonnees_app",
         # Grilles lues par l'ecran Referentiels.
         "baremes_ponderation",
@@ -75,6 +76,26 @@ _TABLES_REFERENCE: frozenset[str] = frozenset(
         "op_parametres_as",
         "op_parametres_seuils",
         "op_risk_parametres",
+    }
+)
+
+
+# Seules cles de `metadonnees_app` conservees dans un espace neuf.
+#
+# Cette table melange du technique et des DONNEES : elle porte l'exigence de
+# fonds propres du risque de marche et le portefeuille de marche lui-meme.
+# Garder la table entiere faisait apparaitre, dans un espace vide, un RWA
+# marche de 204 Md herite de la demonstration -- et un capital requis de
+# 18,42 Md face a zero exposition.
+#
+# Comme pour les tables, on declare ce qu'on GARDE : une cle ajoutee demain
+# sera purgee par defaut plutot que transmise a tous les nouveaux comptes.
+_CLES_METADONNEES_TECHNIQUES: frozenset[str] = frozenset(
+    {
+        "exposure_calc_rules_version",
+        "exposure_calc_rules_recalculated_at",
+        "storage_backend",
+        "market_storage_backend",
     }
 )
 
@@ -102,6 +123,13 @@ def _vider_donnees_metier(chemin: Path) -> None:
             if table in _TABLES_REFERENCE:
                 continue
             connexion.execute(f'DELETE FROM "{table}"')
+
+        if "metadonnees_app" in tables:
+            marques = ", ".join("?" for _ in _CLES_METADONNEES_TECHNIQUES)
+            connexion.execute(
+                f"DELETE FROM metadonnees_app WHERE cle NOT IN ({marques})",
+                tuple(_CLES_METADONNEES_TECHNIQUES),
+            )
         connexion.commit()
         connexion.execute("VACUUM")
     finally:

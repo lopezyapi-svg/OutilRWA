@@ -574,6 +574,11 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         _build_metric("tier1_ratio", "Ratio Tier 1", ratios["tier1"]["value"] / 100.0),
         _build_metric("ratio_levier", "Ratio de Levier", ratios["leverage"]["value"] / 100.0),
         _build_metric("rwa_credit", "RWA Crédit", rwa_credit),
+        # Exigence portee par le SEUL risque de credit. Sans elle, la tuile
+        # « Capital requis (credit) » retombait sur l'exigence totale, marche
+        # et operationnel compris : elle annoncait un besoin de fonds propres
+        # de credit superieur a la realite.
+        _build_metric("capital_credit", "Exigence de fonds propres (crédit)", calculate_capital(rwa_credit)),
         _build_metric("rwa_market", "RWA Marché", rm_calc["rwa_marche"]),
         _build_metric("rwa_op", "RWA Opérationnel", rwa_operationnel),
         _build_metric("crm", "Couverture CRM", covered_ratio),

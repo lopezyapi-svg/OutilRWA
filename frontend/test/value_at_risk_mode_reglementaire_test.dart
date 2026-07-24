@@ -233,17 +233,22 @@ void main() {
     // La VaR et l'ES du backend sont bien affichées sur les cartes KPI.
     expect(find.textContaining('0,1'), findsWidgets);
 
-    // L'onglet Historique est verrouillé (icône cadenas) et ne réagit pas
-    // au tap : rester sur la VaR paramétrique, pas basculer sur l'erreur.
-    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+    // L'onglet Historique n'est plus un cadenas : il annonce ce qu'il
+    // contient et reste navigable.
+    expect(find.byIcon(Icons.lock_outline), findsNothing);
+    expect(find.text('Méthodologie'), findsOneWidget);
+
     await tester.tap(find.text('VaR Historique'));
     await tester.pumpAndSettle();
+
+    // Il expose la méthode et le cas chiffré, sans jamais appeler le serveur.
+    expect(find.text('Méthode de la VaR historique'), findsOneWidget);
+    expect(find.text('Cas chiffré, de bout en bout'), findsOneWidget);
     expect(
       find.textContaining('nécessite obligatoirement'),
       findsNothing,
-      reason: 'l\'onglet verrouillé ne doit pas déclencher de requête',
+      reason: 'la VaR historique ne doit déclencher aucune requête',
     );
-    expect(find.text('VALEUR DU PORTEFEUILLE'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 11));
     await tester.pumpWidget(const SizedBox());
