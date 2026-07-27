@@ -265,13 +265,13 @@ class FxSecurityAnalysisService {
     final globalNetPosition =
         math.max(totalLongPositions, totalShortPositions).toDouble();
 
-    // Exigence de fonds propres pour risque de change = 8 % de la position
+    // Exigence de fonds propres pour risque de change = 9 % de la position
     // nette globale (dispositif prudentiel UMOA).
-    final capitalRequirement = globalNetPosition * 0.08;
+    final capitalRequirement = globalNetPosition * 0.09;
 
-    // Équivalent RWA = Exigence_FP × 12,5 (multiplicateur réglementaire de
+    // Équivalent RWA = Exigence_FP × 11,11 (multiplicateur réglementaire de
     // l'assiette du ratio de solvabilité).
-    final rwaChange = capitalRequirement * 12.5;
+    final rwaChange = capitalRequirement * 11.11;
 
     final marketRiskContribution =
         totalExposure > 0 ? (capitalRequirement / totalExposure) * 100 : 0.0;

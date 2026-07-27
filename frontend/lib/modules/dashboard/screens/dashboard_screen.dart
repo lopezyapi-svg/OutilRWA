@@ -86,7 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // opérationnel compris) reste servie par « capital_requis ».
         final capitalMetric = DashboardMetric(
           key: 'capital_credit',
-          label: 'Capital requis (crédit)',
+          label: 'Capital min. requis (crédit)',
           value: rwaCredit * 0.09,
           variation: '',
           trend: const [],

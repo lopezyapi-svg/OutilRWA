@@ -22,6 +22,7 @@ import 'dart:math' as math;
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:spreadsheet_decoder/spreadsheet_decoder.dart';
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -527,9 +528,13 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
             onClose: () => Navigator.pop(context, false),
             canValidate: _rowsReady && !_isImporting && _importResult == null,
             onRunImport: _runImport,
-            footerText: _rowsReady
-                ? 'Vérifiez les valeurs ci-dessus avant d\'enregistrer.'
-                : 'Sélectionnez un fichier pour lancer la lecture.',
+            centerWidget: Text(
+              _rowsReady
+                  ? 'Vérifiez les valeurs ci-dessus avant d\'enregistrer.'
+                  : 'Sélectionnez un fichier pour lancer la lecture.',
+              textAlign: TextAlign.end,
+              style: TextStyle(color: _muted, fontSize: 10.2, height: 1.2),
+            ),
           ),
         ],
       ),

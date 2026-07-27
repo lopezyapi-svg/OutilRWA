@@ -40,7 +40,7 @@ class DashboardTopMetricsGrid extends StatelessWidget {
         subtitle: 'EAD × RW (Taux de pondération)'.tr(context),
       ),
       _MinimalMetricCard(
-        label: 'Capital requis (crédit)'.tr(context),
+        label: 'Capital min. requis (crédit)'.tr(context),
         value: capitalMetric.value,
         isCurrency: true,
         subtitle: 'RWA Crédit × 9%'.tr(context),

@@ -96,13 +96,13 @@ ForeignExchangeRiskResult calculateForeignExchangeRisk(
   // Position nette globale = MAX(longues, courtes)
   final globalNetPosition = math.max(totalLong, totalShort);
 
-  // Exigence de fonds propres pour risque de change = 8 % de la position
+  // Exigence de fonds propres pour risque de change = 9 % de la position
   // nette globale (dispositif prudentiel UMOA).
-  final capitalRequirement = globalNetPosition * 0.08;
+  final capitalRequirement = globalNetPosition * 0.09;
 
-  // Équivalent RWA = Exigence_FP × 12,5 (multiplicateur réglementaire de
-  // l'assiette du ratio de solvabilité).
-  final marketRwa = capitalRequirement * 12.5;
+  // Équivalent RWA = Exigence_FP × 11,11 (multiplicateur réglementaire de
+  // 1/0.09 pour reconvertir l'exigence en base d'exposition)
+  final marketRwa = capitalRequirement * 11.11;
 
   return ForeignExchangeRiskResult(
     positions: positions,

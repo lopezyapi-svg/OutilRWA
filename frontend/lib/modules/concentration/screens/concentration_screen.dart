@@ -392,34 +392,6 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-              decoration: BoxDecoration(
-                color: AppTheme.background,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Nombre NPL :  ',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.muted,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 12)),
-                    Text('$countNpl',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.text,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12)),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -686,6 +658,30 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppTheme.background,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text('Nombre NPL :  ',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.muted,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13)),
+                Text('$countNpl',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.text,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14)),
+              ],
             ),
           ),
         ],
@@ -1123,9 +1119,9 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(flex: 16, child: block1),
+                  Expanded(flex: 21, child: block1),
                   const SizedBox(width: AppTheme.pageGap),
-                  Expanded(flex: 10, child: subBlockB),
+                  Expanded(flex: 20, child: subBlockB),
                 ],
               ),
             ),
@@ -3506,9 +3502,8 @@ class _ZoneDistributionView extends StatelessWidget {
           compact ? 116.0 : 132.0,
           math.max(96.0, constraints.maxHeight - 12),
         );
-        final legendWidth = compact ? 142.0 : 170.0;
-        final metricsWidth = compact ? 104.0 : 118.0;
-        final contentWidth = donutSize + legendWidth + metricsWidth + 82;
+        final legendWidth = compact ? 190.0 : 230.0;
+        final contentWidth = donutSize + legendWidth + 32;
 
         return Align(
           alignment: Alignment.center,
@@ -3537,39 +3532,51 @@ class _ZoneDistributionView extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 17),
+                            Expanded(
+                              child: Text(
+                                'Zone',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: AppTheme.muted,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Montant',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppTheme.muted,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 45,
+                              child: Text(
+                                'Part',
+                                textAlign: TextAlign.right,
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: AppTheme.muted,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       for (var index = 0; index < entries.length; index++)
                         _ZoneLegendRow(
                           entry: entries[index],
                           color: colors[index],
                         ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: metricsWidth,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _ZoneMetricTile(
-                        label: 'Zone dominante',
-                        value: dominant.label,
-                        color: _geoZoneColor(dominant.label),
-                        emphasize: true,
-                      ),
-                      const SizedBox(height: 7),
-                      _ZoneMetricTile(
-                        label: 'Part zone',
-                        value: AppFormatters.percent(dominant.percentage),
-                        color: _geoZoneColor(dominant.label),
-                      ),
-                      const SizedBox(height: 7),
-                      _ZoneMetricTile(
-                        label: 'Exp. zone dominante',
-                        value:
-                            '${_amountMd(dominant.amount)} ${_amountUnitLabel()}',
-                        color: AppColors.riskWeightDark,
-                      ),
                     ],
                   ),
                 ),
@@ -3808,15 +3815,31 @@ class _ZoneLegendRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            AppFormatters.percent(entry.percentage),
+            '${_amountMd(entry.amount)} ${_amountUnitLabel()}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: color,
-                  fontSize: 11.2,
-                  fontWeight: FontWeight.w800,
+                  color: AppTheme.text.withValues(alpha: 0.65),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
                   height: 1,
                 ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 45,
+            child: Text(
+              AppFormatters.percent(entry.percentage),
+              maxLines: 1,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: color,
+                    fontSize: 11.2,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+            ),
           ),
         ],
       ),

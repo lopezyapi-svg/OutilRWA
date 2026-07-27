@@ -162,9 +162,9 @@ class MarketPrudentialCapitalResult {
   double get commodityRisk => commodityDirectionalRisk + commodityBasisRisk;
   double get capitalRequirement =>
       interestRateRisk + equityRisk + foreignExchangeRisk + commodityRisk;
-  // Équivalent RWA = exigence de fonds propres × 12,5 (multiplicateur
+  // Équivalent RWA = exigence de fonds propres × 11,11 (multiplicateur
   // réglementaire de l'assiette du ratio de solvabilité UMOA).
-  double get marketRwa => capitalRequirement * 12.5;
+  double get marketRwa => capitalRequirement * 11.11;
 }
 
 MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
@@ -202,10 +202,10 @@ MarketPrudentialCapitalResult calculateMarketPrudentialCapital({
   return MarketPrudentialCapitalResult(
     interestRateSpecificRisk: interestSpecific,
     interestRateGeneralRisk: interestGeneral,
-    // Risque spécifique : (8 % ou 4 %) × Σ|net par émetteur|
+    // Risque spécifique : (9 % ou 4,5 %) × Σ|net par émetteur|
     equitySpecificRisk: equityPosition.specificRiskTotal,
-    // Risque général : 8 % × Σ|net par marché national/régional|
-    equityGeneralRisk: equityPosition.generalRiskBase * 0.08,
+    // Risque général : 9 % × Σ|net par marché national/régional|
+    equityGeneralRisk: equityPosition.generalRiskBase * 0.09,
     foreignExchangeRisk: _marketForeignExchangeRisk(marketRecords),
     commodityDirectionalRisk: commodityMeasure.netPosition.abs() * 0.15,
     commodityBasisRisk: commodityMeasure.grossPosition * 0.03,
@@ -535,9 +535,9 @@ _MarketEquityRiskMeasure _marketEquityRiskMeasure(
     specificBase += value;
     final isLiquid =
         isLiquidByIssuer[issuerKey] == true || globalLiquidDiversified;
-    // 8 % du net par émetteur, ramené à 4 % si le portefeuille est jugé
+    // 9 % du net par émetteur, ramené à 4,5 % si le portefeuille est jugé
     // liquide et bien diversifié (sur approbation de la Commission Bancaire).
-    specificTotal += value * (isLiquid ? 0.04 : 0.08);
+    specificTotal += value * (isLiquid ? 0.045 : 0.09);
   }
 
   final generalBase =
@@ -576,9 +576,9 @@ _MarketPositionMeasure _marketCommodityPositionMeasure(
 }
 
 double _marketForeignExchangeRisk(List<MarketPortfolioRecord> records) {
-  // Exigence de fonds propres pour risque de change : 8 % de la position
+  // Exigence de fonds propres pour risque de change : 9 % de la position
   // nette globale en devises.
-  return _marketForeignExchangeGlobalNetPosition(records) * 0.08;
+  return _marketForeignExchangeGlobalNetPosition(records) * 0.09;
 }
 
 double _marketForeignExchangeGlobalNetPosition(
