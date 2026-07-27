@@ -50,4 +50,4 @@ services:
       - key: RWA_COMPTE_LOPEZ
         value: lopez
       - key: RWA_COMPTE_LOPEZ_MDP
-        value: Heymanns@2026#
+        value: "Heymanns@2026#"
