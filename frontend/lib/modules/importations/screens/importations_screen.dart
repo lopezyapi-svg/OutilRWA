@@ -58,7 +58,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                     color: Theme.of(context).dividerColor),
                 const SizedBox(height: 6),
                 Text(
-                  'Importez et consolidez les données d\'exposition par catégorie pour le calcul des risques pondérés (RWA).'
+                  'Veuillez procéder à l\'importation de vos données afin de réaliser vos analyses.'
                       .tr(context),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.muted,

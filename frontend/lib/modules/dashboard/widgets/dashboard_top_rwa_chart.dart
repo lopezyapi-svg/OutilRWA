@@ -5,7 +5,31 @@ import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
+import 'dashboard_chart_tooltip.dart';
 import 'dashboard_design.dart';
+import 'dashboard_theme.dart';
+
+/// Lignes de détail de l'infobulle d'une catégorie du Top 5 RWA.
+List<String> _rwaTooltipLines(
+  BuildContext context,
+  DistributionEntry entry,
+  int? count,
+) {
+  final amountUnit = PortfolioAmountUnitScope.maybeOf(context);
+  final valScaled = entry.amount / amountUnit.divisor;
+  return [
+    context.tr('Part: {{value}}%', args: {
+      'value':
+          AppFormatters.decimalNumber(entry.percentage * 100, maxDecimals: 2),
+    }),
+    context.tr('RWA: {{value}}', args: {
+      'value':
+          '${AppFormatters.decimalNumber(valScaled, maxDecimals: 2)} ${amountUnit.label}',
+    }),
+    if (count != null)
+      context.tr('{{count}} expositions', args: {'count': count}),
+  ];
+}
 
 String _cleanLabel(String label) {
   final cleaned = label.replaceAll(RegExp(r'^\([a-zA-Z]\)\s*'), '');
@@ -27,11 +51,16 @@ class DashboardTopRwaChart extends StatelessWidget {
     required this.entries,
     this.displayCurrency = 'XOF',
     this.trailing,
+    this.exposureCounts,
   });
 
   final List<DistributionEntry> entries;
   final String displayCurrency;
   final Widget? trailing;
+
+  /// Nombre d'expositions par catégorie (clé = libellé brut de l'entrée),
+  /// affiché dans l'infobulle de survol quand il est connu.
+  final Map<String, int>? exposureCounts;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +123,7 @@ class DashboardTopRwaChart extends StatelessWidget {
                             entry: entry,
                             maxAmount: maxAmount,
                             color: _barColors[index % _barColors.length],
+                            count: exposureCounts?[entry.label],
                           ),
                         ),
                       );
@@ -113,13 +143,21 @@ class DashboardTopRwaChart extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 alignment: Alignment.topCenter,
-                child: Text(
-                  _cleanLabel(entry.label).tr(context),
-                  textAlign: TextAlign.center,
-                  style: DashText.caption(c, color: const Color(0xFF1E3A8A))
-                      .copyWith(fontWeight: FontWeight.w500, fontSize: 9.5),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
+                child: DashChartTooltip(
+                  title: dashboardExposureFullLabel(entry.label),
+                  lines: _rwaTooltipLines(
+                    context,
+                    entry,
+                    exposureCounts?[entry.label],
+                  ),
+                  child: Text(
+                    _cleanLabel(entry.label).tr(context),
+                    textAlign: TextAlign.center,
+                    style: DashText.caption(c, color: const Color(0xFF1E3A8A))
+                        .copyWith(fontWeight: FontWeight.w500, fontSize: 9.5),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             );
@@ -135,11 +173,13 @@ class _VerticalBarItem extends StatefulWidget {
     required this.entry,
     required this.maxAmount,
     required this.color,
+    this.count,
   });
 
   final DistributionEntry entry;
   final double maxAmount;
   final Color color;
+  final int? count;
 
   @override
   State<_VerticalBarItem> createState() => _VerticalBarItemState();
@@ -155,7 +195,10 @@ class _VerticalBarItemState extends State<_VerticalBarItem> {
     
     final ratio = widget.entry.percentage;
 
-    return MouseRegion(
+    return DashChartTooltip(
+      title: dashboardExposureFullLabel(widget.entry.label),
+      lines: _rwaTooltipLines(context, widget.entry, widget.count),
+      child: MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: LayoutBuilder(
@@ -202,6 +245,7 @@ class _VerticalBarItemState extends State<_VerticalBarItem> {
             ),
           );
         },
+      ),
       ),
     );
   }

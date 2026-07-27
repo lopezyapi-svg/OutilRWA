@@ -4,7 +4,9 @@ import '../../../core/localization/app_localization.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
+import 'dashboard_chart_tooltip.dart';
 import 'dashboard_design.dart';
+import 'dashboard_theme.dart';
 
 String _cleanLabel(String label) {
   final cleaned = label.replaceAll(RegExp(r'^\([a-zA-Z]\)\s*'), '');
@@ -26,11 +28,16 @@ class DashboardTopGrossChart extends StatelessWidget {
     required this.entries,
     this.displayCurrency = 'XOF',
     this.trailing,
+    this.exposureCounts,
   });
 
   final List<DistributionEntry> entries;
   final String displayCurrency;
   final Widget? trailing;
+
+  /// Nombre d'expositions par catégorie (clé = libellé brut de l'entrée),
+  /// affiché dans l'infobulle de survol quand il est connu.
+  final Map<String, int>? exposureCounts;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +55,7 @@ class DashboardTopGrossChart extends StatelessWidget {
             entry: entry,
             currency: displayCurrency,
             color: _barColors[index % _barColors.length],
+            count: exposureCounts?[entry.label],
           ),
         );
       }).toList(),
@@ -60,11 +68,13 @@ class _HorizontalBarItem extends StatefulWidget {
     required this.entry,
     required this.currency,
     required this.color,
+    this.count,
   });
 
   final DistributionEntry entry;
   final String currency;
   final Color color;
+  final int? count;
 
   @override
   State<_HorizontalBarItem> createState() => _HorizontalBarItemState();
@@ -87,7 +97,19 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: Column(
+      child: DashChartTooltip(
+        title: dashboardExposureFullLabel(widget.entry.label),
+        lines: [
+          context.tr('Part: {{value}}%', args: {
+            'value': AppFormatters.decimalNumber(percentage, maxDecimals: 2),
+          }),
+          context.tr('Exposition totale: {{value}}', args: {
+            'value': '$formattedAmount $suffix',
+          }),
+          if (widget.count != null)
+            context.tr('{{count}} expositions', args: {'count': widget.count}),
+        ],
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -159,6 +181,7 @@ class _HorizontalBarItemState extends State<_HorizontalBarItem> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

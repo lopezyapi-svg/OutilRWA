@@ -748,7 +748,7 @@ class _FileVerificationPanel extends StatelessWidget {
     final statSurface =
         colors.isDark ? const Color(0xFF111D30) : const Color(0xFFFBFCFE);
 
-    return _ImportSectionCard(
+    return SharedImportSectionCard(
       icon: CupertinoIcons.doc_text,
       title: 'Vérification du fichier',
       child: Container(

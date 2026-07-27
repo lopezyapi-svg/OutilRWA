@@ -462,6 +462,9 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     # (crédit + marché + opérationnel), pas sur le seul risque de crédit, et
     # se distingue des fonds propres effectivement détenus.
     capital_requis = calculate_capital(rwa_total)
+    # Exigence du seul risque de crédit : la tuile du dashboard l'affiche
+    # séparément de l'exigence totale (clé "capital_requis").
+    capital_credit = calculate_capital(rwa_credit)
     risk_ratio = safe_ratio(rwa_total, gross_total if gross_total > 0 else ead_total)
     
     default_gross_total = sum(
@@ -567,6 +570,7 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
         _build_metric("rwa", "RWA Total", rwa_total),
         _build_metric("capital", "Capital Total (FPE)", fp_calc["total_capital"]),
         _build_metric("capital_requis", "Exigence de fonds propres", capital_requis),
+        _build_metric("capital_credit", "Exigence de fonds propres (crédit)", capital_credit),
         _build_metric("taux_risque", "Taux de risque", risk_ratio),
         _build_metric("taux_defaut", "Taux de defaut", default_rate),
         _build_metric("solvabilite", "Ratio Solvabilite Globale", ratios["solvency"]["value"] / 100.0),

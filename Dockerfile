@@ -20,7 +20,14 @@ COPY frontend/ ./
 
 # Le moteur graphique est embarque dans l'image, jamais charge depuis un
 # service exterieur : aucune requete ne sort vers un tiers a l'execution.
-RUN flutter build web --release --no-wasm-dry-run
+#
+# « --pwa-strategy=none » : aucun service worker. Un outil interne derriere
+# authentification n'a pas besoin du mode hors-ligne, et le service worker
+# « offline-first » de Flutter ressert son propre cache jusqu'a fermeture de
+# TOUS les onglets — d'ou des postes bloques sur une version perimee malgre un
+# serveur a jour. Sans lui, le navigateur recharge le code frais a chaque
+# visite (les fichiers sont deja servis « no-store » par l'API).
+RUN flutter build web --release --no-wasm-dry-run --pwa-strategy=none
 
 # --- Etape 2 : API Python qui sert aussi l'application ---------------------
 FROM python:3.12-slim

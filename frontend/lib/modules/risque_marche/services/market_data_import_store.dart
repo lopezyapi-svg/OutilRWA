@@ -1697,6 +1697,23 @@ class MarketPortfolioDataset {
   late final double scenarioVar99 = _computeScenarioVar99();
   late final double scenarioWorstLoss =
       scenarioLosses.isEmpty ? 0.0 : math.max(0.0, scenarioLosses.last);
+
+  /// Vrai lorsque `scenarioReturns` ne contient aucune observation de marché
+  /// mais la distribution paramétrique reconstruite à partir de la volatilité
+  /// et du rendement attendu saisis. Une telle série ne peut pas servir de base
+  /// à une VaR historique ni à un rééchantillonnage empirique.
+  late final bool scenarioReturnsAreSimulated =
+      _historicalReturns.isEmpty && scenarioReturns.isNotEmpty;
+
+  /// Rendements réellement observés (série de prix importée). Vide quand le
+  /// portefeuille n'en comporte pas : seule série admissible pour la VaR
+  /// historique.
+  late final List<double> observedReturns =
+      scenarioReturnsAreSimulated ? const <double>[] : scenarioReturns;
+
+  /// Pertes issues des seuls rendements observés, pour les mêmes raisons.
+  late final List<double> observedLosses =
+      scenarioReturnsAreSimulated ? const <double>[] : scenarioLosses;
   late final List<double> bondRateShockLosses = _computeBondRateShockLosses();
   late final double bondRateShockVar99 =
       _computeLossQuantile(bondRateShockLosses, 0.99);
@@ -2209,31 +2226,41 @@ class MarketPortfolioDataset {
     return labelsByKey[dominant.key] ?? dominant.key;
   }
 
+  /// Finesse de la distribution paramétrique de repli. Assez de points pour
+  /// que le quantile 99 % s'appuie sur une vraie queue (≈ 2,5 points au-delà)
+  /// au lieu de se confondre avec l'extrême de l'échantillon.
+  static const int _simulatedDistributionPoints = 256;
+
   List<double> _computeScenarioReturns() {
     final historical = _historicalReturns;
     if (historical.isNotEmpty) return historical;
-    // Repli paramétrique : actions sans série de prix historique. On simule une
-    // distribution de rendements journaliers ~ N(µ, σ) à partir de la
-    // volatilité annualisée et du rendement attendu, afin d'alimenter la VaR et
-    // les chocs simulés. Les obligations conservent leur comportement (série
-    // historique uniquement).
+    // Repli paramétrique : actions sans série de prix historique. Aucune
+    // observation n'existe, donc rien ici ne peut alimenter une VaR historique
+    // — `scenarioReturnsAreSimulated` coupe cette voie côté écran. On construit
+    // la distribution N(µ, σ) déduite de la volatilité annualisée et du
+    // rendement attendu saisis, discrétisée sur ses propres quantiles : le
+    // résultat ne dépend que des paramètres du portefeuille, sans bruit de
+    // tirage ni graine partagée entre portefeuilles. Les obligations
+    // conservent leur comportement (série historique uniquement).
     if (portfolioType != MarketPortfolioType.equities) return historical;
     final sigmaAnnual = annualizedVolatility;
     if (sigmaAnnual <= 0) return historical;
     final sigmaDaily = sigmaAnnual / math.sqrt(252);
     final muDaily = expectedReturn / 252;
-    final random = math.Random(0x5EED);
+    // Positions i / (n − 1) : ce sont exactement celles qu'interpole
+    // `_computeLossQuantile`, de sorte que le quantile lu sur la grille
+    // retrouve le quantile théorique µ + z σ. Les deux extrémités (p = 0 et
+    // p = 1, infinies) sont ramenées à un demi-pas.
+    const lastIndex = _simulatedDistributionPoints - 1;
+    const edge = 0.5 / _simulatedDistributionPoints;
     return [
-      for (var i = 0; i < 60; i++)
-        muDaily + sigmaDaily * _standardNormalSample(random),
+      for (var i = 0; i < _simulatedDistributionPoints; i++)
+        muDaily +
+            sigmaDaily *
+                _standardNormalQuantile(
+                  (i / lastIndex).clamp(edge, 1 - edge),
+                ),
     ];
-  }
-
-  double _standardNormalSample(math.Random random) {
-    // Box-Muller : tire un échantillon N(0,1).
-    final u1 = math.max(1e-9, random.nextDouble());
-    final u2 = random.nextDouble();
-    return math.sqrt(-2 * math.log(u1)) * math.cos(2 * math.pi * u2);
   }
 
   List<double> _computeScenarioLosses() {
@@ -3005,11 +3032,80 @@ double _pearsonCorrelation(List<double> x, List<double> y) {
   return covariance / denominator;
 }
 
+/// Quantile de perte par interpolation linéaire entre les deux observations
+/// encadrantes. L'indexation entière `ceil(n × c) − 1` renvoyait le maximum de
+/// l'échantillon dès que n ≤ 1 / (1 − c) — soit tout échantillon de 100
+/// observations ou moins à 99 % —, ce qui confondait « VaR 99 % » et « pire
+/// perte ».
 double _computeLossQuantile(List<double> sortedLosses, double confidence) {
   if (sortedLosses.isEmpty) return 0.0;
-  final index = (sortedLosses.length * confidence).ceil() - 1;
-  final boundedIndex = index.clamp(0, sortedLosses.length - 1).toInt();
-  return math.max(0.0, sortedLosses[boundedIndex]).toDouble();
+  if (sortedLosses.length == 1) {
+    return math.max(0.0, sortedLosses.first).toDouble();
+  }
+  final position =
+      confidence.clamp(0.0, 1.0) * (sortedLosses.length - 1).toDouble();
+  final lower = position.floor();
+  final upper = math.min(lower + 1, sortedLosses.length - 1);
+  final weight = position - lower;
+  final value = sortedLosses[lower] +
+      (sortedLosses[upper] - sortedLosses[lower]) * weight;
+  return math.max(0.0, value).toDouble();
+}
+
+/// Quantile de la loi normale centrée réduite (approximation rationnelle de
+/// Acklam, erreur relative < 1,2 × 10⁻⁹). Sert à discrétiser une distribution
+/// paramétrique sur ses quantiles, sans tirage aléatoire.
+double _standardNormalQuantile(double probability) {
+  const a = <double>[
+    -3.969683028665376e+01,
+    2.209460984245205e+02,
+    -2.759285104469687e+02,
+    1.383577518672690e+02,
+    -3.066479806614716e+01,
+    2.506628277459239e+00,
+  ];
+  const b = <double>[
+    -5.447609879822406e+01,
+    1.615858368580409e+02,
+    -1.556989798598866e+02,
+    6.680131188771972e+01,
+    -1.328068155288572e+01,
+  ];
+  const c = <double>[
+    -7.784894002430293e-03,
+    -3.223964580411365e-01,
+    -2.400758277161838e+00,
+    -2.549732539343734e+00,
+    4.374664141464968e+00,
+    2.938163982698783e+00,
+  ];
+  const d = <double>[
+    7.784695709041462e-03,
+    3.224671290700398e-01,
+    2.445134137142996e+00,
+    3.754408661907416e+00,
+  ];
+  const pLow = 0.02425;
+  const pHigh = 1 - pLow;
+
+  final p = probability.clamp(1e-12, 1 - 1e-12).toDouble();
+  if (p < pLow) {
+    final q = math.sqrt(-2 * math.log(p));
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q +
+            c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+  if (p > pHigh) {
+    final q = math.sqrt(-2 * math.log(1 - p));
+    return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q +
+            c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+  }
+  final q = p - 0.5;
+  final r = q * q;
+  return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) *
+      q /
+      (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
 }
 
 class MarketImportCommitResult {
