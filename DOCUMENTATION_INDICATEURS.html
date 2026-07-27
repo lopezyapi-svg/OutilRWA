@@ -808,46 +808,197 @@
     </tbody>
   </table>
 
-  <!-- SECTION 3 : RISQUE OPÉRATIONNEL -->
+    <!-- SECTION 3 : RISQUE OPÉRATIONNEL -->
   <div class="section-title">
     3. Risque Opérationnel
-    <span class="section-subtitle">Approche BIC / CRR3 & Méthode AIB</span>
+    <span class="section-subtitle">CRR3 Art. 315-321 / BCEAO Titre V Art. 301 & Cartographie</span>
   </div>
 
-  <!-- Indicator Card 4 -->
+  <div class="exec-note">
+    <h4>Présentation du Risque Opérationnel</h4>
+    <p>
+      Le risque opérationnel est le risque de pertes résultant de pannes informatiques, de fraudes internes/externes, d'erreurs humaines, de litiges ou d'événements extérieurs. 
+      L'application calcule les fonds propres requis selon la nouvelle méthode <strong>BIC / CRR3</strong>, la méthode <strong>AIB (BCEAO)</strong> et la méthode <strong>Standardisée (AS)</strong>, tout en assurant le suivi des <strong>incidents, KRI et de la cartographie des risques</strong>.
+    </p>
+  </div>
+
+  <!-- Card 3.1: BIC / CRR3 -->
   <div class="indicator-card">
     <div class="card-header">
-      <span class="indicator-name">Business Indicator Component (BIC / CRR3)</span>
+      <span class="indicator-name">3.1 Business Indicator Component (BIC / CRR3 - Méthode Principale)</span>
       <span class="badge badge-warning">Exigence Opérationnelle</span>
     </div>
     <div class="grid-3">
       <div class="grid-box">
         <div class="grid-box-title">1. À quoi ça sert ?</div>
         <div class="grid-box-content">
-          Évalue le capital nécessaire pour couvrir les risques de pertes liées à des pannes informatiques, fraudes internes/externes, erreurs humaines ou litiges.
+          Nouvelle norme internationale (CRR3) évaluant le besoin de capital selon le volume d'activité de la banque structuré en 3 composantes financières (ILDC, SC, FC).
         </div>
       </div>
       <div class="grid-box">
         <div class="grid-box-title">2. Comment c'est calculé ?</div>
         <div class="formula-text">BI = ILDC + SC + FC</div>
-        <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">
-          BIC = Application de taux marginaux (12%, 15%, 19%) sur le BI.<br>
-          RWA Opérationnel = BIC x 12.5
-        </div>
+        <div class="formula-text" style="margin-top:4px;">BIC = Taux marginaux (12%, 15%, 18%) sur BI</div>
+        <div class="formula-text" style="margin-top:4px;">RWA Opérationnel = BIC x 11.111</div>
       </div>
       <div class="grid-box">
         <div class="grid-box-title">3. De quoi a-t-on besoin ?</div>
         <div class="grid-box-content">
-          - Marge d'intérêts & dividendes (ILDC)<br>
-          - Commissions & services (SC)<br>
-          - Résultats des portefeuilles financiers (FC)<br>
-          (Moyenne sur 3 ans)
+          - 12 postes du compte de résultat consolidés<br>
+          - ILDC : Marge d'intérêts, dividendes & leasing<br>
+          - SC : Commissions & frais de services<br>
+          - FC : Résultats des portefeuilles financiers (3 ans)
         </div>
       </div>
     </div>
   </div>
 
-    <!-- SECTION 4 : RISQUE DE MARCHÉ & VaR -->
+  <!-- Card 3.2: Méthode AIB -->
+  <div class="indicator-card">
+    <div class="card-header">
+      <span class="indicator-name">3.2 Approche Indicateur de Base (AIB - Repli Réglementaire BCEAO)</span>
+      <span class="badge badge-primary">Titre V - Art. 301</span>
+    </div>
+    <div class="grid-3">
+      <div class="grid-box">
+        <div class="grid-box-title">1. À quoi ça sert ?</div>
+        <div class="grid-box-content">
+          Méthode forfaitaire historique retenue par la BCEAO pour les établissements appliquant le cadre standardisé basé sur le Produit Net Bancaire (PNB).
+        </div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">2. Comment c'est calculé ?</div>
+        <div class="formula-text">Capital AIB = 15% x Moyenne(PNB > 0 sur 3 ans)</div>
+        <div class="formula-text" style="margin-top:4px;">RWA AIB = Capital AIB x 11.111</div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">3. De quoi a-t-on besoin ?</div>
+        <div class="grid-box-content">
+          - Produit Net Bancaire (PNB) des 3 derniers exercices<br>
+          - Exclusions des années où le PNB est négatif
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3.3: Méthode AS (Standardisée) -->
+  <div class="indicator-card">
+    <div class="card-header">
+      <span class="indicator-name">3.3 Approche Standardisée par Lignes de Métier (AS)</span>
+      <span class="badge badge-primary">Approche Métier</span>
+    </div>
+    <div class="grid-3">
+      <div class="grid-box">
+        <div class="grid-box-title">1. À quoi ça sert ?</div>
+        <div class="grid-box-content">
+          Pondère le PNB selon le profil de risque propre à chaque ligne de métier (Banque d'investissement, Banque de détail, Paiements...).
+        </div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">2. Comment c'est calculé ?</div>
+        <div class="formula-text">Capital AS = Somme(PNB_i x Beta_i)</div>
+        <div style="font-size: 10px; color: var(--muted); margin-top: 4px;">
+          Beta_i = Facteur réglementaire par métier (12%, 15%, 18%).
+        </div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">3. De quoi a-t-on besoin ?</div>
+        <div class="grid-box-content">
+          - Ventilation du PNB par ligne d'activité réglementaire<br>
+          - Facteurs Beta applicables à chaque métier
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3.4: Pertes & Incidents -->
+  <div class="indicator-card">
+    <div class="card-header">
+      <span class="indicator-name">3.4 Suivi des Pertes Opérationnelles & Recouvrements</span>
+      <span class="badge badge-warning">Base d'Incidents</span>
+    </div>
+    <div class="grid-3">
+      <div class="grid-box">
+        <div class="grid-box-title">1. À quoi ça sert ?</div>
+        <div class="grid-box-content">
+          Comptabilise l'impact financier réel des événements d'incidents (fraudes, pannes, litiges) et mesure l'efficacité des mécanismes de couverture.
+        </div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">2. Comment c'est calculé ?</div>
+        <div class="formula-text">Perte Nette = Perte Brute - Recouvrements</div>
+        <div class="formula-text" style="margin-top:4px;">Taux Recouvrement = Recouvrement / Perte Brute</div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">3. De quoi a-t-on besoin ?</div>
+        <div class="grid-box-content">
+          - Registre des événements d'incidents déclarés<br>
+          - Montant brut des pertes constatées<br>
+          - Indemnités d'assurance & montants récupérés
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3.5: Cartographie & Risque Résiduel -->
+  <div class="indicator-card">
+    <div class="card-header">
+      <span class="indicator-name">3.5 Cartographie des Risques & Scoring du Risque Résiduel</span>
+      <span class="badge badge-success">Contrôle Interne</span>
+    </div>
+    <div class="grid-3">
+      <div class="grid-box">
+        <div class="grid-box-title">1. À quoi ça sert ?</div>
+        <div class="grid-box-content">
+          Évalue l'exposition nette de la banque après prise en compte de la qualité et de l'efficacité du dispositif de contrôle interne.
+        </div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">2. Comment c'est calculé ?</div>
+        <div class="formula-text">Risque Brut = Probabilité (1-5) x Impact (1-5)</div>
+        <div class="formula-text" style="margin-top:4px;">Risque Résiduel = Risque Brut / Efficacité Contrôle</div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">3. De quoi a-t-on besoin ?</div>
+        <div class="grid-box-content">
+          - Évaluation de la fréquence & gravité (échelles 1 à 5)<br>
+          - Score d'efficacité des contrôles en place<br>
+          - Niveaux : Faible (&le;4), Moyen (5-9), Élevé (10-16), Critique (&gt;16)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3.6: KRI & Contrôles -->
+  <div class="indicator-card">
+    <div class="card-header">
+      <span class="indicator-name">3.6 Indicateurs Clés de Risque (KRI) & Taux de Conformité</span>
+      <span class="badge badge-success">Indicateurs de Pilotage</span>
+    </div>
+    <div class="grid-3">
+      <div class="grid-box">
+        <div class="grid-box-title">1. À quoi ça sert ?</div>
+        <div class="grid-box-content">
+          Alerte de manière précoce sur la dérive des processus opérationnels et mesure le taux d'exécution des plans d'action correctifs.
+        </div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">2. Comment c'est calculé ?</div>
+        <div class="formula-text">KRI Taux d'Erreur = Incidents Mois / Total</div>
+        <div class="formula-text" style="margin-top:4px;">Taux Conformité = Points Conformes / Total x 100</div>
+      </div>
+      <div class="grid-box">
+        <div class="grid-box-title">3. De quoi a-t-on besoin ?</div>
+        <div class="grid-box-content">
+          - Suivi mensuel des métriques KRI opérationnelles<br>
+          - Résultats des campagnes de contrôle permanent<br>
+          - Avancement des plans d'action
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- SECTION 4 : RISQUE DE MARCHÉ & VaR -->
   <div class="section-title">
     4. Risque de Marché
     <span class="section-subtitle">Titre VI BCEAO (Art. 316-442)</span>
@@ -877,7 +1028,7 @@
       <div class="grid-box">
         <div class="grid-box-title">2. Comment c'est calculé ?</div>
         <div class="formula-text">Exigence Marché = Exigence Taux + Actions + Change</div>
-        <div class="formula-text" style="margin-top:4px;">RWA Marché = Exigence Marché x 12.5</div>
+        <div class="formula-text" style="margin-top:4px;">RWA Marché = Exigence Marché x 11.111</div>
       </div>
       <div class="grid-box">
         <div class="grid-box-title">3. De quoi a-t-on besoin ?</div>
@@ -907,7 +1058,7 @@
         <div class="grid-box-title">2. Comment c'est calculé ?</div>
         <div class="formula-text">Position Nette Globale = MAX(Longues, Courtes)</div>
         <div class="formula-text" style="margin-top:4px;">Exigence Change = Position Globale x 8.0%</div>
-        <div class="formula-text" style="margin-top:4px;">RWA Change = Exigence Change x 12.5</div>
+        <div class="formula-text" style="margin-top:4px;">RWA Change = Exigence Change x 11.111</div>
       </div>
       <div class="grid-box">
         <div class="grid-box-title">3. De quoi a-t-on besoin ?</div>
