@@ -4,7 +4,8 @@ import 'dart:math' as math;
 import 'package:excel/excel.dart' hide Border, TextSpan;
 import 'package:excel/excel.dart' as xl show Border, BorderStyle;
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/cupertino.dart' show CupertinoSlidingSegmentedControl;
+import 'package:flutter/cupertino.dart'
+    show CupertinoIcons, CupertinoSlidingSegmentedControl;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
@@ -5605,17 +5606,53 @@ class _RegistreViewState extends State<_RegistreView> {
   String? _filterType;
   final _searchCtrl = TextEditingController();
   String _search = '';
+  // Tri du tableau (index de colonne + sens), comme sur le tableau des
+  // données du Risque de Marché.
+  int? _sortCol;
+  bool _sortAsc = true;
+
+  // Défilement vertical synchronisé entre la colonne figée "Référence", la
+  // zone centrale et la colonne figée "Actions" (même mécanique que la
+  // colonne épinglée du tableau des données du Risque de Marché).
+  final _refColScrollCtrl = ScrollController();
+  final _bodyScrollCtrl = ScrollController();
+  final _actionsScrollCtrl = ScrollController();
+  bool _syncingScroll = false;
 
   @override
   void initState() {
     super.initState();
     _searchCtrl.addListener(() => setState(() => _search = _searchCtrl.text.toLowerCase()));
+    _refColScrollCtrl.addListener(
+        () => _syncScroll(_refColScrollCtrl, [_bodyScrollCtrl, _actionsScrollCtrl]));
+    _bodyScrollCtrl.addListener(
+        () => _syncScroll(_bodyScrollCtrl, [_refColScrollCtrl, _actionsScrollCtrl]));
+    _actionsScrollCtrl.addListener(
+        () => _syncScroll(_actionsScrollCtrl, [_refColScrollCtrl, _bodyScrollCtrl]));
     _reload();
+  }
+
+  void _syncScroll(ScrollController source, List<ScrollController> targets) {
+    if (_syncingScroll || !source.hasClients) return;
+    _syncingScroll = true;
+    for (final target in targets) {
+      if (!target.hasClients) continue;
+      final offset = source.offset
+          .clamp(target.position.minScrollExtent, target.position.maxScrollExtent)
+          .toDouble();
+      if ((target.offset - offset).abs() >= 0.5) {
+        target.jumpTo(offset);
+      }
+    }
+    _syncingScroll = false;
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _refColScrollCtrl.dispose();
+    _bodyScrollCtrl.dispose();
+    _actionsScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -6567,20 +6604,39 @@ class _RegistreViewState extends State<_RegistreView> {
     );
   }
 
-  // Panneau de filtres - même habillage (fond, bordure, ombre) que le panneau
-  // de contrôles du tableau Expositions.
+  // Couleurs partagées de la barre d'outils et du tableau - mêmes valeurs que
+  // le "Tableau des données" du Risque de Marché (risque_marche_screen.dart).
+  static const _kTablePrimary = Color(0xFF2563EB);
+  static const _kTableHeaderBlue = Color(0xFF234A84);
+  Color _tableBorderColor(bool isDark) =>
+      isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F6);
+  Color _tableSurfaceColor(bool isDark) =>
+      isDark ? const Color(0xFF101B31) : Colors.white;
+  Color _tableSoftColor(bool isDark) =>
+      isDark ? const Color(0xFF162642) : const Color(0xFFF3F7FD);
+  Color _tableTextColor(bool isDark) =>
+      isDark ? const Color(0xFFEAF2FF) : const Color(0xFF1B2235);
+  Color _tableMutedColor(bool isDark) =>
+      isDark ? const Color(0xFF8BA3C7) : const Color(0xFF64748B);
+
+  // Barre d'outils du tableau - même habillage que celle du "Tableau des
+  // données" du Risque de Marché : bandeau blanc bordé, contrôles compacts
+  // "Rechercher par ...", champ de recherche et bouton bleu "+ Ajouter".
   Widget _buildRegistreFilterPanel(bool isDark) {
-    final panelBorderColor = isDark ? const Color(0xFF22304B) : const Color(0xFFDDE7F6);
+    final border = _tableBorderColor(isDark);
+    final muted = _tableMutedColor(isDark);
+    final text = _tableTextColor(isDark);
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: panelBorderColor, width: 0.8),
+        color: _tableSurfaceColor(isDark),
+        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
-            color: isDark ? const Color(0x26040A16) : const Color(0x080F172A),
+            color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.035),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -6591,22 +6647,43 @@ class _RegistreViewState extends State<_RegistreView> {
         children: [
           Expanded(
             child: Wrap(
-              spacing: 10,
-              runSpacing: 10,
+              spacing: 8,
+              runSpacing: 6,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 SizedBox(
-                  width: 260,
-                  height: 38,
+                  width: 220,
+                  height: 30,
                   child: TextField(
                     controller: _searchCtrl,
+                    style: TextStyle(
+                      color: text,
+                      fontSize: 10.4,
+                      fontWeight: FontWeight.w500,
+                    ),
                     decoration: InputDecoration(
+                      hintText: 'Rechercher une perte...',
+                      hintStyle: TextStyle(
+                        color: muted.withValues(alpha: 0.75),
+                        fontSize: 10.2,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      prefixIcon: Icon(CupertinoIcons.search, size: 13, color: muted),
+                      prefixIconConstraints:
+                          const BoxConstraints(minWidth: 30, minHeight: 28),
                       isDense: true,
-                      prefixIcon: const Icon(Icons.search_rounded, size: 18),
-                      hintText: 'Rechercher une référence ou une description',
                       filled: true,
-                      fillColor: isDark ? const Color(0xFF13243F) : Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
+                      fillColor: _tableSoftColor(isDark),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(2),
+                        borderSide: BorderSide(color: border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(2),
+                        borderSide: const BorderSide(color: _kTablePrimary),
+                      ),
                     ),
                   ),
                 ),
@@ -6631,33 +6708,44 @@ class _RegistreViewState extends State<_RegistreView> {
                   onChanged: (v) =>
                       setState(() => _filterType = v == 'Tous' ? null : v),
                 ),
-                SizedBox(
-                  height: 38,
-                  child: OutlinedButton.icon(
-                    onPressed: _resetFilters,
-                    icon: const Icon(Icons.restart_alt_rounded, size: 16),
-                    label: const Text('Réinitialiser'),
+                Tooltip(
+                  message: 'Réinitialiser les filtres',
+                  child: InkWell(
+                    onTap: _resetFilters,
+                    borderRadius: BorderRadius.circular(2),
+                    child: Container(
+                      height: 30,
+                      width: 30,
+                      decoration: BoxDecoration(
+                        color: _tableSoftColor(isDark),
+                        border: Border.all(color: border),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      child: Icon(Icons.restart_alt_rounded, size: 15, color: muted),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           SizedBox(
-            height: 34,
+            height: 30,
             child: FilledButton.icon(
               onPressed: _showWizard,
+              icon: const Icon(CupertinoIcons.plus, size: 13),
+              label: const Text(
+                'Ajouter',
+                style: TextStyle(fontSize: 10.6, fontWeight: FontWeight.w500),
+              ),
               style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.accent,
+                backgroundColor: _kTablePrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
-                minimumSize: const Size(150, 34),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                visualDensity: VisualDensity.compact,
-                textStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              icon: const Icon(Icons.add_rounded, size: 16),
-              label: const Text('Ajouter une perte'),
             ),
           ),
         ],
@@ -6704,125 +6792,497 @@ class _RegistreViewState extends State<_RegistreView> {
                       ),
                     );
                   }
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SingleChildScrollView(
-                      child: DataTable(
-                        columnSpacing: 18,
-                        horizontalMargin: 8,
-                        headingRowHeight: 40,
-                        dataRowMinHeight: 44,
-                        dataRowMaxHeight: 52,
-                        dividerThickness: 0.35,
-                        // Style d'en-tête aligné sur le tableau du module
-                        // Expositions (fond marine, texte blanc).
-                        headingRowColor: WidgetStatePropertyAll(
-                          isDark ? const Color(0xFF1B2C4A) : const Color(0xFF23477A),
-                        ),
-                        headingTextStyle: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
-                          letterSpacing: 0.3,
-                        ),
-                        columns: const [
-                          DataColumn(label: Text('Référence')),
-                          DataColumn(label: Text('Date')),
-                          DataColumn(label: Text('Ligne de métier')),
-                          DataColumn(label: Text("Type d'événement")),
-                          DataColumn(label: Text('Perte brute'), numeric: true),
-                          DataColumn(label: Text('Perte nette'), numeric: true),
-                          DataColumn(label: Text('Capital min. (Art. 89)'), numeric: true),
-                          DataColumn(label: Text('RWA'), numeric: true),
-                          DataColumn(label: Text('Statut')),
-                          DataColumn(label: Text('Actions')),
-                        ],
-                        rows: items.asMap().entries.map((entry) {
-                          final rowIndex = entry.key;
-                          final i = entry.value;
-                          final kro = i.perteNette * 0.15;
-                          final apr = kro * kMultiplicateurRwaReglementaire;
-                          // Alternance de fond des lignes, comme sur le
-                          // tableau Expositions.
-                          final rowBg = rowIndex.isEven
-                              ? (isDark ? const Color(0xFF111D33) : Colors.white)
-                              : (isDark ? const Color(0xFF16243C) : const Color(0xFFF7FAFF));
-                          return DataRow(
-                            color: WidgetStatePropertyAll(rowBg),
-                            cells: [
-                              DataCell(Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(i.reference,
-                                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                                  if (i.description.isNotEmpty)
-                                    Text(
-                                      i.description,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(color: AppTheme.muted),
-                                    ),
-                                ],
-                              )),
-                              DataCell(Text(i.dateOccurrence)),
-                              DataCell(Text(i.ligneMetier)),
-                              DataCell(Text(i.typeEvenement)),
-                              DataCell(Text(AppFormatters.currency(i.perteBrute))),
-                              DataCell(Text(
-                                AppFormatters.currency(i.perteNette),
-                                style: TextStyle(color: i.perteNette > 0 ? _kDanger : null),
-                              )),
-                              DataCell(Text(
-                                AppFormatters.currency(kro),
-                                style: const TextStyle(color: AppColors.prudentialSolvency),
-                              )),
-                              DataCell(Text(
-                                AppFormatters.currency(apr),
-                                style: const TextStyle(color: AppColors.marketNeutral),
-                              )),
-                              DataCell(_badge(i.statut, _statutColor(i.statut))),
-                              DataCell(Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    tooltip: 'Modifier',
-                                    onPressed: () => _showEditForm(i),
-                                    icon: const Icon(Icons.edit_outlined, size: 18),
-                                  ),
-                                  IconButton(
-                                    tooltip: 'Supprimer',
-                                    onPressed: () => _confirm(
-                                      context,
-                                      'Supprimer cet incident ?',
-                                      () async {
-                                        await widget.api.deleteRoIncident(i.id);
-                                        _reload();
-                                      },
-                                    ),
-                                    icon: const Icon(
-                                      Icons.delete_outline_rounded,
-                                      size: 18,
-                                      color: AppTheme.danger,
-                                    ),
-                                  ),
-                                ],
-                              )),
-                            ],
-                          );
-                        }).toList(growable: false),
-                      ),
-                    ),
-                  );
+                  return _buildRegistreTable(isDark, items);
                 },
               ),
             ),
             const SizedBox(height: 6),
             _buildPertesStatGrid(cached.length, cBrute, cNette, cKro, cApr),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ── Tableau du registre - même design que le "Tableau des données" du
+  // Risque de Marché : en-tête marine avec icônes de tri sur chaque colonne,
+  // séparateurs verticaux, lignes zébrées, pastilles de statut et colonne
+  // ACTIONS avec icônes modifier/supprimer. ────────────────────────────────
+
+  // (label, largeur, alignement à droite)
+  static const _registreColumns = <(String, double, bool)>[
+    ('Référence',             230.0, false),
+    ('Date',                  105.0, false),
+    ('Ligne de métier',       170.0, false),
+    ("Type d'événement",      185.0, false),
+    ('Perte brute',           130.0, true),
+    ('Perte nette',           130.0, true),
+    ('Capital min. (Art. 89)',150.0, true),
+    ('RWA',                   130.0, true),
+    ('Statut',                120.0, false),
+  ];
+  static const _registreActionsWidth = 92.0;
+  static const _registreHeaderHeight = 48.0;
+  static const _registreRowHeight = 52.0;
+
+  int _compareIncidents(RoIncident a, RoIncident b, int col) => switch (col) {
+        0 => a.reference.toLowerCase().compareTo(b.reference.toLowerCase()),
+        1 => a.dateOccurrence.compareTo(b.dateOccurrence),
+        2 => a.ligneMetier.toLowerCase().compareTo(b.ligneMetier.toLowerCase()),
+        3 => a.typeEvenement.toLowerCase().compareTo(b.typeEvenement.toLowerCase()),
+        4 => a.perteBrute.compareTo(b.perteBrute),
+        // Capital et RWA sont proportionnels à la perte nette : même ordre.
+        5 || 6 || 7 => a.perteNette.compareTo(b.perteNette),
+        8 => a.statut.compareTo(b.statut),
+        _ => 0,
+      };
+
+  void _onRegistreSort(int col) {
+    setState(() {
+      if (_sortCol == col) {
+        _sortAsc = !_sortAsc;
+      } else {
+        _sortCol = col;
+        _sortAsc = true;
+      }
+    });
+  }
+
+  Color _registreHeaderColor(bool isDark) =>
+      isDark ? const Color(0xFF1B2C4A) : _kTableHeaderBlue;
+
+  Widget _buildRegistreTable(bool isDark, List<RoIncident> items) {
+    final sorted = [...items];
+    final sortCol = _sortCol;
+    if (sortCol != null) {
+      sorted.sort((a, b) {
+        final r = _compareIncidents(a, b, sortCol);
+        return _sortAsc ? r : -r;
+      });
+    }
+
+    final border = _tableBorderColor(isDark);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Si la place le permet, les colonnes de données sont étirées
+        // proportionnellement pour que le tableau occupe toute la largeur ;
+        // sinon la zone centrale défile horizontalement entre les deux
+        // colonnes figées (Référence à gauche, Actions à droite).
+        final dataBase = _registreColumns.fold(0.0, (s, c) => s + c.$2);
+        final available = constraints.maxWidth - _registreActionsWidth;
+        final scale = available > dataBase ? available / dataBase : 1.0;
+        final widths = [for (final c in _registreColumns) c.$2 * scale];
+        final middleWidth = widths.skip(1).fold(0.0, (a, b) => a + b);
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: Container(
+            decoration: BoxDecoration(
+              color: _tableSurfaceColor(isDark),
+              border: Border.all(color: border),
+            ),
+            child: Row(
+              children: [
+                // ── Colonne "Référence" figée à gauche ─────────────────────
+                Container(
+                  width: widths[0],
+                  decoration: BoxDecoration(
+                    border: Border(right: BorderSide(color: border)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        height: _registreHeaderHeight,
+                        color: _registreHeaderColor(isDark),
+                        child: _buildRegistreHeaderCell(
+                          label: _registreColumns[0].$1,
+                          width: widths[0],
+                          col: 0,
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          addSemanticIndexes: false,
+                          controller: _refColScrollCtrl,
+                          primary: false,
+                          itemExtent: _registreRowHeight,
+                          itemCount: sorted.length,
+                          itemBuilder: (context, index) =>
+                              _buildRegistreRefCell(
+                            isDark,
+                            widths[0],
+                            sorted[index],
+                            alternate: index.isOdd,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // ── Zone centrale (défilement horizontal) ──────────────────
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: middleWidth,
+                      child: Column(
+                        children: [
+                          Container(
+                            height: _registreHeaderHeight,
+                            color: _registreHeaderColor(isDark),
+                            child: Row(
+                              children: [
+                                for (var c = 1; c < _registreColumns.length; c++)
+                                  _buildRegistreHeaderCell(
+                                    label: _registreColumns[c].$1,
+                                    width: widths[c],
+                                    col: c,
+                                  ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              addSemanticIndexes: false,
+                              controller: _bodyScrollCtrl,
+                              primary: false,
+                              itemExtent: _registreRowHeight,
+                              itemCount: sorted.length,
+                              itemBuilder: (context, index) =>
+                                  _buildRegistreMiddleRow(
+                                isDark,
+                                widths,
+                                sorted[index],
+                                alternate: index.isOdd,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // ── Colonne "Actions" figée à droite ───────────────────────
+                Container(
+                  width: _registreActionsWidth,
+                  decoration: BoxDecoration(
+                    border: Border(left: BorderSide(color: border)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        height: _registreHeaderHeight,
+                        width: double.infinity,
+                        alignment: Alignment.center,
+                        color: _registreHeaderColor(isDark),
+                        child: const Text(
+                          'ACTIONS',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.6,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: ListView.builder(
+                          addSemanticIndexes: false,
+                          controller: _actionsScrollCtrl,
+                          primary: false,
+                          itemExtent: _registreRowHeight,
+                          itemCount: sorted.length,
+                          itemBuilder: (context, index) =>
+                              _buildRegistreActionsCell(
+                            isDark,
+                            sorted[index],
+                            alternate: index.isOdd,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRegistreHeaderCell({
+    required String label,
+    required double width,
+    required int col,
+  }) {
+    final sorted = _sortCol == col;
+    final icon = sorted
+        ? (_sortAsc ? CupertinoIcons.chevron_up : CupertinoIcons.chevron_down)
+        : CupertinoIcons.arrow_up_arrow_down;
+    const highlight = Color(0xFF9CC3FF);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _onRegistreSort(col),
+        child: Container(
+          width: width,
+          height: double.infinity,
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: sorted ? highlight : Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(
+                icon,
+                size: sorted ? 11 : 10,
+                color: sorted ? highlight : Colors.white.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _registreRowColor(bool isDark, bool alternate) => alternate
+      ? (isDark
+          ? const Color(0xFF14233D).withValues(alpha: 0.55)
+          : const Color(0xFFF5F9FF))
+      : _tableSurfaceColor(isDark);
+
+  TextStyle _registreCellStyle(bool isDark,
+          {Color? color, bool emphasized = false}) =>
+      TextStyle(
+        color: color ?? _tableTextColor(isDark),
+        fontSize: 10.8,
+        fontWeight: emphasized ? FontWeight.w800 : FontWeight.w600,
+        height: 1.2,
+      );
+
+  // Cellule de la colonne figée "Référence" (référence + description).
+  Widget _buildRegistreRefCell(
+    bool isDark,
+    double width,
+    RoIncident i, {
+    required bool alternate,
+  }) {
+    final border = _tableBorderColor(isDark);
+    final muted = _tableMutedColor(isDark);
+    return Container(
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        color: _registreRowColor(isDark, alternate),
+        border: Border(
+          bottom: BorderSide(color: border.withValues(alpha: 0.7)),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            i.reference,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _registreCellStyle(isDark, emphasized: true),
+          ),
+          if (i.description.isNotEmpty)
+            Text(
+              i.description,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: muted,
+                fontSize: 9.8,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Ligne de la zone centrale (colonnes 1 à 8, entre les deux colonnes figées).
+  Widget _buildRegistreMiddleRow(
+    bool isDark,
+    List<double> widths,
+    RoIncident i, {
+    required bool alternate,
+  }) {
+    final kro = i.perteNette * 0.15;
+    final apr = kro * kMultiplicateurRwaReglementaire;
+    final border = _tableBorderColor(isDark);
+
+    Widget cell(int c, Widget child, {Alignment? alignment}) => Container(
+          width: widths[c],
+          height: double.infinity,
+          alignment: alignment ??
+              (_registreColumns[c].$3
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border(
+              right: BorderSide(color: border.withValues(alpha: 0.7)),
+            ),
+          ),
+          child: child,
+        );
+
+    return Container(
+      decoration: BoxDecoration(
+        color: _registreRowColor(isDark, alternate),
+        border: Border(
+          bottom: BorderSide(color: border.withValues(alpha: 0.7)),
+        ),
+      ),
+      child: Row(
+        children: [
+          cell(1,
+              Text(i.dateOccurrence,
+                  maxLines: 1, style: _registreCellStyle(isDark))),
+          cell(2,
+              Text(i.ligneMetier,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: _registreCellStyle(isDark))),
+          cell(3,
+              Text(i.typeEvenement,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: _registreCellStyle(isDark))),
+          cell(4,
+              Text(AppFormatters.currency(i.perteBrute),
+                  maxLines: 1, style: _registreCellStyle(isDark))),
+          cell(
+              5,
+              Text(
+                AppFormatters.currency(i.perteNette),
+                maxLines: 1,
+                style: _registreCellStyle(isDark,
+                    color: i.perteNette > 0 ? _kDanger : null),
+              )),
+          cell(
+              6,
+              Text(
+                AppFormatters.currency(kro),
+                maxLines: 1,
+                style: _registreCellStyle(isDark,
+                    color: AppColors.prudentialSolvency),
+              )),
+          cell(
+              7,
+              Text(
+                AppFormatters.currency(apr),
+                maxLines: 1,
+                style:
+                    _registreCellStyle(isDark, color: AppColors.marketNeutral),
+              )),
+          cell(
+            8,
+            _registreStatutChip(i.statut),
+            alignment: Alignment.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Cellule de la colonne figée "Actions" (modifier / supprimer).
+  Widget _buildRegistreActionsCell(
+    bool isDark,
+    RoIncident i, {
+    required bool alternate,
+  }) {
+    final border = _tableBorderColor(isDark);
+    return Container(
+      decoration: BoxDecoration(
+        color: _registreRowColor(isDark, alternate),
+        border: Border(
+          bottom: BorderSide(color: border.withValues(alpha: 0.7)),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            tooltip: 'Modifier',
+            onPressed: () => _showEditForm(i),
+            visualDensity: VisualDensity.compact,
+            icon: Icon(
+              Icons.edit_outlined,
+              size: 17,
+              color:
+                  isDark ? const Color(0xFFB8C7E0) : const Color(0xFF334155),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Supprimer',
+            onPressed: () => _confirm(
+              context,
+              'Supprimer cet incident ?',
+              () async {
+                await widget.api.deleteRoIncident(i.id);
+                _reload();
+              },
+            ),
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              size: 17,
+              color: Color(0xFFEF4444),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Pastille de statut - même style que les badges "Zone" du tableau des
+  // données du Risque de Marché (fond teinté, texte coloré, coins carrés).
+  Widget _registreStatutChip(String statut) {
+    final color = _statutColor(statut);
+    return Container(
+      height: 26,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Text(
+        statut,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color,
+          fontSize: 10.8,
+          fontWeight: FontWeight.w600,
+          height: 1.18,
         ),
       ),
     );
@@ -6893,39 +7353,73 @@ class _RegistreViewState extends State<_RegistreView> {
     );
   }
 
+  // Sélecteur compact "label : valeur ▾" - même habillage que le bouton
+  // "Rechercher par ..." de la barre d'outils du tableau des données du
+  // Risque de Marché.
   Widget _buildPertesFilterDropdown({
     required String label,
     required String value,
     required List<String> values,
     required ValueChanged<String> onChanged,
   }) {
-    return SizedBox(
-      width: 190,
-      child: DropdownButtonFormField<String>(
-        initialValue: value,
-        isExpanded: true,
-        decoration: InputDecoration(labelText: label),
-        items: values
-            .map(
-              (item) => DropdownMenuItem<String>(
-                value: item,
-                child: Text(item, overflow: TextOverflow.ellipsis),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final border = _tableBorderColor(isDark);
+    final muted = _tableMutedColor(isDark);
+    final text = _tableTextColor(isDark);
+
+    return PopupMenuButton<String>(
+      tooltip: '',
+      initialValue: value,
+      onSelected: onChanged,
+      itemBuilder: (context) => [
+        for (final item in values)
+          PopupMenuItem(
+            value: item,
+            child: Text(
+              item,
+              style: TextStyle(
+                color: text,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
-            )
-            .toList(growable: false),
-        selectedItemBuilder: (context) => values
-            .map(
-              (item) => Align(
-                alignment: Alignment.centerLeft,
-                child: Text(item, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ),
+      ],
+      child: Container(
+        height: 30,
+        width: 185,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: _tableSoftColor(isDark),
+          border: Border.all(color: border),
+          borderRadius: BorderRadius.circular(2),
+        ),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: muted,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
               ),
-            )
-            .toList(growable: false),
-        onChanged: (newValue) {
-          if (newValue != null) {
-            onChanged(newValue);
-          }
-        },
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: text,
+                  fontSize: 10.4,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Icon(CupertinoIcons.chevron_down, size: 12, color: muted),
+          ],
+        ),
       ),
     );
   }

@@ -24,8 +24,14 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --port 8000
+python run_server.py --reload --port 8001
 ```
+
+> Ne pas lancer `python -m uvicorn app.main:app --reload` directement : le
+> rechargement automatique surveillerait alors aussi `data/` (base SQLite,
+> logs) et redemarrerait le serveur a chaque enregistrement, faisant echouer
+> les requetes en cours. `run_server.py` exclut ces dossiers du rechargement.
+> Le port 8001 est celui attendu par defaut par le client desktop.
 
 Si `python -m venv .venv` echoue sous Windows, verifie que Python est bien installe hors alias `WindowsApps`, puis recree le venv avec l'interprete reel.
 
