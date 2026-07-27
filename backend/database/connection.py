@@ -245,10 +245,11 @@ class DatabaseManager:
             # INSERT...SELECT depuis des colonnes absentes : schéma frais, rien à migrer
             if statement.strip().upper().startswith("INSERT"):
                 return True
-        # RENAME TABLE sur une table absente = déjà renommée ou schéma frais
+        # Table absente : déjà renommée/restructurée par une migration ultérieure,
+        # ou schéma frais où schema.sql contient directement la structure finale.
+        # Dans les deux cas, il n'y a rien à migrer.
         if "no such table" in message:
-            if re.search(r"alter\s+table\s+\S+\s+rename\s+to", statement, re.IGNORECASE):
-                return True
+            return True
         return False
 
     # Renommages de la migration 021 restés sans effet : (table française,

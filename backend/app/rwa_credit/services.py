@@ -6,14 +6,12 @@ le frontend se contente d'afficher, trier et formater le résultat.
 
 from __future__ import annotations
 
-from app.core.bceao_calculations import (
-    calculate_fonds_propres,
-    calculate_risque_operationnel,
-)
+from app.core.bceao_calculations import calculate_fonds_propres
 from app.core.calculations import convert_currency_amount
 from app.market.services import resolve_market_capital
 from app.core.config import RWA_EXPECTED_WEIGHT_RANGES, settings
 from app.expositions.services import list_expositions
+from app.risque_operationnel.services import calcul_aib as _calcul_aib_uemoa
 from app.rwa_credit.models import (
     RwaCreditAgentRow,
     RwaCreditAnalysis,
@@ -131,25 +129,22 @@ def _load_capital_position(rwa_credit: float) -> dict[str, float | bool | None]:
         )
         fp_row = cursor.fetchone()
         cursor.execute(
-            "SELECT * FROM risque_operationnel ORDER BY date_analyse DESC LIMIT 1"
-        )
-        ro_row = cursor.fetchone()
-        cursor.execute(
             "SELECT * FROM risque_marche ORDER BY date_analyse DESC LIMIT 1"
         )
         rm_row = cursor.fetchone()
 
     fp_data = dict(fp_row) if fp_row else {}
-    ro_data = dict(ro_row) if ro_row else {}
     rm_data = dict(rm_row) if rm_row else {}
 
     fp_calc = calculate_fonds_propres(fp_data)
-    ro_calc = calculate_risque_operationnel(ro_data)
+    # RWA Opérationnel = APR de l'Approche Indicateur de Base (AIB, art. 301
+    # BCEAO) — même source que le tableau de bord (voir dashboard/services.py).
+    rwa_operationnel = _calcul_aib_uemoa().apr_aib
     rm_calc = resolve_market_capital(rm_data)
 
     own_funds = float(fp_calc["total_capital"])
     own_funds_available = bool(fp_row) and own_funds > 0
-    rwa_total = rwa_credit + float(ro_calc["rwa_operationnel"]) + float(
+    rwa_total = rwa_credit + rwa_operationnel + float(
         rm_calc["rwa_marche"]
     )
     solvency_ratio = (own_funds / rwa_total) if rwa_total > 0 else None

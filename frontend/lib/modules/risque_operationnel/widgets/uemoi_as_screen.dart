@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -6,8 +7,8 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart' show AppFormatters;
 import '../../../shared/widgets/section_card.dart';
-import '../../risque_credit_shared/widgets/credit_stat_card.dart';
 import '../models/ro_models.dart';
+import 'ro_hero_stat_card.dart';
 import 'uemoi_form_style.dart';
 
 class UemoiAsScreen extends StatefulWidget {
@@ -25,6 +26,11 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
   String? _error;
 
   int _anneeSelect = DateTime.now().year - 1;
+  List<int> _yearChips = [
+    DateTime.now().year - 2,
+    DateTime.now().year - 1,
+    DateTime.now().year,
+  ];
   final Map<String, TextEditingController> _pnbCtrls = {};
   bool _saving = false;
 
@@ -67,13 +73,77 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
         );
       }
 
-      setState(() { _result = r; _betas = b; });
+      setState(() {
+        _result = r;
+        _betas = b;
+        final years = {..._yearChips, ...r.detailParAnnee.map((d) => d.annee)};
+        _yearChips = years.toList()..sort();
+      });
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
+
+  Future<void> _selectAnnee(int y) async {
+    setState(() => _anneeSelect = y);
+    final lignes = await widget.api.fetchPnbLignes(y);
+    final lignesMap = {for (final l in lignes) l.ligneMetier: l.produitBrutLigne};
+    setState(() {
+      for (final e in _pnbCtrls.entries) {
+        final val = lignesMap[e.key];
+        e.value.text = val != null ? val.toStringAsFixed(0) : '';
+      }
+    });
+  }
+
+  Future<void> _addCustomYear() async {
+    final ctrl = TextEditingController();
+    final year = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Ajouter une année'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(hintText: 'ex. 2022'),
+          onSubmitted: (v) {
+            final y = int.tryParse(v.trim());
+            if (y != null) Navigator.pop(dialogContext, y);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final y = int.tryParse(ctrl.text.trim());
+              if (y != null) Navigator.pop(dialogContext, y);
+            },
+            child: const Text('Ajouter'),
+          ),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (year == null || year < 2000 || year > 2100) return;
+    if (!_yearChips.contains(year)) {
+      setState(() => _yearChips = [..._yearChips, year]..sort());
+    }
+    await _selectAnnee(year);
+  }
+
+  // Années réellement comptées dans le calcul K_AS : celles ayant un
+  // exercice PNB annuel saisi dans Indicateur de Base (AIB) - voir
+  // `calcul_as()` côté backend, qui dérive `detail_par_annee` de
+  // `list_pnb_annuel()` et non des chips choisis dans cet écran.
+  Set<int> get _anneesRetenuesCalcul =>
+      (_result?.detailParAnnee ?? const <AsAnneeDetail>[]).map((d) => d.annee).toSet();
 
   Future<void> _saveAllLignes() async {
     setState(() => _saving = true);
@@ -163,31 +233,68 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
             subtitle: 'Approche Standard - saisie annuelle par ligne de métier BCEAO',
             color: AppTheme.accent,
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              ...[DateTime.now().year - 2, DateTime.now().year - 1, DateTime.now().year].map((y) =>
-                Padding(
+              ..._yearChips.map((y) {
+                final retenue = _anneesRetenuesCalcul.contains(y);
+                return Padding(
                   padding: const EdgeInsets.only(left: AppSpacing.xs),
-                  child: ChoiceChip(
-                    label: Text('$y',
-                        style: const TextStyle(fontSize: 11)),
-                    selected: _anneeSelect == y,
-                    onSelected: (_) async {
-                      setState(() => _anneeSelect = y);
-                      final lignes = await widget.api.fetchPnbLignes(y);
-                      final lignesMap = {
-                        for (final l in lignes) l.ligneMetier: l.produitBrutLigne
-                      };
-                      setState(() {
-                        for (final e in _pnbCtrls.entries) {
-                          final val = lignesMap[e.key];
-                          e.value.text = val != null ? val.toStringAsFixed(0) : '';
-                        }
-                      });
-                    },
+                  child: Tooltip(
+                    message: retenue
+                        ? 'Année $y incluse dans le calcul K_AS'
+                        : "Année $y non incluse dans le calcul : ajoutez d'abord un exercice PNB $y"
+                            " dans l'onglet Indicateur de Base (AIB)",
+                    child: ChoiceChip(
+                      label: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('$y', style: const TextStyle(fontSize: 11)),
+                          if (retenue) ...[
+                            const SizedBox(width: 3),
+                            const Icon(Icons.check_circle, size: 11, color: AppTheme.success),
+                          ],
+                        ],
+                      ),
+                      selected: _anneeSelect == y,
+                      onSelected: (_) => _selectAnnee(y),
+                    ),
+                  ),
+                );
+              }),
+              Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.xs),
+                child: Tooltip(
+                  message: 'Ajouter une autre année',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: _addCustomYear,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppTheme.muted.withValues(alpha: 0.4)),
+                      ),
+                      child: const Icon(Icons.add, size: 14, color: AppTheme.muted),
+                    ),
                   ),
                 ),
               ),
             ]),
             children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: Row(children: [
+                    const Icon(Icons.info_outline, size: 13, color: AppTheme.muted),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        'Seules les années marquées ✓ ci-dessus (celles ayant un exercice PNB '
+                        'annuel saisi dans Indicateur de Base - AIB) sont comptées dans le K_AS.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.muted),
+                      ),
+                    ),
+                  ]),
+                ),
                 // En-tête
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -267,7 +374,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: FilledButton.icon(
+                  child: ElevatedButton.icon(
                     icon: _saving
                         ? const SizedBox(
                             width: 14,
@@ -277,6 +384,13 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                         : const Icon(Icons.save_outlined, size: 15),
                     label: Text(_saving ? 'Enregistrement…' : 'Enregistrer $_anneeSelect'),
                     onPressed: _saving ? null : _saveAllLignes,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.sidebar,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    ),
                   ),
                 ),
               ],
@@ -288,42 +402,42 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
 
   Widget _buildStatGrid(AsCalculResult r) {
     final stats = [
-      CreditStatCard(
+      RoHeroStatCard(
         label: 'K_AS (Exigence)',
         value: AppFormatters.currency(r.kAs),
-        helper: 'Capital risque opérationnel',
-        icon: Icons.shield_outlined,
-        color: AppTheme.accent,
+        subtitle: 'Capital risque opérationnel',
       ),
-      CreditStatCard(
+      RoHeroStatCard(
         label: 'APR Opérationnel',
         value: AppFormatters.currency(r.aprAs),
-        helper: 'RWA risque opérationnel',
-        icon: Icons.assessment_outlined,
-        color: AppColors.prudentialCapital,
+        subtitle: 'RWA risque opérationnel',
       ),
-      CreditStatCard(
+      RoHeroStatCard(
         label: 'Capital minimal (9 %)',
         value: AppFormatters.currency(r.capitalMinAs),
-        helper: 'Capital minimum requis',
-        icon: Icons.account_balance_outlined,
-        color: AppTheme.success,
+        subtitle: 'Capital minimum requis',
       ),
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth >= 960
-            ? 210.0
-            : constraints.maxWidth >= 620
-                ? ((constraints.maxWidth - AppTheme.spacing) / 2).clamp(0.0, 210.0).toDouble()
-                : constraints.maxWidth;
-
-        return Wrap(
-          spacing: AppTheme.spacing,
-          runSpacing: AppTheme.spacing,
+        if (constraints.maxWidth < 620) {
+          return Column(
+            children: [
+              for (final stat in stats) ...[
+                stat,
+                const SizedBox(height: AppTheme.spacing),
+              ],
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final stat in stats) SizedBox(width: width, child: stat),
+            for (var i = 0; i < stats.length; i++) ...[
+              if (i > 0) const SizedBox(width: AppTheme.spacing),
+              Expanded(child: stats[i]),
+            ],
           ],
         );
       },

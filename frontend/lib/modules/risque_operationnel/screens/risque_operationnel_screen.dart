@@ -1,10 +1,10 @@
 // Ecran principal du module Risque Opérationnel - 10 vues.
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:excel/excel.dart' hide Border, TextSpan;
 import 'package:excel/excel.dart' as xl show Border, BorderStyle;
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/cupertino.dart' show CupertinoSlidingSegmentedControl;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
@@ -24,6 +24,7 @@ import '../../dashboard/widgets/dashboard_design.dart';
 import '../../risque_credit_shared/widgets/credit_data_table_card.dart';
 import '../../risque_credit_shared/widgets/credit_stat_card.dart';
 import '../models/ro_models.dart';
+import '../widgets/ro_hero_stat_card.dart';
 import '../widgets/ro_import_bic_dialog.dart';
 import '../widgets/ro_import_pertes_dialog.dart';
 import '../widgets/uemoi_aib_screen.dart';
@@ -88,14 +89,6 @@ String _roTrim(double value, {int maxDecimals = 4}) {
   return s;
 }
 
-/// Assombrit une couleur de statut trop claire (ex. l'orange d'alerte) pour
-/// que les chiffres des cartes du dashboard restent bien lisibles sur fond
-/// clair - la teinte est conservée, seule la luminosité est réduite.
-Color _roReadable(Color c) {
-  final hsl = HSLColor.fromColor(c);
-  if (hsl.lightness <= 0.5) return c;
-  return hsl.withLightness(0.34).toColor();
-}
 
 const _lignesMetier = [
   "Financement d'entreprise",
@@ -123,7 +116,9 @@ const _typesControle = ['Permanent', 'Périodique', 'Ponctuel', 'Sur pièces', '
 const _frequences = ['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'];
 const _typesAction = ['Corrective', 'Préventive', 'Améliorative'];
 const _sourcesAction = ['Incident', 'Contrôle', 'KRI', 'Audit', 'Cartographie'];
-const _manualKriIds = ['kri-01', 'kri-02', 'kri-03', 'kri-07'];
+// KRI dont la valeur se saisit comme un ratio (numérateur / dénominateur).
+// Les autres KRI se saisissent comme une valeur mesurée directe.
+const _ratioKriIds = ['kri-01', 'kri-02', 'kri-03', 'kri-06', 'kri-07'];
 const _priorites = ['Haute', 'Moyenne', 'Basse'];
 const _statutsPlan = ['A faire', 'En cours', 'Terminé', 'Abandonné'];
 
@@ -227,7 +222,7 @@ class RisqueOperationnelScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ExcludeSemantics(
       child: switch (view) {
-        OperationalRiskView.dashboard    => _DashboardView(api: api, titleOnlyHeader: true, initialTab: 1),
+        OperationalRiskView.dashboard    => _DashboardView(api: api, titleOnlyHeader: true, showTabs: true, initialTab: 0),
         OperationalRiskView.registre     => _RegistreView(api: api),
         OperationalRiskView.incidents    => _SimulationCriseView(api: api),
         OperationalRiskView.pertes       => _PertesView(api: api),
@@ -638,8 +633,8 @@ class _DashboardViewState extends State<_DashboardView> {
   late int _selectedTab;
 
   static const _tabDefs = [
-    (Icons.dashboard_outlined, 'Dashboard Opérationnel'),
-    (Icons.compare_arrows_outlined, 'Dashboard CCR 3 operationel'),
+    'Dashboard risque opérationnel UEMOA',
+    'Dashboard risque opérationnel CRR3',
   ];
 
   @override
@@ -710,49 +705,70 @@ class _DashboardViewState extends State<_DashboardView> {
           if (widget.showTabs)
             Container(
               width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF0F1E36) : Colors.white,
                 border: Border(bottom: BorderSide(color: borderColor)),
               ),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: List.generate(_tabDefs.length, (i) {
-                    final isSelected = _selectedTab == i;
-                    final fgColor = isSelected
-                        ? AppColors.accent
-                        : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF234A84));
-                    return InkWell(
-                      onTap: () => setState(() => _selectedTab = i),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(
-                              color: isSelected ? AppColors.accent : Colors.transparent,
-                              width: 2,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(_tabDefs.length, (i) {
+                      final isSelected = _selectedTab == i;
+                      final selectedBg =
+                          isDark ? const Color(0xFF334155) : Colors.white;
+                      final fgColor = isSelected
+                          ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                          : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
+                      return InkWell(
+                        onTap: () => setState(() => _selectedTab = i),
+                        hoverColor: isDark
+                            ? const Color(0xFF334155).withValues(alpha: 0.5)
+                            : const Color(0xFFCBD5E1).withValues(alpha: 0.4),
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOutCubic,
+                          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? selectedBg : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: isSelected && !isDark
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.05),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.02),
+                                      blurRadius: 1,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            _tabDefs[i],
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              color: fgColor,
                             ),
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(_tabDefs[i].$1, size: 16, color: fgColor),
-                            const SizedBox(width: 8),
-                            Text(
-                              _tabDefs[i].$2,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                color: fgColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
+                      );
+                    }),
+                  ),
                 ),
               ),
             ),
@@ -779,25 +795,25 @@ class _DashboardViewState extends State<_DashboardView> {
                               evo == null ? _kMuted : (evo > 0 ? _kDanger : _kSuccess);
 
                           final monitoringCards = <Widget>[
-                            _RoHeroStatCard(
+                            RoHeroStatCard(
                               label: 'Non clôturés',
                               value: '${d.widget2.incidentsNonClos}',
                               valueColor: _kWarning,
                               subtitle: 'Incidents ouverts à traiter',
                             ),
-                            _RoHeroStatCard(
+                            RoHeroStatCard(
                               label: 'Évolution N-1',
                               value: evoStr,
                               valueColor: evoColor,
                               subtitle: 'Pertes vs même période N-1',
                             ),
-                            _RoHeroStatCard(
+                            RoHeroStatCard(
                               label: 'Actions en retard',
                               value: '${d.widget3.actionsEnRetard}',
                               valueColor: d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
                               subtitle: "Plans d'action non clôturés",
                             ),
-                            _RoHeroStatCard(
+                            RoHeroStatCard(
                               label: 'Contrôles non conformes',
                               value: '${d.widget3.controlesNonConformes}',
                               valueColor:
@@ -1181,7 +1197,7 @@ class _RoDashSummaryRow extends StatelessWidget {
           itemCount: items.length,
           itemBuilder: (context, index) {
             final item = items[index];
-            return _RoHeroStatCard(
+            return RoHeroStatCard(
               label: item.label,
               value: item.value,
               valueColor: item.color,
@@ -1194,89 +1210,6 @@ class _RoDashSummaryRow extends StatelessWidget {
   }
 }
 
-// ─── Carte KPI « hero » (style aligné sur le Dashboard Crédit) ───────────────
-
-class _RoHeroStatCard extends StatefulWidget {
-  const _RoHeroStatCard({
-    required this.label,
-    required this.value,
-    this.subtitle,
-    this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final String? subtitle;
-  final Color? valueColor;
-
-  @override
-  State<_RoHeroStatCard> createState() => _RoHeroStatCardState();
-}
-
-class _RoHeroStatCardState extends State<_RoHeroStatCard> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = DashColors.of(context);
-    return MouseRegion(
-      onEnter: (_) {
-        if (mounted) setState(() => _hovered = true);
-      },
-      onExit: (_) {
-        if (mounted) setState(() => _hovered = false);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        height: 152,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(Dash.radius),
-          border: Border.all(
-            color: _hovered ? Colors.indigo.shade300 : c.border,
-            width: 1.0,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.label.toUpperCase(),
-              style: DashText.eyebrow(c, color: Colors.indigo).copyWith(
-                fontSize: 9.0,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
-                height: 1.25,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Divider(color: c.border, thickness: Dash.hairline, height: 1),
-            const SizedBox(height: 10),
-            Text(
-              widget.value,
-              style: DashText.hero(c, size: 19,
-                  color: widget.valueColor != null ? _roReadable(widget.valueColor!) : c.ink),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
-              const Spacer(),
-              Text(
-                widget.subtitle!,
-                style: DashText.caption(c, color: c.muted),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─── VIEW 2 : SIMULATION DE CRISE - Art. 545 PIEAFP ─────────────────────────
 
@@ -1284,7 +1217,7 @@ class _SimulationCriseView extends StatefulWidget {
   const _SimulationCriseView({required this.api, this.embedded = false});
   final RwaApiService api;
   /// Quand true, masque le titre de page (déjà porté par l'onglet parent,
-  /// ex : le hub "CCR3 / Dispositif UEMOI") - utilisé quand ce widget est
+  /// ex : le hub "CCR3 / Dispositif UEMOA") - utilisé quand ce widget est
   /// intégré comme onglet plutôt qu'affiché comme écran autonome.
   final bool embedded;
   @override
@@ -1824,7 +1757,6 @@ class _PertesView extends StatefulWidget {
 }
 
 class _PertesViewState extends State<_PertesView> {
-  int _mainSection = 0;
   int _selectedTab = 0;
 
   static const _tabDefs = [
@@ -1853,65 +1785,12 @@ class _PertesViewState extends State<_PertesView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final borderColor = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
 
-    const sectionDefs = [
-      (Icons.monetization_on_rounded, 'Pertes opérationnelles'),
-      (Icons.analytics_outlined, 'Vue UEMOA'),
-    ];
-
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Sélecteur de section ──
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: borderColor, width: 1.5)),
-            ),
-            child: Row(
-              children: List.generate(sectionDefs.length, (i) {
-                final isSelected = _mainSection == i;
-                final fg = isSelected
-                    ? AppColors.accent
-                    : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF6B7FA8));
-                return InkWell(
-                  onTap: () => setState(() => _mainSection = i),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(
-                        color: isSelected ? AppColors.accent : Colors.transparent,
-                        width: 3,
-                      )),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(sectionDefs[i].$1, size: 18, color: fg),
-                        const SizedBox(width: 8),
-                        Text(
-                          sectionDefs[i].$2,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                            color: fg,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _mainSection == 0
-                ? _buildPertesSection(isDark, borderColor)
-                : _DashboardView(api: widget.api, showHeader: false, showTabs: false),
-          ),
+          Expanded(child: _buildPertesSection(isDark, borderColor)),
         ],
       ),
     );
@@ -2078,51 +1957,6 @@ class _PertesContentState extends State<_PertesContent> {
           ),
         );
       },
-    );
-  }
-}
-
-// ─── Point pulsant surveillance auto ─────────────────────────────────────────
-
-class _AutoPulseDot extends StatefulWidget {
-  const _AutoPulseDot({required this.active});
-  final bool active;
-
-  @override
-  State<_AutoPulseDot> createState() => _AutoPulseDotState();
-}
-
-class _AutoPulseDotState extends State<_AutoPulseDot>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double>   _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
-      ..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) => Container(
-        width: 8, height: 8,
-        decoration: BoxDecoration(
-          color: _kMuted.withValues(alpha: _anim.value),
-          shape: BoxShape.circle,
-        ),
-      ),
     );
   }
 }
@@ -2522,7 +2356,7 @@ class _PertesSummaryBar extends StatelessWidget {
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final item = items[index];
-                return _RoHeroStatCard(
+                return RoHeroStatCard(
                   label: item.label,
                   value: item.value,
                   valueColor: item.color,
@@ -2555,10 +2389,6 @@ class _KriViewState extends State<_KriView> {
   late Future<RoKriModuleData> _future;
   String? _filterStatus;
 
-  // ── Surveillance automatique ──────────────────────────────────────────────
-  Timer?      _autoTimer;
-  DateTime?   _lastAutoRefresh;
-  bool        _autoRunning = false;
   // Statuts enregistrés lors du dernier cycle pour détecter les franchissements
   final Map<String, String> _prevStatuts = {};
 
@@ -2566,34 +2396,12 @@ class _KriViewState extends State<_KriView> {
   void initState() {
     super.initState();
     _reload();
-    // Lance un premier calcul auto dès l'ouverture, puis toutes les 30 s
-    _triggerAutoCalc();
-    _autoTimer = Timer.periodic(const Duration(seconds: 30), (_) => _triggerAutoCalc());
   }
 
-  @override
-  void dispose() {
-    _autoTimer?.cancel();
-    super.dispose();
-  }
-
-  void _reload() => setState(() { _future = widget.api.fetchRoKri(); });
-
-  Future<void> _triggerAutoCalc() async {
-    if (!mounted) return;
-    setState(() => _autoRunning = true);
-    try {
-      final data = await widget.api.autoCalculKri();
-      if (!mounted) return;
-      _detectBreaches(data);
-      setState(() {
-        _future = Future.value(data);
-        _lastAutoRefresh = DateTime.now();
-        _autoRunning = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _autoRunning = false);
-    }
+  void _reload() {
+    final future = widget.api.fetchRoKri();
+    future.then((data) { if (mounted) _detectBreaches(data); });
+    setState(() { _future = future; });
   }
 
   double? _parseNumber(String text) {
@@ -2602,12 +2410,15 @@ class _KriViewState extends State<_KriView> {
     return double.tryParse(normalized);
   }
 
+  bool _isRatioKri(String kriId) => _ratioKriIds.contains(kriId);
+
   double? _computeManualKriValue(String kriId, double valueA, double valueB) {
     if (valueB == 0) return null;
     return switch (kriId) {
       'kri-01' => valueA / valueB * 100,
       'kri-02' => valueA / valueB * 100,
       'kri-03' => valueA / valueB,
+      'kri-06' => valueA / valueB * 100,
       'kri-07' => valueA / valueB * 100,
       _ => null,
     };
@@ -2617,20 +2428,25 @@ class _KriViewState extends State<_KriView> {
     'kri-01' => 'Départs volontaires',
     'kri-02' => 'Jours d’absence',
     'kri-03' => 'Total heures de formation',
+    'kri-06' => 'Transactions/opérations erronées',
     'kri-07' => 'Notes ≥ 4',
-    _ => 'Valeur 1',
+    _ => 'Valeur mesurée',
   };
 
   String _manualKriField2Label(String kriId) => switch (kriId) {
     'kri-01' => 'Effectif moyen',
     'kri-02' => 'Jours travaillés théoriques',
     'kri-03' => 'Effectif total',
+    'kri-06' => 'Transactions/opérations totales',
     'kri-07' => 'Total réponses',
     _ => 'Valeur 2',
   };
 
   String _manualKriResultUnit(String kriId) => switch (kriId) {
     'kri-03' => 'Heures / employé',
+    'kri-04' => 'Nombre',
+    'kri-05' => 'Jours',
+    'kri-08' => 'Nombre',
     _ => '%',
   };
 
@@ -2638,7 +2454,11 @@ class _KriViewState extends State<_KriView> {
     'kri-01' => 'Turnover = départs volontaires / effectif moyen × 100',
     'kri-02' => 'Taux d’absence = jours d’absence / jours travaillés théoriques × 100',
     'kri-03' => 'Heures formation par employé = total heures formation / effectif total',
+    'kri-04' => 'Nombre d’incidents liés aux systèmes/IT constatés sur la période.',
+    'kri-05' => 'Délai moyen (en jours) entre l’ouverture et la clôture des incidents résolus.',
+    'kri-06' => 'Taux d’erreurs = transactions/opérations erronées / total × 100',
     'kri-07' => 'Taux de satisfaction = notes ≥ 4 / total réponses × 100',
+    'kri-08' => 'Nombre de contrôles évalués « Non-conforme » sur la période.',
     _ => '',
   };
 
@@ -2654,12 +2474,14 @@ class _KriViewState extends State<_KriView> {
     double? computedValue;
 
     void updateComputed() {
-      final a = _parseNumber(fieldAController.text);
-      final b = _parseNumber(fieldBController.text);
-      if (a != null && b != null) {
-        computedValue = _computeManualKriValue(selectedKriId, a, b);
+      if (_isRatioKri(selectedKriId)) {
+        final a = _parseNumber(fieldAController.text);
+        final b = _parseNumber(fieldBController.text);
+        computedValue = (a != null && b != null)
+            ? _computeManualKriValue(selectedKriId, a, b)
+            : null;
       } else {
-        computedValue = null;
+        computedValue = _parseNumber(fieldAController.text);
       }
     }
 
@@ -2672,6 +2494,7 @@ class _KriViewState extends State<_KriView> {
               .definition
               .nom;
           final unit = _manualKriResultUnit(selectedKriId);
+          final isRatio = _isRatioKri(selectedKriId);
           return AlertDialog(
             title: const Text('Saisie des données KRI'),
             content: SingleChildScrollView(
@@ -2680,10 +2503,14 @@ class _KriViewState extends State<_KriView> {
                 child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
                   DropdownButtonFormField<String>(
                     initialValue: selectedKriId,
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Indicateur', isDense: true),
                     items: availableKris.map((k) => DropdownMenuItem(
                       value: k.definition.id,
-                      child: Text('${k.definition.id} - ${k.definition.nom}'),
+                      child: Text(
+                        '${k.definition.id} - ${k.definition.nom}',
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     )).toList(),
                     onChanged: (value) {
                       if (value == null) return;
@@ -2700,7 +2527,11 @@ class _KriViewState extends State<_KriView> {
                   TextFormField(
                     controller: fieldAController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: _manualKriField1Label(selectedKriId), isDense: true),
+                    decoration: InputDecoration(
+                      labelText: _manualKriField1Label(selectedKriId),
+                      suffixText: isRatio ? null : unit,
+                      isDense: true,
+                    ),
                     inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
                     validator: (v) => (v == null || v.trim().isEmpty) ? 'Champ requis' : null,
                     onChanged: (_) {
@@ -2708,22 +2539,24 @@ class _KriViewState extends State<_KriView> {
                       setState2(() {});
                     },
                   ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: fieldBController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(labelText: _manualKriField2Label(selectedKriId), isDense: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Champ requis';
-                      if (_parseNumber(v) == 0) return 'Ne peut pas être zéro';
-                      return null;
-                    },
-                    onChanged: (_) {
-                      updateComputed();
-                      setState2(() {});
-                    },
-                  ),
+                  if (isRatio) ...[
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: fieldBController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: InputDecoration(labelText: _manualKriField2Label(selectedKriId), isDense: true),
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d .,]'))],
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Champ requis';
+                        if (_parseNumber(v) == 0) return 'Ne peut pas être zéro';
+                        return null;
+                      },
+                      onChanged: (_) {
+                        updateComputed();
+                        setState2(() {});
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: dateCtrl,
@@ -2757,9 +2590,11 @@ class _KriViewState extends State<_KriView> {
                         color: _kMuted.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8)),
                       child: Row(children: [
-                        Expanded(child: Text('Valeur calculée pour $selectedName', style: const TextStyle(fontSize: 12, color: _kMuted))),
+                        Expanded(child: Text(
+                          isRatio ? 'Valeur calculée pour $selectedName' : 'Valeur enregistrée pour $selectedName',
+                          style: const TextStyle(fontSize: 12, color: _kMuted))),
                         Text(
-                          '${computedValue!.toStringAsFixed(selectedKriId == 'kri-03' ? 1 : 1)} $unit',
+                          '${computedValue!.toStringAsFixed(1)} $unit',
                           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                         ),
                       ]),
@@ -2773,7 +2608,7 @@ class _KriViewState extends State<_KriView> {
                 onPressed: () async {
                   if (!formKey.currentState!.validate()) return;
                   if (computedValue == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de calculer la valeur KRI.')));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Valeur KRI invalide.')));
                     return;
                   }
                   try {
@@ -2921,60 +2756,10 @@ class _KriViewState extends State<_KriView> {
                         ],
 
                         const SizedBox(height: 16),
-                        // ── Surveillance automatique ──────────────────────
-                        _kriPanelSection('Surveillance', Icons.radar_rounded, _kMuted),
-                        const SizedBox(height: 8),
-                        // Indicateur live
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(7),
-                            border: Border.all(color: _kMuted.withValues(alpha: 0.18)),
-                          ),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              _AutoPulseDot(active: _autoRunning),
-                              const SizedBox(width: 7),
-                              Expanded(child: Text('Calcul automatique',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                                  color: isDark ? AppTheme.darkText : AppTheme.text))),
-                            ]),
-                            const SizedBox(height: 4),
-                            Text(
-                              _autoRunning
-                                ? 'Calcul en cours…'
-                                : _lastAutoRefresh == null
-                                  ? 'En attente…'
-                                  : 'Mis à jour à ${_lastAutoRefresh!.hour.toString().padLeft(2,'0')}:${_lastAutoRefresh!.minute.toString().padLeft(2,'0')}:${_lastAutoRefresh!.second.toString().padLeft(2,'0')}',
-                              style: const TextStyle(fontSize: 10, color: _kMuted),
-                            ),
-                            const SizedBox(height: 3),
-                            const Text('Rafraîchi toutes les 30 s',
-                              style: TextStyle(fontSize: 9.5, color: _kMuted)),
-                          ]),
-                        ),
-                        const SizedBox(height: 8),
-                        // Bouton calcul immédiat
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
-                            onPressed: _autoRunning ? null : _triggerAutoCalc,
-                            icon: const Icon(Icons.bolt_rounded, size: 15, color: _kMuted),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: isDark ? AppTheme.darkText : AppTheme.text,
-                              side: BorderSide(color: _kMuted.withValues(alpha: 0.35)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              textStyle: const TextStyle(fontSize: 12),
-                            ),
-                            label: const Text('Calculer maintenant'),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: OutlinedButton.icon(
-                            onPressed: () => _showKriEntryDialog(
-                              data.kriList.where((k) => _manualKriIds.contains(k.definition.id)).toList()),
+                            onPressed: () => _showKriEntryDialog(data.kriList),
                             icon: const Icon(Icons.edit_calendar_outlined, size: 15, color: _kMuted),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: isDark ? AppTheme.darkText : AppTheme.text,
@@ -4019,7 +3804,7 @@ class _CartographieSummaryBar extends StatelessWidget {
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final item = items[index];
-                return _RoHeroStatCard(
+                return RoHeroStatCard(
                   label: item.label,
                   value: item.value,
                   valueColor: item.color,
@@ -5806,7 +5591,7 @@ class _RegistreView extends StatefulWidget {
   final RwaApiService api;
   /// Quand true, remplace le grand titre de page par une simple barre
   /// d'actions (Import/Export) - utilisé quand ce widget est intégré comme
-  /// onglet du hub "CCR3 / Dispositif UEMOI" plutôt qu'affiché en écran
+  /// onglet du hub "CCR3 / Dispositif UEMOA" plutôt qu'affiché en écran
   /// autonome depuis le menu.
   final bool embedded;
   @override
@@ -7147,7 +6932,7 @@ class _RegistreViewState extends State<_RegistreView> {
 
 }
 
-// ─── CCR3 / Dispositif UEMOI - hub à onglets (ancien "Import de données",
+// ─── CCR3 / Dispositif UEMOA - hub à onglets (ancien "Import de données",
 // extrait pour que le registre des pertes redevienne l'écran direct de
 // l'entrée "Import données" du menu) ──────────────────────────────────────
 
@@ -7163,28 +6948,25 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
   int _uemoiSubTab    = 0;
 
   static const _tabDefs = [
-    (Icons.compare_arrows_outlined,  'CCR3'),
-    (Icons.policy_outlined,          'Dispositif UEMOI'),
+    'Dispositif UEMOA',
+    'CCR3',
   ];
 
   // Onglets de premier niveau temporairement désactivés (non fonctionnels).
-  // "Dispositif UEMOI" (index 1) est désactivé pour le moment.
-  static const _disabledTopTabs = {1};
+  static const _disabledTopTabs = <int>{};
 
   static const _uemoiSubTabDefs = [
-    (Icons.trending_up_outlined,   'Indicateur de Base (AIB)'),
-    (Icons.account_tree_outlined,  'Approche Standard (AS)'),
-    (Icons.analytics_outlined,     'BIC / Pilotage interne'),
-    (Icons.dashboard_outlined,     'Tableau de bord'),
-    (Icons.compare_arrows_outlined,'Synthèse globale'),
-    (Icons.upload_file_outlined,   'Import données'),
-    (Icons.science_rounded,        'Simulation de crise'),
+    'Indicateur de Base (AIB)',
+    'Approche Standard (AS)',
+    'BIC / Pilotage interne',
+    'Synthèse globale',
+    'Import données',
+    'Simulation de crise',
   ];
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
 
     return Padding(
       padding: const EdgeInsets.all(AppTheme.pagePadding),
@@ -7192,7 +6974,7 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const PageHeader(
-            title: 'CCR3 / Dispositif UEMOI',
+            title: 'CCR3 / Dispositif UEMOA',
             titleFontSize: 26,
           ),
           const SizedBox(height: 14),
@@ -7200,62 +6982,38 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    border: Border(bottom: BorderSide(color: borderColor)),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: List.generate(_tabDefs.length, (i) {
-                        // "Dispositif UEMOI" temporairement désactivé (non
-                        // fonctionnel pour le moment) - onglet grisé, non
-                        // cliquable, sans effet visuel de sélection.
-                        final isDisabled = _disabledTopTabs.contains(i);
-                        final isSelected = !isDisabled && _selectedTab == i;
-                        final fgColor = isDisabled
-                            ? (isDark ? const Color(0xFF4B5B79) : const Color(0xFFB7C2D6))
-                            : isSelected
-                                ? AppColors.accent
-                                : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF234A84));
-                        return InkWell(
-                          onTap: isDisabled ? null : () => setState(() => _selectedTab = i),
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            decoration: BoxDecoration(
-                              border: Border(bottom: BorderSide(
-                                color: isSelected ? AppColors.accent : Colors.transparent,
-                                width: 2,
-                              )),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(_tabDefs[i].$1, size: 16, color: fgColor),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _tabDefs[i].$2,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                    color: fgColor,
-                                  ),
-                                ),
-                                if (isDisabled) ...[
-                                  const SizedBox(width: 6),
-                                  Icon(Icons.lock_outline, size: 12, color: fgColor),
-                                ],
-                              ],
+                // Même contrôle segmenté que le module Risque Crédit
+                // (écran Expositions - _buildTabSelector).
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: CupertinoSlidingSegmentedControl<int>(
+                    groupValue: _selectedTab,
+                    children: {
+                      for (var i = 0; i < _tabDefs.length; i++)
+                        i: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 8),
+                          child: Text(
+                            _tabDefs[i],
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: _selectedTab == i
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
                             ),
                           ),
-                        );
-                      }),
-                    ),
+                        ),
+                    },
+                    onValueChanged: (int? value) {
+                      if (value != null &&
+                          value != _selectedTab &&
+                          !_disabledTopTabs.contains(value)) {
+                        setState(() => _selectedTab = value);
+                      }
+                    },
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Expanded(child: _buildCurrentTab(isDark)),
               ],
             ),
@@ -7267,65 +7025,47 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
 
   Widget _buildCurrentTab(bool isDark) {
     switch (_selectedTab) {
-      case 0: return _buildCcr3Content(isDark);
-      case 1: return _buildDispositifUemoiContent(isDark);
+      case 0: return _buildDispositifUemoiContent(isDark);
+      case 1: return _buildCcr3Content(isDark);
       default: return const SizedBox.shrink();
     }
   }
 
   Widget _buildDispositifUemoiContent(bool isDark) {
-    final borderColor = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F5);
-
+    // Même contrôle segmenté que le module Risque Crédit (écran Expositions -
+    // _buildTabSelector) : piste grise, pastille glissante blanche, sans icônes.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── Barre de sous-onglets ───────────────────────────────────────────
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: borderColor)),
-          ),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(_uemoiSubTabDefs.length, (i) {
-                final isSelected = _uemoiSubTab == i;
-                final fgColor = isSelected
-                    ? AppColors.accent
-                    : (isDark ? const Color(0xFF9FB0CE) : const Color(0xFF234A84));
-                return InkWell(
-                  onTap: () => setState(() => _uemoiSubTab = i),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      border: Border(bottom: BorderSide(
-                        color: isSelected ? AppColors.accent : Colors.transparent,
-                        width: 2,
-                      )),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(_uemoiSubTabDefs[i].$1, size: 14, color: fgColor),
-                        const SizedBox(width: 6),
-                        Text(
-                          _uemoiSubTabDefs[i].$2,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                            color: fgColor,
-                          ),
-                        ),
-                      ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: CupertinoSlidingSegmentedControl<int>(
+            groupValue: _uemoiSubTab,
+            children: {
+              for (var i = 0; i < _uemoiSubTabDefs.length; i++)
+                i: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    _uemoiSubTabDefs[i],
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: _uemoiSubTab == i
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
-                );
-              }),
-            ),
+                ),
+            },
+            onValueChanged: (int? value) {
+              if (value != null && value != _uemoiSubTab) {
+                setState(() => _uemoiSubTab = value);
+              }
+            },
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
 
         // ── Contenu du sous-onglet actif ────────────────────────────────────
         Expanded(child: _buildUemoiSubTab(isDark)),
@@ -7338,41 +7078,11 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
       case 0: return UemoiAibScreen(api: widget.api);
       case 1: return UemoiAsScreen(api: widget.api);
       case 2: return _CorepTabView(api: widget.api, isDark: isDark);
-      case 3: return _buildUemoiPlaceholder(isDark, 'Tableau de bord & indicateurs', 'Pilier 2 PIEAFP - indicateurs agrégés', Icons.dashboard_outlined, 'BLOC C');
-      case 4: return UemoiSyntheseScreen(api: widget.api);
-      case 5: return _RegistreView(api: widget.api, embedded: true);
-      case 6: return _SimulationCriseView(api: widget.api, embedded: true);
+      case 3: return UemoiSyntheseScreen(api: widget.api);
+      case 4: return _RegistreView(api: widget.api, embedded: true);
+      case 5: return _SimulationCriseView(api: widget.api, embedded: true);
       default: return const SizedBox.shrink();
     }
-  }
-
-  Widget _buildUemoiPlaceholder(bool isDark, String title, String subtitle, IconData icon, String bloc) {
-    final muted      = isDark ? const Color(0xFF8BA3C7) : const Color(0xFF94A3B8);
-    final blocColor  = isDark ? const Color(0xFF1E88E5) : const Color(0xFF1565C0);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: blocColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: blocColor.withValues(alpha: 0.3)),
-            ),
-            child: Text(bloc, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: blocColor)),
-          ),
-          const SizedBox(height: 16),
-          Icon(icon, size: 44, color: muted.withValues(alpha: 0.35)),
-          const SizedBox(height: 14),
-          Text(title,    style: TextStyle(color: muted, fontSize: 14, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          Text(subtitle, style: TextStyle(color: muted, fontSize: 11)),
-          const SizedBox(height: 10),
-          Text('Section en cours de développement', style: TextStyle(color: muted.withValues(alpha: 1.0), fontSize: 11, fontStyle: FontStyle.italic)),
-        ],
-      ),
-    );
   }
 
   Widget _buildCcr3Content(bool isDark) =>
@@ -7391,7 +7101,10 @@ class _CorepTabView extends StatefulWidget {
 }
 
 class _CorepTabViewState extends State<_CorepTabView> {
-  int _view = 0;
+  // Seule la vue "Décision" (pilotage) reste accessible depuis cet onglet -
+  // Saisie/Résultats/Analyse rapide/Paramètres sont déjà proposés à
+  // l'identique sous l'onglet de premier niveau "CCR3".
+  int _view = 4;
   bool _loading = true;
   String? _error;
   bool _saving = false;
@@ -7594,42 +7307,51 @@ class _CorepTabViewState extends State<_CorepTabView> {
   }
 
   Widget _buildTopBar() {
-    final years = _result?.annees ?? [_anneeN - 2, _anneeN - 1, _anneeN];
-    final yearLabel = '${years[0]} · ${years[1]} · ${years[2]}';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Même habillage "pilule" (fond gris, pastille blanche + ombre légère sur
+    // l'onglet actif) que les autres barres d'onglets du hub UEMOA et que le
+    // Pilotage RWA Crédit.
+    final pillBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
 
     Widget tab(int idx, IconData icon, String label) {
       final sel = _view == idx;
-      return GestureDetector(
+      final selectedBg = isDark ? const Color(0xFF334155) : Colors.white;
+      final fgColor = sel
+          ? (isDark ? Colors.white : const Color(0xFF0F172A))
+          : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
+      return InkWell(
         onTap: () => setState(() => _view = idx),
-        child: Container(
+        borderRadius: BorderRadius.circular(6),
+        hoverColor: isDark
+            ? const Color(0xFF334155).withValues(alpha: 0.5)
+            : const Color(0xFFCBD5E1).withValues(alpha: 0.4),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: sel ? _kAccent : Colors.transparent,
-            borderRadius: BorderRadius.circular(5),
+            color: sel ? selectedBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: sel && !isDark
+                ? [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 1, offset: const Offset(0, 1)),
+                  ]
+                : null,
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 13, color: sel ? Colors.white : _muted),
+            Icon(icon, size: 13, color: fgColor),
             const SizedBox(width: 5),
             Text(label, style: TextStyle(
               fontSize: 11.5, fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
-              color: sel ? Colors.white : _muted,
+              color: fgColor,
             )),
           ]),
         ),
       );
     }
-
-    Widget yearBtn(IconData icon, VoidCallback onTap) => Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(3),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-          child: Icon(icon, size: 12, color: _kAccent),
-        ),
-      ),
-    );
 
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
@@ -7639,42 +7361,16 @@ class _CorepTabViewState extends State<_CorepTabView> {
         border: Border.all(color: _border, width: 0.8),
       ),
       child: Row(children: [
-        const Icon(Icons.account_balance_outlined, size: 14, color: _kAccent),
-        const SizedBox(width: 6),
-        Text('CRR3-COREP', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
-        const SizedBox(width: 8),
         Container(
+          padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: _kAccent.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: _kAccent.withValues(alpha: 0.25)),
+            color: pillBg,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            yearBtn(Icons.remove, () {
-              setState(() { _anneeN--; _result = null; });
-              _load();
-            }),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(yearLabel, style: const TextStyle(
-                  fontSize: 10.5, fontWeight: FontWeight.w600, color: _kAccent)),
-            ),
-            yearBtn(Icons.add, () {
-              setState(() { _anneeN++; _result = null; });
-              _load();
-            }),
+            tab(4, Icons.gavel_rounded, 'Décision'),
           ]),
         ),
-        const SizedBox(width: 14),
-        tab(0, Icons.edit_note_outlined, 'Saisie PNB'),
-        const SizedBox(width: 4),
-        tab(1, Icons.analytics_outlined, 'Résultats'),
-        const SizedBox(width: 4),
-        tab(2, Icons.speed_outlined, 'Analyse rapide'),
-        const SizedBox(width: 4),
-        tab(3, Icons.tune_outlined, 'Paramètres'),
-        const SizedBox(width: 4),
-        tab(4, Icons.gavel_rounded, 'Décision'),
         const Spacer(),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -8292,7 +7988,7 @@ class _Ccr3TabView extends StatefulWidget {
   final RwaApiService api;
   final bool isDark;
   /// Quand true, seul l'onglet "Analyse rapide" est accessible - Résultats,
-  /// Saisie et Paramètres sont masqués (saisie/config à faire depuis UEMOI).
+  /// Saisie et Paramètres sont masqués (saisie/config à faire depuis UEMOA).
   final bool onlyAnalyseRapide;
   /// Quand true, le bouton "Analyse rapide" est masqué (les autres onglets
   /// restent accessibles) - utilisé sur l'écran Import de données.
@@ -8581,46 +8277,48 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
   Widget _buildTopBar() {
     final years = _result?.annees ?? [_anneeN - 2, _anneeN - 1, _anneeN];
     final yearLabel = '${years[0]} · ${years[1]} · ${years[2]}';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // Même habillage "pilule" (fond gris, pastille blanche + ombre légère sur
+    // l'onglet actif) que les autres barres d'onglets du hub UEMOA et que le
+    // Pilotage RWA Crédit.
+    final pillBg = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
 
     Widget tab(int idx, IconData icon, String label) {
       final sel = _view == idx;
-      const glow = Color(0xFF3B5BFF);
-      return MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: () => setState(() => _view = idx),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: sel
-                    ? const [Color(0xFF4A6BFF), Color(0xFF1830B8)]
-                    : const [Color(0xFF16213E), Color(0xFF0B1226)],
-              ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: sel ? const Color(0xFF8FA5FF) : glow.withValues(alpha: 0.35),
-                width: sel ? 1.3 : 1,
-              ),
-              boxShadow: sel
-                  ? [
-                      BoxShadow(color: glow.withValues(alpha: 0.28), blurRadius: 8, spreadRadius: 0),
-                      BoxShadow(color: glow.withValues(alpha: 0.12), blurRadius: 14),
-                    ]
-                  : [
-                      BoxShadow(color: glow.withValues(alpha: 0.06), blurRadius: 4),
-                    ],
-            ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(label.toUpperCase(), style: const TextStyle(
-                fontSize: 10.5, fontWeight: FontWeight.w700,
-                color: Colors.white, letterSpacing: 0.5,
-              )),
-            ]),
+      final selectedBg = isDark ? const Color(0xFF334155) : Colors.white;
+      final fgColor = sel
+          ? (isDark ? Colors.white : const Color(0xFF0F172A))
+          : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B));
+      return InkWell(
+        onTap: () => setState(() => _view = idx),
+        borderRadius: BorderRadius.circular(6),
+        hoverColor: isDark
+            ? const Color(0xFF334155).withValues(alpha: 0.5)
+            : const Color(0xFFCBD5E1).withValues(alpha: 0.4),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: sel ? selectedBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: sel && !isDark
+                ? [
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
+                    BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 1, offset: const Offset(0, 1)),
+                  ]
+                : null,
           ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 13, color: fgColor),
+            const SizedBox(width: 5),
+            Text(label, style: TextStyle(
+              fontSize: 11.5, fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
+              color: fgColor,
+            )),
+          ]),
         ),
       );
     }
@@ -8662,19 +8360,22 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             ]),
           ),
           const SizedBox(width: 14),
-          if (!widget.onlyAnalyseRapide) ...[
-            if (!widget.hideAnalyseRapideTab) ...[
-              tab(0, Icons.speed_outlined, 'Analyse rapide'),
-              const SizedBox(width: 4),
-            ],
-            tab(2, Icons.edit_note_outlined, 'Saisie'),
-            const SizedBox(width: 4),
-            tab(4, Icons.fact_check_outlined, 'Données importées'),
-            const SizedBox(width: 4),
-            tab(1, Icons.analytics_outlined, 'Résultats'),
-            const SizedBox(width: 4),
-            tab(3, Icons.tune_outlined, 'Paramètres'),
-          ],
+          if (!widget.onlyAnalyseRapide)
+            Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: pillBg,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (!widget.hideAnalyseRapideTab)
+                  tab(0, Icons.speed_outlined, 'Analyse rapide'),
+                tab(2, Icons.edit_note_outlined, 'Saisie'),
+                tab(4, Icons.fact_check_outlined, 'Données importées'),
+                tab(1, Icons.analytics_outlined, 'Résultats'),
+                tab(3, Icons.tune_outlined, 'Paramètres'),
+              ]),
+            ),
           const Spacer(),
           // Bouton "Import" retiré de cette barre - redondant avec le
           // bouton "Importer" déjà présent dans l'onglet "Données importées".
@@ -9255,7 +8956,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           Text('Aucune donnée disponible', style: TextStyle(fontSize: 15, color: _txt)),
           const SizedBox(height: 4),
           if (widget.onlyAnalyseRapide)
-            Text('La saisie se fait depuis la section UEMOI.',
+            Text('La saisie se fait depuis la section UEMOA.',
                 style: TextStyle(fontSize: 11.5, color: _muted))
           else ...[
             const SizedBox(height: 8),
@@ -9325,33 +9026,33 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
            "${(r.params.coefTranche3 * 100).toStringAsFixed(0)} %"})';
 
     return Row(children: [
-      Expanded(child: _RoHeroStatCard(
+      Expanded(child: RoHeroStatCard(
         label: 'Exigence de fonds propres (OFR) CRR3',
         value: _roAmount(context, r.ofrCrr3),
         valueColor: _kAccent,
         subtitle: 'Besoin en fonds propres',
       )),
       const SizedBox(width: 12),
-      Expanded(child: _RoHeroStatCard(
+      Expanded(child: RoHeroStatCard(
         label: "Montant d'exposition au risque (REA) CRR3",
         value: _roAmount(context, r.reaCrr3),
         subtitle: '× ${r.params.multiplicateurRea.toStringAsFixed(1)}',
       )),
       const SizedBox(width: 12),
-      Expanded(child: _RoHeroStatCard(
+      Expanded(child: RoHeroStatCard(
         label: 'Exigence de fonds propres (OFR) BIA',
         value: _roAmount(context, r.ofrBia),
         subtitle: '15 % × PNB moy',
       )),
       const SizedBox(width: 12),
-      Expanded(child: _RoHeroStatCard(
+      Expanded(child: RoHeroStatCard(
         label: "Écart d'exigence de fonds propres (OFR) CRR3 − BIA",
         value: '${r.ecart > 0 ? "+" : ""}${_roAmount(context, r.ecart)}',
         valueColor: ecartColor,
         subtitle: ecartPos ? 'CRR3 > BIA (défavorable)' : 'CRR3 < BIA (favorable)',
       )),
       const SizedBox(width: 12),
-      Expanded(child: _RoHeroStatCard(
+      Expanded(child: RoHeroStatCard(
         label: "Tranche de la composante de l'indicateur d'activité (BIC)",
         value: trancheLabel,
         valueColor: bi.trancheActive == 1 ? _kGreen :

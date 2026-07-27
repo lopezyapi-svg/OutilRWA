@@ -317,12 +317,6 @@ class RwaApiService {
     return RoKriValeur.fromJson(json);
   }
 
-  Future<RoKriModuleData> autoCalculKri() async {
-    final json = await _client.post('/risque-operationnel/kri/auto-calcul', {})
-        as Map<String, dynamic>;
-    return RoKriModuleData.fromJson(json);
-  }
-
   Future<List<RoRisque>> fetchRoRisques() async {
     final json =
         await _client.get('/risque-operationnel/risques') as List<dynamic>;
@@ -904,7 +898,7 @@ class RwaApiService {
     return OpRiskCalculResult.fromJson(json);
   }
 
-  // ── UEMOI - AIB (Approche Indicateur de Base) ────────────────────────────────
+  // ── UEMOA - AIB (Approche Indicateur de Base) ────────────────────────────────
 
   Future<List<PnbAnnuelView>> fetchPnbAnnuel() async {
     final list =
@@ -949,7 +943,7 @@ class RwaApiService {
     return DecisionPilotageResult.fromJson(json);
   }
 
-  // ── UEMOI - AS (Approche Standard) ───────────────────────────────────────────
+  // ── UEMOA - AS (Approche Standard) ───────────────────────────────────────────
 
   Future<List<BetaLigneView>> fetchBetaLignes() async {
     final list = await _client.get('/risque-operationnel/as/beta-lignes')
@@ -1008,7 +1002,7 @@ class RwaApiService {
     return DecisionPilotageResult.fromJson(json);
   }
 
-  // ── UEMOI - Seuils + Synthèse ─────────────────────────────────────────────────
+  // ── UEMOA - Seuils + Synthèse ─────────────────────────────────────────────────
 
   Future<ParametresSeuils> fetchPertesSeuils() async {
     final json = await _client.get('/risque-operationnel/pertes/seuils')
