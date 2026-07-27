@@ -63,34 +63,6 @@ def calculate_fonds_propres(fp_data: dict[str, float]) -> dict[str, float]:
     }
 
 
-def calculate_risque_operationnel(pb_data: dict[str, float]) -> dict[str, float]:
-    """
-    Calcule le RWA Opérationnel selon l'Approche Indicateur de Base (AIB).
-    Titre V, Section II. 2.1, Paragraphe 301.
-    """
-    produits_bruts = [
-        pb_data.get("produit_brut_annee_1", 0.0),
-        pb_data.get("produit_brut_annee_2", 0.0),
-        pb_data.get("produit_brut_annee_3", 0.0),
-    ]
-    
-    pb_positifs = [pb for pb in produits_bruts if pb > 0]
-    
-    if not pb_positifs:
-        exigence = 0.0
-    else:
-        alpha = 0.15
-        moyenne_pb = sum(pb_positifs) / len(pb_positifs)
-        exigence = moyenne_pb * alpha
-        
-    rwa_op = exigence * RWA_MULTIPLIER
-    
-    return {
-        "exigence_fonds_propres": round(exigence, 2),
-        "rwa_operationnel": round(rwa_op, 2),
-    }
-
-
 def calculate_risque_marche(marche_data: dict[str, float]) -> dict[str, float]:
     """
     Calcule le RWA Marché (Titre VI).

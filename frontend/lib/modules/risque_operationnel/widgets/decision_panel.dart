@@ -1,5 +1,5 @@
 // Panneau de décision de pilotage - réutilisable dans les onglets
-// A1 (AIB), A2 (AS) et B1 (BIC/Pilotage interne) du Dispositif UEMOI.
+// A1 (AIB), A2 (AS) et B1 (BIC/Pilotage interne) du Dispositif UEMOA.
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_spacing.dart';

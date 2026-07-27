@@ -113,11 +113,6 @@ def add_kri_valeur(data: KriValeurCreate) -> KriValeurView:
     return services.add_kri_valeur(data)
 
 
-@router.post("/kri/auto-calcul", response_model=KriModuleData)
-def auto_calcul_kri() -> KriModuleData:
-    return services.auto_calcul_kri()
-
-
 # ─── Cartographie des risques ─────────────────────────────────────────────────
 
 @router.get("/risques", response_model=list[RisqueView])

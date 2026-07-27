@@ -17,7 +17,7 @@ from app.core.bceao_calculations import (
     evaluate_ratios
 )
 from app.market.services import resolve_market_capital
-from app.risque_operationnel.services import calcul_bic as _calcul_bic_crr3
+from app.risque_operationnel.services import calcul_aib as _calcul_aib_uemoa
 from app.dashboard.models import (
     DashboardMetric,
     DashboardProjectionPoint,
@@ -417,18 +417,15 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     # CALCULATIONS BCEAO
     fp_calc = calculate_fonds_propres(fp_data)
     rm_calc = resolve_market_capital(rm_data)
-    # RWA Opérationnel = REA CRR3 (Approche Standard / BIC), issu de la saisie
-    # ou de l'import Excel BIC/CCR3 — remplace l'ancienne approche indicateur
-    # de base (AIB) simplifiée qui n'était plus représentative.
-    #
-    # C'est bien `rea_crr3` (= OFR × 12,5) qu'il faut agréger ici, pas
-    # `ofr_crr3` : ce dernier est l'exigence de FONDS PROPRES, donc déjà nette
-    # du multiplicateur. L'utiliser comme RWA revenait à lui réappliquer les
-    # 9 % du ratio et divisait l'exigence opérationnelle par 12,5 (le risque
-    # opérationnel tombait à 0 % du RWA total). Même convention que la
-    # synthèse du module Risque Opérationnel (apr = rea_crr3) et que le
-    # risque de marché (rwa_marche = capital requis × 12,5).
-    rwa_operationnel = _calcul_bic_crr3().rea_crr3
+    # RWA Opérationnel = APR de l'Approche Indicateur de Base (AIB, art. 301
+    # du dispositif prudentiel BCEAO) — c'est la méthode réglementaire UEMOA
+    # effectivement applicable, à la différence du BIC/CRR3 qui n'est qu'un
+    # outil de pilotage interne calé sur le référentiel bâlois européen (cf.
+    # libellé « BIC — CRR3 Pilotage interne » dans la synthèse du module
+    # Risque Opérationnel). `apr_aib` est déjà exprimé en équivalent RWA
+    # (K_IB × 12,5), comme le risque de marché (rwa_marche = capital requis
+    # × 12,5) : pas de multiplicateur à réappliquer ici.
+    rwa_operationnel = _calcul_aib_uemoa().apr_aib
 
     fp_detail = FondsPropresDetail(
         capital_ordinaire=fp_data.get("capital_ordinaire", 0.0),

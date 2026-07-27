@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_theme.dart';
 
-/// Style de formulaire standard pour Dispositif UEMOI : reprend l'habillage
+/// Style de formulaire standard pour Dispositif UEMOA : reprend l'habillage
 /// de la modale "Modifier les Fonds Propres" (bandeau coloré en tête de
 /// carte, titre + sous-titre, puis champs en boîtes grisées).
 ///
@@ -231,6 +231,76 @@ class UemoiFormField extends StatelessWidget {
           Expanded(flex: labelFlex, child: labelWidget),
           const SizedBox(width: 8),
           Expanded(flex: fieldFlex, child: SizedBox(height: 32, child: field)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ligne libellé + valeur en boîte grisée, en lecture seule (pas de champ
+/// éditable) - même habillage que [UemoiFormField] pour afficher des
+/// données déjà saisies (ex. cartes par exercice de la saisie AIB).
+class UemoiInfoRow extends StatelessWidget {
+  const UemoiInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.labelFlex = 6,
+    this.fieldFlex = 7,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final int labelFlex;
+  final int fieldFlex;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
+    final defaultValueColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final fillColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0x1F94A3B8) : const Color(0x1F64748B),
+            width: 0.8,
+          ),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            flex: labelFlex,
+            child: Text(label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w500, color: labelColor)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: fieldFlex,
+            child: Container(
+              height: 32,
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(color: fillColor, borderRadius: BorderRadius.circular(4)),
+              child: Text(
+                value,
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                  fontWeight: FontWeight.w600,
+                  color: valueColor ?? defaultValueColor,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
