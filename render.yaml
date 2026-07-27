@@ -47,3 +47,7 @@ services:
         value: administrator
       - key: RWA_COMPTE_ADMINISTRATOR_MDP
         value: ***REMOVED***
+      - key: RWA_COMPTE_LOPEZ
+        value: lopez
+      - key: RWA_COMPTE_LOPEZ_MDP
+        value: ***REMOVED***
