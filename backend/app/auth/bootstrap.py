@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 _COMPTES_INITIAUX = (
     ("RWA_COMPTE_EDITION", "RWA_COMPTE_EDITION_MDP", "edition"),
     ("RWA_COMPTE_CONSULTATION", "RWA_COMPTE_CONSULTATION_MDP", "consultation"),
+    ("RWA_COMPTE_ADMINISTRATOR", "RWA_COMPTE_ADMINISTRATOR_MDP", "edition"),
 )
 
 

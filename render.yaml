@@ -43,3 +43,7 @@ services:
         value: pascal
       - key: RWA_COMPTE_EDITION_MDP
         sync: false
+      - key: RWA_COMPTE_ADMINISTRATOR
+        value: administrator
+      - key: RWA_COMPTE_ADMINISTRATOR_MDP
+        value: Heymanns@Adm2026
