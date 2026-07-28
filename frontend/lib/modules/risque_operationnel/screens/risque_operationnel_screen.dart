@@ -25,6 +25,7 @@ import '../../dashboard/widgets/dashboard_design.dart';
 import '../../risque_credit_shared/widgets/credit_data_table_card.dart';
 import '../../risque_credit_shared/widgets/credit_stat_card.dart';
 import '../models/ro_models.dart';
+import '../widgets/ro_criteres_dashboard.dart';
 import '../widgets/ro_hero_stat_card.dart';
 import '../widgets/ro_import_bic_dialog.dart';
 import '../widgets/ro_import_pertes_dialog.dart';
@@ -8237,22 +8238,6 @@ class _CorepTabViewState extends State<_CorepTabView> {
     }
   }
 
-  Color _statutColor(String statut) {
-    switch (statut) {
-      case 'conforme': return _kGreen;
-      case 'attention': return const Color(0xFFF59E0B);
-      default: return _kRed;
-    }
-  }
-
-  IconData _statutIcon(String statut) {
-    switch (statut) {
-      case 'conforme': return Icons.check_circle_outline;
-      case 'attention': return Icons.warning_amber_outlined;
-      default: return Icons.error_outline;
-    }
-  }
-
   Widget _buildDecisionView() {
     if (_decisionLoading && _decision == null) {
       return const Center(child: CircularProgressIndicator());
@@ -8277,39 +8262,42 @@ class _CorepTabViewState extends State<_CorepTabView> {
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // ── Verdict global ──────────────────────────────────────────────────
-        Row(children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
-            child: KpiMetricCard(
+            child: RoHeroStatCard(
               label: 'Niveau de pilotage',
               value: d.niveauGlobal,
-              helper: d.synthese,
-              icon: Icons.shield_outlined,
-              color: color,
+              subtitle: d.synthese,
+              valueColor: color,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: KpiMetricCard(
+            child: RoHeroStatCard(
               label: 'Score global',
               value: '${d.scoreGlobal}/${d.scoreMax}',
-              helper: 'Analyse générée le ${d.dateAnalyse}',
-              icon: Icons.checklist_rtl_outlined,
-              color: color,
+              subtitle: 'Analyse générée le ${d.dateAnalyse}',
+              valueColor: color,
             ),
           ),
           const SizedBox(width: 8),
           SizedBox(
-            width: 42,
-            height: 42,
-            child: Tooltip(
-              message: 'Rafraîchir l\'analyse',
-              child: OutlinedButton(
-                onPressed: _decisionLoading ? null : _loadDecision,
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  shape: const CircleBorder(),
+            height: 152,
+            child: Center(
+              child: SizedBox(
+                width: 42,
+                height: 42,
+                child: Tooltip(
+                  message: 'Rafraîchir l\'analyse',
+                  child: OutlinedButton(
+                    onPressed: _decisionLoading ? null : _loadDecision,
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      shape: const CircleBorder(),
+                    ),
+                    child: const Icon(Icons.refresh, size: 18),
+                  ),
                 ),
-                child: const Icon(Icons.refresh, size: 18),
               ),
             ),
           ),
@@ -8334,42 +8322,8 @@ class _CorepTabViewState extends State<_CorepTabView> {
         ),
         const SizedBox(height: 12),
 
-        // ── Critères de décision ─────────────────────────────────────────────
-        CreditDataTableCard(
-          title: 'Critères d\'analyse',
-          columns: const [
-            DataColumn(label: Text('Critère')),
-            DataColumn(label: Text('Référence')),
-            DataColumn(label: Text('Valeur observée')),
-            DataColumn(label: Text('Seuil')),
-            DataColumn(label: Text('Statut')),
-          ],
-          rows: d.criteres.map((c) {
-            final sc = _statutColor(c.statut);
-            return DataRow(cells: [
-              DataCell(Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${c.code} - ${c.libelle}',
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text(c.commentaire,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: _muted)),
-                ],
-              )),
-              DataCell(Text(c.referenceReglementaire)),
-              DataCell(Text(c.valeurObservee)),
-              DataCell(Text(c.seuilReference)),
-              DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(_statutIcon(c.statut), size: 15, color: sc),
-                const SizedBox(width: 4),
-                Text(c.statut, style: TextStyle(color: sc, fontWeight: FontWeight.w600)),
-              ])),
-            ]);
-          }).toList(growable: false),
-        ),
+        // ── Critères de décision - dashboard de cartes ───────────────────────
+        RoCriteresDashboard(criteres: d.criteres),
         const SizedBox(height: AppTheme.spacing),
 
         // ── Recommandations ──────────────────────────────────────────────────

@@ -497,6 +497,9 @@ class AsAnneeDetail(BaseModel):
     lignes: list[AsLigneDetail]
     k_total: float
     k_retenu: float
+    # False quand aucun PNB par ligne n'a été saisi pour cet exercice :
+    # l'année est affichée mais exclue du calcul K_AS.
+    renseignee: bool = True
 
 
 class AsCalculResult(BaseModel):

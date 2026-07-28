@@ -1,19 +1,13 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
 import '../../../core/services/rwa_api_service.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart' show AppFormatters;
-import '../../../shared/widgets/section_card.dart';
-import '../../risque_credit_shared/widgets/credit_module_toolbar.dart';
 import '../models/ro_models.dart';
 import 'ro_hero_stat_card.dart';
 import 'uemoi_form_style.dart';
-
-// Couleurs de bandeau utilisées pour distinguer visuellement les cartes
-// d'exercice, dans l'ordre le plus récent -> le plus ancien.
-const _kExerciceColors = [AppTheme.accent, AppColors.prudentialCapital, AppTheme.muted];
 
 class UemoiAibScreen extends StatefulWidget {
   const UemoiAibScreen({super.key, required this.api});
@@ -27,18 +21,11 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
   AibCalculResult? _result;
   bool _loading = true;
   String? _error;
-  final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _load();
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
   }
 
   Future<void> _load() async {
@@ -194,7 +181,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
                                   }
                                 },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.sidebar,
+                            backgroundColor: _kPrimary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                             elevation: 0,
@@ -282,11 +269,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
     }
 
     final r = _result;
-    final query = _searchCtrl.text.trim().toLowerCase();
-    final annees = (r?.anneesSaisies ?? const <PnbAnnuelView>[]).where((a) {
-      if (query.isEmpty) return true;
-      return '${a.annee}'.contains(query) || a.sourceDocument.toLowerCase().contains(query);
-    }).toList(growable: false);
+    final annees = r?.anneesSaisies ?? const <PnbAnnuelView>[];
 
     return SingleChildScrollView(
       padding: AppSpacing.pageInsets,
@@ -295,91 +278,328 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
         children: [
           _buildStatGrid(r),
           AppSpacing.gapMd,
-          SectionCard(
-            title: 'PNB annuel (N-2, N-1, N) - Indicateur de Base',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CreditModuleToolbar(
-                  searchController: _searchCtrl,
-                  searchHint: 'Rechercher un exercice ou une source',
-                  onSearchChanged: (_) => setState(() {}),
-                  actions: [
-                    FilledButton.icon(
-                      onPressed: () => _openExerciceDialog(),
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('Nouvel exercice'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                if (annees.isEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      borderRadius: BorderRadius.circular(AppTheme.radius),
-                      border: Border.all(color: Theme.of(context).dividerColor),
-                    ),
-                    child: Text(
-                      'Aucun exercice saisi. Ajoutez le PNB des 3 derniers exercices.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.muted,
-                            fontWeight: FontWeight.w500,
-                          ),
-                    ),
-                  )
-                else
-                  Wrap(
-                    spacing: AppSpacing.md,
-                    runSpacing: AppSpacing.md,
-                    children: [
-                      for (var i = 0; i < annees.length; i++)
-                        SizedBox(
-                          width: 320,
-                          child: _buildExerciceCard(annees[i], _kExerciceColors[i % _kExerciceColors.length]),
-                        ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
+          _buildPnbCard(context, annees),
         ],
       ),
     );
   }
 
-  Widget _buildExerciceCard(PnbAnnuelView a, Color color) {
-    return UemoiFormCard(
-      title: 'Exercice ${a.annee}',
-      subtitle: a.sourceDocument.isEmpty ? 'Indicateur de Base - BCEAO' : a.sourceDocument,
-      color: color,
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            tooltip: 'Modifier',
-            onPressed: () => _openExerciceDialog(initial: a),
-            icon: const Icon(Icons.edit_outlined, size: 18),
-          ),
-          IconButton(
-            tooltip: 'Supprimer',
-            onPressed: () => _confirmDelete(a.annee),
-            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.danger),
+  // ── Carte "PNB annuel" - tableau moderne (en-tête marine, lignes zébrées,
+  // barre d'outils compacte) - même langage visuel que le "Tableau des
+  // données" du Risque de Marché. ───────────────────────────────────────────
+
+  static const _kPrimary = Color(0xFF2563EB);
+
+  Widget _buildPnbCard(BuildContext context, List<PnbAnnuelView> annees) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final border = isDark ? const Color(0xFF263856) : const Color(0xFFDDE7F6);
+    final surface = isDark ? const Color(0xFF101B31) : Colors.white;
+    final soft = isDark ? const Color(0xFF162642) : const Color(0xFFF3F7FD);
+    final text = isDark ? const Color(0xFFEAF2FF) : const Color(0xFF1B2235);
+    final muted = isDark ? const Color(0xFF8BA3C7) : const Color(0xFF64748B);
+    final headerBg = isDark ? const Color(0xFF1B2C4A) : const Color(0xFF234A84);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      children: [
-        UemoiInfoRow(label: 'PNB total', value: AppFormatters.currency(a.produitBrutTotal)),
-        UemoiInfoRow(
-          label: 'Statut AIB',
-          value: a.pnbPositif ? AppFormatters.currency(a.pnbRetenuAib) : 'Exclu (négatif)',
-          valueColor: a.pnbPositif ? AppTheme.success : AppTheme.muted,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Titre + barre d'outils ───────────────────────────────────────
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('PNB annuel (N-2, N-1, N) - Indicateur de Base',
+                        style: TextStyle(
+                            color: text,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+              // Compteur d'exercices : l'AIB en attend exactement 3.
+              Builder(builder: (context) {
+                final nb = _result?.anneesSaisies.length ?? 0;
+                final complet = nb >= 3;
+                final color = complet ? AppTheme.success : _kPrimary;
+                return Container(
+                  height: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: isDark ? 0.20 : 0.10),
+                    border: Border.all(color: color.withValues(alpha: 0.55)),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                          complet
+                              ? Icons.check_circle_rounded
+                              : Icons.event_outlined,
+                          size: 12,
+                          color: color),
+                      const SizedBox(width: 5),
+                      Text('$nb/3 exercices',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: color)),
+                    ],
+                  ),
+                );
+              }),
+              const SizedBox(width: 8),
+              Builder(builder: (context) {
+                // L'AIB porte sur exactement 3 exercices (N-2, N-1, N) : une
+                // fois les 3 saisis, on modifie ou on supprime, on n'ajoute plus.
+                final complet = (_result?.anneesSaisies.length ?? 0) >= 3;
+                return Tooltip(
+                  message: complet
+                      ? '3 exercices maximum (N-2, N-1, N) : supprimez un '
+                          'exercice existant pour en ajouter un autre'
+                      : 'Ajouter un exercice PNB',
+                  child: SizedBox(
+                    height: 30,
+                    child: FilledButton.icon(
+                      onPressed: complet ? null : () => _openExerciceDialog(),
+                      icon: const Icon(CupertinoIcons.plus, size: 13),
+                      label: const Text('Nouvel exercice',
+                          style: TextStyle(
+                              fontSize: 10.6, fontWeight: FontWeight.w500)),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _kPrimary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(2)),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // ── Tableau des exercices ────────────────────────────────────────
+          if (annees.isEmpty)
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              decoration: BoxDecoration(
+                color: soft,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: border),
+              ),
+              child: Text(
+                'Aucun exercice saisi. Ajoutez le PNB des 3 derniers exercices.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: muted, fontSize: 11.5, fontWeight: FontWeight.w500),
+              ),
+            )
+          else
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: border),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Column(
+                  children: [
+                    // En-tête marine
+                    Container(
+                      height: 40,
+                      color: headerBg,
+                      child: Row(
+                        children: [
+                          _pnbHeadCell('Exercice', width: 110),
+                          _pnbHeadCell('PNB total', expanded: true, right: true),
+                          _pnbHeadCell('Statut AIB', expanded: true, right: true),
+                          _pnbHeadCell('Source', expanded: true),
+                          Container(
+                            width: 92,
+                            height: double.infinity,
+                            alignment: Alignment.center,
+                            child: const Text('ACTIONS',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9.6,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    for (var i = 0; i < annees.length; i++)
+                      _buildPnbRow(
+                        annees[i],
+                        alternate: i.isOdd,
+                        isDark: isDark,
+                        border: border,
+                        surface: surface,
+                        text: text,
+                        muted: muted,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pnbHeadCell(String label,
+      {double? width, bool expanded = false, bool right = false}) {
+    final cell = Container(
+      width: width,
+      height: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      alignment: right ? Alignment.centerRight : Alignment.centerLeft,
+      decoration: BoxDecoration(
+        border: Border(
+          right: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
         ),
-        UemoiInfoRow(label: 'Source', value: a.sourceDocument.isEmpty ? '-' : a.sourceDocument),
-      ],
+      ),
+      child: Text(label,
+          style: const TextStyle(
+              color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+    );
+    return expanded ? Expanded(child: cell) : cell;
+  }
+
+  Widget _buildPnbRow(
+    PnbAnnuelView a, {
+    required bool alternate,
+    required bool isDark,
+    required Color border,
+    required Color surface,
+    required Color text,
+    required Color muted,
+  }) {
+    final background = alternate
+        ? (isDark
+            ? const Color(0xFF14233D).withValues(alpha: 0.55)
+            : const Color(0xFFF5F9FF))
+        : surface;
+    final sep = border.withValues(alpha: 0.7);
+
+    Widget cell(Widget child,
+        {double? width, bool expanded = false, bool right = false}) {
+      final c = Container(
+        width: width,
+        height: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: right ? Alignment.centerRight : Alignment.centerLeft,
+        decoration: BoxDecoration(
+          border: Border(right: BorderSide(color: sep)),
+        ),
+        child: child,
+      );
+      return expanded ? Expanded(child: c) : c;
+    }
+
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: background,
+        border: Border(top: BorderSide(color: sep)),
+      ),
+      child: Row(
+        children: [
+          cell(
+            Text('${a.annee}',
+                style: TextStyle(
+                    color: text, fontSize: 11.5, fontWeight: FontWeight.w800)),
+            width: 110,
+          ),
+          cell(
+            Text(AppFormatters.currency(a.produitBrutTotal),
+                maxLines: 1,
+                style: TextStyle(
+                    color: text, fontSize: 11, fontWeight: FontWeight.w600)),
+            expanded: true,
+            right: true,
+          ),
+          cell(
+            a.pnbPositif
+                ? Text(AppFormatters.currency(a.pnbRetenuAib),
+                    maxLines: 1,
+                    style: const TextStyle(
+                        color: AppTheme.success,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700))
+                : Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: const Text('Exclu (négatif)',
+                        style: TextStyle(
+                            color: Color(0xFFF59E0B),
+                            fontSize: 10.2,
+                            fontWeight: FontWeight.w700)),
+                  ),
+            expanded: true,
+            right: true,
+          ),
+          cell(
+            Text(a.sourceDocument.isEmpty ? '-' : a.sourceDocument,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: muted, fontSize: 10.8, fontWeight: FontWeight.w500)),
+            expanded: true,
+          ),
+          SizedBox(
+            width: 92,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  tooltip: 'Modifier',
+                  onPressed: () => _openExerciceDialog(initial: a),
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(Icons.edit_outlined,
+                      size: 17,
+                      color: isDark
+                          ? const Color(0xFFB8C7E0)
+                          : const Color(0xFF334155)),
+                ),
+                IconButton(
+                  tooltip: 'Supprimer',
+                  onPressed: () => _confirmDelete(a.annee),
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.delete_outline_rounded,
+                      size: 17, color: Color(0xFFEF4444)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

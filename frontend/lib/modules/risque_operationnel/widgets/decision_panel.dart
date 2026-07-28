@@ -6,6 +6,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/section_card.dart';
 import '../models/ro_models.dart';
+import 'ro_criteres_dashboard.dart';
 
 class DecisionPanel extends StatefulWidget {
   const DecisionPanel({super.key, required this.loader});
@@ -45,22 +46,6 @@ class _DecisionPanelState extends State<DecisionPanel> {
       case 'Sous surveillance': return const Color(0xFFF59E0B);
       case 'Vigilance renforcée': return const Color(0xFFEA580C);
       default: return AppTheme.danger;
-    }
-  }
-
-  Color _statutColor(String statut) {
-    switch (statut) {
-      case 'conforme': return AppTheme.success;
-      case 'attention': return const Color(0xFFF59E0B);
-      default: return AppTheme.danger;
-    }
-  }
-
-  IconData _statutIcon(String statut) {
-    switch (statut) {
-      case 'conforme': return Icons.check_circle_outline;
-      case 'attention': return Icons.warning_amber_outlined;
-      default: return Icons.error_outline;
     }
   }
 
@@ -167,44 +152,9 @@ class _DecisionPanelState extends State<DecisionPanel> {
         Divider(height: 1, color: isDark ? AppTheme.darkBorder : AppTheme.border),
         AppSpacing.gapSm,
 
-        // ── Critères d'analyse ────────────────────────────────────────────────
-        Text('Critères d\'analyse',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700)),
-        AppSpacing.gapXs,
-        ...d.criteres.map((c) {
-          final sc = _statutColor(c.statut);
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Icon(_statutIcon(c.statut), size: 16, color: sc),
-              AppSpacing.hGapSm,
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Expanded(
-                      child: Text('${c.code} - ${c.libelle}',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w600)),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: sc.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(c.referenceReglementaire,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: sc, fontWeight: FontWeight.w600)),
-                    ),
-                  ]),
-                  Text('${c.valeurObservee} • seuil : ${c.seuilReference}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted)),
-                  Text(c.commentaire, style: Theme.of(context).textTheme.bodySmall),
-                ]),
-              ),
-            ]),
-          );
-        }),
+        // ── Critères d'analyse - dashboard de cartes ─────────────────────────
+        RoCriteresDashboard(criteres: d.criteres, embedded: true),
+        AppSpacing.gapSm,
 
         Divider(height: 1, color: isDark ? AppTheme.darkBorder : AppTheme.border),
         AppSpacing.gapSm,
