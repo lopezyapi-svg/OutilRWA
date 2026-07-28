@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/formatters.dart' show AppFormatters;
 import '../models/ro_models.dart';
+import 'ro_format.dart' show roAmount;
 import 'ro_hero_stat_card.dart';
 import 'uemoi_form_style.dart';
 
@@ -534,7 +534,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
             width: 110,
           ),
           cell(
-            Text(AppFormatters.currency(a.produitBrutTotal),
+            Text(roAmount(context, a.produitBrutTotal),
                 maxLines: 1,
                 style: TextStyle(
                     color: text, fontSize: 11, fontWeight: FontWeight.w600)),
@@ -543,7 +543,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
           ),
           cell(
             a.pnbPositif
-                ? Text(AppFormatters.currency(a.pnbRetenuAib),
+                ? Text(roAmount(context, a.pnbRetenuAib),
                     maxLines: 1,
                     style: const TextStyle(
                         color: AppTheme.success,
@@ -608,17 +608,17 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
     final stats = [
       RoHeroStatCard(
         label: 'K_IB (Exigence)',
-        value: insuffisant ? '-' : AppFormatters.currency(r.kIb),
+        value: insuffisant ? '-' : roAmount(context, r.kIb),
         subtitle: 'Capital risque opérationnel',
       ),
       RoHeroStatCard(
         label: 'APR Opérationnel',
-        value: insuffisant ? '-' : AppFormatters.currency(r.aprAib),
+        value: insuffisant ? '-' : roAmount(context, r.aprAib),
         subtitle: 'RWA risque opérationnel',
       ),
       RoHeroStatCard(
         label: 'Capital minimal (9 %)',
-        value: insuffisant ? '-' : AppFormatters.currency(r.capitalMinAib),
+        value: insuffisant ? '-' : roAmount(context, r.capitalMinAib),
         subtitle: 'Capital minimum requis',
       ),
     ];

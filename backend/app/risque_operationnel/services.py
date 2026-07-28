@@ -882,9 +882,10 @@ def get_dashboard() -> DashboardData:
         ).fetchone()["total"] or 0
         # K_IB simplifié : 15% de la moyenne des pertes sur 3 ans (proxy)
         k_ib = total_pertes * 0.15
-        # Conversion en équivalent RWA : multiplicateur réglementaire de 12,5
-        # (assiette du ratio de solvabilité, §90 du dispositif prudentiel).
-        apr = k_ib * 12.5
+        # Conversion en équivalent RWA = K_IB / ratio de solvabilité (9 %),
+        # même formule que calcul_aib() - plus de multiplicateur 12,5 distinct.
+        ratio_solvabilite = get_aib_parametres().ratio_solvabilite_min
+        apr = k_ib / ratio_solvabilite if ratio_solvabilite else 0.0
 
         # Widget 2
         inc_mois = conn.execute(
@@ -1562,31 +1563,31 @@ def get_synthese() -> SyntheseResult:
     try:
         aib = calcul_aib()
         lignes.append(SyntheseLigne(
-            methode="AIB — Indicateur de Base (art. 301)",
+            methode="AIB : Indicateur de Base (art. 301)",
             k=aib.k_ib, apr=aib.apr_aib, capital_min=aib.capital_min_aib,
             disponible=not aib.donnees_insuffisantes,
         ))
         k_ib = aib.k_ib if not aib.donnees_insuffisantes else None
     except Exception:
         k_ib = None
-        lignes.append(SyntheseLigne(methode="AIB — Indicateur de Base (art. 301)", k=0, apr=0, capital_min=0, disponible=False))
+        lignes.append(SyntheseLigne(methode="AIB : Indicateur de Base (art. 301)", k=0, apr=0, capital_min=0, disponible=False))
 
     # AS
     try:
         as_res = calcul_as()
         lignes.append(SyntheseLigne(
-            methode="AS — Approche Standard (art. 305-311)",
+            methode="AS : Approche Standard (art. 305-311)",
             k=as_res.k_as, apr=as_res.apr_as, capital_min=as_res.capital_min_as,
-            disponible=as_res.as_autorisee and not as_res.donnees_insuffisantes,
+            disponible=not as_res.donnees_insuffisantes,
         ))
     except Exception:
-        lignes.append(SyntheseLigne(methode="AS — Approche Standard (art. 305-311)", k=0, apr=0, capital_min=0, disponible=False))
+        lignes.append(SyntheseLigne(methode="AS : Approche Standard (art. 305-311)", k=0, apr=0, capital_min=0, disponible=False))
 
     # BIC
     try:
         bic = calcul_bic()
         lignes.append(SyntheseLigne(
-            methode="BIC — CRR3 Pilotage interne",
+            methode="BIC : CRR3 Pilotage interne",
             k=bic.ofr_crr3, apr=bic.rea_crr3,
             capital_min=bic.rea_crr3 * settings.capital_ratio,
             disponible=not bic.donnees_insuffisantes,
@@ -1594,7 +1595,7 @@ def get_synthese() -> SyntheseResult:
         ofr_bic = bic.ofr_crr3 if not bic.donnees_insuffisantes else None
     except Exception:
         ofr_bic = None
-        lignes.append(SyntheseLigne(methode="BIC — CRR3 Pilotage interne", k=0, apr=0, capital_min=0, disponible=False))
+        lignes.append(SyntheseLigne(methode="BIC : CRR3 Pilotage interne", k=0, apr=0, capital_min=0, disponible=False))
 
     ecart = (ofr_bic - k_ib) if (ofr_bic is not None and k_ib is not None) else None
 
