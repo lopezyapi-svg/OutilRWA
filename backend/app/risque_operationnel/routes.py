@@ -240,7 +240,10 @@ def list_pnb_annuel() -> list[PnbAnnuelView]:
 
 @router.put("/aib/pnb/{annee}", response_model=PnbAnnuelView)
 def upsert_pnb_annuel(annee: int, data: PnbAnnuelCreate) -> PnbAnnuelView:
-    return services.upsert_pnb_annuel(annee, data)
+    try:
+        return services.upsert_pnb_annuel(annee, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.delete("/aib/pnb/{annee}", status_code=204)

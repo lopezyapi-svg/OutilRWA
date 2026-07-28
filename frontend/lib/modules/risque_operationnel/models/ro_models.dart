@@ -851,10 +851,20 @@ class AsLigneDetail {
 }
 
 class AsAnneeDetail {
-  const AsAnneeDetail({required this.annee, required this.lignes, required this.kTotal, required this.kRetenu});
+  const AsAnneeDetail({
+    required this.annee,
+    required this.lignes,
+    required this.kTotal,
+    required this.kRetenu,
+    required this.renseignee,
+  });
   final int annee;
   final List<AsLigneDetail> lignes;
   final double kTotal, kRetenu;
+
+  /// False quand aucun PNB par ligne n'a été saisi pour cet exercice :
+  /// l'année est affichée mais exclue du calcul K_AS.
+  final bool renseignee;
 
   factory AsAnneeDetail.fromJson(Map<String, dynamic> j) => AsAnneeDetail(
         annee: j['annee'] as int,
@@ -863,6 +873,7 @@ class AsAnneeDetail {
             .toList(),
         kTotal: (j['k_total'] as num).toDouble(),
         kRetenu: (j['k_retenu'] as num).toDouble(),
+        renseignee: j['renseignee'] == null ? true : _jBool(j['renseignee']),
       );
 }
 

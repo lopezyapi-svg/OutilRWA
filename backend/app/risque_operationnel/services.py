@@ -1277,6 +1277,16 @@ def upsert_pnb_annuel(annee: int, data: PnbAnnuelCreate) -> PnbAnnuelView:
             "SELECT annee FROM op_pnb_annuel WHERE annee = ?", (annee,)
         ).fetchone()
         if existing is None:
+            # L'Indicateur de Base porte sur exactement 3 exercices
+            # (N-2, N-1, N) : on refuse un 4e exercice plutôt que de fausser
+            # la moyenne ou d'écarter silencieusement une année.
+            nb = conn.execute("SELECT COUNT(*) FROM op_pnb_annuel").fetchone()[0]
+            if nb >= 3:
+                raise ValueError(
+                    "L'Indicateur de Base porte sur 3 exercices (N-2, N-1, N). "
+                    "Supprimez un exercice existant avant d'en ajouter un autre."
+                )
+        if existing is None:
             conn.execute(
                 "INSERT INTO op_pnb_annuel (annee, produit_brut_total, source_document, modifie_le)"
                 " VALUES (?, ?, ?, ?)",
@@ -1330,12 +1340,17 @@ def calcul_aib() -> AibCalculResult:
     annees_saisies = list_pnb_annuel()
     params = get_aib_parametres()
 
-    positifs = [a for a in annees_saisies if a.pnb_retenu_aib > 0]
+    # Règle N-2, N-1, N : seuls les 3 exercices les plus récents entrent dans
+    # la moyenne, même si davantage d'années ont été saisies dans le registre.
+    retenues = sorted(annees_saisies, key=lambda a: a.annee)[-3:]
+    positifs = [a for a in retenues if a.pnb_retenu_aib > 0]
     n = len(positifs)
     somme = sum(a.pnb_retenu_aib for a in positifs)
     pnb_moyen = somme / n if n > 0 else 0.0
     k_ib = pnb_moyen * params.alpha
-    apr = k_ib * params.multiplicateur_rwa
+    # APR = K_IB / ratio de solvabilite (9 %), coherent avec le meme ratio
+    # utilise pour le capital minimal - plus de multiplicateur 12,5 (1/8 %) distinct.
+    apr = k_ib / params.ratio_solvabilite_min if params.ratio_solvabilite_min else 0.0
     capital = apr * params.ratio_solvabilite_min
 
     return AibCalculResult(
@@ -1393,6 +1408,10 @@ def get_pnb_lignes(annee: int) -> list[PnbParLigneView]:
 def upsert_pnb_ligne(annee: int, ligne_metier: str, data: PnbParLigneCreate) -> PnbParLigneView:
     now = utcnow_iso()
     with database_manager.transaction() as conn:
+        # L'Approche Standard ne conserve qu'UN exercice : enregistrer une
+        # ligne pour une nouvelle année remplace l'exercice précédent - le
+        # calcul K_AS porte toujours sur le seul exercice présent en base.
+        conn.execute("DELETE FROM op_pnb_par_ligne WHERE annee != ?", (annee,))
         existing = conn.execute(
             "SELECT annee FROM op_pnb_par_ligne WHERE annee=? AND ligne_metier=?",
             (annee, ligne_metier),
@@ -1455,13 +1474,22 @@ def update_as_parametres(data: ParametresAsUpdate) -> ParametresAs:
 
 
 def calcul_as() -> AsCalculResult:
+    """K_AS sur UN seul exercice.
+
+    L'Approche Standard est saisie pour l'exercice courant : le calcul porte
+    sur l'exercice le plus récent ayant un PNB par ligne enregistré
+    (K_AS = somme des PNB de ligne x beta, plancher a 0).
+    """
     params = get_as_parametres()
-    annees_saisies = sorted({r.annee for r in list_pnb_annuel()})
 
     detail_par_annee: list[AsAnneeDetail] = []
     with database_manager.read_connection() as conn:
         betas = {r["ligne_metier"]: float(r["beta"]) for r in conn.execute("SELECT * FROM op_beta_lignes").fetchall()}
-        for annee in annees_saisies:
+        annee_row = conn.execute(
+            "SELECT MAX(annee) AS annee FROM op_pnb_par_ligne"
+        ).fetchone()
+        annee = annee_row["annee"]
+        if annee is not None:
             rows = conn.execute(
                 "SELECT * FROM op_pnb_par_ligne WHERE annee = ?", (annee,)
             ).fetchall()
@@ -1471,12 +1499,15 @@ def calcul_as() -> AsCalculResult:
                 pbl = float(r["produit_brut_ligne"])
                 lignes.append(AsLigneDetail(ligne_metier=r["ligne_metier"], pnb=pbl, beta=beta, k_ligne=pbl * beta))
             k_total = sum(l.k_ligne for l in lignes)
-            k_retenu = max(k_total, 0.0)
-            detail_par_annee.append(AsAnneeDetail(annee=annee, lignes=lignes, k_total=k_total, k_retenu=k_retenu))
+            detail_par_annee.append(AsAnneeDetail(
+                annee=int(annee), lignes=lignes, k_total=k_total,
+                k_retenu=max(k_total, 0.0), renseignee=True,
+            ))
 
-    n = len(detail_par_annee)
-    k_as = sum(d.k_retenu for d in detail_par_annee) / n if n > 0 else 0.0
-    apr = k_as * params.multiplicateur_rwa
+    k_as = detail_par_annee[0].k_retenu if detail_par_annee else 0.0
+    # APR = K_AS / ratio de solvabilite (9 %), coherent avec le meme ratio
+    # utilise pour le capital minimal - plus de multiplicateur 12,5 (1/8 %) distinct.
+    apr = k_as / params.ratio_solvabilite_min if params.ratio_solvabilite_min else 0.0
     capital = apr * params.ratio_solvabilite_min
 
     return AsCalculResult(
@@ -1485,7 +1516,7 @@ def calcul_as() -> AsCalculResult:
         k_as=k_as,
         apr_as=apr,
         capital_min_as=capital,
-        donnees_insuffisantes=n == 0,
+        donnees_insuffisantes=not detail_par_annee,
     )
 
 
@@ -2210,9 +2241,9 @@ def get_decision_as() -> DecisionPilotageResult:
             reference_reglementaire="Art. 305-311",
             statut="attention", poids=1,
             valeur_observee="Autorisée — données par ligne de métier incomplètes",
-            seuil_reference="PNB des 8 lignes de métier sur 3 exercices",
-            commentaire="L'Approche Standard est autorisée mais les données de PNB par ligne "
-                        "de métier restent incomplètes sur les exercices requis.",
+            seuil_reference="PNB des 8 lignes de métier pour l'exercice courant",
+            commentaire="L'Approche Standard est autorisée mais aucun PNB par ligne de "
+                        "métier n'est encore saisi pour l'exercice courant.",
         ))
     else:
         criteres.append(DecisionCritere(
@@ -2220,7 +2251,7 @@ def get_decision_as() -> DecisionPilotageResult:
             reference_reglementaire="Art. 305-311",
             statut="conforme", poids=0,
             valeur_observee="Autorisée — données complètes",
-            seuil_reference="PNB des 8 lignes de métier sur 3 exercices",
+            seuil_reference="PNB des 8 lignes de métier pour l'exercice courant",
             commentaire="L'Approche Standard est autorisée et les données par ligne de "
                         "métier sont complètes.",
         ))
