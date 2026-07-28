@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/formatters.dart' show AppFormatters;
 import '../models/ro_models.dart';
+import 'ro_format.dart' show roAmount;
 import 'ro_hero_stat_card.dart';
 
 class UemoiAsScreen extends StatefulWidget {
@@ -375,7 +375,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                             expanded: true,
                           ),
                           dataCell(
-                            Text(AppFormatters.currency(d.lignes[i].pnb),
+                            Text(roAmount(context, d.lignes[i].pnb),
                                 maxLines: 1,
                                 style: TextStyle(
                                     color: text,
@@ -403,7 +403,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                             center: true,
                           ),
                           dataCell(
-                            Text(AppFormatters.currency(d.lignes[i].kLigne),
+                            Text(roAmount(context, d.lignes[i].kLigne),
                                 maxLines: 1,
                                 style: TextStyle(
                                     color: d.lignes[i].kLigne >= 0
@@ -437,7 +437,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                         dataCell(
                           Text(
                               d.kTotal < 0
-                                  ? 'K total : ${AppFormatters.currency(d.kTotal)}'
+                                  ? 'K total : ${roAmount(context, d.kTotal)}'
                                   : '',
                               maxLines: 1,
                               style: const TextStyle(
@@ -448,7 +448,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                           right: true,
                         ),
                         dataCell(
-                          Text(AppFormatters.currency(d.kRetenu),
+                          Text(roAmount(context, d.kRetenu),
                               maxLines: 1,
                               style: const TextStyle(
                                   color: _kPrimary,
@@ -814,17 +814,17 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
     final stats = [
       RoHeroStatCard(
         label: 'K_AS (Exigence)',
-        value: AppFormatters.currency(r.kAs),
+        value: roAmount(context, r.kAs),
         subtitle: 'Capital risque opérationnel',
       ),
       RoHeroStatCard(
         label: 'APR Opérationnel',
-        value: AppFormatters.currency(r.aprAs),
+        value: roAmount(context, r.aprAs),
         subtitle: 'RWA risque opérationnel',
       ),
       RoHeroStatCard(
         label: 'Capital minimal (9 %)',
-        value: AppFormatters.currency(r.capitalMinAs),
+        value: roAmount(context, r.capitalMinAs),
         subtitle: 'Capital minimum requis',
       ),
     ];

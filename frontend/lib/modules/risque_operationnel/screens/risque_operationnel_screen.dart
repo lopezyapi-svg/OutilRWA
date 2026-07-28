@@ -12,7 +12,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/services/rwa_api_service.dart';
-import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -26,6 +25,7 @@ import '../../risque_credit_shared/widgets/credit_data_table_card.dart';
 import '../../risque_credit_shared/widgets/credit_stat_card.dart';
 import '../models/ro_models.dart';
 import '../widgets/ro_criteres_dashboard.dart';
+import '../widgets/ro_format.dart' show roAmount;
 import '../widgets/ro_hero_stat_card.dart';
 import '../widgets/ro_import_bic_dialog.dart';
 import '../widgets/ro_import_pertes_dialog.dart';
@@ -57,17 +57,6 @@ const _kSuccess = AppTheme.success;
 const _kWarning = AppTheme.warning;
 const _kDanger = AppTheme.danger;
 const _kMuted = AppTheme.muted;
-
-/// Formate un montant FCFA avec la même unité (M / Md) ET la même écriture
-/// que les cartes du Dashboard Crédit ("913,5Md" : nombre compact à
-/// précision adaptative, sans espace avant l'unité) - voir
-/// `AppFormatters.compactNumber` utilisé par `DashboardRwaDonut`.
-String _roAmount(BuildContext context, double value) {
-  final unit = PortfolioAmountUnitScope.maybeOf(context);
-  final sign = value < 0 ? '-' : '';
-  final scaled = value.abs() / unit.divisor;
-  return '$sign${AppFormatters.compactNumber(scaled)}${unit.label}';
-}
 
 /// Formate un pourcentage avec 1 décimale, sauf si celle-ci est un 0 : dans ce
 /// cas on repasse à 2 décimales pour ne pas masquer une petite valeur non nulle
@@ -936,7 +925,7 @@ class _RoDashboardHeader extends StatelessWidget {
             excludeFromSemantics: true,
             message: 'Dashboard Opérationnel - Art. 313 & 89 UMOA\n\n'
                 'Capital minimum = 15 % × PNB moyen positif (BIA - Art. 89)\n'
-                'RWA = Capital minimum × 12,5 (multiplicateur réglementaire)\n'
+                'RWA = Capital minimum × 11,11 (= 1 / 9 %, ratio de solvabilité)\n'
                 'Statut : Conforme si les seuils prudentiels sont respectés',
             preferBelow: false,
             decoration: BoxDecoration(
@@ -1144,15 +1133,15 @@ class _RoDashSummaryRow extends StatelessWidget {
     final items = <({String label, String value, Color color, String subtitle})>[
       (
         label: 'Capital minimum (Art. 89)',
-        value: _roAmount(context, data.widget1.exigenceFondsPropres),
+        value: roAmount(context, data.widget1.exigenceFondsPropres),
         color: _kBlue,
         subtitle: '15 % × PNB moyen positif (BIA)',
       ),
       (
         label: 'RWA opérationnel',
-        value: _roAmount(context, data.widget1.aprRisqueOp),
+        value: roAmount(context, data.widget1.aprRisqueOp),
         color: AppColors.prudentialSolvency,
-        subtitle: 'Capital minimum × 12,5',
+        subtitle: 'Capital minimum × 11,11 (1 / 9 %)',
       ),
       (
         label: 'Statut réglementaire',
@@ -1168,7 +1157,7 @@ class _RoDashSummaryRow extends StatelessWidget {
       ),
       (
         label: 'Pertes nettes (mois)',
-        value: _roAmount(context, data.widget2.pertesNettesMois),
+        value: roAmount(context, data.widget2.pertesNettesMois),
         color: _kDanger,
         subtitle: 'Perte brute - Récupérations',
       ),
@@ -9476,26 +9465,26 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     return Row(children: [
       Expanded(child: RoHeroStatCard(
         label: 'Exigence de fonds propres (OFR) CRR3',
-        value: _roAmount(context, r.ofrCrr3),
+        value: roAmount(context, r.ofrCrr3),
         valueColor: _kAccent,
         subtitle: 'Besoin en fonds propres',
       )),
       const SizedBox(width: 12),
       Expanded(child: RoHeroStatCard(
         label: "Montant d'exposition au risque (REA) CRR3",
-        value: _roAmount(context, r.reaCrr3),
+        value: roAmount(context, r.reaCrr3),
         subtitle: '× ${r.params.multiplicateurRea.toStringAsFixed(1)}',
       )),
       const SizedBox(width: 12),
       Expanded(child: RoHeroStatCard(
         label: 'Exigence de fonds propres (OFR) BIA',
-        value: _roAmount(context, r.ofrBia),
+        value: roAmount(context, r.ofrBia),
         subtitle: '15 % × PNB moy',
       )),
       const SizedBox(width: 12),
       Expanded(child: RoHeroStatCard(
         label: "Écart d'exigence de fonds propres (OFR) CRR3 − BIA",
-        value: '${r.ecart > 0 ? "+" : ""}${_roAmount(context, r.ecart)}',
+        value: '${r.ecart > 0 ? "+" : ""}${roAmount(context, r.ecart)}',
         valueColor: ecartColor,
         subtitle: ecartPos ? 'CRR3 > BIA (défavorable)' : 'CRR3 < BIA (favorable)',
       )),
@@ -9506,7 +9495,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         valueColor: bi.trancheActive == 1 ? _kGreen :
                     bi.trancheActive == 2 ? Colors.orange : _kRed,
         subtitle: bi.margeAvantTrancheSuivante != null
-            ? 'Marge : ${_roAmount(context, bi.margeAvantTrancheSuivante!)}'
+            ? 'Marge : ${roAmount(context, bi.margeAvantTrancheSuivante!)}'
             : 'Tranche maximale',
       )),
     ]);
@@ -9575,7 +9564,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                     TextSpan(text: lbl,
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c)),
                     TextSpan(
-                        text: '  ${_roAmount(context, v)}  (${_roPct(v / total * 100)} %)',
+                        text: '  ${roAmount(context, v)}  (${_roPct(v / total * 100)} %)',
                         style: TextStyle(fontSize: 10.5, color: _muted)),
                   ])),
                 ),
@@ -9589,7 +9578,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             Icon(Icons.account_balance_wallet_outlined, size: 13, color: _muted),
             const SizedBox(width: 5),
             Text('BI total : ', style: TextStyle(fontSize: 11, color: _muted)),
-            Text(_roAmount(context, bi),
+            Text(roAmount(context, bi),
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _txt)),
           ]),
         ],
@@ -9636,7 +9625,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                 Container(width: 10, height: 10,
                     decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
                 const SizedBox(width: 4),
-                Text('$lbl : ${_roAmount(context, v)}',
+                Text('$lbl : ${roAmount(context, v)}',
                     style: TextStyle(fontSize: 10.5, color: _muted)),
                 const SizedBox(width: 14),
               ],
@@ -9733,7 +9722,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             ),
           ]),
           const SizedBox(height: 4),
-          Text('BI = ${_roAmount(context, bi)}  •  Seuils : ${_roAmount(context, s1)} / ${_roAmount(context, s2)}',
+          Text('BI = ${roAmount(context, bi)}  •  Seuils : ${roAmount(context, s1)} / ${roAmount(context, s2)}',
               style: TextStyle(fontSize: 11, color: _muted)),
           const SizedBox(height: 16),
           trancheRow('T1', r.params.coefTranche1 * 100, _kGreen, 0, s1Rel),
@@ -9750,7 +9739,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             Row(children: [
               Icon(Icons.arrow_forward_outlined, size: 12, color: _muted),
               const SizedBox(width: 5),
-              Text('Marge avant tranche ${t + 1} : ${_roAmount(context, marge)}',
+              Text('Marge avant tranche ${t + 1} : ${roAmount(context, marge)}',
                   style: TextStyle(fontSize: 11, color: _muted)),
             ]),
           ] else ...[
@@ -9891,7 +9880,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                 decoration: BoxDecoration(color: biColor, shape: BoxShape.circle)),
             const SizedBox(width: 6),
             RichText(text: TextSpan(children: [
-              TextSpan(text: 'BI = ${_roAmount(context, bi)}',
+              TextSpan(text: 'BI = ${roAmount(context, bi)}',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: biColor)),
               TextSpan(text: '  -  Tranche $t  (${_roPct(biRel / (t == 1 ? s1Rel : t == 2 ? s2Rel : 1) * 100)} % du seuil)',
                   style: TextStyle(fontSize: 11, color: _muted)),
@@ -9902,7 +9891,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             Row(children: [
               Icon(Icons.arrow_forward_outlined, size: 12, color: _muted),
               const SizedBox(width: 5),
-              Text('Marge avant tranche ${t + 1} : ${_roAmount(context, marge)}',
+              Text('Marge avant tranche ${t + 1} : ${roAmount(context, marge)}',
                   style: TextStyle(fontSize: 11, color: _muted)),
             ]),
           ] else ...[

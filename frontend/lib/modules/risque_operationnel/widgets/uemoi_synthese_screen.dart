@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/utils/formatters.dart' show AppFormatters;
 import '../models/ro_models.dart';
+import 'ro_format.dart' show roAmount;
 import 'ro_hero_stat_card.dart';
 
 class UemoiSyntheseScreen extends StatefulWidget {
@@ -69,7 +69,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
                 if (ecart != null)
                   RoHeroStatCard(
                     label: 'Écart BIC − AIB',
-                    value: AppFormatters.currency(ecart),
+                    value: roAmount(context, ecart),
                     subtitle: 'Risque opérationnel capital',
                     valueColor: ecart < 0 ? AppTheme.success : AppTheme.danger,
                   ),
@@ -275,7 +275,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
                             dataCell(
                               Text(
                                   l.disponible
-                                      ? AppFormatters.currency(l.k)
+                                      ? roAmount(context, l.k)
                                       : '-',
                                   maxLines: 1,
                                   style: TextStyle(
@@ -290,7 +290,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
                             dataCell(
                               Text(
                                   l.disponible
-                                      ? AppFormatters.currency(l.apr)
+                                      ? roAmount(context, l.apr)
                                       : '-',
                                   maxLines: 1,
                                   style: TextStyle(
@@ -303,7 +303,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
                             dataCell(
                               Text(
                                   l.disponible
-                                      ? AppFormatters.currency(l.capitalMin)
+                                      ? roAmount(context, l.capitalMin)
                                       : '-',
                                   maxLines: 1,
                                   style: TextStyle(
