@@ -1,6 +1,6 @@
-# Outil RWA
+# Risque Management
 
-Base modulaire d'un outil de calcul et de pilotage des RWA, avec un backend Python et un frontend Flutter.
+Base modulaire d'un outil de calcul et de pilotage des RWA et des risques, avec un backend Python et un frontend Flutter.
 
 ## Architecture
 

@@ -16,7 +16,7 @@ Deux voies possibles :
 ## 0. Mise en ligne sur Render (le plus simple)
 
 Render construit l'application à partir de votre dépôt GitHub et l'expose sur
-une adresse du type `https://outil-rwa.onrender.com`, accessible du monde
+une adresse du type `https://risque-management.onrender.com`, accessible du monde
 entier, HTTPS compris. Aucun serveur à administrer.
 
 ### Étapes

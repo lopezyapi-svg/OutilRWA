@@ -96,13 +96,48 @@ Chaque métrique est décomposée de manière claire en 3 axes :
 
 ## 3. Risque Opérationnel
 
-### 3.1 Business Indicator Component (BIC / CRR3)
-- **À quoi ça sert ?** Calcule les fonds propres requis pour faire face aux pannes informatiques, fraudes internes/externes, litiges ou erreurs de traitement.
+### 3.1 Business Indicator Component (BIC / CRR3 - Méthode Principale)
+- **À quoi ça sert ?** Évalue les fonds propres requis selon le volume d'activité consolidé (ILDC, SC, FC).
 - **Comment c'est calculé ?**  
-  BI = Composante Intérêts/Dividendes (ILDC) + Commissions (SC) + Opérations Financières (FC)  
-  BIC = Application de tranches marginales (12%, 15%, 18%) sur le BI  
-  RWA Opérationnel = BIC x 12.5
-- **De quoi a-t-on besoin ?** 12 postes du compte de résultat consolidés sur les 3 derniers exercices.
+  BI = ILDC + SC + FC  
+  BIC = Application de taux marginaux (12%, 15%, 18%) sur BI  
+  RWA Opérationnel = BIC x 11.111
+- **De quoi a-t-on besoin ?** 12 postes du compte de résultat sur 3 ans.
+
+### 3.2 Approche Indicateur de Base (AIB - Repli BCEAO)
+- **À quoi ça sert ?** Méthode forfaitaire de repli basée sur le Produit Net Bancaire (PNB).
+- **Comment c'est calculé ?**  
+  Capital AIB = 15% x Moyenne(PNB > 0 sur 3 ans)  
+  RWA AIB = Capital AIB x 11.111
+- **De quoi a-t-on besoin ?** PNB annuel des 3 derniers exercices.
+
+### 3.3 Approche Standardisée par Lignes de Métier (AS)
+- **À quoi ça sert ?** Pondère le PNB selon le profil de risque propre à chaque ligne de métier (Banque de détail, Banque d'investissement, Paiements...).
+- **Comment c'est calculé ?**  
+  Capital AS = Somme(PNB_i x Beta_i)  
+  *Beta_i = Facteur réglementaire par métier (12%, 15%, 18%).*
+- **De quoi a-t-on besoin ?** Ventilation du PNB par ligne d'activité réglementaire.
+
+### 3.4 Suivi des Pertes Opérationnelles & Recouvrements
+- **À quoi ça sert ?** Comptabilise l'impact financier réel des incidents (fraudes, pannes, litiges).
+- **Comment c'est calculé ?**  
+  Perte Nette = Perte Brute - Recouvrements  
+  Taux de Recouvrement = Recouvrements / Perte Brute x 100
+- **De quoi a-t-on besoin ?** Base d'incidents déclarés, pertes brutes et indemnisations d'assurance.
+
+### 3.5 Cartographie des Risques & Scoring du Risque Résiduel
+- **À quoi ça sert ?** Évalue l'exposition nette de la banque après prise en compte de la qualité du contrôle interne.
+- **Comment c'est calculé ?**  
+  Risque Brut = Probabilité (1-5) x Impact (1-5)  
+  Risque Résiduel = Risque Brut / Efficacité du Contrôle Interne
+- **De quoi a-t-on besoin ?** Évaluation Fréquence/Gravité et score d'efficacité des contrôles.
+
+### 3.6 Indicateurs Clés de Risque (KRI) & Taux de Conformité
+- **À quoi ça sert ?** Alerte de manière précoce sur la dérive des processus et mesure le suivi des plans d'action.
+- **Comment c'est calculé ?**  
+  KRI Taux d'Erreur = Incidents du Mois / Total Incidents  
+  Taux de Conformité = Points Conformes / Total Points Contrôlés x 100
+- **De quoi a-t-on besoin ?** Relevé mensuel des métriques KRI et résultats des contrôles permanents.
 
 ---
 
@@ -112,7 +147,7 @@ Chaque métrique est décomposée de manière claire en 3 axes :
 - **À quoi ça sert ?** Agrège l'ensemble des charges de capital réglementaire au titre des risques de taux, d'actions et de change.
 - **Comment c'est calculé ?**  
   Exigence Marché = Exigence Taux + Actions + Change  
-  RWA Marché = Exigence Marché x 12.5
+  RWA Marché = Exigence Marché x 11.111
 - **De quoi a-t-on besoin ?** Positions de change par devise, portefeuille de titres de transaction (obligations, actions).
 
 ### 4.2 Risque de Change (Position Nette Globale FX)
@@ -120,7 +155,7 @@ Chaque métrique est décomposée de manière claire en 3 axes :
 - **Comment c'est calculé ?**  
   Position Nette Globale = MAX(Somme Positions Longues, Somme Positions Courtes)  
   Exigence Change = Position Nette Globale x 8.0%  
-  RWA Change = Exigence Change x 12.5
+  RWA Change = Exigence Change x 11.111
 - **De quoi a-t-on besoin ?** Actifs/passifs en devises (au comptant & à terme), cours de change du jour (USD, EUR...).
 
 ### 4.3 Risque de Taux d'Intérêt (Portefeuille Titres / Obligations)
@@ -172,7 +207,7 @@ Chaque métrique est décomposée de manière claire en 3 axes :
 | **Ratio CET1** | CET1 / RWA Total | **5.0%** | +2.5% | **7.5%** |
 | **Ratio Tier 1** | Tier 1 / RWA Total | **6.0%** | +2.5% | **8.5%** |
 | **Ratio Solvabilité** | FPE / RWA Total | **9.0%** | +2.5% | **11.5%** |
-| **Ratio de Levier** | Tier 1 / Expositions Totales | **3.0%** | - | **3.0%** |
+| **Ratio de Levier** | Tier 1 / Expositions Totales | **3.0%** | — | **3.0%** |
 
 ---
 *Documentation - Risk Management - Conforme au Dispositif Prudentiel BCEAO / UMOA.*
