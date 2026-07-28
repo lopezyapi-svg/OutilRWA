@@ -11112,10 +11112,13 @@ class _IncidentsDashSection extends StatelessWidget {
         child: data.repartitionLigneMetier.isEmpty
             ? const Center(
                 child: Text('Aucun incident', style: TextStyle(color: _kMuted)))
-            : _RoDonutChart(
-                items: data.repartitionLigneMetier,
-                palette: _palette,
-                isDark: isDark,
+            : CustomPaint(
+                painter: _RoVertBarChartPainter(
+                  items: data.repartitionLigneMetier,
+                  isDark: isDark,
+                  palette: _palette,
+                ),
+                size: Size.infinite,
               ),
       ),
     );
@@ -11267,156 +11270,6 @@ class _RoVertBarChartPainter extends CustomPainter {
       old.items != items;
 }
 
-// ─── Donut chart ──────────────────────────────────────────────────────────────
-
-class _RoDonutChart extends StatelessWidget {
-  const _RoDonutChart({
-    required this.items,
-    required this.palette,
-    required this.isDark,
-  });
-  final List<RoRepartitionItem> items;
-  final List<Color> palette;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final total = items.fold(0, (s, e) => s + e.valeur);
-    if (total == 0) return const SizedBox();
-
-    final sorted = items.asMap().entries.toList()
-      ..sort((a, b) => b.value.valeur.compareTo(a.value.valeur));
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Donut avec taille explicite
-        SizedBox(
-          width: 120,
-          height: 120,
-          child: CustomPaint(
-            painter: _DonutPainter(
-              items: items,
-              palette: palette,
-              total: total,
-              isDark: isDark,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        // Légende
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var entry in sorted.take(6)) ...[
-                Row(children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: palette[entry.key % palette.length],
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    child: Text(
-                      entry.value.label,
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        color: isDark ? AppTheme.darkMuted : AppTheme.muted,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${(entry.value.valeur / total * 100).toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      color: palette[entry.key % palette.length],
-                    ),
-                  ),
-                ]),
-                const SizedBox(height: 6),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DonutPainter extends CustomPainter {
-  const _DonutPainter({
-    required this.items,
-    required this.palette,
-    required this.total,
-    required this.isDark,
-  });
-  final List<RoRepartitionItem> items;
-  final List<Color> palette;
-  final int total;
-  final bool isDark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (total == 0) return;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - 6;
-    const strokeW = 18.0;
-    double start = -math.pi / 2;
-
-    for (var i = 0; i < items.length; i++) {
-      final sweep = (items[i].valeur / total) * 2 * math.pi;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        start + 0.05,
-        sweep - 0.10,
-        false,
-        Paint()
-          ..color = palette[i % palette.length]
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = strokeW
-          ..strokeCap = StrokeCap.round,
-      );
-      start += sweep;
-    }
-
-    // Total au centre
-    final tp = TextPainter(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: '$total\n',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: isDark ? AppTheme.darkText : AppTheme.text,
-            ),
-          ),
-          const TextSpan(
-            text: 'incidents',
-            style: TextStyle(fontSize: 8, color: _kMuted),
-          ),
-        ],
-      ),
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    );
-    tp.layout(maxWidth: radius * 1.4);
-    tp.paint(
-        canvas, center - Offset(tp.width / 2, tp.height / 2));
-  }
-
-  @override
-  bool shouldRepaint(covariant _DonutPainter old) => old.total != total;
-}
 
 // ─── Table helpers ────────────────────────────────────────────────────────────
 
