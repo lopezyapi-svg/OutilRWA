@@ -8236,29 +8236,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
             child: RoHeroStatCard(
               label: 'Score global',
               value: '${d.scoreGlobal}/${d.scoreMax}',
-              subtitle: 'Analyse générée le ${d.dateAnalyse}',
               valueColor: color,
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            height: 152,
-            child: Center(
-              child: SizedBox(
-                width: 42,
-                height: 42,
-                child: Tooltip(
-                  message: 'Rafraîchir l\'analyse',
-                  child: OutlinedButton(
-                    onPressed: _decisionLoading ? null : _loadDecision,
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      shape: const CircleBorder(),
-                    ),
-                    child: const Icon(Icons.refresh, size: 18),
-                  ),
-                ),
-              ),
             ),
           ),
         ]),
