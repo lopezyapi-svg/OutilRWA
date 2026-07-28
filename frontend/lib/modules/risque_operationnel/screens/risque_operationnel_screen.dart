@@ -6807,8 +6807,7 @@ class _RegistreViewState extends State<_RegistreView> {
     ("Type d'événement",      185.0, false),
     ('Perte brute',           130.0, true),
     ('Perte nette',           130.0, true),
-    ('Capital min. (Art. 89)',150.0, true),
-    ('RWA',                   130.0, true),
+    ('Description',           200.0, false),
     ('Statut',                120.0, false),
   ];
   static const _registreActionsWidth = 92.0;
@@ -6821,9 +6820,9 @@ class _RegistreViewState extends State<_RegistreView> {
         2 => a.ligneMetier.toLowerCase().compareTo(b.ligneMetier.toLowerCase()),
         3 => a.typeEvenement.toLowerCase().compareTo(b.typeEvenement.toLowerCase()),
         4 => a.perteBrute.compareTo(b.perteBrute),
-        // Capital et RWA sont proportionnels à la perte nette : même ordre.
-        5 || 6 || 7 => a.perteNette.compareTo(b.perteNette),
-        8 => a.statut.compareTo(b.statut),
+        5 => a.perteNette.compareTo(b.perteNette),
+        6 => a.description.toLowerCase().compareTo(b.description.toLowerCase()),
+        7 => a.statut.compareTo(b.statut),
         _ => 0,
       };
 
@@ -7079,7 +7078,6 @@ class _RegistreViewState extends State<_RegistreView> {
     required bool alternate,
   }) {
     final border = _tableBorderColor(isDark);
-    final muted = _tableMutedColor(isDark);
     return Container(
       width: width,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -7090,41 +7088,22 @@ class _RegistreViewState extends State<_RegistreView> {
           bottom: BorderSide(color: border.withValues(alpha: 0.7)),
         ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            i.reference,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: _registreCellStyle(isDark, emphasized: true),
-          ),
-          if (i.description.isNotEmpty)
-            Text(
-              i.description,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: muted,
-                fontSize: 9.8,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-        ],
+      child: Text(
+        i.reference,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: _registreCellStyle(isDark, emphasized: true),
       ),
     );
   }
 
-  // Ligne de la zone centrale (colonnes 1 à 8, entre les deux colonnes figées).
+  // Ligne de la zone centrale (colonnes 1 à 7, entre les deux colonnes figées).
   Widget _buildRegistreMiddleRow(
     bool isDark,
     List<double> widths,
     RoIncident i, {
     required bool alternate,
   }) {
-    final kro = i.perteNette * 0.15;
-    final apr = kro * kMultiplicateurRwaReglementaire;
     final border = _tableBorderColor(isDark);
 
     Widget cell(int c, Widget child, {Alignment? alignment}) => Container(
@@ -7179,21 +7158,13 @@ class _RegistreViewState extends State<_RegistreView> {
           cell(
               6,
               Text(
-                AppFormatters.currency(kro),
-                maxLines: 1,
-                style: _registreCellStyle(isDark,
-                    color: AppColors.prudentialSolvency),
+                i.description.isEmpty ? '-' : i.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: _registreCellStyle(isDark),
               )),
           cell(
-              7,
-              Text(
-                AppFormatters.currency(apr),
-                maxLines: 1,
-                style:
-                    _registreCellStyle(isDark, color: AppColors.marketNeutral),
-              )),
-          cell(
-            8,
+            7,
             _registreStatutChip(i.statut),
             alignment: Alignment.center,
           ),
