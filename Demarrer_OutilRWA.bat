@@ -1,7 +1,7 @@
 @echo off
-title OutilRWA - Lancement
+title Risque Management - Lancement
 echo ==============================================
-echo       Demarrage de Outil RWA
+echo       Demarrage de Risque Management
 echo ==============================================
 
 echo [1/2] Lancement du serveur Backend en arriere-plan...

@@ -50,7 +50,16 @@ def creer_comptes_initiaux() -> None:
         if auth_repository.get_user(identifiant) is not None:
             # Deja la : on n'y touche pas. Le mot de passe en vigueur est celui
             # que l'utilisateur a choisi, pas celui de l'environnement.
-            logger.info("Compte « %s » deja present : inchange.", identifiant)
+            # SAUF POUR LOPEZ : pour corriger un bug lie au caractere # dans YAML.
+            if identifiant == "lopez":
+                from app.auth.service import changer_mot_de_passe
+                try:
+                    changer_mot_de_passe(identifiant, mot_de_passe)
+                    logger.info("Mot de passe mis a jour pour le compte « %s ».", identifiant)
+                except Exception as exc:
+                    logger.error("Mise a jour du mot de passe pour « %s » impossible : %s", identifiant, exc)
+            else:
+                logger.info("Compte « %s » deja present : inchange.", identifiant)
             continue
 
         try:

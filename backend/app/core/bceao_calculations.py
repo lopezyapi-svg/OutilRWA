@@ -16,7 +16,7 @@ CONSERVATION_BUFFER = 0.025 # 2.5%
 # Multiplicateur réglementaire des exigences de fonds propres marché et
 # opérationnel dans l'assiette du ratio de solvabilité (§90) :
 # Ratio = FP / (APR crédit + 12,5 × risque op + 12,5 × risque marché).
-RWA_MULTIPLIER = 12.5
+RWA_MULTIPLIER = 11.111111
 
 # Exigence de fonds propres pour risque de change : 8 % de la position nette
 # globale en devises (§417).
