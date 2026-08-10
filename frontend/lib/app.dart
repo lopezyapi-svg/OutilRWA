@@ -35,7 +35,6 @@ import 'modules/risque_operationnel/screens/risque_operationnel_screen.dart';
 import 'modules/auth/screens/login_screen.dart';
 import 'modules/rwa_engine/screens/rwa_engine_screen.dart';
 import 'modules/vue_ensemble/screens/vue_ensemble_screen.dart';
-import 'modules/welcome/screens/welcome_screen.dart';
 import 'shared/widgets/app_shell.dart';
 import 'shared/widgets/under_construction_screen.dart';
 
@@ -82,12 +81,13 @@ class _RwaAppState extends State<RwaApp> {
   );
   // Un espace neuf est vide : le premier geste attendu est un import, pas la
   // lecture d'un tableau de bord sans chiffres. L'application s'ouvre donc sur
-  // « Importations ».
+  // « Importations » par défaut, et bascule sur la vue d'ensemble dès que le
+  // portefeuille contient des données.
   AppModule _selectedModule = AppModule.importations;
   ThemeMode _themeMode = ThemeMode.light;
   String _fontFamily = AppTheme.defaultFontFamily;
   Color _primaryColor = AppTheme.accent;
-  bool _showWelcomeScreen = true;
+  bool _initialLandingResolved = false;
   bool _isMarketImportDialogOpen = false;
   final PageStorageBucket _pageStorageBucket = PageStorageBucket();
   @override
@@ -98,6 +98,7 @@ class _RwaAppState extends State<RwaApp> {
     PortfolioAmountUnitPreference.current = _portfolioAmountUnit.value;
     _portfolioAmountUnit.addListener(_handleAmountUnitChanged);
     _appLanguage.addListener(_handleLanguageChanged);
+    _session.addListener(_handleSessionChanged);
     unawaited(MarketDataImportStore.instance.configureSqlBackend(_api));
     unawaited(InMemoryForeignExchangeRepository().configureSqlBackend(_api));
     unawaited(MarketCapitalRequirementPersister.instance.start());
@@ -107,6 +108,7 @@ class _RwaAppState extends State<RwaApp> {
   void dispose() {
     _portfolioAmountUnit.removeListener(_handleAmountUnitChanged);
     _appLanguage.removeListener(_handleLanguageChanged);
+    _session.removeListener(_handleSessionChanged);
     _portfolioDisplayCurrency.dispose();
     _portfolioAmountUnit.dispose();
     _appLanguage.dispose();
@@ -187,34 +189,23 @@ class _RwaAppState extends State<RwaApp> {
               notifier: _portfolioDisplayCurrency,
               child: PortfolioAmountUnitScope(
                 notifier: _portfolioAmountUnit,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 240),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeOutCubic,
-                  child: _showWelcomeScreen
-                      ? WelcomeScreen(
-                          key: const ValueKey<String>('welcome-screen'),
-                          onOpenHome: _openHome,
-                        )
-                      : AppShell(
-                          selectedModule: _selectedModule,
-                          onSelectModule: _selectModule,
-                          onReturnToWelcome: _returnToWelcome,
-                          themeMode: _themeMode,
-                          onThemeModeChanged: (themeMode) =>
-                              setState(() => _themeMode = themeMode),
-                          portfolioDisplayCurrency:
-                              _portfolioDisplayCurrency,
-                          portfolioAmountUnit: _portfolioAmountUnit,
-                          appLanguage: _appLanguage,
-                          fontFamily: _fontFamily,
-                          onFontFamilyChanged: (fontFamily) =>
-                              setState(() => _fontFamily = fontFamily),
-                          primaryColor: _primaryColor,
-                          onPrimaryColorChanged: (primaryColor) =>
-                              setState(() => _primaryColor = primaryColor),
-                          child: _buildSelectedScreen(),
-                        ),
+                child: AppShell(
+                  selectedModule: _selectedModule,
+                  onSelectModule: _selectModule,
+                  onReturnToWelcome: _navigateHome,
+                  themeMode: _themeMode,
+                  onThemeModeChanged: (themeMode) =>
+                      setState(() => _themeMode = themeMode),
+                  portfolioDisplayCurrency: _portfolioDisplayCurrency,
+                  portfolioAmountUnit: _portfolioAmountUnit,
+                  appLanguage: _appLanguage,
+                  fontFamily: _fontFamily,
+                  onFontFamilyChanged: (fontFamily) =>
+                      setState(() => _fontFamily = fontFamily),
+                  primaryColor: _primaryColor,
+                  onPrimaryColorChanged: (primaryColor) =>
+                      setState(() => _primaryColor = primaryColor),
+                  child: _buildSelectedScreen(),
                 ),
               ),
     );
@@ -248,26 +239,37 @@ class _RwaAppState extends State<RwaApp> {
     });
   }
 
-  void _openHome() {
-    setState(() {
-      _selectedModule = AppModule.importations;
-      _showWelcomeScreen = false;
-    });
+  /// Bascule vers l'écran de démarrage : imports si le portefeuille est
+  /// vide, vue d'ensemble sinon. Utilisé au premier chargement de la
+  /// session et par le bouton d'accueil de la barre supérieure.
+  void _handleSessionChanged() {
+    if (_initialLandingResolved || _session.etat != SessionState.connecte) {
+      return;
+    }
+    _initialLandingResolved = true;
+    unawaited(_navigateHome());
   }
 
-  void _returnToWelcome() {
-    setState(() => _showWelcomeScreen = true);
+  Future<void> _navigateHome() async {
+    try {
+      final dashboard = await _api.fetchDashboard();
+      if (!mounted) return;
+      setState(() {
+        _selectedModule = dashboard.portfolioOverview.isNotEmpty
+            ? AppModule.vueEnsemble
+            : AppModule.importations;
+      });
+    } catch (_) {
+      // Portefeuille vide ou données indisponibles : les imports restent le
+      // point de départ le plus sûr.
+      if (!mounted) return;
+      setState(() => _selectedModule = AppModule.importations);
+    }
   }
 
   Future<void> _openMarketImportDialog() async {
     if (_isMarketImportDialogOpen) {
       return;
-    }
-    if (_showWelcomeScreen) {
-      setState(() {
-        _showWelcomeScreen = false;
-        _selectedModule = AppModule.risqueMarche;
-      });
     }
     _isMarketImportDialogOpen = true;
     try {
