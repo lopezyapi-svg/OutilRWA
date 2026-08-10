@@ -67,3 +67,6 @@ backend/_excel_recalc_test.vbs
 !backend/data/rwa_data.db
 !backend/data/exposure_metadata.json
 !backend/data/modele_import_rwa.xlsx
+
+# Sorties Flutter (Windows).
+frontend/windows/flutter/ephemeral/
