@@ -1,0 +1,69 @@
+# Fichiers generes localement.
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+backend/.ruff_cache/
+
+# Sorties Flutter.
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/build/
+frontend/.idea/
+frontend/devtools_options.yaml
+frontend/flutter_webserver*.log
+frontend/flutter*.log
+frontend/*.log
+frontend/*.err.log
+frontend/*.out.log
+
+# Sorties generales.
+build/
+dist/
+.build/
+
+# Secrets locaux / variables d'environnement.
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# IDE
+.vscode/
+
+# Données locales / bases SQLite
+backend/logs/
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Dossiers temporaires
+tmp/
+tmp_*
+**/node_modules/
+
+# Artefacts generes ponctuels
+outputs/
+.tmp_*.js
+
+# Fichiers de test locaux
+backend/_excel_source_test.xlsx
+backend/_excel_recalc_test.vbs
+
+# Configuration locale Claude Code
+.claude/
+
+# Données de démarrage livrées avec l'application : la base de démonstration
+# doit être versionnée pour que l'hébergeur la trouve. Elle ne contient aucun
+# compte (ils sont créés au démarrage) ni donnée réelle de contrepartie.
+!backend/data/rwa_data.db
+!backend/data/exposure_metadata.json
+!backend/data/modele_import_rwa.xlsx
