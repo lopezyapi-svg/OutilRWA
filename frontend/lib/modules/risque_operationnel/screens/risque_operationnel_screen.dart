@@ -12,7 +12,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../../core/services/rwa_api_service.dart';
-import '../../../core/state/portfolio_amount_unit_scope.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
@@ -25,6 +24,8 @@ import '../../dashboard/widgets/dashboard_design.dart';
 import '../../risque_credit_shared/widgets/credit_data_table_card.dart';
 import '../../risque_credit_shared/widgets/credit_stat_card.dart';
 import '../models/ro_models.dart';
+import '../widgets/ro_criteres_dashboard.dart';
+import '../widgets/ro_format.dart' show roAmount;
 import '../widgets/ro_hero_stat_card.dart';
 import '../widgets/ro_import_bic_dialog.dart';
 import '../widgets/ro_import_pertes_dialog.dart';
@@ -56,17 +57,6 @@ const _kSuccess = AppTheme.success;
 const _kWarning = AppTheme.warning;
 const _kDanger = AppTheme.danger;
 const _kMuted = AppTheme.muted;
-
-/// Formate un montant FCFA avec la même unité (M / Md) ET la même écriture
-/// que les cartes du Dashboard Crédit ("913,5Md" : nombre compact à
-/// précision adaptative, sans espace avant l'unité) - voir
-/// `AppFormatters.compactNumber` utilisé par `DashboardRwaDonut`.
-String _roAmount(BuildContext context, double value) {
-  final unit = PortfolioAmountUnitScope.maybeOf(context);
-  final sign = value < 0 ? '-' : '';
-  final scaled = value.abs() / unit.divisor;
-  return '$sign${AppFormatters.compactNumber(scaled)}${unit.label}';
-}
 
 /// Formate un pourcentage avec 1 décimale, sauf si celle-ci est un 0 : dans ce
 /// cas on repasse à 2 décimales pour ne pas masquer une petite valeur non nulle
@@ -935,7 +925,7 @@ class _RoDashboardHeader extends StatelessWidget {
             excludeFromSemantics: true,
             message: 'Dashboard Opérationnel - Art. 313 & 89 UMOA\n\n'
                 'Capital minimum = 15 % × PNB moyen positif (BIA - Art. 89)\n'
-                'RWA = Capital minimum × 12,5 (multiplicateur réglementaire)\n'
+                'RWA = Capital minimum × 11,11 (= 1 / 9 %, ratio de solvabilité)\n'
                 'Statut : Conforme si les seuils prudentiels sont respectés',
             preferBelow: false,
             decoration: BoxDecoration(
@@ -1143,15 +1133,15 @@ class _RoDashSummaryRow extends StatelessWidget {
     final items = <({String label, String value, Color color, String subtitle})>[
       (
         label: 'Capital minimum (Art. 89)',
-        value: _roAmount(context, data.widget1.exigenceFondsPropres),
+        value: roAmount(context, data.widget1.exigenceFondsPropres),
         color: _kBlue,
         subtitle: '15 % × PNB moyen positif (BIA)',
       ),
       (
         label: 'RWA opérationnel',
-        value: _roAmount(context, data.widget1.aprRisqueOp),
+        value: roAmount(context, data.widget1.aprRisqueOp),
         color: AppColors.prudentialSolvency,
-        subtitle: 'Capital minimum × 12,5',
+        subtitle: 'Capital minimum × 11,11 (1 / 9 %)',
       ),
       (
         label: 'Statut réglementaire',
@@ -1167,7 +1157,7 @@ class _RoDashSummaryRow extends StatelessWidget {
       ),
       (
         label: 'Pertes nettes (mois)',
-        value: _roAmount(context, data.widget2.pertesNettesMois),
+        value: roAmount(context, data.widget2.pertesNettesMois),
         color: _kDanger,
         subtitle: 'Perte brute - Récupérations',
       ),
@@ -6817,8 +6807,7 @@ class _RegistreViewState extends State<_RegistreView> {
     ("Type d'événement",      185.0, false),
     ('Perte brute',           130.0, true),
     ('Perte nette',           130.0, true),
-    ('Capital min. (Art. 89)',150.0, true),
-    ('RWA',                   130.0, true),
+    ('Description',           200.0, false),
     ('Statut',                120.0, false),
   ];
   static const _registreActionsWidth = 92.0;
@@ -6831,9 +6820,9 @@ class _RegistreViewState extends State<_RegistreView> {
         2 => a.ligneMetier.toLowerCase().compareTo(b.ligneMetier.toLowerCase()),
         3 => a.typeEvenement.toLowerCase().compareTo(b.typeEvenement.toLowerCase()),
         4 => a.perteBrute.compareTo(b.perteBrute),
-        // Capital et RWA sont proportionnels à la perte nette : même ordre.
-        5 || 6 || 7 => a.perteNette.compareTo(b.perteNette),
-        8 => a.statut.compareTo(b.statut),
+        5 => a.perteNette.compareTo(b.perteNette),
+        6 => a.description.toLowerCase().compareTo(b.description.toLowerCase()),
+        7 => a.statut.compareTo(b.statut),
         _ => 0,
       };
 
@@ -7089,7 +7078,6 @@ class _RegistreViewState extends State<_RegistreView> {
     required bool alternate,
   }) {
     final border = _tableBorderColor(isDark);
-    final muted = _tableMutedColor(isDark);
     return Container(
       width: width,
       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -7100,41 +7088,22 @@ class _RegistreViewState extends State<_RegistreView> {
           bottom: BorderSide(color: border.withValues(alpha: 0.7)),
         ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            i.reference,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: _registreCellStyle(isDark, emphasized: true),
-          ),
-          if (i.description.isNotEmpty)
-            Text(
-              i.description,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: muted,
-                fontSize: 9.8,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-        ],
+      child: Text(
+        i.reference,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: _registreCellStyle(isDark, emphasized: true),
       ),
     );
   }
 
-  // Ligne de la zone centrale (colonnes 1 à 8, entre les deux colonnes figées).
+  // Ligne de la zone centrale (colonnes 1 à 7, entre les deux colonnes figées).
   Widget _buildRegistreMiddleRow(
     bool isDark,
     List<double> widths,
     RoIncident i, {
     required bool alternate,
   }) {
-    final kro = i.perteNette * 0.15;
-    final apr = kro * kMultiplicateurRwaReglementaire;
     final border = _tableBorderColor(isDark);
 
     Widget cell(int c, Widget child, {Alignment? alignment}) => Container(
@@ -7189,21 +7158,13 @@ class _RegistreViewState extends State<_RegistreView> {
           cell(
               6,
               Text(
-                AppFormatters.currency(kro),
-                maxLines: 1,
-                style: _registreCellStyle(isDark,
-                    color: AppColors.prudentialSolvency),
+                i.description.isEmpty ? '-' : i.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: _registreCellStyle(isDark),
               )),
           cell(
-              7,
-              Text(
-                AppFormatters.currency(apr),
-                maxLines: 1,
-                style:
-                    _registreCellStyle(isDark, color: AppColors.marketNeutral),
-              )),
-          cell(
-            8,
+            7,
             _registreStatutChip(i.statut),
             alignment: Alignment.center,
           ),
@@ -8237,22 +8198,6 @@ class _CorepTabViewState extends State<_CorepTabView> {
     }
   }
 
-  Color _statutColor(String statut) {
-    switch (statut) {
-      case 'conforme': return _kGreen;
-      case 'attention': return const Color(0xFFF59E0B);
-      default: return _kRed;
-    }
-  }
-
-  IconData _statutIcon(String statut) {
-    switch (statut) {
-      case 'conforme': return Icons.check_circle_outline;
-      case 'attention': return Icons.warning_amber_outlined;
-      default: return Icons.error_outline;
-    }
-  }
-
   Widget _buildDecisionView() {
     if (_decisionLoading && _decision == null) {
       return const Center(child: CircularProgressIndicator());
@@ -8277,40 +8222,21 @@ class _CorepTabViewState extends State<_CorepTabView> {
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // ── Verdict global ──────────────────────────────────────────────────
-        Row(children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
-            child: KpiMetricCard(
+            child: RoHeroStatCard(
               label: 'Niveau de pilotage',
               value: d.niveauGlobal,
-              helper: d.synthese,
-              icon: Icons.shield_outlined,
-              color: color,
+              subtitle: d.synthese,
+              valueColor: color,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: KpiMetricCard(
+            child: RoHeroStatCard(
               label: 'Score global',
               value: '${d.scoreGlobal}/${d.scoreMax}',
-              helper: 'Analyse générée le ${d.dateAnalyse}',
-              icon: Icons.checklist_rtl_outlined,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 42,
-            height: 42,
-            child: Tooltip(
-              message: 'Rafraîchir l\'analyse',
-              child: OutlinedButton(
-                onPressed: _decisionLoading ? null : _loadDecision,
-                style: OutlinedButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  shape: const CircleBorder(),
-                ),
-                child: const Icon(Icons.refresh, size: 18),
-              ),
+              valueColor: color,
             ),
           ),
         ]),
@@ -8334,42 +8260,8 @@ class _CorepTabViewState extends State<_CorepTabView> {
         ),
         const SizedBox(height: 12),
 
-        // ── Critères de décision ─────────────────────────────────────────────
-        CreditDataTableCard(
-          title: 'Critères d\'analyse',
-          columns: const [
-            DataColumn(label: Text('Critère')),
-            DataColumn(label: Text('Référence')),
-            DataColumn(label: Text('Valeur observée')),
-            DataColumn(label: Text('Seuil')),
-            DataColumn(label: Text('Statut')),
-          ],
-          rows: d.criteres.map((c) {
-            final sc = _statutColor(c.statut);
-            return DataRow(cells: [
-              DataCell(Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${c.code} - ${c.libelle}',
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  Text(c.commentaire,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 11, color: _muted)),
-                ],
-              )),
-              DataCell(Text(c.referenceReglementaire)),
-              DataCell(Text(c.valeurObservee)),
-              DataCell(Text(c.seuilReference)),
-              DataCell(Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(_statutIcon(c.statut), size: 15, color: sc),
-                const SizedBox(width: 4),
-                Text(c.statut, style: TextStyle(color: sc, fontWeight: FontWeight.w600)),
-              ])),
-            ]);
-          }).toList(growable: false),
-        ),
+        // ── Critères de décision - dashboard de cartes ───────────────────────
+        RoCriteresDashboard(criteres: d.criteres),
         const SizedBox(height: AppTheme.spacing),
 
         // ── Recommandations ──────────────────────────────────────────────────
@@ -9522,26 +9414,26 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     return Row(children: [
       Expanded(child: RoHeroStatCard(
         label: 'Exigence de fonds propres (OFR) CRR3',
-        value: _roAmount(context, r.ofrCrr3),
+        value: roAmount(context, r.ofrCrr3),
         valueColor: _kAccent,
         subtitle: 'Besoin en fonds propres',
       )),
       const SizedBox(width: 12),
       Expanded(child: RoHeroStatCard(
         label: "Montant d'exposition au risque (REA) CRR3",
-        value: _roAmount(context, r.reaCrr3),
+        value: roAmount(context, r.reaCrr3),
         subtitle: '× ${r.params.multiplicateurRea.toStringAsFixed(1)}',
       )),
       const SizedBox(width: 12),
       Expanded(child: RoHeroStatCard(
         label: 'Exigence de fonds propres (OFR) BIA',
-        value: _roAmount(context, r.ofrBia),
+        value: roAmount(context, r.ofrBia),
         subtitle: '15 % × PNB moy',
       )),
       const SizedBox(width: 12),
       Expanded(child: RoHeroStatCard(
         label: "Écart d'exigence de fonds propres (OFR) CRR3 − BIA",
-        value: '${r.ecart > 0 ? "+" : ""}${_roAmount(context, r.ecart)}',
+        value: '${r.ecart > 0 ? "+" : ""}${roAmount(context, r.ecart)}',
         valueColor: ecartColor,
         subtitle: ecartPos ? 'CRR3 > BIA (défavorable)' : 'CRR3 < BIA (favorable)',
       )),
@@ -9552,7 +9444,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         valueColor: bi.trancheActive == 1 ? _kGreen :
                     bi.trancheActive == 2 ? Colors.orange : _kRed,
         subtitle: bi.margeAvantTrancheSuivante != null
-            ? 'Marge : ${_roAmount(context, bi.margeAvantTrancheSuivante!)}'
+            ? 'Marge : ${roAmount(context, bi.margeAvantTrancheSuivante!)}'
             : 'Tranche maximale',
       )),
     ]);
@@ -9621,7 +9513,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                     TextSpan(text: lbl,
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: c)),
                     TextSpan(
-                        text: '  ${_roAmount(context, v)}  (${_roPct(v / total * 100)} %)',
+                        text: '  ${roAmount(context, v)}  (${_roPct(v / total * 100)} %)',
                         style: TextStyle(fontSize: 10.5, color: _muted)),
                   ])),
                 ),
@@ -9635,7 +9527,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             Icon(Icons.account_balance_wallet_outlined, size: 13, color: _muted),
             const SizedBox(width: 5),
             Text('BI total : ', style: TextStyle(fontSize: 11, color: _muted)),
-            Text(_roAmount(context, bi),
+            Text(roAmount(context, bi),
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _txt)),
           ]),
         ],
@@ -9682,7 +9574,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                 Container(width: 10, height: 10,
                     decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
                 const SizedBox(width: 4),
-                Text('$lbl : ${_roAmount(context, v)}',
+                Text('$lbl : ${roAmount(context, v)}',
                     style: TextStyle(fontSize: 10.5, color: _muted)),
                 const SizedBox(width: 14),
               ],
@@ -9779,7 +9671,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             ),
           ]),
           const SizedBox(height: 4),
-          Text('BI = ${_roAmount(context, bi)}  •  Seuils : ${_roAmount(context, s1)} / ${_roAmount(context, s2)}',
+          Text('BI = ${roAmount(context, bi)}  •  Seuils : ${roAmount(context, s1)} / ${roAmount(context, s2)}',
               style: TextStyle(fontSize: 11, color: _muted)),
           const SizedBox(height: 16),
           trancheRow('T1', r.params.coefTranche1 * 100, _kGreen, 0, s1Rel),
@@ -9796,7 +9688,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             Row(children: [
               Icon(Icons.arrow_forward_outlined, size: 12, color: _muted),
               const SizedBox(width: 5),
-              Text('Marge avant tranche ${t + 1} : ${_roAmount(context, marge)}',
+              Text('Marge avant tranche ${t + 1} : ${roAmount(context, marge)}',
                   style: TextStyle(fontSize: 11, color: _muted)),
             ]),
           ] else ...[
@@ -9937,7 +9829,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                 decoration: BoxDecoration(color: biColor, shape: BoxShape.circle)),
             const SizedBox(width: 6),
             RichText(text: TextSpan(children: [
-              TextSpan(text: 'BI = ${_roAmount(context, bi)}',
+              TextSpan(text: 'BI = ${roAmount(context, bi)}',
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: biColor)),
               TextSpan(text: '  -  Tranche $t  (${_roPct(biRel / (t == 1 ? s1Rel : t == 2 ? s2Rel : 1) * 100)} % du seuil)',
                   style: TextStyle(fontSize: 11, color: _muted)),
@@ -9948,7 +9840,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             Row(children: [
               Icon(Icons.arrow_forward_outlined, size: 12, color: _muted),
               const SizedBox(width: 5),
-              Text('Marge avant tranche ${t + 1} : ${_roAmount(context, marge)}',
+              Text('Marge avant tranche ${t + 1} : ${roAmount(context, marge)}',
                   style: TextStyle(fontSize: 11, color: _muted)),
             ]),
           ] else ...[
@@ -11169,10 +11061,13 @@ class _IncidentsDashSection extends StatelessWidget {
         child: data.repartitionLigneMetier.isEmpty
             ? const Center(
                 child: Text('Aucun incident', style: TextStyle(color: _kMuted)))
-            : _RoDonutChart(
-                items: data.repartitionLigneMetier,
-                palette: _palette,
-                isDark: isDark,
+            : CustomPaint(
+                painter: _RoVertBarChartPainter(
+                  items: data.repartitionLigneMetier,
+                  isDark: isDark,
+                  palette: _palette,
+                ),
+                size: Size.infinite,
               ),
       ),
     );
@@ -11324,156 +11219,6 @@ class _RoVertBarChartPainter extends CustomPainter {
       old.items != items;
 }
 
-// ─── Donut chart ──────────────────────────────────────────────────────────────
-
-class _RoDonutChart extends StatelessWidget {
-  const _RoDonutChart({
-    required this.items,
-    required this.palette,
-    required this.isDark,
-  });
-  final List<RoRepartitionItem> items;
-  final List<Color> palette;
-  final bool isDark;
-
-  @override
-  Widget build(BuildContext context) {
-    final total = items.fold(0, (s, e) => s + e.valeur);
-    if (total == 0) return const SizedBox();
-
-    final sorted = items.asMap().entries.toList()
-      ..sort((a, b) => b.value.valeur.compareTo(a.value.valeur));
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Donut avec taille explicite
-        SizedBox(
-          width: 120,
-          height: 120,
-          child: CustomPaint(
-            painter: _DonutPainter(
-              items: items,
-              palette: palette,
-              total: total,
-              isDark: isDark,
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        // Légende
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var entry in sorted.take(6)) ...[
-                Row(children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: palette[entry.key % palette.length],
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    child: Text(
-                      entry.value.label,
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        color: isDark ? AppTheme.darkMuted : AppTheme.muted,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${(entry.value.valeur / total * 100).toStringAsFixed(0)}%',
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      color: palette[entry.key % palette.length],
-                    ),
-                  ),
-                ]),
-                const SizedBox(height: 6),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DonutPainter extends CustomPainter {
-  const _DonutPainter({
-    required this.items,
-    required this.palette,
-    required this.total,
-    required this.isDark,
-  });
-  final List<RoRepartitionItem> items;
-  final List<Color> palette;
-  final int total;
-  final bool isDark;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (total == 0) return;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - 6;
-    const strokeW = 18.0;
-    double start = -math.pi / 2;
-
-    for (var i = 0; i < items.length; i++) {
-      final sweep = (items[i].valeur / total) * 2 * math.pi;
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        start + 0.05,
-        sweep - 0.10,
-        false,
-        Paint()
-          ..color = palette[i % palette.length]
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = strokeW
-          ..strokeCap = StrokeCap.round,
-      );
-      start += sweep;
-    }
-
-    // Total au centre
-    final tp = TextPainter(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: '$total\n',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: isDark ? AppTheme.darkText : AppTheme.text,
-            ),
-          ),
-          const TextSpan(
-            text: 'incidents',
-            style: TextStyle(fontSize: 8, color: _kMuted),
-          ),
-        ],
-      ),
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    );
-    tp.layout(maxWidth: radius * 1.4);
-    tp.paint(
-        canvas, center - Offset(tp.width / 2, tp.height / 2));
-  }
-
-  @override
-  bool shouldRepaint(covariant _DonutPainter old) => old.total != total;
-}
 
 // ─── Table helpers ────────────────────────────────────────────────────────────
 

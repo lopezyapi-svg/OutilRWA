@@ -75,11 +75,23 @@ class _RoHeroStatCardState extends State<RoHeroStatCard> {
             ),
             if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
               const Spacer(),
-              Text(
-                widget.subtitle!,
-                style: DashText.caption(c, color: c.muted),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Tooltip(
+                message: widget.subtitle!,
+                waitDuration: const Duration(milliseconds: 300),
+                textStyle: const TextStyle(
+                    fontSize: 12, color: Colors.white, height: 1.4),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  widget.subtitle!,
+                  style: DashText.caption(c, color: c.muted),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ],
