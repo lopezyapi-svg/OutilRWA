@@ -9,8 +9,8 @@ import '../../core/theme/app_theme.dart';
 import 'desktop_asset_image.dart';
 import 'rwa_tool_logo.dart';
 
-const Color _sidebarDeepBlue = Color(0xFF234A84);
-const double _sidebarPanelRadius = 1;
+const Color _sidebarDeepBlue = Color.fromARGB(255, 6, 24, 57);
+const double _sidebarPanelRadius = 4.0;
 
 /// Couleur de l'état sélectionné = navy institutionnel (accord avec le
 /// dashboard). En mode sombre, navy éclairci pour rester lisible sur le fond.
@@ -826,9 +826,7 @@ class _ExpandedSidebar extends StatelessWidget {
                 ? const Color(0xFF0F1B31).withValues(alpha: 0.97)
                 : Colors.white.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(_sidebarPanelRadius),
-            border: Border.all(
-              color: isDark ? const Color(0xFF22304B) : const Color(0xFFE5E8F5),
-            ),
+
             boxShadow: [
               BoxShadow(
                 color:
@@ -1159,7 +1157,7 @@ class _ExpandedNavTile extends StatelessWidget {
               offset: const Offset(0, 1),
             ),
           ];
-    const tileRadius = 3.0;
+    const tileRadius = 4.0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
@@ -1173,10 +1171,6 @@ class _ExpandedNavTile extends StatelessWidget {
           decoration: BoxDecoration(
             color: tileColor,
             borderRadius: BorderRadius.circular(tileRadius),
-            border: Border.all(
-              color: tileBorderColor,
-              width: tileBorderWidth,
-            ),
             boxShadow: tileShadow,
           ),
           child: !showLabel
@@ -1198,7 +1192,7 @@ class _ExpandedNavTile extends StatelessWidget {
                             : (isDark
                                 ? const Color(0xFF14233D)
                                 : const Color(0xFFF7FAFF)),
-                        borderRadius: BorderRadius.circular(3.0),
+                        borderRadius: BorderRadius.circular(4.0),
                       ),
                       child: Icon(
                         entry.iconFor(selected),
