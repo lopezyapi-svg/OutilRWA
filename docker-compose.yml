@@ -15,8 +15,8 @@ services:
       context: ./backend
     restart: unless-stopped
     environment:
-      # Authentification obligatoire : c'est tout l'objet du deploiement web.
-      RWA_AUTH_ENABLED: "1"
+      # Authentification desactivee temporairement (demande explicite).
+      RWA_AUTH_ENABLED: "0"
       # Secret de signature. Aucune valeur par defaut : l'API refuse de
       # demarrer s'il est absent ou trop court.
       RWA_JWT_SECRET: ${RWA_JWT_SECRET:?definissez RWA_JWT_SECRET dans .env}
