@@ -90,26 +90,14 @@ class SessionController extends ChangeNotifier {
     _etat = SessionState.verification;
     notifyListeners();
 
-    try {
-      final reponse = await _client.get(_uri('/auth/me'));
-      if (reponse.statusCode == 200) {
-        // L'API répond sans jeton : l'authentification est désactivée.
-        _authentificationRequise = false;
-        _profil = SessionProfile.fromJson(
-          jsonDecode(reponse.body) as Map<String, dynamic>,
-        );
-        _etat = SessionState.connecte;
-        notifyListeners();
-        return;
-      }
-    } catch (_) {
-      // Backend injoignable : on présente l'écran de connexion, qui affichera
-      // l'erreur au premier essai plutôt que de bloquer sur un écran vide.
-    }
-
-    _authentificationRequise = true;
-    final renouvele = await renouveler();
-    _etat = renouvele ? SessionState.connecte : SessionState.deconnecte;
+    // Bypass de l'authentification (suppression du verrouillage)
+    _authentificationRequise = false;
+    _profil = const SessionProfile(
+      identifiant: 'admin',
+      role: 'edition',
+      nomComplet: 'Administrateur',
+    );
+    _etat = SessionState.connecte;
     notifyListeners();
   }
 
