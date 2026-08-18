@@ -11,8 +11,8 @@ services:
     healthCheckPath: /sante
 
     envVars:
-      # Authentification desactivee temporairement (demande explicite) :
-      # le service reste public sans ecran de connexion.
+      # Authentification desactivee (demande explicite) : le service reste
+      # public, sans ecran de connexion.
       - key: RWA_AUTH_ENABLED
         value: "0"
 

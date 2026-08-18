@@ -15,6 +15,7 @@ from app.web_statique import monter_application_web
 from app.crm.routes import router as crm_router
 from app.dashboard.routes import router as dashboard_router
 from app.expositions.routes import router as expositions_router
+from app.fodep.routes import router as fodep_router
 from app.hors_bilan.routes import router as hors_bilan_router
 from app.market.routes import router as market_router
 from app.rapports.routes import router as rapports_router
@@ -134,6 +135,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(expositions_router)
+app.include_router(fodep_router)
 app.include_router(hors_bilan_router)
 app.include_router(crm_router)
 app.include_router(referentiels_router)

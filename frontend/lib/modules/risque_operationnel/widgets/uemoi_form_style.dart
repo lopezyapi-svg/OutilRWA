@@ -116,6 +116,7 @@ class UemoiFormField extends StatelessWidget {
     this.readOnly = false,
     this.onTap,
     this.numeric = true,
+    this.signed = false,
     this.multiline = false,
     this.required = false,
     this.suffixIcon,
@@ -133,6 +134,9 @@ class UemoiFormField extends StatelessWidget {
   final bool readOnly;
   final VoidCallback? onTap;
   final bool numeric;
+  /// Autorise un signe négatif en tête de saisie (ex. postes de déduction
+  /// FODEP, saisis en valeurs <= 0). Sans effet si [numeric] est faux.
+  final bool signed;
   final bool multiline;
   final bool required;
   final Widget? suffixIcon;
@@ -158,7 +162,11 @@ class UemoiFormField extends StatelessWidget {
       keyboardType: keyboardType ??
           (numeric ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text),
       inputFormatters: numeric
-          ? [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\s]'))]
+          ? [
+              FilteringTextInputFormatter.allow(
+                signed ? RegExp(r'[0-9.,\s-]') : RegExp(r'[0-9.,\s]'),
+              ),
+            ]
           : null,
       validator: validator ?? (required ? (v) => (v == null || v.trim().isEmpty) ? 'Champ requis' : null : null),
       style: TextStyle(
