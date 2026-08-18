@@ -922,8 +922,6 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     );
   }
 
-  /// Tableau à en-tête et pied fixes, corps défilant si nécessaire — même
-  /// habillage (deepblue, radius 2, sans icône) que les autres onglets.
   Widget _tableauFixe(
     DashColors c, {
     required String titre,
@@ -935,23 +933,27 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: c.border, width: Dash.hairline),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (titre.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: const Color(0xFFF8FAFC),
+              child: Text(
+                titre.toUpperCase(),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF475569), letterSpacing: 0.5),
+              ),
+            ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: _deepblue,
-            child: Text(titre, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              border: Border(bottom: BorderSide(color: c.divider, width: Dash.hairline)),
+              color: const Color(0xFF172554),
+              border: Border(top: BorderSide(color: c.divider, width: 0.5)),
             ),
             child: Row(
               children: [
@@ -961,7 +963,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                     child: Text(
                       colonnes[i],
                       textAlign: i == 0 ? TextAlign.left : TextAlign.right,
-                      style: DashText.eyebrow(c, color: c.muted),
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                   ),
               ],
@@ -972,37 +974,53 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  for (final ligne in lignes)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: c.divider, width: 0.5))),
-                      child: Row(
-                        children: [
-                          for (int i = 0; i < ligne.length; i++)
-                            Expanded(
-                              flex: flex[i],
-                              child: Text(
-                                ligne[i],
-                                textAlign: i == 0 ? TextAlign.left : TextAlign.right,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: i == ligne.length - 1 ? FontWeight.w700 : FontWeight.w500,
-                                  color: i == ligne.length - 1 ? c.navy : c.ink,
+                  for (int idx = 0; idx < lignes.length; idx++)
+                    Builder(
+                      builder: (context) {
+                        final ligne = lignes[idx];
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: idx.isEven ? Colors.white : const Color(0xFFF8FAFC),
+                            border: Border(bottom: BorderSide(color: c.divider, width: 0.5)),
+                          ),
+                          child: Row(
+                            children: [
+                              for (int i = 0; i < ligne.length; i++)
+                                Expanded(
+                                  flex: flex[i],
+                                  child: Text(
+                                    ligne[i],
+                                    textAlign: i == 0 ? TextAlign.left : TextAlign.right,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: i == ligne.length - 1 ? FontWeight.w700 : (i == 0 ? FontWeight.w500 : FontWeight.w400),
+                                      color: i == ligne.length - 1 ? const Color(0xFF0F172A) : (i == 0 ? const Color(0xFF1E293B) : const Color(0xFF64748B)),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                        ],
-                      ),
+                            ],
+                          ),
+                        );
+                      }
                     ),
                 ],
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(border: Border(top: BorderSide(color: c.divider, width: Dash.hairline))),
-            child: Text(pied, style: DashText.caption(c)),
-          ),
+          if (pied.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9), // slate-100
+                border: Border(top: BorderSide(color: c.divider, width: 0.5)),
+              ),
+              child: Text(
+                pied,
+                textAlign: TextAlign.right,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
+              ),
+            ),
         ],
       ),
     );

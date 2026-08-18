@@ -598,15 +598,18 @@ class _CompactSidebarLogo extends StatelessWidget {
     return SizedBox(
       width: 50,
       height: 40,
-      child: DesktopAssetImage(
-        'assets/images/heymanns_logo.png',
-        fit: BoxFit.contain,
-        filterQuality: FilterQuality.high,
-        color: isDark ? const Color(0xFFEAF1FF) : null,
-        colorBlendMode: isDark ? BlendMode.srcIn : null,
-        opacity: isDark
-            ? const AlwaysStoppedAnimation<double>(0.82)
-            : const AlwaysStoppedAnimation<double>(1),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: DesktopAssetImage(
+          'assets/images/heymanns_logo.png',
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.high,
+          color: isDark ? const Color(0xFFEAF1FF) : null,
+          colorBlendMode: isDark ? BlendMode.srcIn : null,
+          opacity: isDark
+              ? const AlwaysStoppedAnimation<double>(0.82)
+              : const AlwaysStoppedAnimation<double>(1),
+        ),
       ),
     );
   }
@@ -1094,15 +1097,18 @@ class _SidebarServiceCard extends StatelessWidget {
         children: [
           SizedBox(
             height: 90,
-            child: DesktopAssetImage(
-              'assets/images/heymanns_logo.png',
-              fit: BoxFit.contain,
-              filterQuality: FilterQuality.high,
-              color: isDark ? const Color(0xFFEAF1FF) : null,
-              colorBlendMode: isDark ? BlendMode.srcIn : null,
-              opacity: isDark
-                  ? const AlwaysStoppedAnimation<double>(0.84)
-                  : const AlwaysStoppedAnimation<double>(1),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: DesktopAssetImage(
+                'assets/images/heymanns_logo.png',
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
+                color: isDark ? const Color(0xFFEAF1FF) : null,
+                colorBlendMode: isDark ? BlendMode.srcIn : null,
+                opacity: isDark
+                    ? const AlwaysStoppedAnimation<double>(0.84)
+                    : const AlwaysStoppedAnimation<double>(1),
+              ),
             ),
           ),
           const SizedBox(height: 2),
