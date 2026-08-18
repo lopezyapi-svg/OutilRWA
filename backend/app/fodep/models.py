@@ -43,6 +43,18 @@ class EtablissementUpdate(BaseModel):
     code_bceao: str
 
 
+class ParticipationEntry(BaseModel):
+    id: str | None = None
+    denomination_emettrice: str
+    capital_emettrice: float
+    montant_net: float
+
+
+class ParticipationsSave(BaseModel):
+    periode: str
+    lignes: list[ParticipationEntry]
+
+
 class ImportFodepResult(BaseModel):
     id: str
     nom_fichier: str

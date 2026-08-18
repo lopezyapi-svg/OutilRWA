@@ -115,6 +115,49 @@ class FodepApercu {
   }
 }
 
+class ParticipationEntry {
+  const ParticipationEntry({
+    this.id,
+    required this.denominationEmettrice,
+    required this.capitalEmettrice,
+    required this.montantNet,
+  });
+
+  final String? id;
+  final String denominationEmettrice;
+  final double capitalEmettrice;
+  final double montantNet;
+
+  factory ParticipationEntry.fromJson(Map<String, dynamic> json) {
+    return ParticipationEntry(
+      id: json['id'] as String?,
+      denominationEmettrice: json['denomination_emettrice'] as String? ?? '',
+      capitalEmettrice: (json['capital_emettrice'] as num).toDouble(),
+      montantNet: (json['montant_net'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        if (id != null) 'id': id,
+        'denomination_emettrice': denominationEmettrice,
+        'capital_emettrice': capitalEmettrice,
+        'montant_net': montantNet,
+      };
+
+  ParticipationEntry copyWith({
+    String? denominationEmettrice,
+    double? capitalEmettrice,
+    double? montantNet,
+  }) {
+    return ParticipationEntry(
+      id: id,
+      denominationEmettrice: denominationEmettrice ?? this.denominationEmettrice,
+      capitalEmettrice: capitalEmettrice ?? this.capitalEmettrice,
+      montantNet: montantNet ?? this.montantNet,
+    );
+  }
+}
+
 class EtablissementView {
   const EtablissementView({required this.denomination, required this.codeBceao});
 

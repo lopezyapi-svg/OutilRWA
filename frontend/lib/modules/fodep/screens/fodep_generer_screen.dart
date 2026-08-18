@@ -1,20 +1,11 @@
-// Écran « Générer un FODEP » : saisie des 45 postes de Fonds Propres
-// réglementaires (codes DISPRU BCEAO), calcul des totaux et ratios de
-// solvabilité, export du classeur FODEP. Habillage aligné sur le système
-// visuel institutionnel du dashboard (dashboard_design.dart) et sur le
-// formulaire Dispositif UEMOA (uemoi_form_style.dart) : un seul accent
-// navy, panneaux plats, couleur réservée au statut.
 import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_theme.dart';
 import '../../../shared/utils/file_save.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../dashboard/widgets/dashboard_design.dart';
-import '../../risque_operationnel/widgets/uemoi_form_style.dart';
-import '../models/fodep_models.dart';
 import '../services/fodep_service.dart';
 import '../widgets/fodep_design.dart';
 
@@ -27,343 +18,290 @@ class FodepGenererScreen extends StatefulWidget {
   State<FodepGenererScreen> createState() => _FodepGenererScreenState();
 }
 
-const _kGroupeLibelles = <MapEntry<String, String>>[
-  MapEntry('CET1', 'Fonds propres de base durs'),
-  MapEntry('AT1', 'Fonds propres de base additionnels'),
-  MapEntry('T2', 'Fonds propres complémentaires'),
-  MapEntry('effectifs', 'Fonds propres nets'),
-];
-
 class _FodepGenererScreenState extends State<FodepGenererScreen> {
-  bool _chargement = true;
-  bool _enregistrement = false;
-  bool _export = false;
+  bool _exportExcel = false;
+  bool _exportPdf = false;
   String? _erreur;
-  String? _messageSucces;
-  String _groupeSelectionne = 'CET1';
+  String? _succes;
 
-  List<CodeDispru> _codes = [];
-  FodepApercu? _apercu;
-
-  final _periodeCtrl = TextEditingController();
-  final _denominationCtrl = TextEditingController();
-  final _codeBceaoCtrl = TextEditingController();
-  final Map<String, TextEditingController> _posteCtrl = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _charger();
-  }
-
-  @override
-  void dispose() {
-    _periodeCtrl.dispose();
-    _denominationCtrl.dispose();
-    _codeBceaoCtrl.dispose();
-    for (final c in _posteCtrl.values) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  Future<void> _charger() async {
+  Future<void> _exporter(String format) async {
+    final isPdf = format == 'pdf';
     setState(() {
-      _chargement = true;
       _erreur = null;
-    });
-    try {
-      final codes = await widget.service.listerCodesDispru();
-      final apercu = await widget.service.obtenirApercu();
-      final etablissement = await widget.service.obtenirEtablissement();
-      setState(() {
-        _codes = codes;
-        _apercu = apercu;
-        // Le panneau de saisie de la période a été retiré : sans lui, une
-        // période vide bloquerait l'enregistrement sans aucun moyen de la
-        // renseigner. Repli sur la date du jour tant qu'un autre écran ne
-        // pilote pas explicitement l'arrêté.
-        _periodeCtrl.text = apercu.periode ??
-            DateTime.now().toIso8601String().split('T').first;
-        _denominationCtrl.text = etablissement.denomination;
-        _codeBceaoCtrl.text = etablissement.codeBceao;
-        for (final code in codes) {
-          final key = code.code.toLowerCase();
-          _posteCtrl[key] = TextEditingController(
-            text: _formatEditable(apercu.postes[key] ?? 0.0),
-          );
-        }
-        _chargement = false;
-      });
-    } catch (e) {
-      setState(() {
-        _erreur = 'Chargement impossible : $e';
-        _chargement = false;
-      });
-    }
-  }
-
-  String _formatEditable(double value) {
-    if (value == value.roundToDouble()) return value.toStringAsFixed(0);
-    return value.toString();
-  }
-
-  Map<String, double> _lireValeursSaisies() {
-    final result = <String, double>{};
-    for (final entry in _posteCtrl.entries) {
-      final texte =
-          entry.value.text.trim().replaceAll(' ', '').replaceAll(',', '.');
-      result[entry.key] = double.tryParse(texte) ?? 0.0;
-    }
-    return result;
-  }
-
-  Future<void> _enregistrer() async {
-    final periode = _periodeCtrl.text.trim();
-    if (periode.isEmpty) {
-      setState(() => _erreur =
-          "La période (ex. 2026-06-30) est requise avant d'enregistrer.");
-      return;
-    }
-    setState(() {
-      _enregistrement = true;
-      _erreur = null;
-      _messageSucces = null;
-    });
-    try {
-      if (_denominationCtrl.text.trim().isNotEmpty ||
-          _codeBceaoCtrl.text.trim().isNotEmpty) {
-        await widget.service.enregistrerEtablissement(
-          denomination: _denominationCtrl.text.trim(),
-          codeBceao: _codeBceaoCtrl.text.trim(),
-        );
+      _succes = null;
+      if (isPdf) {
+        _exportPdf = true;
+      } else {
+        _exportExcel = true;
       }
-      final apercu = await widget.service.enregistrer(
-        periode: periode,
-        postes: _lireValeursSaisies(),
-      );
-      setState(() {
-        _apercu = apercu;
-        _enregistrement = false;
-        _messageSucces = 'Arrêté $periode enregistré.';
-      });
-    } catch (e) {
-      setState(() {
-        _erreur = 'Enregistrement impossible : $e';
-        _enregistrement = false;
-      });
-    }
-  }
-
-  Future<void> _exporter() async {
-    setState(() {
-      _export = true;
-      _erreur = null;
     });
+
     try {
-      final Uint8List bytes = await widget.service.exporterExcel(
-        periode:
-            _periodeCtrl.text.trim().isEmpty ? null : _periodeCtrl.text.trim(),
-      );
-      final nomSuggere = _periodeCtrl.text.trim().isEmpty
-          ? 'brouillon'
-          : _periodeCtrl.text.trim();
+      final Uint8List bytes = await widget.service.exporterExcel();
+      final nomSuggere = 'FODEP_fonds_propres_${DateTime.now().toIso8601String().split('T').first}';
       final location = await getSaveLocation(
-        suggestedName: 'FODEP_fonds_propres_$nomSuggere.xlsx',
+        suggestedName: isPdf ? '$nomSuggere.pdf' : '$nomSuggere.xlsx',
       );
       if (location != null) {
-        await saveBytesAtLocation(location, bytes, requiredExtension: '.xlsx');
-        if (mounted) setState(() => _messageSucces = 'Export enregistré.');
+        await saveBytesAtLocation(
+          location,
+          bytes,
+          requiredExtension: isPdf ? '.pdf' : '.xlsx',
+        );
+        if (mounted) setState(() => _succes = 'Export ${isPdf ? 'PDF' : 'Excel'} enregistré avec succès.');
       }
     } catch (e) {
-      setState(() => _erreur = 'Export impossible : $e');
+      if (mounted) setState(() => _erreur = 'Export impossible : $e');
     } finally {
-      if (mounted) setState(() => _export = false);
+      if (mounted) {
+        setState(() {
+          _exportPdf = false;
+          _exportExcel = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_chargement) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    final apercu = _apercu;
     final c = DashColors.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── En-tête ────────────────────────────────────────────────────────
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 16),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
           decoration: BoxDecoration(
+            color: c.surface,
             border: Border(
               bottom: BorderSide(
-                color: isDark ? const Color(0xFF22304B) : AppTheme.border,
+                color: c.border,
+                width: Dash.hairline,
               ),
             ),
           ),
           child: const PageHeader(
             title: 'Générer un FODEP',
-            subtitle:
-                'Fonds propres réglementaires (codes DISPRU, dispositif BCEAO/UMOA).',
-            titleFontSize: 20,
-            subtitleFontSize: 12,
-            titleSubtitleGap: 2,
+            subtitle: 'Exportez le formulaire de déclaration prudentielle au format souhaité.',
+            titleFontSize: 24,
+            subtitleFontSize: 13,
+            titleSubtitleGap: 4,
           ),
         ),
+
+        // ── Corps ──────────────────────────────────────────────────────────
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_erreur != null) ...[
-                  FodepNotice(status: DashStatus.sousMinimum, texte: _erreur!),
-                  const SizedBox(height: AppTheme.spacing * 2),
-                ],
-                if (_messageSucces != null) ...[
-                  FodepNotice(
-                      status: DashStatus.conforme, texte: _messageSucces!),
-                  const SizedBox(height: AppTheme.spacing * 2),
-                ],
-                if (apercu != null) _buildTuiles(apercu, c),
-                const SizedBox(height: AppTheme.pageGap),
-                if (apercu != null) _buildPostes(),
-                const SizedBox(height: AppTheme.pageGap),
-                Row(
-                  children: [
-                    FilledButton.icon(
-                      onPressed: _enregistrement ? null : _enregistrer,
-                      icon: _enregistrement
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.save_outlined, size: 16),
-                      label: const Text("Enregistrer l'arrêté"),
-                    ),
-                    const SizedBox(width: AppTheme.spacing * 2),
-                    OutlinedButton.icon(
-                      onPressed: _export ? null : _exporter,
-                      icon: _export
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.file_download_outlined, size: 16),
-                      label: const Text('Exporter en Excel'),
-                    ),
-                  ],
+          child: Container(
+            color: c.surfaceAlt,
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 800),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_erreur != null) ...[
+                        FodepNotice(status: DashStatus.sousMinimum, texte: _erreur!),
+                        const SizedBox(height: 24),
+                      ],
+                      if (_succes != null) ...[
+                        FodepNotice(status: DashStatus.conforme, texte: _succes!),
+                        const SizedBox(height: 24),
+                      ],
+
+                      DashPanel(
+                        title: 'Formats de génération',
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Sélectionnez le format cible pour générer le rapport. L\'export reprend les données du dernier arrêté enregistré dans le module de gestion des risques.',
+                              style: DashText.value(c, weight: FontWeight.w400)
+                                  .copyWith(height: 1.5, color: c.muted),
+                            ),
+                            const SizedBox(height: 32),
+                            LayoutBuilder(builder: (context, cx) {
+                              final large = cx.maxWidth >= 500;
+                              
+                              final boutons = [
+                                Expanded(
+                                  flex: large ? 1 : 0,
+                                  child: _ExportOptionCard(
+                                    title: 'Format PDF',
+                                    description: 'Document prêt à être imprimé ou partagé. Non modifiable.',
+                                    icon: Icons.picture_as_pdf_rounded,
+                                    color: const Color(0xFFE53935), // Rouge standard PDF
+                                    isLoading: _exportPdf,
+                                    isDisabled: _exportPdf || _exportExcel,
+                                    onTap: () => _exporter('pdf'),
+                                  ),
+                                ),
+                                SizedBox(width: large ? 24 : 0, height: large ? 0 : 24),
+                                Expanded(
+                                  flex: large ? 1 : 0,
+                                  child: _ExportOptionCard(
+                                    title: 'Format Excel',
+                                    description: 'Classeur contenant les données brutes et tableaux. Modifiable.',
+                                    icon: Icons.table_view_rounded,
+                                    color: const Color(0xFF2E7D32), // Vert standard Excel
+                                    isLoading: _exportExcel,
+                                    isDisabled: _exportPdf || _exportExcel,
+                                    onTap: () => _exporter('excel'),
+                                  ),
+                                ),
+                              ];
+
+                              return large
+                                  ? IntrinsicHeight(
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: boutons,
+                                      ),
+                                    )
+                                  : Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: boutons,
+                                    );
+                            }),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildTuiles(FodepApercu apercu, DashColors c) {
-    final ratios = apercu.ratios;
-    final tuiles = <Widget>[
-      FodepValueTile(
-          label: 'Fonds propres CET1',
-          value: _fmt(apercu.totaux['fpi22'] ?? 0),
-          caption: 'FPI22'),
-      FodepValueTile(
-          label: 'Fonds propres T1',
-          value: _fmt(apercu.totaux['fpi29'] ?? 0),
-          caption: 'FPI29'),
-      FodepValueTile(
-          label: 'Fonds propres effectifs',
-          value: _fmt(apercu.totaux['fpi41'] ?? 0),
-          caption: 'FPI41'),
-      FodepValueTile(
-        label: 'APR total',
-        value: _fmt(apercu.apr.aprTotal),
-        caption: 'EP08 : crédit + marché + opérationnel',
-      ),
-      if (ratios['cet1'] != null)
-        FodepRatioTile(label: 'Ratio CET1', ratio: ratios['cet1']!),
-      if (ratios['tier1'] != null)
-        FodepRatioTile(label: 'Ratio T1', ratio: ratios['tier1']!),
-      if (ratios['solvency'] != null)
-        FodepRatioTile(
-            label: 'Ratio de solvabilité', ratio: ratios['solvency']!),
-      if (ratios['leverage'] != null)
-        FodepRatioTile(label: 'Ratio de levier', ratio: ratios['leverage']!),
-    ];
+class _ExportOptionCard extends StatefulWidget {
+  const _ExportOptionCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.color,
+    required this.isLoading,
+    required this.isDisabled,
+    required this.onTap,
+  });
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 900
-            ? 4
-            : (constraints.maxWidth >= 600 ? 2 : 1);
-        final width =
-            (constraints.maxWidth - (columns - 1) * AppTheme.spacing * 2) /
-                columns;
-        return Wrap(
-          spacing: AppTheme.spacing * 2,
-          runSpacing: AppTheme.spacing * 2,
-          children: [for (final t in tuiles) SizedBox(width: width, child: t)],
-        );
-      },
-    );
-  }
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color color;
+  final bool isLoading;
+  final bool isDisabled;
+  final VoidCallback onTap;
 
-  String _fmt(double v) {
-    if (v.abs() >= 1000000000)
-      return '${(v / 1000000000).toStringAsFixed(1)} Md'.replaceAll('.', ',');
-    if (v.abs() >= 1000000)
-      return '${(v / 1000000).toStringAsFixed(1)} M'.replaceAll('.', ',');
-    return v.toStringAsFixed(0);
-  }
+  @override
+  State<_ExportOptionCard> createState() => _ExportOptionCardState();
+}
 
-  Widget _buildPostes() {
-    final groupesPresents = _kGroupeLibelles
-        .where((e) => _codes.any((c) => c.groupe == e.key))
-        .toList();
-    if (groupesPresents.isNotEmpty &&
-        !groupesPresents.any((e) => e.key == _groupeSelectionne)) {
-      _groupeSelectionne = groupesPresents.first.key;
-    }
-    final libelleGroupe = groupesPresents
-        .firstWhere((e) => e.key == _groupeSelectionne,
-            orElse: () => groupesPresents.first)
-        .value;
+class _ExportOptionCardState extends State<_ExportOptionCard> {
+  bool _isHovered = false;
 
-    return DashPanel(
-      title: 'Postes réglementaires (codes DISPRU)',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          FodepTabs(
-            onglets: groupesPresents,
-            selection: _groupeSelectionne,
-            onSelect: (g) => setState(() => _groupeSelectionne = g),
+  @override
+  Widget build(BuildContext context) {
+    final c = DashColors.of(context);
+    
+    final disabled = widget.isDisabled;
+    final effectiveColor = disabled ? widget.color.withValues(alpha: 0.5) : widget.color;
+    
+    final hoverTransform = _isHovered && !disabled 
+        ? Matrix4.translationValues(0.0, -4.0, 0.0) 
+        : Matrix4.identity();
+        
+    final hoverShadow = _isHovered && !disabled
+        ? BoxShadow(
+            color: widget.color.withValues(alpha: 0.15),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          )
+        : BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          );
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: disabled ? null : widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          transform: hoverTransform,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _isHovered && !disabled ? widget.color.withValues(alpha: 0.5) : c.border,
+              width: _isHovered && !disabled ? 2.0 : 1.0,
+            ),
+            boxShadow: [hoverShadow],
           ),
-          const SizedBox(height: 14),
-          UemoiFormCard(
-            title: libelleGroupe,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (final code
-                  in _codes.where((c) => c.groupe == _groupeSelectionne))
-                UemoiFormField(
-                  label: code.estDeduction
-                      ? '${code.code} : ${code.label} (déduction)'
-                      : '${code.code} : ${code.label}',
-                  controller: _posteCtrl[code.code.toLowerCase()]!,
-                  numeric: true,
-                  signed: code.estDeduction,
-                  suffixText: 'FCFA',
-                  labelFlex: 8,
-                  fieldFlex: 5,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: effectiveColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      size: 32,
+                      color: effectiveColor,
+                    ),
+                  ),
+                  if (widget.isLoading)
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(effectiveColor),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                widget.title,
+                style: DashText.value(c).copyWith(
+                  fontSize: 16,
+                  color: disabled ? c.muted : c.ink,
                 ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.description,
+                style: DashText.caption(c).copyWith(
+                  height: 1.4,
+                  fontSize: 13,
+                  color: disabled ? c.faint : c.muted,
+                ),
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

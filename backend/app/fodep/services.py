@@ -19,7 +19,10 @@ from database.connection import database_manager
 from app.dashboard.services import _normalize_row
 from app.expositions.services import list_expositions
 from app.fodep.calculations import (
+    calculer_exposition_levier,
     calculer_fonds_propres_detailles,
+    calculer_limites_operations,
+    calculer_produit_brut,
     calculer_ratios_solvabilite,
 )
 from app.fodep.dispru import FONDS_PROPRES_CODES
@@ -27,12 +30,16 @@ from app.fodep.models import (
     AprDetail,
     EtablissementView,
     FodepApercu,
+    ParticipationEntry,
     RatioDetail,
 )
 from app.market.services import resolve_market_capital
 from app.risque_operationnel.services import calcul_aib as _calcul_aib_uemoa
 
 POSTE_CODES: tuple[str, ...] = tuple(c.code.lower() for c in FONDS_PROPRES_CODES)
+LIMITES_POSTE_CODES: tuple[str, ...] = tuple(
+    c.code.lower() for c in FONDS_PROPRES_CODES if c.groupe == "LIMITES"
+)
 
 
 def _utcnow_iso() -> str:
@@ -112,6 +119,107 @@ def _prefill_depuis_modele_simplifie() -> dict[str, float]:
     return postes
 
 
+def _normaliser_periode(periode: str | None) -> str | None:
+    """Ramène une date d'arrêté au format ISO AAAA-MM-JJ.
+
+    Les périodes déjà enregistrées ne sont pas toutes ISO (saisie libre
+    historique au format JJ-MM-AAAA) : comparer ces chaînes telles quelles
+    aux intervalles de validité donnerait un ordre lexicographique faux.
+    """
+
+    if not periode:
+        return None
+    texte = periode.strip()
+    for gabarit in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(texte, gabarit).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
+
+def resoudre_seuils(periode: str | None) -> dict[str, float]:
+    """Seuils prudentiels en vigueur à la date d'arrêté.
+
+    La notice impose que le niveau à respecter soit paramétré par date
+    d'arrêté et jamais figé dans le code : cette résolution lit la table
+    ``fodep_seuil_prudentiel`` et retient, pour chaque norme, la ligne dont
+    l'intervalle de validité contient la période demandée.
+
+    Sans période exploitable (brouillon non daté, ou date au format non
+    reconnu), les seuils les plus récents s'appliquent — c'est le seul choix
+    qui ne suppose pas une date.
+    """
+
+    reference = _normaliser_periode(periode)
+    with database_manager.read_connection() as conn:
+        if reference:
+            rows = conn.execute(
+                "SELECT code, seuil FROM fodep_seuil_prudentiel "
+                "WHERE date_debut <= ? AND (date_fin IS NULL OR date_fin >= ?) "
+                "ORDER BY code, date_debut",
+                (reference, reference),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT code, seuil FROM fodep_seuil_prudentiel "
+                "WHERE date_fin IS NULL ORDER BY code, date_debut"
+            ).fetchall()
+
+    # ORDER BY date_debut : sur un intervalle recouvrant, la ligne la plus
+    # récemment entrée en vigueur l'emporte.
+    return {row["code"]: float(row["seuil"]) for row in rows}
+
+
+def lister_participations(periode: str | None) -> list[ParticipationEntry]:
+    with database_manager.read_connection() as conn:
+        if periode:
+            rows = conn.execute(
+                "SELECT * FROM fodep_participation WHERE periode = ? ORDER BY denomination_emettrice",
+                (periode,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM fodep_participation ORDER BY denomination_emettrice"
+            ).fetchall()
+    return [
+        ParticipationEntry(
+            id=row["id"],
+            denomination_emettrice=row["denomination_emettrice"],
+            capital_emettrice=float(row["capital_emettrice"]),
+            montant_net=float(row["montant_net"]),
+        )
+        for row in rows
+    ]
+
+
+def enregistrer_participations(periode: str, lignes: list[ParticipationEntry]) -> list[ParticipationEntry]:
+    """Remplace l'intégralité du registre pour la période donnée — même
+    logique « tout ou rien » que ``enregistrer_fonds_propres`` : le registre
+    est petit et la ré-saisie complète évite de gérer des diffs ligne à
+    ligne côté client."""
+
+    maintenant = _utcnow_iso()
+    with database_manager.transaction() as conn:
+        conn.execute("DELETE FROM fodep_participation WHERE periode = ?", (periode,))
+        for ligne in lignes:
+            conn.execute(
+                "INSERT INTO fodep_participation "
+                "(id, periode, denomination_emettrice, capital_emettrice, montant_net, cree_le, modifie_le) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    str(uuid.uuid4()),
+                    periode,
+                    ligne.denomination_emettrice.strip(),
+                    ligne.capital_emettrice,
+                    ligne.montant_net,
+                    maintenant,
+                    maintenant,
+                ),
+            )
+    return lister_participations(periode)
+
+
 def generer_apercu(periode: str | None = None) -> FodepApercu:
     if periode:
         with database_manager.read_connection() as conn:
@@ -140,13 +248,53 @@ def generer_apercu(periode: str | None = None) -> FodepApercu:
             periode_effective = None
 
     totaux = calculer_fonds_propres_detailles(postes)
+    seuils = resoudre_seuils(periode_effective)
+
+    # Limites sur opérations (RA006-RA011) : calculées sur les fonds propres
+    # AVANT déduction des excédents qu'elles produisent elles-mêmes — l'une
+    # des deux conventions explicitement admises par la notice technique
+    # pour trancher la circularité entre ces limites et le CET1 (§ boucle de
+    # calcul, EP34-EP39), l'autre étant une résolution itérative jugée
+    # disproportionnée pour un écart de second ordre.
+    participations = (
+        [p.model_dump() for p in lister_participations(periode_effective)]
+        if periode_effective
+        else []
+    )
+    a_des_donnees_registre = bool(participations) or any(
+        postes.get(code, 0.0) for code in LIMITES_POSTE_CODES
+    )
+    ratios_limites, excedents = calculer_limites_operations(
+        postes, participations, t1=totaux["fpi29"], fpe=totaux["fpi41"], seuils=seuils
+    )
+    if a_des_donnees_registre:
+        postes = {**postes, **excedents}
+        totaux = calculer_fonds_propres_detailles(postes)
+
+    # EP21 (produit brut) et EP33 (briques d'exposition du levier) : totaux
+    # dérivés des postes saisis, jamais saisis eux-mêmes.
+    totaux.update(calculer_produit_brut(postes))
+    levier = calculer_exposition_levier(postes)
+    totaux.update(levier)
+
     apr = obtenir_apr_total()
 
+    # Dénominateur du ratio de levier : l'exposition totale de l'EP33 quand
+    # elle est renseignée — c'est l'assiette que la notice prescrit — sinon
+    # repli sur la somme des expositions brutes du portefeuille.
     exposure_rows = [_normalize_row(item) for item in list_expositions()]
-    total_expositions = sum(float(row["gross_amount"]) for row in exposure_rows)
+    total_expositions = (
+        levier["rl015"]
+        if levier["rl015"] > 0
+        else sum(float(row["gross_amount"]) for row in exposure_rows)
+    )
 
-    ratios_bruts = calculer_ratios_solvabilite(totaux, apr.apr_total, total_expositions)
+    ratios_bruts = calculer_ratios_solvabilite(
+        totaux, apr.apr_total, total_expositions, seuils
+    )
     ratios = {k: RatioDetail(**v) for k, v in ratios_bruts.items()}
+    if a_des_donnees_registre:
+        ratios.update({k: RatioDetail(**v) for k, v in ratios_limites.items()})
 
     return FodepApercu(
         periode=periode_effective,

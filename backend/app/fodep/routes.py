@@ -13,6 +13,8 @@ from app.fodep.models import (
     FodepApercu,
     FondsPropresSave,
     ImportFodepResult,
+    ParticipationEntry,
+    ParticipationsSave,
 )
 
 router = APIRouter(prefix="/fodep", tags=["FODEP"])
@@ -50,6 +52,21 @@ def enregistrer(payload: FondsPropresSave) -> FodepApercu:
     if not payload.periode.strip():
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Période requise.")
     return services.enregistrer_fonds_propres(payload.periode.strip(), payload.postes)
+
+
+@router.get("/participations", response_model=list[ParticipationEntry])
+def lister_participations(periode: str | None = None) -> list[ParticipationEntry]:
+    """Registre des participations dans des entités commerciales (EP35),
+    utilisé pour les normes RA006-RA008."""
+
+    return services.lister_participations(periode)
+
+
+@router.put("/participations", response_model=list[ParticipationEntry])
+def enregistrer_participations(payload: ParticipationsSave) -> list[ParticipationEntry]:
+    if not payload.periode.strip():
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Période requise.")
+    return services.enregistrer_participations(payload.periode.strip(), payload.lignes)
 
 
 @router.get("/etablissement", response_model=EtablissementView)

@@ -79,13 +79,25 @@ def calculate_risque_marche(marche_data: dict[str, float]) -> dict[str, float]:
     }
 
 
-def evaluate_ratios(rwa_total: float, fonds_propres: dict[str, float], total_expositions: float) -> dict[str, Any]:
+def evaluate_ratios(
+    rwa_total: float,
+    fonds_propres: dict[str, float],
+    total_expositions: float,
+    seuils: dict[str, float] | None = None,
+) -> dict[str, Any]:
     """
     Calcule et évalue les ratios de solvabilité et de levier par rapport aux normes UMOA.
+
+    ``seuils`` (en pourcentage, clés ``cet1``/``tier1``/``solvency``/``leverage``)
+    permet d'imposer des niveaux datés — la notice FODEP exige que le niveau à
+    respecter soit paramétré par date d'arrêté plutôt que figé dans le code.
+    Omis, les minima courants ci-dessus s'appliquent, ce qui préserve le
+    comportement des appelants qui n'ont pas de date d'arrêté (tableau de bord).
     """
     cet1 = fonds_propres["cet1"]
     t1 = fonds_propres["t1"]
     total_capital = fonds_propres["total_capital"]
+    seuils = seuils or {}
     
     if rwa_total <= 0:
         cet1_ratio = 0.0
@@ -113,9 +125,13 @@ def evaluate_ratios(rwa_total: float, fonds_propres: dict[str, float], total_exp
             "status": status
         }
 
+    def _seuil(cle: str, defaut: float) -> float:
+        valeur = seuils.get(cle)
+        return valeur / 100.0 if valeur is not None else defaut
+
     return {
-        "cet1": _evaluate(cet1_ratio, MIN_CET1_RATIO),
-        "tier1": _evaluate(t1_ratio, MIN_TIER1_RATIO),
-        "solvency": _evaluate(solvency_ratio, MIN_SOLVENCY_RATIO),
-        "leverage": _evaluate(leverage_ratio, MIN_LEVERAGE_RATIO),
+        "cet1": _evaluate(cet1_ratio, _seuil("cet1", MIN_CET1_RATIO)),
+        "tier1": _evaluate(t1_ratio, _seuil("tier1", MIN_TIER1_RATIO)),
+        "solvency": _evaluate(solvency_ratio, _seuil("solvency", MIN_SOLVENCY_RATIO)),
+        "leverage": _evaluate(leverage_ratio, _seuil("leverage", MIN_LEVERAGE_RATIO)),
     }

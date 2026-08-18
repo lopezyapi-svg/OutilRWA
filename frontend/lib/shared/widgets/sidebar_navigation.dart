@@ -419,12 +419,6 @@ const _entryReportingGlobal = _MenuEntry.leaf(
   label: 'Reporting global',
 );
 
-const _entryFodepDashboard = _MenuEntry.leaf(
-  module: AppModule.fodepDashboard,
-  icon: Icons.dashboard_outlined,
-  label: 'Tableau de bord',
-);
-
 const _entryFodepAnalyser = _MenuEntry.leaf(
   module: AppModule.fodepAnalyser,
   icon: Icons.fact_check_outlined,
@@ -455,7 +449,6 @@ const List<_MenuEntry> _sidebarItems = [
   _groupIcaap,
   _groupCapitalPlanning,
   _entryReportingGlobal,
-  _entryFodepDashboard,
   _entryFodepAnalyser,
   _entryFodepGenerer,
   _groupParametres,
@@ -489,7 +482,7 @@ const List<_SidebarSection> _sidebarSections = [
   ),
   _SidebarSection(
     title: 'FODEP',
-    entries: [_entryFodepDashboard, _entryFodepAnalyser, _entryFodepGenerer],
+    entries: [_entryFodepAnalyser, _entryFodepGenerer],
   ),
   _SidebarSection(title: 'Paramètres', entries: [_groupParametres]),
 ];

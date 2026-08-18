@@ -89,8 +89,65 @@ _EFFECTIFS: tuple[CodeDispru, ...] = (
     CodeDispru("FPI42", "EP03", "Fonds Propres Nets (pour calcul des grands risques)", "effectifs", paragraphes=("346",)),
 )
 
+# ── Limites sur opérations (EP36, EP37, EP38) ───────────────────────────────
+# Groupe distinct de CET1/AT1/T2/effectifs : ces postes n'entrent dans aucun
+# total de fonds propres, ils alimentent uniquement les normes RA009-RA011
+# (voir calculations.py::calculer_limites_operations). Valeur nette
+# uniquement — voir la note de la migration 036.
+_LIMITES_OPERATIONS: tuple[CodeDispru, ...] = (
+    CodeDispru("IM001", "EP36", "Immobilisations hors exploitation avant ajustement", "LIMITES"),
+    CodeDispru("IM002", "EP36", "Immobilisations acquises par réalisation de garantie depuis moins de 2 ans", "LIMITES", "deduction"),
+    CodeDispru("IM003", "EP36", "Immobilisations acquises par réalisation de garantie depuis plus de 2 ans, avec dérogation de la Commission Bancaire", "LIMITES", "deduction"),
+    CodeDispru("PA084", "EP36", "Participations dans les sociétés immobilières", "LIMITES"),
+    CodeDispru("IM007", "EP37", "Immobilisations d'exploitation ajustées", "LIMITES"),
+    CodeDispru("PA106", "EP37", "Total des participations (toutes sections de l'EP34)", "LIMITES"),
+    CodeDispru("PR001A", "EP38", "Montant des concours — actionnaires détenant individuellement au moins 10 % des droits de vote", "LIMITES"),
+    CodeDispru("PR001B", "EP38", "Montant des concours — membres de l'organe délibérant", "LIMITES"),
+    CodeDispru("PR001C", "EP38", "Montant des concours — membres de l'organe exécutif", "LIMITES"),
+    CodeDispru("PR001D", "EP38", "Montant des concours — commissaires aux comptes", "LIMITES"),
+    CodeDispru("PR001E", "EP38", "Montant des concours — personnel de direction", "LIMITES"),
+    CodeDispru("PR001F", "EP38", "Montant des concours — cadres moyens et supérieurs", "LIMITES"),
+    CodeDispru("PR001G", "EP38", "Montant des concours — personnel d'exécution", "LIMITES"),
+    CodeDispru("PR001H", "EP38", "Montant des concours — autres parties liées", "LIMITES"),
+    CodeDispru("PR002A", "EP38", "Engagements par signature — actionnaires détenant individuellement au moins 10 % des droits de vote", "LIMITES"),
+    CodeDispru("PR002B", "EP38", "Engagements par signature — membres de l'organe délibérant", "LIMITES"),
+    CodeDispru("PR002C", "EP38", "Engagements par signature — membres de l'organe exécutif", "LIMITES"),
+    CodeDispru("PR002D", "EP38", "Engagements par signature — commissaires aux comptes", "LIMITES"),
+    CodeDispru("PR002E", "EP38", "Engagements par signature — personnel de direction", "LIMITES"),
+    CodeDispru("PR002F", "EP38", "Engagements par signature — cadres moyens et supérieurs", "LIMITES"),
+    CodeDispru("PR002G", "EP38", "Engagements par signature — personnel d'exécution", "LIMITES"),
+    CodeDispru("PR002H", "EP38", "Engagements par signature — autres parties liées", "LIMITES"),
+)
+
+# ── EP21 — Calcul du produit brut (approche indicateur de base) ─────────────
+# La notice ne numérote pas de RO004 ; RO009 (total) est calculé, jamais saisi.
+_PRODUIT_BRUT: tuple[CodeDispru, ...] = (
+    CodeDispru("RO001", "EP21", "Produit d'exploitation bancaire", "PRODUIT_BRUT", paragraphes=("301-302",)),
+    CodeDispru("RO002", "EP21", "Moins-values réalisées sur cessions de titres du portefeuille bancaire", "PRODUIT_BRUT", paragraphes=("301-302",)),
+    CodeDispru("RO003", "EP21", "Charges d'exploitation bancaire", "PRODUIT_BRUT", "deduction", ("301-302",)),
+    CodeDispru("RO005", "EP21", "Plus-values réalisées sur cessions de titres du portefeuille bancaire", "PRODUIT_BRUT", "deduction", ("301-302",)),
+    CodeDispru("RO006", "EP21", "Produits nets d'exploitation bancaire exceptionnels ou inhabituels", "PRODUIT_BRUT", paragraphes=("301-302",)),
+    CodeDispru("RO007", "EP21", "Produits provenant des activités d'assurance", "PRODUIT_BRUT", "deduction", ("301-302",)),
+    CodeDispru("RO008", "EP21", "Produits des entités financières exclues du périmètre prudentiel", "PRODUIT_BRUT", "deduction", ("301-302",)),
+)
+
+# ── EP33 — Briques d'exposition du ratio de levier ──────────────────────────
+# RL004, RL007, RL010, RL013 et RL015 sont des totaux calculés.
+_LEVIER: tuple[CodeDispru, ...] = (
+    CodeDispru("RL001", "EP33", "Actifs au bilan", "LEVIER"),
+    CodeDispru("RL002", "EP33", "Expositions au bilan déduites des fonds propres", "LEVIER", "deduction"),
+    CodeDispru("RL003", "EP33", "Expositions sur opérations assimilables à des pensions (retirées du bilan)", "LEVIER", "deduction"),
+    CodeDispru("RL005", "EP33", "Dérivés non couverts par un accord-cadre de compensation bilatérale admissible", "LEVIER", paragraphes=("193-204",)),
+    CodeDispru("RL006", "EP33", "Dérivés couverts par un accord-cadre de compensation bilatérale admissible", "LEVIER", paragraphes=("193-204",)),
+    CodeDispru("RL008", "EP33", "Opérations assimilables à des pensions à titre d'intermédiaire", "LEVIER", paragraphes=("234-235",)),
+    CodeDispru("RL009", "EP33", "Autres opérations assimilables à des pensions", "LEVIER"),
+    CodeDispru("RL011", "EP33", "Engagements de financement", "LEVIER", paragraphes=("164-169",)),
+    CodeDispru("RL012", "EP33", "Autres engagements hors bilan", "LEVIER", paragraphes=("164-169",)),
+)
+
 FONDS_PROPRES_CODES: tuple[CodeDispru, ...] = (
     _CET1_POSITIFS + _CET1_DEDUCTIONS + _AT1 + _T2 + _EFFECTIFS
+    + _LIMITES_OPERATIONS + _PRODUIT_BRUT + _LEVIER
 )
 
 FONDS_PROPRES_REGISTRY: dict[str, CodeDispru] = {

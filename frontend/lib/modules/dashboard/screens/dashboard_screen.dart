@@ -7,9 +7,11 @@ import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/state/portfolio_currency_scope.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../fodep/services/fodep_service.dart';
 import '../models/dashboard_models.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/dashboard_charts_section.dart';
+import '../widgets/dashboard_fodep_ep01.dart';
 import '../widgets/dashboard_top_metrics_grid.dart';
 
 /// Ecran principal de pilotage des RWA et du capital.
@@ -17,9 +19,11 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     super.key,
     required this.api,
+    required this.fodep,
   });
 
   final RwaApiService api;
+  final FodepService fodep;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -131,6 +135,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       defaultRateMetric: defaultRateMetric,
                       exposuresCount: data.portfolioOverview.length,
                     ),
+                    const SizedBox(height: AppTheme.pageGap),
+                    DashboardFodepEp01Panel(fodep: widget.fodep),
                     const SizedBox(height: AppTheme.pageGap),
                     Builder(
                       builder: (context) {

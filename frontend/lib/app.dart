@@ -294,7 +294,7 @@ class _RwaAppState extends State<RwaApp> {
           api: _api,
           onNavigateToModule: _selectModule,
         ),
-      AppModule.dashboardCredit => DashboardScreen(api: _api),
+      AppModule.dashboardCredit => DashboardScreen(api: _api, fodep: _fodep),
       AppModule.expositions => ExpositionsScreen(
           api: _api,
           displayCurrencyListenable: _portfolioDisplayCurrency,

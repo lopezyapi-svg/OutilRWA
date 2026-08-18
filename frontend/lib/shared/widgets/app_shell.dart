@@ -2116,7 +2116,7 @@ class _ShellBrand extends StatelessWidget {
             color: isDark
                 ? const Color(0xFF14233D)
                 : Colors.white.withValues(alpha: 0.78),
-            borderRadius: BorderRadius.circular(AppTheme.radius),
+            borderRadius: BorderRadius.circular(7),
             boxShadow: [
               BoxShadow(
                 color: isDark
@@ -2127,11 +2127,14 @@ class _ShellBrand extends StatelessWidget {
               ),
             ],
           ),
-          child: const DesktopAssetImage(
-            'assets/images/logo.png',
-            fit: BoxFit.contain,
-            alignment: Alignment.center,
-            filterQuality: FilterQuality.high,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(7),
+            child: const DesktopAssetImage(
+              'assets/images/logo.png',
+              fit: BoxFit.contain,
+              alignment: Alignment.center,
+              filterQuality: FilterQuality.high,
+            ),
           ),
         ),
         const SizedBox(width: 3),
