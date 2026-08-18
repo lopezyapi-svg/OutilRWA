@@ -362,54 +362,31 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
 
     final totalApr = apercu.apr.aprTotal;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: c.border, width: Dash.hairline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Container(
-            margin: const EdgeInsets.all(4),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF172554), // exact deep blue requested
-              borderRadius: BorderRadius.circular(2),
-            ),
-            child: Row(
+    return FodepTable(
+      children: [
+        const FodepTableHeader(col1: 'Poste', col2: 'Référence', col3: 'Niveau / Montant estimé'),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(flex: 5, child: Text('Poste', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-                Expanded(flex: 2, child: Text('Référence', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-                Expanded(flex: 3, child: Text('Niveau / Montant estimé', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+                const FodepTableGroup(title: 'Ratios de solvabilité'),
+                FodepTableRow(label: 'Ratio de Fonds propres CET 1 (%)', ref: 'a x 100 / d', value: '${cet1.toStringAsFixed(2)} %'),
+                FodepTableRow(label: 'Ratio de Fonds propres de base T1 (%)', ref: 'b x 100 / d', value: '${tier1.toStringAsFixed(2)} %'),
+                FodepTableRow(label: 'Ratio de Solvabilité total (%)', ref: 'c x 100 / d', value: '${solvency.toStringAsFixed(2)} %'),
+                
+                const FodepTableGroup(title: 'Fonds Propres'),
+                FodepTableRow(label: 'Fonds propres de base durs (CET 1)', ref: 'EP03 / EP05', value: _fmt(fpCet1)),
+                FodepTableRow(label: 'Fonds propres de base (T1)', ref: 'EP03 / EP05', value: _fmt(fpT1)),
+                FodepTableRow(label: 'Fonds propres effectifs (FPE)', ref: 'EP03 / EP05', value: _fmt(fpEffectifs)),
+                
+                const FodepTableGroup(title: 'Actifs Pondérés des risques (APR)'),
+                FodepTableRow(label: 'Total des actifs pondérés des risques de crédit, de marché et opérationnel', ref: 'EP08', value: _fmt(totalApr), isLast: true),
               ],
             ),
           ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _buildSolvGroup(c, 'Ratios de solvabilité'),
-                  _buildSolvRow(c, 'Ratio de Fonds propres CET 1 (%)', 'a x 100 / d', '${cet1.toStringAsFixed(2)} %'),
-                  _buildSolvRow(c, 'Ratio de Fonds propres de base T1 (%)', 'b x 100 / d', '${tier1.toStringAsFixed(2)} %'),
-                  _buildSolvRow(c, 'Ratio de Solvabilité total (%)', 'c x 100 / d', '${solvency.toStringAsFixed(2)} %'),
-                  
-                  _buildSolvGroup(c, 'Fonds Propres'),
-                  _buildSolvRow(c, 'Fonds propres de base durs (CET 1)', 'EP03 / EP05', _fmt(fpCet1)),
-                  _buildSolvRow(c, 'Fonds propres de base (T1)', 'EP03 / EP05', _fmt(fpT1)),
-                  _buildSolvRow(c, 'Fonds propres effectifs (FPE)', 'EP03 / EP05', _fmt(fpEffectifs)),
-                  
-                  _buildSolvGroup(c, 'Actifs Pondérés des risques (APR)'),
-                  _buildSolvRow(c, 'Total des actifs pondérés des risques de crédit, de marché et opérationnel', 'EP08', _fmt(totalApr), isLast: true),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1136,6 +1113,143 @@ class _GrandRisque {
 }
 
 // ── Widgets locaux ────────────────────────────────────────────────────────────
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ── Composants Réutilisables pour le Design System FODEP ─────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+
+class FodepTable extends StatelessWidget {
+  const FodepTable({super.key, required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DashColors.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: c.border, width: Dash.hairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
+    );
+  }
+}
+
+class FodepTableHeader extends StatelessWidget {
+  const FodepTableHeader({super.key, required this.col1, required this.col2, required this.col3, this.flex1 = 5, this.flex2 = 2, this.flex3 = 3});
+  final String col1;
+  final String col2;
+  final String col3;
+  final int flex1;
+  final int flex2;
+  final int flex3;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF172554), // Deep Blue
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Row(
+        children: [
+          Expanded(flex: flex1, child: Text(col1, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+          if (flex2 > 0) Expanded(flex: flex2, child: Text(col2, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+          Expanded(flex: flex3, child: Text(col3, textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+        ],
+      ),
+    );
+  }
+}
+
+class FodepTableGroup extends StatelessWidget {
+  const FodepTableGroup({super.key, required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DashColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC), // Slate 50
+        border: Border(
+          bottom: BorderSide(color: c.border, width: Dash.hairline),
+          top: BorderSide(color: c.border, width: Dash.hairline),
+        ),
+      ),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: c.muted,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class FodepTableRow extends StatelessWidget {
+  const FodepTableRow({
+    super.key, 
+    required this.label, 
+    required this.ref, 
+    required this.value, 
+    this.isLast = false,
+    this.flex1 = 5,
+    this.flex2 = 2,
+    this.flex3 = 3,
+    this.isBold = false,
+    this.isIndent = false,
+  });
+  
+  final String label;
+  final String ref;
+  final String value;
+  final bool isLast;
+  final int flex1;
+  final int flex2;
+  final int flex3;
+  final bool isBold;
+  final bool isIndent;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DashColors.of(context);
+    return Container(
+      padding: EdgeInsets.only(left: isIndent ? 40 : 20, right: 20, top: 12, bottom: 12),
+      decoration: BoxDecoration(
+        border: isLast ? null : Border(bottom: BorderSide(color: c.divider, width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: flex1, 
+            child: Text(label, style: TextStyle(fontSize: 13, color: isBold ? c.ink : c.navy, fontWeight: isBold ? FontWeight.w700 : FontWeight.w400))
+          ),
+          if (flex2 > 0)
+            Expanded(
+              flex: flex2, 
+              child: Text(ref, style: TextStyle(fontSize: 12, color: c.muted, fontWeight: FontWeight.w500))
+            ),
+          Expanded(
+            flex: flex3, 
+            child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 13, color: c.ink, fontWeight: FontWeight.w600))
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _OngletEp extends StatefulWidget {
   const _OngletEp({
