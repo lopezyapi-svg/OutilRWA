@@ -43,6 +43,9 @@ enum AppModule {
   icapReportingIcaap,
   icapUemoaCemac,
   capitalPlaning,
+  fodepDashboard,
+  fodepAnalyser,
+  fodepGenerer,
   referentiels,
   rapports,
 }
@@ -121,6 +124,12 @@ extension AppModuleLabel on AppModule {
         return 'Spécificités UEMOA / CEMAC';
       case AppModule.capitalPlaning:
         return 'Capital Planning';
+      case AppModule.fodepDashboard:
+        return 'Tableau de bord FODEP';
+      case AppModule.fodepAnalyser:
+        return 'Analyser un FODEP existant';
+      case AppModule.fodepGenerer:
+        return 'Générer un FODEP';
       case AppModule.referentiels:
         return 'Paramètres';
       case AppModule.rapports:
@@ -200,6 +209,12 @@ extension AppModuleLabel on AppModule {
         return 'Comparaison des specificites reglementaires BCEAO (UEMOA) et COBAC (CEMAC).';
       case AppModule.capitalPlaning:
         return 'Projection du capital, des besoins prudentiels et des marges de manoeuvre.';
+      case AppModule.fodepDashboard:
+        return 'Vue d\'ensemble et suivi du module FODEP.';
+      case AppModule.fodepAnalyser:
+        return 'Chargement et analyse d\'un FODEP existant.';
+      case AppModule.fodepGenerer:
+        return 'Génération d\'un nouveau FODEP.';
       case AppModule.referentiels:
         return 'Référentiels, tables RW, CCF et notations de calcul.';
       case AppModule.rapports:
@@ -279,6 +294,12 @@ extension AppModuleLabel on AppModule {
         return Icons.compare_arrows_rounded;
       case AppModule.capitalPlaning:
         return Icons.open_in_new_rounded;
+      case AppModule.fodepDashboard:
+        return Icons.dashboard_outlined;
+      case AppModule.fodepAnalyser:
+        return Icons.fact_check_outlined;
+      case AppModule.fodepGenerer:
+        return Icons.note_add_outlined;
       case AppModule.referentiels:
         return Icons.tune_rounded;
       case AppModule.rapports:

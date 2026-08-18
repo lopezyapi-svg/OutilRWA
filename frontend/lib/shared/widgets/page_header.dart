@@ -15,6 +15,7 @@ class PageHeader extends StatelessWidget {
     this.subtitleFontSize,
     this.crossAxisAlignment = CrossAxisAlignment.start,
     this.subtitleSuffix,
+    this.titleSubtitleGap = 4,
   });
 
   final String title;
@@ -24,6 +25,7 @@ class PageHeader extends StatelessWidget {
   final double? subtitleFontSize;
   final CrossAxisAlignment crossAxisAlignment;
   final Widget? subtitleSuffix;
+  final double titleSubtitleGap;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +49,7 @@ class PageHeader extends StatelessWidget {
                     ),
               ),
               if (subtitle != null && subtitle!.isNotEmpty) ...[
-                const SizedBox(height: 4),
+                SizedBox(height: titleSubtitleGap),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,

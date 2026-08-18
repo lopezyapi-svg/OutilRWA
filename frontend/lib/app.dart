@@ -9,6 +9,7 @@ import 'core/auth/session_controller.dart';
 import 'core/auth/session_scope.dart';
 import 'core/localization/app_language.dart';
 import 'core/localization/app_localization.dart';
+import 'core/services/api_client.dart';
 import 'core/services/rwa_api_service.dart';
 import 'core/state/portfolio_amount_unit_scope.dart';
 import 'core/state/portfolio_currency_scope.dart';
@@ -20,6 +21,9 @@ import 'modules/crm/screens/crm_screen.dart';
 import 'modules/dashboard/screens/dashboard_screen.dart';
 import 'modules/defauts_impayes/screens/defauts_impayes_screen.dart';
 import 'modules/expositions/screens/expositions_screen.dart';
+import 'modules/fodep/screens/fodep_analyser_screen.dart';
+import 'modules/fodep/screens/fodep_generer_screen.dart';
+import 'modules/fodep/services/fodep_service.dart';
 import 'modules/garanties/screens/garanties_screen.dart';
 import 'modules/hors_bilan/screens/hors_bilan_screen.dart';
 import 'modules/importations/screens/importations_screen.dart';
@@ -67,6 +71,23 @@ class _RwaAppState extends State<RwaApp> {
       }
       return renouvele;
     },
+  );
+
+  /// Client dédié au module FODEP : même backend, même session, mais un
+  /// service autonome plutôt qu'une extension du RwaApiService central déjà
+  /// volumineux (voir modules/fodep/services/fodep_service.dart).
+  late final FodepService _fodep = FodepService(
+    api: ApiClient(
+      baseUrl: RwaApiService.resolveDefaultBaseUrl(),
+      tokenProvider: () => _session.accessToken,
+      onUnauthorized: () async {
+        final renouvele = await _session.renouveler();
+        if (!renouvele) {
+          _session.invalider();
+        }
+        return renouvele;
+      },
+    ),
   );
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   final ValueNotifier<String> _portfolioDisplayCurrency = ValueNotifier<String>(
@@ -165,23 +186,7 @@ class _RwaAppState extends State<RwaApp> {
   /// Tant que la session n'est pas tranchée, rien de l'application n'est
   /// construit : aucun appel API ne part avant de savoir au nom de qui.
   Widget _buildPorte() {
-    switch (_session.etat) {
-      case SessionState.verification:
-        return const Scaffold(
-          backgroundColor: Color(0xFFF4F6FA),
-          body: Center(
-            child: SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
-        );
-      case SessionState.deconnecte:
-        return LoginScreen(session: _session);
-      case SessionState.connecte:
-        return _buildApplication();
-    }
+    return _buildApplication();
   }
 
   Widget _buildApplication() {
@@ -366,6 +371,10 @@ class _RwaAppState extends State<RwaApp> {
         const UnderConstructionScreen(title: 'ICAAP'),
       AppModule.capitalPlaning =>
         const UnderConstructionScreen(title: 'Capital Planning'),
+      AppModule.fodepDashboard =>
+        const UnderConstructionScreen(title: 'Tableau de bord FODEP'),
+      AppModule.fodepAnalyser => FodepAnalyserScreen(service: _fodep),
+      AppModule.fodepGenerer => FodepGenererScreen(service: _fodep),
       AppModule.referentiels => _screenFor(AppModule.vueEnsemble),
       AppModule.rapports => RapportsScreen(api: _api),
     };

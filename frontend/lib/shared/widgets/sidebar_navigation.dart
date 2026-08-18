@@ -75,7 +75,6 @@ class SidebarNavigation extends StatelessWidget {
             headerTrailing: headerTrailing,
           )
         : _ExpandedSidebar(
-            items: items,
             selectedModule: selectedModule,
             onSelectModule: onSelectModule,
             onSelectSettingsSection: onSelectSettingsSection,
@@ -350,73 +349,149 @@ const List<_MenuEntry> _settingsChildren = [
   ),
 ];
 
+const _entryImportations = _MenuEntry.leaf(
+  module: AppModule.importations,
+  icon: Icons.cloud_upload_outlined,
+  label: 'Importations',
+);
+
+const _entryVueEnsemble = _MenuEntry.leaf(
+  module: AppModule.vueEnsemble,
+  icon: Icons.pie_chart_outline_rounded,
+  label: 'Vue d\'ensemble',
+);
+
+const _groupRisqueCredit = _MenuEntry.group(
+  icon: Icons.monetization_on_outlined,
+  label: 'Risque Crédit',
+  children: _riskCreditChildren,
+);
+
+const _groupRisqueMarche = _MenuEntry.group(
+  icon: Icons.show_chart_rounded,
+  label: 'Risque de Marché',
+  children: [
+    _MenuEntry.leaf(
+      module: AppModule.risqueMarche,
+      icon: Icons.dashboard_outlined,
+      label: 'Tableau de Bord',
+    ),
+    _MenuEntry.leaf(
+      module: AppModule.risqueMarcheCalculPrudentiel,
+      icon: Icons.calculate_rounded,
+      label: 'Calcul Prudentiel',
+    ),
+    _MenuEntry.leaf(
+      module: AppModule.risqueMarchePilotage,
+      icon: Icons.speed_rounded,
+      label: 'Pilotage des risques',
+    ),
+  ],
+);
+
+const _groupRisqueOperationnel = _MenuEntry.group(
+  icon: Icons.shield_outlined,
+  label: 'Risque Opérationnel',
+  children: _operationalRiskChildren,
+);
+
+const _groupStressTest = _MenuEntry.group(
+  icon: Icons.science_outlined,
+  label: 'Stress Test',
+  children: _stressChildren,
+);
+
+const _groupIcaap = _MenuEntry.group(
+  icon: Icons.business_center_outlined,
+  label: 'ICAAP',
+  children: _icaapChildren,
+);
+
+const _groupCapitalPlanning = _MenuEntry.group(
+  icon: Icons.bar_chart_rounded,
+  label: 'Capital Planning',
+  children: _capitalPlanningChildren,
+);
+
+const _entryReportingGlobal = _MenuEntry.leaf(
+  module: AppModule.risqueOperationnelReporting,
+  icon: Icons.summarize_outlined,
+  label: 'Reporting global',
+);
+
+const _entryFodepDashboard = _MenuEntry.leaf(
+  module: AppModule.fodepDashboard,
+  icon: Icons.dashboard_outlined,
+  label: 'Tableau de bord',
+);
+
+const _entryFodepAnalyser = _MenuEntry.leaf(
+  module: AppModule.fodepAnalyser,
+  icon: Icons.fact_check_outlined,
+  label: 'Analyser un FODEP existant',
+);
+
+const _entryFodepGenerer = _MenuEntry.leaf(
+  module: AppModule.fodepGenerer,
+  icon: Icons.note_add_outlined,
+  label: 'Générer un FODEP',
+);
+
+const _groupParametres = _MenuEntry.group(
+  icon: Icons.settings_outlined,
+  label: 'Paramètres',
+  children: _settingsChildren,
+);
+
+/// Liste plate, utilisée par la sidebar compacte (icônes seules : les
+/// en-têtes de section n'y ont pas leur place).
 const List<_MenuEntry> _sidebarItems = [
-  _MenuEntry.leaf(
-    module: AppModule.importations,
-    icon: Icons.cloud_upload_outlined,
-    label: 'Importations',
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.vueEnsemble,
-    icon: Icons.pie_chart_outline_rounded,
-    label: 'Vue d\'ensemble',
-  ),
-  _MenuEntry.group(
-    icon: Icons.monetization_on_outlined,
-    label: 'Risque Crédit',
-    children: _riskCreditChildren,
-  ),
-  _MenuEntry.group(
-    icon: Icons.show_chart_rounded,
-    label: 'Risque de Marché',
-    children: [
-      _MenuEntry.leaf(
-        module: AppModule.risqueMarche,
-        icon: Icons.dashboard_outlined,
-        label: 'Tableau de Bord',
-      ),
-      _MenuEntry.leaf(
-        module: AppModule.risqueMarcheCalculPrudentiel,
-        icon: Icons.calculate_rounded,
-        label: 'Calcul Prudentiel',
-      ),
-      _MenuEntry.leaf(
-        module: AppModule.risqueMarchePilotage,
-        icon: Icons.speed_rounded,
-        label: 'Pilotage des risques',
-      ),
+  _entryImportations,
+  _entryVueEnsemble,
+  _groupRisqueCredit,
+  _groupRisqueMarche,
+  _groupRisqueOperationnel,
+  _groupStressTest,
+  _groupIcaap,
+  _groupCapitalPlanning,
+  _entryReportingGlobal,
+  _entryFodepDashboard,
+  _entryFodepAnalyser,
+  _entryFodepGenerer,
+  _groupParametres,
+];
+
+/// Regroupement par thème, utilisé par la sidebar étendue : un en-tête de
+/// section (« RISQUES », « FODEP »…) suivi des boutons qui s'y rattachent
+/// directement, sans clic intermédiaire pour les révéler.
+class _SidebarSection {
+  const _SidebarSection({required this.title, required this.entries});
+
+  final String title;
+  final List<_MenuEntry> entries;
+}
+
+const List<_SidebarSection> _sidebarSections = [
+  _SidebarSection(title: 'Accueil', entries: [_entryVueEnsemble]),
+  _SidebarSection(title: 'Données', entries: [_entryImportations]),
+  _SidebarSection(
+    title: 'Risques',
+    entries: [
+      _groupRisqueCredit,
+      _groupRisqueMarche,
+      _groupRisqueOperationnel,
+      _groupStressTest,
     ],
   ),
-  _MenuEntry.group(
-    icon: Icons.shield_outlined,
-    label: 'Risque Opérationnel',
-    children: _operationalRiskChildren,
+  _SidebarSection(
+    title: 'Pilotage',
+    entries: [_groupIcaap, _groupCapitalPlanning, _entryReportingGlobal],
   ),
-  _MenuEntry.group(
-    icon: Icons.science_outlined,
-    label: 'Stress Test',
-    children: _stressChildren,
+  _SidebarSection(
+    title: 'FODEP',
+    entries: [_entryFodepDashboard, _entryFodepAnalyser, _entryFodepGenerer],
   ),
-  _MenuEntry.group(
-    icon: Icons.business_center_outlined,
-    label: 'ICAAP',
-    children: _icaapChildren,
-  ),
-  _MenuEntry.group(
-    icon: Icons.bar_chart_rounded,
-    label: 'Capital Planning',
-    children: _capitalPlanningChildren,
-  ),
-  _MenuEntry.leaf(
-    module: AppModule.risqueOperationnelReporting,
-    icon: Icons.summarize_outlined,
-    label: 'Reporting global',
-  ),
-  _MenuEntry.group(
-    icon: Icons.settings_outlined,
-    label: 'Paramètres',
-    children: _settingsChildren,
-  ),
+  _SidebarSection(title: 'Paramètres', entries: [_groupParametres]),
 ];
 
 /// Variante compacte de la sidebar affichant surtout les icônes.
@@ -791,7 +866,6 @@ class _CompactNavButton extends StatelessWidget {
 /// Variante ouverte de la sidebar avec icônes et libellés.
 class _ExpandedSidebar extends StatelessWidget {
   const _ExpandedSidebar({
-    required this.items,
     required this.selectedModule,
     required this.onSelectModule,
     required this.showBrand,
@@ -801,7 +875,6 @@ class _ExpandedSidebar extends StatelessWidget {
     this.headerTrailing,
   });
 
-  final List<_MenuEntry> items;
   final AppModule selectedModule;
   final ValueChanged<AppModule> onSelectModule;
   final bool showBrand;
@@ -846,52 +919,53 @@ class _ExpandedSidebar extends StatelessWidget {
                 const _BrandHeader(),
                 const SizedBox(height: 3),
               ],
-              if (!isCondensed) ...[
+              if (!isCondensed && headerTrailing != null) ...[
                 Row(
                   children: [
-                    Expanded(
-                      child: _SidebarSectionTitle(context.tr('Navigation')),
-                    ),
-                    if (headerTrailing != null) ...[
-                      const SizedBox(width: 8),
-                      headerTrailing!,
-                    ],
+                    const Spacer(),
+                    headerTrailing!,
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 6),
               ],
               Expanded(
-                child: ListView.separated(addSemanticIndexes: false,
+                child: ListView(
                   padding: EdgeInsets.zero,
                   physics: const ClampingScrollPhysics(),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 6),
-                  itemBuilder: (context, index) {
-                    final entry = items[index];
-                    if (entry.hasChildren) {
-                      return _ExpandedNavGroup(
-                        entry: entry,
-                        selectedModule: selectedModule,
-                        onSelectModule: onSelectModule,
-                        onSelectSettingsSection: onSelectSettingsSection,
-                        selectedSettingsSectionId: selectedSettingsSectionId,
-                        showLabel: !isCondensed,
-                      );
-                    }
-
-                    return _ExpandedNavTile(
-                      entry: entry,
-                      selected: _entrySelected(
-                        entry,
-                        selectedModule,
-                        selectedSettingsSectionId,
-                      ),
-                      showLabel: !isCondensed,
-                      onTap: () => onSelectModule(
-                        entry.resolveTarget(selectedModule),
-                      ),
-                    );
-                  },
+                  children: [
+                    for (final section in _sidebarSections) ...[
+                      if (!isCondensed) ...[
+                        _SidebarSectionTitle(context.tr(section.title)),
+                        const SizedBox(height: 6),
+                      ],
+                      for (final entry in section.entries) ...[
+                        if (entry.hasChildren)
+                          _ExpandedNavGroup(
+                            entry: entry,
+                            selectedModule: selectedModule,
+                            onSelectModule: onSelectModule,
+                            onSelectSettingsSection: onSelectSettingsSection,
+                            selectedSettingsSectionId: selectedSettingsSectionId,
+                            showLabel: !isCondensed,
+                          )
+                        else
+                          _ExpandedNavTile(
+                            entry: entry,
+                            selected: _entrySelected(
+                              entry,
+                              selectedModule,
+                              selectedSettingsSectionId,
+                            ),
+                            showLabel: !isCondensed,
+                            onTap: () => onSelectModule(
+                              entry.resolveTarget(selectedModule),
+                            ),
+                          ),
+                        const SizedBox(height: 6),
+                      ],
+                      const SizedBox(height: 10),
+                    ],
+                  ],
                 ),
               ),
               const SizedBox(height: 2),
@@ -994,10 +1068,13 @@ class _SidebarSectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Indigo institutionnel (même teinte que les sur-titres du dashboard,
+    // DashColors.accent) : distingue le titre de section du bleu marine des
+    // boutons de navigation.
     return Text(
       label,
       style: TextStyle(
-        color: isDark ? const Color(0xFF9CB2D4) : _sidebarDeepBlue,
+        color: isDark ? const Color(0xFF818CF8) : const Color(0xFF4338CA),
         fontSize: 10,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.4,
@@ -1147,9 +1224,7 @@ class _ExpandedNavTile extends StatelessWidget {
         ? selectedBlue
         : (isDark
             ? const Color(0xFF16304F).withValues(alpha: 0.46)
-            : const Color(0xFFF4F8FF));
-    final tileBorderColor = selected ? selectedBlue : Colors.transparent;
-    final tileBorderWidth = selected ? 1.0 : 0.0;
+            : const Color(0xFFE8EFFC));
     final tileShadow = selected
         ? const <BoxShadow>[]
         : [
@@ -1162,21 +1237,19 @@ class _ExpandedNavTile extends StatelessWidget {
     const tileRadius = 3.0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0).add(
+        const EdgeInsets.only(bottom: 2),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(tileRadius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           decoration: BoxDecoration(
             color: tileColor,
             borderRadius: BorderRadius.circular(tileRadius),
-            border: Border.all(
-              color: tileBorderColor,
-              width: tileBorderWidth,
-            ),
             boxShadow: tileShadow,
           ),
           child: !showLabel
@@ -1193,11 +1266,7 @@ class _ExpandedNavTile extends StatelessWidget {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: selected
-                            ? Colors.white.withValues(alpha: 0.16)
-                            : (isDark
-                                ? const Color(0xFF14233D)
-                                : const Color(0xFFF7FAFF)),
+                        color: tileColor,
                         borderRadius: BorderRadius.circular(3.0),
                       ),
                       child: Icon(
@@ -1214,7 +1283,7 @@ class _ExpandedNavTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: textColor,
-                          fontSize: 10.4,
+                          fontSize: 12,
                           fontWeight:
                               selected ? FontWeight.w700 : FontWeight.w600,
                           height: 1.0,
