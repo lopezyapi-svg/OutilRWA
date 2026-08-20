@@ -182,7 +182,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.calendar_today_rounded,
               size: 14,
               color: Colors.white,
@@ -239,8 +239,8 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               PageHeader(
-                title: 'Analyser un FODEP',
-                subtitle: 'Visualisation détaillée des exigences en fonds propres, des risques pondérés (APR) et de la conformité réglementaire.',
+                title: 'Analyse',
+                subtitle: 'Analyse des fonds propres, des risques pondérés et de la conformité',
                 titleFontSize: 24,
                 subtitleFontSize: 13,
                 titleSubtitleGap: 4,
@@ -248,16 +248,19 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
               ),
               const SizedBox(height: 24),
               
-              // ── Barre d'onglets (Tab Bar style) ──────────────────
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: c.divider, width: 1)),
-                ),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
+              // ── Barre d'onglets (Segmented Control style) ──────────────────
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC), // slate-50
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: c.border, width: Dash.hairline),
+                  ),
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       for (final s in _SectionFodep.values)
                         _OngletEp(
@@ -278,33 +281,19 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         Expanded(
           child: _chargement
               ? const Center(child: CircularProgressIndicator())
-              : (_section == _SectionFodep.conformite || _section == _SectionFodep.solvabilite)
-                  ? Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_erreur != null) ...[
-                            FodepNotice(status: DashStatus.sousMinimum, texte: _erreur!),
-                            const SizedBox(height: 16),
-                          ],
-                          if (_apercu != null) Expanded(child: _buildSection(c)),
-                        ],
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (_erreur != null) ...[
-                            FodepNotice(status: DashStatus.sousMinimum, texte: _erreur!),
-                            const SizedBox(height: 16),
-                          ],
-                          if (_apercu != null) _buildSection(c),
-                        ],
-                      ),
-                    ),
+              : Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_erreur != null) ...[
+                        FodepNotice(status: DashStatus.sousMinimum, texte: _erreur!),
+                        const SizedBox(height: 16),
+                      ],
+                      if (_apercu != null) Expanded(child: _buildSection(c)),
+                    ],
+                  ),
+                ),
         ),
       ],
     );
@@ -330,26 +319,6 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     }
   }
 
-  Widget _buildEnCours(DashColors c, String titre) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.construction, size: 48, color: c.muted),
-            const SizedBox(height: 16),
-            Text(
-              '$titre : En cours de construction',
-              style: TextStyle(fontSize: 16, color: c.ink, fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ── Ratios de solvabilité (EP02) ──────────────────────────────────────────
   Widget _buildSolvabilite(DashColors c, FodepApercu apercu) {
     final cet1 = apercu.ratios['cet1']?.value ?? 0;
@@ -371,8 +340,8 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const FodepTableGroup(title: 'Ratios de solvabilité'),
-                FodepTableRow(label: 'Ratio de Fonds propres CET 1 (%)', ref: 'a x 100 / d', value: '${cet1.toStringAsFixed(2)} %'),
-                FodepTableRow(label: 'Ratio de Fonds propres de base T1 (%)', ref: 'b x 100 / d', value: '${tier1.toStringAsFixed(2)} %'),
+                FodepTableRow(label: 'Ratio de fonds propres CET 1 (%)', ref: 'a x 100 / d', value: '${cet1.toStringAsFixed(2)} %'),
+                FodepTableRow(label: 'Ratio de fonds propres de base T1 (%)', ref: 'b x 100 / d', value: '${tier1.toStringAsFixed(2)} %'),
                 FodepTableRow(label: 'Ratio de Solvabilité total (%)', ref: 'c x 100 / d', value: '${solvency.toStringAsFixed(2)} %'),
                 
                 const FodepTableGroup(title: 'Fonds Propres'),
@@ -442,54 +411,11 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
 
     return _tableauFixe(
       c,
-      titre: 'EP08 — TOTAL DES ACTIFS PONDÉRÉS DES RISQUES',
+      titre: 'TOTAL DES ACTIFS PONDÉRÉS DES RISQUES',
       colonnes: const ['Poste', 'Référence', 'Montant'],
       flex: const [5, 2, 3],
       lignes: lignes,
       pied: 'TOTAL ACTIFS PONDÉRÉS DES RISQUES (APR) : ${_fmt(apr.aprTotal)}',
-    );
-  }
-
-  Widget _buildSolvGroup(DashColors c, String title) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC), // slate-50, very subtle
-        border: Border(bottom: BorderSide(color: c.border, width: Dash.hairline)),
-      ),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF475569), letterSpacing: 0.5), // slate-600
-      ),
-    );
-  }
-
-  Widget _buildSolvRow(DashColors c, String poste, String ref, String montant, {bool isLast = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        border: isLast ? null : Border(bottom: BorderSide(color: c.divider, width: Dash.hairline)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 5,
-            child: Text(poste, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF1E293B))), // slate-800
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(ref, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))), // slate-500
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              montant,
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)), // slate-900
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -548,7 +474,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         couleur: const Color(0xFF059669),
         lignes: [
           for (final norme in const [
-            ('RA006', "Limite individuelle sur les participations dans les entités commerciales (25% du capital)", 'ra006', 'EP35'),
+            ('RA006', 'Limite individuelle sur les participations dans les entités commerciales (25% du capital)', 'ra006', 'EP35'),
             ('RA007', 'Limite individuelle sur les participations dans les entités commerciales (15% des FP T1)', 'ra007', 'EP35'),
             ('RA008', 'Limite globale de participations dans les entités commerciales (60% des FP effectifs)', 'ra008', 'EP35'),
             ('RA009', 'Limite sur les immobilisations hors exploitation', 'ra009', 'EP36'),
@@ -586,8 +512,8 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
               SizedBox(width: 70, child: Text('Code', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5))),
               SizedBox(width: 8),
               Expanded(child: Text('Norme prudentielle', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5))),
-              SizedBox(width: 48, child: Text('Réf.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
-              SizedBox(width: 86, child: Text('Seuil', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
+              SizedBox(width: 48, child: Text('Référence', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
+              SizedBox(width: 86, child: Text('Seuil réglementaire', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
               SizedBox(width: 86, child: Text('Observé', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
               SizedBox(width: 100, child: Text('Situation', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
             ]),
@@ -657,7 +583,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         total: (apercu.totaux['fpi41'] ?? 0) - (apercu.totaux['fpi29'] ?? 0),
       ),
       _BlocFondsPropres(
-        groupe: 'effectifs',
+        groupe: 'effectifs-total',
         titre: 'Fonds propres effectifs',
         sousTitre: '',
         code: 'FPI41',
@@ -665,36 +591,38 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
       ),
     ];
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 300,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: _CarteFondsPropres(bloc: blocs[0], apercu: apercu, codes: _codes, fmt: _fmt, c: c)),
-              const SizedBox(width: 16),
-              Expanded(child: _CarteFondsPropres(bloc: blocs[1], apercu: apercu, codes: _codes, fmt: _fmt, c: c)),
-              const SizedBox(width: 16),
-              Expanded(child: _CarteFondsPropres(bloc: blocs[2], apercu: apercu, codes: _codes, fmt: _fmt, c: c)),
-            ],
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          SizedBox(
+            height: 300,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _CarteFondsPropres(bloc: blocs[0], apercu: apercu, codes: _codes, fmt: _fmt, c: c)),
+                const SizedBox(width: 16),
+                Expanded(child: _CarteFondsPropres(bloc: blocs[1], apercu: apercu, codes: _codes, fmt: _fmt, c: c)),
+                const SizedBox(width: 16),
+                Expanded(child: _CarteFondsPropres(bloc: blocs[2], apercu: apercu, codes: _codes, fmt: _fmt, c: c)),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 300,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: _CarteFondsPropres(bloc: blocs[3], apercu: apercu, codes: _codes, fmt: _fmt, c: c)),
-              const SizedBox(width: 16),
-              const Expanded(child: SizedBox()),
-              const SizedBox(width: 16),
-              const Expanded(child: SizedBox()),
-            ],
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 300,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _CarteFondsPropres(bloc: blocs[3], apercu: apercu, codes: _codes, fmt: _fmt, c: c)),
+                const SizedBox(width: 16),
+                const Expanded(child: SizedBox()),
+                const SizedBox(width: 16),
+                const Expanded(child: SizedBox()),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -703,17 +631,11 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     final analyse = _analyseCredit;
     if (analyse == null || analyse.agents.isEmpty) {
       return DashPanel(
-        title: 'EP09-EP20 — Actifs pondérés au titre du risque de crédit',
+        title: 'Actifs pondérés au titre du risque de crédit',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _LigneValeur(label: 'RWA Risque de crédit (EP08)', valeur: _fmt(apercu.apr.rwaCredit), c: c),
-            const SizedBox(height: 8),
-            Text(
-              'Ventilation par catégorie prudentielle indisponible (aucune exposition importée). '
-              'Ce montant est repris dans le calcul de l\'EP08 en tant que composante principale des actifs pondérés.',
-              style: DashText.caption(c),
-            ),
           ],
         ),
       );
@@ -733,17 +655,16 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
             margin: const EdgeInsets.all(4),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(color: _deepblue, borderRadius: BorderRadius.circular(2)),
-            child: Row(
+            child: const Row(
               children: [
-                Expanded(flex: 5, child: Text('Catégorie prudentielle (EP09-EP20)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-                Expanded(flex: 3, child: Text('Exposition brute', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-                Expanded(flex: 2, child: Text('Pondération moy.', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-                Expanded(flex: 3, child: Text('APR', textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+                Expanded(flex: 5, child: Text('Catégorie prudentielle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+                Expanded(flex: 3, child: Text('Exposition brute', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+                Expanded(flex: 2, child: Text('Pondération moy.', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+                Expanded(flex: 3, child: Text('APR', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
               ],
             ),
           ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 320),
+          Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
@@ -790,13 +711,13 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     if (detail == null) {
       return _tableauFixe(
         c,
-        titre: 'EP25-EP28 — ACTIFS PONDÉRÉS AU TITRE DU RISQUE DE MARCHÉ',
+        titre: 'ACTIFS PONDÉRÉS AU TITRE DU RISQUE DE MARCHÉ',
         colonnes: const ['Poste', 'Référence', 'Montant'],
         flex: const [5, 2, 3],
         lignes: [
           ['ACTIFS PONDÉRÉS AU TITRE DU RISQUE DE MARCHÉ', 'EP08', _fmt(apercu.apr.rwaMarche)],
         ],
-        pied: "Détail par famille de risque indisponible (module Risque de Marché non initialisé).",
+        pied: 'Détail par famille de risque indisponible (module Risque de Marché non initialisé).',
       );
     }
 
@@ -805,22 +726,22 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
 
     return _tableauFixe(
       c,
-      titre: 'EP25-EP28 — RISQUE DE MARCHÉ, APPROCHE STANDARD (QUATRE FAMILLES)',
+      titre: 'RISQUE DE MARCHÉ, APPROCHE STANDARD (QUATRE FAMILLES)',
       colonnes: const ['État · Composante', 'Exigence FP', 'APR'],
       flex: const [5, 3, 3],
       lignes: [
-        ['EP25 — Taux d\'intérêt : risque spécifique', _fmt(detail.interestRateSpecificRisk), _fmt(detail.interestRateSpecificRisk * mult)],
-        ['EP25 — Taux d\'intérêt : risque général', _fmt(detail.interestRateGeneralRisk), _fmt(detail.interestRateGeneralRisk * mult)],
-        ['EP26 — Titres de propriété : risque spécifique', _fmt(detail.equitySpecificRisk), _fmt(detail.equitySpecificRisk * mult)],
-        ['EP26 — Titres de propriété : risque général', _fmt(detail.equityGeneralRisk), _fmt(detail.equityGeneralRisk * mult)],
-        ['EP27 — Change : risque général (position nette globale)', _fmt(detail.foreignExchangeRisk), _fmt(detail.foreignExchangeRisk * mult)],
+        ['Taux d\'intérêt : risque spécifique', _fmt(detail.interestRateSpecificRisk), _fmt(detail.interestRateSpecificRisk * mult)],
+        ['Taux d\'intérêt : risque général', _fmt(detail.interestRateGeneralRisk), _fmt(detail.interestRateGeneralRisk * mult)],
+        ['Titres de propriété : risque spécifique', _fmt(detail.equitySpecificRisk), _fmt(detail.equitySpecificRisk * mult)],
+        ['Titres de propriété : risque général', _fmt(detail.equityGeneralRisk), _fmt(detail.equityGeneralRisk * mult)],
+        ['Change : risque général (position nette globale)', _fmt(detail.foreignExchangeRisk), _fmt(detail.foreignExchangeRisk * mult)],
         if (commodityRenseigne) ...[
-          ['EP28 — Produits de base : risque directionnel', _fmt(detail.commodityDirectionalRisk), _fmt(detail.commodityDirectionalRisk * mult)],
-          ['EP28 — Produits de base : risque de base', _fmt(detail.commodityBasisRisk), _fmt(detail.commodityBasisRisk * mult)],
+          ['Produits de base : risque directionnel', _fmt(detail.commodityDirectionalRisk), _fmt(detail.commodityDirectionalRisk * mult)],
+          ['Produits de base : risque de base', _fmt(detail.commodityBasisRisk), _fmt(detail.commodityBasisRisk * mult)],
         ] else
-          ['EP28 — Produits de base', 'Aucune position saisie', '—'],
+          ['Produits de base', 'Aucune position saisie', '—'],
       ],
-      pied: 'TOTAL EP08 — actifs pondérés au titre du risque de marché : ${_fmt(detail.marketRwa)} '
+      pied: 'TOTAL Actifs pondérés au titre du risque de marché : ${_fmt(detail.marketRwa)} '
           '(exigence de fonds propres agrégée ${_fmt(detail.capitalRequirement)} × 11,11).',
     );
   }
@@ -863,12 +784,12 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
 
     return _tableauFixe(
       c,
-      titre: "EP21 — RISQUE OPÉRATIONNEL : EXIGENCES DE FONDS PROPRES AU TITRE DE L'APPROCHE INDICATEUR DE BASE",
+      titre: "EXIGENCES DE FONDS PROPRES AU TITRE DE L'APPROCHE INDICATEUR DE BASE",
       colonnes: const ['Poste', 'Réf. / Exercice', 'Montant'],
       flex: const [6, 2, 3],
       lignes: lignes,
       pied: aib == null || aib.donneesInsuffisantes
-          ? "Aucun produit brut annuel saisi dans le module Risque Opérationnel : les montants restent à zéro."
+          ? 'Aucun produit brut annuel saisi dans le module Risque Opérationnel : les montants restent à zéro.'
           : '${aib.n} exercice(s) à produit brut positif retenu(s) dans la moyenne.',
     );
   }
@@ -893,7 +814,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
 
     return _tableauFixe(
       c,
-      titre: 'EP33 — RATIO DE LEVIER',
+      titre: 'RATIO DE LEVIER',
       colonnes: const ['Poste', 'Référence', 'Montant'],
       flex: const [6, 2, 3],
       lignes: [
@@ -917,7 +838,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         ["Situation de l'établissement", 'EP01', levier == null ? '—' : (levier.conforme ? 'CONFORME' : 'INFRACTION')],
       ],
       pied: rl015 > 0
-          ? "Exposition totale issue des briques saisies ci-dessus."
+          ? 'Exposition totale issue des briques saisies ci-dessus.'
           : "Briques d'exposition non renseignées : l'exposition totale retenue reste celle reconstituée sur le portefeuille. Saisissez-les dans l'onglet Normes sur les opérations.",
     );
   }
@@ -969,8 +890,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
               ],
             ),
           ),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 320),
+          Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
@@ -1069,12 +989,12 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     if (grands.isEmpty) {
       return _tableauFixe(
         c,
-        titre: 'EP29 — GRANDS RISQUES DU PORTEFEUILLE BANCAIRE ET DE NÉGOCIATION',
+        titre: 'GRANDS RISQUES DU PORTEFEUILLE BANCAIRE ET DE NÉGOCIATION',
         colonnes: const ['Contrepartie', 'Exposition nette', '% des FP T1'],
         flex: const [5, 3, 2],
         lignes: const [],
         pied: t1 <= 0
-            ? "Fonds propres de base T1 nuls : le seuil de 10 % ne peut pas être appliqué."
+            ? 'Fonds propres de base T1 nuls : le seuil de 10 % ne peut pas être appliqué.'
             : "Aucune contrepartie n'atteint 10 % des fonds propres de base T1 : l'établissement ne déclare aucun grand risque sur cet arrêté.",
       );
     }
@@ -1082,7 +1002,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     final plusEleve = grands.first.pourcentageT1;
     return _tableauFixe(
       c,
-      titre: 'EP29 — GRANDS RISQUES DU PORTEFEUILLE BANCAIRE ET DE NÉGOCIATION',
+      titre: 'GRANDS RISQUES DU PORTEFEUILLE BANCAIRE ET DE NÉGOCIATION',
       colonnes: const ['Contrepartie', 'Exposition initiale totale', 'Exposition nette', '% des FP T1'],
       flex: const [5, 3, 3, 2],
       lignes: [
@@ -1096,7 +1016,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
       ],
       pied: '${grands.length} contrepartie(s) au-delà du seuil de 10 % des fonds propres de base T1. '
           'Niveau observé le plus élevé : ${plusEleve.toStringAsFixed(2)} % (limite 25 %). '
-          "Rapport retenu : le plus contraignant entre exposition nette et actifs pondérés, la notice laissant les deux définitions ouvertes. "
+          'Rapport retenu : le plus contraignant entre exposition nette et actifs pondérés, la notice laissant les deux définitions ouvertes. '
           "Identifiants Centrale des risques, pays et secteur non disponibles : l'application ne tient pas ce référentiel.",
     );
   }
@@ -1297,31 +1217,34 @@ class _OngletEpState extends State<_OngletEp> {
     Color textColor = selected ? const Color(0xFF172554) : c.muted;
     FontWeight weight = selected ? FontWeight.w700 : FontWeight.w500;
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 24),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: widget.onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: selected ? const Color(0xFF172554) : (_isHovered ? c.border : Colors.transparent), 
-                  width: 2,
-                ),
-              ),
-            ),
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: weight,
-                color: _isHovered && !selected ? c.ink : textColor,
-              ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? Colors.white : (_isHovered ? c.border.withValues(alpha: 0.5) : Colors.transparent),
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
+          ),
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              fontSize: 13, // slightly smaller text to save space
+              fontWeight: weight,
+              color: _isHovered && !selected ? c.ink : textColor,
             ),
           ),
         ),
@@ -1417,15 +1340,15 @@ class _CarteFondsPropres extends StatelessWidget {
           // ── Détail des postes ──────────────────────────────────────────
           if (lignes.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Expanded(flex: 7, child: Text('LIBELLÉ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: const Color(0xFF172554), letterSpacing: 0.5))),
-                  const SizedBox(width: 10),
+                  Expanded(flex: 7, child: Text('LIBELLÉ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF172554), letterSpacing: 0.5))),
+                  SizedBox(width: 10),
                   Expanded(
                     flex: 4,
-                    child: Text('MONTANT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: const Color(0xFF1E3A8A), letterSpacing: 0.5), textAlign: TextAlign.right),
+                    child: Text('MONTANT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF1E3A8A), letterSpacing: 0.5), textAlign: TextAlign.right),
                   ),
                 ],
               ),
@@ -1532,13 +1455,11 @@ class _LigneValeur extends StatelessWidget {
     required this.label,
     required this.valeur,
     required this.c,
-    this.gras = false,
   });
 
   final String label;
   final String valeur;
   final DashColors c;
-  final bool gras;
 
   @override
   Widget build(BuildContext context) {
@@ -1551,7 +1472,7 @@ class _LigneValeur extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 13,
-                fontWeight: gras ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: FontWeight.w500,
                 color: c.ink,
               ),
             ),
@@ -1560,8 +1481,8 @@ class _LigneValeur extends StatelessWidget {
             valeur,
             style: TextStyle(
               fontSize: 13,
-              fontWeight: gras ? FontWeight.w800 : FontWeight.w600,
-              color: gras ? c.navy : c.ink,
+              fontWeight: FontWeight.w600,
+              color: c.ink,
             ),
           ),
         ],
@@ -1920,7 +1841,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
     final periode = widget.apercu.periode;
 
     if (periode == null) {
-      return FodepNotice(
+      return const FodepNotice(
         status: DashStatus.sousMinimum,
         texte: "Aucun arrêté enregistré : renseignez d'abord une période (import ou saisie des fonds propres, onglet Fonds propres) avant de compléter les limites sur opérations.",
       );
@@ -1937,11 +1858,6 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
           FodepNotice(status: DashStatus.conforme, texte: _succes!),
           const SizedBox(height: 16),
         ],
-        Text(
-          "Ces données alimentent les normes de l'État de conformité (EP35 à EP38), "
-          "le produit brut du risque opérationnel (EP21) et les briques d'exposition du ratio de levier (EP33).",
-          style: DashText.caption(c),
-        ),
         const SizedBox(height: 20),
         _buildSectionParticipations(c),
         const SizedBox(height: 24),
@@ -1951,13 +1867,13 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
         const SizedBox(height: 24),
         _buildSectionPostes(
           c,
-          titre: 'PRODUIT BRUT — EP21 (RISQUE OPÉRATIONNEL)',
+          titre: 'PRODUIT BRUT',
           postes: _postesProduitBrut,
         ),
         const SizedBox(height: 24),
         _buildSectionPostes(
           c,
-          titre: "BRIQUES D'EXPOSITION DU RATIO DE LEVIER — EP33",
+          titre: "BRIQUES D'EXPOSITION DU RATIO DE LEVIER",
           postes: _postesLevier,
         ),
       ],
@@ -2091,7 +2007,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
   Widget _buildSectionParticipations(DashColors c) {
     return _panneau(
       c,
-      titre: 'PARTICIPATIONS DANS DES ENTITÉS COMMERCIALES — EP35 (RA006-RA008)',
+      titre: 'PARTICIPATIONS DANS DES ENTITÉS COMMERCIALES',
       pied: Row(
         children: [
           _lienTexte(c, '+ Ajouter une ligne', () {
@@ -2185,7 +2101,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
   Widget _buildSectionImmobilisations(DashColors c) {
     return _panneau(
       c,
-      titre: 'IMMOBILISATIONS ET PARTICIPATIONS — EP36 / EP37 (RA009-RA010)',
+      titre: 'IMMOBILISATIONS ET PARTICIPATIONS',
       pied: Row(children: [const Spacer(), _boutonEnregistrer(_sauvegarderPostes)]),
       child: Column(
         children: [
@@ -2212,7 +2128,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
   Widget _buildSectionPrets(DashColors c) {
     return _panneau(
       c,
-      titre: 'PRÊTS AUX ACTIONNAIRES, DIRIGEANTS ET PERSONNEL — EP38 (RA011)',
+      titre: 'PRÊTS AUX ACTIONNAIRES, DIRIGEANTS ET PERSONNEL',
       pied: Row(children: [const Spacer(), _boutonEnregistrer(_sauvegarderPostes)]),
       child: Column(
         children: [
