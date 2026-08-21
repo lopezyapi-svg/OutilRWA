@@ -5,7 +5,7 @@ Portage Python de `calculateMarketPrudentialCapital`
 (frontend/lib/modules/risque_marche/services/market_data_import_store.dart) :
 risque de taux (spécifique + général par échéancier), risque actions
 (spécifique + général) et risque de change. Sert uniquement à calibrer les
-fonds propres du quatrième modèle — l'outil reste seul juge du chiffre final.
+fonds propres du quatrième modèle - l'outil reste seul juge du chiffre final.
 """
 
 from __future__ import annotations
@@ -271,7 +271,7 @@ def exigence_actions(actions) -> dict:
 
 
 def exigence_change(obligations, actions) -> dict:
-    """8 % de la position nette globale en devises — périmètre établissement
+    """8 % de la position nette globale en devises - périmètre établissement
     (portefeuilles bancaire et de négociation confondus)."""
     net_par_devise = {}
     for ligne in obligations:

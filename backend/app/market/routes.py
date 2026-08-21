@@ -391,7 +391,7 @@ def _build_var_history_template() -> bytes:
     ligne = un titre à une date. Les caractéristiques du titre sont
     répétées sur chaque ligne ; plusieurs lignes pour un même identifiant,
     avec des dates différentes, construisent son historique de prix dans
-    le même onglet — pas de correspondance à maintenir entre des onglets
+    le même onglet - pas de correspondance à maintenir entre des onglets
     séparés positions/historique.
     """
     from io import BytesIO
@@ -541,7 +541,7 @@ def _build_var_history_template() -> bytes:
     auto_width(ws2, len(headers_equities))
     ws2.column_dimensions[get_column_letter(notes_col2)].width = 68
 
-    # ── Courbe des taux (OPTIONNELLE — voie recommandée pour la VaR
+    # ── Courbe des taux (OPTIONNELLE - voie recommandée pour la VaR
     # historique obligataire : l'historique du facteur de risque remplace
     # avantageusement l'historique de prix titre par titre) ────────────────
     ws3 = wb.create_sheet("Courbe des taux")

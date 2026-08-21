@@ -127,7 +127,7 @@ def temp_db(tmp_path, monkeypatch):
 
     monkeypatch.setattr(database_manager, "db_path", tmp_path / "test_rwa.db")
     # Base neuve : schema.sql est à jour, les migrations historiques (schéma
-    # anglais d'origine) ne doivent pas être rejouées — on les marque appliquées,
+    # anglais d'origine) ne doivent pas être rejouées - on les marque appliquées,
     # comme le fait le seed de production.
     connection = database_manager.connect()
     try:

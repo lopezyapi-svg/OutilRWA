@@ -1309,7 +1309,7 @@ def compute_metrics(payload: ExposureCreate, category_code: str, crm_details: di
         # que la meme exposition non garantie : la reconnaissance de la
         # protection est une faculte, aucune banque ne declare une garantie qui
         # la penalise. Quand le garant est ponderé plus lourdement que le
-        # debiteur, la substitution n'est donc pas retenue — la garantie reste
+        # debiteur, la substitution n'est donc pas retenue - la garantie reste
         # tracee, sans effet sur le RWA.
         rwa = min(rwa_apres_substitution, ead * original_rw)
         final_rw = 0.0 if ead == 0 else max(0.0, rwa / ead)

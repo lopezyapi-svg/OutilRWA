@@ -3,11 +3,11 @@
 Sources de données, par ordre de priorité :
 1. portefeuille importé via la boîte de dialogue « Importer données de
    marché » de l'application (feuilles Obligations/Actions), persisté en
-   SQLite (table metadonnees_app, clé market_portfolios_payload_v1) — c'est
+   SQLite (table metadonnees_app, clé market_portfolios_payload_v1) - c'est
    la façon normale, pour un utilisateur de l'application, d'alimenter le
    calcul avec ses propres positions ;
 2. fichiers CSV dans le répertoire data/ (encodage UTF-8, séparateur
-   point-virgule, point décimal, dates AAAA-MM-JJ) — dépôt manuel réservé
+   point-virgule, point décimal, dates AAAA-MM-JJ) - dépôt manuel réservé
    au développement/tests ou à un usage avancé ;
 3. tables PostgreSQL équivalentes si la variable d'environnement
    VAR_POSTGRES_DSN est renseignée (mêmes colonnes, mêmes types) ;
@@ -17,7 +17,7 @@ Sources de données, par ordre de priorité :
    vaut 1 (démonstration).
 
 Important : le portefeuille importé ne fournit que les POSITIONS actuelles
-(quantités, prix courant) — la VaR historique/Monte-Carlo a en plus besoin
+(quantités, prix courant) - la VaR historique/Monte-Carlo a en plus besoin
 d'un historique de prix ou de taux (courbe quotidienne) pour reconstituer
 les variations passées. Cet historique reste un fichier CSV (ou une table
 Postgres) : un import de positions seul, sans historique disponible,
@@ -222,7 +222,7 @@ def _texte_date_import(valeur: object) -> str:
 def _lire_valeur_marche_portefeuilles_sqlite() -> dict | None:
     """Lit le payload JSON du portefeuille marché importé via l'application
     (table metadonnees_app, clé market_portfolios_payload_v1). Renvoie None
-    si aucun import n'a encore été enregistré ou si la lecture échoue —
+    si aucun import n'a encore été enregistré ou si la lecture échoue -
     dans ce cas les sources suivantes (CSV, Postgres) prennent le relais."""
 
     try:
@@ -326,8 +326,8 @@ def _charger_positions_importees(nom_table: str) -> list[dict[str, str]] | None:
     la façon normale, pour un utilisateur de l'application, d'alimenter le
     calcul de VaR avec son propre portefeuille plutôt que de déposer des
     fichiers à la main. Renvoie None si aucun import exploitable n'est
-    disponible pour ce type de portefeuille (les sources suivantes — CSV,
-    Postgres — prennent alors le relais)."""
+    disponible pour ce type de portefeuille (les sources suivantes - CSV,
+    Postgres - prennent alors le relais)."""
 
     if nom_table not in ("positions_obligations", "positions_actions"):
         return None
@@ -904,7 +904,7 @@ _cache_series: dict[str, tuple[tuple, _SeriePayload]] = {}
 
 def _empreinte_portefeuille_importe_sqlite() -> str | None:
     """Horodatage de la dernière sauvegarde du portefeuille marché importé
-    (métadonnée mise à jour à chaque import réussi côté API) — inclus dans
+    (métadonnée mise à jour à chaque import réussi côté API) - inclus dans
     l'empreinte de cache pour qu'un import via l'application soit pris en
     compte immédiatement, sans attendre qu'un fichier CSV change."""
 

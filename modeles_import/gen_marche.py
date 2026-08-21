@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Modèle d'import « Risque de marché » — portefeuille titres complet.
+"""Modèle d'import « Risque de marché » - portefeuille titres complet.
 
 Structure produite (noms de feuilles imposés par l'import de l'outil) :
-  • Saisir donnée — portefeuille obligataire (30 colonnes obligatoires)
-  • Actions       — portefeuille actions (15 colonnes obligatoires)
-  • Notice        — feuille d'aide, ignorée à l'import
+  • Saisir donnée - portefeuille obligataire (30 colonnes obligatoires)
+  • Actions       - portefeuille actions (15 colonnes obligatoires)
+  • Notice        - feuille d'aide, ignorée à l'import
 
 Les deux feuilles étant présentes, l'écran « Importer données de marché »
 reconnaît automatiquement le périmètre « Portefeuille complet ».
@@ -100,9 +100,9 @@ PART_TRADING_ACTIONS = 0.55
 def _intentions_obligations(part_trading: float):
     reste = 1.0 - part_trading
     return [
-        ("HTM — Détenu jusqu'à échéance", reste * 0.72),
-        ("AFS — Disponible à la vente", reste * 0.28),
-        ("Trading — Portefeuille de négociation", part_trading),
+        ("HTM - Détenu jusqu'à échéance", reste * 0.72),
+        ("AFS - Disponible à la vente", reste * 0.28),
+        ("Trading - Portefeuille de négociation", part_trading),
     ]
 
 _MODES_PLACEMENT = [
@@ -124,7 +124,7 @@ _FREQUENCES = [
     ("Annuelle", 1), ("Semestrielle", 2), ("Trimestrielle", 4),
 ]
 
-_NOTATIONS_INTERNES = ["1 — Excellent", "2 — Bon", "3 — Correct", "4 — Sous surveillance", "5 — Sensible"]
+_NOTATIONS_INTERNES = ["1 - Excellent", "2 - Bon", "3 - Correct", "4 - Sous surveillance", "5 - Sensible"]
 
 # ── Actions ─────────────────────────────────────────────────────────────────
 _SOCIETES_ACTIONS = [
@@ -315,9 +315,9 @@ def construire_actions(
         # négociation, elle est classée en titres disponibles à la vente ou en
         # titres de participation, tous deux au portefeuille bancaire.
         intention = _tirage_pondere(rng, [
-            ("Trading — Portefeuille de négociation", part_trading),
-            ("AFS — Disponible à la vente", (1.0 - part_trading) * 0.74),
-            ("Titres de participation — portefeuille bancaire", (1.0 - part_trading) * 0.26),
+            ("Trading - Portefeuille de négociation", part_trading),
+            ("AFS - Disponible à la vente", (1.0 - part_trading) * 0.74),
+            ("Titres de participation - portefeuille bancaire", (1.0 - part_trading) * 0.26),
         ])
 
         prix_acquisition = round(rng.uniform(1_200, 24_000) if devise == "XOF"
@@ -398,15 +398,15 @@ def construire_classeur(chemin, obligations, actions):
 
     feuille_notice(
         wb,
-        f"Modèle d'import — Risque de marché — {BANQUE}",
+        f"Modèle d'import - Risque de marché - {BANQUE}",
         [
             ("Date d'arrêté", f"Portefeuille observé au {DATE_ANALYSE}."),
             ("Saisir donnée",
-             f"{len(obligations)} lignes obligataires — encours nominal "
+             f"{len(obligations)} lignes obligataires - encours nominal "
              f"{valeur_obligations / 1e9:,.1f} Md FCFA. Le nom de la feuille est "
              "imposé par l'outil : ne pas le renommer."),
             ("Actions",
-             f"{len(actions)} lignes actions — valorisation "
+             f"{len(actions)} lignes actions - valorisation "
              f"{valeur_actions / 1e9:,.1f} Md FCFA."),
             ("Périmètre reconnu",
              "Les deux feuilles étant présentes, l'écran « Importer données de "

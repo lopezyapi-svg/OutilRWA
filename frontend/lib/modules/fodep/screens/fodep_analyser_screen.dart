@@ -9,6 +9,7 @@ import '../../risque_marche/services/market_risk_aggregation_service.dart';
 import '../../rwa_engine/models/rwa_credit_analysis.dart';
 import '../models/fodep_models.dart';
 import '../services/fodep_service.dart';
+import '../widgets/fodep_charts.dart';
 import '../widgets/fodep_design.dart';
 
 enum _SectionFodep {
@@ -58,7 +59,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
   RwaCreditAnalysis? _analyseCredit;
   AibCalculResult? _calculAib;
   MarketPrudentialCapitalResult? _capitalMarcheDetail;
-  _SectionFodep _section = _SectionFodep.fondsPropres;
+  _SectionFodep _section = _SectionFodep.conformite;
   bool _enregistrementPeriode = false;
 
   @override
@@ -94,7 +95,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         // Ventilation EP25-EP28 (taux/actions/change/matières premières) :
         // calculée côté client par le module Risque de Marché, comme le
         // fait déjà MarketCapitalRequirementPersister pour le total persisté
-        // — même source, on évite juste de dupliquer le calcul en base.
+        // - même source, on évite juste de dupliquer le calcul en base.
         final snapshot = MarketDataImportStore.instance.snapshotNotifier.value;
         final records = [
           ...?snapshot.datasets[MarketPortfolioType.bonds]?.records,
@@ -153,17 +154,54 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     }
   }
 
+  Widget _buildBoutonImportAncienFodep(DashColors c) {
+    return GestureDetector(
+      onTap: () {
+        // TODO: Implémenter l'import d'un ancien FODEP
+      },
+      child: Container(
+        height: 28,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: c.surface,
+          border: Border.all(color: c.border, width: Dash.hairline),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.upload_file_rounded,
+              size: 14,
+              color: c.ink,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Importer nouveau FODEP',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: c.ink,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildPastilleArrete(DashColors c) {
     final periode = _apercu?.periode;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          "Date d'arrêté :",
-          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.muted),
+        _buildBoutonImportAncienFodep(c),
+        const SizedBox(width: 16),
+        Tooltip(
+          message: "Date d'arrêté",
+          child: _buildPastilleArreteBadge(c, periode),
         ),
-        const SizedBox(width: 8),
-        _buildPastilleArreteBadge(c, periode),
       ],
     );
   }
@@ -290,7 +328,28 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                         FodepNotice(status: DashStatus.sousMinimum, texte: _erreur!),
                         const SizedBox(height: 16),
                       ],
-                      if (_apercu != null) Expanded(child: _buildSection(c)),
+                      if (_apercu != null)
+                        Expanded(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 320),
+                            switchInCurve: Curves.easeOutCubic,
+                            switchOutCurve: Curves.easeInCubic,
+                            transitionBuilder: (child, animation) => FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 0.012),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            ),
+                            child: KeyedSubtree(
+                              key: ValueKey(_section),
+                              child: _buildSection(c),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -331,6 +390,8 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
 
     final totalApr = apercu.apr.aprTotal;
 
+    String pct(double v) => '${v.toStringAsFixed(2)} %';
+
     return FodepTable(
       children: [
         const FodepTableHeader(col1: 'Poste', col2: 'Référence', col3: 'Niveau / Montant estimé'),
@@ -340,15 +401,15 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const FodepTableGroup(title: 'Ratios de solvabilité'),
-                FodepTableRow(label: 'Ratio de fonds propres CET 1 (%)', ref: 'a x 100 / d', value: '${cet1.toStringAsFixed(2)} %'),
-                FodepTableRow(label: 'Ratio de fonds propres de base T1 (%)', ref: 'b x 100 / d', value: '${tier1.toStringAsFixed(2)} %'),
-                FodepTableRow(label: 'Ratio de Solvabilité total (%)', ref: 'c x 100 / d', value: '${solvency.toStringAsFixed(2)} %'),
-                
+                FodepTableRow(label: 'Ratio de fonds propres CET 1 (%)', ref: 'a x 100 / d', value: pct(cet1)),
+                FodepTableRow(label: 'Ratio de fonds propres de base T1 (%)', ref: 'b x 100 / d', value: pct(tier1)),
+                FodepTableRow(label: 'Ratio de Solvabilité total (%)', ref: 'c x 100 / d', value: pct(solvency)),
+
                 const FodepTableGroup(title: 'Fonds Propres'),
                 FodepTableRow(label: 'Fonds propres de base durs (CET 1)', ref: 'EP03 / EP05', value: _fmt(fpCet1)),
                 FodepTableRow(label: 'Fonds propres de base (T1)', ref: 'EP03 / EP05', value: _fmt(fpT1)),
                 FodepTableRow(label: 'Fonds propres effectifs (FPE)', ref: 'EP03 / EP05', value: _fmt(fpEffectifs)),
-                
+
                 const FodepTableGroup(title: 'Actifs Pondérés des risques (APR)'),
                 FodepTableRow(label: 'Total des actifs pondérés des risques de crédit, de marché et opérationnel', ref: 'EP08', value: _fmt(totalApr), isLast: true),
               ],
@@ -359,7 +420,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     );
   }
 
-  // ── EP08 — Total des actifs pondérés des risques ───────────────────────────
+  // ── EP08 - Total des actifs pondérés des risques ───────────────────────────
   // Structure officielle (classeur BCEAO) : A. Risque de crédit (une ligne
   // par catégorie prudentielle, référence EP12-EP20) + APR01, B. Risque de
   // marché (taux/actions/change/matières premières, référence EP25-EP28) +
@@ -419,7 +480,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     );
   }
 
-  // ── État de conformité — tableau officiel des normes prudentielles ──────────
+  // ── État de conformité - tableau officiel des normes prudentielles ──────────
   Widget _buildConformite(DashColors c, FodepApercu apercu) {
     final cet1 = apercu.ratios['cet1'];
     final tier1 = apercu.ratios['tier1'];
@@ -494,71 +555,71 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         ],
       ),
     ];
-    return Container(
-      decoration: BoxDecoration(
-        color: c.surface,
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: c.border, width: Dash.hairline),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // En-tête colonnes
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            color: const Color(0xFF172554), // deepblue
-            child: const Row(children: [
-              SizedBox(width: 70, child: Text('Code', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5))),
-              SizedBox(width: 8),
-              Expanded(child: Text('Norme prudentielle', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5))),
-              SizedBox(width: 48, child: Text('Référence', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
-              SizedBox(width: 86, child: Text('Seuil réglementaire', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
-              SizedBox(width: 86, child: Text('Observé', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
-              SizedBox(width: 100, child: Text('Situation', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), textAlign: TextAlign.center)),
-            ]),
-          ),
+    final division = sections[1].lignes.first;
+    final autres = sections[3].lignes;
+    final jauges = <_LigneConformite>[
+      sections[0].lignes[0],
+      sections[0].lignes[1],
+      sections[0].lignes[2],
+      sections[2].lignes.first,
+    ];
 
-          // Lignes avec défilement
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final section in sections) ...[
-                    // En-tête de section avec bordure colorée
-                Container(
-                  padding: const EdgeInsets.fromLTRB(0, 9, 16, 9),
-                  decoration: BoxDecoration(
-                    color: section.couleur.withValues(alpha: 0.05),
-                    border: Border(
-                      top: BorderSide(color: c.divider, width: 0.5),
-                      left: BorderSide(color: section.couleur, width: 4),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FodepGraphPanel(
+            title: 'RATIOS CLÉS - NIVEAU OBSERVÉ VS SEUIL RÉGLEMENTAIRE',
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (int i = 0; i < jauges.length; i++)
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: i == 0 ? 0 : 10),
+                      child: _buildJauge(c, jauges[i]),
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: Text(section.titre, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: section.couleur, letterSpacing: 0.2)),
-                  ),
-                ),
-                for (int i = 0; i < section.lignes.length; i++)
-                  _LigneConformiteRow2(
-                    ligne: section.lignes[i],
-                    couleurSection: section.couleur,
-                    pair: i.isEven,
-                    c: c,
-                  ),
               ],
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+          FodepGraphPanel(
+            title: 'AUTRES NORMES PRUDENTIELLES',
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final largeur = (constraints.maxWidth - 24) / 3;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    for (final ligne in [division, ...autres])
+                      SizedBox(
+                        width: largeur,
+                        child: _CarteNormeStatut(c: c, ligne: ligne),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
-    ],
-  ),
-);
+    );
   }
 
-  // ── EP01 — Fonds propres réglementaires ──────────────────────────────────
+  /// Jauge radiale d'un ratio de solvabilité / levier.
+  Widget _buildJauge(DashColors c, _LigneConformite ligne) {
+    return FodepJaugeRadiale(
+      libelle: ligne.code == 'RA005' ? 'Levier' : ligne.libelle.split('(').first.trim(),
+      valeur: ligne.observe ?? 0,
+      seuil: ligne.seuil ?? 0,
+      conforme: ligne.statut == _Statut.conforme,
+      disponible: ligne.statut != _Statut.nd,
+    );
+  }
+
+  // ── EP01 - Fonds propres réglementaires ──────────────────────────────────
   Widget _buildEp01(DashColors c, FodepApercu apercu) {
     final blocs = <_BlocFondsPropres>[
       _BlocFondsPropres(
@@ -608,25 +669,13 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            height: 300,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(child: _CarteFondsPropres(bloc: blocs[3], apercu: apercu, codes: _codes, fmt: _fmt, c: c)),
-                const SizedBox(width: 16),
-                const Expanded(child: SizedBox()),
-                const SizedBox(width: 16),
-                const Expanded(child: SizedBox()),
-              ],
-            ),
-          ),
+          _CarteFondsPropres(bloc: blocs[3], apercu: apercu, codes: _codes, fmt: _fmt, c: c),
         ],
       ),
     );
   }
 
-  // ── EP09-EP20 — Ventilation du risque de crédit par catégorie prudentielle ──
+  // ── EP09-EP20 - Ventilation du risque de crédit par catégorie prudentielle ──
   Widget _buildEp02(DashColors c, FodepApercu apercu) {
     final analyse = _analyseCredit;
     if (analyse == null || analyse.agents.isEmpty) {
@@ -644,60 +693,79 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: c.border, width: Dash.hairline),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.45)
+                : const Color(0xFF0F1B2D).withValues(alpha: 0.06),
+            blurRadius: Theme.of(context).brightness == Brightness.dark ? 30 : 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            margin: const EdgeInsets.all(4),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(color: _deepblue, borderRadius: BorderRadius.circular(2)),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF172554), Color(0xFF1E3A8A)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+            ),
             child: const Row(
               children: [
-                Expanded(flex: 5, child: Text('Catégorie prudentielle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-                Expanded(flex: 3, child: Text('Exposition brute', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-                Expanded(flex: 2, child: Text('Pondération moy.', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-                Expanded(flex: 3, child: Text('APR', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+                Expanded(flex: 5, child: Text('Catégorie prudentielle', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
+                Expanded(flex: 3, child: Text('Exposition brute', textAlign: TextAlign.right, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
+                Expanded(flex: 2, child: Text('Pondération moy.', textAlign: TextAlign.right, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
+                Expanded(flex: 3, child: Text('APR', textAlign: TextAlign.right, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
               ],
             ),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  for (final agent in analyse.agents)
+            child: Scrollbar(
+              thumbVisibility: false,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    for (int i = 0; i < analyse.agents.length; i++)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                        decoration: BoxDecoration(
+                          color: i.isEven ? c.surface : c.surfaceAlt,
+                          border: Border(bottom: BorderSide(color: c.divider, width: 0.5)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(flex: 5, child: Text(analyse.agents[i].label, style: TextStyle(fontSize: 12, color: c.ink))),
+                            Expanded(flex: 3, child: Text(_fmt(analyse.agents[i].grossExposure), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.ink, fontFeatures: Dash.tabular))),
+                            Expanded(flex: 2, child: Text(analyse.agents[i].averageWeight == null ? '-' : '${(analyse.agents[i].averageWeight! * 100).toStringAsFixed(1)} %', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: c.muted, fontFeatures: Dash.tabular))),
+                            Expanded(flex: 3, child: Text(_fmt(analyse.agents[i].rwa), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c.navy, fontFeatures: Dash.tabular))),
+                          ],
+                        ),
+                      ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: c.divider, width: 0.5))),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF172554),
+                      ),
                       child: Row(
                         children: [
-                          Expanded(flex: 5, child: Text(agent.label, style: TextStyle(fontSize: 12, color: c.ink))),
-                          Expanded(flex: 3, child: Text(_fmt(agent.grossExposure), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.ink))),
-                          Expanded(flex: 2, child: Text(agent.averageWeight == null ? '—' : '${(agent.averageWeight! * 100).toStringAsFixed(1)} %', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: c.muted))),
-                          Expanded(flex: 3, child: Text(_fmt(agent.rwa), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c.navy))),
+                          Expanded(flex: 5, child: Text("TOTAL - repris à l'EP08", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white))),
+                          Expanded(flex: 3, child: Text(_fmt(analyse.totals.grossExposure), textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: Dash.tabular))),
+                          const Expanded(flex: 2, child: SizedBox()),
+                          Expanded(flex: 3, child: Text(_fmt(analyse.totals.rwa), textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: Dash.tabular))),
                         ],
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              border: Border(top: BorderSide(color: c.divider, width: Dash.hairline)),
-            ),
-            child: Row(
-              children: [
-                Expanded(flex: 5, child: Text('TOTAL — repris à l\'EP08', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: c.ink))),
-                Expanded(flex: 3, child: Text(_fmt(analyse.totals.grossExposure), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: c.ink))),
-                const Expanded(flex: 2, child: SizedBox()),
-                Expanded(flex: 3, child: Text(_fmt(analyse.totals.rwa), textAlign: TextAlign.right, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: c.navy))),
-              ],
             ),
           ),
         ],
@@ -705,7 +773,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     );
   }
 
-  // ── EP25-EP28 — Risque de marché, quatre familles ───────────────────────────
+  // ── EP25-EP28 - Risque de marché, quatre familles ───────────────────────────
   Widget _buildEp03(DashColors c, FodepApercu apercu) {
     final detail = _capitalMarcheDetail;
     if (detail == null) {
@@ -739,14 +807,14 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
           ['Produits de base : risque directionnel', _fmt(detail.commodityDirectionalRisk), _fmt(detail.commodityDirectionalRisk * mult)],
           ['Produits de base : risque de base', _fmt(detail.commodityBasisRisk), _fmt(detail.commodityBasisRisk * mult)],
         ] else
-          ['Produits de base', 'Aucune position saisie', '—'],
+          ['Produits de base', 'Aucune position saisie', '-'],
       ],
       pied: 'TOTAL Actifs pondérés au titre du risque de marché : ${_fmt(detail.marketRwa)} '
           '(exigence de fonds propres agrégée ${_fmt(detail.capitalRequirement)} × 11,11).',
     );
   }
 
-  // ── EP21 — Risque opérationnel, approche indicateur de base ────────────────
+  // ── EP21 - Risque opérationnel, approche indicateur de base ────────────────
   // Structure officielle : section A « Calcul du produit brut » (RO001 à
   // RO009) puis section B « Calcul des actifs pondérés » (produit brut des
   // trois exercices, moyenne, alpha, exigence, APR).
@@ -772,7 +840,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
           final libelle = ['ANNÉE-3 (a)', 'ANNÉE-2 (b)', 'ANNÉE-1 (c)'][i];
           return [
             'Produit brut $libelle',
-            ex == null ? '—' : ex.annee.toString(),
+            ex == null ? '-' : ex.annee.toString(),
             ex == null ? _fmt(0) : '${_fmt(ex.produitBrutTotal)}${ex.pnbPositif ? '' : '  (exclu, ≤ 0)'}',
           ];
         }(),
@@ -794,7 +862,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     );
   }
 
-  // ── EP33 — Ratio de levier ───────────────────────────────────────────────
+  // ── EP33 - Ratio de levier ───────────────────────────────────────────────
   // Structure officielle : A. expositions au bilan (RL001-RL004),
   // B. dérivés (RL005-RL007), C. opérations assimilables à des pensions
   // (RL008-RL010), D. hors bilan (RL011-RL013), E. calcul du ratio
@@ -833,9 +901,9 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         ['Total des expositions sur engagement hors bilan', 'EP33', _fmt(tx['rl013'] ?? 0)],
         ['Fonds propres de base T1', 'EP03 / EP05', _fmt(t1)],
         ['Exposition totale', 'EP33', _fmt(expositionTotale)],
-        ['Ratio de levier (%)', 'EP01', levier == null ? '—' : '${levier.value.toStringAsFixed(2)} %'],
-        ['Niveau à respecter (%)', 'EP01', levier == null ? '—' : '${levier.threshold.toStringAsFixed(2)} %'],
-        ["Situation de l'établissement", 'EP01', levier == null ? '—' : (levier.conforme ? 'CONFORME' : 'INFRACTION')],
+        ['Ratio de levier (%)', 'EP01', levier == null ? '-' : '${levier.value.toStringAsFixed(2)} %'],
+        ['Niveau à respecter (%)', 'EP01', levier == null ? '-' : '${levier.threshold.toStringAsFixed(2)} %'],
+        ["Situation de l'établissement", 'EP01', levier == null ? '-' : (levier.conforme ? 'CONFORME' : 'INFRACTION')],
       ],
       pied: rl015 > 0
           ? 'Exposition totale issue des briques saisies ci-dessus.'
@@ -851,11 +919,21 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     required List<List<String>> lignes,
     required String pied,
   }) {
+    final sombre = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: c.border, width: Dash.hairline),
+        boxShadow: [
+          BoxShadow(
+            color: sombre
+                ? Colors.black.withValues(alpha: 0.45)
+                : const Color(0xFF0F1B2D).withValues(alpha: 0.06),
+            blurRadius: sombre ? 30 : 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -863,18 +941,41 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         children: [
           if (titre.isNotEmpty)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: const Color(0xFFF8FAFC),
-              child: Text(
-                titre.toUpperCase(),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF475569), letterSpacing: 0.5),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              color: c.surface,
+              child: Row(
+                children: [
+                  Container(
+                    width: 4,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      color: c.navy,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      titre.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: c.ink,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF172554),
-              border: Border(top: BorderSide(color: c.divider, width: 0.5)),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF172554), Color(0xFF1E3A8A)],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
             ),
             child: Row(
               children: [
@@ -884,76 +985,116 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                     child: Text(
                       colonnes[i],
                       textAlign: i == 0 ? TextAlign.left : TextAlign.right,
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.4,
+                      ),
                     ),
                   ),
               ],
             ),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  for (int idx = 0; idx < lignes.length; idx++)
-                    Builder(
-                      builder: (context) {
-                        final ligne = lignes[idx];
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: idx.isEven ? Colors.white : const Color(0xFFF8FAFC),
-                            border: Border(bottom: BorderSide(color: c.divider, width: 0.5)),
-                          ),
-                          child: Row(
-                            children: [
-                              for (int i = 0; i < ligne.length; i++)
-                                Expanded(
-                                  flex: flex[i],
-                                  child: Text(
-                                    ligne[i],
-                                    textAlign: i == 0 ? TextAlign.left : TextAlign.right,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: i == ligne.length - 1 ? FontWeight.w700 : (i == 0 ? FontWeight.w500 : FontWeight.w400),
-                                      color: i == ligne.length - 1 ? const Color(0xFF0F172A) : (i == 0 ? const Color(0xFF1E293B) : const Color(0xFF64748B)),
+            child: Scrollbar(
+              thumbVisibility: false,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    for (int idx = 0; idx < lignes.length; idx++)
+                      Builder(
+                        builder: (context) {
+                          final ligne = lignes[idx];
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: idx.isEven ? c.surface : c.surfaceAlt,
+                              border: Border(bottom: BorderSide(color: c.divider, width: 0.5)),
+                            ),
+                            child: Row(
+                              children: [
+                                for (int i = 0; i < ligne.length; i++)
+                                  Expanded(
+                                    flex: flex[i],
+                                    child: Text(
+                                      ligne[i],
+                                      textAlign: i == 0 ? TextAlign.left : TextAlign.right,
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontFeatures: i > 0 ? Dash.tabular : null,
+                                        fontWeight: i == ligne.length - 1 ? FontWeight.w700 : (i == 0 ? FontWeight.w500 : FontWeight.w400),
+                                        color: i == ligne.length - 1
+                                            ? c.navy
+                                            : (i == 0 ? c.ink : c.muted),
+                                      ),
                                     ),
                                   ),
+                              ],
+                            ),
+                          );
+                        }
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF172554),
+                          border: Border(top: BorderSide(color: c.divider, width: 0.5)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: flex[0],
+                              child: Text(
+                                pied.contains(' : ') ? pied.substring(0, pied.lastIndexOf(' : ')) : pied,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: 0.2,
                                 ),
-                            ],
-                          ),
-                        );
-                      }
-                    ),
-                ],
+                              ),
+                            ),
+                            if (flex.length > 1)
+                              Expanded(
+                                flex: flex[1],
+                                child: const SizedBox.shrink(),
+                              ),
+                            if (flex.length > 2)
+                              Expanded(
+                                flex: flex[2],
+                                child: Text(
+                                  pied.contains(' : ') ? pied.substring(pied.lastIndexOf(' : ') + 3) : '',
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    fontFeatures: Dash.tabular,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
-          if (pied.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9), // slate-100
-                border: Border(top: BorderSide(color: c.divider, width: 0.5)),
-              ),
-              child: Text(
-                pied,
-                textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1E293B)),
-              ),
-            ),
         ],
       ),
     );
   }
 
-  // ── EP29 — Grands risques du portefeuille bancaire et de négociation ───────
+  // ── EP29 - Grands risques du portefeuille bancaire et de négociation ───────
   /// Une contrepartie est un grand risque dès que son exposition atteint
   /// 10 % des fonds propres de base T1 (notice, EP29).
   ///
   /// La notice signale elle-même une ambiguïté sur le critère : le texte
   /// introductif rapporte le total des expositions au T1, le descriptif des
   /// colonnes rapporte la somme des actifs pondérés au T1. Elle demande de
-  /// retenir par prudence le plus contraignant — c'est le maximum des deux
+  /// retenir par prudence le plus contraignant - c'est le maximum des deux
   /// rapports qui est utilisé ici, et affiché comme tel.
   List<_GrandRisque> _calculerGrandsRisques(double t1) {
     final analyse = _analyseCredit;
@@ -1000,24 +1141,53 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     }
 
     final plusEleve = grands.first.pourcentageT1;
-    return _tableauFixe(
-      c,
-      titre: 'GRANDS RISQUES DU PORTEFEUILLE BANCAIRE ET DE NÉGOCIATION',
-      colonnes: const ['Contrepartie', 'Exposition initiale totale', 'Exposition nette', '% des FP T1'],
-      flex: const [5, 3, 3, 2],
-      lignes: [
-        for (final g in grands)
-          [
-            g.nom,
-            _fmt(g.expositionBrute),
-            _fmt(g.expositionNette),
-            '${g.pourcentageT1.toStringAsFixed(2)} %',
-          ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: 340,
+          child: FodepGraphPanel(
+            title: 'EXPOSITIONS AU-DELÀ DU SEUIL DE 10 % DES FONDS PROPRES DE BASE T1',
+            child: Center(
+              child: FodepBarresHorizontales(
+                maxValeur: 25,
+                seuils: const [10, 25],
+                format: (v) => '${v.toStringAsFixed(1)} %',
+                donnees: [
+                  for (final g in grands)
+                    FodepBarreDonnee(
+                      libelle: g.nom,
+                      valeur: g.pourcentageT1,
+                      couleur: g.pourcentageT1 > 25 ? c.sousMinimum : c.ramp[0],
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _tableauFixe(
+            c,
+            titre: 'GRANDS RISQUES DU PORTEFEUILLE BANCAIRE ET DE NÉGOCIATION',
+            colonnes: const ['Contrepartie', 'Exposition initiale totale', 'Exposition nette', '% des FP T1'],
+            flex: const [5, 3, 3, 2],
+            lignes: [
+              for (final g in grands)
+                [
+                  g.nom,
+                  _fmt(g.expositionBrute),
+                  _fmt(g.expositionNette),
+                  '${g.pourcentageT1.toStringAsFixed(2)} %',
+                ],
+            ],
+            pied: '${grands.length} contrepartie(s) au-delà du seuil de 10 % des fonds propres de base T1. '
+                'Niveau observé le plus élevé : ${plusEleve.toStringAsFixed(2)} % (limite 25 %). '
+                'Rapport retenu : le plus contraignant entre exposition nette et actifs pondérés, la notice laissant les deux définitions ouvertes. '
+                "Identifiants Centrale des risques, pays et secteur non disponibles : l'application ne tient pas ce référentiel.",
+          ),
+        ),
       ],
-      pied: '${grands.length} contrepartie(s) au-delà du seuil de 10 % des fonds propres de base T1. '
-          'Niveau observé le plus élevé : ${plusEleve.toStringAsFixed(2)} % (limite 25 %). '
-          'Rapport retenu : le plus contraignant entre exposition nette et actifs pondérés, la notice laissant les deux définitions ouvertes. '
-          "Identifiants Centrale des risques, pays et secteur non disponibles : l'application ne tient pas ce référentiel.",
     );
   }
 
@@ -1064,12 +1234,23 @@ class FodepTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
+    final sombre = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: c.border, width: Dash.hairline),
+        boxShadow: [
+          BoxShadow(
+            color: sombre
+                ? Colors.black.withValues(alpha: 0.45)
+                : const Color(0xFF0F1B2D).withValues(alpha: 0.06),
+            blurRadius: sombre ? 30 : 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: children,
@@ -1090,17 +1271,19 @@ class FodepTableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(4),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF172554), // Deep Blue
-        borderRadius: BorderRadius.circular(2),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF172554), Color(0xFF1E3A8A)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
       ),
       child: Row(
         children: [
-          Expanded(flex: flex1, child: Text(col1, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-          if (flex2 > 0) Expanded(flex: flex2, child: Text(col2, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-          Expanded(flex: flex3, child: Text(col3, textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
+          Expanded(flex: flex1, child: Text(col1, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
+          if (flex2 > 0) Expanded(flex: flex2, child: Text(col2, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
+          Expanded(flex: flex3, child: Text(col3, textAlign: TextAlign.right, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
         ],
       ),
     );
@@ -1115,22 +1298,35 @@ class FodepTableGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(20, 13, 20, 11),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC), // Slate 50
+        color: c.surfaceAlt,
         border: Border(
-          bottom: BorderSide(color: c.border, width: Dash.hairline),
-          top: BorderSide(color: c.border, width: Dash.hairline),
+          bottom: BorderSide(color: c.divider, width: 0.5),
+          top: BorderSide(color: c.divider, width: 0.5),
         ),
       ),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: c.muted,
-          letterSpacing: 0.5,
-        ),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 11,
+            decoration: BoxDecoration(
+              color: c.navy,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 7),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              color: c.ink,
+              letterSpacing: 0.7,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1172,16 +1368,16 @@ class FodepTableRow extends StatelessWidget {
         children: [
           Expanded(
             flex: flex1, 
-            child: Text(label, style: TextStyle(fontSize: 13, color: isBold ? c.ink : c.navy, fontWeight: isBold ? FontWeight.w700 : FontWeight.w400))
+            child: Text(label, style: TextStyle(fontSize: 12.5, color: isBold ? c.ink : c.navy, fontWeight: isBold ? FontWeight.w700 : FontWeight.w400))
           ),
           if (flex2 > 0)
             Expanded(
               flex: flex2, 
-              child: Text(ref, style: TextStyle(fontSize: 12, color: c.muted, fontWeight: FontWeight.w500))
+              child: Text(ref, style: TextStyle(fontSize: 11.5, color: c.muted, fontWeight: FontWeight.w500))
             ),
           Expanded(
             flex: flex3, 
-            child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 13, color: c.ink, fontWeight: FontWeight.w600))
+            child: Text(value, textAlign: TextAlign.right, style: TextStyle(fontSize: 12.5, color: c.ink, fontWeight: FontWeight.w600, fontFeatures: Dash.tabular))
           ),
         ],
       ),
@@ -1213,9 +1409,6 @@ class _OngletEpState extends State<_OngletEp> {
   Widget build(BuildContext context) {
     final selected = widget.selected;
     final c = widget.c;
-    
-    Color textColor = selected ? const Color(0xFF172554) : c.muted;
-    FontWeight weight = selected ? FontWeight.w700 : FontWeight.w500;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -1223,28 +1416,30 @@ class _OngletEpState extends State<_OngletEp> {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: widget.onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
           margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? Colors.white : (_isHovered ? c.border.withValues(alpha: 0.5) : Colors.transparent),
-            borderRadius: BorderRadius.circular(6),
+            color: selected ? Colors.white : (_isHovered ? c.border.withValues(alpha: 0.6) : Colors.transparent),
+            borderRadius: BorderRadius.circular(10),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    )
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
                   ]
                 : null,
           ),
           child: Text(
             widget.label,
             style: TextStyle(
-              fontSize: 13, // slightly smaller text to save space
-              fontWeight: weight,
-              color: _isHovered && !selected ? c.ink : textColor,
+              fontSize: 12.5,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? const Color(0xFF172554) : (_isHovered ? c.ink : c.muted),
             ),
           ),
         ),
@@ -1253,7 +1448,7 @@ class _OngletEpState extends State<_OngletEp> {
   }
 }
 
-// ── EP01 — Carte de composante de fonds propres (CET1 / AT1 / T2 / effectifs) ──
+// ── EP01 - Carte de composante de fonds propres (CET1 / AT1 / T2 / effectifs) ──
 
 class _BlocFondsPropres {
   const _BlocFondsPropres({
@@ -1289,21 +1484,37 @@ class _CarteFondsPropres extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lignes = codes.where((cd) => cd.groupe == bloc.groupe).toList();
+    final sombre = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: c.border, width: Dash.hairline),
+        boxShadow: [
+          BoxShadow(
+            color: sombre
+                ? Colors.black.withValues(alpha: 0.45)
+                : const Color(0xFF0F1B2D).withValues(alpha: 0.06),
+            blurRadius: sombre ? 30 : 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── En-tête : indicateur principal ────────────────────────────
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
             decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: c.divider, width: Dash.hairline)),
+              gradient: const LinearGradient(
+                colors: [Color(0xFF172554), Color(0xFF1E3A8A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1311,26 +1522,65 @@ class _CarteFondsPropres extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         bloc.titre,
-                        style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF3730A3)), // indigo
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 if (bloc.sousTitre.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(bloc.sousTitre, style: TextStyle(fontSize: 11, color: c.muted)),
+                  const SizedBox(height: 3),
+                  Text(
+                    bloc.sousTitre,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
                 ],
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(fmt(bloc.total), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.ink)),
-                    const SizedBox(width: 4),
-                    Text('FCFA', style: TextStyle(fontSize: 11, color: c.muted, fontWeight: FontWeight.w500)),
+                    Flexible(
+                      child: FodepCompteur(
+                        valeur: bloc.total,
+                        format: fmt,
+                        style: const TextStyle(
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          fontFeatures: Dash.tabular,
+                          height: 1.1,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'FCFA',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -1339,42 +1589,44 @@ class _CarteFondsPropres extends StatelessWidget {
 
           // ── Détail des postes ──────────────────────────────────────────
           if (lignes.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 18),
               child: Row(
                 children: [
-                  Expanded(flex: 7, child: Text('LIBELLÉ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF172554), letterSpacing: 0.5))),
+                  Expanded(flex: 7, child: Text('LIBELLÉ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.6))),
                   SizedBox(width: 10),
                   Expanded(
                     flex: 4,
-                    child: Text('MONTANT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: Color(0xFF1E3A8A), letterSpacing: 0.5), textAlign: TextAlign.right),
+                    child: Text('MONTANT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.6), textAlign: TextAlign.right),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Divider(height: 1, thickness: Dash.hairline, color: c.divider),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    for (int i = 0; i < lignes.length; i++)
-                      _LignePoste(
-                        index: i + 1,
-                        code: lignes[i],
-                        valeur: apercu.postes[lignes[i].code.toLowerCase()] ?? 0,
-                        fmt: fmt,
-                        c: c,
-                      ),
-                    const SizedBox(height: 8),
-                  ],
+              child: Scrollbar(
+                thumbVisibility: false,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Column(
+                    children: [
+                      for (int i = 0; i < lignes.length; i++)
+                        _LignePoste(
+                          index: i + 1,
+                          code: lignes[i],
+                          valeur: apercu.postes[lignes[i].code.toLowerCase()] ?? 0,
+                          fmt: fmt,
+                          c: c,
+                        ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ] else
-            const SizedBox(height: 16),
+          ],
         ],
       ),
     );
@@ -1400,7 +1652,7 @@ class _LignePoste extends StatelessWidget {
   Widget build(BuildContext context) {
     final estDeduction = code.estDeduction;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: c.divider, width: 0.5)),
       ),
@@ -1409,25 +1661,29 @@ class _LignePoste extends StatelessWidget {
         children: [
           Container(
             margin: const EdgeInsets.only(top: 1),
-            width: 16,
-            height: 16,
+            width: 17,
+            height: 17,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9), // slate-100
+              color: c.surfaceAlt,
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFCBD5E1), width: Dash.hairline), // slate-300
+              border: Border.all(color: c.border, width: Dash.hairline),
             ),
-            child: Text('$index', style: const TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: Color(0xFF475569))), // slate-600
+            child: Text(
+              '$index',
+              style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700, color: c.muted),
+            ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 7),
           Expanded(
             flex: 7,
             child: Text(
               estDeduction ? '${code.label}  (déduction)' : code.label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w400,
-                color: Color(0xFF172554), // blue950
+                color: c.ink,
+                height: 1.35,
               ),
             ),
           ),
@@ -1440,7 +1696,8 @@ class _LignePoste extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: estDeduction && valeur < 0 ? const Color(0xFFEF4444) : const Color(0xFF1E3A8A), // blue900
+                fontFeatures: Dash.tabular,
+                color: estDeduction && valeur < 0 ? c.sousMinimum : c.navy,
               ),
             ),
           ),
@@ -1524,121 +1781,104 @@ class _LigneConformite {
 
 
 
-// ── Ligne tableau conformité (version 2 — stylée) ─────────────────────────────
-class _LigneConformiteRow2 extends StatelessWidget {
-  const _LigneConformiteRow2({
-    required this.ligne,
-    required this.couleurSection,
-    required this.pair,
-    required this.c,
-  });
-  final _LigneConformite ligne;
-  final Color couleurSection;
-  final bool pair;
-  final DashColors c;
+/// Carte compacte de statut d'une norme (pastille + libellé + observé vs seuil).
+class _CarteNormeStatut extends StatelessWidget {
+  const _CarteNormeStatut({required this.c, required this.ligne});
 
-  static String _fmtPct(double v) => '${v.toStringAsFixed(2).replaceAll('.', ',')} %';
+  final DashColors c;
+  final _LigneConformite ligne;
+
+  Color get _couleur {
+    switch (ligne.statut) {
+      case _Statut.conforme:
+        return c.conforme;
+      case _Statut.infraction:
+        return c.sousMinimum;
+      case _Statut.nd:
+        return c.faint;
+    }
+  }
+
+  String get _statutTexte {
+    switch (ligne.statut) {
+      case _Statut.conforme:
+        return 'Conforme';
+      case _Statut.infraction:
+        return 'Non conforme';
+      case _Statut.nd:
+        return 'Non renseigné';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final Color badgeCouleur;
-    final String badgeLabel;
-    final IconData badgeIcone;
-
-    switch (ligne.statut) {
-      case _Statut.conforme:
-        badgeCouleur = const Color(0xFF16A34A);
-        badgeLabel = 'CONFORME';
-        badgeIcone = Icons.check_circle;
-      case _Statut.infraction:
-        badgeCouleur = const Color(0xFFDC2626);
-        badgeLabel = 'INFRACTION';
-        badgeIcone = Icons.cancel;
-      case _Statut.nd:
-        badgeCouleur = const Color(0xFF9CA3AF);
-        badgeLabel = '—';
-        badgeIcone = Icons.remove;
-    }
-
-    final valeurObserveeAffichee = ligne.observe != null ? _fmtPct(ligne.observe!) : '—';
-    final isInfraction = ligne.statut == _Statut.infraction;
-
+    final observe = ligne.observe;
+    final seuil = ligne.seuil;
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isInfraction
-            ? const Color(0xFFDC2626).withValues(alpha: 0.04)
-            : pair
-                ? c.surfaceAlt.withValues(alpha: 0.5)
-                : c.surface,
-        border: Border(
-          bottom: BorderSide(color: c.divider, width: 0.5),
-          left: BorderSide(color: couleurSection.withValues(alpha: 0.3), width: 4),
-        ),
+        color: c.surface,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: c.border, width: Dash.hairline),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.35)
+                : const Color(0xFF0F1B2D).withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 70,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                color: couleurSection.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: c.surfaceAlt,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: c.border, width: Dash.hairline),
+                ),
+                child: Text(
+                  '${ligne.code} · ${ligne.reference}',
+                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: c.muted, letterSpacing: 0.4),
+                ),
               ),
-              child: Text(ligne.code, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: couleurSection), textAlign: TextAlign.center),
+              const Spacer(),
+              FodepPastilleStatut(couleur: _couleur, libelle: _statutTexte),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            ligne.libelle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: c.ink, height: 1.4),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: c.surfaceAlt,
+              borderRadius: BorderRadius.circular(8),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(ligne.libelle, style: TextStyle(fontSize: 12, color: c.ink, height: 1.4)),
-          ),
-          SizedBox(
-            width: 48,
-            child: Text(ligne.reference, style: TextStyle(fontSize: 11, color: c.muted, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
-          ),
-          SizedBox(
-            width: 86,
             child: Text(
-              ligne.seuil != null ? _fmtPct(ligne.seuil!) : '—',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.muted),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          SizedBox(
-            width: 86,
-            child: Text(
-              valeurObserveeAffichee,
+              observe == null
+                  ? 'Non renseigné'
+                  : 'Observé : ${observe.toStringAsFixed(2)} %   ·   Seuil : ${seuil?.toStringAsFixed(2) ?? '-'} %',
+              textAlign: TextAlign.right,
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: isInfraction ? const Color(0xFFDC2626) : (ligne.observe != null ? const Color(0xFF16A34A) : c.muted),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: observe == null ? c.faint : _couleur,
+                height: 1.3,
+                fontFeatures: Dash.tabular,
               ),
-              textAlign: TextAlign.center,
             ),
-          ),
-          SizedBox(
-            width: 100,
-            child: ligne.statut == _Statut.nd
-                ? Text('—', style: TextStyle(color: c.muted, fontSize: 12), textAlign: TextAlign.center)
-                : Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 6),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: badgeCouleur.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: badgeCouleur.withValues(alpha: 0.3), width: 1),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(badgeIcone, size: 11, color: badgeCouleur),
-                        const SizedBox(width: 4),
-                        Flexible(child: Text(badgeLabel, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: badgeCouleur, letterSpacing: 0.3))),
-                      ],
-                    ),
-                  ),
           ),
         ],
       ),
@@ -1847,40 +2087,43 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_erreur != null) ...[
-          FodepNotice(status: DashStatus.sousMinimum, texte: _erreur!),
-          const SizedBox(height: 16),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_erreur != null) ...[
+            FodepNotice(status: DashStatus.sousMinimum, texte: _erreur!),
+            const SizedBox(height: 16),
+          ],
+          if (_succes != null) ...[
+            FodepNotice(status: DashStatus.conforme, texte: _succes!),
+            const SizedBox(height: 16),
+          ],
+          const SizedBox(height: 20),
+          _buildSectionParticipations(c),
+          const SizedBox(height: 24),
+          _buildSectionImmobilisations(c),
+          const SizedBox(height: 24),
+          _buildSectionPrets(c),
+          const SizedBox(height: 24),
+          _buildSectionPostes(
+            c,
+            titre: 'PRODUIT BRUT',
+            postes: _postesProduitBrut,
+          ),
+          const SizedBox(height: 24),
+          _buildSectionPostes(
+            c,
+            titre: "BRIQUES D'EXPOSITION DU RATIO DE LEVIER",
+            postes: _postesLevier,
+          ),
         ],
-        if (_succes != null) ...[
-          FodepNotice(status: DashStatus.conforme, texte: _succes!),
-          const SizedBox(height: 16),
-        ],
-        const SizedBox(height: 20),
-        _buildSectionParticipations(c),
-        const SizedBox(height: 24),
-        _buildSectionImmobilisations(c),
-        const SizedBox(height: 24),
-        _buildSectionPrets(c),
-        const SizedBox(height: 24),
-        _buildSectionPostes(
-          c,
-          titre: 'PRODUIT BRUT',
-          postes: _postesProduitBrut,
-        ),
-        const SizedBox(height: 24),
-        _buildSectionPostes(
-          c,
-          titre: "BRIQUES D'EXPOSITION DU RATIO DE LEVIER",
-          postes: _postesLevier,
-        ),
-      ],
+      ),
     );
   }
 
-  /// Grille de postes à structure figée (EP21, EP33) — même rendu que la
+  /// Grille de postes à structure figée (EP21, EP33) - même rendu que la
   /// section immobilisations, dont elle partage la mécanique.
   Widget _buildSectionPostes(
     DashColors c, {
@@ -2003,7 +2246,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
     );
   }
 
-  // ── EP34/EP35 — Registre des participations commerciales ───────────────────
+  // ── EP34/EP35 - Registre des participations commerciales ───────────────────
   Widget _buildSectionParticipations(DashColors c) {
     return _panneau(
       c,
@@ -2097,7 +2340,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
     );
   }
 
-  // ── EP36/EP37 — Immobilisations et participations ──────────────────────────
+  // ── EP36/EP37 - Immobilisations et participations ──────────────────────────
   Widget _buildSectionImmobilisations(DashColors c) {
     return _panneau(
       c,
@@ -2124,7 +2367,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
     );
   }
 
-  // ── EP38 — Prêts aux actionnaires, dirigeants et personnel ──────────────────
+  // ── EP38 - Prêts aux actionnaires, dirigeants et personnel ──────────────────
   Widget _buildSectionPrets(DashColors c) {
     return _panneau(
       c,

@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Modèle d'import « Risque opérationnel » — pertes + indicateur d'activité.
+"""Modèle d'import « Risque opérationnel » - pertes + indicateur d'activité.
 
 Un seul classeur alimente les deux imports du module :
-  • Incidents  — 1 000 pertes opérationnelles (import « Pertes »)
-  • 2023 / 2024 / 2025 — un onglet par exercice, colonnes Poste / Valeur
+  • Incidents  - 1 000 pertes opérationnelles (import « Pertes »)
+  • 2023 / 2024 / 2025 - un onglet par exercice, colonnes Poste / Valeur
     (import « BIC / CCR3 »)
-  • Notice — feuille d'aide, ignorée par les deux imports
+  • Notice - feuille d'aide, ignorée par les deux imports
 
 Les deux dialogues d'import ignorent les feuilles qui ne les concernent pas :
 celui des pertes ne lit que la feuille contenant « incident », celui du BIC ne
@@ -46,65 +46,65 @@ ANNEES_BIC = (2023, 2024, 2025)
 # beaucoup d'incidents modestes, quelques sinistres majeurs.
 _CATALOGUE = [
     ("Banque de détail", "Externe", "Fraude externe",
-     "Fraude carte bancaire — {n} transactions non autorisées sur automate", 6.0, 0.9),
+     "Fraude carte bancaire - {n} transactions non autorisées sur automate", 6.0, 0.9),
     ("Banque de détail", "Externe", "Fraude externe",
-     "Retrait frauduleux au guichet — usurpation d'identité agence {ville}", 6.2, 0.8),
+     "Retrait frauduleux au guichet - usurpation d'identité agence {ville}", 6.2, 0.8),
     ("Banque de détail", "Personnel", "Erreur humaine",
-     "Erreur de caisse — écart de fin de journée agence {ville}", 5.4, 0.7),
+     "Erreur de caisse - écart de fin de journée agence {ville}", 5.4, 0.7),
     ("Banque de détail", "Processus", "Processus inadéquat",
-     "Double débit clientèle — anomalie de traitement des prélèvements", 5.8, 0.8),
+     "Double débit clientèle - anomalie de traitement des prélèvements", 5.8, 0.8),
     ("Banque de détail", "Externe", "Événement externe",
-     "Vol par effraction — distributeur automatique agence {ville}", 6.6, 0.7),
+     "Vol par effraction - distributeur automatique agence {ville}", 6.6, 0.7),
     ("Banque de détail", "Système", "Défaillance système",
      "Indisponibilité du réseau monétique {n} heures", 6.3, 0.8),
     ("Banque commerciale", "Interne", "Fraude interne",
-     "Détournement par un chargé de clientèle — comptes dormants", 7.1, 1.0),
+     "Détournement par un chargé de clientèle - comptes dormants", 7.1, 1.0),
     ("Banque commerciale", "Processus", "Processus inadéquat",
-     "Garantie non enregistrée — perte de sûreté sur dossier crédit", 7.0, 0.9),
+     "Garantie non enregistrée - perte de sûreté sur dossier crédit", 7.0, 0.9),
     ("Banque commerciale", "Juridique", "Processus inadéquat",
-     "Condamnation — défaut d'information précontractuelle", 7.3, 0.9),
+     "Condamnation - défaut d'information précontractuelle", 7.3, 0.9),
     ("Banque commerciale", "Personnel", "Erreur humaine",
-     "Décaissement erroné — mauvais compte bénéficiaire", 6.8, 0.9),
+     "Décaissement erroné - mauvais compte bénéficiaire", 6.8, 0.9),
     ("Paiements et règlements", "Système", "Défaillance système",
-     "Interruption du système de compensation — {n} opérations en attente", 6.9, 0.9),
+     "Interruption du système de compensation - {n} opérations en attente", 6.9, 0.9),
     ("Paiements et règlements", "Processus", "Erreur humaine",
-     "Virement international erroné — code SWIFT incorrect", 6.7, 0.9),
+     "Virement international erroné - code SWIFT incorrect", 6.7, 0.9),
     ("Paiements et règlements", "Externe", "Fraude externe",
-     "Fraude au virement — usurpation d'identité fournisseur", 7.2, 1.0),
+     "Fraude au virement - usurpation d'identité fournisseur", 7.2, 1.0),
     ("Paiements et règlements", "Système", "Défaillance système",
-     "Rejets massifs de prélèvements — incompatibilité de format", 6.1, 0.8),
+     "Rejets massifs de prélèvements - incompatibilité de format", 6.1, 0.8),
     ("Activités de marché", "Processus", "Erreur humaine",
-     "Erreur de saisie d'ordre — quantité exécutée erronée", 7.0, 1.0),
+     "Erreur de saisie d'ordre - quantité exécutée erronée", 7.0, 1.0),
     ("Activités de marché", "Système", "Défaillance système",
-     "Défaut de valorisation — flux de cours indisponible {n} jours", 6.6, 0.9),
+     "Défaut de valorisation - flux de cours indisponible {n} jours", 6.6, 0.9),
     ("Activités de marché", "Processus", "Processus inadéquat",
-     "Dépassement de limite non détecté — position dénouée à perte", 7.4, 1.0),
+     "Dépassement de limite non détecté - position dénouée à perte", 7.4, 1.0),
     ("Financement d'entreprise", "Juridique", "Processus inadéquat",
-     "Litige client — devoir de conseil sur montage structuré", 7.5, 1.0),
+     "Litige client - devoir de conseil sur montage structuré", 7.5, 1.0),
     ("Financement d'entreprise", "Processus", "Processus inadéquat",
-     "Documentation de sûreté incomplète — recours limité", 7.2, 0.9),
+     "Documentation de sûreté incomplète - recours limité", 7.2, 0.9),
     ("Financement d'entreprise", "Interne", "Fraude interne",
-     "Contournement du circuit de délégation — engagement non autorisé", 7.6, 1.0),
+     "Contournement du circuit de délégation - engagement non autorisé", 7.6, 1.0),
     ("Fonctions d'agent", "Processus", "Erreur humaine",
-     "Retard de règlement-livraison — pénalité contractuelle", 6.2, 0.8),
+     "Retard de règlement-livraison - pénalité contractuelle", 6.2, 0.8),
     ("Fonctions d'agent", "Processus", "Processus inadéquat",
-     "Erreur de conservation de titres — réconciliation tardive", 6.4, 0.8),
+     "Erreur de conservation de titres - réconciliation tardive", 6.4, 0.8),
     ("Gestion d'actifs", "Processus", "Erreur humaine",
-     "Erreur de calcul de valeur liquidative — indemnisation porteurs", 6.8, 0.9),
+     "Erreur de calcul de valeur liquidative - indemnisation porteurs", 6.8, 0.9),
     ("Gestion d'actifs", "Juridique", "Processus inadéquat",
      "Non-respect du ratio de dispersion d'un OPCVM", 6.5, 0.8),
     ("Courtage de détail", "Processus", "Erreur humaine",
-     "Ordre client exécuté hors instruction — rachat de position", 6.3, 0.9),
+     "Ordre client exécuté hors instruction - rachat de position", 6.3, 0.9),
     ("Courtage de détail", "Externe", "Fraude externe",
-     "Compromission d'accès client — ordres frauduleux", 6.6, 0.9),
+     "Compromission d'accès client - ordres frauduleux", 6.6, 0.9),
     ("Banque de détail", "Personnel", "Événement externe",
-     "Accident du travail — arrêt d'activité agence {ville}", 5.9, 0.7),
+     "Accident du travail - arrêt d'activité agence {ville}", 5.9, 0.7),
     ("Banque commerciale", "Externe", "Événement externe",
-     "Dégât des eaux — remise en état agence {ville}", 6.4, 0.8),
+     "Dégât des eaux - remise en état agence {ville}", 6.4, 0.8),
     ("Banque de détail", "Système", "Défaillance système",
-     "Panne du core banking — {n} heures d'indisponibilité", 6.7, 0.9),
+     "Panne du core banking - {n} heures d'indisponibilité", 6.7, 0.9),
     ("Banque commerciale", "Interne", "Fraude interne",
-     "Falsification de pièces justificatives — dossier de crédit", 7.2, 0.9),
+     "Falsification de pièces justificatives - dossier de crédit", 7.2, 0.9),
     ("Paiements et règlements", "Juridique", "Processus inadéquat",
      "Sanction pour retard de déclaration réglementaire", 6.5, 0.8),
     ("Activités de marché", "Externe", "Événement externe",
@@ -292,7 +292,7 @@ def _feuille_bic(wb, annee: int) -> None:
     ws = wb.create_sheet(str(annee))
     ws.column_dimensions["A"].width = 44
     ws.column_dimensions["B"].width = 22
-    titre_bandeau(ws, f"Exercice {annee} — Indicateur d'activité BIC / CCR3", 2)
+    titre_bandeau(ws, f"Exercice {annee} - Indicateur d'activité BIC / CCR3", 2)
 
     ws.row_dimensions[2].height = 20
     for col_index, label in ((1, "Poste"), (2, "Valeur (FCFA)")):
@@ -304,7 +304,7 @@ def _feuille_bic(wb, annee: int) -> None:
 
     postes = BIC_PAR_ANNEE[annee]
     valeurs = dict(postes)
-    valeurs["PNB (BIA — si non calculé automatiquement)"] = _pnb(postes)
+    valeurs["PNB (BIA - si non calculé automatiquement)"] = _pnb(postes)
 
     for offset, poste in enumerate(BIC_POSTES):
         ligne = 3 + offset
@@ -344,14 +344,14 @@ def construire_classeur(chemin, incidents):
 
     feuille_notice(
         wb,
-        f"Modèle d'import — Risque opérationnel — {BANQUE}",
+        f"Modèle d'import - Risque opérationnel - {BANQUE}",
         [
             ("Deux imports, un seul fichier",
              "La feuille « Incidents » alimente l'import des pertes ; les onglets "
              "2023, 2024 et 2025 alimentent l'import BIC / CCR3. Chaque dialogue "
              "ignore les feuilles qui ne le concernent pas."),
             ("Incidents",
-             f"{len(incidents)} pertes du {DEBUT.isoformat()} au {FIN.isoformat()} — "
+             f"{len(incidents)} pertes du {DEBUT.isoformat()} au {FIN.isoformat()} - "
              f"perte brute cumulée {perte_brute_totale / 1e9:,.2f} Md FCFA, perte "
              f"nette {perte_nette_totale / 1e9:,.2f} Md FCFA."),
             ("Colonnes obligatoires",

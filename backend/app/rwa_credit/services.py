@@ -138,7 +138,7 @@ def _load_capital_position(rwa_credit: float) -> dict[str, float | bool | None]:
 
     fp_calc = calculate_fonds_propres(fp_data)
     # RWA Opérationnel = APR de l'Approche Indicateur de Base (AIB, art. 301
-    # BCEAO) — même source que le tableau de bord (voir dashboard/services.py).
+    # BCEAO) - même source que le tableau de bord (voir dashboard/services.py).
     rwa_operationnel = _calcul_aib_uemoa().apr_aib
     rm_calc = resolve_market_capital(rm_data)
 

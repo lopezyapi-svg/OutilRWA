@@ -428,7 +428,7 @@ Color? _deltaColor(double delta, DashColors c) {
 
 /// Garantie déclarée dont l'exigence ne bouge pas : le garant est pondéré au
 /// moins aussi lourdement que le débiteur, la substitution n'est donc pas
-/// retenue. La ligne compte dans la couverture affichée sans rien alléger —
+/// retenue. La ligne compte dans la couverture affichée sans rien alléger -
 /// c'est ce décalage qu'il faut montrer.
 bool _isCrmWithoutEffect(PortfolioRow row) =>
     row.crmCoveragePercent > 0 && _rwaDelta(row).abs() < 1;

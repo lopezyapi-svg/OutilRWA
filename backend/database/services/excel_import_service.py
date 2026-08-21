@@ -34,7 +34,7 @@ from database.repositories.import_repository import import_repository
 # Options figées réutilisées pour les listes déroulantes du modèle Excel.
 # Importées directement du moteur de calcul partagé (build_exposure_record /
 # resolve_category / coerce_bank_institution_case...) pour garantir qu'une
-# valeur choisie dans le classeur est TOUJOURS reconnue par le calcul —
+# valeur choisie dans le classeur est TOUJOURS reconnue par le calcul -
 # exactement comme les options proposées par le formulaire "Ajouter une
 # exposition" (frontend/lib/modules/expositions/models/exposition_models.dart).
 from database.services.rwa_calculation_service import (
@@ -57,7 +57,7 @@ CATEGORY_PRUDENTIAL_LABELS: tuple[str, ...] = tuple(
     option["prudential"] for option in CATEGORY_OPTIONS
 )
 # Sous-ensemble de catégories acceptées comme "Catégorie du garant" en CRM non
-# financée (un garant ne peut pas être de catégorie immobilier/défaut) — mêmes
+# financée (un garant ne peut pas être de catégorie immobilier/défaut) - mêmes
 # codes que guarantorEligibleCategoryCodes côté frontend.
 _GUARANTOR_ELIGIBLE_CATEGORY_CODES = ("a", "b", "c", "d", "e", "f", "k")
 GUARANTOR_CATEGORY_OPTIONS: tuple[str, ...] = tuple(
@@ -66,7 +66,7 @@ GUARANTOR_CATEGORY_OPTIONS: tuple[str, ...] = tuple(
     if option["code"] in _GUARANTOR_ELIGIBLE_CATEGORY_CODES
 )
 
-# Libellé prudentiel associé à chaque code de catégorie (a, b, c...) — sert à
+# Libellé prudentiel associé à chaque code de catégorie (a, b, c...) - sert à
 # construire les listes déroulantes en cascade ci-dessous : le choix de la
 # catégorie détermine les options valides des colonnes qui n'ont de sens que
 # pour certaines catégories, exactement comme le formulaire "Ajouter une
@@ -146,7 +146,7 @@ DEFAULTED_EXPOSURE_INITIAL_RISK_WEIGHT_OPTIONS: tuple[float, ...] = (
 )
 
 # Explication humaine des clés techniques Cas_institution_bancaire (utilisée
-# uniquement pour l'affichage dans l'onglet "Listes de référence" — la
+# uniquement pour l'affichage dans l'onglet "Listes de référence" - la
 # valeur importée reste la clé technique elle-même, seule forme reconnue
 # sans ambiguïté par coerce_bank_institution_case côté calcul).
 BANK_INSTITUTION_CASE_LABELS: dict[str, str] = {
@@ -239,7 +239,7 @@ FIXED_OPTIONS_BY_COLUMN: dict[str, tuple] = {
 # catégorie choisie sur la même ligne (colonne "Catégorie d'exposition") :
 # pour chaque colonne, les codes de catégorie qui l'activent et la liste
 # d'options à proposer dans ce cas. Sur les autres catégories, la colonne ne
-# propose que "(Sans objet pour cette catégorie)" — comme le formulaire
+# propose que "(Sans objet pour cette catégorie)" - comme le formulaire
 # "Ajouter une exposition" masque ces mêmes champs selon la catégorie.
 # Remplace, pour ces colonnes, l'entrée correspondante de
 # FIXED_OPTIONS_BY_COLUMN (conservée telle quelle pour l'onglet "Listes de
@@ -279,7 +279,7 @@ CATEGORY_DEPENDENT_COLUMNS: dict[str, tuple[tuple[str, ...], tuple]] = {
 
 # Nombre de lignes de saisie couvertes par les listes déroulantes (au-delà de
 # ce nombre de lignes, l'utilisateur peut toujours copier la validation avec
-# Excel — poignée de recopie — donc une valeur généreuse suffit).
+# Excel - poignée de recopie - donc une valeur généreuse suffit).
 _VALIDATION_ROW_COUNT = 2000
 
 
@@ -511,7 +511,7 @@ class ExcelImportService:
         instructions.column_dimensions["A"].width = 26
         instructions.column_dimensions["B"].width = 90
         instructions.merge_cells("A1:B1")
-        instructions["A1"].value = "Instructions — Import des expositions (Risque de crédit)"
+        instructions["A1"].value = "Instructions - Import des expositions (Risque de crédit)"
         instructions["A1"].font = Font(bold=True, size=13, color="FFFFFF")
         instructions["A1"].fill = hdr_fill(BLUE_DARK)
         instructions["A1"].alignment = center()
@@ -633,7 +633,7 @@ class ExcelImportService:
                 {
                     "Date d'analyse": "2026-06-30",
                     "ID_Exposition": "EXP-EX-003",
-                    "Contrepartie": "Particulier — M. Koffi",
+                    "Contrepartie": "Particulier - M. Koffi",
                     "Notation_externe_contrepartie": "Non noté",
                     "Pays_contrepartie": "Côte d'Ivoire",
                     "Notation_externe_pays": "AAA",
@@ -745,14 +745,14 @@ class ExcelImportService:
 
                 description = description_by_column.get(header)
                 if description:
-                    comment_text = f"{'Obligatoire' if is_required else 'Optionnel'} — {description}"
+                    comment_text = f"{'Obligatoire' if is_required else 'Optionnel'} - {description}"
                     cell.comment = Comment(comment_text, "OutilRWA")
 
                 # Liste déroulante en cascade : les colonnes qui ne concernent
                 # qu'une (ou plusieurs) catégorie(s) précise(s) ne proposent
                 # les vraies options que si la catégorie de la ligne
                 # correspond ; sinon seule "(Sans objet pour cette catégorie)"
-                # est proposée — reproduit le masquage conditionnel du
+                # est proposée - reproduit le masquage conditionnel du
                 # formulaire "Ajouter une exposition" selon la catégorie.
                 cascade_spec = (
                     CATEGORY_DEPENDENT_COLUMNS.get(header)
@@ -782,7 +782,7 @@ class ExcelImportService:
                     # Liste déroulante fixe : colonnes à choix fixes
                     # explicites, sinon Oui/Non pour toute colonne de ce type
                     # dans la spec du validateur
-                    # (app/validators/excel_import_validator.py) — donc tout
+                    # (app/validators/excel_import_validator.py) - donc tout
                     # futur champ oui/non hérite automatiquement de son menu
                     # déroulant sans modification à faire ici.
                     options = FIXED_OPTIONS_BY_COLUMN.get(header)
@@ -807,12 +807,12 @@ class ExcelImportService:
                     cell.alignment = left()
 
         # ── Feuille informative "Listes de référence" (non requise à
-        # l'import — sert uniquement de rappel des valeurs valides) ────────
+        # l'import - sert uniquement de rappel des valeurs valides) ────────
         reference = workbook.create_sheet("Listes de référence")
         reference.column_dimensions["A"].width = 40
         reference.column_dimensions["B"].width = 40
         reference.merge_cells("A1:B1")
-        reference["A1"].value = "Listes de référence (rappel — feuille informative)"
+        reference["A1"].value = "Listes de référence (rappel - feuille informative)"
         reference["A1"].font = Font(bold=True, size=12, color="FFFFFF")
         reference["A1"].fill = hdr_fill(BLUE_DARK)
         reference["A1"].alignment = center()
@@ -855,7 +855,7 @@ class ExcelImportService:
             (
                 "Champs Oui/Non (tous les Souverain_*, BMD_*, Organisme_public_*, "
                 "Clientele_detail_*, Immobilier_*, Defaut_*, Entreprise_*, "
-                "Obligation_convertible_indice_principal) — la plupart sont en "
+                "Obligation_convertible_indice_principal) - la plupart sont en "
                 "cascade selon Catégorie d'exposition, voir l'onglet "
                 "Instructions",
                 OUI_NON_OPTIONS,

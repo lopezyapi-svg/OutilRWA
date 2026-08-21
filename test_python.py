@@ -13,7 +13,7 @@ def build_fonds_propres_import_template() -> bytes:
     ws.row_dimensions[1].height = 32
     ws.merge_cells("A1:C1")
     title_cell = ws["A1"]
-    title_cell.value = "Modèle d'import — Fonds Propres Réglementaires"
+    title_cell.value = "Modèle d'import - Fonds Propres Réglementaires"
     
     # Also commenting out row heights to be safe
     # ws.row_dimensions[2].height = 24

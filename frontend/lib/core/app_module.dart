@@ -127,7 +127,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.fodepDashboard:
         return 'Tableau de bord FODEP';
       case AppModule.fodepAnalyser:
-        return 'Analyser un FODEP existant';
+        return 'Analyse';
       case AppModule.fodepGenerer:
         return 'Générer un FODEP';
       case AppModule.referentiels:

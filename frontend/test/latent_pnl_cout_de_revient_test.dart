@@ -46,7 +46,7 @@ void main() {
   group('plus et moins-values latentes par émetteur', () {
     test('une ligne au pair reste dans le coût de revient', () {
       // Deux lignes de 1 M : l'une gagne 100 k, l'autre est au pair.
-      // Coût de revient attendu : 2 M, et non 1 M — sans quoi la variation
+      // Coût de revient attendu : 2 M, et non 1 M - sans quoi la variation
       // afficherait +10 % au lieu de +5 %.
       final dataset = _portefeuille([
         _ligne(

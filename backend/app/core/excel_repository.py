@@ -60,7 +60,7 @@ EXPECTED_SHEETS = (
     "CRM_financée",
 )
 # Doit rester identique, colonne par colonne, à la spec du validateur
-# (IMPORT_SHEET_SPECS dans app/validators/excel_import_validator.py) — sinon
+# (IMPORT_SHEET_SPECS dans app/validators/excel_import_validator.py) - sinon
 # un modèle généré ici puis réimporté tel quel est rejeté par le validateur
 # pour "colonnes requises manquantes".
 #

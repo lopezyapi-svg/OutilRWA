@@ -25,7 +25,7 @@ GLOBAL_SOLVENCY_REQUIREMENT = MIN_SOLVENCY_RATIO + CONSERVATION_BUFFER
 # Ratio de capital minimum réglementaire UMOA par défaut (9 %, exigence
 # minimale de fonds propres §91c, sans coussin). Paramétrable via
 # settings.capital_ratio. L'exigence globale avec coussin de conservation
-# (2,5 %) est de 11,5 % — GLOBAL_SOLVENCY_REQUIREMENT.
+# (2,5 %) est de 11,5 % - GLOBAL_SOLVENCY_REQUIREMENT.
 DEFAULT_CAPITAL_RATIO = settings.capital_ratio
 
 # Seuils de concentration (HHI - Herfindahl-Hirschman Index)

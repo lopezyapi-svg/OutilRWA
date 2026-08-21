@@ -79,7 +79,7 @@ void main() {
     // Volontairement, on N'ATTEND PAS `MarketDataImportStore.initialized` : ce
     // future dépend d'une lecture fichier réelle (dart:io) qui n'est jamais
     // pompée sous `flutter_test`, et son `.timeout` ne se déclenche pas non plus
-    // pendant un `await` nu (horloge simulée) — l'attendre figeait tout le test.
+    // pendant un `await` nu (horloge simulée) - l'attendre figeait tout le test.
     // L'écran rend désormais directement les données présentes dans le snapshot
     // (cf. FxRiskAnalysisScreen.initState), donc le tableau est disponible dès
     // le premier pump sans dépendre de la restauration persistée.
@@ -105,7 +105,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Après défilement : la colonne figée de gauche a bien défilé avec le
-    // corps — la première ligne a disparu, la dernière est apparue.
+    // corps - la première ligne a disparu, la dernière est apparue.
     expect(find.text('EMET_000'), findsNothing);
     expect(find.text('EMET_059'), findsOneWidget);
   });

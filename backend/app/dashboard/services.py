@@ -418,10 +418,10 @@ def get_dashboard_snapshot() -> DashboardSnapshot:
     fp_calc = calculate_fonds_propres(fp_data)
     rm_calc = resolve_market_capital(rm_data)
     # RWA Opérationnel = APR de l'Approche Indicateur de Base (AIB, art. 301
-    # du dispositif prudentiel BCEAO) — c'est la méthode réglementaire UEMOA
+    # du dispositif prudentiel BCEAO) - c'est la méthode réglementaire UEMOA
     # effectivement applicable, à la différence du BIC/CRR3 qui n'est qu'un
     # outil de pilotage interne calé sur le référentiel bâlois européen (cf.
-    # libellé « BIC — CRR3 Pilotage interne » dans la synthèse du module
+    # libellé « BIC - CRR3 Pilotage interne » dans la synthèse du module
     # Risque Opérationnel). `apr_aib` est déjà exprimé en équivalent RWA
     # (K_IB × 12,5), comme le risque de marché (rwa_marche = capital requis
     # × 12,5) : pas de multiplicateur à réappliquer ici.
@@ -715,7 +715,7 @@ def update_fonds_propres(update_data: FondsPropresUpdate) -> DashboardSnapshot:
 # Libellés des 11 postes des Fonds Propres Réglementaires, dans l'ordre
 # attendu par le modèle Excel d'import. Doit rester synchronisé avec
 # `_fpFields`/`_fpLabels` côté frontend
-# (dashboard/widgets/dashboard_fonds_propres_import_dialog.dart) — chaque
+# (dashboard/widgets/dashboard_fonds_propres_import_dialog.dart) - chaque
 # libellé précise son groupe (CET1/AT1/Tier 2) car "Réduction prudentielle"
 # apparaît dans les trois groupes et doit rester non-ambigu.
 FONDS_PROPRES_INPUT_FIELDS: tuple[tuple[str, str, str], ...] = (
@@ -738,7 +738,7 @@ def build_fonds_propres_import_template() -> bytes:
     Réglementaires (CET1 / AT1 / Tier 2).
 
     Une seule "photo" à la fois (pas de dimension année) : le modèle contient
-    une ligne par poste, avec son groupe (CET1/AT1/Tier 2) et sa valeur —
+    une ligne par poste, avec son groupe (CET1/AT1/Tier 2) et sa valeur -
     l'import remplace entièrement les fonds propres actuellement enregistrés,
     exactement comme le fait le formulaire "Mettre à jour".
     """
@@ -770,7 +770,7 @@ def build_fonds_propres_import_template() -> bytes:
     ws.row_dimensions[1].height = 32
     ws.merge_cells("A1:C1")
     title_cell = ws["A1"]
-    title_cell.value = "Modèle d'import — Fonds Propres Réglementaires (CET1 / AT1 / Tier 2)"
+    title_cell.value = "Modèle d'import - Fonds Propres Réglementaires (CET1 / AT1 / Tier 2)"
     title_cell.font = Font(bold=True, size=13, color="FFFFFF")
     title_cell.fill = fill(BLUE_DARK)
     title_cell.alignment = center()
@@ -816,7 +816,7 @@ def build_fonds_propres_import_template() -> bytes:
     ws2 = wb.create_sheet("Instructions")
     ws2.column_dimensions["A"].width = 78
     ws2.merge_cells("A1:A1")
-    ws2["A1"].value = "Instructions — Import des Fonds Propres Réglementaires"
+    ws2["A1"].value = "Instructions - Import des Fonds Propres Réglementaires"
     ws2["A1"].font = Font(bold=True, size=13, color="FFFFFF")
     ws2["A1"].fill = fill(BLUE_DARK)
     ws2["A1"].alignment = center()

@@ -3,7 +3,7 @@
 Sur un hebergeur qui n'expose qu'un seul service (Render, Fly, Railway...), il
 n'y a ni proxy inverse ni conteneur separe pour les fichiers statiques :
 l'application et l'API doivent partager le meme programme, donc la meme
-origine. C'est d'ailleurs preferable — aucune requete d'origine croisee, et le
+origine. C'est d'ailleurs preferable - aucune requete d'origine croisee, et le
 cookie de session reste strictement de premiere partie.
 """
 

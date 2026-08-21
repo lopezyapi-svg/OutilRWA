@@ -29,9 +29,9 @@ logger = logging.getLogger(__name__)
 # limité aux entreprises, grille IF par maturité, défaut prudent à 150 %,
 # ARC financée sans double déduction, Hfx 8 %, capital minimum 9 %).
 # 2026-07-19 v2 : dates d'octroi incohérentes (postérieures à l'échéance ou à
-# la date d'analyse) ignorées — maturité initiale indéterminée et traitement
+# la date d'analyse) ignorées - maturité initiale indéterminée et traitement
 # long terme prudent au lieu d'un faux « 0 mois » ouvrant le court terme.
-# 2026-07-19 v3 : statut prudentiel de vie — toute exposition avec >= 90 jours
+# 2026-07-19 v3 : statut prudentiel de vie - toute exposition avec >= 90 jours
 # d'impayés (ou déclassée manuellement) est pondérée comme une créance en
 # souffrance (150 %, 100 % si provisions >= 20 %) sans perdre sa catégorie.
 # 2026-07-21 v4 : les versements amortissent l'encours BILAN (et non plus
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 # désormais l'EAD bilan, donc le RWA et l'exigence de fonds propres. Le taux de
 # provisionnement d'une créance en souffrance se mesure sur l'encours bilan.
 # 2026-07-21 v5 : une ligne classée en catégorie « créances en souffrance » est
-# douteuse par construction — elle ne peut plus être annoncée saine dans le
+# douteuse par construction - elle ne peut plus être annoncée saine dans le
 # suivi ni échapper au taux de créances en souffrance du tableau de bord.
 # 2026-07-22 v6 : la sûreté financée est ramenée dans la devise réelle de
 # l'exposition. Le détail CRM portait « XOF » par défaut : sur une ligne en

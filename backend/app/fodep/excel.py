@@ -28,7 +28,7 @@ def build_fonds_propres_export(periode: str | None, postes: dict[str, float]) ->
     thin = Side(style="thin", color=BORDER_CLR)
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    ws["A1"] = f"FODEP — Fonds propres réglementaires — période {periode or '(brouillon)'}"
+    ws["A1"] = f"FODEP - Fonds propres réglementaires - période {periode or '(brouillon)'}"
     ws["A1"].font = Font(bold=True, size=13, color=BLUE_DARK)
     ws.merge_cells("A1:E1")
 

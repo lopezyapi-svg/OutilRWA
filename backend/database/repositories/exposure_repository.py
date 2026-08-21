@@ -732,7 +732,7 @@ class ExposureRepository:
             "UPDATE expositions SET contrepartie_id = ? WHERE contrepartie_id = ?",
             (target_id, source_id),
         )
-        # Sous-tables de type (PKs remappées — les FK suivent via CASCADE)
+        # Sous-tables de type (PKs remappées - les FK suivent via CASCADE)
         for table in (
             "exposition_souveraine",
             "exposition_organisme_public",

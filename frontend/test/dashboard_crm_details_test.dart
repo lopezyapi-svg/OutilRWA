@@ -216,7 +216,7 @@ void main() {
         (tester) async {
       // Le moteur ne retient pas une substitution défavorable : la ligne garde
       // la pondération du débiteur. Elle compte pourtant dans le taux de
-      // couverture affiché — c'est ce décalage que le bandeau doit dire.
+      // couverture affiché - c'est ce décalage que le bandeau doit dire.
       await pumpDetails(tester);
       await tester.tap(find.text('Non financée'));
       await tester.pumpAndSettle();

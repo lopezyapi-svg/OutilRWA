@@ -51,7 +51,7 @@ enum SessionState {
 /// Détient le jeton d'accès et le profil, et rejoue le renouvellement.
 ///
 /// Le jeton d'accès n'est **jamais** écrit sur disque : il vit dans ce champ,
-/// en mémoire vive. Un rechargement de page le perd, et c'est voulu — il est
+/// en mémoire vive. Un rechargement de page le perd, et c'est voulu - il est
 /// alors redemandé via le cookie de renouvellement, illisible par le
 /// JavaScript. Un XSS ne trouve donc rien à voler qui survive à la page.
 class SessionController extends ChangeNotifier {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'dashboard_design.dart';
 
 /// Infobulle « carte » des graphiques du dashboard : titre en gras puis
-/// lignes de détail, sur fond clair arrondi et ombré — même langage visuel
+/// lignes de détail, sur fond clair arrondi et ombré - même langage visuel
 /// que la carte de survol du donut CRM.
 class DashChartTooltip extends StatelessWidget {
   const DashChartTooltip({

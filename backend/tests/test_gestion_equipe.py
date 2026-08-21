@@ -26,7 +26,7 @@ def client():
 
     Les modules d'authentification sont rechargés : `settings` est un objet
     capturé à l'import, et un autre module de test qui recharge la
-    configuration laisserait ici un secret périmé — les jetons émis ne
+    configuration laisserait ici un secret périmé - les jetons émis ne
     seraient alors plus vérifiables.
     """
 

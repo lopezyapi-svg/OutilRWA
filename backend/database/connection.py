@@ -282,7 +282,7 @@ class DatabaseManager:
 
         `schema.sql` s'exécute AVANT les migrations et crée déjà les tables
         françaises. Le « ALTER TABLE ... RENAME TO » de la migration 021
-        échouait donc sur « une table de ce nom existe déjà » — erreur que le
+        échouait donc sur « une table de ce nom existe déjà » - erreur que le
         moteur ignore volontairement pour rendre les migrations rejouables.
 
         Le renommage devait pourtant emporter les données : elles sont restées

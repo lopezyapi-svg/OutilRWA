@@ -1,4 +1,4 @@
-"""Fondation SQLAlchemy (moteur, session) — pilote de la migration ORM.
+"""Fondation SQLAlchemy (moteur, session) - pilote de la migration ORM.
 
 Ce module coexiste volontairement avec `database.connection.DatabaseManager` :
 - `DatabaseManager` reste seul responsable de la création et de la migration
@@ -24,7 +24,7 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from database.connection import DATABASE_PATH
 
-# Même fichier SQLite que DatabaseManager — une seule source de vérité pour
+# Même fichier SQLite que DatabaseManager - une seule source de vérité pour
 # le chemin de la base, quel que soit le point d'accès (SQL brut ou ORM).
 engine = create_engine(
     f"sqlite:///{DATABASE_PATH}",

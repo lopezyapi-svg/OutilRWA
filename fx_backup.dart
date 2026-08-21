@@ -98,8 +98,8 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
     _analysisResult = _computeAnalysis();
     // Restauration des données persistées en arrière-plan : best-effort. Le
     // rendu ne dépend QUE du snapshot courant (cf. `_runAnalysis` rebranché sur
-    // le listener), donc si ce future ne se complète jamais — typiquement en
-    // test widget, où l'I/O fichier de `initialized` n'est pas pompée — l'écran
+    // le listener), donc si ce future ne se complète jamais - typiquement en
+    // test widget, où l'I/O fichier de `initialized` n'est pas pompée - l'écran
     // affiche malgré tout les données disponibles au lieu de rester bloqué sur
     // le spinner.
     _awaitRestore();
@@ -207,7 +207,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
             ),
           ),
           const SizedBox(height: 3),
-          // Tableau — occupe toute la hauteur restante (scroll interne + pied
+          // Tableau - occupe toute la hauteur restante (scroll interne + pied
           // figé) au lieu d'une hauteur fixe qui paraissait coincée en bas.
           Expanded(
             child: Padding(
@@ -287,7 +287,7 @@ FxRiskAnalysisResult _emptyFxRiskAnalysisResult() {
 }
 
 /// Bouton d'information (ⓘ) ouvrant la méthodologie et les formules du risque
-/// de change — placé près du titre du tableau pour rendre les chiffres
+/// de change - placé près du titre du tableau pour rendre les chiffres
 /// (notamment les 0) compréhensibles.
 class _FxInfoButton extends StatelessWidget {
   const _FxInfoButton({required this.result});
@@ -332,7 +332,7 @@ class _FxMethodologyDialog extends StatelessWidget {
               size: 18, color: _fxPrimary),
           const SizedBox(width: 2),
           Expanded(
-            child: Text('Risque de change — méthodologie',
+            child: Text('Risque de change - méthodologie',
                 style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -362,8 +362,8 @@ class _FxMethodologyDialog extends StatelessWidget {
                   border: Border.all(color: _fxWarning.withValues(alpha: 0.30)),
                 ),
                 child: Text(
-                  'La devise de référence (XOF) et l\'EUR — à parité fixe '
-                  '(1 EUR = 655,957 FCFA) — ne portent aucun risque de change : '
+                  'La devise de référence (XOF) et l\'EUR - à parité fixe '
+                  '(1 EUR = 655,957 FCFA) - ne portent aucun risque de change : '
                   'leurs lignes restent donc à 0.',
                   style: TextStyle(fontSize: 12, color: textColor, height: 1.4),
                 ),
@@ -408,7 +408,7 @@ class _FxMethodologyDialog extends StatelessWidget {
                   '${formatLargeNumber(result.rwaChange)} XOF',
                   highlight: true),
               const SizedBox(height: 3),
-              Text('Référence : BCEAO — Dispositif prudentiel, Art. 45.',
+              Text('Référence : BCEAO - Dispositif prudentiel, Art. 45.',
                   style: TextStyle(
                       fontSize: 10.5,
                       fontStyle: FontStyle.italic,
@@ -507,7 +507,7 @@ class _FxEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Deux situations bien distinctes — il est important de ne pas les
+    // Deux situations bien distinctes - il est important de ne pas les
     // confondre : « pas de risque de change » est un RÉSULTAT valide (et non une
     // absence de données), car la devise de référence (XOF) ne porte aucun
     // risque de change.
@@ -647,7 +647,7 @@ class _FxShockChart extends StatefulWidget {
 
 class _FxShockChartState extends State<_FxShockChart> {
   static const double _maxShock = 0.20; // ±20 %
-  static const double _exampleNet = 1e9; // 1 Md XOF — position USD d'exemple
+  static const double _exampleNet = 1e9; // 1 Md XOF - position USD d'exemple
   bool _example = false;
 
   /// Position nette sensible au change = positions en devises FLOTTANTES vs XOF
@@ -1460,7 +1460,7 @@ class _FxTrend {
   final String label;
 }
 
-/// Carte KPI moderne — badge dégradé, hiérarchie typographique soignée,
+/// Carte KPI moderne - badge dégradé, hiérarchie typographique soignée,
 /// sous-titre contextuel, puce de tendance et effet de survol.
 class _FxKpiCard extends StatefulWidget {
   const _FxKpiCard({
@@ -1712,7 +1712,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
   // tout le corps. Chaque ligne est UN widget unique qui contient à la fois la
   // colonne gauche figée, le milieu et la colonne droite figée ; comme tout
   // partage l'unique position de défilement vertical, les colonnes figées ne
-  // peuvent JAMAIS dériver par rapport au milieu — l'alignement est garanti par
+  // peuvent JAMAIS dériver par rapport au milieu - l'alignement est garanti par
   // construction, sans aucune synchronisation à maintenir. La virtualisation
   // est conservée : seules les lignes visibles sont construites (indispensable
   // pour un portefeuille de plusieurs milliers de titres).
@@ -1727,7 +1727,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
   // Pourquoi c'est essentiel : avec un `LinkedScrollControllerGroup` alimenté
   // par un contrôleur par ligne, le recyclage permanent des lignes par la
   // `ListView` ajoutait/retirait sans fin des contrôleurs au groupe, ce qui
-  // empêchait la file de microtâches de se vider — `pumpAndSettle` ne
+  // empêchait la file de microtâches de se vider - `pumpAndSettle` ne
   // convergeait jamais (timeout) et le défilement saccadait en production.
   final ScrollController _midHSC = ScrollController();
 
@@ -1899,7 +1899,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
                             headerTextLight)),
                   ]),
                 ),
-                // Body — liste verticale unique et VIRTUALISÉE. Chaque ligne
+                // Body - liste verticale unique et VIRTUALISÉE. Chaque ligne
                 // (_FxSecurityRow) porte la colonne gauche figée, le milieu
                 // défilant et la colonne droite figée ; toutes partagent
                 // l'unique défilement vertical, donc l'alignement des colonnes
@@ -2039,7 +2039,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
 /// Une ligne du corps du tableau.
 ///
 /// Structure : colonne gauche figée · milieu (déjà synchronisé horizontalement
-/// par le parent via [Transform.translate]) · colonne droite figée — le tout
+/// par le parent via [Transform.translate]) · colonne droite figée - le tout
 /// dans UN seul widget, donc partageant l'unique défilement vertical de la
 /// liste (alignement garanti). La ligne ne possède AUCUN [ScrollController] :
 /// elle se contente d'afficher le milieu fourni, ce qui rend le recyclage par

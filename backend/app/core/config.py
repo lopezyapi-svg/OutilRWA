@@ -51,7 +51,7 @@ class Settings:
     # Libelle de perimetre affiche dans le bandeau de contexte.
     rwa_analysis_scope_label: str = os.getenv(
         "RWA_ANALYSIS_SCOPE_LABEL",
-        "Portefeuille consolidé — risque de crédit",
+        "Portefeuille consolidé - risque de crédit",
     )
     # --- Authentification -------------------------------------------------
     # Desactivee par defaut : le poste de travail lance le backend en local sur

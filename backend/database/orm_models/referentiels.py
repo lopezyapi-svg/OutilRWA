@@ -2,7 +2,7 @@
 
 Mappe les 4 tables définies dans database/schema.sql (lignes ~228-253) :
 baremes_ponderation, baremes_ccf, references_notation,
-references_pays_souverains. Module pilote de la migration SQLAlchemy —
+references_pays_souverains. Module pilote de la migration SQLAlchemy -
 aucune jointure, CRUD simple, sert de gabarit pour les modules suivants.
 """
 

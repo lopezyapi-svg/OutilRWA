@@ -186,7 +186,7 @@ def list_historique(limit: int = Query(default=200, le=1000)) -> list[Historique
     return services.list_historique(limit=limit)
 
 
-# ─── BIC — Approche Standard CRR3 ────────────────────────────────────────────
+# ─── BIC - Approche Standard CRR3 ────────────────────────────────────────────
 
 @router.get("/bic/inputs", response_model=list[OpRiskInput])
 def list_bic_inputs() -> list[OpRiskInput]:
@@ -231,7 +231,7 @@ def download_bic_import_template() -> Response:
     )
 
 
-# ─── BLOC A1 — AIB (Approche Indicateur de Base) ─────────────────────────────
+# ─── BLOC A1 - AIB (Approche Indicateur de Base) ─────────────────────────────
 
 @router.get("/aib/pnb", response_model=list[PnbAnnuelView])
 def list_pnb_annuel() -> list[PnbAnnuelView]:
@@ -271,7 +271,7 @@ def get_decision_aib() -> DecisionPilotageResult:
     return services.get_decision_aib()
 
 
-# ─── BLOC A2 — AS (Approche Standard) ────────────────────────────────────────
+# ─── BLOC A2 - AS (Approche Standard) ────────────────────────────────────────
 
 @router.get("/as/beta-lignes", response_model=list[BetaLigneView])
 def list_beta_lignes() -> list[BetaLigneView]:
@@ -332,7 +332,7 @@ def get_synthese() -> SyntheseResult:
     return services.get_synthese()
 
 
-# ─── Décision de pilotage — Analyse et reporting (dispositif UEMOA) ──────────
+# ─── Décision de pilotage - Analyse et reporting (dispositif UEMOA) ──────────
 
 @router.get("/pilotage/decision", response_model=DecisionPilotageResult)
 def get_decision_pilotage() -> DecisionPilotageResult:

@@ -7,7 +7,7 @@ from typing import Any
 # ============================================================================
 MIN_CET1_RATIO = 0.05       # 5% (§91a)
 MIN_TIER1_RATIO = 0.06      # 6% (§91b)
-MIN_SOLVENCY_RATIO = 0.09   # 9% — minimum SANS coussin (§91c ; exigence globale avec coussin = 11,5 %)
+MIN_SOLVENCY_RATIO = 0.09   # 9% - minimum SANS coussin (§91c ; exigence globale avec coussin = 11,5 %)
 MIN_LEVERAGE_RATIO = 0.03   # 3%
 
 # Coussin de conservation (Titre III, section IV, Paragraphe 92)
@@ -89,7 +89,7 @@ def evaluate_ratios(
     Calcule et évalue les ratios de solvabilité et de levier par rapport aux normes UMOA.
 
     ``seuils`` (en pourcentage, clés ``cet1``/``tier1``/``solvency``/``leverage``)
-    permet d'imposer des niveaux datés — la notice FODEP exige que le niveau à
+    permet d'imposer des niveaux datés - la notice FODEP exige que le niveau à
     respecter soit paramétré par date d'arrêté plutôt que figé dans le code.
     Omis, les minima courants ci-dessus s'appliquent, ce qui préserve le
     comportement des appelants qui n'ont pas de date d'arrêté (tableau de bord).

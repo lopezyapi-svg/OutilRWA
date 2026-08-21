@@ -1473,7 +1473,7 @@ class _PanneauGraphique extends StatelessWidget {
               message: 'Recadrer l\'axe sur la distribution courante',
               child: InkWell(
                 onTap: onRecadrer,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(4),
                 child: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
@@ -1498,7 +1498,7 @@ class _PanneauGraphique extends StatelessWidget {
               message: 'Réinitialiser les paramètres',
               child: InkWell(
                 onTap: onReinitialiser,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(4),
                 child: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(

@@ -422,7 +422,7 @@ const _entryReportingGlobal = _MenuEntry.leaf(
 const _entryFodepAnalyser = _MenuEntry.leaf(
   module: AppModule.fodepAnalyser,
   icon: Icons.fact_check_outlined,
-  label: 'Analyser un FODEP existant',
+  label: 'Analyse',
 );
 
 const _entryFodepGenerer = _MenuEntry.leaf(

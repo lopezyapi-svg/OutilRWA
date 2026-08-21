@@ -2,7 +2,7 @@
 
 Le modèle Excel (2 onglets Obligations/Actions, format long : une ligne =
 un titre à une date) doit produire des CSV lisibles par la couche de
-données VaR (app.var_marche.portefeuille_data) sans intervention manuelle —
+données VaR (app.var_marche.portefeuille_data) sans intervention manuelle -
 c'est le seul moyen, pour un utilisateur, d'alimenter la VaR Historique.
 """
 
@@ -60,7 +60,7 @@ def test_modele_officiel_structure_des_onglets():
 
 def test_upload_modele_officiel_alimente_la_var(tmp_path):
     """Le modèle généré par l'application doit être ré-importable tel quel
-    et rendre la VaR calculable — non-régression du bug où (1) les notes
+    et rendre la VaR calculable - non-régression du bug où (1) les notes
     d'aide étaient relues comme des positions malformées et (2) les
     fréquences de coupon en toutes lettres (« Semestrielle ») faisaient
     échouer la lecture des positions."""
@@ -99,7 +99,7 @@ def test_upload_modele_officiel_alimente_la_var(tmp_path):
 def test_upload_position_sans_historique_est_conservee(tmp_path):
     """Une ligne sans Date ni Prix (position connue, pas encore de série de
     prix) doit être conservée comme position mais ne pas alimenter
-    l'historique — permet l'import progressif d'un portefeuille."""
+    l'historique - permet l'import progressif d'un portefeuille."""
 
     import io
 
@@ -181,7 +181,7 @@ def test_import_courbe_des_taux_remplace_historique(tmp_path):
 def test_actualisation_courbe_accumule_les_dates(tmp_path, monkeypatch):
     """_ecrire_historique_taux EMPILE les dates (une par actualisation) au
     lieu d'écraser : réactualiser le même jour reste idempotent, un jour
-    nouveau augmente la profondeur — c'est ce qui permet à la VaR historique
+    nouveau augmente la profondeur - c'est ce qui permet à la VaR historique
     de se débloquer avec le temps."""
 
     from app.var_marche.routes import _ecrire_historique_taux

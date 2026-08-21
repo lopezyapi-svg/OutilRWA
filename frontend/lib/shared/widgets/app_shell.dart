@@ -2055,7 +2055,7 @@ class _WorkspaceTopBar extends StatelessWidget {
               const _ShellBrand(),
               const Spacer(),
               // Identité de session et gestion d'équipe. L'application a DEUX
-              // barres d'en-tête — celle-ci pour le poste de travail, _TopBar
+              // barres d'en-tête - celle-ci pour le poste de travail, _TopBar
               // pour les écrans étroits. Les deux doivent porter la zone
               // compte, sinon la gestion d'équipe n'apparaît que sur l'une
               // des deux : c'est ce qui la rendait visible au téléphone et
@@ -2803,7 +2803,7 @@ class _ZoneCompte extends StatelessWidget {
     final theme = Theme.of(context);
     // Sur écran étroit, seules les commandes subsistent : le nom du compte et
     // le badge de rôle poussaient la barre au-delà de sa largeur. Perdre le
-    // nom est sans gravité — l'utilisateur sait qui il est ; perdre l'accès à
+    // nom est sans gravité - l'utilisateur sait qui il est ; perdre l'accès à
     // l'équipe ne l'est pas.
     final etroit = MediaQuery.sizeOf(context).width < 700;
     return Padding(

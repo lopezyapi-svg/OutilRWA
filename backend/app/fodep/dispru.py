@@ -93,7 +93,7 @@ _EFFECTIFS: tuple[CodeDispru, ...] = (
 # Groupe distinct de CET1/AT1/T2/effectifs : ces postes n'entrent dans aucun
 # total de fonds propres, ils alimentent uniquement les normes RA009-RA011
 # (voir calculations.py::calculer_limites_operations). Valeur nette
-# uniquement — voir la note de la migration 036.
+# uniquement - voir la note de la migration 036.
 _LIMITES_OPERATIONS: tuple[CodeDispru, ...] = (
     CodeDispru("IM001", "EP36", "Immobilisations hors exploitation avant ajustement", "LIMITES"),
     CodeDispru("IM002", "EP36", "Immobilisations acquises par réalisation de garantie depuis moins de 2 ans", "LIMITES", "deduction"),
@@ -101,25 +101,25 @@ _LIMITES_OPERATIONS: tuple[CodeDispru, ...] = (
     CodeDispru("PA084", "EP36", "Participations dans les sociétés immobilières", "LIMITES"),
     CodeDispru("IM007", "EP37", "Immobilisations d'exploitation ajustées", "LIMITES"),
     CodeDispru("PA106", "EP37", "Total des participations (toutes sections de l'EP34)", "LIMITES"),
-    CodeDispru("PR001A", "EP38", "Montant des concours — actionnaires détenant individuellement au moins 10 % des droits de vote", "LIMITES"),
-    CodeDispru("PR001B", "EP38", "Montant des concours — membres de l'organe délibérant", "LIMITES"),
-    CodeDispru("PR001C", "EP38", "Montant des concours — membres de l'organe exécutif", "LIMITES"),
-    CodeDispru("PR001D", "EP38", "Montant des concours — commissaires aux comptes", "LIMITES"),
-    CodeDispru("PR001E", "EP38", "Montant des concours — personnel de direction", "LIMITES"),
-    CodeDispru("PR001F", "EP38", "Montant des concours — cadres moyens et supérieurs", "LIMITES"),
-    CodeDispru("PR001G", "EP38", "Montant des concours — personnel d'exécution", "LIMITES"),
-    CodeDispru("PR001H", "EP38", "Montant des concours — autres parties liées", "LIMITES"),
-    CodeDispru("PR002A", "EP38", "Engagements par signature — actionnaires détenant individuellement au moins 10 % des droits de vote", "LIMITES"),
-    CodeDispru("PR002B", "EP38", "Engagements par signature — membres de l'organe délibérant", "LIMITES"),
-    CodeDispru("PR002C", "EP38", "Engagements par signature — membres de l'organe exécutif", "LIMITES"),
-    CodeDispru("PR002D", "EP38", "Engagements par signature — commissaires aux comptes", "LIMITES"),
-    CodeDispru("PR002E", "EP38", "Engagements par signature — personnel de direction", "LIMITES"),
-    CodeDispru("PR002F", "EP38", "Engagements par signature — cadres moyens et supérieurs", "LIMITES"),
-    CodeDispru("PR002G", "EP38", "Engagements par signature — personnel d'exécution", "LIMITES"),
-    CodeDispru("PR002H", "EP38", "Engagements par signature — autres parties liées", "LIMITES"),
+    CodeDispru("PR001A", "EP38", "Montant des concours - actionnaires détenant individuellement au moins 10 % des droits de vote", "LIMITES"),
+    CodeDispru("PR001B", "EP38", "Montant des concours - membres de l'organe délibérant", "LIMITES"),
+    CodeDispru("PR001C", "EP38", "Montant des concours - membres de l'organe exécutif", "LIMITES"),
+    CodeDispru("PR001D", "EP38", "Montant des concours - commissaires aux comptes", "LIMITES"),
+    CodeDispru("PR001E", "EP38", "Montant des concours - personnel de direction", "LIMITES"),
+    CodeDispru("PR001F", "EP38", "Montant des concours - cadres moyens et supérieurs", "LIMITES"),
+    CodeDispru("PR001G", "EP38", "Montant des concours - personnel d'exécution", "LIMITES"),
+    CodeDispru("PR001H", "EP38", "Montant des concours - autres parties liées", "LIMITES"),
+    CodeDispru("PR002A", "EP38", "Engagements par signature - actionnaires détenant individuellement au moins 10 % des droits de vote", "LIMITES"),
+    CodeDispru("PR002B", "EP38", "Engagements par signature - membres de l'organe délibérant", "LIMITES"),
+    CodeDispru("PR002C", "EP38", "Engagements par signature - membres de l'organe exécutif", "LIMITES"),
+    CodeDispru("PR002D", "EP38", "Engagements par signature - commissaires aux comptes", "LIMITES"),
+    CodeDispru("PR002E", "EP38", "Engagements par signature - personnel de direction", "LIMITES"),
+    CodeDispru("PR002F", "EP38", "Engagements par signature - cadres moyens et supérieurs", "LIMITES"),
+    CodeDispru("PR002G", "EP38", "Engagements par signature - personnel d'exécution", "LIMITES"),
+    CodeDispru("PR002H", "EP38", "Engagements par signature - autres parties liées", "LIMITES"),
 )
 
-# ── EP21 — Calcul du produit brut (approche indicateur de base) ─────────────
+# ── EP21 - Calcul du produit brut (approche indicateur de base) ─────────────
 # La notice ne numérote pas de RO004 ; RO009 (total) est calculé, jamais saisi.
 _PRODUIT_BRUT: tuple[CodeDispru, ...] = (
     CodeDispru("RO001", "EP21", "Produit d'exploitation bancaire", "PRODUIT_BRUT", paragraphes=("301-302",)),
@@ -131,7 +131,7 @@ _PRODUIT_BRUT: tuple[CodeDispru, ...] = (
     CodeDispru("RO008", "EP21", "Produits des entités financières exclues du périmètre prudentiel", "PRODUIT_BRUT", "deduction", ("301-302",)),
 )
 
-# ── EP33 — Briques d'exposition du ratio de levier ──────────────────────────
+# ── EP33 - Briques d'exposition du ratio de levier ──────────────────────────
 # RL004, RL007, RL010, RL013 et RL015 sont des totaux calculés.
 _LEVIER: tuple[CodeDispru, ...] = (
     CodeDispru("RL001", "EP33", "Actifs au bilan", "LEVIER"),
@@ -154,7 +154,7 @@ FONDS_PROPRES_REGISTRY: dict[str, CodeDispru] = {
     c.code.lower(): c for c in FONDS_PROPRES_CODES
 }
 
-# Libellés des totaux calculés (non saisis) — pour affichage / export.
+# Libellés des totaux calculés (non saisis) - pour affichage / export.
 TOTAUX_LABELS: dict[str, str] = {
     "fpi08": "Total des fonds propres CET1 avant déductions applicables",
     "fpi14": "Total des fonds propres CET1 ajustés avant déductions liées à des seuils",
@@ -177,7 +177,7 @@ TOTAUX_LABELS: dict[str, str] = {
 APR_TOTAL_LABEL = "Total des actifs pondérés des risques (APR)"
 
 # Seuils de solvabilité (%). Alignés sur la constante déjà en vigueur dans
-# RisqueManagement (core/calculations.py) : 5 % CET1 / 6 % T1 / 9 % total —
+# RisqueManagement (core/calculations.py) : 5 % CET1 / 6 % T1 / 9 % total -
 # choix délibéré de l'établissement, confirmé, distinct du 4,5 % « de base »
 # cité dans la notice technique BCEAO/Bâle III.
 SOLVABILITE_SEUILS = {

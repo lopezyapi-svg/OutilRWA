@@ -1,7 +1,7 @@
 """Services métier du module FODEP.
 
 Point d'attention central : ce module ne recalcule PAS le RWA crédit, marché
-ou opérationnel — il les lit auprès des modules qui les calculent déjà
+ou opérationnel - il les lit auprès des modules qui les calculent déjà
 (``rwa_credit`` via les expositions, ``market``, ``risque_operationnel``),
 exactement comme le fait ``dashboard.services.get_dashboard_snapshot``. Deux
 moteurs de calcul du même chiffre serait une source de divergence, pas une
@@ -88,7 +88,7 @@ def _prefill_depuis_modele_simplifie() -> dict[str, float]:
     """Reprend le modèle simplifié à 11 postes (`fonds_propres`, déjà utilisé
     par le tableau de bord) comme brouillon de départ pour les postes FODEP
     qui leur correspondent directement. Le reste (34 postes propres au détail
-    réglementaire BCEAO) doit être complété manuellement — ce n'est qu'un
+    réglementaire BCEAO) doit être complété manuellement - ce n'est qu'un
     point de départ, pas une équivalence garantie.
     """
 
@@ -147,7 +147,7 @@ def resoudre_seuils(periode: str | None) -> dict[str, float]:
     l'intervalle de validité contient la période demandée.
 
     Sans période exploitable (brouillon non daté, ou date au format non
-    reconnu), les seuils les plus récents s'appliquent — c'est le seul choix
+    reconnu), les seuils les plus récents s'appliquent - c'est le seul choix
     qui ne suppose pas une date.
     """
 
@@ -194,7 +194,7 @@ def lister_participations(periode: str | None) -> list[ParticipationEntry]:
 
 
 def enregistrer_participations(periode: str, lignes: list[ParticipationEntry]) -> list[ParticipationEntry]:
-    """Remplace l'intégralité du registre pour la période donnée — même
+    """Remplace l'intégralité du registre pour la période donnée - même
     logique « tout ou rien » que ``enregistrer_fonds_propres`` : le registre
     est petit et la ré-saisie complète évite de gérer des diffs ligne à
     ligne côté client."""
@@ -251,7 +251,7 @@ def generer_apercu(periode: str | None = None) -> FodepApercu:
     seuils = resoudre_seuils(periode_effective)
 
     # Limites sur opérations (RA006-RA011) : calculées sur les fonds propres
-    # AVANT déduction des excédents qu'elles produisent elles-mêmes — l'une
+    # AVANT déduction des excédents qu'elles produisent elles-mêmes - l'une
     # des deux conventions explicitement admises par la notice technique
     # pour trancher la circularité entre ces limites et le CET1 (§ boucle de
     # calcul, EP34-EP39), l'autre étant une résolution itérative jugée
@@ -280,7 +280,7 @@ def generer_apercu(periode: str | None = None) -> FodepApercu:
     apr = obtenir_apr_total()
 
     # Dénominateur du ratio de levier : l'exposition totale de l'EP33 quand
-    # elle est renseignée — c'est l'assiette que la notice prescrit — sinon
+    # elle est renseignée - c'est l'assiette que la notice prescrit - sinon
     # repli sur la somme des expositions brutes du portefeuille.
     exposure_rows = [_normalize_row(item) for item in list_expositions()]
     total_expositions = (

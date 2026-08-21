@@ -88,7 +88,7 @@ def calculer_ratios_solvabilite(
 # ── Limites sur opérations (EP35-EP38 → RA006-RA011) ────────────────────────
 # Normes-plafond : contrairement aux ratios de solvabilité (un minimum à
 # atteindre), ce sont des maximums à ne pas dépasser. La polarité du statut
-# est donc inversée par rapport à ``bceao_calculations._evaluate`` — voir
+# est donc inversée par rapport à ``bceao_calculations._evaluate`` - voir
 # ``_evaluer_plafond`` ci-dessous.
 
 PR001_CATEGORIES: tuple[str, ...] = ("a", "b", "c", "d", "e", "f", "g", "h")
@@ -106,7 +106,7 @@ def _evaluer_plafond(valeur_pct: float, seuil_pct: float) -> dict:
 
 
 def calculer_produit_brut(postes: dict[str, float]) -> dict[str, float]:
-    """RO009 — total du produit brut de l'EP21.
+    """RO009 - total du produit brut de l'EP21.
 
     Somme algébrique : les postes précédés de (-) dans la notice (RO003,
     RO005, RO007, RO008) sont saisis négatifs, conformément à la convention
@@ -122,7 +122,7 @@ def calculer_exposition_levier(postes: dict[str, float]) -> dict[str, float]:
 
     Les opérations assimilables à des pensions sont d'abord retirées du
     bilan (RL003, négatif) avant d'être réintégrées avec leur traitement
-    propre en RL008/RL009 — un double comptage à cet endroit fausserait le
+    propre en RL008/RL009 - un double comptage à cet endroit fausserait le
     ratio (notice, EP33).
     """
 
@@ -156,7 +156,7 @@ def calculer_limites_operations(
     im003, im007, pa084, pa106, pr001a..h, pr002a..h).
 
     Le deuxième élément du tuple ne contient que les excédents strictement
-    positifs qui *devraient* remplacer la saisie manuelle — c'est à
+    positifs qui *devraient* remplacer la saisie manuelle - c'est à
     l'appelant (``services.generer_apercu``) de décider s'il y a assez de
     données de registre pour justifier l'override (voir le repli documenté
     dans la migration 036).
@@ -184,7 +184,7 @@ def calculer_limites_operations(
     pa149 = max(0.0, total_participations - seuils["ra007"] / 100 * t1)
 
     # IM004 (immobilisations hors exploitation seules) sert de brique à IM005
-    # (RA009, avec PA084) ET à IM008 (RA010, sans PA084 mais avec IM007) —
+    # (RA009, avec PA084) ET à IM008 (RA010, sans PA084 mais avec IM007) -
     # les deux totaux de l'EP37/EP38 ne se chevauchent pas malgré le nom
     # proche, voir la note de la migration 036.
     im004 = _s(postes, "im001", "im002", "im003")

@@ -339,7 +339,7 @@ def _ecrire_historique_taux(points: list[dict[str, Any]], jour: str) -> None:
     )
 
     # Table SQLite miroir (transparence/inspection) : reconstruite depuis le
-    # CSV complet — le CSV reste la source lue par portefeuille_data.
+    # CSV complet - le CSV reste la source lue par portefeuille_data.
     chemin_db = racine / "rwa_data.db"
     with sqlite3.connect(chemin_db) as connexion:
         connexion.execute(

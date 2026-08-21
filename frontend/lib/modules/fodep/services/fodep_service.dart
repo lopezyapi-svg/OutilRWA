@@ -40,7 +40,7 @@ class FodepService {
     return FodepApercu.fromJson(reponse);
   }
 
-  /// Ventilation du RWA crédit par catégorie prudentielle (EP09-EP20) —
+  /// Ventilation du RWA crédit par catégorie prudentielle (EP09-EP20) -
   /// déjà calculée par le module rwa_credit, réutilisée telle quelle (voir
   /// l'en-tête de ce fichier : FODEP ne recalcule pas ce que d'autres
   /// modules calculent déjà).
@@ -49,7 +49,7 @@ class FodepService {
     return RwaCreditAnalysis.fromJson(reponse);
   }
 
-  /// Détail EP21-EP22 (approche indicateur de base) — déjà calculé par le
+  /// Détail EP21-EP22 (approche indicateur de base) - déjà calculé par le
   /// module risque opérationnel, réutilisé tel quel.
   Future<AibCalculResult> obtenirCalculAib() async {
     final reponse = await api.get('/risque-operationnel/aib/calcul') as Map<String, dynamic>;

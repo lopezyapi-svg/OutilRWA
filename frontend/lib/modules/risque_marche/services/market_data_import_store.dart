@@ -1827,7 +1827,7 @@ class MarketPortfolioDataset {
     final costByIssuer = <String, double>{};
     // Émetteurs dont au moins une ligne a bougé : eux seuls figurent dans un
     // état de plus et moins-values. Le critère porte sur les LIGNES, pas sur
-    // leur somme — deux lignes qui se compensent restent deux mouvements
+    // leur somme - deux lignes qui se compensent restent deux mouvements
     // réels, et l'émetteur garde sa place avec un résultat net nul.
     final emetteursAvecMouvement = <String>{};
     // Même clé canonique que les classements d'exposition : sans elle, un
@@ -2236,7 +2236,7 @@ class MarketPortfolioDataset {
     if (historical.isNotEmpty) return historical;
     // Repli paramétrique : actions sans série de prix historique. Aucune
     // observation n'existe, donc rien ici ne peut alimenter une VaR historique
-    // — `scenarioReturnsAreSimulated` coupe cette voie côté écran. On construit
+    // - `scenarioReturnsAreSimulated` coupe cette voie côté écran. On construit
     // la distribution N(µ, σ) déduite de la volatilité annualisée et du
     // rendement attendu saisis, discrétisée sur ses propres quantiles : le
     // résultat ne dépend que des paramètres du portefeuille, sans bruit de
@@ -2749,7 +2749,7 @@ String _marketCountryIso3(String country) {
 /// Le regroupement par émetteur portait sur le nom BRUT, comparé caractère
 /// par caractère. Toute variation d'écriture créait un émetteur de plus :
 /// « NOKOUE CIMENTS S.A. », « Nokoué Ciments SA » et « Nokoué  Ciments sa »
-/// comptaient pour trois. Le sens de l'erreur est le plus gênant — une
+/// comptaient pour trois. Le sens de l'erreur est le plus gênant - une
 /// exposition scindée SOUS-ESTIME la concentration, et une contrepartie qui
 /// pèse 12 % passe pour deux lignes à 6 %, sous le seuil d'attention.
 ///
@@ -2780,12 +2780,12 @@ String marketIssuerCanonicalKey(String nom) {
   normalise = normalise.replaceAll(RegExp(r'\s+'), ' ').trim();
 
   // Formes juridiques en fin de nom : elles varient d'un fichier à l'autre
-  // sans désigner une entité différente. Retirées uniquement en SUFFIXE —
+  // sans désigner une entité différente. Retirées uniquement en SUFFIXE -
   // « SA » au milieu d'un nom peut en faire partie.
   //
   // « GROUPE » et « HOLDING » n'y figurent PAS : ils distinguent des entités
   // juridiques réelles. Confondre « Sanaga Utilities Holding » et « Sanaga
-  // Utilities » surestimerait la concentration — l'erreur inverse de celle
+  // Utilities » surestimerait la concentration - l'erreur inverse de celle
   // qu'on corrige, et tout aussi fausse.
   const formesJuridiques = {
     'SA', 'SAS', 'SARL', 'SASU', 'SNC', 'SCS', 'SCA', 'GIE',
@@ -2802,7 +2802,7 @@ String marketIssuerCanonicalKey(String nom) {
 
 /// Nom retenu pour l'affichage parmi les graphies rencontrées.
 ///
-/// La plus fréquente l'emporte — c'est la convention de la maison — et la
+/// La plus fréquente l'emporte - c'est la convention de la maison - et la
 /// plus longue départage : « Nokoué Ciments SA » plutôt que « Nokoué
 /// Ciments ». Le fichier n'est jamais réécrit.
 String marketIssuerPreferredLabel(Iterable<String> graphies) {
@@ -3034,8 +3034,8 @@ double _pearsonCorrelation(List<double> x, List<double> y) {
 
 /// Quantile de perte par interpolation linéaire entre les deux observations
 /// encadrantes. L'indexation entière `ceil(n × c) − 1` renvoyait le maximum de
-/// l'échantillon dès que n ≤ 1 / (1 − c) — soit tout échantillon de 100
-/// observations ou moins à 99 % —, ce qui confondait « VaR 99 % » et « pire
+/// l'échantillon dès que n ≤ 1 / (1 − c) - soit tout échantillon de 100
+/// observations ou moins à 99 % -, ce qui confondait « VaR 99 % » et « pire
 /// perte ».
 double _computeLossQuantile(List<double> sortedLosses, double confidence) {
   if (sortedLosses.isEmpty) return 0.0;

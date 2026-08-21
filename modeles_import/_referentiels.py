@@ -173,7 +173,7 @@ BIC_POSTES = (
     "Commissions versées",
     "Résultat net Ptf négociation",
     "Résultat net Ptf bancaire",
-    "PNB (BIA — si non calculé automatiquement)",
+    "PNB (BIA - si non calculé automatiquement)",
 )
 
 # ── Fonds propres ───────────────────────────────────────────────────────────

@@ -20,7 +20,7 @@ class SessionScope extends InheritedNotifier<SessionController> {
   ///
   /// Chaque compte travaille dans son propre espace : l'écriture est ouverte à
   /// tous. Hors de toute session (application de bureau, tests de widgets), la
-  /// réponse reste « oui » — l'absence d'authentification signifie un usage
+  /// réponse reste « oui » - l'absence d'authentification signifie un usage
   /// local, pas un utilisateur bridé.
   static bool peutEditer(BuildContext context) {
     final controller = maybeOf(context);
@@ -70,8 +70,8 @@ class EditionSeulement extends StatelessWidget {
 
 /// Bandeau discret rappelant le rôle du compte connecté.
 ///
-/// Il ne signale plus une restriction d'écriture — chacun travaille dans son
-/// espace — mais l'absence de droits sur les comptes de l'équipe.
+/// Il ne signale plus une restriction d'écriture - chacun travaille dans son
+/// espace - mais l'absence de droits sur les comptes de l'équipe.
 class BandeauConsultation extends StatelessWidget {
   const BandeauConsultation({super.key});
 

@@ -257,7 +257,7 @@ def build_ro_import_template() -> bytes:
     ws.row_dimensions[1].height = 32
     ws.merge_cells("A1:H1")
     title_cell = ws["A1"]
-    title_cell.value = "Modèle d'import — Pertes Opérationnelles (Risque Opérationnel BCEAO)"
+    title_cell.value = "Modèle d'import - Pertes Opérationnelles (Risque Opérationnel BCEAO)"
     title_cell.font = Font(bold=True, size=13, color="FFFFFF")
     title_cell.fill = fill(BLUE_DARK)
     title_cell.alignment = center()
@@ -271,7 +271,7 @@ def build_ro_import_template() -> bytes:
         ("E", "cause_racine",     "Cause racine",          "Optionnel",                   False, 20),
         ("F", "perte_brute",      "Perte brute (FCFA)",    "Montant numérique",           True,  18),
         ("G", "perte_recuperee",  "Perte récupérée (FCFA)","Assurance / provisions",      False, 20),
-        ("H", "statut",           "Statut",                "Optionnel — défaut: Ouvert",  False, 14),
+        ("H", "statut",           "Statut",                "Optionnel - défaut: Ouvert",  False, 14),
     ]
 
     ws.row_dimensions[2].height = 40
@@ -296,14 +296,14 @@ def build_ro_import_template() -> bytes:
 
     # Lignes d'exemple (une par type d'événement)
     exemples = [
-        ("2025-01-15", "Erreur de saisie virement client — doublon déclenché",            "Banque de détail",   "Processus", "Erreur humaine",       450000, 0,       "Résolu"),
-        ("2025-02-03", "Tentative de phishing — données compromises employé",              "Banque commerciale", "Interne",   "Fraude interne",       0,      0,       "En cours"),
-        ("2025-03-10", "Fraude carte bancaire — 12 transactions non autorisées",           "Banque de détail",   "Externe",   "Fraude externe",       1800000, 600000, "Résolu"),
-        ("2025-03-22", "Panne du core banking 6h — transactions en attente",               "Paiements et règlements", "Système", "Défaillance système", 3200000, 0,    "Clôturé"),
-        ("2025-04-08", "Litige client — mauvais conseil produit structuré",                "Financement d'entreprise", "Juridique", "Processus inadéquat", 7500000, 2500000, "En cours"),
-        ("2025-05-14", "Accident du travail — blessure caissier",                          "Banque de détail",   "Personnel", "Événement externe",    0,      0,       "Clôturé"),
-        ("2025-06-01", "Erreur règlement titre — mauvaise quantité exécutée",              "Activités de marché","Processus", "Erreur humaine",       950000, 950000, "Clôturé"),
-        ("2025-06-20", "Perte physique fonds — vol agence",                                "Banque de détail",   "Externe",   "Fraude externe",       2100000, 400000, "En cours"),
+        ("2025-01-15", "Erreur de saisie virement client - doublon déclenché",            "Banque de détail",   "Processus", "Erreur humaine",       450000, 0,       "Résolu"),
+        ("2025-02-03", "Tentative de phishing - données compromises employé",              "Banque commerciale", "Interne",   "Fraude interne",       0,      0,       "En cours"),
+        ("2025-03-10", "Fraude carte bancaire - 12 transactions non autorisées",           "Banque de détail",   "Externe",   "Fraude externe",       1800000, 600000, "Résolu"),
+        ("2025-03-22", "Panne du core banking 6h - transactions en attente",               "Paiements et règlements", "Système", "Défaillance système", 3200000, 0,    "Clôturé"),
+        ("2025-04-08", "Litige client - mauvais conseil produit structuré",                "Financement d'entreprise", "Juridique", "Processus inadéquat", 7500000, 2500000, "En cours"),
+        ("2025-05-14", "Accident du travail - blessure caissier",                          "Banque de détail",   "Personnel", "Événement externe",    0,      0,       "Clôturé"),
+        ("2025-06-01", "Erreur règlement titre - mauvaise quantité exécutée",              "Activités de marché","Processus", "Erreur humaine",       950000, 950000, "Clôturé"),
+        ("2025-06-20", "Perte physique fonds - vol agence",                                "Banque de détail",   "Externe",   "Fraude externe",       2100000, 400000, "En cours"),
     ]
 
     for row_idx, ex in enumerate(exemples, start=4):
@@ -322,7 +322,7 @@ def build_ro_import_template() -> bytes:
     ws2.column_dimensions["B"].width = 58
 
     ws2.merge_cells("A1:B1")
-    ws2["A1"].value = "Instructions — Import des pertes opérationnelles"
+    ws2["A1"].value = "Instructions - Import des pertes opérationnelles"
     ws2["A1"].font = Font(bold=True, size=13, color="FFFFFF")
     ws2["A1"].fill = fill(BLUE_DARK)
     ws2["A1"].alignment = center()
@@ -335,10 +335,10 @@ def build_ro_import_template() -> bytes:
         ("type_evenement",      "Valeur exacte parmi 6 options (Interne, Externe, Processus, Système, Personnel, Juridique)."),
         ("cause_racine",        "Optionnel : Erreur humaine | Défaillance système | Processus inadéquat | Fraude interne | Fraude externe | Événement externe | Non définie."),
         ("perte_brute",         "Montant total de la perte avant récupération, en FCFA (nombre entier ou décimal)."),
-        ("perte_recuperee",     "Montant récupéré (assurance, provisions) — 0 si rien. Perte nette = brute − récupérée."),
+        ("perte_recuperee",     "Montant récupéré (assurance, provisions) - 0 si rien. Perte nette = brute − récupérée."),
         ("statut",              "Optionnel : Ouvert | En cours | Résolu | Clôturé. Défaut = Ouvert."),
         ("Lignes vides",        "Les lignes entièrement vides sont ignorées."),
-        ("Doublons",            "Aucune vérification de doublon — vérifier avant import en mode remplacement."),
+        ("Doublons",            "Aucune vérification de doublon - vérifier avant import en mode remplacement."),
     ]
 
     for ri, (label, text) in enumerate(instructions, start=2):
@@ -357,7 +357,7 @@ def build_ro_import_template() -> bytes:
 
     # ── Feuille 3 : Lignes_Métier (référence) ───────────────────────────────
     # La feuille de saisie renvoie vers cet onglet ("Voir onglet Lignes_Métier")
-    # pour la colonne ligne_metier — doit exister et lister exactement les
+    # pour la colonne ligne_metier - doit exister et lister exactement les
     # valeurs reconnues par le frontend (voir _lignesMetier dans
     # ro_import_pertes_dialog.dart), sinon la référence est un lien mort.
     ws3 = wb.create_sheet("Lignes_Métier")
@@ -419,7 +419,7 @@ BIC_INPUT_FIELDS: tuple[tuple[str, str], ...] = (
     ("commissions_versees", "Commissions versées"),
     ("resultat_portefeuille_negociation", "Résultat net Ptf négociation"),
     ("resultat_portefeuille_bancaire", "Résultat net Ptf bancaire"),
-    ("pnb", "PNB (BIA — si non calculé automatiquement)"),
+    ("pnb", "PNB (BIA - si non calculé automatiquement)"),
 )
 
 
@@ -428,7 +428,7 @@ def build_bic_import_template() -> bytes:
 
     Format « un onglet par exercice » : chaque feuille du classeur porte comme
     nom l'année concernée (ex : "2024") et contient deux colonnes, « Poste »
-    et « Valeur ». L'exercice est donc déterminé par l'onglet lui-même — il
+    et « Valeur ». L'exercice est donc déterminé par l'onglet lui-même - il
     n'y a jamais de mélange ni d'ambiguïté entre les années des différentes
     feuilles. Pour ajouter un exercice, l'utilisateur duplique un onglet et le
     renomme avec l'année voulue ; pour en retirer un, il supprime l'onglet.
@@ -469,7 +469,7 @@ def build_bic_import_template() -> bytes:
         ws.row_dimensions[1].height = 30
         ws.merge_cells("A1:B1")
         title_cell = ws["A1"]
-        title_cell.value = f"Exercice {annee} — Indicateur d'activité BIC / CCR3"
+        title_cell.value = f"Exercice {annee} - Indicateur d'activité BIC / CCR3"
         title_cell.font = Font(bold=True, size=12, color="FFFFFF")
         title_cell.fill = fill(BLUE_DARK)
         title_cell.alignment = center()
@@ -508,7 +508,7 @@ def build_bic_import_template() -> bytes:
 
     ws_instr.column_dimensions["A"].width = 80
     ws_instr.merge_cells("A1:A1")
-    ws_instr["A1"].value = "Instructions — Import des postes BIC / CCR3"
+    ws_instr["A1"].value = "Instructions - Import des postes BIC / CCR3"
     ws_instr["A1"].font = Font(bold=True, size=13, color="FFFFFF")
     ws_instr["A1"].fill = fill(BLUE_DARK)
     ws_instr["A1"].alignment = center()
@@ -516,7 +516,7 @@ def build_bic_import_template() -> bytes:
     instructions = [
         "Chaque ONGLET (feuille) représente UN exercice : le nom de l'onglet "
         "est l'année concernée (ex : « 2024 »). L'exercice est donc déterminé "
-        "par l'onglet — il n'y a jamais de mélange entre les années.",
+        "par l'onglet - il n'y a jamais de mélange entre les années.",
         "Le modèle contient 3 onglets pré-remplis à titre d'exemple. Pour "
         "ajouter un exercice : clic droit sur un onglet > Déplacer ou copier > "
         "Créer une copie, puis renommez le nouvel onglet avec l'année voulue.",
@@ -525,7 +525,7 @@ def build_bic_import_template() -> bytes:
         "« Valeur ». Ne pas modifier les libellés de la colonne « Poste ».",
         "Les cases vides ou non numériques sont importées comme 0.",
         "L'import met à jour uniquement les exercices dont l'onglet est "
-        "présent dans le fichier — les autres exercices déjà enregistrés ne "
+        "présent dans le fichier - les autres exercices déjà enregistrés ne "
         "sont pas affectés.",
     ]
     for ri, text in enumerate(instructions, start=2):
@@ -989,7 +989,7 @@ def get_dashboard() -> DashboardData:
     )
 
 
-# ─── BIC — Approche Standard CRR3 ────────────────────────────────────────────
+# ─── BIC - Approche Standard CRR3 ────────────────────────────────────────────
 
 def _compute_pnb_effectif(inp: OpRiskInput) -> float:
     """PNB de l'exercice : valeur saisie/importée si renseignée (non nulle),
@@ -1031,7 +1031,7 @@ def _row_to_input(row) -> OpRiskInput:
         pnb=row["pnb"],
     )
     # Le PNB affiché est toujours la valeur effective (saisie sinon
-    # calculée) — la valeur brute reste inchangée en base, seule la
+    # calculée) - la valeur brute reste inchangée en base, seule la
     # restitution API/UI applique le calcul automatique.
     inp.pnb = _compute_pnb_effectif(inp)
     return inp
@@ -1062,7 +1062,7 @@ def get_op_risk_input(annee: int) -> OpRiskInput:
 
 def list_op_risk_inputs() -> list[OpRiskInput]:
     """Renvoie TOUTES les années pour lesquelles des postes BIC/CCR3 ont été
-    enregistrés (saisie manuelle ou import Excel), triées par année — sans se
+    enregistrés (saisie manuelle ou import Excel), triées par année - sans se
     limiter à la fenêtre glissante N-2/N-1/N utilisée par calcul_bic(). Permet
     à l'onglet "Données importées" de retrouver un exercice importé même s'il
     ne fait pas partie des 3 derniers exercices calculés par défaut.
@@ -1146,7 +1146,7 @@ def update_op_risk_parametres(data: OpRiskParametresUpdate) -> OpRiskParametres:
 def calcul_bic(annee_n: int | None = None) -> OpRiskCalculResult:
     """
     Business Indicator Component (CRR3 Art. 315-321).
-    ILM = 1 par hypothèse (non activé — cadre réglementaire UE actuel).
+    ILM = 1 par hypothèse (non activé - cadre réglementaire UE actuel).
     annee_n : dernier exercice clos (défaut = année courante - 1).
     """
     year_n = annee_n if annee_n is not None else date.today().year - 1
@@ -1216,7 +1216,7 @@ def calcul_bic(annee_n: int | None = None) -> OpRiskCalculResult:
     rea_crr3 = ofr_crr3 * mult
 
     # `inp.pnb` est déjà la valeur effective (saisie sinon calculée
-    # automatiquement à partir d'ILDC/SC/FC — voir _compute_pnb_effectif /
+    # automatiquement à partir d'ILDC/SC/FC - voir _compute_pnb_effectif /
     # _row_to_input), y compris pour les exercices absents de la base
     # (OpRiskInput par défaut → tous postes à 0 → PNB calculé = 0).
     pnb_moy = sum(_compute_pnb_effectif(inp) for inp in inputs) / 3
@@ -1248,7 +1248,7 @@ def calcul_bic(annee_n: int | None = None) -> OpRiskCalculResult:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# BLOC A1 — AIB (Approche Indicateur de Base) — art. 301
+# BLOC A1 - AIB (Approche Indicateur de Base) - art. 301
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _row_to_pnb_annuel(row) -> PnbAnnuelView:
@@ -1368,7 +1368,7 @@ def calcul_aib() -> AibCalculResult:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# BLOC A2 — AS (Approche Standard) — art. 305-311
+# BLOC A2 - AS (Approche Standard) - art. 305-311
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def list_beta_lignes() -> list[BetaLigneView]:
@@ -1616,7 +1616,7 @@ def get_synthese() -> SyntheseResult:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Décision de pilotage — Analyse et reporting (dispositif réglementaire UEMOA)
+# Décision de pilotage - Analyse et reporting (dispositif réglementaire UEMOA)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_decision_pilotage() -> DecisionPilotageResult:
@@ -1637,7 +1637,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
     """
     criteres: list[DecisionCritere] = []
 
-    # ── C1 — Disponibilité des données réglementaires (Art. 89) ───────────────
+    # ── C1 - Disponibilité des données réglementaires (Art. 89) ───────────────
     try:
         bic = calcul_bic()
         bic_erreur = False
@@ -1665,7 +1665,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
             commentaire="Les données financières nécessaires au calcul réglementaire sont disponibles.",
         ))
 
-    # ── C2 — Exposition en capital réglementaire (tranche BIC) ────────────────
+    # ── C2 - Exposition en capital réglementaire (tranche BIC) ────────────────
     if not bic_erreur and not bic.donnees_insuffisantes:
         tranche = bic.bi_detail.tranche_active
         ecart_pct = (bic.ecart / bic.ofr_bia * 100) if bic.ofr_bia else 0.0
@@ -1679,7 +1679,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
             code="C2", libelle="Exposition en capital réglementaire (BIC)",
             reference_reglementaire="Art. 315-321 / Art. 89",
             statut=statut, poids=poids,
-            valeur_observee=f"Tranche {tranche} — écart CRR3/BIA {ecart_pct:+.1f} %",
+            valeur_observee=f"Tranche {tranche} - écart CRR3/BIA {ecart_pct:+.1f} %",
             seuil_reference="Tranche 1 attendue, écart ≤ 10 %",
             commentaire=(
                 f"Le niveau du Business Indicator place l'établissement en tranche {tranche} "
@@ -1700,7 +1700,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
             commentaire="Impossible d'évaluer l'exposition en capital faute de calcul BIC disponible.",
         ))
 
-    # ── C3 — Pertes opérationnelles vs seuils de reporting Pilier 2 ───────────
+    # ── C3 - Pertes opérationnelles vs seuils de reporting Pilier 2 ───────────
     dashboard = get_dashboard()
     seuils = get_pertes_seuils()
     pertes_mois = dashboard.widget2.pertes_nettes_mois
@@ -1744,7 +1744,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
         commentaire=motif,
     ))
 
-    # ── C4 — Incidents ouverts et tendance des pertes ─────────────────────────
+    # ── C4 - Incidents ouverts et tendance des pertes ─────────────────────────
     non_clos = dashboard.widget2.incidents_non_clos
     evolution = dashboard.widget2.evolution_pertes_pct or 0.0
     if non_clos > 5 or evolution > 50:
@@ -1767,7 +1767,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
         ),
     ))
 
-    # ── C5 — Cartographie des risques ──────────────────────────────────────────
+    # ── C5 - Cartographie des risques ──────────────────────────────────────────
     risques = list_risques()
     nb_critique_risque = sum(1 for r in risques if r.niveau_label == "Critique")
     nb_eleve_risque = sum(1 for r in risques if r.niveau_label == "Élevé")
@@ -1791,7 +1791,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
         ),
     ))
 
-    # ── C6 — Contrôles internes non conformes ─────────────────────────────────
+    # ── C6 - Contrôles internes non conformes ─────────────────────────────────
     controles = list_controles()
     nb_non_conf = sum(1 for c in controles if c.resultat == "Non-conforme")
     if nb_non_conf > 2:
@@ -1814,7 +1814,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
         ),
     ))
 
-    # ── C7 — Indicateurs clés de risque (KRI) hors seuil ──────────────────────
+    # ── C7 - Indicateurs clés de risque (KRI) hors seuil ──────────────────────
     kri = get_kri_module()
     if kri.kri_hors_seuil >= 2:
         statut, poids = "critique", 2
@@ -1836,7 +1836,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
         ),
     ))
 
-    # ── C8 — Plans d'action en retard ──────────────────────────────────────────
+    # ── C8 - Plans d'action en retard ──────────────────────────────────────────
     plans = list_plans()
     en_retard = sum(1 for p in plans if p.en_retard)
     if en_retard > 2:
@@ -1878,7 +1878,7 @@ def get_decision_pilotage() -> DecisionPilotageResult:
     ]
     if not recommandations:
         recommandations = [
-            "Aucune action corrective requise à ce stade — maintenir la surveillance "
+            "Aucune action corrective requise à ce stade - maintenir la surveillance "
             "courante du dispositif conformément à l'Art. 546 (reporting annuel à la "
             "Commission Bancaire de l'UMOA)."
         ]
@@ -1909,13 +1909,13 @@ def get_decision_pilotage() -> DecisionPilotageResult:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Critères transverses partagés — utilisés par les décisions AIB (A1) et AS (A2)
+# Critères transverses partagés - utilisés par les décisions AIB (A1) et AS (A2)
 # ═══════════════════════════════════════════════════════════════════════════════
 #
 # Ces critères couvrent les signaux de risque opérationnel qui ne dépendent pas
 # de la méthode de calcul du capital réglementaire (pertes, incidents,
-# cartographie, contrôles, KRI, plans d'action). Ils sont dupliqués — et non
-# extraits depuis get_decision_pilotage() — afin de ne pas modifier le moteur
+# cartographie, contrôles, KRI, plans d'action). Ils sont dupliqués - et non
+# extraits depuis get_decision_pilotage() - afin de ne pas modifier le moteur
 # de décision BIC déjà validé.
 
 def _critere_pertes_pilier2(code: str) -> tuple[DecisionCritere, str, str]:
@@ -2106,7 +2106,7 @@ def _finaliser_decision(
     ]
     if not recommandations:
         recommandations = [
-            "Aucune action corrective requise à ce stade — maintenir la surveillance "
+            "Aucune action corrective requise à ce stade - maintenir la surveillance "
             "courante du dispositif conformément à l'Art. 546 (reporting annuel à la "
             "Commission Bancaire de l'UMOA)."
         ]
@@ -2137,12 +2137,12 @@ def _finaliser_decision(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Décision de pilotage — AIB (Approche Indicateur de Base, Art. 301)
+# Décision de pilotage - AIB (Approche Indicateur de Base, Art. 301)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_decision_aib() -> DecisionPilotageResult:
     """
-    Moteur de décision pour l'onglet A1 — AIB.
+    Moteur de décision pour l'onglet A1 - AIB.
     Combine la robustesse des données PNB retenues pour le calcul déclaratoire
     avec les signaux transverses de risque opérationnel.
     """
@@ -2197,12 +2197,12 @@ def get_decision_aib() -> DecisionPilotageResult:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Décision de pilotage — AS (Approche Standard, Art. 305-311)
+# Décision de pilotage - AS (Approche Standard, Art. 305-311)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_decision_as() -> DecisionPilotageResult:
     """
-    Moteur de décision pour l'onglet A2 — AS.
+    Moteur de décision pour l'onglet A2 - AS.
     Vérifie en priorité l'autorisation réglementaire préalable de la Commission
     Bancaire (art. 300 UEMOA), puis applique les signaux transverses de risque
     opérationnel.
@@ -2241,7 +2241,7 @@ def get_decision_as() -> DecisionPilotageResult:
             code="C1", libelle="Autorisation et disponibilité des données (AS)",
             reference_reglementaire="Art. 305-311",
             statut="attention", poids=1,
-            valeur_observee="Autorisée — données par ligne de métier incomplètes",
+            valeur_observee="Autorisée - données par ligne de métier incomplètes",
             seuil_reference="PNB des 8 lignes de métier pour l'exercice courant",
             commentaire="L'Approche Standard est autorisée mais aucun PNB par ligne de "
                         "métier n'est encore saisi pour l'exercice courant.",
@@ -2251,7 +2251,7 @@ def get_decision_as() -> DecisionPilotageResult:
             code="C1", libelle="Autorisation et disponibilité des données (AS)",
             reference_reglementaire="Art. 305-311",
             statut="conforme", poids=0,
-            valeur_observee="Autorisée — données complètes",
+            valeur_observee="Autorisée - données complètes",
             seuil_reference="PNB des 8 lignes de métier pour l'exercice courant",
             commentaire="L'Approche Standard est autorisée et les données par ligne de "
                         "métier sont complètes.",

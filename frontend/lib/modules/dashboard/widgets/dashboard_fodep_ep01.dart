@@ -4,7 +4,7 @@ import '../../fodep/models/fodep_models.dart';
 import '../../fodep/services/fodep_service.dart';
 import 'dashboard_design.dart';
 
-/// Panneau EP01 — Fonds propres réglementaires (FODEP officiel BCEAO).
+/// Panneau EP01 - Fonds propres réglementaires (FODEP officiel BCEAO).
 /// Chargement autonome : s'insère dans le dashboard sans dépendre du snapshot RWA.
 class DashboardFodepEp01Panel extends StatefulWidget {
   const DashboardFodepEp01Panel({super.key, required this.fodep});
@@ -49,7 +49,7 @@ class _DashboardFodepEp01PanelState extends State<DashboardFodepEp01Panel> {
 
     if (_chargement) {
       return const DashPanel(
-        title: 'EP01 — Fonds propres réglementaires (FODEP)',
+        title: 'EP01 - Fonds propres réglementaires (FODEP)',
         child: SizedBox(height: 80, child: Center(child: CircularProgressIndicator.adaptive())),
       );
     }
@@ -69,7 +69,7 @@ class _DashboardFodepEp01PanelState extends State<DashboardFodepEp01Panel> {
     };
 
     return DashPanel(
-      title: 'EP01 — Fonds propres réglementaires (FODEP)',
+      title: 'EP01 - Fonds propres réglementaires (FODEP)',
       trailing: apercu.periode != null
           ? Text(
               'Arrêté : ${apercu.periode}',

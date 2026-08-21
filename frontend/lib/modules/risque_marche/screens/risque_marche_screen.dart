@@ -1272,7 +1272,7 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.08)
@@ -35481,8 +35481,8 @@ RWA Marché = Exigence FP Marché × 11,11''',
 /// Décomposition de l'exigence de fonds propres au titre du risque de marché.
 ///
 /// Remplace un graphique à barres qui juxtaposait trois grandeurs
-/// incomparables — une assiette de 610 Md, une exigence de 6,7 Md et un RWA de
-/// 83,8 Md — sur un même axe. Trois défauts en découlaient :
+/// incomparables - une assiette de 610 Md, une exigence de 6,7 Md et un RWA de
+/// 83,8 Md - sur un même axe. Trois défauts en découlaient :
 ///
 ///  * l'axe appliquait une racine carrée pour rendre les petites barres
 ///    visibles : une barre deux fois plus haute ne valait pas le double. Sur
@@ -35494,7 +35494,7 @@ RWA Marché = Exigence FP Marché × 11,11''',
 ///
 /// Le registre retenu est celui d'un état prudentiel : un tableau aligné qui
 /// porte les chiffres, et UN visuel focal qui porte la structure. La densité
-/// — exigence rapportée à l'assiette — est la colonne qui manquait : c'est
+/// - exigence rapportée à l'assiette - est la colonne qui manquait : c'est
 /// elle qui dit quel compartiment consomme le capital.
 class _MarketCapitalRequirementPanel extends StatelessWidget {
   const _MarketCapitalRequirementPanel({

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Modèle d'import « Fonds propres réglementaires » — CET1 / AT1 / Tier 2.
+"""Modèle d'import « Fonds propres réglementaires » - CET1 / AT1 / Tier 2.
 
 Une seule photo (pas de dimension exercice) : 11 postes, une ligne par poste.
 Les montants sont calibrés sur les RWA réellement produits par les trois
@@ -118,7 +118,7 @@ def construire_classeur(chemin, calibration: dict, synthese: dict):
 
     titre_bandeau(
         ws,
-        "Modèle d'import — Fonds propres réglementaires (CET1 / AT1 / Tier 2)",
+        "Modèle d'import - Fonds propres réglementaires (CET1 / AT1 / Tier 2)",
         3,
         hauteur=32,
     )
@@ -190,14 +190,14 @@ def construire_classeur(chemin, calibration: dict, synthese: dict):
 
     feuille_notice(
         wb,
-        f"Modèle d'import — Fonds propres réglementaires — {BANQUE}",
+        f"Modèle d'import - Fonds propres réglementaires - {BANQUE}",
         [
             ("Format",
              "Une ligne par poste, trois colonnes : Groupe, Poste, Valeur. "
              "Les 11 libellés de la colonne « Poste » doivent rester intacts : "
              "c'est sur eux que l'import fait la correspondance."),
             ("Portée de l'import",
-             "L'import remplace intégralement les fonds propres enregistrés — "
+             "L'import remplace intégralement les fonds propres enregistrés - "
              "il n'y a pas de dimension exercice, c'est une photo unique."),
             ("Calibrage",
              "Les montants sont ajustés sur les RWA produits par les trois "

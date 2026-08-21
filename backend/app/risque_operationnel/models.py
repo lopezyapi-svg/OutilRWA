@@ -298,7 +298,7 @@ class DashboardData(BaseModel):
     repartition_type: list[RepartitionItem]
 
 
-# ─── BIC — Approche Standard CRR3 (Art. 315-321) ─────────────────────────────
+# ─── BIC - Approche Standard CRR3 (Art. 315-321) ─────────────────────────────
 
 class OpRiskInput(BaseModel):
     annee: int
@@ -405,7 +405,7 @@ class OpRiskCalculResult(BaseModel):
     donnees_insuffisantes: bool
 
 
-# ─── BLOC A1 — AIB (Approche Indicateur de Base) ─────────────────────────────
+# ─── BLOC A1 - AIB (Approche Indicateur de Base) ─────────────────────────────
 
 class PnbAnnuelCreate(BaseModel):
     produit_brut_total: float
@@ -445,7 +445,7 @@ class AibCalculResult(BaseModel):
     donnees_insuffisantes: bool
 
 
-# ─── BLOC A2 — AS (Approche Standard) ────────────────────────────────────────
+# ─── BLOC A2 - AS (Approche Standard) ────────────────────────────────────────
 
 class PnbParLigneCreate(BaseModel):
     produit_brut_ligne: float
@@ -541,7 +541,7 @@ class SyntheseResult(BaseModel):
     ratio_couverture: float | None
 
 
-# ─── Décision de pilotage — Analyse et reporting (dispositif UEMOA) ──────────
+# ─── Décision de pilotage - Analyse et reporting (dispositif UEMOA) ──────────
 
 class DecisionCritere(BaseModel):
     code: str

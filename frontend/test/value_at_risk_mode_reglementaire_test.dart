@@ -222,7 +222,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Méthode par défaut : paramétrique (fonctionne sans historique) — pas
+    // Méthode par défaut : paramétrique (fonctionne sans historique) - pas
     // historique, verrouillée et placée en dernier tant qu'aucun historique
     // de prix réel n'est disponible (décision du 2026-07-17).
     expect(find.text('VALEUR DU PORTEFEUILLE'), findsOneWidget);

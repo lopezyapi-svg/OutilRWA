@@ -48,7 +48,7 @@ def titre_bandeau(ws, texte: str, derniere_colonne: int, hauteur: int = 30) -> N
 
 def ecrire_entetes(ws, entetes, ligne: int = 1, obligatoires=None) -> None:
     """Écrit la ligne d'en-tête. Les colonnes obligatoires sont en bleu,
-    les optionnelles en gris — même code couleur que le modèle de l'outil."""
+    les optionnelles en gris - même code couleur que le modèle de l'outil."""
     obligatoires = set(obligatoires or entetes)
     ws.row_dimensions[ligne].height = 30
     for index, entete in enumerate(entetes, start=1):

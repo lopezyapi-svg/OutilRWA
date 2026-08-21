@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Modèle d'import « Risque de crédit » — 1 000 expositions + CRM associées.
+"""Modèle d'import « Risque de crédit » - 1 000 expositions + CRM associées.
 
 Structure produite (strictement conforme à IMPORT_SHEET_SPECS côté backend) :
-  • Template données   — 1 ligne = 1 exposition (10 colonnes obligatoires + 30 optionnelles)
-  • CRM_non_financee   — 1 ligne = 1 garantie personnelle
-  • CRM_financée       — 1 ligne = 1 sûreté financière
-  • Notice             — feuille d'aide, ignorée à l'import
+  • Template données   - 1 ligne = 1 exposition (10 colonnes obligatoires + 30 optionnelles)
+  • CRM_non_financee   - 1 ligne = 1 garantie personnelle
+  • CRM_financée       - 1 ligne = 1 sûreté financière
+  • Notice             - feuille d'aide, ignorée à l'import
 """
 
 from __future__ import annotations
@@ -231,8 +231,8 @@ def _ligne_souverain(rng, identifiant, index):
     else:
         cas = CAS_SOUVERAIN_AUCUN
     libelle = (
-        f"Titre public — État {pays}" if uemoa
-        else f"Créance souveraine — {pays}"
+        f"Titre public - État {pays}" if uemoa
+        else f"Créance souveraine - {pays}"
     )
     ligne = {
         "Contrepartie": libelle,
@@ -247,7 +247,7 @@ def _ligne_souverain(rng, identifiant, index):
         "PRÊT TOTAL": montant,
         "Cas_particulier_souverain": cas,
         "Souverain_ponderation_pref_nulle": "Oui" if cas != CAS_SOUVERAIN_AUCUN else "Non",
-        "Commentaire": "Portefeuille de titres publics — refinancement BCEAO éligible"
+        "Commentaire": "Portefeuille de titres publics - refinancement BCEAO éligible"
         if uemoa else "Exposition souveraine hors UMOA",
     }
     if cas == CAS_SOUVERAIN_AUCUN and NOTATION_PAYS[pays] == "Non noté":
@@ -263,7 +263,7 @@ def _ligne_organisme_public(rng, identifiant, index):
     uemoa_fcfa = pays in PAYS_UEMOA
     return {
         "Contrepartie": _ORGANISMES_PUBLICS[index % len(_ORGANISMES_PUBLICS)]
-        + f" — {pays}",
+        + f" - {pays}",
         "Notation_externe_contrepartie": rng.choice(["BBB", "BBB-", "BB+", "Non noté", "Non noté"]),
         "Pays_contrepartie": pays,
         "Notation_externe_pays": NOTATION_PAYS[pays],
@@ -313,7 +313,7 @@ def _ligne_institution_financiere(rng, identifiant, index):
         weights=[3, 5, 8, 10, 10, 8, 6, 25],
     )[0]
     ligne = {
-        "Contrepartie": f"{nom} — {pays}",
+        "Contrepartie": f"{nom} - {pays}",
         "Notation_externe_contrepartie": notation,
         "Pays_contrepartie": pays,
         "Notation_externe_pays": NOTATION_PAYS[pays],
@@ -416,7 +416,7 @@ def _ligne_immo_residentiel(rng, identifiant, index):
         "Date d'échéance": echeance,
         "PRÊT TOTAL": round(montant * rng.uniform(1.0, 1.15), -4),
         "Immobilier_residentiel_eligible": "Oui" if rng.random() < 0.88 else "Non",
-        "Commentaire": "Crédit acquisition logement — hypothèque de 1er rang",
+        "Commentaire": "Crédit acquisition logement - hypothèque de 1er rang",
     }
 
 
@@ -440,7 +440,7 @@ def _ligne_immo_commercial(rng, identifiant, index):
         "Entreprise_procedure_prudentielle": "Non",
         "Commentaire": rng.choice(
             ["Acquisition d'entrepôt logistique", "Immeuble de bureaux locatif",
-             "Centre commercial — financement long", "Plateforme industrielle"]
+             "Centre commercial - financement long", "Plateforme industrielle"]
         ),
     }
 
@@ -469,10 +469,10 @@ def _ligne_souffrance(rng, identifiant, index):
         "Defaut_pret_immo_residentiel": "Oui" if est_immo else "Non",
         "Defaut_provision_min_20pct": "Oui" if taux_provision >= 0.20 else "Non",
         "Commentaire": rng.choice(
-            ["Créance déclassée — recouvrement amiable en cours",
-             "Contentieux — mise en demeure notifiée",
+            ["Créance déclassée - recouvrement amiable en cours",
+             "Contentieux - mise en demeure notifiée",
              "Dossier transmis au service juridique",
-             "Rééchelonnement refusé — provisionnement renforcé"]
+             "Rééchelonnement refusé - provisionnement renforcé"]
         ),
     }
 
@@ -506,7 +506,7 @@ def _ligne_autre_actif(rng, identifiant, index):
     type_actif = rng.choices(list(TYPES_AUTRES_ACTIFS), weights=_POIDS_AUTRES_ACTIFS)[0]
     montant = _montant(rng, 15_000_000, 9_000_000_000, 100_000)
     return {
-        "Contrepartie": f"Poste de bilan — {type_actif[:60]}",
+        "Contrepartie": f"Poste de bilan - {type_actif[:60]}",
         "Notation_externe_contrepartie": "Non noté",
         "Pays_contrepartie": "Cote d'Ivoire",
         "Notation_externe_pays": NOTATION_PAYS["Cote d'Ivoire"],
@@ -555,7 +555,7 @@ _GARANTS_ENTREPRISE = [
 _GARANTS_GRANDS_COMPTES = [
     ("Banque Ouest-Africaine de Développement", "Expositions sur les BMD", "AAA"),
     ("Fonds de Garantie des Dépôts de l'UMOA", "Souverains", "AAA"),
-    ("État — Fonds de Garantie Agricole", "Souverains", "BB"),
+    ("État - Fonds de Garantie Agricole", "Souverains", "BB"),
     ("Fonds Africain de Garantie", "Expositions sur les BMD", "A-"),
     ("Union Bancaire du Sahel", "Institutions financières", "BBB-"),
 ]
@@ -629,7 +629,7 @@ def _crm_non_financee(rng, exposition_id, montant, montant_xof, code_categorie):
 
 
 # Champs monétaires de la feuille de saisie : ils sont tous exprimés dans la
-# devise de la ligne (colonne « Devise »), jamais en contre-valeur FCFA —
+# devise de la ligne (colonne « Devise »), jamais en contre-valeur FCFA -
 # l'outil applique lui-même la conversion à l'affichage et à l'agrégation.
 _CHAMPS_MONETAIRES = (
     "Montant_exposition_but_au_bilan",
@@ -685,7 +685,7 @@ def construire_donnees(graine: int = 20260630, echelle: float = 1.0):
         devise = ligne["Devise"]
         montant_xof = montant * TAUX_XOF.get(devise, 1.0)
 
-        # Statut de GESTION (libre) — à ne pas confondre avec le statut
+        # Statut de GESTION (libre) - à ne pas confondre avec le statut
         # prudentiel, que l'outil dérive lui-même des jours d'impayés.
         jours = ligne.get("Jours_impayes") or 0
         if code == "i":
@@ -747,7 +747,7 @@ def construire_classeur(chemin, template, crm_non_fin, crm_fin):
 
     feuille_notice(
         wb,
-        f"Modèle d'import — Risque de crédit — {BANQUE}",
+        f"Modèle d'import - Risque de crédit - {BANQUE}",
         [
             ("Date d'arrêté", f"Toutes les expositions sont observées au {DATE_ANALYSE}."),
             ("Template données",

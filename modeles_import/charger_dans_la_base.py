@@ -12,7 +12,7 @@ sauvegarde horodatée.
 Le risque de marché est le seul poste que ce script ne peut pas produire par
 le chemin normal : son exigence de fonds propres est calculée côté application
 puis publiée par l'écran « Importer données de marché ». Le script écrit donc
-l'estimation de `calc_marche.py`, que l'application recalculera — et écrasera —
+l'estimation de `calc_marche.py`, que l'application recalculera - et écrasera -
 au premier import du modèle marché.
 """
 

@@ -3,7 +3,7 @@ import 'package:rwa_calculator/modules/risque_marche/models/currency_registry.da
 import 'package:rwa_calculator/modules/risque_marche/services/market_data_import_store.dart';
 
 void main() {
-  group('calculateMarketPrudentialCapital — taux de change utilisé', () {
+  group('calculateMarketPrudentialCapital - taux de change utilisé', () {
     setUp(() {
       // Remet le référentiel à sa valeur par défaut avant/après chaque test :
       // ce singleton est partagé, un test ne doit pas polluer le suivant.
