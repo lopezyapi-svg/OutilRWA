@@ -91,9 +91,7 @@ class FodepGraphPanel extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Compteur animé : la valeur défile de 0 à la valeur cible (micro-animation).
+}/// Compteur : affichage direct et fluide de la valeur formatée.
 class FodepCompteur extends StatelessWidget {
   const FodepCompteur({
     super.key,
@@ -108,12 +106,7 @@ class FodepCompteur extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: valeur),
-      duration: const Duration(milliseconds: 900),
-      curve: Curves.easeOutCubic,
-      builder: (context, v, _) => Text(format(v), style: style),
-    );
+    return Text(format(valeur), style: style);
   }
 }
 
@@ -146,7 +139,7 @@ class FodepPastilleStatut extends StatelessWidget {
 }
 
 /// Jauge radiale (arc 270°) : valeur observée, seuil réglementaire matérialisé
-/// par un trait, arc en dégradé, compteur animé et pastille de statut.
+/// par un trait, arc en dégradé, valeur directe et pastille de statut.
 class FodepJaugeRadiale extends StatelessWidget {
   const FodepJaugeRadiale({
     super.key,
@@ -154,8 +147,8 @@ class FodepJaugeRadiale extends StatelessWidget {
     required this.valeur,
     required this.seuil,
     required this.conforme,
-    this.suffixe = '%',
     this.disponible = true,
+    this.suffixe = '%',
   });
 
   final String libelle;
@@ -171,11 +164,10 @@ class FodepJaugeRadiale extends StatelessWidget {
     final couleur = !disponible
         ? c.faint
         : (conforme ? c.conforme : c.sousMinimum);
-    
-    // We scale max to be value + 30%, or threshold + 50%, whichever is larger, 
-    // so the gauge is never completely full.
+
     final maxValeur = math.max(valeur * 1.30, seuil * 1.5).clamp(1.0, double.infinity);
     final sombre = Theme.of(context).brightness == Brightness.dark;
+    final fraction = disponible ? (valeur / maxValeur).clamp(0.0, 1.0) : 0.0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -186,20 +178,15 @@ class FodepJaugeRadiale extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: disponible ? valeur / maxValeur : 0),
-                duration: const Duration(milliseconds: 1000),
-                curve: Curves.easeOutCubic,
-                builder: (context, fraction, _) => CustomPaint(
-                  size: const Size(160, 160),
-                  painter: _JaugeRadialePainter(
-                    fraction: fraction,
-                    seuilFraction: disponible ? seuil / maxValeur : 0,
-                    couleur: couleur,
-                    fond: sombre ? c.grid : const Color(0xFFE2E8F0),
-                    traitSeuil: sombre ? Colors.white : c.navy,
-                    eclaircissement: sombre ? 0.12 : 0.28,
-                  ),
+              CustomPaint(
+                size: const Size(160, 160),
+                painter: _JaugeRadialePainter(
+                  fraction: fraction,
+                  seuilFraction: disponible ? (seuil / maxValeur).clamp(0.0, 1.0) : 0,
+                  couleur: couleur,
+                  fond: sombre ? c.grid : const Color(0xFFE2E8F0),
+                  traitSeuil: sombre ? Colors.white : c.navy,
+                  eclaircissement: sombre ? 0.12 : 0.28,
                 ),
               ),
               Positioned(
@@ -235,6 +222,103 @@ class FodepJaugeRadiale extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           libelle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c.ink),
+        ),
+      ],
+    );
+  }
+}
+
+/// Jauge radiale circulaire (semi-donut) style compte-tours automobile / cockpit.
+class FodepJaugePrudentielle extends StatelessWidget {
+  const FodepJaugePrudentielle({
+    super.key,
+    required this.titre,
+    required this.valeur,
+    required this.seuil,
+    required this.reference,
+    this.suffixe = '%',
+    this.conforme = true,
+    this.disponible = true,
+    this.couleurAlerte,
+  });
+
+  final String titre;
+  final double valeur;
+  final double seuil;
+  final String reference;
+  final String suffixe;
+  final bool conforme;
+  final bool disponible;
+  final Color? couleurAlerte;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DashColors.of(context);
+    final couleur = couleurAlerte ?? (disponible ? (conforme ? c.conforme : c.sousMinimum) : c.faint);
+
+    // We scale max to be value + 30%, or threshold + 50%, whichever is larger, 
+    // so the gauge is never completely full.
+    final maxValeur = math.max(valeur * 1.30, seuil * 1.5).clamp(1.0, double.infinity);
+    final sombre = Theme.of(context).brightness == Brightness.dark;
+    final fraction = disponible ? (valeur / maxValeur).clamp(0.0, 1.0) : 0.0;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 160,
+          height: 140,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CustomPaint(
+                size: const Size(160, 160),
+                painter: _JaugeRadialePainter(
+                  fraction: fraction,
+                  seuilFraction: disponible ? (seuil / maxValeur).clamp(0.0, 1.0) : 0,
+                  couleur: couleur,
+                  fond: sombre ? c.grid : const Color(0xFFE2E8F0),
+                  traitSeuil: sombre ? Colors.white : c.navy,
+                  eclaircissement: sombre ? 0.12 : 0.28,
+                ),
+              ),
+              Positioned(
+                top: 50,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FodepCompteur(
+                      valeur: disponible ? valeur : 0,
+                      format: (v) => disponible ? '${v.toStringAsFixed(2)} $suffixe' : '—',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: disponible ? c.ink : c.faint,
+                        height: 1.1,
+                        letterSpacing: -0.5,
+                        fontFeatures: Dash.tabular,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    FodepPastilleStatut(
+                      couleur: couleur,
+                      libelle: !disponible
+                          ? 'Non renseigné'
+                          : (conforme ? 'Conforme' : 'Non conforme'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          titre,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
@@ -432,8 +516,7 @@ class FodepBarresHorizontales extends StatelessWidget {
   }
 }
 
-/// Une barre horizontale animée : remplissage en fondu progressif (stagger).
-class _BarreHAnimee extends StatefulWidget {
+class _BarreHAnimee extends StatelessWidget {
   const _BarreHAnimee({
     required this.donnee,
     required this.index,
@@ -451,26 +534,10 @@ class _BarreHAnimee extends StatefulWidget {
   final List<double> seuilsGlobaux;
 
   @override
-  State<_BarreHAnimee> createState() => _BarreHAnimeeState();
-}
-
-class _BarreHAnimeeState extends State<_BarreHAnimee> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: Duration(milliseconds: 700 + widget.index * 90),
-  )..forward();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
-    final d = widget.donnee;
-    final fraction = widget.max > 0 ? d.valeur / widget.max : 0.0;
+    final d = donnee;
+    final fraction = max > 0 ? (d.valeur / max).clamp(0.0, 1.0) : 0.0;
 
     return Row(
       children: [
@@ -490,22 +557,16 @@ class _BarreHAnimeeState extends State<_BarreHAnimee> with SingleTickerProviderS
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final largeur = constraints.maxWidth;
-                return AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, _) {
-                    final t = Curves.easeOutCubic.transform(_controller.value);
-                    return CustomPaint(
-                      size: Size(largeur, 24),
-                      painter: _BarreHPainter(
-                        fraction: fraction * t,
-                        couleur: widget.couleur,
-                        fond: c.grid,
-                        seuilFraction: d.seuil == null || widget.max <= 0 ? null : d.seuil! / widget.max,
-                        seuils: widget.seuilsGlobaux.map((s) => widget.max > 0 ? s / widget.max : 0.0).toList(),
-                        couleurSeuil: c.muted.withValues(alpha: 0.5),
-                      ),
-                    );
-                  },
+                return CustomPaint(
+                  size: Size(largeur, 24),
+                  painter: _BarreHPainter(
+                    fraction: fraction,
+                    couleur: couleur,
+                    fond: c.grid,
+                    seuilFraction: d.seuil == null || max <= 0 ? null : d.seuil! / max,
+                    seuils: seuilsGlobaux.map((s) => max > 0 ? (s / max).clamp(0.0, 1.0) : 0.0).toList(),
+                    couleurSeuil: c.border,
+                  ),
                 );
               },
             ),
@@ -521,7 +582,7 @@ class _BarreHAnimeeState extends State<_BarreHAnimee> with SingleTickerProviderS
             border: Border.all(color: c.border, width: Dash.hairline),
           ),
           child: Text(
-            widget.format(d.valeur),
+            format(d.valeur),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.right,

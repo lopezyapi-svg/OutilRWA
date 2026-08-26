@@ -79,14 +79,80 @@ def enregistrer_etablissement(payload: EtablissementUpdate) -> EtablissementView
     return services.enregistrer_etablissement(payload.denomination, payload.code_bceao)
 
 
-@router.get("/fonds-propres/export")
-def exporter_fonds_propres(periode: str | None = None) -> Response:
-    apercu = services.generer_apercu(periode)
-    contenu = excel.build_fonds_propres_export(apercu.periode, apercu.postes)
-    nom = f"FODEP_fonds_propres_{apercu.periode or 'brouillon'}.xlsx"
+@router.get("/template")
+@router.get("/fonds-propres/template")
+def telecharger_modele_officiel() -> Response:
+    contenu = excel.get_matrice_officielle_template_bytes()
+    nom = "Matrice_FODEP_Officielle.xlsx"
     return Response(
         content=contenu,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'},
+    )
+
+
+@router.get("/fonds-propres/export")
+def exporter_fonds_propres(periode: str | None = None) -> Response:
+    apercu = services.generer_apercu(periode)
+    etablissement = services.obtenir_etablissement()
+    participations = services.lister_participations(periode)
+    from app.rwa_credit.services import get_rwa_credit_analysis
+
+    contenu = excel.build_fonds_propres_export(
+        apercu.periode,
+        apercu.postes,
+        etablissement=etablissement,
+        participations=participations,
+        apr=apercu.apr,
+        totaux=apercu.totaux,
+        analyse_credit=get_rwa_credit_analysis(),
+    )
+    nom = f"Matrice_FODEP_Officielle_{apercu.periode or 'brouillon'}.xlsx"
+    return Response(
+        content=contenu,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{nom}"'},
+    )
+
+
+@router.get("/fonds-propres/export-pdf")
+def exporter_fonds_propres_pdf(periode: str | None = None) -> Response:
+    """Rend en PDF le classeur officiel lui-meme, onglet par onglet.
+
+    La conversion est faite en Python pur (openpyxl + reportlab) : le poste qui
+    heberge l'API n'a besoin ni d'Excel, ni de LibreOffice, ni d'aucun logiciel
+    installe a cote.
+    """
+
+    from app.fodep.xlsx_pdf import convertir_classeur_en_pdf
+    from app.rwa_credit.services import get_rwa_credit_analysis
+
+    apercu = services.generer_apercu(periode)
+    etablissement = services.obtenir_etablissement()
+    participations = services.lister_participations(periode)
+
+    contenu_xlsx = excel.build_fonds_propres_export(
+        apercu.periode,
+        apercu.postes,
+        etablissement=etablissement,
+        participations=participations,
+        apr=apercu.apr,
+        totaux=apercu.totaux,
+        analyse_credit=get_rwa_credit_analysis(),
+    )
+
+    try:
+        pdf_bytes = convertir_classeur_en_pdf(contenu_xlsx)
+    except Exception as exc:  # noqa: BLE001 - remonte une erreur lisible au client
+        raise HTTPException(
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+            f"Generation du PDF impossible : {exc}",
+        ) from exc
+
+    nom = f"Matrice_FODEP_Officielle_{apercu.periode or 'brouillon'}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{nom}"'},
     )
 
@@ -105,18 +171,36 @@ async def importer_fonds_propres(file: UploadFile = File(...)) -> ImportFodepRes
     if not postes:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "Aucun poste FODEP reconnu dans ce fichier. Le format attendu est "
-            "celui produit par l'export FODEP de cet outil (colonnes Code / "
-            "EP / Groupe / Libellé / Valeur).",
+            "Aucun montant numérique n'a été détecté pour les postes FODEP dans ce fichier. "
+            "Veuillez renseigner vos montants dans la matrice officielle FODEP (Matrice_FODEP_Officielle.xlsx).",
         )
 
+    import re
+    periode_detectee = None
+    if file.filename:
+        m = re.search(r"(\d{2})[-_]?(\d{2})[-_]?(\d{4})", file.filename)
+        if m:
+            j, m_num, a = m.groups()
+            if 1 <= int(j) <= 31 and 1 <= int(m_num) <= 12 and int(a) >= 2000:
+                periode_detectee = f"{a}-{m_num.zfill(2)}-{j.zfill(2)}"
+        if not periode_detectee:
+            m = re.search(r"(\d{4})[-_]?(\d{2})[-_]?(\d{2})", file.filename)
+            if m:
+                a, m_num, j = m.groups()
+                if 1 <= int(j) <= 31 and 1 <= int(m_num) <= 12 and int(a) >= 2000:
+                    periode_detectee = f"{a}-{m_num.zfill(2)}-{j.zfill(2)}"
+
     ecarts = services.comparer_a_l_existant(postes)
-    identifiant = services.enregistrer_import(file.filename or "import.xlsx", None, postes)
+    identifiant = services.enregistrer_import(
+        file.filename or "import.xlsx",
+        periode_detectee,
+        postes,
+    )
 
     return ImportFodepResult(
         id=identifiant,
         nom_fichier=file.filename or "import.xlsx",
-        periode=None,
+        periode=periode_detectee,
         postes_detectes=postes,
         ecarts=ecarts,
     )

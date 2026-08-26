@@ -10,6 +10,11 @@ numpy>=1.26
 scipy>=1.11.0
 pandas>=2.1.0
 
+# Rendu PDF du classeur officiel FODEP (app/fodep/xlsx_pdf.py), sans Excel ni
+# LibreOffice : sans cette ligne l'export PDF marche en dev (installe a la
+# main) et casse silencieusement dans Docker et l'installeur Windows.
+reportlab==5.0.1
+
 # Requis par fastapi.testclient : sans lui, quatre fichiers de tests ne se
 # collectent meme pas et la suite passe pour verte alors qu'elle n'a rien
 # execute.

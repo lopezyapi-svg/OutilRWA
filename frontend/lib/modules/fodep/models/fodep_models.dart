@@ -176,12 +176,14 @@ class ImportFodepResult {
   const ImportFodepResult({
     required this.id,
     required this.nomFichier,
+    this.periode,
     required this.postesDetectes,
     required this.ecarts,
   });
 
   final String id;
   final String nomFichier;
+  final String? periode;
   final Map<String, double> postesDetectes;
   final Map<String, Map<String, double>> ecarts;
 
@@ -189,6 +191,7 @@ class ImportFodepResult {
     return ImportFodepResult(
       id: json['id'] as String,
       nomFichier: json['nom_fichier'] as String,
+      periode: json['periode'] as String?,
       postesDetectes: (json['postes_detectes'] as Map<String, dynamic>).map(
         (key, value) => MapEntry(key, (value as num).toDouble()),
       ),

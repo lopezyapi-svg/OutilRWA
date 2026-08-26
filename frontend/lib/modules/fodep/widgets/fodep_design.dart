@@ -111,10 +111,11 @@ class FodepValueTile extends StatelessWidget {
 /// Bandeau d'information/erreur/succès, plat, cohérent avec la palette de
 /// statut du dashboard (aucune couleur inventée hors de DashColors).
 class FodepNotice extends StatelessWidget {
-  const FodepNotice({super.key, required this.status, required this.texte});
+  const FodepNotice({super.key, required this.status, required this.texte, this.onClose});
 
   final DashStatus status;
   final String texte;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -141,11 +142,19 @@ class FodepNotice extends StatelessWidget {
           Expanded(
             child: Text(texte, style: DashText.value(c, color: c.ink, weight: FontWeight.w500).copyWith(fontSize: 12)),
           ),
+          if (onClose != null) ...[
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: onClose,
+              child: Icon(Icons.close_rounded, size: 16, color: c.muted),
+            ),
+          ]
         ],
       ),
     );
   }
 }
+
 
 /// Onglets sobres (texte seul, soulignement navy) pour naviguer entre les
 /// groupes de postes DISPRU, sans icône ni couleur de statut.

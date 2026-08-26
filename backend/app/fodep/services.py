@@ -307,6 +307,7 @@ def generer_apercu(periode: str | None = None) -> FodepApercu:
 
 
 def enregistrer_fonds_propres(periode: str, postes: dict[str, float]) -> FodepApercu:
+    periode = _normaliser_periode(periode) or periode
     valeurs = {code: float(postes.get(code, 0.0) or 0.0) for code in POSTE_CODES}
     maintenant = _utcnow_iso()
 

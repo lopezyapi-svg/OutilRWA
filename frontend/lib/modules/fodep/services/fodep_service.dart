@@ -95,10 +95,21 @@ class FodepService {
     return EtablissementView.fromJson(reponse);
   }
 
+  Future<Uint8List> telechargerModeleOfficiel() {
+    return api.getBytes('/fodep/template');
+  }
+
   Future<Uint8List> exporterExcel({String? periode}) {
     final chemin = periode == null
         ? '/fodep/fonds-propres/export'
         : '/fodep/fonds-propres/export?periode=${Uri.encodeQueryComponent(periode)}';
+    return api.getBytes(chemin);
+  }
+
+  Future<Uint8List> exporterPdf({String? periode}) {
+    final chemin = periode == null
+        ? '/fodep/fonds-propres/export-pdf'
+        : '/fodep/fonds-propres/export-pdf?periode=${Uri.encodeQueryComponent(periode)}';
     return api.getBytes(chemin);
   }
 
