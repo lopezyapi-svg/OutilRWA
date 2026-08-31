@@ -67,8 +67,8 @@ def test_moteur_formules_reproduit_les_valeurs_calculees_par_excel():
 
 
 def test_export_avec_denomination_etablissement_ne_plante_pas():
-    """ADPE!D5 (denomination) est dans la fusion C5:K5 : y ecrire directement
-    levait AttributeError avant l'introduction de excel._ecrire."""
+    """La denomination de l'etablissement doit apparaitre dans l'onglet ADPE
+    reconstruit, sans faire echouer l'export."""
 
     contenu = excel.build_fonds_propres_export(
         "2026-06-30",
@@ -78,7 +78,9 @@ def test_export_avec_denomination_etablissement_ne_plante_pas():
     )
 
     wb = openpyxl.load_workbook(__import__("io").BytesIO(contenu))
-    assert wb["ADPE"]["C5"].value == "BANQUE ATLANTIQUE CI"
+    ws = wb["ADPE"]
+    texte = " ".join(str(c.value) for ligne in ws.iter_rows() for c in ligne if c.value)
+    assert "BANQUE ATLANTIQUE CI" in texte
 
 
 def test_convertir_classeur_en_pdf_produit_un_pdf_valide():
@@ -150,8 +152,11 @@ def test_feuille_attestation_presente_et_rendue_dans_le_pdf():
     )
 
     wb = openpyxl.load_workbook(BytesIO(contenu))
-    assert "ATTESTATION" in wb.sheetnames
-    ws = wb["ATTESTATION"]
+    # L'onglet officiel ADPE est reconstruit sous le meme nom (plus de doublon
+    # « ATTESTATION » separe).
+    assert "ADPE" in wb.sheetnames
+    assert "ATTESTATION" not in wb.sheetnames
+    ws = wb["ADPE"]
     cellules = [str(c.value) for ligne in ws.iter_rows() for c in ligne if c.value]
     texte = " ".join(cellules)
     assert "ATTESTATION DE DECLARATION PRUDENTIELLE" in texte

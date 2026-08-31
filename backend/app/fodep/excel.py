@@ -226,27 +226,11 @@ def build_fonds_propres_export(
 
     wb = openpyxl.load_workbook(chemin)
 
-    # 0. Renseigner l'en-tête et l'établissement dans ADPE
-    if "ADPE" in wb.sheetnames:
-        ws = wb["ADPE"]
-        if etablissement:
-            nom = getattr(etablissement, "denomination", None) or (
-                etablissement.get("denomination") if isinstance(etablissement, dict) else ""
-            )
-            code_b = getattr(etablissement, "code_bceao", None) or (
-                etablissement.get("code_bceao") if isinstance(etablissement, dict) else ""
-            )
-            if nom:
-                _ecrire(ws, 5, 4, str(nom).strip())
-            if code_b:
-                _ecrire(ws, 6, 4, str(code_b).strip())
-        if periode:
-            try:
-                parts = periode.split("-")
-                if len(parts) == 3:
-                    _ecrire(ws, 9, 4, f"{parts[2]}/{parts[1]}/{parts[0]}")
-            except Exception:
-                _ecrire(ws, 9, 4, str(periode))
+    # 0. L'onglet officiel ADPE (attestation de declaration prudentielle) du
+    # modele est une grille de cases a cocher vide, sans emplacement fiable
+    # pour le declarant : on le reconstruit entierement plus bas
+    # (_ajouter_feuille_attestation) sous le meme nom, avec toutes les
+    # informations saisies. Rien a ecrire ici.
 
     totaux = totaux or {}
 
@@ -304,13 +288,13 @@ def build_fonds_propres_export(
             if valeur is not None:
                 _ecrire(ws, r, 4, valeur)
         # Serie du produit brut sur 3 ans (C26=annee-3, D26=annee-2,
-        # E26=annee-1) : le modele officiel la livre avec les chiffres du
-        # specimen. L'application ne suit que l'arrete courant -> annee-1 =
-        # RO009, annees anterieures effacees (a saisir a la main si besoin).
+        # E26=annee-1). L'application ne suit que l'arrete courant : on reporte
+        # RO009 sur les trois annees pour que la moyenne du modele
+        # (=(C26+D26+E26)/3, qui divise toujours par 3) reste egale a RO009,
+        # et non pas RO009/3 comme si deux annees etaient a zero.
         if "ro009" in totaux:
-            _ecrire(ws, 26, 3, 0)
-            _ecrire(ws, 26, 4, 0)
-            _ecrire(ws, 26, 5, totaux["ro009"])
+            for col in (3, 4, 5):
+                _ecrire(ws, 26, col, totaux["ro009"])
 
     # 3. Renseigner EP33 (Ratio de levier) - postes RL001..RL012, totaux
     # RL004/RL007/RL010/RL013/RL015, et le rappel RL014 = fonds propres T1.
@@ -428,6 +412,11 @@ def build_fonds_propres_export(
         rwa_op = getattr(apr, "rwa_operationnel", 0.0) or (apr.get("rwa_operationnel") if isinstance(apr, dict) else 0.0)
         _ecrire(ws, 19, 5, rwa_credit)
         _ecrire(ws, 26, 5, rwa_marche)
+        # E30 (approche indicateur de base, renvoi vers EP21) ET E32 (total
+        # APR operationnel) : on force les deux a la meme valeur reelle du
+        # module risque operationnel, sinon l'onglet se contredit (E30 issu
+        # de la formule EP21, E32 de la valeur injectee).
+        _ecrire(ws, 30, 5, rwa_op)
         _ecrire(ws, 32, 5, rwa_op)
 
     # 9. Renseigner EP02 (Solvabilité)
@@ -522,9 +511,16 @@ def _ajouter_feuille_attestation(wb: Any, attestation: Any, etablissement: Any, 
         date_arrete = "—"
 
     # ── Nettoyage préalable ──────────────────────────────────────────────────
-    if "ATTESTATION" in wb.sheetnames:
-        del wb["ATTESTATION"]
-    ws = wb.create_sheet("ATTESTATION")
+    # On remplace l'onglet officiel ADPE (grille vide, sans emplacement fiable
+    # pour le déclarant) par une reconstruction complète, sous le même nom,
+    # positionnée là où ADPE se trouvait.
+    position = None
+    for nom_existant in ("ADPE", "ATTESTATION"):
+        if nom_existant in wb.sheetnames:
+            if position is None:
+                position = wb.sheetnames.index(nom_existant)
+            del wb[nom_existant]
+    ws = wb.create_sheet("ADPE", index=position if position is not None else None)
 
     # ── Largeurs de colonnes (8 colonnes) ────────────────────────────────────
     largeurs = [12.0, 18.0, 18.0, 18.0, 14.0, 10.0, 10.0, 14.0]
