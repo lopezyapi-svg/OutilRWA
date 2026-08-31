@@ -823,7 +823,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: backgroundColor.withValues(alpha: 0.78)),
       ),
       child: Text(
@@ -1490,7 +1490,7 @@ class _RoImportPertesDialogState extends State<_RoImportPertesDialog> {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: AppTheme.danger.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: AppTheme.danger.withValues(alpha: 0.25)),
       ),
       child: Column(

@@ -6,6 +6,7 @@ import '../../../shared/utils/file_save.dart';
 import '../../dashboard/widgets/dashboard_design.dart';
 import '../models/fodep_models.dart';
 import '../services/fodep_service.dart';
+import '../../../core/theme/app_theme.dart';
 
 Future<bool?> showFodepImportDialog(
   BuildContext context, {
@@ -185,7 +186,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
     return Dialog(
       backgroundColor: c.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         side: BorderSide(color: c.border, width: Dash.hairline),
       ),
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
@@ -206,7 +207,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                 border: Border(
                   bottom: BorderSide(color: c.border, width: Dash.hairline),
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radius)),
               ),
               child: Row(
                 children: [
@@ -215,7 +216,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                     height: 36,
                     decoration: BoxDecoration(
                       color: Colors.indigo.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                       border: Border.all(
                         color: Colors.indigo.withValues(alpha: 0.3),
                         width: 1,
@@ -292,7 +293,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                                 : (_selectedFile != null
                                     ? Colors.indigo.withValues(alpha: 0.03)
                                     : c.surfaceAlt),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                             border: Border.all(
                               color: _isDragging
                                   ? Colors.indigo
@@ -399,7 +400,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFEF2F2),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                           border: Border.all(
                             color: const Color(0xFFFCA5A5),
                             width: 1,
@@ -439,7 +440,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                           color: sombre
                               ? const Color(0xFF0F172A)
                               : const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                           border: Border.all(color: c.border, width: Dash.hairline),
                         ),
                         child: Column(
@@ -454,7 +455,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                                   ),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFF16A34A).withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(AppTheme.radius),
                                     border: Border.all(
                                       color: const Color(0xFF16A34A).withValues(alpha: 0.3),
                                     ),
@@ -544,7 +545,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                               height: 180,
                               decoration: BoxDecoration(
                                 color: c.surface,
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(AppTheme.radius),
                                 border: Border.all(
                                   color: c.divider,
                                   width: 0.5,
@@ -619,7 +620,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.blue.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                         border: Border.all(
                           color: Colors.blue.withValues(alpha: 0.15),
                         ),
@@ -681,7 +682,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                   top: BorderSide(color: c.border, width: Dash.hairline),
                 ),
                 borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(12)),
+                    const BorderRadius.vertical(bottom: Radius.circular(AppTheme.radius)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -698,7 +699,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                         vertical: 10,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                     ),
                     child: const Text('Annuler'),
@@ -733,7 +734,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                       ),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                     ),
                   ),

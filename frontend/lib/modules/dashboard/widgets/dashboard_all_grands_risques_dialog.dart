@@ -4,6 +4,7 @@ import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
+import '../../../core/theme/app_theme.dart';
 
 class DashboardAllGrandsRisquesDialog extends StatelessWidget {
   const DashboardAllGrandsRisquesDialog({
@@ -33,7 +34,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
         Container(width: 0.3, height: 32, color: Colors.white24);
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
       backgroundColor: Colors.white,
       child: Container(
         width: 900,

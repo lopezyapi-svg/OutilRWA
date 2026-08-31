@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localization.dart';
+import '../../../core/theme/app_theme.dart';
 import 'dashboard_theme.dart';
 
 /// Carte standard utilisée pour les blocs du dashboard.
@@ -24,10 +25,10 @@ class DashboardPanel extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: dashboardPanelColor(isDark),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: dashboardPanelBorder(isDark)),
         boxShadow: dashboardPanelShadow(isDark),
       ),

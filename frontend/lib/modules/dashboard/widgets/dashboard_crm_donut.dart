@@ -7,6 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'dashboard_design.dart';
+import '../../../core/theme/app_theme.dart';
 
 class DashboardCrmDonut extends StatefulWidget {
   const DashboardCrmDonut({super.key, required this.entries, required this.portfolioOverview});
@@ -820,7 +821,7 @@ class _CrmDetailsDialogState extends State<_CrmDetailsDialog> {
       showDuration: const Duration(seconds: 15),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
         boxShadow: [
           BoxShadow(

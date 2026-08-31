@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/ro_models.dart';
+import '../../../core/theme/app_theme.dart';
 
 class RoCriteresDashboard extends StatelessWidget {
   const RoCriteresDashboard({
@@ -153,7 +154,7 @@ class RoCriteresDashboard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
@@ -241,11 +242,11 @@ class _CritereCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF13213A) : const Color(0xFFFBFCFF),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: border),
         ),
         child: Column(
@@ -268,7 +269,7 @@ class _CritereCard extends StatelessWidget {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                         child: Text(
                           critere.code,

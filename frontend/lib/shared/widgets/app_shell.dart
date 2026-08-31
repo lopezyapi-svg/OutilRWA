@@ -2116,7 +2116,7 @@ class _ShellBrand extends StatelessWidget {
             color: isDark
                 ? const Color(0xFF14233D)
                 : Colors.white.withValues(alpha: 0.78),
-            borderRadius: BorderRadius.circular(7),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             boxShadow: [
               BoxShadow(
                 color: isDark
@@ -2128,7 +2128,7 @@ class _ShellBrand extends StatelessWidget {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(7),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             child: const DesktopAssetImage(
               'assets/images/logo.png',
               fit: BoxFit.contain,

@@ -599,7 +599,7 @@ class _CompactSidebarLogo extends StatelessWidget {
       width: 50,
       height: 40,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: DesktopAssetImage(
           'assets/images/heymanns_logo.png',
           fit: BoxFit.contain,
@@ -1098,7 +1098,7 @@ class _SidebarServiceCard extends StatelessWidget {
           SizedBox(
             height: 90,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               child: DesktopAssetImage(
                 'assets/images/heymanns_logo.png',
                 fit: BoxFit.contain,

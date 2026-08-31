@@ -65,7 +65,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF0F172A) : Colors.white,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.1),
@@ -304,7 +304,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
@@ -344,7 +344,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: isDark ? 0.20 : 0.10),
                     border: Border.all(color: color.withValues(alpha: 0.55)),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -406,7 +406,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
                   const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
               decoration: BoxDecoration(
                 color: soft,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(color: border),
               ),
               child: Text(
@@ -418,11 +418,11 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
             )
           else
             ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               child: Container(
                 decoration: BoxDecoration(
                   border: Border.all(color: border),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Column(
                   children: [

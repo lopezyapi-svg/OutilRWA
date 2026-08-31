@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/formatters.dart';
 import 'dashboard_design.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Masthead du dashboard prudentiel - barre claire raffinée.
 ///
@@ -114,11 +115,11 @@ class _DateControl extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: colors.border, width: 1),
           ),
           child: Row(
@@ -166,12 +167,12 @@ class _IconButtonBox extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           child: Container(
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: colors.border, width: 1),
             ),
             child: Icon(icon, size: 17, color: colors.muted),

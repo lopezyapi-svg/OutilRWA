@@ -108,7 +108,7 @@ Widget _artInfo(String artRef) {
           const TextStyle(fontSize: 11.5, color: Colors.white, height: 1.6),
       decoration: BoxDecoration(
         color: const Color(0xFF1E2A3A),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: const Icon(Icons.info_outline_rounded, size: 14, color: _kBlue),
@@ -556,7 +556,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
           width: double.infinity,
           padding: const pw.EdgeInsets.all(22),
           decoration: pw.BoxDecoration(
-              color: headerBg, borderRadius: pw.BorderRadius.circular(6)),
+              color: headerBg, borderRadius: pw.BorderRadius.circular(AppTheme.radius)),
           child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
@@ -826,7 +826,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                   color: Theme.of(context).brightness == Brightness.dark
                       ? const Color(0xFF0F2544)
                       : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   boxShadow: [
                     BoxShadow(
                         color: Colors.black.withValues(alpha: 0.18),

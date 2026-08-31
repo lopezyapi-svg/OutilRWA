@@ -12,6 +12,7 @@ import '../services/fodep_service.dart';
 import '../widgets/fodep_charts.dart';
 import '../widgets/fodep_design.dart';
 import '../widgets/fodep_import_dialog.dart';
+import '../../../core/theme/app_theme.dart';
 
 enum _SectionFodep {
   conformite,
@@ -251,6 +252,9 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     );
   }
 
+  /// Formate une valeur **déjà exprimée en millions** (postes / totaux FODEP).
+  String _fmtM(double millions) => _fmt(millions * 1e6);
+
   String _fmt(double v) {
     if (v == 0) return '0';
     // Format en millions par défaut
@@ -305,7 +309,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC), // slate-50
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     border: Border.all(color: c.border, width: Dash.hairline),
                   ),
                   child: Row(
@@ -399,9 +403,9 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                 FodepTableRow(label: 'Ratio de Solvabilité total (%)', ref: 'c x 100 / d', value: pct(solvency)),
 
                 const FodepTableGroup(title: 'Fonds Propres'),
-                FodepTableRow(label: 'Fonds propres de base durs (CET 1)', ref: 'EP03 / EP05', value: _fmt(fpCet1)),
-                FodepTableRow(label: 'Fonds propres de base (T1)', ref: 'EP03 / EP05', value: _fmt(fpT1)),
-                FodepTableRow(label: 'Fonds propres effectifs (FPE)', ref: 'EP03 / EP05', value: _fmt(fpEffectifs)),
+                FodepTableRow(label: 'Fonds propres de base durs (CET 1)', ref: 'EP03 / EP05', value: _fmtM(fpCet1)),
+                FodepTableRow(label: 'Fonds propres de base (T1)', ref: 'EP03 / EP05', value: _fmtM(fpT1)),
+                FodepTableRow(label: 'Fonds propres effectifs (FPE)', ref: 'EP03 / EP05', value: _fmtM(fpEffectifs)),
 
                 const FodepTableGroup(title: 'Actifs Pondérés des risques (APR)'),
                 FodepTableRow(label: 'Total des actifs pondérés des risques de crédit, de marché et opérationnel', ref: 'EP08', value: _fmt(totalApr), isLast: true),
@@ -604,7 +608,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: const Color(0xFFE2E8F0),
           width: 1.0,
@@ -1117,14 +1121,14 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     final ro009 = apercu.totaux['ro009'] ?? 0;
 
     final lignes = <List<String>>[
-      ["Produit d'exploitation bancaire", 'EP21', _fmt(p['ro001'] ?? 0)],
-      ['Moins-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmt(p['ro002'] ?? 0)],
-      ["(-) Charges d'exploitation bancaire", 'EP21', _fmt(p['ro003'] ?? 0)],
-      ['(-) Plus-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmt(p['ro005'] ?? 0)],
-      ["(+/-) Produits nets d'exploitation bancaire exceptionnels ou inhabituels", 'EP21', _fmt(p['ro006'] ?? 0)],
-      ["(-) Produits provenant des activités d'assurance", 'EP21', _fmt(p['ro007'] ?? 0)],
-      ['(-) Produits des entités financières exclues du périmètre prudentiel', 'EP21', _fmt(p['ro008'] ?? 0)],
-      ['Total du produit brut', 'EP21', _fmt(ro009)],
+      ["Produit d'exploitation bancaire", 'EP21', _fmtM(p['ro001'] ?? 0)],
+      ['Moins-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmtM(p['ro002'] ?? 0)],
+      ["(-) Charges d'exploitation bancaire", 'EP21', _fmtM(p['ro003'] ?? 0)],
+      ['(-) Plus-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmtM(p['ro005'] ?? 0)],
+      ["(+/-) Produits nets d'exploitation bancaire exceptionnels ou inhabituels", 'EP21', _fmtM(p['ro006'] ?? 0)],
+      ["(-) Produits provenant des activités d'assurance", 'EP21', _fmtM(p['ro007'] ?? 0)],
+      ['(-) Produits des entités financières exclues du périmètre prudentiel', 'EP21', _fmtM(p['ro008'] ?? 0)],
+      ['Total du produit brut', 'EP21', _fmtM(ro009)],
       for (int i = 0; i < 3; i++)
         () {
           final rang = exercices.length - 3 + i;
@@ -1656,13 +1660,13 @@ class _OngletEp extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(5),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: selected
               ? [
                   BoxShadow(
@@ -2135,7 +2139,7 @@ class _InfoTooltipBouton extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: const Color(0xFFCBD5E1), width: Dash.hairline),
         boxShadow: [
           BoxShadow(
@@ -2385,7 +2389,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(color: c.border, width: Dash.hairline),
                 ),
                 child: Row(

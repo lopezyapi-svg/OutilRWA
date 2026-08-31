@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../../../modules/dashboard/widgets/dashboard_design.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Formateur de montants en millions (même convention que l'écran FODEP).
 String fodepFmtMontant(double v) {
@@ -578,7 +579,7 @@ class _BarreHAnimee extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: c.surfaceAlt,
-            borderRadius: BorderRadius.circular(7),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: c.border, width: Dash.hairline),
           ),
           child: Text(
@@ -622,14 +623,14 @@ class _BarreHPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, size.height / 2 - 5, size.width, 10),
-      const Radius.circular(5),
+      const Radius.circular(AppTheme.radius),
     );
     canvas.drawRRect(rect, Paint()..color = fond);
     if (fraction > 0.01) {
       final largeur = size.width * fraction.clamp(0.0, 1.0);
       final rectRempli = RRect.fromRectAndRadius(
         Rect.fromLTWH(0, size.height / 2 - 5, largeur.clamp(4.0, size.width).toDouble(), 10),
-        const Radius.circular(5),
+        const Radius.circular(AppTheme.radius),
       );
       canvas.drawRRect(
         rectRempli,

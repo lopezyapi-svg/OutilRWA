@@ -875,6 +875,9 @@ class _YieldCurveDashboardState extends State<_YieldCurveDashboard> {
                       Container(
                         height: 36,
                         decoration: BoxDecoration(
+                          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                           color: _marketSurfaceSoftFor(context).withValues(
                               alpha: _isMarketDark(context) ? 0.3 : 0.6),
                           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1023,6 +1026,9 @@ class _YieldCurveDashboardState extends State<_YieldCurveDashboard> {
                               380, // Fix height since Expanded won't work in SingleChildScrollView
                           child: Container(
                             decoration: BoxDecoration(
+                              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                               color: _marketSurfaceSoftFor(context).withValues(
                                   alpha: _isMarketDark(context) ? 0.64 : 0.90),
                               border: Border.all(
@@ -1347,8 +1353,11 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
+              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
               color: interpretation.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(
                 color: interpretation.color.withValues(alpha: 0.2),
               ),
@@ -2050,6 +2059,9 @@ class _YieldCurveNoDataChart extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 260),
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
         decoration: BoxDecoration(
+          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
           color: _marketSurfaceFor(context).withValues(
             alpha: isDark ? 0.62 : 0.82,
           ),
@@ -4207,10 +4219,13 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _marketSurfaceFor(context).withValues(
           alpha: _isMarketDark(context) ? 0.86 : 0.98,
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
@@ -8033,10 +8048,13 @@ class _BondKeyIndicatorsSection extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _marketSurfaceFor(context).withValues(
           alpha: _isMarketDark(context) ? 0.86 : 0.98,
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
@@ -8564,7 +8582,7 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
                           isExpanded: true,
                           dropdownColor:
                               isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -10536,7 +10554,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                     ),
                     decoration: BoxDecoration(
                       color: isDark ? Colors.grey.shade900 : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                       border: Border.all(color: muted.withValues(alpha: 0.2)),
                       boxShadow: [
                         BoxShadow(
@@ -10611,7 +10629,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                     tooltipMargin: 8,
                     tooltipBorder:
                         BorderSide(color: muted.withValues(alpha: 0.2)),
-                    tooltipBorderRadius: BorderRadius.circular(8),
+                    tooltipBorderRadius: BorderRadius.circular(AppTheme.radius),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final row = sortedRows[groupIndex];
                       if (rodIndex == 0) {
@@ -10997,8 +11015,11 @@ class _BondZoneRadarProfileChartState
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: muted.withValues(alpha: 0.2)),
       ),
       child: Column(
@@ -11062,7 +11083,7 @@ class _BondZoneRadarProfileChartState
                   color: isDark
                       ? const Color(0xFF1E293B)
                       : Colors.white, // Modern slate in dark, white in light
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(color: muted.withValues(alpha: 0.2)),
                   boxShadow: [
                     BoxShadow(
@@ -11665,7 +11686,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                         isDark ? const Color(0xFF1E1E2C) : Colors.white,
                     tooltipPadding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
-                    tooltipBorderRadius: BorderRadius.circular(8),
+                    tooltipBorderRadius: BorderRadius.circular(AppTheme.radius),
                     tooltipBorder: BorderSide(
                         color: muted.withValues(alpha: 0.15), width: 1),
                     getTooltipItems: (touchedSpot) {
@@ -11835,7 +11856,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                 ),
                 decoration: BoxDecoration(
                   color: isDark ? Colors.grey.shade900 : Colors.white,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(color: muted.withValues(alpha: 0.2)),
                   boxShadow: [
                     BoxShadow(
@@ -14147,7 +14168,7 @@ class _MarketAnalyticKpiGrid extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border.withValues(alpha: 0.8), width: 1),
         boxShadow: [
           BoxShadow(
@@ -14160,7 +14181,7 @@ class _MarketAnalyticKpiGrid extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -14243,10 +14264,13 @@ class _MarketAnalyticKpiItemState extends State<_MarketAnalyticKpiItem> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
+          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
           color: _isHovered
               ? accent.withValues(alpha: 0.05)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
             color: _isHovered
                 ? accent.withValues(alpha: 0.22)
@@ -14388,14 +14412,22 @@ class _GlobalMarketKpiCards extends StatelessWidget {
   }
 
   Widget _buildCardContainer(BuildContext context, Widget child) {
+    final isDark = _isMarketDark(context);
     return Container(
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: child,
     );
@@ -15268,9 +15300,12 @@ class _BondSectionPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _marketSurfaceSoftFor(context)
             .withValues(alpha: _isMarketDark(context) ? 0.50 : 0.74),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
@@ -15593,6 +15628,9 @@ class _BondRiskNotificationTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: notification.color.withValues(alpha: isDark ? 0.14 : 0.075),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
@@ -15699,8 +15737,11 @@ class _BondRatingPanel extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
+          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
           color: _marketSurfaceFor(context),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
             color: _deepBlue.withValues(alpha: 0.25),
             width: 0.4,
@@ -16085,6 +16126,9 @@ class _BondSegmentToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _marketSurfaceFor(context),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border.withValues(alpha: 0.82)),
@@ -18531,6 +18575,9 @@ class _MarketIssuerCardList extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
                   decoration: BoxDecoration(
+                    boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                     color: entries[index].color.withValues(alpha: 0.055),
                     borderRadius: BorderRadius.circular(AppTheme.radius),
                     border: Border.all(
@@ -18723,7 +18770,7 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
               color: _isMarketDark(context)
                   ? const Color(0xFF18233C)
                   : Colors.white,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(
                 color: _isMarketDark(context)
                     ? const Color(0xFF3B4A6B)
@@ -25762,6 +25809,9 @@ class _VarMethodSwitch extends StatelessWidget {
               curve: _varMethodTransitionCurve,
               child: DecoratedBox(
                 decoration: BoxDecoration(
+                  boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                   color: _marketPrimary,
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(
@@ -29899,8 +29949,15 @@ class _MarketCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: isDark ? surface.withValues(alpha: 0.92) : Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: hasBorder ? Border.all(color: isDark ? border : _line) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: child,
     );
@@ -30994,7 +31051,7 @@ class _CalculPrudentielTabBar extends StatelessWidget {
                 color: isDark
                     ? const Color(0xFF1E293B)
                     : const Color(0xFFE2E8F0), // Slate 800 or Slate 200
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -31039,14 +31096,14 @@ class _CalculPrudentielTabBar extends StatelessWidget {
       hoverColor: hoverBg,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? selectedBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: isSelected && !isDark
               ? [
                   BoxShadow(
@@ -33055,7 +33112,7 @@ class _PilotageTabBar extends StatelessWidget {
                 color: isDark
                     ? const Color(0xFF1E293B)
                     : const Color(0xFFE2E8F0), // Slate 800 or Slate 200
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -33107,14 +33164,14 @@ class _PilotageTabBar extends StatelessWidget {
       hoverColor: hoverBg,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? selectedBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: isSelected && !isDark
               ? [
                   BoxShadow(
@@ -33604,6 +33661,9 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: color.withValues(alpha: 0.2)),
@@ -33792,6 +33852,9 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
+            boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
             color: (valueColor ?? Colors.blue).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
@@ -34370,10 +34433,13 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
 
     return Container(
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: isDark
             ? const Color(0xFF0F1B3D).withValues(alpha: 0.5)
             : Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _marketBorderFor(context)),
       ),
       padding: const EdgeInsets.all(16),
