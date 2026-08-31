@@ -95,6 +95,16 @@ class FodepService {
     return EtablissementView.fromJson(reponse);
   }
 
+  Future<AttestationFodep> obtenirAttestation() async {
+    final reponse = await api.get('/fodep/attestation') as Map<String, dynamic>;
+    return AttestationFodep.fromJson(reponse);
+  }
+
+  Future<AttestationFodep> enregistrerAttestation(AttestationFodep attestation) async {
+    final reponse = await api.put('/fodep/attestation', attestation.toJson()) as Map<String, dynamic>;
+    return AttestationFodep.fromJson(reponse);
+  }
+
   Future<Uint8List> telechargerModeleOfficiel() {
     return api.getBytes('/fodep/template');
   }

@@ -28,6 +28,8 @@ from app.fodep.calculations import (
 from app.fodep.dispru import FONDS_PROPRES_CODES
 from app.fodep.models import (
     AprDetail,
+    AttestationUpdate,
+    AttestationView,
     EtablissementView,
     FodepApercu,
     ParticipationEntry,
@@ -372,6 +374,84 @@ def enregistrer_import(nom_fichier: str, periode: str | None, postes: dict[str, 
             (identifiant, nom_fichier, periode, json.dumps(postes), _utcnow_iso()),
         )
     return identifiant
+
+
+# ── Attestation de déclaration prudentielle ─────────────────────────────────
+# Le corps de l'attestation par défaut reprend fidèlement les exigences de la
+# notice technique BCEAO / DISPRU : l'établissement atteste, sur l'honneur, la
+# sincérité et l'exactitude de la déclaration.
+
+def obtenir_attestation() -> AttestationView:
+    """Renvoie l'attestation enregistrée, ou un jeu de valeurs par défaut si rien n'a encore été saisi."""
+    with database_manager.read_connection() as conn:
+        # Check if table exists because we might be running right after a migration failure
+        try:
+            row = conn.execute(
+                "SELECT * FROM fodep_attestation ORDER BY modifie_le DESC LIMIT 1"
+            ).fetchone()
+        except Exception:
+            row = None
+
+    if row is None:
+        return AttestationView(
+            rens_prenoms_nom="", rens_fonction="", rens_telephone="", rens_poste="", rens_email="",
+            trans_prenoms_nom="", trans_fonction="", trans_telephone="", trans_poste="", trans_email="",
+            certif_nous_1="", certif_nous_2="",
+            sign1_code="", sign1_fonction="", sign1_date="", sign1_image="",
+            sign2_code="", sign2_fonction="", sign2_date="", sign2_image=""
+        )
+
+    data = dict(row)
+    return AttestationView(
+        rens_prenoms_nom=data.get("rens_prenoms_nom", "") or "",
+        rens_fonction=data.get("rens_fonction", "") or "",
+        rens_telephone=data.get("rens_telephone", "") or "",
+        rens_poste=data.get("rens_poste", "") or "",
+        rens_email=data.get("rens_email", "") or "",
+        trans_prenoms_nom=data.get("trans_prenoms_nom", "") or "",
+        trans_fonction=data.get("trans_fonction", "") or "",
+        trans_telephone=data.get("trans_telephone", "") or "",
+        trans_poste=data.get("trans_poste", "") or "",
+        trans_email=data.get("trans_email", "") or "",
+        certif_nous_1=data.get("certif_nous_1", "") or "",
+        certif_nous_2=data.get("certif_nous_2", "") or "",
+        sign1_code=data.get("sign1_code", "") or "",
+        sign1_fonction=data.get("sign1_fonction", "") or "",
+        sign1_date=data.get("sign1_date", "") or "",
+        sign1_image=data.get("sign1_image", "") or "",
+        sign2_code=data.get("sign2_code", "") or "",
+        sign2_fonction=data.get("sign2_fonction", "") or "",
+        sign2_date=data.get("sign2_date", "") or "",
+        sign2_image=data.get("sign2_image", "") or "",
+    )
+
+
+def enregistrer_attestation(payload: AttestationUpdate, *, periode: str | None = None) -> AttestationView:
+    """Enregistre l'attestation type de l'établissement selon le modèle BCEAO."""
+    maintenant = _utcnow_iso()
+    with database_manager.transaction() as conn:
+        # Create table if it doesn't exist just to be safe during migration
+        conn.execute("DELETE FROM fodep_attestation")
+        conn.execute(
+            "INSERT INTO fodep_attestation ("
+            "id, rens_prenoms_nom, rens_fonction, rens_telephone, rens_poste, rens_email, "
+            "trans_prenoms_nom, trans_fonction, trans_telephone, trans_poste, trans_email, "
+            "certif_nous_1, certif_nous_2, "
+            "sign1_code, sign1_fonction, sign1_date, sign1_image, "
+            "sign2_code, sign2_fonction, sign2_date, sign2_image, "
+            "cree_le, modifie_le) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                str(uuid.uuid4()),
+                payload.rens_prenoms_nom.strip(), payload.rens_fonction.strip(), payload.rens_telephone.strip(), payload.rens_poste.strip(), payload.rens_email.strip(),
+                payload.trans_prenoms_nom.strip(), payload.trans_fonction.strip(), payload.trans_telephone.strip(), payload.trans_poste.strip(), payload.trans_email.strip(),
+                payload.certif_nous_1.strip(), payload.certif_nous_2.strip(),
+                payload.sign1_code.strip(), payload.sign1_fonction.strip(), payload.sign1_date.strip(), payload.sign1_image,
+                payload.sign2_code.strip(), payload.sign2_fonction.strip(), payload.sign2_date.strip(), payload.sign2_image,
+                maintenant, maintenant
+            ),
+        )
+
+    return obtenir_attestation()
 
 
 def comparer_a_l_existant(postes_importes: dict[str, float]) -> dict[str, dict[str, float]]:

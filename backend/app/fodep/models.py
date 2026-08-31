@@ -61,3 +61,49 @@ class ImportFodepResult(BaseModel):
     periode: str | None
     postes_detectes: dict[str, float]
     ecarts: dict[str, dict[str, float]]
+
+
+class AttestationView(BaseModel):
+    rens_prenoms_nom: str
+    rens_fonction: str
+    rens_telephone: str
+    rens_poste: str
+    rens_email: str
+    trans_prenoms_nom: str
+    trans_fonction: str
+    trans_telephone: str
+    trans_poste: str
+    trans_email: str
+    certif_nous_1: str
+    certif_nous_2: str
+    sign1_code: str
+    sign1_fonction: str
+    sign1_date: str
+    sign1_image: str
+    sign2_code: str
+    sign2_fonction: str
+    sign2_date: str
+    sign2_image: str
+
+
+class AttestationUpdate(BaseModel):
+    rens_prenoms_nom: str = ""
+    rens_fonction: str = ""
+    rens_telephone: str = ""
+    rens_poste: str = ""
+    rens_email: str = ""
+    trans_prenoms_nom: str = ""
+    trans_fonction: str = ""
+    trans_telephone: str = ""
+    trans_poste: str = ""
+    trans_email: str = ""
+    certif_nous_1: str = ""
+    certif_nous_2: str = ""
+    sign1_code: str = ""
+    sign1_fonction: str = ""
+    sign1_date: str = ""
+    sign1_image: str = ""
+    sign2_code: str = ""
+    sign2_fonction: str = ""
+    sign2_date: str = ""
+    sign2_image: str = ""

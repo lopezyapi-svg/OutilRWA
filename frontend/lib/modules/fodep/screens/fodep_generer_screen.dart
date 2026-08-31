@@ -9,6 +9,7 @@ import '../../dashboard/widgets/dashboard_design.dart';
 import '../models/fodep_models.dart';
 import '../services/fodep_service.dart';
 
+import '../widgets/fodep_attestation_form.dart';
 import '../widgets/fodep_design.dart';
 
 class FodepGenererScreen extends StatefulWidget {
@@ -29,6 +30,10 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
 
   FodepApercu? _apercu;
   EtablissementView? _etablissement;
+  AttestationFodep? _attestation;
+
+  int _etape = 1;
+  bool _attestationValidee = false;
 
   @override
   void initState() {
@@ -41,11 +46,14 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
     try {
       final apercu = await widget.service.obtenirApercu();
       final etab = await widget.service.obtenirEtablissement();
+      final attest = await widget.service.obtenirAttestation();
 
       if (!mounted) return;
       setState(() {
         _apercu = apercu;
         _etablissement = etab;
+        _attestation = attest;
+        _attestationValidee = attest.rensPrenomsNom.trim().isNotEmpty;
         _chargementInitial = false;
       });
     } catch (e) {
@@ -105,8 +113,8 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
         if (mounted) {
           setState(() {
             _succes = isPdf
-                ? 'Rapport officiel FODEP (PDF) exporté avec succès.'
-                : 'Classeur officiel FODEP (44 onglets Excel) exporté avec succès.';
+                ? 'Rapport officiel FODEP exporté en PDF.'
+                : 'Classeur officiel FODEP exporté.';
           });
         }
       }
@@ -144,12 +152,14 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
           ),
           child: const PageHeader(
             title: 'Générer un FODEP',
-            subtitle: 'Exportez le formulaire de déclaration prudentielle officiel aux formats réglementaires.',
+            subtitle: 'Complétez l\'attestation, puis exportez le FODEP.',
             titleFontSize: 24,
             subtitleFontSize: 13,
             titleSubtitleGap: 4,
           ),
         ),
+
+        if (!_chargementInitial) _indicateurEtapes(),
 
         // ── Corps ──────────────────────────────────────────────────────────
         Expanded(
@@ -183,6 +193,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                               const SizedBox(height: 20),
                             ],
 
+                            if (_etape == 2) ...[
                             // Bandeau d'information sur l'arrêté en cours d'export
                             Container(
                               padding: const EdgeInsets.all(16),
@@ -242,7 +253,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                               }
                                             }
                                             return Text(
-                                              'Date d\'arrêté : $displayDate · Matrice réglementaire officielle BCEAO / DISPRU (EP01 à EP39)',
+                                              'Date d\'arrêté : $displayDate · Référentiel BCEAO / DISPRU',
                                               style: TextStyle(
                                                 fontSize: 11.5,
                                                 color: c.muted,
@@ -269,8 +280,8 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Sélectionnez le format souhaité pour exporter votre déclaration prudentielle. Les exports intègrent l\'ensemble des 44 états officiels renseignés avec les données de l\'arrêté actif.',
+                                   Text(
+                                     'Choisissez le format. Les données de l\'arrêté actif sont intégrées.',
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       height: 1.45,
@@ -287,7 +298,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                         child: _ExportOptionCard(
                                           title: 'Format PDF Officiel',
                                           description:
-                                              'Rapport réglementaire officiel paginé (EP01 à EP38) conforme aux exigences de la Commission Bancaire.',
+                                              'Rapport paginé conforme aux exigences de la commission bancaire.',
                                           icon: Icons.picture_as_pdf_rounded,
                                           color: const Color(0xFFDC2626),
                                           isLoading: _exportPdf,
@@ -301,7 +312,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                         child: _ExportOptionCard(
                                           title: 'Format Excel Officiel',
                                           description:
-                                              'Classeur officiel BCEAO complet (44 onglets) renseigné avec les formules et les états EP01-EP39.',
+                                              'Classeur complet renseigné avec les états EP01 à EP39.',
                                           icon: Icons.table_view_rounded,
                                           color: const Color(0xFF15803D),
                                           isLoading: _exportExcel,
@@ -326,11 +337,152 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                 ],
                               ),
                             ),
+                           const SizedBox(height: 16),
+                            OutlinedButton.icon(
+                              onPressed: () => setState(() => _etape = 1),
+                              icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                              label: const Text('Retour à l\'attestation'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: c.muted,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                side: BorderSide(color: c.border),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              ),
+                            ),
+                            ],
+
+                          // ── Étape 1 : Attestation de déclaration prudentielle ──────────────
+                          if (_etape == 1 && _attestation != null) ...[
+                            DashPanel(
+                              title: 'ATTESTATION DE DÉCLARATION PRUDENTIELLE',
+                              padding: const EdgeInsets.all(28),
+                              child: FodepAttestationForm(
+                                key: ValueKey('${_apercu?.periode ?? ''}-${_etablissement?.codeBceao ?? ''}'),
+                                service: widget.service,
+                                attestation: _attestation!,
+                                etablissement: _etablissement,
+                                periode: _apercu?.periode,
+                                onSaved: () {
+                                  if (mounted) {
+                                    setState(() {
+                                      _attestationValidee = true;
+                                      _succes = 'Attestation enregistrée avec succès.';
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            if (!_attestationValidee)
+                              FodepNotice(
+                                status: DashStatus.sousMinimum,
+                                texte: 'Complétez et enregistrez l\'attestation pour continuer.',
+                              ),
+                            const SizedBox(height: 16),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ElevatedButton.icon(
+                                onPressed: _attestationValidee
+                                    ? () => setState(() => _etape = 2)
+                                    : null,
+                                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                                label: const Text('Continuer vers la génération'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF172554),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                              ),
+                            ),
                           ],
-                        ),
+                        ],
                       ),
-                    ),
-                  ),
+                ),
+              ),
+            ),
+          ),
+         ),
+      ],
+      );
+  }
+
+  Widget _indicateurEtapes() {
+    final c = DashColors.of(context);
+    const etapes = [
+      ('Attestation', Icons.verified_user_rounded),
+      ('Génération', Icons.picture_as_pdf_rounded),
+    ];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: BoxDecoration(
+        color: c.surface,
+        border: Border(bottom: BorderSide(color: c.border, width: Dash.hairline)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          for (var i = 0; i < etapes.length; i++) ...[
+            _PastilleEtape(
+              numero: i + 1,
+              libelle: etapes[i].$1,
+              icone: etapes[i].$2,
+              actif: _etape == i + 1,
+              fait: _etape > i + 1,
+            ),
+            if (i < etapes.length - 1)
+              Container(
+                width: 56,
+                height: 2,
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                color: _etape > i + 1 ? const Color(0xFF172554) : c.border,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PastilleEtape extends StatelessWidget {
+  const _PastilleEtape({
+    required this.numero,
+    required this.libelle,
+    required this.icone,
+    required this.actif,
+    required this.fait,
+  });
+
+  final int numero;
+  final String libelle;
+  final IconData icone;
+  final bool actif;
+  final bool fait;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = DashColors.of(context);
+    final colore = fait || actif ? const Color(0xFF172554) : c.border;
+    final texte = fait || actif ? Colors.white : c.muted;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: colore,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icone, size: 18, color: texte),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          '$numero. $libelle',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: actif || fait ? c.ink : c.muted,
           ),
         ),
       ],
