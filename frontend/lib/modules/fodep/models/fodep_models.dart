@@ -305,4 +305,63 @@ class AttestationFodep {
       'sign2_image': sign2Image,
     };
   }
+
+  static AttestationFodep empty() => AttestationFodep(
+        rensPrenomsNom: '', rensFonction: '', rensTelephone: '', rensPoste: '', rensEmail: '',
+        transPrenomsNom: '', transFonction: '', transTelephone: '', transPoste: '', transEmail: '',
+        certifNous1: '', certifNous2: '',
+        sign1Code: '', sign1Fonction: '', sign1Date: '', sign1Image: '',
+        sign2Code: '', sign2Fonction: '', sign2Date: '', sign2Image: '',
+      );
+
+  AttestationFodep copyWith({
+    String? rensPrenomsNom, String? rensFonction, String? rensTelephone, String? rensPoste, String? rensEmail,
+    String? transPrenomsNom, String? transFonction, String? transTelephone, String? transPoste, String? transEmail,
+    String? certifNous1, String? certifNous2,
+    String? sign1Code, String? sign1Fonction, String? sign1Date, String? sign1Image,
+    String? sign2Code, String? sign2Fonction, String? sign2Date, String? sign2Image,
+  }) {
+    return AttestationFodep(
+      rensPrenomsNom: rensPrenomsNom ?? this.rensPrenomsNom,
+      rensFonction: rensFonction ?? this.rensFonction,
+      rensTelephone: rensTelephone ?? this.rensTelephone,
+      rensPoste: rensPoste ?? this.rensPoste,
+      rensEmail: rensEmail ?? this.rensEmail,
+      transPrenomsNom: transPrenomsNom ?? this.transPrenomsNom,
+      transFonction: transFonction ?? this.transFonction,
+      transTelephone: transTelephone ?? this.transTelephone,
+      transPoste: transPoste ?? this.transPoste,
+      transEmail: transEmail ?? this.transEmail,
+      certifNous1: certifNous1 ?? this.certifNous1,
+      certifNous2: certifNous2 ?? this.certifNous2,
+      sign1Code: sign1Code ?? this.sign1Code,
+      sign1Fonction: sign1Fonction ?? this.sign1Fonction,
+      sign1Date: sign1Date ?? this.sign1Date,
+      sign1Image: sign1Image ?? this.sign1Image,
+      sign2Code: sign2Code ?? this.sign2Code,
+      sign2Fonction: sign2Fonction ?? this.sign2Fonction,
+      sign2Date: sign2Date ?? this.sign2Date,
+      sign2Image: sign2Image ?? this.sign2Image,
+    );
+  }
+
+  /// Signature d'égalité par valeur (pour le suivi « modifications non
+  /// enregistrées »).
+  String get signatureValeur => toJson().entries
+      .map((e) => '${e.key}=${e.value}')
+      .join('|');
+
+  /// L'attestation est-elle complète au sens réglementaire minimal :
+  /// les deux responsables identifiés + au moins un signataire renseigné.
+  bool get estComplete =>
+      rensPrenomsNom.trim().isNotEmpty &&
+      rensFonction.trim().isNotEmpty &&
+      rensEmail.trim().isNotEmpty &&
+      transPrenomsNom.trim().isNotEmpty &&
+      transFonction.trim().isNotEmpty &&
+      transEmail.trim().isNotEmpty &&
+      certifNous1.trim().isNotEmpty &&
+      sign1Code.trim().isNotEmpty &&
+      sign1Fonction.trim().isNotEmpty &&
+      sign1Date.trim().isNotEmpty;
 }

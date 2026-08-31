@@ -34,6 +34,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
 
   int _etape = 1;
   bool _attestationValidee = false;
+  bool _attestationDirty = false;
 
   @override
   void initState() {
@@ -53,7 +54,8 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
         _apercu = apercu;
         _etablissement = etab;
         _attestation = attest;
-        _attestationValidee = attest.rensPrenomsNom.trim().isNotEmpty;
+        _attestationValidee = attest.estComplete;
+        _attestationDirty = false;
         _chargementInitial = false;
       });
     } catch (e) {
@@ -362,37 +364,44 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                 attestation: _attestation!,
                                 etablissement: _etablissement,
                                 periode: _apercu?.periode,
-                                onSaved: () {
-                                  if (mounted) {
-                                    setState(() {
-                                      _attestationValidee = true;
-                                      _succes = 'Attestation enregistrée avec succès.';
-                                    });
+                                onDirtyChanged: (dirty) {
+                                  if (mounted && dirty != _attestationDirty) {
+                                    setState(() => _attestationDirty = dirty);
                                   }
+                                },
+                                onSaved: () {
+                                  widget.service.obtenirAttestation().then((frais) {
+                                    if (!mounted) return;
+                                    setState(() {
+                                      _attestation = frais;
+                                      _attestationValidee = frais.estComplete;
+                                      _attestationDirty = false;
+                                    });
+                                  });
                                 },
                               ),
                             ),
                             const SizedBox(height: 20),
-                            if (!_attestationValidee)
-                              FodepNotice(
+                            if (_attestationDirty)
+                              const FodepNotice(
+                                status: DashStatus.sousCible,
+                                texte: 'Enregistrez vos modifications pour poursuivre vers la génération.',
+                              )
+                            else if (!_attestationValidee)
+                              const FodepNotice(
                                 status: DashStatus.sousMinimum,
-                                texte: 'Complétez et enregistrez l\'attestation pour continuer.',
+                                texte: 'Complétez et enregistrez l\'attestation (responsables, certification et signataire n° 1) pour continuer.',
                               ),
                             const SizedBox(height: 16),
                             Align(
                               alignment: Alignment.centerRight,
-                              child: ElevatedButton.icon(
-                                onPressed: _attestationValidee
+                              child: fodepPrimaryButton(
+                                context: context,
+                                label: 'Continuer vers la génération',
+                                icon: Icons.arrow_forward_rounded,
+                                onPressed: (_attestationValidee && !_attestationDirty)
                                     ? () => setState(() => _etape = 2)
                                     : null,
-                                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                                label: const Text('Continuer vers la génération'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF172554),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                ),
                               ),
                             ),
                           ],
