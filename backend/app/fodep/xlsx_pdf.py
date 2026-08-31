@@ -28,9 +28,11 @@ from openpyxl.utils.cell import range_boundaries
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus import (
     BaseDocTemplate,
+    Flowable,
     Frame,
     Image,
     NextPageTemplate,
@@ -864,28 +866,84 @@ def _construire_table(
     return table
 
 
-def _image_couverture(feuille: Any, largeur_disponible: float) -> Image | None:
-    """Image (logo) de la page de garde, mise a l'echelle pour tenir sur la page."""
+class _ImageAncree(Flowable):
+    """Image d'un onglet, dessinee a sa position d'ancrage reelle (et non
+    ajoutee en flux apres le tableau, ce qui la ferait deborder sur une page
+    suivante). Ne consomme aucun espace de flot (wrap -> 0, 0)."""
+
+    def __init__(self, donnees: bytes, x: float, y: float, largeur: float, hauteur: float):
+        super().__init__()
+        self.donnees = donnees
+        self.x = x
+        self.y = y
+        self.largeur = largeur
+        self.hauteur = hauteur
+
+    def wrap(self, *args):
+        return (0, 0)
+
+    def draw(self):
+        if self.donnees:
+            self.canv.drawImage(
+                ImageReader(io.BytesIO(self.donnees)),
+                self.x,
+                self.y,
+                self.largeur,
+                self.hauteur,
+                mask="auto",
+            )
+
+
+def _images_feuille(
+    feuille: Any, echelle: float, marge: float, format_page: tuple[float, float]
+) -> list[Flowable]:
+    """Images d'un onglet, dessinees a leur ancre d'origine (logo de page de
+    garde, signature de l'attestation, etc.).
+
+    Dans le classeur, chaque image est ancree sur des cellules (souvent
+    laissees vides) qui reservent deja sa place dans le tableau. On les
+    restitue en surimpression, a l'echelle de la feuille, exactement la ou
+    Excel les place, plutot qu'en flux apres le tableau (ce qui les ferait
+    basculer sur une page supplementaire).
+    """
 
     images = getattr(feuille, "_images", None)
     if not images:
-        return None
-    brut = images[0]
-    try:
-        donnees = brut._data()
-        largeur_native = float(brut.width) * _POINTS_PAR_PIXEL
-        hauteur_native = float(brut.height) * _POINTS_PAR_PIXEL
-    except Exception:
-        return None
-    if largeur_native <= 0 or hauteur_native <= 0:
-        return None
+        return []
 
-    ratio = min(1.0, largeur_disponible / largeur_native)
-    return Image(
-        io.BytesIO(donnees),
-        width=largeur_native * ratio,
-        height=hauteur_native * ratio,
-    )
+    resultats: list[Flowable] = []
+    for brut in images:
+        ancrage = getattr(brut, "anchor", None)
+        if not hasattr(ancrage, "_from"):
+            continue
+        try:
+            donnees = brut._data()
+            largeur_native = float(brut.width) * _POINTS_PAR_PIXEL
+            hauteur_native = float(brut.height) * _POINTS_PAR_PIXEL
+        except Exception:
+            continue
+        if largeur_native <= 0 or hauteur_native <= 0:
+            continue
+
+        depart = ancrage._from
+        col_off = (depart.colOff or 0) / 12700.0
+        row_off = (depart.rowOff or 0) / 12700.0
+        gauche_pt = (
+            sum(_largeur_colonne_points(feuille, c + 1) for c in range(depart.col)) + col_off
+        )
+        haut_pt = (
+            sum(_hauteur_ligne_points(feuille, r + 1) for r in range(depart.row)) + row_off
+        )
+
+        largeur = largeur_native * echelle
+        hauteur = hauteur_native * echelle
+        x = marge + gauche_pt * echelle
+        y_haut = (format_page[1] - marge) - haut_pt * echelle
+        y = y_haut - hauteur
+
+        resultats.append(_ImageAncree(donnees, x, y, largeur, hauteur))
+
+    return resultats
 
 
 # ── Assemblage du document ──────────────────────────────────────────────────
@@ -927,18 +985,36 @@ def convertir_classeur_en_pdf(contenu_xlsx: bytes) -> bytes:
             continue
 
         paysage = (feuille.page_setup.orientation or "portrait") == "landscape"
+        marge = 8 * mm if paysage else 4 * mm
         format_page = landscape(A4) if paysage else A4
         largeur_utile = format_page[0] - 2 * marge
 
         largeur_brute = sum(
             _largeur_colonne_points(feuille, index) for index in range(1, plage.colonnes + 1)
         )
-        # Un ajustement a la largeur calcule (comme la case « ajuster a X
-        # pages de large » d'Excel) plutot que le pourcentage de zoom fige
-        # dans le classeur (21 valeurs de 23% a 92%) : ADPE deborde encore de
-        # sa propre echelle Excel (1089 pt pour 493 pt utiles) et s'imprimerait
-        # sur 3 pages en largeur si on la reprenait telle quelle.
-        echelle = min(1.0, largeur_utile / largeur_brute) if largeur_brute > 0 else 1.0
+        # Echelle : ajustement a la largeur de la page (equivalent Excel
+        # « ajuster a 1 page de large »). Le contenu remplit toute la largeur
+        # utile, sans marge laterale ni centrage flottant. Les onglets dont la
+        # hauteur depasse la page sont fractionnes naturellement (fidele au
+        # classeur). Le grossissement est autorise pour les onglets plus
+        # etroits que la page, afin d'eviter les blocs etroits centres au
+        # milieu de feuilles blanches.
+        echelle = (largeur_utile / largeur_brute) if largeur_brute > 0 else 1.0
+
+        # Pour les feuilles dont le contenu tient sur une seule page (largeur
+        # ajustee), on comble aussi la hauteur utile afin d'eviter les grandes
+        # marges blanches verticales (cas typique des pages portrait courtes,
+        # ex. l'attestation). Les onglets volontairement multiplicatifs (etats
+        # longs) ne sont pas concernes : s'ils depassent nettement la page,
+        # ils conservent le fractionnement naturel.
+        hauteur_utile = format_page[1] - 2 * marge
+        hauteur_brute = sum(
+            _hauteur_ligne_points(feuille, r + 1) for r in range(1, plage.lignes + 1)
+        )
+        if largeur_brute > 0 and hauteur_brute > 0:
+            hauteur_contenu = hauteur_brute * echelle
+            if hauteur_contenu <= hauteur_utile * 1.25:
+                echelle = min(echelle, hauteur_utile / hauteur_brute)
 
         identifiant = f"onglet-{len(modeles)}"
         modeles.append(
@@ -968,8 +1044,7 @@ def convertir_classeur_en_pdf(contenu_xlsx: bytes) -> bytes:
             elements.append(PageBreak())
         elements.append(_construire_table(feuille, plage, moteur, theme, echelle))
 
-        image = _image_couverture(feuille, largeur_utile)
-        if image is not None:
+        for image in _images_feuille(feuille, echelle, marge, format_page):
             elements.append(image)
 
     if not modeles:

@@ -110,6 +110,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
       } catch (_) {
         capitalMarcheDetail = null;
       }
+      if (!mounted) return;
       setState(() {
         _codes = codes;
         _apercu = apercu;
@@ -119,6 +120,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         _chargement = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _erreur = 'Chargement impossible : $e';
         _chargement = false;

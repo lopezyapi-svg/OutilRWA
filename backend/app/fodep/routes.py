@@ -8,6 +8,8 @@ from fastapi.responses import Response
 from app.fodep import excel, services
 from app.fodep.dispru import FONDS_PROPRES_CODES, SOLVABILITE_SEUILS
 from app.fodep.models import (
+    AttestationUpdate,
+    AttestationView,
     EtablissementUpdate,
     EtablissementView,
     FodepApercu,
@@ -79,6 +81,23 @@ def enregistrer_etablissement(payload: EtablissementUpdate) -> EtablissementView
     return services.enregistrer_etablissement(payload.denomination, payload.code_bceao)
 
 
+@router.get("/attestation", response_model=AttestationView)
+def obtenir_attestation() -> AttestationView:
+    """Attestation de déclaration prudentielle (déclarant, qualité, lieu, date
+    et corps du texte). Un texte réglementaire par défaut est fourni si rien
+    n'a encore été saisi."""
+
+    return services.obtenir_attestation()
+
+
+@router.put("/attestation", response_model=AttestationView)
+def enregistrer_attestation(payload: AttestationUpdate, periode: str | None = None) -> AttestationView:
+    """Enregistre l'attestation type de l'établissement (réutilisée d'un arrêté
+    à l'autre). Une date de signature non fournie reprend la date d'arrêté."""
+
+    return services.enregistrer_attestation(payload, periode=periode)
+
+
 @router.get("/template")
 @router.get("/fonds-propres/template")
 def telecharger_modele_officiel() -> Response:
@@ -96,6 +115,7 @@ def exporter_fonds_propres(periode: str | None = None) -> Response:
     apercu = services.generer_apercu(periode)
     etablissement = services.obtenir_etablissement()
     participations = services.lister_participations(periode)
+    attestation = services.obtenir_attestation()
     from app.rwa_credit.services import get_rwa_credit_analysis
 
     contenu = excel.build_fonds_propres_export(
@@ -106,6 +126,7 @@ def exporter_fonds_propres(periode: str | None = None) -> Response:
         apr=apercu.apr,
         totaux=apercu.totaux,
         analyse_credit=get_rwa_credit_analysis(),
+        attestation=attestation,
     )
     nom = f"Matrice_FODEP_Officielle_{apercu.periode or 'brouillon'}.xlsx"
     return Response(
@@ -130,6 +151,7 @@ def exporter_fonds_propres_pdf(periode: str | None = None) -> Response:
     apercu = services.generer_apercu(periode)
     etablissement = services.obtenir_etablissement()
     participations = services.lister_participations(periode)
+    attestation = services.obtenir_attestation()
 
     contenu_xlsx = excel.build_fonds_propres_export(
         apercu.periode,
@@ -139,6 +161,7 @@ def exporter_fonds_propres_pdf(periode: str | None = None) -> Response:
         apr=apercu.apr,
         totaux=apercu.totaux,
         analyse_credit=get_rwa_credit_analysis(),
+        attestation=attestation,
     )
 
     try:

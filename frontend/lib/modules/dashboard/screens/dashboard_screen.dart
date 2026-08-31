@@ -11,7 +11,6 @@ import '../../fodep/services/fodep_service.dart';
 import '../models/dashboard_models.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/dashboard_charts_section.dart';
-import '../widgets/dashboard_fodep_ep01.dart';
 import '../widgets/dashboard_top_metrics_grid.dart';
 
 /// Ecran principal de pilotage des RWA et du capital.
@@ -135,8 +134,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       defaultRateMetric: defaultRateMetric,
                       exposuresCount: data.portfolioOverview.length,
                     ),
-                    const SizedBox(height: AppTheme.pageGap),
-                    DashboardFodepEp01Panel(fodep: widget.fodep),
                     const SizedBox(height: AppTheme.pageGap),
                     Builder(
                       builder: (context) {
