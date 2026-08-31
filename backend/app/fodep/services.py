@@ -96,41 +96,6 @@ def _dernier_arrete() -> tuple[dict[str, float], str | None]:
     return {code: float(data.get(code, 0.0) or 0.0) for code in POSTE_CODES}, periode
 
 
-def _prefill_depuis_modele_simplifie() -> dict[str, float]:
-    """Reprend le modèle simplifié à 11 postes (`fonds_propres`, déjà utilisé
-    par le tableau de bord) comme brouillon de départ pour les postes FODEP
-    qui leur correspondent directement. Le reste (34 postes propres au détail
-    réglementaire BCEAO) doit être complété manuellement - ce n'est qu'un
-    point de départ, pas une équivalence garantie.
-    """
-
-    with database_manager.read_connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM fonds_propres ORDER BY date_analyse DESC LIMIT 1"
-        ).fetchone()
-    simplifie = dict(row) if row else {}
-
-    postes = {code: 0.0 for code in POSTE_CODES}
-    # Correspondances directes uniquement (mapping honnête, pas une
-    # équivalence réglementaire complète) :
-    postes["fpi01"] = float(simplifie.get("capital_ordinaire", 0.0) or 0.0)
-    postes["fpi04"] = float(simplifie.get("reserves", 0.0) or 0.0)
-    postes["fpi05"] = float(simplifie.get("resultats_report", 0.0) or 0.0)
-    postes["fpi06"] = float(simplifie.get("resultat_eligible", 0.0) or 0.0)
-    # Les déductions CET1 simplifiées n'ont pas de correspondance ligne à
-    # ligne dans le détail BCEAO (18 postes de déduction distincts) : on les
-    # reporte sur FPI21 « Autres déductions » pour ne rien perdre du brouillon
-    # existant, à ventiler ensuite.
-    postes["fpi21"] = -abs(float(simplifie.get("deductions_prud_cet1", 0.0) or 0.0))
-    postes["fpi23"] = float(simplifie.get("instruments_at1", 0.0) or 0.0)
-    postes["fpi24"] = float(simplifie.get("primes_emission_at1", 0.0) or 0.0)
-    postes["fpi27"] = -abs(float(simplifie.get("deductions_prud_at1", 0.0) or 0.0))
-    postes["fpi30"] = float(simplifie.get("dettes_subordonnees_t2", 0.0) or 0.0)
-    postes["fpi35"] = float(simplifie.get("provisions_generales_t2", 0.0) or 0.0)
-    postes["pa158"] = -abs(float(simplifie.get("deductions_prud_t2", 0.0) or 0.0))
-    return postes
-
-
 def _normaliser_periode(periode: str | None) -> str | None:
     """Ramène une date d'arrêté au format ISO AAAA-MM-JJ.
 
@@ -253,10 +218,12 @@ def generer_apercu(periode: str | None = None) -> FodepApercu:
             source_prefill = False
             periode_effective = periode_existante
         else:
-            # Rien de saisi encore côté FODEP : on propose un brouillon basé
-            # sur le modèle simplifié existant, clairement signalé comme tel.
-            postes = _prefill_depuis_modele_simplifie()
-            source_prefill = True
+            # Rien de saisi encore côté FODEP : formulaire vierge. On ne
+            # pré-remplit plus depuis le modèle simplifié - ses montants sont
+            # tenus en FCFA alors que la déclaration FODEP est en millions, et
+            # un brouillon à la mauvaise échelle est pire qu'un formulaire vide.
+            postes = {code: 0.0 for code in POSTE_CODES}
+            source_prefill = False
             periode_effective = None
 
     totaux = calculer_fonds_propres_detailles(postes)
