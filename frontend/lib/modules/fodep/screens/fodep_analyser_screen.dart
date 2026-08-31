@@ -252,24 +252,20 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     );
   }
 
-  /// Formate une valeur **déjà exprimée en millions** (postes / totaux FODEP).
-  String _fmtM(double millions) => _fmt(millions * 1e6);
-
-  String _fmt(double v) {
-    if (v == 0) return '0';
-    // Format en millions par défaut
-    final enMillions = v / 1e6;
-    
-    // On ajoute un séparateur de milliers si le montant en millions est grand
-    // mais on peut simplement utiliser toStringAsFixed(2) avec un replaceAll pour l'instant
-    // Pour améliorer la lisibilité des gros chiffres, on pourrait formater avec des espaces
-    // Ex: 87420.50 -> 87 420,50
-    final parts = enMillions.toStringAsFixed(2).split('.');
+  /// Formate un montant **déjà exprimé en millions de FCFA** (postes / totaux
+  /// FODEP). Toute la déclaration FODEP est tenue dans cette unité.
+  String _fmt(double millions) {
+    if (millions == 0) return '0';
+    final parts = millions.toStringAsFixed(2).split('.');
     final entier = parts[0].replaceAll(RegExp(r'\B(?=(\d{3})+(?!\d))'), ' ');
     final decimal = parts.length > 1 ? ',${parts[1]}' : '';
-    
     return '$entier$decimal M';
   }
+
+  /// Formate un montant tenu en **FCFA** (agrégats repris des modules crédit /
+  /// marché / opérationnel : APR, expositions brutes…) en le ramenant à
+  /// l'unité de la déclaration.
+  String _fmtFcfa(double fcfa) => _fmt(fcfa / 1e6);
 
   @override
   Widget build(BuildContext context) {
@@ -403,12 +399,12 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                 FodepTableRow(label: 'Ratio de Solvabilité total (%)', ref: 'c x 100 / d', value: pct(solvency)),
 
                 const FodepTableGroup(title: 'Fonds Propres'),
-                FodepTableRow(label: 'Fonds propres de base durs (CET 1)', ref: 'EP03 / EP05', value: _fmtM(fpCet1)),
-                FodepTableRow(label: 'Fonds propres de base (T1)', ref: 'EP03 / EP05', value: _fmtM(fpT1)),
-                FodepTableRow(label: 'Fonds propres effectifs (FPE)', ref: 'EP03 / EP05', value: _fmtM(fpEffectifs)),
+                FodepTableRow(label: 'Fonds propres de base durs (CET 1)', ref: 'EP03 / EP05', value: _fmt(fpCet1)),
+                FodepTableRow(label: 'Fonds propres de base (T1)', ref: 'EP03 / EP05', value: _fmt(fpT1)),
+                FodepTableRow(label: 'Fonds propres effectifs (FPE)', ref: 'EP03 / EP05', value: _fmt(fpEffectifs)),
 
                 const FodepTableGroup(title: 'Actifs Pondérés des risques (APR)'),
-                FodepTableRow(label: 'Total des actifs pondérés des risques de crédit, de marché et opérationnel', ref: 'EP08', value: _fmt(totalApr), isLast: true),
+                FodepTableRow(label: 'Total des actifs pondérés des risques de crédit, de marché et opérationnel', ref: 'EP08', value: _fmtFcfa(totalApr), isLast: true),
               ],
             ),
           ),
@@ -455,16 +451,16 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
 
     final lignes = <List<String>>[
       for (final poste in creditOfficiel)
-        [poste.$1, poste.$2, _fmt(rwaParCategorie[poste.$3] ?? 0)],
-      ['Total des actifs pondérés du risque de crédit', '', _fmt(apr.rwaCredit)],
-      ["APR au titre du risque de taux d'intérêt du portefeuille de négociation", 'EP25', _fmt(marche == null ? 0 : marche.interestRateRisk * mult)],
-      ['APR au titre du risque de positions sur titres de propriété', 'EP26', _fmt(marche == null ? 0 : marche.equityRisk * mult)],
-      ['APR au titre du risque de change', 'EP27', _fmt(marche == null ? 0 : marche.foreignExchangeRisk * mult)],
-      ['APR au titre du risque de positions sur produits de base', 'EP28', _fmt(marche == null ? 0 : marche.commodityRisk * mult)],
-      ['Total des actifs pondérés du risque de marché', '', _fmt(apr.rwaMarche)],
-      ["Actifs pondérés selon l'approche indicateur de base", 'EP21', _fmt(aib != null && !aib.donneesInsuffisantes ? apr.rwaOperationnel : 0)],
+        [poste.$1, poste.$2, _fmtFcfa(rwaParCategorie[poste.$3] ?? 0)],
+      ['Total des actifs pondérés du risque de crédit', '', _fmtFcfa(apr.rwaCredit)],
+      ["APR au titre du risque de taux d'intérêt du portefeuille de négociation", 'EP25', _fmtFcfa(marche == null ? 0 : marche.interestRateRisk * mult)],
+      ['APR au titre du risque de positions sur titres de propriété', 'EP26', _fmtFcfa(marche == null ? 0 : marche.equityRisk * mult)],
+      ['APR au titre du risque de change', 'EP27', _fmtFcfa(marche == null ? 0 : marche.foreignExchangeRisk * mult)],
+      ['APR au titre du risque de positions sur produits de base', 'EP28', _fmtFcfa(marche == null ? 0 : marche.commodityRisk * mult)],
+      ['Total des actifs pondérés du risque de marché', '', _fmtFcfa(apr.rwaMarche)],
+      ["Actifs pondérés selon l'approche indicateur de base", 'EP21', _fmtFcfa(aib != null && !aib.donneesInsuffisantes ? apr.rwaOperationnel : 0)],
       ["Actifs pondérés selon l'approche standard", 'EP23', _fmt(0)],
-      ['Total des actifs pondérés du risque opérationnel', '', _fmt(apr.rwaOperationnel)],
+      ['Total des actifs pondérés du risque opérationnel', '', _fmtFcfa(apr.rwaOperationnel)],
     ];
 
     return _tableauFixe(
@@ -473,7 +469,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
       colonnes: const ['Poste', 'Référence', 'Montant'],
       flex: const [5, 2, 3],
       lignes: lignes,
-      pied: 'TOTAL ACTIFS PONDÉRÉS DES RISQUES (APR) : ${_fmt(apr.aprTotal)}',
+      pied: 'TOTAL ACTIFS PONDÉRÉS DES RISQUES (APR) : ${_fmtFcfa(apr.aprTotal)}',
     );
   }
 
@@ -981,7 +977,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _LigneValeur(label: 'RWA Risque de crédit (EP08)', valeur: _fmt(apercu.apr.rwaCredit), c: c),
+            _LigneValeur(label: 'RWA Risque de crédit (EP08)', valeur: _fmtFcfa(apercu.apr.rwaCredit), c: c),
           ],
         ),
       );
@@ -1040,9 +1036,9 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                         child: Row(
                           children: [
                             Expanded(flex: 5, child: Text(analyse.agents[i].label, style: TextStyle(fontSize: 12, color: c.ink))),
-                            Expanded(flex: 3, child: Text(_fmt(analyse.agents[i].grossExposure), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.ink, fontFeatures: Dash.tabular))),
+                            Expanded(flex: 3, child: Text(_fmtFcfa(analyse.agents[i].grossExposure), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.ink, fontFeatures: Dash.tabular))),
                             Expanded(flex: 2, child: Text(analyse.agents[i].averageWeight == null ? '-' : '${(analyse.agents[i].averageWeight! * 100).toStringAsFixed(1)} %', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, color: c.muted, fontFeatures: Dash.tabular))),
-                            Expanded(flex: 3, child: Text(_fmt(analyse.agents[i].rwa), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c.navy, fontFeatures: Dash.tabular))),
+                            Expanded(flex: 3, child: Text(_fmtFcfa(analyse.agents[i].rwa), textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c.navy, fontFeatures: Dash.tabular))),
                           ],
                         ),
                       ),
@@ -1059,9 +1055,9 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
             child: Row(
               children: [
                 const Expanded(flex: 5, child: Text('TOTAL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white))),
-                Expanded(flex: 3, child: Text(_fmt(analyse.totals.grossExposure), textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: Dash.tabular))),
+                Expanded(flex: 3, child: Text(_fmtFcfa(analyse.totals.grossExposure), textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: Dash.tabular))),
                 const Expanded(flex: 2, child: SizedBox()),
-                Expanded(flex: 3, child: Text(_fmt(analyse.totals.rwa), textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: Dash.tabular))),
+                Expanded(flex: 3, child: Text(_fmtFcfa(analyse.totals.rwa), textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: Dash.tabular))),
               ],
             ),
           ),
@@ -1080,7 +1076,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         colonnes: const ['Poste', 'Référence', 'Montant'],
         flex: const [5, 2, 3],
         lignes: [
-          ['ACTIFS PONDÉRÉS AU TITRE DU RISQUE DE MARCHÉ', 'EP08', _fmt(apercu.apr.rwaMarche)],
+          ['ACTIFS PONDÉRÉS AU TITRE DU RISQUE DE MARCHÉ', 'EP08', _fmtFcfa(apercu.apr.rwaMarche)],
         ],
         pied: '',
       );
@@ -1095,14 +1091,14 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
       colonnes: const ['État · Composante', 'Exigence FP', 'APR'],
       flex: const [5, 3, 3],
       lignes: [
-        ['Taux d\'intérêt : risque spécifique', _fmt(detail.interestRateSpecificRisk), _fmt(detail.interestRateSpecificRisk * mult)],
-        ['Taux d\'intérêt : risque général', _fmt(detail.interestRateGeneralRisk), _fmt(detail.interestRateGeneralRisk * mult)],
-        ['Titres de propriété : risque spécifique', _fmt(detail.equitySpecificRisk), _fmt(detail.equitySpecificRisk * mult)],
-        ['Titres de propriété : risque général', _fmt(detail.equityGeneralRisk), _fmt(detail.equityGeneralRisk * mult)],
-        ['Change : risque général (position nette globale)', _fmt(detail.foreignExchangeRisk), _fmt(detail.foreignExchangeRisk * mult)],
+        ['Taux d\'intérêt : risque spécifique', _fmtFcfa(detail.interestRateSpecificRisk), _fmtFcfa(detail.interestRateSpecificRisk * mult)],
+        ['Taux d\'intérêt : risque général', _fmtFcfa(detail.interestRateGeneralRisk), _fmtFcfa(detail.interestRateGeneralRisk * mult)],
+        ['Titres de propriété : risque spécifique', _fmtFcfa(detail.equitySpecificRisk), _fmtFcfa(detail.equitySpecificRisk * mult)],
+        ['Titres de propriété : risque général', _fmtFcfa(detail.equityGeneralRisk), _fmtFcfa(detail.equityGeneralRisk * mult)],
+        ['Change : risque général (position nette globale)', _fmtFcfa(detail.foreignExchangeRisk), _fmtFcfa(detail.foreignExchangeRisk * mult)],
         if (commodityRenseigne) ...[
-          ['Produits de base : risque directionnel', _fmt(detail.commodityDirectionalRisk), _fmt(detail.commodityDirectionalRisk * mult)],
-          ['Produits de base : risque de base', _fmt(detail.commodityBasisRisk), _fmt(detail.commodityBasisRisk * mult)],
+          ['Produits de base : risque directionnel', _fmtFcfa(detail.commodityDirectionalRisk), _fmtFcfa(detail.commodityDirectionalRisk * mult)],
+          ['Produits de base : risque de base', _fmtFcfa(detail.commodityBasisRisk), _fmtFcfa(detail.commodityBasisRisk * mult)],
         ] else
           ['Produits de base', 'Aucune position saisie', '-'],
       ],
@@ -1121,14 +1117,14 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     final ro009 = apercu.totaux['ro009'] ?? 0;
 
     final lignes = <List<String>>[
-      ["Produit d'exploitation bancaire", 'EP21', _fmtM(p['ro001'] ?? 0)],
-      ['Moins-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmtM(p['ro002'] ?? 0)],
-      ["(-) Charges d'exploitation bancaire", 'EP21', _fmtM(p['ro003'] ?? 0)],
-      ['(-) Plus-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmtM(p['ro005'] ?? 0)],
-      ["(+/-) Produits nets d'exploitation bancaire exceptionnels ou inhabituels", 'EP21', _fmtM(p['ro006'] ?? 0)],
-      ["(-) Produits provenant des activités d'assurance", 'EP21', _fmtM(p['ro007'] ?? 0)],
-      ['(-) Produits des entités financières exclues du périmètre prudentiel', 'EP21', _fmtM(p['ro008'] ?? 0)],
-      ['Total du produit brut', 'EP21', _fmtM(ro009)],
+      ["Produit d'exploitation bancaire", 'EP21', _fmt(p['ro001'] ?? 0)],
+      ['Moins-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmt(p['ro002'] ?? 0)],
+      ["(-) Charges d'exploitation bancaire", 'EP21', _fmt(p['ro003'] ?? 0)],
+      ['(-) Plus-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmt(p['ro005'] ?? 0)],
+      ["(+/-) Produits nets d'exploitation bancaire exceptionnels ou inhabituels", 'EP21', _fmt(p['ro006'] ?? 0)],
+      ["(-) Produits provenant des activités d'assurance", 'EP21', _fmt(p['ro007'] ?? 0)],
+      ['(-) Produits des entités financières exclues du périmètre prudentiel', 'EP21', _fmt(p['ro008'] ?? 0)],
+      ['Total du produit brut', 'EP21', _fmt(ro009)],
       for (int i = 0; i < 3; i++)
         () {
           final rang = exercices.length - 3 + i;
@@ -1137,13 +1133,13 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
           return [
             'Produit brut $libelle',
             ex == null ? '-' : ex.annee.toString(),
-            ex == null ? _fmt(0) : '${_fmt(ex.produitBrutTotal)}${ex.pnbPositif ? '' : '  (exclu, ≤ 0)'}',
+            ex == null ? _fmt(0) : '${_fmtFcfa(ex.produitBrutTotal)}${ex.pnbPositif ? '' : '  (exclu, ≤ 0)'}',
           ];
         }(),
-      ['Moyenne du produit brut > 0  (d)', 'EP21', _fmt(aib?.pnbMoyen ?? 0)],
+      ['Moyenne du produit brut > 0  (d)', 'EP21', _fmtFcfa(aib?.pnbMoyen ?? 0)],
       ['Alpha  (e)', 'EP21', '${((aib?.alpha ?? 0.15) * 100).toStringAsFixed(0)} %'],
-      ['Exigences de fonds propres  (f = d × e)', 'EP21', _fmt(aib?.kIb ?? 0)],
-      ['Actifs pondérés des risques  (g = f × 12,5)', 'EP08', _fmt(apercu.apr.rwaOperationnel)],
+      ['Exigences de fonds propres  (f = d × e)', 'EP21', _fmtFcfa(aib?.kIb ?? 0)],
+      ['Actifs pondérés des risques  (g = f × 12,5)', 'EP08', _fmtFcfa(apercu.apr.rwaOperationnel)],
     ];
 
     return _tableauFixe(
@@ -1401,11 +1397,14 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         final nom = cp.name.trim();
         if (nom.isEmpty) continue;
         final existant = parNom[nom];
+        // Expositions des contreparties tenues en FCFA -> ramenées en millions,
+        // l'unité de t1 (totaux FODEP) : sans quoi le % des FP T1 est 1e6 fois
+        // trop grand.
         parNom[nom] = _GrandRisque(
           nom: nom,
-          expositionBrute: (existant?.expositionBrute ?? 0) + cp.grossExposure,
-          expositionNette: (existant?.expositionNette ?? 0) + cp.exposure,
-          rwa: (existant?.rwa ?? 0) + cp.rwa,
+          expositionBrute: (existant?.expositionBrute ?? 0) + cp.grossExposure / 1e6,
+          expositionNette: (existant?.expositionNette ?? 0) + cp.exposure / 1e6,
+          rwa: (existant?.rwa ?? 0) + cp.rwa / 1e6,
           t1: t1,
         );
       }
@@ -2566,7 +2565,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
   // ── 1. Onglet Participations (EP34 / EP35) ──────────────────────────────────
   Widget _buildSectionParticipations(DashColors c) {
     final totalMontant = _participations.fold<double>(0, (s, p) => s + p.montantNet);
-    final fpEffectifs = widget.apercu.totaux['fpe40'] ?? 0;
+    final fpEffectifs = widget.apercu.totaux['fpi41'] ?? 0;
 
     return _panneau(
       c,
@@ -2729,7 +2728,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
 
   // ── 2. Onglet Immobilisations (EP36 / EP37) ─────────────────────────────────
   Widget _buildSectionImmobilisations(DashColors c) {
-    final fpEffectifs = widget.apercu.totaux['fpe40'] ?? 0;
+    final fpEffectifs = widget.apercu.totaux['fpi41'] ?? 0;
     final horsExploitation = _parseNombre(_controleurs['im001']?.text ?? '0');
     final immosExploit = _parseNombre(_controleurs['im007']?.text ?? '0');
     final totalPart = _parseNombre(_controleurs['pa106']?.text ?? '0');
@@ -2823,7 +2822,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
 
   // ── 3. Onglet Prêts aux Dirigeants & Personnel (EP38) ────────────────────────
   Widget _buildSectionPrets(DashColors c) {
-    final fpEffectifs = widget.apercu.totaux['fpe40'] ?? 0;
+    final fpEffectifs = widget.apercu.totaux['fpi41'] ?? 0;
     double totalConcours = 0;
     double totalEngagements = 0;
     for (final cat in _categoriesPrets) {
