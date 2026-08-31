@@ -43,6 +43,16 @@ LIMITES_POSTE_CODES: tuple[str, ...] = tuple(
     c.code.lower() for c in FONDS_PROPRES_CODES if c.groupe == "LIMITES"
 )
 
+# Unité de tenue des montants FODEP : millions de FCFA. Les postes saisis, les
+# totaux fonds propres et les ratios sont exprimés dans cette unité.
+#
+# L'APR (RWA crédit / marché / opérationnel) et les expositions brutes repris
+# des autres modules restent tenus en FCFA dans l'objet renvoyé à l'IHM (qui
+# les divise elle-même pour l'affichage). On ne les ramène en millions QUE
+# pour les confronter aux fonds propres : calcul des ratios de solvabilité et
+# écriture dans le classeur officiel. Sans cela, ratio = 40 759 / 730e9 ≈ 0.
+FODEP_UNITE_DIVISEUR = 1_000_000.0
+
 
 def _utcnow_iso() -> str:
     return datetime.utcnow().replace(microsecond=0).isoformat()
@@ -285,14 +295,17 @@ def generer_apercu(periode: str | None = None) -> FodepApercu:
     # elle est renseignée - c'est l'assiette que la notice prescrit - sinon
     # repli sur la somme des expositions brutes du portefeuille.
     exposure_rows = [_normalize_row(item) for item in list_expositions()]
+    # Ratios confrontés aux fonds propres (millions) : APR et assiette de
+    # levier ramenés en millions.
+    apr_total_millions = apr.apr_total / FODEP_UNITE_DIVISEUR
     total_expositions = (
         levier["rl015"]
         if levier["rl015"] > 0
-        else sum(float(row["gross_amount"]) for row in exposure_rows)
+        else sum(float(row["gross_amount"]) for row in exposure_rows) / FODEP_UNITE_DIVISEUR
     )
 
     ratios_bruts = calculer_ratios_solvabilite(
-        totaux, apr.apr_total, total_expositions, seuils
+        totaux, apr_total_millions, total_expositions, seuils
     )
     ratios = {k: RatioDetail(**v) for k, v in ratios_bruts.items()}
     if a_des_donnees_registre:

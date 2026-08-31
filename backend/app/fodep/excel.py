@@ -107,6 +107,8 @@ def _ecrire_ventilation_credit(wb: Any, analyse: Any) -> None:
     rwa_credit, la meme que celle affichee a l'ecran dans l'application).
     """
 
+    from app.fodep.services import FODEP_UNITE_DIVISEUR as _d
+
     agents = {agent.code: agent for agent in getattr(analyse, "agents", [])}
     ws09 = wb["EP09"] if "EP09" in wb.sheetnames else None
 
@@ -115,22 +117,28 @@ def _ecrire_ventilation_credit(wb: Any, analyse: Any) -> None:
         if agent is None:
             continue
 
+        # Montants du module crédit tenus en FCFA -> ramenés en millions,
+        # l'unité de la déclaration FODEP.
+        gross = float(agent.gross_exposure) / _d
+        ead = float(agent.ead) / _d
+        rwa = float(agent.rwa) / _d
+
         if ws09 is not None:
-            _ecrire(ws09, ligne_ep09, 4, agent.gross_exposure)
+            _ecrire(ws09, ligne_ep09, 4, gross)
 
         if onglet_total not in wb.sheetnames:
             continue
         ws = wb[onglet_total]
 
         if onglet_total == "EP20":
-            _ecrire(ws, ligne_total, 3, agent.ead)
-            _ecrire(ws, ligne_total, 5, agent.rwa)
+            _ecrire(ws, ligne_total, 3, ead)
+            _ecrire(ws, ligne_total, 5, rwa)
             for r in _LIGNES_DETAIL_EP20:
                 _ecrire(ws, r, 3, 0)
             continue
 
-        _ecrire(ws, ligne_total, 9, agent.ead)
-        _ecrire(ws, ligne_total, 10, agent.rwa)
+        _ecrire(ws, ligne_total, 9, ead)
+        _ecrire(ws, ligne_total, 10, rwa)
         for r in _LIGNES_DETAIL_CREDIT.get(onglet_total, ()):
             for c in _COLONNES_DETAIL_CREDIT:
                 _ecrire(ws, r, c, 0)
@@ -406,10 +414,14 @@ def build_fonds_propres_export(
 
     # 8. Renseigner EP08 (Actifs pondérés des risques)
     if "EP08" in wb.sheetnames and apr:
+        from app.fodep.services import FODEP_UNITE_DIVISEUR as _d
+
         ws = wb["EP08"]
-        rwa_credit = getattr(apr, "rwa_credit", 0.0) or (apr.get("rwa_credit") if isinstance(apr, dict) else 0.0)
-        rwa_marche = getattr(apr, "rwa_marche", 0.0) or (apr.get("rwa_marche") if isinstance(apr, dict) else 0.0)
-        rwa_op = getattr(apr, "rwa_operationnel", 0.0) or (apr.get("rwa_operationnel") if isinstance(apr, dict) else 0.0)
+        # L'APR est repris des modules en FCFA -> converti en millions, l'unité
+        # de la déclaration (mêmes ordres de grandeur que les fonds propres).
+        rwa_credit = (getattr(apr, "rwa_credit", 0.0) or (apr.get("rwa_credit") if isinstance(apr, dict) else 0.0)) / _d
+        rwa_marche = (getattr(apr, "rwa_marche", 0.0) or (apr.get("rwa_marche") if isinstance(apr, dict) else 0.0)) / _d
+        rwa_op = (getattr(apr, "rwa_operationnel", 0.0) or (apr.get("rwa_operationnel") if isinstance(apr, dict) else 0.0)) / _d
         _ecrire(ws, 19, 5, rwa_credit)
         _ecrire(ws, 26, 5, rwa_marche)
         # E30 (approche indicateur de base, renvoi vers EP21) ET E32 (total

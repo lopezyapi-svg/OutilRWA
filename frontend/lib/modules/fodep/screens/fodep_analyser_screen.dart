@@ -252,6 +252,9 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     );
   }
 
+  /// Formate une valeur **déjà exprimée en millions** (postes / totaux FODEP).
+  String _fmtM(double millions) => _fmt(millions * 1e6);
+
   String _fmt(double v) {
     if (v == 0) return '0';
     // Format en millions par défaut
@@ -400,9 +403,9 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                 FodepTableRow(label: 'Ratio de Solvabilité total (%)', ref: 'c x 100 / d', value: pct(solvency)),
 
                 const FodepTableGroup(title: 'Fonds Propres'),
-                FodepTableRow(label: 'Fonds propres de base durs (CET 1)', ref: 'EP03 / EP05', value: _fmt(fpCet1)),
-                FodepTableRow(label: 'Fonds propres de base (T1)', ref: 'EP03 / EP05', value: _fmt(fpT1)),
-                FodepTableRow(label: 'Fonds propres effectifs (FPE)', ref: 'EP03 / EP05', value: _fmt(fpEffectifs)),
+                FodepTableRow(label: 'Fonds propres de base durs (CET 1)', ref: 'EP03 / EP05', value: _fmtM(fpCet1)),
+                FodepTableRow(label: 'Fonds propres de base (T1)', ref: 'EP03 / EP05', value: _fmtM(fpT1)),
+                FodepTableRow(label: 'Fonds propres effectifs (FPE)', ref: 'EP03 / EP05', value: _fmtM(fpEffectifs)),
 
                 const FodepTableGroup(title: 'Actifs Pondérés des risques (APR)'),
                 FodepTableRow(label: 'Total des actifs pondérés des risques de crédit, de marché et opérationnel', ref: 'EP08', value: _fmt(totalApr), isLast: true),
@@ -1118,14 +1121,14 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     final ro009 = apercu.totaux['ro009'] ?? 0;
 
     final lignes = <List<String>>[
-      ["Produit d'exploitation bancaire", 'EP21', _fmt(p['ro001'] ?? 0)],
-      ['Moins-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmt(p['ro002'] ?? 0)],
-      ["(-) Charges d'exploitation bancaire", 'EP21', _fmt(p['ro003'] ?? 0)],
-      ['(-) Plus-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmt(p['ro005'] ?? 0)],
-      ["(+/-) Produits nets d'exploitation bancaire exceptionnels ou inhabituels", 'EP21', _fmt(p['ro006'] ?? 0)],
-      ["(-) Produits provenant des activités d'assurance", 'EP21', _fmt(p['ro007'] ?? 0)],
-      ['(-) Produits des entités financières exclues du périmètre prudentiel', 'EP21', _fmt(p['ro008'] ?? 0)],
-      ['Total du produit brut', 'EP21', _fmt(ro009)],
+      ["Produit d'exploitation bancaire", 'EP21', _fmtM(p['ro001'] ?? 0)],
+      ['Moins-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmtM(p['ro002'] ?? 0)],
+      ["(-) Charges d'exploitation bancaire", 'EP21', _fmtM(p['ro003'] ?? 0)],
+      ['(-) Plus-values réalisées sur cessions de titres du portefeuille bancaire', 'EP21', _fmtM(p['ro005'] ?? 0)],
+      ["(+/-) Produits nets d'exploitation bancaire exceptionnels ou inhabituels", 'EP21', _fmtM(p['ro006'] ?? 0)],
+      ["(-) Produits provenant des activités d'assurance", 'EP21', _fmtM(p['ro007'] ?? 0)],
+      ['(-) Produits des entités financières exclues du périmètre prudentiel', 'EP21', _fmtM(p['ro008'] ?? 0)],
+      ['Total du produit brut', 'EP21', _fmtM(ro009)],
       for (int i = 0; i < 3; i++)
         () {
           final rang = exercices.length - 3 + i;
