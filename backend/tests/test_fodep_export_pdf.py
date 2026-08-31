@@ -13,6 +13,7 @@ Deux bugs corriges par ce fichier :
 
 from __future__ import annotations
 
+from io import BytesIO
 from pathlib import Path
 
 import openpyxl
@@ -110,3 +111,120 @@ def test_conversion_pdf_echoue_proprement_sur_un_classeur_vide():
 
     with pytest.raises(ValueError):
         convertir_classeur_en_pdf(tampon.getvalue())
+
+
+def test_feuille_attestation_presente_et_rendue_dans_le_pdf():
+    """L'onglet « ATTESTATION » (modele BCEAO) doit etre injecte dans le
+    classeur avec les donnees etablissement + declarant, et figurer dans le
+    PDF genere sans casser la conversion."""
+
+    attestation = {
+        "rens_prenoms_nom": "Amadou Diallo",
+        "rens_fonction": "Directeur General",
+        "rens_telephone": "+225 01 02 03",
+        "rens_poste": "101",
+        "rens_email": "a.diallo@banque.ci",
+        "trans_prenoms_nom": "Awa Kone",
+        "trans_fonction": "Responsable Reporting",
+        "trans_telephone": "+225 04 05 06",
+        "trans_poste": "202",
+        "trans_email": "a.kone@banque.ci",
+        "certif_nous_1": "Amadou Diallo",
+        "certif_nous_2": "Awa Kone",
+        "sign1_code": "SIG-001",
+        "sign1_fonction": "Directeur General",
+        "sign1_date": "30/06/2026",
+        "sign1_image": "",
+        "sign2_code": "SIG-002",
+        "sign2_fonction": "Commissaire aux comptes",
+        "sign2_date": "30/06/2026",
+        "sign2_image": "",
+    }
+
+    contenu = excel.build_fonds_propres_export(
+        "2026-06-30",
+        {"fpi01": 1_000_000.0},
+        etablissement=_Etablissement(),
+        participations=[],
+        attestation=attestation,
+    )
+
+    wb = openpyxl.load_workbook(BytesIO(contenu))
+    assert "ATTESTATION" in wb.sheetnames
+    ws = wb["ATTESTATION"]
+    cellules = [str(c.value) for ligne in ws.iter_rows() for c in ligne if c.value]
+    texte = " ".join(cellules)
+    assert "ATTESTATION DE DECLARATION PRUDENTIELLE" in texte
+    assert "BANQUE ATLANTIQUE CI" in texte
+    assert "Amadou Diallo" in texte and "Awa Kone" in texte
+    assert "SIG-001" in texte and "Commissaire aux comptes" in texte
+
+    pdf = convertir_classeur_en_pdf(contenu)
+    assert pdf[:5] == b"%PDF-"
+    assert len(pdf) > 10_000
+
+
+def test_les_totaux_du_classeur_suivent_calculations_pas_les_formules_du_modele():
+    """Regression du bug « le PDF ne montre pas les valeurs de l'outil » : le
+    modele officiel livre des formules de total partielles (FPI14 ne deduit que
+    IM012, FPI26/FPI28/FPI39/FPI40 = 0 en dur, FPI29 = FPI22, FPI41 = FPI29).
+    L'export doit ecrire par-dessus les totaux calcules par calculations.py."""
+
+    from app.fodep.calculations import (
+        calculer_exposition_levier,
+        calculer_fonds_propres_detailles,
+        calculer_produit_brut,
+    )
+    from app.fodep.dispru import FONDS_PROPRES_CODES
+
+    postes = {c.code.lower(): 0.0 for c in FONDS_PROPRES_CODES}
+    postes.update(
+        {
+            "fpi01": 20_000.0, "fpi03": 5_623.0, "fpi06": 14_211.0,
+            "im012": -376.0, "pa163": -50.0,          # 2e deduction CET1 -> hors formule modele
+            "fpi23": 1_000.0,                          # AT1 -> ignore par le modele
+            "fpi30": 2_000.0,                          # T2  -> ignore par le modele
+            "ro001": 49_350.0, "ro003": -12_761.0,
+            "rl001": 537_474.0, "rl002": -376.0, "rl011": 35.5, "rl012": 21_527.0,
+        }
+    )
+    totaux = calculer_fonds_propres_detailles(postes)
+    totaux.update(calculer_produit_brut(postes))
+    totaux.update(calculer_exposition_levier(postes))
+
+    contenu = excel.build_fonds_propres_export(
+        "2026-06-30", postes, etablissement=_Etablissement(),
+        participations=[], totaux=totaux,
+    )
+    wb = openpyxl.load_workbook(BytesIO(contenu))
+    moteur = MoteurFormules(wb)
+
+    def v(feuille: str, cellule: str) -> float:
+        return float(moteur.valeur(feuille, cellule))
+
+    assert v("EP03", "C40") == pytest.approx(totaux["fpi22"])   # TOTAL CET1
+    assert v("EP03", "C52") == pytest.approx(totaux["fpi29"])   # TOTAL T1 (avec AT1)
+    assert v("EP03", "C69") == pytest.approx(totaux["fpi41"])   # FONDS PROPRES EFFECTIFS (avec T2)
+    assert totaux["fpi29"] > totaux["fpi22"]                     # l'AT1 compte vraiment
+    assert totaux["fpi41"] > totaux["fpi29"]                     # le T2 compte vraiment
+    assert v("EP21", "D18") == pytest.approx(totaux["ro009"])   # produit brut total
+    assert v("EP33", "C34") == pytest.approx(totaux["rl015"])   # exposition levier totale
+    assert v("EP33", "C33") == pytest.approx(totaux["fpi29"])   # rappel T1
+    assert v("EP02", "F14") == pytest.approx(totaux["fpi22"])
+    assert v("EP02", "F16") == pytest.approx(totaux["fpi41"])
+
+
+def test_export_ne_laisse_aucune_participation_du_specimen_dans_ep35():
+    """Le modele officiel livre EP35 pre-rempli avec les participations d'un
+    autre etablissement (SCIE, GIM UEMOA...). Sans registre pour l'arrete,
+    l'onglet doit ressortir vide."""
+
+    contenu = excel.build_fonds_propres_export(
+        "2026-06-30", {"fpi01": 1_000_000.0},
+        etablissement=_Etablissement(), participations=[],
+    )
+    ws = openpyxl.load_workbook(BytesIO(contenu))["EP35"]
+    for r in range(12, 66):
+        assert ws.cell(r, 2).value in (None, "")
+        for c in (4, 5, 6):
+            assert (ws.cell(r, c).value or 0) == 0
