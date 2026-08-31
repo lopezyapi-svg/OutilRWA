@@ -14,10 +14,10 @@ class AppTheme {
     'General Sans',
     'Nunito Sans',
   ];
-  static const double radius = 4;
+  static const double radius = 10;
   static const double spacing = 4;
-  static const double pagePadding = 4;
-  static const double pageGap = 4;
+  static const double pagePadding = 14;
+  static const double pageGap = 12;
   static const Color sidebar = Color(0xFF11047A);
   static const Color sidebarLight = Color(0xFF190793);
   static const Color accent = Color(0xFF4318FF);
@@ -103,8 +103,11 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: surfaceColor,
-        elevation: brightness == Brightness.light ? 1 : 0,
-        shadowColor: const Color(0xFF4318FF).withValues(alpha: 0.07),
+        elevation: brightness == Brightness.light ? 3 : 1,
+        shadowColor: brightness == Brightness.light
+            ? const Color(0xFF1B2559).withValues(alpha: 0.14)
+            : Colors.black.withValues(alpha: 0.45),
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.all(Radius.circular(radius)),
           side: brightness == Brightness.dark
@@ -142,12 +145,23 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: accentColor,
           foregroundColor: Colors.white,
+          elevation: 2,
+          shadowColor: accentColor.withValues(alpha: 0.35),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius),
           ),
           textStyle: textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 2,
+          shadowColor: accentColor.withValues(alpha: 0.30),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radius),
           ),
         ),
       ),
@@ -184,6 +198,16 @@ class AppTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
+        elevation: 8,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.black.withValues(alpha: 0.30),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius + 4),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radius),
         ),
