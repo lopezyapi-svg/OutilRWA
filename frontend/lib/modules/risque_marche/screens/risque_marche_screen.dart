@@ -875,6 +875,9 @@ class _YieldCurveDashboardState extends State<_YieldCurveDashboard> {
                       Container(
                         height: 36,
                         decoration: BoxDecoration(
+                          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                           color: _marketSurfaceSoftFor(context).withValues(
                               alpha: _isMarketDark(context) ? 0.3 : 0.6),
                           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -1023,6 +1026,9 @@ class _YieldCurveDashboardState extends State<_YieldCurveDashboard> {
                               380, // Fix height since Expanded won't work in SingleChildScrollView
                           child: Container(
                             decoration: BoxDecoration(
+                              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                               color: _marketSurfaceSoftFor(context).withValues(
                                   alpha: _isMarketDark(context) ? 0.64 : 0.90),
                               border: Border.all(
@@ -1347,6 +1353,9 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
+              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
               color: interpretation.color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(
@@ -2050,6 +2059,9 @@ class _YieldCurveNoDataChart extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 260),
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
         decoration: BoxDecoration(
+          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
           color: _marketSurfaceFor(context).withValues(
             alpha: isDark ? 0.62 : 0.82,
           ),
@@ -4207,6 +4219,9 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _marketSurfaceFor(context).withValues(
           alpha: _isMarketDark(context) ? 0.86 : 0.98,
         ),
@@ -8033,6 +8048,9 @@ class _BondKeyIndicatorsSection extends StatelessWidget {
       width: double.infinity,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _marketSurfaceFor(context).withValues(
           alpha: _isMarketDark(context) ? 0.86 : 0.98,
         ),
@@ -10997,6 +11015,9 @@ class _BondZoneRadarProfileChartState
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: muted.withValues(alpha: 0.2)),
@@ -14243,6 +14264,9 @@ class _MarketAnalyticKpiItemState extends State<_MarketAnalyticKpiItem> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
+          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
           color: _isHovered
               ? accent.withValues(alpha: 0.05)
               : Colors.transparent,
@@ -14388,6 +14412,7 @@ class _GlobalMarketKpiCards extends StatelessWidget {
   }
 
   Widget _buildCardContainer(BuildContext context, Widget child) {
+    final isDark = _isMarketDark(context);
     return Container(
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context),
@@ -14396,6 +14421,13 @@ class _GlobalMarketKpiCards extends StatelessWidget {
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: child,
     );
@@ -15268,6 +15300,9 @@ class _BondSectionPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _marketSurfaceSoftFor(context)
             .withValues(alpha: _isMarketDark(context) ? 0.50 : 0.74),
         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -15593,6 +15628,9 @@ class _BondRiskNotificationTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: notification.color.withValues(alpha: isDark ? 0.14 : 0.075),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
@@ -15699,6 +15737,9 @@ class _BondRatingPanel extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
+          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
           color: _marketSurfaceFor(context),
           borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
@@ -16085,6 +16126,9 @@ class _BondSegmentToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _marketSurfaceFor(context),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border.withValues(alpha: 0.82)),
@@ -18531,6 +18575,9 @@ class _MarketIssuerCardList extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 3, vertical: 9.0),
                   decoration: BoxDecoration(
+                    boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                     color: entries[index].color.withValues(alpha: 0.055),
                     borderRadius: BorderRadius.circular(AppTheme.radius),
                     border: Border.all(
@@ -25762,6 +25809,9 @@ class _VarMethodSwitch extends StatelessWidget {
               curve: _varMethodTransitionCurve,
               child: DecoratedBox(
                 decoration: BoxDecoration(
+                  boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                   color: _marketPrimary,
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(
@@ -29899,8 +29949,15 @@ class _MarketCard extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: isDark ? surface.withValues(alpha: 0.92) : Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: hasBorder ? Border.all(color: isDark ? border : _line) : null,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: child,
     );
@@ -33604,6 +33661,9 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: color.withValues(alpha: 0.2)),
@@ -33792,6 +33852,9 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
+            boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
             color: (valueColor ?? Colors.blue).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
@@ -34370,6 +34433,9 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
 
     return Container(
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: isDark
             ? const Color(0xFF0F1B3D).withValues(alpha: 0.5)
             : Colors.white,

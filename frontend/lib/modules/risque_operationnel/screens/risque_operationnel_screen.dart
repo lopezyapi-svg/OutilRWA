@@ -939,6 +939,9 @@ class _RoDashboardHeader extends StatelessWidget {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
+                boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(color: c.border, width: 1),
               ),
@@ -957,6 +960,9 @@ class _RoDashboardHeader extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
+                    boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                     borderRadius: BorderRadius.circular(AppTheme.radius),
                     border: Border.all(color: c.border, width: 1),
                   ),
@@ -1022,6 +1028,9 @@ class _RoDashboardIconButton extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
+              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
               borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: colors.border, width: 1),
             ),
@@ -1331,6 +1340,9 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                     Container(
                       width: 284,
                       decoration: BoxDecoration(
+                        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                         color: panelBg,
                         borderRadius: BorderRadius.circular(AppTheme.radius),
                         border: Border.all(color: panelBorder),
@@ -1555,6 +1567,9 @@ class _CriseResultsPanel extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
+            boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
             color: statusColor.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: statusColor.withValues(alpha: 0.25)),
@@ -1976,6 +1991,9 @@ class _PertesTop5Card extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: bg,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border),
@@ -2030,6 +2048,9 @@ class _PertesTop5Card extends StatelessWidget {
                           Container(
                             width: 26, height: 26,
                             decoration: BoxDecoration(
+                              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                               color: rc.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(AppTheme.radius),
                               border: Border.all(color: rc.withValues(alpha: 0.35)),
@@ -2139,6 +2160,9 @@ class _PertesLigneCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: bg,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border),
@@ -2676,6 +2700,9 @@ class _KriViewState extends State<_KriView> {
             Container(
               width: 230,
               decoration: BoxDecoration(
+                boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                 color: panelBg,
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(color: panelBorder),
@@ -2767,6 +2794,9 @@ class _KriViewState extends State<_KriView> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                             decoration: BoxDecoration(
+                              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                               borderRadius: BorderRadius.circular(AppTheme.radius),
                               border: Border.all(color: _kMuted.withValues(alpha: 0.25)),
                             ),
@@ -2859,6 +2889,9 @@ class _KriViewState extends State<_KriView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _kMuted.withValues(alpha: 0.18)),
       ),
@@ -2914,6 +2947,9 @@ class _KriViewState extends State<_KriView> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
+          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
           color: isSelected ? _kMuted.withValues(alpha: 0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
@@ -2979,6 +3015,9 @@ class _KriBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: surface,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: borderColor),
@@ -3116,6 +3155,9 @@ class _KriCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(11),
                     decoration: BoxDecoration(
+                      boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                       color: mutedColor.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(AppTheme.radius),
                       border: Border.all(color: mutedColor.withValues(alpha: 0.18)),
@@ -3975,6 +4017,9 @@ class _ControlesViewState extends State<_ControlesView> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
+                  boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                   color: isDark ? const Color(0xFF13233E) : Colors.white,
                   border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
                   borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -4321,6 +4366,9 @@ class _PlansViewState extends State<_PlansView> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                 decoration: BoxDecoration(
+                                  boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                                   borderRadius: BorderRadius.circular(AppTheme.radius),
                                   border: Border.all(color: AppTheme.border),
                                   color: const Color(0xFFFBFCFF),
@@ -4476,6 +4524,9 @@ class _PlansViewState extends State<_PlansView> {
             Container(
               width: 230,
               decoration: BoxDecoration(
+                boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                 color: panelBg,
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(color: panelBorder),
@@ -4527,6 +4578,9 @@ class _PlansViewState extends State<_PlansView> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
+                          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                           color: (txReal >= 80 ? _kSuccess : _kWarning).withValues(alpha: 0.07),
                           borderRadius: BorderRadius.circular(AppTheme.radius),
                           border: Border.all(
@@ -4568,6 +4622,9 @@ class _PlansViewState extends State<_PlansView> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           decoration: BoxDecoration(
+                            boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                             color: _kDanger.withValues(alpha: 0.07),
                             borderRadius: BorderRadius.circular(AppTheme.radius),
                             border: Border.all(color: _kDanger.withValues(alpha: 0.3)),
@@ -4652,6 +4709,9 @@ class _PlansViewState extends State<_PlansView> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
+                          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                           color: _kDanger.withValues(alpha: 0.06),
                           borderRadius: BorderRadius.circular(AppTheme.radius),
                           border: Border.all(color: _kDanger.withValues(alpha: 0.3)),
@@ -4709,6 +4769,9 @@ class _PlansViewState extends State<_PlansView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: c.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: c.withValues(alpha: 0.2)),
@@ -4738,6 +4801,9 @@ class _PlansViewState extends State<_PlansView> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
+          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
           color: active ? c.withValues(alpha: 0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: active ? c.withValues(alpha: 0.4) : c.withValues(alpha: 0.15)),
@@ -4798,6 +4864,9 @@ class _PlanCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: bg,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
@@ -5114,6 +5183,9 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
+              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
               color: soft,
               border: Border.all(color: border),
               borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -5500,6 +5572,9 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                     Expanded(
                       child: Container(
                         decoration: BoxDecoration(
+                          boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                           color: isDark ? const Color(0xFF13233E) : Colors.white,
                           border: Border.all(color: isDark ? const Color(0xFF304764) : AppTheme.border),
                           borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -5915,6 +5990,9 @@ class _RegistreViewState extends State<_RegistreView> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               decoration: BoxDecoration(
+                boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                 color: soft,
                 border: Border.all(color: border),
                 borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -7811,6 +7889,9 @@ class _CorepTabViewState extends State<_CorepTabView> {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _card,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _border, width: 0.8),
@@ -7895,6 +7976,9 @@ class _CorepTabViewState extends State<_CorepTabView> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
+            boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
             color: const Color(0xFF0891B2).withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: const Color(0xFF0891B2).withValues(alpha: 0.25)),
@@ -8053,6 +8137,9 @@ class _CorepTabViewState extends State<_CorepTabView> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
+              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
               color: Colors.orange.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
@@ -8712,6 +8799,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 6, 10, 6),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _card,
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _border, width: 0.8),
@@ -8848,6 +8938,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
+            boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
             color: _card,
             border: Border.all(color: _border, width: 0.8),
             borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -8877,6 +8970,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                     margin: const EdgeInsets.only(bottom: 12),
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
+                      boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                       color: _surf,
                       border: Border.all(color: _border),
                       borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -9022,6 +9118,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
+            boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
             color: _kAccent.withValues(alpha: 0.06),
             border: Border.all(color: _kAccent.withValues(alpha: 0.25)),
             borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -9083,6 +9182,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
+              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
               color: _card,
               border: Border.all(color: _border, width: 0.8),
               borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -9122,6 +9224,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                       margin: const EdgeInsets.only(bottom: 12),
                       clipBehavior: Clip.antiAlias,
                       decoration: BoxDecoration(
+                        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                         color: _surf,
                         border: Border.all(color: _border),
                         borderRadius: BorderRadius.circular(AppTheme.radius),
@@ -9208,6 +9313,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         Container(
           margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
+            boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
             color: _surf, border: Border.all(color: _border),
             borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
@@ -9469,6 +9577,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _surf, border: Border.all(color: _border),
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
@@ -9542,6 +9653,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _surf, border: Border.all(color: _border),
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
@@ -9651,6 +9765,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _surf, border: Border.all(color: _border),
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
@@ -9729,6 +9846,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
         color: _surf, border: Border.all(color: _border),
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
@@ -9920,6 +10040,9 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
+              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
               color: _surf, border: Border.all(color: _border),
               borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
@@ -10451,6 +10574,9 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
             return Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
+                boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
                 color: _kBlue.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(color: _kBlue.withValues(alpha: 0.20)),
@@ -10529,6 +10655,9 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
+            boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
             color: _kSuccess.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: _kSuccess.withValues(alpha: 0.20)),
@@ -10803,6 +10932,9 @@ class _RoRiskMatrix extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
+              boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 14, offset: Offset(0, 6)),
+        ],
               color: _kBlue.withValues(alpha: 0.06),
               borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: _kBlue.withValues(alpha: 0.15)),
