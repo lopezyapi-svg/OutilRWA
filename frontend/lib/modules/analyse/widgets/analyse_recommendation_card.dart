@@ -25,7 +25,7 @@ class AnalyseRecommendationCard extends StatelessWidget {
       padding: AppSpacing.cardInsets,
       decoration: BoxDecoration(
         color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: priorityColor.withValues(alpha: 0.3),
           width: 1.5,
@@ -150,7 +150,7 @@ class AnalyseRecommendationCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 5.0),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Text(
         label,
@@ -169,7 +169,7 @@ class AnalyseRecommendationCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Text(
         label,

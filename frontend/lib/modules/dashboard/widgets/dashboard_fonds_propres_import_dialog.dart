@@ -571,7 +571,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: backgroundColor.withValues(alpha: 0.78)),
       ),
       child: Text(
@@ -881,7 +881,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppTheme.warning.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -924,7 +924,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
             color: _isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

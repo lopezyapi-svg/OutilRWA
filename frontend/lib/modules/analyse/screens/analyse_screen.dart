@@ -177,7 +177,7 @@ class _RegulatoryCard extends StatelessWidget {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Icon(card.icon, color: color, size: 20),
               ),
@@ -425,7 +425,7 @@ class _JsonPreview extends StatelessWidget {
           color: isDark
               ? Colors.black.withValues(alpha: 0.22)
               : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Text(
           '{ analysis_id: ${json['analysis_id']}, status: ${json['status']}, diagnostics: ${report.diagnostics.length}, recommendations: ${report.recommendations.length} }',
@@ -558,7 +558,7 @@ class _BarLine extends StatelessWidget {
           ),
           AppSpacing.gapSm,
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             child: LinearProgressIndicator(
               value: factor.toDouble(),
               minHeight: 16,
@@ -584,7 +584,7 @@ class _TrafficLight extends StatelessWidget {
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -646,7 +646,7 @@ class _StatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Text(
@@ -745,7 +745,7 @@ BoxDecoration _cardDecoration(BuildContext context) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   return BoxDecoration(
     color: isDark ? AppColors.surfaceDark : Colors.white,
-    borderRadius: BorderRadius.circular(6),
+    borderRadius: BorderRadius.circular(AppTheme.radius),
     border: Border.all(
       color: isDark ? AppColors.borderDark : AppColors.borderLight,
     ),

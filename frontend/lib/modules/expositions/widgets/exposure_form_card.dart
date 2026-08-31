@@ -149,7 +149,7 @@ InlineSpan _buildTooltipCardSpan(String line) {
         padding: const EdgeInsets.fromLTRB(3, 9, 3, 9),
         decoration: BoxDecoration(
           color: const Color(0xFF172845),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
             color: const Color(0xFF2D4B7A),
             width: 1,
@@ -1378,7 +1378,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1C34),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: const Color(0xFF2D4B7A), width: 1),
         boxShadow: const [
           BoxShadow(
@@ -1416,7 +1416,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               height: 22,
               decoration: BoxDecoration(
                 color: AppTheme.accent.withAlpha(31),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               alignment: Alignment.center,
               child: const Icon(
@@ -1466,7 +1466,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             height: 22,
             decoration: BoxDecoration(
               color: AppTheme.accent.withAlpha(31),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             alignment: Alignment.center,
             child: const Icon(
@@ -1518,7 +1518,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             height: 22,
             decoration: BoxDecoration(
               color: AppTheme.accent.withAlpha(31),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             alignment: Alignment.center,
             child: const Icon(
@@ -1563,7 +1563,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
             height: 22,
             decoration: BoxDecoration(
               color: AppTheme.accent.withAlpha(31),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             alignment: Alignment.center,
             child: const Icon(
@@ -6825,7 +6825,7 @@ class _CrmChoiceStepScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
               decoration: BoxDecoration(
                 color: questionAccent.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(
                   color: questionAccent.withValues(alpha: 0.16),
                   width: _wizardBorderWidth,
@@ -7153,7 +7153,7 @@ class _StepSurface extends StatelessWidget {
                             margin: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               color: const Color(0xFF0F1C34),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
                               border: Border.all(
                                 color: const Color(0xFF2D4B7A),
                                 width: 1,
@@ -7499,14 +7499,14 @@ class _ModeChoiceCard extends StatelessWidget {
       height: 50,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF13233C) : Colors.white,
-            borderRadius: BorderRadius.circular(5),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
               color: selected
                   ? accent.withValues(alpha: 0.72)

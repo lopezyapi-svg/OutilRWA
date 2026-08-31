@@ -347,7 +347,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: _cardColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
       child: Container(
         width: 760,
         constraints: const BoxConstraints(maxWidth: 800, maxHeight: 720),
@@ -382,7 +382,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: AppTheme.danger.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(5),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: AppTheme.danger.withValues(alpha: 0.4)),
             ),
             child: Row(
@@ -1079,7 +1079,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: _isBusy ? null : () => _promptMontant(periode, entry),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: Icon(CupertinoIcons.pencil, size: 10, color: fg.withValues(alpha: 0.7)),

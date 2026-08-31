@@ -12,6 +12,7 @@ import '../services/fodep_service.dart';
 import '../widgets/fodep_charts.dart';
 import '../widgets/fodep_design.dart';
 import '../widgets/fodep_import_dialog.dart';
+import '../../../core/theme/app_theme.dart';
 
 enum _SectionFodep {
   conformite,
@@ -305,7 +306,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8FAFC), // slate-50
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     border: Border.all(color: c.border, width: Dash.hairline),
                   ),
                   child: Row(
@@ -604,7 +605,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: const Color(0xFFE2E8F0),
           width: 1.0,
@@ -1656,13 +1657,13 @@ class _OngletEp extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(5),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: selected
               ? [
                   BoxShadow(
@@ -2135,7 +2136,7 @@ class _InfoTooltipBouton extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: const Color(0xFFCBD5E1), width: Dash.hairline),
         boxShadow: [
           BoxShadow(
@@ -2385,7 +2386,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(color: c.border, width: Dash.hairline),
                 ),
                 child: Row(

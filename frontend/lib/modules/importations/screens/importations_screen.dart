@@ -247,7 +247,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                                       decoration: BoxDecoration(
                                         color: AppTheme.success
                                             .withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(8),
+                                        borderRadius: BorderRadius.circular(AppTheme.radius),
                                         border: Border.all(
                                             color: AppTheme.success
                                                 .withValues(alpha: 0.3)),
@@ -306,12 +306,12 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
         }) {
           return InkWell(
             onTap: () => Navigator.pop(ctx, value),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 border: Border.all(color: color.withValues(alpha: 0.35)),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 color: color.withValues(alpha: 0.06),
               ),
               child: Row(
@@ -321,7 +321,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
                     height: 38,
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                     child: Icon(icon, color: color, size: 19),
                   ),
@@ -346,7 +346,7 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
         }
 
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
           title: Text('Quel type de fichier importer ?'.tr(ctx)),
           content: SizedBox(
             width: 420,
@@ -403,14 +403,14 @@ class _ImportationsScreenState extends State<ImportationsScreen> {
       elevation: 0,
       color: backgroundColor ?? Theme.of(context).cardColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         side: BorderSide(
           color: borderColor ?? Theme.of(context).dividerColor,
         ),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
           child: Column(

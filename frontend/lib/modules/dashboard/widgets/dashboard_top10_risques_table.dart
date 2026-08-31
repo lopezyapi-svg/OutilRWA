@@ -6,6 +6,7 @@ import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
 import 'dashboard_all_grands_risques_dialog.dart';
+import '../../../core/theme/app_theme.dart';
 
 class DashboardTop10RisquesTable extends StatelessWidget {
   const DashboardTop10RisquesTable({
@@ -92,11 +93,11 @@ class DashboardTop10RisquesTable extends StatelessWidget {
         children: [
           const SizedBox(height: 4),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(color: borderColor, width: 0.8),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Column(
                 children: [
@@ -452,7 +453,7 @@ class _StatutBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: FittedBox(
         fit: BoxFit.scaleDown,

@@ -11,6 +11,7 @@ import '../services/fodep_service.dart';
 
 import '../widgets/fodep_attestation_form.dart';
 import '../widgets/fodep_design.dart';
+import '../../../core/theme/app_theme.dart';
 
 class FodepGenererScreen extends StatefulWidget {
   const FodepGenererScreen({super.key, required this.service});
@@ -201,7 +202,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: c.surface,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(AppTheme.radius),
                                 border: Border.all(color: c.border, width: Dash.hairline),
                                 boxShadow: [
                                   BoxShadow(
@@ -218,7 +219,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                     height: 40,
                                     decoration: BoxDecoration(
                                       color: const Color(0xFF172554).withValues(alpha: 0.08),
-                                      borderRadius: BorderRadius.circular(6),
+                                      borderRadius: BorderRadius.circular(AppTheme.radius),
                                     ),
                                     child: const Icon(
                                       Icons.account_balance_rounded,
@@ -348,7 +349,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                 foregroundColor: c.muted,
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 side: BorderSide(color: c.border),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
                               ),
                             ),
                             ],
@@ -561,7 +562,7 @@ class _ExportOptionCardState extends State<_ExportOptionCard> {
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: c.surface,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
               color: _isHovered && !disabled ? widget.color.withValues(alpha: 0.4) : const Color(0xFFCBD5E1),
               width: _isHovered && !disabled ? 1.5 : 1.0,
@@ -579,7 +580,7 @@ class _ExportOptionCardState extends State<_ExportOptionCard> {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: effectiveColor.withValues(alpha: 0.09),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                     child: Icon(
                       widget.icon,

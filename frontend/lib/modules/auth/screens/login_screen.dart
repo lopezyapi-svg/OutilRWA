@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/session_controller.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Écran de connexion. Sobre, sans promesse commerciale : c'est une porte
 /// d'entrée vers des données prudentielles, pas une page d'accueil produit.
@@ -76,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(color: const Color(0xFFE3E7EE)),
               ),
               child: Column(

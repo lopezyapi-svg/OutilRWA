@@ -4272,7 +4272,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF101C32) : const Color(0xFFF6F9FF),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: isDark ? const Color(0xFF304764) : const Color(0xFFDDE7F6)),
       ),
       child: DropdownButtonHideUnderline(
@@ -4451,7 +4451,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                               touchTooltipData: LineTouchTooltipData(
                                 maxContentWidth: 200,
                                 tooltipBorder: BorderSide(color: textColor.withValues(alpha: 0.2), width: 1),
-                                tooltipBorderRadius: BorderRadius.circular(8),
+                                tooltipBorderRadius: BorderRadius.circular(AppTheme.radius),
                                 fitInsideHorizontally: true,
                                 fitInsideVertically: true,
                                 getTooltipColor: (touchedSpot) => Theme.of(context).cardColor,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/auth/session_controller.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Gestion de l'équipe : ajouter un membre, suspendre un accès.
 ///
@@ -115,7 +116,7 @@ class _EquipeDialogState extends State<EquipeDialog> {
   Widget build(BuildContext context) {
     final moi = widget.session.profil?.identifiant;
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
       child: SizedBox(
         width: 620,
         child: Padding(

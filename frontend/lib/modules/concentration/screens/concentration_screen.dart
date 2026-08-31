@@ -307,7 +307,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
     Widget buildSubCard({required String title, required List<Widget> rows}) {
       return Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,7 +342,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
                 color: AppTheme.background,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -370,7 +370,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
                 color: AppTheme.background,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
@@ -666,7 +666,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
             decoration: BoxDecoration(
               color: AppTheme.background,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -697,7 +697,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
       margin: const EdgeInsets.symmetric(vertical: 24),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: Theme.of(context).dividerColor),
         boxShadow: [
           BoxShadow(
@@ -1306,7 +1306,7 @@ class _PortfolioTabNavigation extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Padding(
           padding: const EdgeInsets.all(4),
@@ -1361,7 +1361,7 @@ class _PortfolioTabButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: selected
               ? [
                   BoxShadow(
@@ -3240,7 +3240,7 @@ class _IssuerResidenceCountryCardState
       elevation: 2,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         side: BorderSide(color: border),
       ),
       child: Padding(
@@ -4068,7 +4068,7 @@ class _TopCounterpartyExposureCard extends StatelessWidget {
       elevation: 2,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         side: BorderSide(color: border),
       ),
       child: Padding(

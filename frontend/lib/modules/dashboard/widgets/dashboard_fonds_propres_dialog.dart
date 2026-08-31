@@ -10,6 +10,7 @@ import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../../dashboard/models/dashboard_models.dart';
 import 'dashboard_design.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Modal d'edition des fonds propres reglementaires.
 class DashboardFondsPropresDialog extends StatefulWidget {
@@ -281,7 +282,7 @@ class _DashboardFondsPropresDialogState
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -412,7 +413,7 @@ class _DashboardFondsPropresDialogState
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
@@ -544,7 +545,7 @@ class _DashboardFondsPropresDialogState
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
           width: 0.5,

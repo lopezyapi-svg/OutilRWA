@@ -11,6 +11,7 @@ import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../../expositions/models/exposition_models.dart';
 import '../models/rwa_credit_analysis.dart';
+import '../../../core/theme/app_theme.dart';
 
 
 const double _pageRadius = 8;
@@ -430,7 +431,7 @@ class _PilotageTabs extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Padding(
           padding: const EdgeInsets.all(4),
@@ -485,7 +486,7 @@ class _PilotageTabButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           color: bgColor,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: selected
               ? [
                   BoxShadow(
@@ -665,7 +666,7 @@ class _SummaryCardState extends State<_SummaryCard> {
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
             color: _isHovered ? Colors.indigo.withValues(alpha: 0.5) : _line,
           ),
@@ -3018,7 +3019,7 @@ class _TopExposuresChart extends StatelessWidget {
               }
             },
             touchTooltipData: BarTouchTooltipData(
-              tooltipBorderRadius: BorderRadius.circular(5),
+              tooltipBorderRadius: BorderRadius.circular(AppTheme.radius),
               fitInsideHorizontally: true,
               fitInsideVertically: false,
               getTooltipColor: (group) => _deepBlue,

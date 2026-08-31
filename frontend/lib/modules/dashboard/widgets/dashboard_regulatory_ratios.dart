@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/currency_conversion.dart';
+import '../../../core/theme/app_theme.dart';
 
 class RegulatoryRatioSpec {
   const RegulatoryRatioSpec({
@@ -40,7 +41,7 @@ class DashboardRegulatoryRatios extends StatelessWidget {
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(

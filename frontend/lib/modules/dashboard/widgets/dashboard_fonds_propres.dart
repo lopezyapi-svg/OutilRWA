@@ -6,6 +6,7 @@ import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
 import '../models/dashboard_models.dart';
 import 'dashboard_design.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Structure des fonds propres réglementaires - décomposition par tier.
 ///
@@ -66,7 +67,7 @@ class DashboardFondsPropres extends StatelessWidget {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6)),
+                    borderRadius: BorderRadius.circular(AppTheme.radius)),
               ),
               onPressed: onEdit,
             )
