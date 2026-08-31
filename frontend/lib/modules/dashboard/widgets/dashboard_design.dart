@@ -14,11 +14,34 @@ import '../../../core/theme/app_colors.dart';
 class Dash {
   Dash._();
 
-  /// Rayon des panneaux : net, jamais l'arrondi « SaaS ».
-  static const double radius = 4;
+  /// Rayon des panneaux.
+  static const double radius = 10;
+
+  /// Rayon élargi (boîtes de dialogue, grandes surfaces).
+  static const double radiusLg = 14;
 
   /// Filet fin unique pour bordures et séparateurs.
   static const double hairline = 0.6;
+
+  /// Ombre portée douce d'un panneau posé (light / dark).
+  static List<BoxShadow> shadow(bool dark) => dark
+      ? const [
+          BoxShadow(color: Color(0x59000000), blurRadius: 16, offset: Offset(0, 6)),
+        ]
+      : const [
+          BoxShadow(color: Color(0x14172B4D), blurRadius: 14, offset: Offset(0, 6)),
+          BoxShadow(color: Color(0x0A172B4D), blurRadius: 3, offset: Offset(0, 1)),
+        ];
+
+  /// Ombre plus marquée (survol, éléments soulevés).
+  static List<BoxShadow> shadowRaised(bool dark) => dark
+      ? const [
+          BoxShadow(color: Color(0x73000000), blurRadius: 24, offset: Offset(0, 12)),
+        ]
+      : const [
+          BoxShadow(color: Color(0x24172B4D), blurRadius: 24, offset: Offset(0, 12)),
+          BoxShadow(color: Color(0x0F172B4D), blurRadius: 4, offset: Offset(0, 2)),
+        ];
 
   /// Padding interne standard d'un panneau.
   static const EdgeInsets panelPadding = EdgeInsets.all(18);
@@ -251,6 +274,7 @@ class DashPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: height,
       padding: padding,
@@ -258,6 +282,7 @@ class DashPanel extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
+        boxShadow: Dash.shadow(dark),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

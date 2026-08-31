@@ -45,6 +45,7 @@ class FodepRatioTile extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
+        boxShadow: Dash.shadow(Theme.of(context).brightness == Brightness.dark),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,6 +92,7 @@ class FodepValueTile extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
+        boxShadow: Dash.shadow(Theme.of(context).brightness == Brightness.dark),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,10 +509,12 @@ Future<T?> showFodepDialog<T>({
     barrierColor: Colors.black.withValues(alpha: 0.45),
     builder: (context) => Dialog(
       backgroundColor: c.surface,
-      elevation: 0,
+      elevation: 10,
+      shadowColor: Colors.black.withValues(alpha: 0.32),
+      surfaceTintColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(24),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(Dash.radius),
+        borderRadius: BorderRadius.circular(Dash.radiusLg),
         side: BorderSide(color: c.border, width: Dash.hairline),
       ),
       child: ConstrainedBox(
@@ -644,7 +648,7 @@ void showFodepToast(
       SnackBar(
         behavior: SnackBarBehavior.floating,
         backgroundColor: c.surface,
-        elevation: 0,
+        elevation: 6,
         duration: const Duration(seconds: 4),
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

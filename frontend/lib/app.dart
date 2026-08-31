@@ -383,9 +383,31 @@ class _RwaAppState extends State<RwaApp> {
   Widget _buildSelectedScreen() {
     return PageStorage(
       bucket: _pageStorageBucket,
-      child: KeyedSubtree(
-        key: PageStorageKey<String>(_selectedModule.name),
-        child: _screenFor(_selectedModule),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 240),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) => FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.02),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        ),
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          alignment: Alignment.topLeft,
+          children: [
+            ...previousChildren,
+            if (currentChild != null) currentChild,
+          ],
+        ),
+        child: KeyedSubtree(
+          key: PageStorageKey<String>(_selectedModule.name),
+          child: _screenFor(_selectedModule),
+        ),
       ),
     );
   }
