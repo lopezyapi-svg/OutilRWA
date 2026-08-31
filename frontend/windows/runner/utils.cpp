@@ -20,8 +20,12 @@ namespace {
 
 constexpr wchar_t kBackendHost[] = L"127.0.0.1";
 constexpr unsigned short kBackendPort = 8000;
-constexpr auto kBackendStartupTimeout = std::chrono::seconds(15);
-constexpr auto kBackendPollInterval = std::chrono::milliseconds(150);
+// Premier lancement sur un poste neuf : extraction du Python embarque, copie
+// de la base, imports froids (reportlab / openpyxl), 40 migrations SQL, le
+// tout pendant que Windows Defender analyse chaque fichier. 15 s n'y suffisent
+// pas sur une machine lente ou tres protegee - d'ou l'echec "ne repond pas".
+constexpr auto kBackendStartupTimeout = std::chrono::seconds(120);
+constexpr auto kBackendPollInterval = std::chrono::milliseconds(200);
 
 HANDLE g_backend_process = nullptr;
 bool g_backend_started_by_runner = false;
