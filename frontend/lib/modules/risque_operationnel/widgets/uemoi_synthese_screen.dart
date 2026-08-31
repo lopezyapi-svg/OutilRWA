@@ -171,7 +171,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
@@ -193,11 +193,11 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
                   color: muted, fontSize: 10.5, fontWeight: FontWeight.w500)),
           const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(color: border),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Column(
                 children: [
@@ -356,7 +356,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
@@ -382,7 +382,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
                   color: soft,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(color: border),
                 ),
                 child: Row(

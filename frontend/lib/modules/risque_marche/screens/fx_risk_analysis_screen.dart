@@ -1383,7 +1383,7 @@ class _FxRatesBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
           color: accent.withValues(alpha: fixed ? 0.04 : 0.07),
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: accent.withValues(alpha: 0.22)),
         ),
         child: Row(
@@ -1533,7 +1533,7 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
             padding: const EdgeInsets.all(2),
             decoration: BoxDecoration(
               color: _fxPrimary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: const Icon(CupertinoIcons.money_dollar_circle_fill,
                 size: 20, color: _fxPrimary),
@@ -1567,7 +1567,7 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
               decoration: BoxDecoration(
                 color: _fxPrimary.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Row(children: [
                 const Icon(CupertinoIcons.arrow_right_arrow_left,
@@ -1591,7 +1591,7 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
                 isDense: true,
                 labelText: 'Taux de change',
                 border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
                 suffix: Text('XOF',
                     style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -1650,7 +1650,7 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
           onPressed: () => Navigator.of(context).pop(),
           style: TextButton.styleFrom(
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
           ),
           child: const Text('Annuler'),
         ),
@@ -1658,7 +1658,7 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
           onPressed: _fetching ? null : _submit,
           style: FilledButton.styleFrom(
             shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
           ),
           child: const Text('Valider',
               style: TextStyle(fontWeight: FontWeight.w600)),
@@ -1674,7 +1674,7 @@ class _RateEditorDialogState extends State<_RateEditorDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: color.withValues(alpha: 0.30)),
       ),
       child: Row(

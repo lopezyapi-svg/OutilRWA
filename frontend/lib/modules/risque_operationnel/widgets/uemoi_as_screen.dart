@@ -286,7 +286,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
@@ -316,7 +316,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                 decoration: BoxDecoration(
                   color: _kPrimary.withValues(alpha: isDark ? 0.22 : 0.10),
                   border: Border.all(color: _kPrimary),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text('Exercice ${d.annee}',
                     style: TextStyle(
@@ -330,11 +330,11 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
 
           // ── Tableau des lignes ───────────────────────────────────────────
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(color: border),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Column(
                 children: [
@@ -482,7 +482,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border),
         boxShadow: [
           BoxShadow(
@@ -524,7 +524,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                     'fois - cliquez pour changer d\'exercice',
                 child: InkWell(
                   onTap: _changerExercice,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   child: Container(
                     height: 28,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -532,7 +532,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                     decoration: BoxDecoration(
                       color: _kPrimary.withValues(alpha: isDark ? 0.22 : 0.10),
                       border: Border.all(color: _kPrimary),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -565,7 +565,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: soft,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: border),
             ),
             child: Row(
@@ -594,11 +594,11 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
 
           // ── Tableau de saisie ────────────────────────────────────────────
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(color: border),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Column(
                 children: [

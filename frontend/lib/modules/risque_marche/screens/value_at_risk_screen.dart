@@ -1674,7 +1674,7 @@ class _BoutonImportModele extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 border: Border.all(color: _varBorder),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,

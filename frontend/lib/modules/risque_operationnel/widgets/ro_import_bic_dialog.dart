@@ -751,7 +751,7 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: backgroundColor.withValues(alpha: 0.78)),
       ),
       child: Text(sheetName, style: TextStyle(color: _text, fontSize: 9.7, fontWeight: FontWeight.w500)),
@@ -970,7 +970,7 @@ class _RoImportBicDialogState extends State<_RoImportBicDialog> {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppTheme.warning.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: AppTheme.warning.withValues(alpha: 0.3)),
       ),
       child: Column(

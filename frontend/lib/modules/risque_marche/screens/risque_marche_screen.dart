@@ -1348,7 +1348,7 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: interpretation.color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(
                 color: interpretation.color.withValues(alpha: 0.2),
               ),
@@ -4210,7 +4210,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
         color: _marketSurfaceFor(context).withValues(
           alpha: _isMarketDark(context) ? 0.86 : 0.98,
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
@@ -8036,7 +8036,7 @@ class _BondKeyIndicatorsSection extends StatelessWidget {
         color: _marketSurfaceFor(context).withValues(
           alpha: _isMarketDark(context) ? 0.86 : 0.98,
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
@@ -8564,7 +8564,7 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
                           isExpanded: true,
                           dropdownColor:
                               isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -10536,7 +10536,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                     ),
                     decoration: BoxDecoration(
                       color: isDark ? Colors.grey.shade900 : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                       border: Border.all(color: muted.withValues(alpha: 0.2)),
                       boxShadow: [
                         BoxShadow(
@@ -10611,7 +10611,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                     tooltipMargin: 8,
                     tooltipBorder:
                         BorderSide(color: muted.withValues(alpha: 0.2)),
-                    tooltipBorderRadius: BorderRadius.circular(8),
+                    tooltipBorderRadius: BorderRadius.circular(AppTheme.radius),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final row = sortedRows[groupIndex];
                       if (rodIndex == 0) {
@@ -10998,7 +10998,7 @@ class _BondZoneRadarProfileChartState
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: muted.withValues(alpha: 0.2)),
       ),
       child: Column(
@@ -11062,7 +11062,7 @@ class _BondZoneRadarProfileChartState
                   color: isDark
                       ? const Color(0xFF1E293B)
                       : Colors.white, // Modern slate in dark, white in light
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(color: muted.withValues(alpha: 0.2)),
                   boxShadow: [
                     BoxShadow(
@@ -11665,7 +11665,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                         isDark ? const Color(0xFF1E1E2C) : Colors.white,
                     tooltipPadding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 10),
-                    tooltipBorderRadius: BorderRadius.circular(8),
+                    tooltipBorderRadius: BorderRadius.circular(AppTheme.radius),
                     tooltipBorder: BorderSide(
                         color: muted.withValues(alpha: 0.15), width: 1),
                     getTooltipItems: (touchedSpot) {
@@ -11835,7 +11835,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                 ),
                 decoration: BoxDecoration(
                   color: isDark ? Colors.grey.shade900 : Colors.white,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(color: muted.withValues(alpha: 0.2)),
                   boxShadow: [
                     BoxShadow(
@@ -14147,7 +14147,7 @@ class _MarketAnalyticKpiGrid extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border.withValues(alpha: 0.8), width: 1),
         boxShadow: [
           BoxShadow(
@@ -14160,7 +14160,7 @@ class _MarketAnalyticKpiGrid extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -14246,7 +14246,7 @@ class _MarketAnalyticKpiItemState extends State<_MarketAnalyticKpiItem> {
           color: _isHovered
               ? accent.withValues(alpha: 0.05)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
             color: _isHovered
                 ? accent.withValues(alpha: 0.22)
@@ -14391,7 +14391,7 @@ class _GlobalMarketKpiCards extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
@@ -15270,7 +15270,7 @@ class _BondSectionPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: _marketSurfaceSoftFor(context)
             .withValues(alpha: _isMarketDark(context) ? 0.50 : 0.74),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: _deepBlue.withValues(alpha: 0.25),
           width: 0.4,
@@ -15700,7 +15700,7 @@ class _BondRatingPanel extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: _marketSurfaceFor(context),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
             color: _deepBlue.withValues(alpha: 0.25),
             width: 0.4,
@@ -18723,7 +18723,7 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
               color: _isMarketDark(context)
                   ? const Color(0xFF18233C)
                   : Colors.white,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(
                 color: _isMarketDark(context)
                     ? const Color(0xFF3B4A6B)
@@ -30994,7 +30994,7 @@ class _CalculPrudentielTabBar extends StatelessWidget {
                 color: isDark
                     ? const Color(0xFF1E293B)
                     : const Color(0xFFE2E8F0), // Slate 800 or Slate 200
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -31039,14 +31039,14 @@ class _CalculPrudentielTabBar extends StatelessWidget {
       hoverColor: hoverBg,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? selectedBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: isSelected && !isDark
               ? [
                   BoxShadow(
@@ -33055,7 +33055,7 @@ class _PilotageTabBar extends StatelessWidget {
                 color: isDark
                     ? const Color(0xFF1E293B)
                     : const Color(0xFFE2E8F0), // Slate 800 or Slate 200
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -33107,14 +33107,14 @@ class _PilotageTabBar extends StatelessWidget {
       hoverColor: hoverBg,
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected ? selectedBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: isSelected && !isDark
               ? [
                   BoxShadow(
@@ -34373,7 +34373,7 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
         color: isDark
             ? const Color(0xFF0F1B3D).withValues(alpha: 0.5)
             : Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _marketBorderFor(context)),
       ),
       padding: const EdgeInsets.all(16),
