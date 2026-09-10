@@ -403,7 +403,12 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
 
       // 4. Enregistrer
       final saved =
-          await saveBytesAtLocation(location, bytes, requiredExtension: '.pdf');
+          await saveBytesAtLocation(
+            location,
+            bytes,
+            requiredExtension: '.pdf',
+            suggestedName: 'rapport_global_${_periode.toLowerCase()}_$ts.pdf',
+          );
       if (!mounted) return;
 
       final fileName = saved.path.split(RegExp(r'[\\/]')).last;

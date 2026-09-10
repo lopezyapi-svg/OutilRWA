@@ -112,6 +112,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
           location,
           bytes,
           requiredExtension: isPdf ? '.pdf' : '.xlsx',
+          suggestedName: isPdf ? '$nomSuggere.pdf' : '$nomSuggere.xlsx',
         );
         if (mounted) {
           setState(() {

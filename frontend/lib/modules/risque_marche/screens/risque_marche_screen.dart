@@ -4673,6 +4673,7 @@ class _EquityIndicatorContentBoardState
       location,
       Uint8List.fromList(bytes),
       requiredExtension: '.xlsx',
+      suggestedName: 'tableau_bord_actions_$ts.xlsx',
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -9608,6 +9609,7 @@ class _BondIndicatorContentBoardState
       location,
       Uint8List.fromList(bytes),
       requiredExtension: '.xlsx',
+      suggestedName: 'tableau_bord_obligations_$ts.xlsx',
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

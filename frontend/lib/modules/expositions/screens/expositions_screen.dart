@@ -3960,6 +3960,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       location,
       bytes,
       requiredExtension: '.xlsx',
+      suggestedName: 'export_expositions_rwa_${_exportTimestamp()}.xlsx',
     );
     if (!mounted) {
       return;
@@ -3988,6 +3989,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       location,
       pdfBytes,
       requiredExtension: '.pdf',
+      suggestedName: 'export_expositions_rwa_${_exportTimestamp()}.pdf',
     );
     if (!mounted) {
       return;

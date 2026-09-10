@@ -5386,7 +5386,8 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
       acceptedTypeGroups: const [XTypeGroup(label: 'Excel', extensions: ['xlsx'])],
     );
     if (!mounted || location == null) return;
-    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes), requiredExtension: '.xlsx');
+    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes),
+        requiredExtension: '.xlsx', suggestedName: 'historique_ro_$ts.xlsx');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Export Excel réussi'), backgroundColor: _kSuccess),
@@ -5479,7 +5480,8 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
       acceptedTypeGroups: const [XTypeGroup(label: 'PDF', extensions: ['pdf'])],
     );
     if (!mounted || location == null) return;
-    await saveBytesAtLocation(location, pdfBytes, requiredExtension: '.pdf');
+    await saveBytesAtLocation(location, pdfBytes,
+        requiredExtension: '.pdf', suggestedName: 'historique_ro_$ts.pdf');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Export PDF réussi'), backgroundColor: _kSuccess),
@@ -6315,7 +6317,8 @@ class _RegistreViewState extends State<_RegistreView> {
     );
     if (!mounted || location == null) return;
 
-    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes), requiredExtension: '.xlsx');
+    await saveBytesAtLocation(location, Uint8List.fromList(rawBytes),
+        requiredExtension: '.xlsx', suggestedName: 'registre_ro_$ts.xlsx');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Export Excel réussi'),
@@ -6587,7 +6590,8 @@ class _RegistreViewState extends State<_RegistreView> {
     );
     if (!mounted || location == null) return;
 
-    await saveBytesAtLocation(location, pdfBytes, requiredExtension: '.pdf');
+    await saveBytesAtLocation(location, pdfBytes,
+        requiredExtension: '.pdf', suggestedName: 'registre_ro_$ts.pdf');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Export PDF réussi'),

@@ -124,7 +124,12 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
         ],
       );
       if (location == null) return;
-      await saveBytesAtLocation(location, bytes, requiredExtension: '.xlsx');
+      await saveBytesAtLocation(
+        location,
+        bytes,
+        requiredExtension: '.xlsx',
+        suggestedName: 'Matrice_FODEP_Officielle.xlsx',
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
