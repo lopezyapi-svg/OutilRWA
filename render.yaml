@@ -16,6 +16,15 @@ services:
       - key: RWA_AUTH_ENABLED
         value: "0"
 
+      # Demo publique : sans portefeuille importe ni courbe actualisee, la
+      # section Value at Risk retombe sur une serie SIMULEE reproductible
+      # (badge « Donnees simulees » cote interface). Des qu'un portefeuille
+      # reel est importe ou la courbe UEMOA actualisee, ces donnees priment
+      # et la simulation n'est plus utilisee. A retirer pour une instance de
+      # production alimentee par des donnees reelles.
+      - key: VAR_MODE_SIMULATION
+        value: "1"
+
       # Secret de signature genere par Render, jamais ecrit dans le depot.
       # Le regenerer deconnecte tout le monde.
       - key: RWA_JWT_SECRET
