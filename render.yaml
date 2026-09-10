@@ -1,5 +1,12 @@
 # Description du service pour Render.
 # Render lit ce fichier et cree le service automatiquement (« Blueprint »).
+#
+# ATTENTION : le service actuellement en ligne s'appelle « outil-rwa »
+# (https://outil-rwa.onrender.com) et a ete cree A LA MAIN, pas depuis ce
+# blueprint. Il n'est donc PAS resynchronise par ce fichier : toute variable
+# d'environnement ajoutee/modifiee ici doit aussi etre reportee manuellement
+# dans le dashboard Render (service outil-rwa -> Environment). Ce fichier
+# reste la reference pour recreer le service proprement via New -> Blueprint.
 
 services:
   - type: web
@@ -22,6 +29,11 @@ services:
       # reel est importe ou la courbe UEMOA actualisee, ces donnees priment
       # et la simulation n'est plus utilisee. A retirer pour une instance de
       # production alimentee par des donnees reelles.
+      #
+      # Deja pose manuellement le 2026-09-10 dans le dashboard du service
+      # outil-rwa (Environment -> VAR_MODE_SIMULATION = 1), verifie en ligne
+      # (les 3 methodes VaR calculent, badge « Donnees simulees » affiche).
+      # Conserve ici pour qu'une recreation via blueprint le reprenne.
       - key: VAR_MODE_SIMULATION
         value: "1"
 
