@@ -1,29 +1,21 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localization.dart';
-import '../../../core/utils/formatters.dart';
 import 'dashboard_design.dart';
-import '../../../core/theme/app_theme.dart';
 
 /// Masthead du dashboard prudentiel - barre claire raffinée.
 ///
-/// Surface blanche structurée : monogramme navy plein, sur-titre tracé (cadre
-/// réglementaire), pastille de conformité (statut = seule couleur), contrôle de
-/// date et actions en conteneurs à filet fin.
+/// Surface blanche structurée : titre et sur-titre (cadre réglementaire) à
+/// gauche, action unique « Actualiser » à droite. La sélection de date et
+/// l'export ont été retirés : la date n'influençait aucun calcul et l'export
+/// est couvert par le module Capital Planning.
 class DashboardGeneralHeader extends StatelessWidget {
   const DashboardGeneralHeader({
     super.key,
-    required this.analysisDate,
-    required this.onPickAnalysisDate,
     this.onRefresh,
-    this.onExport,
   });
 
-  final DateTime analysisDate;
-  final VoidCallback onPickAnalysisDate;
   final VoidCallback? onRefresh;
-  final VoidCallback? onExport;
 
   @override
   Widget build(BuildContext context) {
@@ -73,109 +65,41 @@ class DashboardGeneralHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          _DateControl(
-            value: AppFormatters.shortDate(analysisDate),
-            onTap: onPickAnalysisDate,
-            colors: c,
-          ),
-          const SizedBox(width: 10),
-          _IconButtonBox(
-            icon: Icons.file_download_outlined,
-            tooltip: 'Exporter',
-            onTap: onExport,
-            colors: c,
-          ),
-          const SizedBox(width: 8),
-          _IconButtonBox(
-            icon: Icons.refresh_rounded,
-            tooltip: 'Actualiser',
-            onTap: onRefresh,
-            colors: c,
-          ),
+          _RefreshButton(onTap: onRefresh, colors: c),
         ],
       ),
     );
   }
 }
 
-class _DateControl extends StatelessWidget {
-  const _DateControl({
-    required this.value,
+/// Bouton d'actualisation : seule action du masthead, rendue en aplat navy
+/// (l'accent institutionnel) pour la désigner clairement comme action primaire.
+class _RefreshButton extends StatelessWidget {
+  const _RefreshButton({
     required this.onTap,
     required this.colors,
   });
 
-  final String value;
-  final VoidCallback onTap;
-  final DashColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppTheme.radius),
-            border: Border.all(color: colors.border, width: 1),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(CupertinoIcons.calendar, size: 15, color: colors.muted),
-              const SizedBox(width: 8),
-              Text(
-                value,
-                style: TextStyle(
-                  color: colors.ink,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: Dash.tabular,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(Icons.expand_more, size: 16, color: colors.faint),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _IconButtonBox extends StatelessWidget {
-  const _IconButtonBox({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    required this.colors,
-  });
-
-  final IconData icon;
-  final String tooltip;
   final VoidCallback? onTap;
   final DashColors colors;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: tooltip.tr(context),
+      message: 'Actualiser'.tr(context),
       child: Material(
-        color: Colors.transparent,
+        color: colors.navy,
+        borderRadius: BorderRadius.circular(Dash.radius),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(AppTheme.radius),
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppTheme.radius),
-              border: Border.all(color: colors.border, width: 1),
-            ),
-            child: Icon(icon, size: 17, color: colors.muted),
+          hoverColor: Colors.white.withValues(alpha: 0.14),
+          highlightColor: Colors.white.withValues(alpha: 0.06),
+          splashColor: Colors.white.withValues(alpha: 0.20),
+          child: const SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(Icons.refresh_rounded, size: 18, color: Colors.white),
           ),
         ),
       ),

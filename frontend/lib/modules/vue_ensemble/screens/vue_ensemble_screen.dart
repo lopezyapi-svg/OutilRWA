@@ -42,13 +42,11 @@ class VueEnsembleScreen extends StatefulWidget {
 
 class _VueEnsembleScreenState extends State<VueEnsembleScreen> {
   late Future<DashboardSnapshot> _future;
-  late DateTime _analysisDate;
   StreamSubscription<int>? _portfolioRefreshSubscription;
 
   @override
   void initState() {
     super.initState();
-    _analysisDate = DateUtils.dateOnly(DateTime.now());
     _future = _loadDashboard();
     _portfolioRefreshSubscription =
         widget.api.portfolioRefreshStream.listen((_) {
@@ -67,16 +65,6 @@ class _VueEnsembleScreenState extends State<VueEnsembleScreen> {
     });
   }
 
-  void _export() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          context.tr('Export du tableau de bord - bientôt disponible'),
-        ),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _portfolioRefreshSubscription?.cancel();
@@ -85,22 +73,6 @@ class _VueEnsembleScreenState extends State<VueEnsembleScreen> {
 
   Future<DashboardSnapshot> _loadDashboard() {
     return widget.api.fetchDashboard();
-  }
-
-  Future<void> _pickAnalysisDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _analysisDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
-      helpText: context.tr("Choisir la date d'analyse"),
-    );
-
-    if (picked == null) {
-      return;
-    }
-
-    setState(() => _analysisDate = DateUtils.dateOnly(picked));
   }
 
   @override
@@ -133,10 +105,7 @@ class _VueEnsembleScreenState extends State<VueEnsembleScreen> {
 
         return _ExecutiveDashboard(
           data: snapshot.data!,
-          analysisDate: _analysisDate,
-          onPickAnalysisDate: _pickAnalysisDate,
           onRefresh: _refresh,
-          onExport: _export,
           onNavigateToModule: widget.onNavigateToModule,
           api: widget.api,
         );
@@ -148,19 +117,13 @@ class _VueEnsembleScreenState extends State<VueEnsembleScreen> {
 class _ExecutiveDashboard extends StatelessWidget {
   const _ExecutiveDashboard({
     required this.data,
-    required this.analysisDate,
-    required this.onPickAnalysisDate,
     required this.onRefresh,
-    required this.onExport,
     this.onNavigateToModule,
     required this.api,
   });
 
   final DashboardSnapshot data;
-  final DateTime analysisDate;
-  final VoidCallback onPickAnalysisDate;
   final VoidCallback onRefresh;
-  final VoidCallback onExport;
   final ValueChanged<AppModule>? onNavigateToModule;
   final RwaApiService api;
 
@@ -174,10 +137,7 @@ class _ExecutiveDashboard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           DashboardGeneralHeader(
-            analysisDate: analysisDate,
-            onPickAnalysisDate: onPickAnalysisDate,
             onRefresh: onRefresh,
-            onExport: onExport,
           ),
           Expanded(
             child: LayoutBuilder(
