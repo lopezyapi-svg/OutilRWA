@@ -496,10 +496,10 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
         // Valeur du portefeuille (Md FCFA) : la saisie de l'écran, sinon le
         // capital restant dû du tableau de bord Sensibilité. Nécessaire pour
         // estimer la VaR réglementaire quand aucune position n'est importée.
-        valeurPortefeuille: _methode != VarMethode.historique &&
-                _portefeuille == 'obligations'
-            ? (_valeurPortefeuilleMd ?? _crdEnMilliards())
-            : null,
+        valeurPortefeuille:
+            _methode != VarMethode.historique && _portefeuille == 'obligations'
+                ? (_valeurPortefeuilleMd ?? _crdEnMilliards())
+                : null,
         nbSimulations:
             _methode == VarMethode.monteCarlo ? _nbSimulations : null,
       );
@@ -645,82 +645,86 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(
-                  width: _parameterPanelWidth,
-                  child: _PanneauParametres(
-                    methode: _methode,
-                    portefeuille: _portefeuille,
-                    confiance: _confiance,
-                    horizon: _horizon,
-                    fenetre: _fenetre,
-                    volatilite: _volatilite,
-                    beta: _beta,
-                    durationModifiee: _durationModifiee ??
-                        _reponse?.durationModifieePortefeuille ??
-                        ValueAtRiskScreen.lastDashboardDurationModifiee ??
-                        _durationDefaut,
-                    valeurPortefeuilleMd:
-                        _valeurPortefeuilleMd ?? _crdEnMilliards(),
-                    nbSimulations: _nbSimulations,
-                    onPortefeuille: (valeur) {
-                      setState(() {
-                        _portefeuille = valeur;
-                        if (valeur == 'obligations') {
-                          _durationModifiee =
-                              ValueAtRiskScreen.lastDashboardDurationModifiee;
-                        } else {
-                          _durationModifiee = null;
-                        }
-                      });
-                      _charger(nouveauContexte: true);
-                    },
-                    onConfiance: (valeur) {
-                      setState(() => _confiance = valeur);
-                      _charger();
-                    },
-                    onHorizon: (valeur) {
-                      setState(() => _horizon = valeur);
-                      _charger();
-                    },
-                    onFenetre: (valeur) {
-                      setState(() => _fenetre = valeur);
-                      _charger();
-                    },
-                    onVolatilite: (valeur) {
-                      setState(() => _volatilite = valeur);
-                    },
-                    onVolatiliteEnd: (valeur) {
-                      _charger();
-                    },
-                    onBeta: (valeur) {
-                      setState(() => _beta = valeur);
-                    },
-                    onBetaEnd: (valeur) {
-                      _charger();
-                    },
-                    onDuration: (valeur) {
-                      setState(() => _durationModifiee = valeur);
-                    },
-                    onDurationEnd: (valeur) {
-                      _charger();
-                    },
-                    onValeurPortefeuille: (valeur) {
-                      if (valeur == _valeurPortefeuilleMd) return;
-                      setState(() => _valeurPortefeuilleMd = valeur);
-                      _charger();
-                    },
-                    onNbSimulations: (valeur) {
-                      setState(() => _nbSimulations = valeur);
-                      _charger();
-                    },
-                    paysCourbe: _paysCourbe,
-                    actualisationEnCours: _actualisationEnCours,
-                    onPaysCourbe: (valeur) =>
-                        setState(() => _paysCourbe = valeur),
-                    onActualiserCourbe: _actualiserCourbe,
+                // La VaR historique n'expose qu'une méthodologie : aucun
+                // paramètre ne l'influence, le panneau de gauche est masqué.
+                if (!_methode.sansCalculPossible) ...[
+                  SizedBox(
+                    width: _parameterPanelWidth,
+                    child: _PanneauParametres(
+                      methode: _methode,
+                      portefeuille: _portefeuille,
+                      confiance: _confiance,
+                      horizon: _horizon,
+                      fenetre: _fenetre,
+                      volatilite: _volatilite,
+                      beta: _beta,
+                      durationModifiee: _durationModifiee ??
+                          _reponse?.durationModifieePortefeuille ??
+                          ValueAtRiskScreen.lastDashboardDurationModifiee ??
+                          _durationDefaut,
+                      valeurPortefeuilleMd:
+                          _valeurPortefeuilleMd ?? _crdEnMilliards(),
+                      nbSimulations: _nbSimulations,
+                      onPortefeuille: (valeur) {
+                        setState(() {
+                          _portefeuille = valeur;
+                          if (valeur == 'obligations') {
+                            _durationModifiee =
+                                ValueAtRiskScreen.lastDashboardDurationModifiee;
+                          } else {
+                            _durationModifiee = null;
+                          }
+                        });
+                        _charger(nouveauContexte: true);
+                      },
+                      onConfiance: (valeur) {
+                        setState(() => _confiance = valeur);
+                        _charger();
+                      },
+                      onHorizon: (valeur) {
+                        setState(() => _horizon = valeur);
+                        _charger();
+                      },
+                      onFenetre: (valeur) {
+                        setState(() => _fenetre = valeur);
+                        _charger();
+                      },
+                      onVolatilite: (valeur) {
+                        setState(() => _volatilite = valeur);
+                      },
+                      onVolatiliteEnd: (valeur) {
+                        _charger();
+                      },
+                      onBeta: (valeur) {
+                        setState(() => _beta = valeur);
+                      },
+                      onBetaEnd: (valeur) {
+                        _charger();
+                      },
+                      onDuration: (valeur) {
+                        setState(() => _durationModifiee = valeur);
+                      },
+                      onDurationEnd: (valeur) {
+                        _charger();
+                      },
+                      onValeurPortefeuille: (valeur) {
+                        if (valeur == _valeurPortefeuilleMd) return;
+                        setState(() => _valeurPortefeuilleMd = valeur);
+                        _charger();
+                      },
+                      onNbSimulations: (valeur) {
+                        setState(() => _nbSimulations = valeur);
+                        _charger();
+                      },
+                      paysCourbe: _paysCourbe,
+                      actualisationEnCours: _actualisationEnCours,
+                      onPaysCourbe: (valeur) =>
+                          setState(() => _paysCourbe = valeur),
+                      onActualiserCourbe: _actualiserCourbe,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Expanded(child: _contenuPrincipal()),
               ],
             ),
@@ -1282,7 +1286,8 @@ class _ChampValeurPortefeuilleState extends State<_ChampValeurPortefeuille> {
   }
 
   void _valider() {
-    final brut = _controleur.text.trim().replaceAll(' ', '').replaceAll(',', '.');
+    final brut =
+        _controleur.text.trim().replaceAll(' ', '').replaceAll(',', '.');
     final valeur = brut.isEmpty ? null : double.tryParse(brut);
     widget.onChange(valeur != null && valeur > 0 ? valeur : null);
   }
@@ -2053,7 +2058,8 @@ class _HistogrammeVarPainter extends CustomPainter {
     final position = survol;
     if (position == null || !zone.contains(position)) return;
 
-    final xValeur = xMin + (position.dx - zone.left) / zone.width * (xMax - xMin);
+    final xValeur =
+        xMin + (position.dx - zone.left) / zone.width * (xMax - xMin);
     final classe = reponse.histogramme.isNotEmpty ? _classePour(xValeur) : null;
     final densite =
         reponse.histogramme.isEmpty ? _densiteInterpolee(xValeur) : null;
