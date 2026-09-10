@@ -465,8 +465,8 @@ class _SidebarSection {
 }
 
 const List<_SidebarSection> _sidebarSections = [
-  _SidebarSection(title: 'Accueil', entries: [_entryVueEnsemble]),
   _SidebarSection(title: 'Données', entries: [_entryImportations]),
+  _SidebarSection(title: 'Accueil', entries: [_entryVueEnsemble]),
   _SidebarSection(
     title: 'Risques',
     entries: [
