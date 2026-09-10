@@ -106,9 +106,13 @@ class RwaApiService {
     throw StateError('Réponse CEMAC invalide.');
   }
 
-  /// Appelle un endpoint VaR du backend (/api/var/historique,
-  /// /api/var/parametrique ou /api/var/montecarlo). Tous les calculs sont
-  /// effectués côté serveur ; le client ne fait que de l'affichage.
+  /// Appelle un endpoint VaR du backend (/var/historique, /var/parametrique
+  /// ou /var/montecarlo). Tous les calculs sont effectués côté serveur ; le
+  /// client ne fait que de l'affichage.
+  ///
+  /// Le chemin ne porte PAS « /api » : sur le web, la base d'URL vaut déjà
+  /// « <origine>/api » (voir _resolveDefaultApiBaseUrl). Le préfixer ici
+  /// donnait « /api/api/var/... » -> 404 sur les déploiements web.
   Future<Map<String, dynamic>> fetchVarAnalysis({
     required String methode,
     required String typePortefeuille,
@@ -123,7 +127,7 @@ class RwaApiService {
     int? graine,
   }) async {
     final query = StringBuffer(
-      '/api/var/$methode'
+      '/var/$methode'
       '?type_portefeuille=$typePortefeuille'
       '&niveau_confiance=$niveauConfiance'
       '&horizon_jours=$horizonJours'
@@ -205,7 +209,7 @@ class RwaApiService {
   /// Retourne le résumé de la courbe récupérée (pays, date, nombre de points).
   Future<Map<String, dynamic>> actualiserCourbeUemoa(String pays) async {
     final payload = await _client.post(
-      '/api/var/actualiser-courbe?pays=${Uri.encodeQueryComponent(pays)}',
+      '/var/actualiser-courbe?pays=${Uri.encodeQueryComponent(pays)}',
       const {},
     );
     return payload is Map
@@ -215,7 +219,7 @@ class RwaApiService {
 
   /// Liste des pays UEMOA dont la courbe de taux est actualisable en ligne.
   Future<List<String>> fetchPaysCourbe() async {
-    final payload = await _client.get('/api/var/courbe/pays');
+    final payload = await _client.get('/var/courbe/pays');
     if (payload is! Map) return const [];
     final pays = payload['pays'];
     return pays is List ? pays.map((e) => e.toString()).toList() : const [];
