@@ -33129,7 +33129,11 @@ class _PilotageTabBar extends StatelessWidget {
               ),
             ),
           ),
-          if (selectedTab != _PilotageTab.varRisk)
+          // Le sélecteur Obligations / Actions n'a de sens que pour les vues
+          // portefeuille. VaR et Courbe des taux (taux UMOA-Titres) n'en
+          // dépendent pas : on le masque.
+          if (selectedTab != _PilotageTab.varRisk &&
+              selectedTab != _PilotageTab.courbeTaux)
             _MarketPortfolioTypeSwitch(
               selectedType: selectedType,
               onChanged: onTypeChanged,
