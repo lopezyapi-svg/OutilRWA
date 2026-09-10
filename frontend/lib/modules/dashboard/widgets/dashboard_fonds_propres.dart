@@ -299,7 +299,7 @@ class DashboardFondsPropres extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(AppTheme.radius),
+        borderRadius: BorderRadius.circular(3),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),
