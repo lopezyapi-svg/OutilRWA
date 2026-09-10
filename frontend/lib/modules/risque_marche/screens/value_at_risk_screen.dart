@@ -243,6 +243,11 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   double _volatilite = _volatiliteDefaut;
   double _beta = _betaDefaut;
   double? _durationModifiee;
+  // Valeur du portefeuille obligataire (Md FCFA) saisie dans l'écran. Sert
+  // à estimer la VaR réglementaire quand aucune position n'est importée mais
+  // que la courbe UEMOA a été actualisée. Pré-remplie avec le capital
+  // restant dû du tableau de bord Sensibilité s'il est déjà calculé.
+  double? _valeurPortefeuilleMd;
   int _nbSimulations = _simulationsDefaut;
   String _paysCourbe = _paysCourbeDefaut;
   bool _actualisationEnCours = false;
@@ -251,6 +256,10 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
   bool _chargement = false;
   String? _erreur;
   bool _donneesAbsentes = false;
+  // Le serveur attend une saisie (valeur de portefeuille ou duration) pour
+  // pouvoir estimer la VaR sur la courbe UEMOA : état informatif, pas une
+  // panne.
+  bool _saisieRequise = false;
   int _requeteEnCours = 0;
   Timer? _relanceAutomatique;
 
@@ -275,7 +284,15 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
     // (mêmes conventions : flux amortis pondérés par le capital restant dû)
     // et la renvoie pour affichage.
     _durationModifiee = ValueAtRiskScreen.lastDashboardDurationModifiee;
+    _valeurPortefeuilleMd = _crdEnMilliards();
     _charger();
+  }
+
+  /// Capital restant dû du tableau de bord Sensibilité converti en Md FCFA
+  /// (`lastDashboardCrd` est en FCFA), ou null s'il n'a pas encore été calculé.
+  static double? _crdEnMilliards() {
+    final crd = ValueAtRiskScreen.lastDashboardCrd;
+    return crd != null && crd > 0 ? crd / 1e9 : null;
   }
 
   @override
@@ -445,6 +462,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
         _chargement = false;
         _erreur = null;
         _donneesAbsentes = false;
+        _saisieRequise = false;
       });
       return;
     }
@@ -470,10 +488,12 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
             _methode != VarMethode.historique && _portefeuille == 'obligations'
                 ? _durationModifiee
                 : null,
-        // lastDashboardCrd est en FCFA ; l'API VaR attend des Md FCFA.
-        valeurPortefeuille: _portefeuille == 'obligations' &&
-                ValueAtRiskScreen.lastDashboardCrd != null
-            ? ValueAtRiskScreen.lastDashboardCrd! / 1e9
+        // Valeur du portefeuille (Md FCFA) : la saisie de l'écran, sinon le
+        // capital restant dû du tableau de bord Sensibilité. Nécessaire pour
+        // estimer la VaR réglementaire quand aucune position n'est importée.
+        valeurPortefeuille: _methode != VarMethode.historique &&
+                _portefeuille == 'obligations'
+            ? (_valeurPortefeuilleMd ?? _crdEnMilliards())
             : null,
         nbSimulations:
             _methode == VarMethode.monteCarlo ? _nbSimulations : null,
@@ -497,6 +517,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
         _reponse = nouvelle;
         _chargement = false;
         _donneesAbsentes = false;
+        _saisieRequise = false;
 
         // Axe figé : initialisé sur la première distribution du contexte,
         // puis étendu seulement si les données réelles (histogramme, VaR,
@@ -525,22 +546,39 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
       });
     } catch (erreur) {
       if (!mounted || numero != _requeteEnCours) return;
-      final donneesAbsentes = erreur is ApiException &&
-          erreur.detail is Map &&
-          (erreur.detail as Map)['code'] == 'VAR_DONNEES_ABSENTES';
+      String? codeErreur;
+      String? messageServeur;
+      if (erreur is ApiException && erreur.detail is Map) {
+        final detail = erreur.detail as Map;
+        codeErreur = detail['code'] as String?;
+        messageServeur = detail['message'] as String?;
+      }
+      final donneesAbsentes = codeErreur == 'VAR_DONNEES_ABSENTES';
+      final saisieRequise = codeErreur == 'VAR_VALEUR_PORTEFEUILLE_REQUISE' ||
+          codeErreur == 'VAR_DURATION_REQUISE';
       setState(() {
         _chargement = false;
-        _erreur = erreur.toString();
+        // Les erreurs « métier » du backend portent un message clair : on
+        // l'affiche tel quel plutôt que le toString() de l'exception.
+        _erreur = (donneesAbsentes || saisieRequise)
+            ? (messageServeur ?? erreur.toString())
+            : erreur.toString();
         _donneesAbsentes = donneesAbsentes;
-        if (donneesAbsentes) {
-          // Les données absentes rendent l'ancienne réponse caduque.
+        _saisieRequise = saisieRequise;
+        if (donneesAbsentes || saisieRequise) {
+          // Contexte caduc : l'ancienne réponse ne correspond plus.
           _reponse = null;
           _reponsePrecedente = null;
           _axeXMin = null;
           _axeXMax = null;
         }
       });
-      _programmerRelanceAutomatique();
+      // Une saisie manquante se corrige dans le panneau : pas de relance
+      // automatique en boucle, contrairement aux données absentes (fichiers
+      // déposés dans data/ pris en compte au fil de l'eau).
+      if (!saisieRequise) {
+        _programmerRelanceAutomatique();
+      }
     }
   }
 
@@ -559,6 +597,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
       _volatilite = _volatiliteDefaut;
       _beta = _betaDefaut;
       _durationModifiee = ValueAtRiskScreen.lastDashboardDurationModifiee;
+      _valeurPortefeuilleMd = _crdEnMilliards();
       _nbSimulations = _simulationsDefaut;
     });
     _charger(nouveauContexte: true);
@@ -615,6 +654,8 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                         _reponse?.durationModifieePortefeuille ??
                         ValueAtRiskScreen.lastDashboardDurationModifiee ??
                         _durationDefaut,
+                    valeurPortefeuilleMd:
+                        _valeurPortefeuilleMd ?? _crdEnMilliards(),
                     nbSimulations: _nbSimulations,
                     onPortefeuille: (valeur) {
                       setState(() {
@@ -658,6 +699,11 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                     onDurationEnd: (valeur) {
                       _charger();
                     },
+                    onValeurPortefeuille: (valeur) {
+                      if (valeur == _valeurPortefeuilleMd) return;
+                      setState(() => _valeurPortefeuilleMd = valeur);
+                      _charger();
+                    },
                     onNbSimulations: (valeur) {
                       setState(() => _nbSimulations = valeur);
                       _charger();
@@ -696,17 +742,21 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  _donneesAbsentes
+                  (_donneesAbsentes || _saisieRequise)
                       ? Icons.info_outline
                       : Icons.warning_amber_rounded,
                   size: 42,
-                  color: _donneesAbsentes ? _varPrimary : Colors.red,
+                  color: (_donneesAbsentes || _saisieRequise)
+                      ? _varPrimary
+                      : Colors.red,
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  _donneesAbsentes
-                      ? 'Aucune donnée chargée'
-                      : 'Erreur lors de l\'évaluation',
+                  _saisieRequise
+                      ? 'Complétez les paramètres'
+                      : _donneesAbsentes
+                          ? 'Aucune donnée chargée'
+                          : 'Erreur lors de l\'évaluation',
                   style: const TextStyle(
                     color: _varNavy,
                     fontSize: 16,
@@ -717,9 +767,11 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Text(
-                    _donneesAbsentes
-                        ? 'Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk.'
-                        : _erreur!,
+                    _saisieRequise
+                        ? _erreur!
+                        : _donneesAbsentes
+                            ? 'Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk.'
+                            : _erreur!,
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: _varMuted, fontSize: 13),
                   ),
@@ -914,6 +966,7 @@ class _PanneauParametres extends StatelessWidget {
     required this.volatilite,
     required this.beta,
     required this.durationModifiee,
+    required this.valeurPortefeuilleMd,
     required this.nbSimulations,
     required this.onPortefeuille,
     required this.onConfiance,
@@ -925,6 +978,7 @@ class _PanneauParametres extends StatelessWidget {
     required this.onBetaEnd,
     required this.onDuration,
     required this.onDurationEnd,
+    required this.onValeurPortefeuille,
     required this.onNbSimulations,
     required this.paysCourbe,
     required this.actualisationEnCours,
@@ -940,6 +994,7 @@ class _PanneauParametres extends StatelessWidget {
   final double volatilite;
   final double beta;
   final double durationModifiee;
+  final double? valeurPortefeuilleMd;
   final int nbSimulations;
   final ValueChanged<String> onPortefeuille;
   final ValueChanged<double> onConfiance;
@@ -951,6 +1006,7 @@ class _PanneauParametres extends StatelessWidget {
   final ValueChanged<double> onBetaEnd;
   final ValueChanged<double> onDuration;
   final ValueChanged<double> onDurationEnd;
+  final ValueChanged<double?> onValeurPortefeuille;
   final ValueChanged<int> onNbSimulations;
   final String paysCourbe;
   final bool actualisationEnCours;
@@ -1138,6 +1194,15 @@ class _PanneauParametres extends StatelessWidget {
                   ],
                 ),
               ),
+            if (methode != VarMethode.historique &&
+                portefeuille == 'obligations')
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: _ChampValeurPortefeuille(
+                  valeurMd: valeurPortefeuilleMd,
+                  onChange: onValeurPortefeuille,
+                ),
+              ),
             if (methode == VarMethode.monteCarlo)
               _GroupeChoix<int>(
                 libelle: 'Nombre de simulations',
@@ -1149,6 +1214,138 @@ class _PanneauParametres extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Saisie de la valeur du portefeuille obligataire (Md FCFA), utilisée pour
+/// estimer la VaR réglementaire quand aucune position n'est importée mais que
+/// la courbe UEMOA a été actualisée. La valeur remonte à la validation ou à
+/// la perte du focus (pas à chaque frappe) pour éviter des recalculs en
+/// rafale.
+class _ChampValeurPortefeuille extends StatefulWidget {
+  const _ChampValeurPortefeuille({
+    required this.valeurMd,
+    required this.onChange,
+  });
+
+  final double? valeurMd;
+  final ValueChanged<double?> onChange;
+
+  @override
+  State<_ChampValeurPortefeuille> createState() =>
+      _ChampValeurPortefeuilleState();
+}
+
+class _ChampValeurPortefeuilleState extends State<_ChampValeurPortefeuille> {
+  late final TextEditingController _controleur =
+      TextEditingController(text: _texte(widget.valeurMd));
+  final FocusNode _focus = FocusNode();
+
+  static String _texte(double? valeur) {
+    if (valeur == null || valeur <= 0) return '';
+    // Entier si rond, sinon deux décimales : lecture directe en Md FCFA.
+    return valeur == valeur.roundToDouble()
+        ? valeur.toStringAsFixed(0)
+        : valeur.toStringAsFixed(2);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() {
+      if (!_focus.hasFocus) _valider();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _ChampValeurPortefeuille ancien) {
+    super.didUpdateWidget(ancien);
+    // Synchronise l'affichage si la valeur change en dehors du champ
+    // (ex. capital restant dû calculé après coup), sauf pendant la saisie.
+    if (!_focus.hasFocus && widget.valeurMd != ancien.valeurMd) {
+      final attendu = _texte(widget.valeurMd);
+      if (attendu != _controleur.text) _controleur.text = attendu;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controleur.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _valider() {
+    final brut = _controleur.text.trim().replaceAll(' ', '').replaceAll(',', '.');
+    final valeur = brut.isEmpty ? null : double.tryParse(brut);
+    widget.onChange(valeur != null && valeur > 0 ? valeur : null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                'Valeur du portefeuille',
+                style: TextStyle(
+                  color: _varNavy,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              'Md FCFA',
+              style: TextStyle(
+                color: _varMuted,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          controller: _controleur,
+          focusNode: _focus,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _valider(),
+          style: const TextStyle(
+            color: _varNavy,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: 'ex. 500',
+            hintStyle: const TextStyle(color: _varMuted, fontSize: 12),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            filled: true,
+            fillColor: Colors.white,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: _varBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: _varPrimary),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Utilisée si aucun portefeuille obligataire n\'est importé.',
+          style: TextStyle(color: _varMuted, fontSize: 9.5),
+        ),
+      ],
     );
   }
 }
@@ -1434,7 +1631,8 @@ class _PanneauGraphique extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      if (reponse.sourceDonnees == 'simulation') ...[
+                      if (reponse.sourceDonnees == 'simulation' ||
+                          reponse.sourceDonnees == 'courbe') ...[
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -1446,9 +1644,11 @@ class _PanneauGraphique extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(color: _varBorder),
                           ),
-                          child: const Text(
-                            'Données simulées',
-                            style: TextStyle(
+                          child: Text(
+                            reponse.sourceDonnees == 'courbe'
+                                ? 'Estimation courbe UEMOA'
+                                : 'Données simulées',
+                            style: const TextStyle(
                               color: _varMuted,
                               fontSize: 10.5,
                               fontWeight: FontWeight.w600,
