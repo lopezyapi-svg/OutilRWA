@@ -82,6 +82,11 @@ _PROFONDEUR_SIMULATION = 1_050
 # comme aberrante dans les journaux.
 _SEUIL_VARIATION_ABERRANTE = 0.20
 
+# Maturité pivot (années) à laquelle la courbe UEMOA est lue pour calibrer
+# les chocs de taux quand aucun portefeuille n'est importé : point le plus
+# liquide et le plus représentatif du marché obligataire régional.
+_MATURITE_PIVOT_COURBE_ANS = 5.0
+
 
 class ErreurDonneesVar(ValueError):
     """Erreur explicite de la couche de données (message en français)."""
@@ -993,6 +998,40 @@ def _construire_serie_valeurs(type_portefeuille: str) -> _SeriePayload:
                 None,
                 tuple(avertissements),
             )
+
+    # Aucune position obligataire importée, mais la courbe UEMOA a été
+    # actualisée (onglet « Courbe des Taux ») : on débloque les VaR
+    # paramétrique et Monte-Carlo en mode réglementaire. La série de
+    # valorisation n'a qu'un point (profondeur 0) — la valeur et la duration
+    # modifiée du portefeuille sont fournies par l'écran ; les variations de
+    # la courbe au pivot 5 ans calibrent, si l'historique en compte au moins
+    # deux, les chocs de taux Monte-Carlo. La VaR historique reste
+    # indisponible faute d'historique de prix.
+    if type_portefeuille == "obligations" and not charger_positions_obligations():
+        courbes = charger_historique_taux()
+        if courbes:
+            taux_pivot = np.array(
+                [
+                    interpoler_taux(courbes[jour], _MATURITE_PIVOT_COURBE_ANS)
+                    for jour in sorted(courbes)
+                ]
+            )
+            # Au moins trois courbes datées => au moins deux variations, le
+            # minimum pour un écart-type empirique. En deçà, Monte-Carlo
+            # utilise la volatilité réglementaire.
+            variations = (
+                tuple(float(v) for v in np.diff(taux_pivot) / 100.0)
+                if len(taux_pivot) >= 3
+                else None
+            )
+            avertissements.append(
+                "Aucun portefeuille obligataire importé : VaR paramétrique et "
+                "Monte-Carlo estimées en mode réglementaire, à partir de la "
+                "valeur et de la duration modifiée saisies, sur la courbe "
+                "UEMOA actualisée. La VaR historique nécessite un historique "
+                "de prix importé."
+            )
+            return ((0.0,), 0.0, "courbe", None, variations, tuple(avertissements))
 
     if not mode_simulation_actif():
         # Message ciblé : si le portefeuille est bien importé, le blocage

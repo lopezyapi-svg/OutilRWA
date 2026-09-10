@@ -96,6 +96,44 @@ def _serie_ou_422(
         ) from exc
 
 
+def _exiger_saisie_si_courbe(
+    serie_pnl: portefeuille_data.SeriePnl,
+    valeur_portefeuille: float | None,
+    duration_modifiee: float | None,
+) -> None:
+    """Mode « courbe » (aucun portefeuille importé, courbe UEMOA actualisée) :
+    la VaR réglementaire a besoin d'une valeur de portefeuille et d'une
+    duration modifiée saisies par l'utilisateur. On les exige explicitement
+    plutôt que de renvoyer une VaR nulle silencieuse."""
+
+    if serie_pnl.source_donnees != "courbe":
+        return
+    if valeur_portefeuille is None or valeur_portefeuille <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "VAR_VALEUR_PORTEFEUILLE_REQUISE",
+                "message": (
+                    "Aucun portefeuille obligataire importé. Saisissez la "
+                    "valeur du portefeuille (Md FCFA) pour estimer la VaR sur "
+                    "la courbe UEMOA actualisée, ou importez vos positions."
+                ),
+            },
+        )
+    if duration_modifiee is None or duration_modifiee <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "VAR_DURATION_REQUISE",
+                "message": (
+                    "Renseignez une duration modifiée strictement positive "
+                    "pour estimer la VaR obligataire sur la courbe UEMOA "
+                    "actualisée."
+                ),
+            },
+        )
+
+
 def _en_milliards(serie_pnl: portefeuille_data.SeriePnl) -> dict[str, Any]:
     return {
         "valeur_portefeuille": serie_pnl.valeur_portefeuille / _MILLIARD_FCFA,
@@ -202,6 +240,7 @@ def var_parametrique_endpoint(
 
     _valider_parametres(type_portefeuille, niveau_confiance, horizon_jours, fenetre_jours)
     serie_pnl = _serie_ou_422(type_portefeuille, fenetre_jours, horizon_jours)
+    _exiger_saisie_si_courbe(serie_pnl, valeur_portefeuille, duration_modifiee)
     donnees = _en_milliards(serie_pnl)
     resultat = var_parametrique.calculer(
         donnees["pertes"], 
@@ -255,6 +294,7 @@ def var_montecarlo_endpoint(
             "Valeurs acceptées : 1000, 10000, 50000."
         )
     serie_pnl = _serie_ou_422(type_portefeuille, fenetre_jours, horizon_jours)
+    _exiger_saisie_si_courbe(serie_pnl, valeur_portefeuille, duration_modifiee)
     donnees = _en_milliards(serie_pnl)
     variations_taux = serie_pnl.variations_taux
     resultat = var_montecarlo.calculer(

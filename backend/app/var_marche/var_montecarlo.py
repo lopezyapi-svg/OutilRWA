@@ -63,13 +63,17 @@ def _simuler_pertes_obligations(
     horizon_jours: int,
     volatilite_reglementaire: float,
 ) -> np.ndarray:
-    if len(variations_taux) == 0:
+    if len(variations_taux) < 2:
+        # 0 ou 1 variation : écart-type empirique indéfini, on retombe sur
+        # la volatilité réglementaire quotidienne.
         moyenne = 0.0
         ecart_type = volatilite_reglementaire / math.sqrt(252.0)
     else:
         moyenne = float(variations_taux.mean())
         ecart_type = float(variations_taux.std(ddof=1))
-        
+    if not math.isfinite(ecart_type) or ecart_type <= 0.0:
+        ecart_type = volatilite_reglementaire / math.sqrt(252.0)
+
     chocs_taux = generateur.normal(moyenne, ecart_type, nb_simulations)
     # Perte positive quand le taux monte : perte = DM x V x dTaux.
     pertes_quotidiennes = duration_modifiee * valeur_portefeuille * chocs_taux
