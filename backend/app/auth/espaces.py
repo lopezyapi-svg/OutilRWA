@@ -76,6 +76,11 @@ _TABLES_REFERENCE: frozenset[str] = frozenset(
         "op_parametres_as",
         "op_parametres_seuils",
         "op_risk_parametres",
+        # ICAAP : seuils prudentiels versionnes et gabarit de correlations.
+        # Ces deux tables portent le dispositif (Pilier 2), pas des donnees
+        # d'un portefeuille : un espace neuf doit les conserver.
+        "icaap_parametre",
+        "icaap_correlation_defaut",
     }
 )
 

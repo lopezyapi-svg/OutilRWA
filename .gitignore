@@ -57,6 +57,16 @@ outputs/
 # Fichiers de test locaux
 backend/_excel_source_test.xlsx
 backend/_excel_recalc_test.vbs
+backend/test2.pdf
+backend/test_clean.xlsx
+
+# Livrables/archives poste de travail (trop volumineux pour le depot ;
+# reconstruits a partir du code par l'hebergeur et l'installeur).
+OutilRiskM/
+OutilRiskM*.zip
+
+# Documentation de reference conservee en local uniquement.
+docs/
 
 # Configuration locale Claude Code
 .claude/

@@ -17,6 +17,7 @@ from app.dashboard.routes import router as dashboard_router
 from app.expositions.routes import router as expositions_router
 from app.fodep.routes import router as fodep_router
 from app.hors_bilan.routes import router as hors_bilan_router
+from app.icaap.routes import router as icaap_router
 from app.market.routes import router as market_router
 from app.rapports.routes import router as rapports_router
 from app.referentiels.routes import router as referentiels_router
@@ -137,6 +138,7 @@ app.include_router(dashboard_router)
 app.include_router(expositions_router)
 app.include_router(fodep_router)
 app.include_router(hors_bilan_router)
+app.include_router(icaap_router)
 app.include_router(crm_router)
 app.include_router(referentiels_router)
 app.include_router(rapports_router)
