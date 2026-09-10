@@ -9,11 +9,9 @@ class DashboardHeader extends StatelessWidget {
   const DashboardHeader({
     super.key,
     this.onReload,
-    this.onExport,
   });
 
   final VoidCallback? onReload;
-  final VoidCallback? onExport;
 
   @override
   Widget build(BuildContext context) {
@@ -28,13 +26,6 @@ class DashboardHeader extends StatelessWidget {
             icon: Icons.refresh_rounded,
             label: 'Actualiser',
             onTap: onReload,
-          ),
-          const SizedBox(width: 8),
-          _HeaderButton(
-            icon: Icons.download_rounded,
-            label: 'Exporter',
-            isPrimary: true,
-            onTap: onExport,
           ),
         ],
       ),
@@ -83,23 +74,21 @@ class _HeaderButton extends StatelessWidget {
     required this.icon,
     required this.label,
     this.onTap,
-    this.isPrimary = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
-  final bool isPrimary;
 
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
-    
+
     return Material(
-      color: isPrimary ? c.navy : Colors.transparent,
+      color: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(6),
-        side: isPrimary ? BorderSide.none : BorderSide(color: c.border),
+        side: BorderSide(color: c.border),
       ),
       child: InkWell(
         onTap: onTap ?? () {},
@@ -115,13 +104,13 @@ class _HeaderButton extends StatelessWidget {
               Icon(
                 icon,
                 size: 14,
-                color: isPrimary ? Colors.white : c.navy,
+                color: c.navy,
               ),
               const SizedBox(width: 8),
               Text(
                 label.tr(context),
                 style: TextStyle(
-                  color: isPrimary ? Colors.white : c.navy,
+                  color: c.navy,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   height: 1.1,
