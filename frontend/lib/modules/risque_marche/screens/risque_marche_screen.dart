@@ -19257,7 +19257,7 @@ String _marketSignedMoney(double value) {
 }
 
 /// Rayon des tableaux et tuiles du tableau de bord marché.
-const double _marketTileRadius = 3;
+const double _marketTileRadius = 4;
 
 /// Ligne d'une ventilation du portefeuille actions (périmètre, devise).
 class _MarketBreakdownRow {

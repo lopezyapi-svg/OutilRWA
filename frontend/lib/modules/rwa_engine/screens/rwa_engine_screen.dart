@@ -14,7 +14,7 @@ import '../models/rwa_credit_analysis.dart';
 import '../../../core/theme/app_theme.dart';
 
 
-const double _pageRadius = 8;
+const double _pageRadius = 4;
 const Color _deepBlue = Color(0xFF001F4E);
 const Color _blue700 = Color(0xFF0B4DBA);
 const Color _ink = Color(0xFF0F1B3D);

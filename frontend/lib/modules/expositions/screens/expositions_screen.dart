@@ -65,7 +65,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   static const double _filterControlHeight = 30;
   static const double _optionControlHeight = 34;
   static const double _textFilterControlHeight = 44;
-  static const double _screenBorderRadius = 3;
+  static const double _screenBorderRadius = 4;
   static const double _tableRowHeight = 36;
   static const String _filterId = 'id';
   static const String _filterCounterparty = 'counterparty';

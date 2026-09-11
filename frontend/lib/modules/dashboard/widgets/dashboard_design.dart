@@ -15,7 +15,7 @@ class Dash {
   Dash._();
 
   /// Rayon des panneaux.
-  static const double radius = 10;
+  static const double radius = 4;
 
   /// Rayon élargi (boîtes de dialogue, grandes surfaces).
   static const double radiusLg = 14;

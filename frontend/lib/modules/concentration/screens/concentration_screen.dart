@@ -18,7 +18,7 @@ import 'package:fl_chart/fl_chart.dart';
 const int _counterpartyTopCount = 10;
 const int _issuerResidenceCountryTopCount = 10;
 const int _concentrationViewModelVersion = 5;
-const double _concentrationRadius = 8;
+const double _concentrationRadius = 4;
 const List<String> _counterpartyRatingOrder = [
   'AAA',
   'AA+',
