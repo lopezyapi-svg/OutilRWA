@@ -1313,6 +1313,35 @@ const Map<String, String> _englishTranslations = {
   'Version : 1.0.0': 'Version: 1.0.0',
   '{{label}} : Coussin de conservation (en {{unit}})':
       '{{label}}: Conservation buffer (in {{unit}})',
+
+  // --- FODEP : écran Générer ---
+  'Générer un FODEP': 'Generate a FODEP',
+  'Complétez l\'attestation, puis exportez le FODEP.':
+      'Complete the certification, then export the FODEP.',
+  'Établissement assujetti FODEP': 'Entity subject to FODEP',
+  'Actualiser les données': 'Refresh data',
+  'FORMATS D\'EXPORTATION RÉGLEMENTAIRES': 'REGULATORY EXPORT FORMATS',
+  'Choisissez le format. Les données de l\'arrêté actif sont intégrées.':
+      'Choose the format. Data from the active reporting date is included.',
+  'Format PDF Officiel': 'Official PDF format',
+  'Rapport paginé conforme aux exigences de la commission bancaire.':
+      'Paginated report compliant with the banking commission requirements.',
+  'Format Excel Officiel': 'Official Excel format',
+  'Classeur complet renseigné avec les états EP01 à EP39.':
+      'Complete workbook filled in with statements EP01 to EP39.',
+  'Retour à l\'attestation': 'Back to the certification',
+  'ATTESTATION DE DÉCLARATION PRUDENTIELLE':
+      'PRUDENTIAL DECLARATION CERTIFICATION',
+  'Enregistrez vos modifications pour poursuivre vers la génération.':
+      'Save your changes to proceed to generation.',
+  'Complétez et enregistrez l\'attestation (responsables, certification et signataire n° 1) pour continuer.':
+      'Complete and save the certification (officers, certification and signatory no. 1) to continue.',
+  'Continuer vers la génération': 'Continue to generation',
+  'Attestation': 'Certification',
+  'Génération': 'Generation',
+  'Rapport officiel FODEP exporté en PDF.':
+      'Official FODEP report exported as PDF.',
+  'Classeur officiel FODEP exporté.': 'Official FODEP workbook exported.',
 };
 
 const Map<String, String> _frenchTranslations = {

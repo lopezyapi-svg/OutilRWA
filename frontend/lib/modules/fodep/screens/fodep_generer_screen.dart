@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../shared/utils/file_save.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../dashboard/widgets/dashboard_design.dart';
@@ -236,7 +237,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                         Text(
                                           _etablissement?.denomination.isNotEmpty == true
                                               ? '${_etablissement!.denomination} (${_etablissement!.codeBceao})'
-                                              : 'Établissement assujetti FODEP',
+                                              : 'Établissement assujetti FODEP'.tr(context),
                                           style: TextStyle(
                                             fontSize: 13.5,
                                             fontWeight: FontWeight.w800,
@@ -271,7 +272,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                   IconButton(
                                     onPressed: _chargerDonnees,
                                     icon: Icon(Icons.refresh_rounded, color: c.muted, size: 20),
-                                    tooltip: 'Actualiser les données',
+                                    tooltip: 'Actualiser les données'.tr(context),
                                   ),
                                 ],
                               ),
@@ -285,7 +286,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                    Text(
-                                     'Choisissez le format. Les données de l\'arrêté actif sont intégrées.',
+                                     'Choisissez le format. Les données de l\'arrêté actif sont intégrées.'.tr(context),
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       height: 1.45,
@@ -345,7 +346,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
                             OutlinedButton.icon(
                               onPressed: () => setState(() => _etape = 1),
                               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                              label: const Text('Retour à l\'attestation'),
+                              label: Text('Retour à l\'attestation'.tr(context)),
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: c.muted,
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -489,7 +490,7 @@ class _PastilleEtape extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Text(
-          '$numero. $libelle',
+          '$numero. ${libelle.tr(context)}',
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
@@ -602,7 +603,7 @@ class _ExportOptionCardState extends State<_ExportOptionCard> {
               ),
               const SizedBox(height: 18),
               Text(
-                widget.title,
+                widget.title.tr(context),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
@@ -611,7 +612,7 @@ class _ExportOptionCardState extends State<_ExportOptionCard> {
               ),
               const SizedBox(height: 6),
               Text(
-                widget.description,
+                widget.description.tr(context),
                 style: TextStyle(
                   height: 1.4,
                   fontSize: 12,
