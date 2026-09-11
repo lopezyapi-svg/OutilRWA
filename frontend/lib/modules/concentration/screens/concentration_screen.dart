@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
@@ -275,7 +276,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(label,
+                      Text(label.tr(context),
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: AppTheme.text,
                               fontWeight: FontWeight.w600,
@@ -314,7 +315,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-              child: Text(title,
+              child: Text(title.tr(context),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Colors.indigo[900],
                       fontWeight: FontWeight.w700,
@@ -349,7 +350,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Encours NPL :  ',
+                    Text('Encours NPL :  '.tr(context),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppTheme.muted,
                             fontWeight: FontWeight.w500,
@@ -377,7 +378,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Provisions totales :  ',
+                    Text('Provisions totales :  '.tr(context),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppTheme.muted,
                             fontWeight: FontWeight.w500,
@@ -406,7 +407,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
           // Header matching the reference image
           Row(
             children: [
-              Text('Indicateurs NPL et Provisions',
+              Text('Indicateurs NPL et Provisions'.tr(context),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: AppTheme.text,
                       fontWeight: FontWeight.w700,
@@ -531,7 +532,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Suivi du nombre de jours impayés',
+          Text('Suivi du nombre de jours impayés'.tr(context),
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   color: AppTheme.text,
                   fontWeight: FontWeight.w700,
@@ -611,7 +612,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
-                                  child: Text(chartEntries[i].label,
+                                  child: Text(chartEntries[i].label.tr(context),
                                       style: Theme.of(context)
                                           .textTheme
                                           .labelSmall
@@ -671,7 +672,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Text('Nombre NPL :  ',
+                Text('Nombre NPL :  '.tr(context),
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.muted,
                         fontWeight: FontWeight.w600,
@@ -715,7 +716,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Top 5 des plus grandes expositions NPL (brut)',
+                Text('Top 5 des plus grandes expositions NPL (brut)'.tr(context),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: AppTheme.text,
                         fontWeight: FontWeight.w700,
@@ -766,7 +767,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                               width: 50,
                                               padding: const EdgeInsets.only(left: 12, top: 9, bottom: 9),
                                               alignment: Alignment.centerLeft,
-                                              child: Text('N°', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                                              child: Text('N°'.tr(context), style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                                             ),
                                             Container(width: 0.5, color: const Color(0xFFDCE4F2)),
                                             Expanded(
@@ -774,7 +775,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                                                 alignment: Alignment.centerLeft,
-                                                child: Text('Contrepartie', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                                                child: Text('Contrepartie'.tr(context), style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                                               ),
                                             ),
 
@@ -784,7 +785,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                                                 alignment: Alignment.centerLeft,
-                                                child: Text('Encours brut',
+                                                child: Text('Encours brut'.tr(context),
                                                     style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                                               ),
                                             ),
@@ -794,7 +795,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                                                 alignment: Alignment.centerLeft,
-                                                child: Text('Provision',
+                                                child: Text('Provision'.tr(context),
                                                     style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                                               ),
                                             ),
@@ -804,7 +805,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                                                 alignment: Alignment.centerLeft,
-                                                child: Text('Taux couv.',
+                                                child: Text('Taux couv.'.tr(context),
                                                     style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                                               ),
                                             ),
@@ -930,7 +931,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Voir toutes les expositions NPL',
+                        Text('Voir toutes les expositions NPL'.tr(context),
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -960,7 +961,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     width: 32,
                     padding: const EdgeInsets.only(left: 12, top: 9, bottom: 9),
                     alignment: Alignment.centerLeft,
-                    child: Text('N°', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                    child: Text('N°'.tr(context), style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                   ),
                   Container(width: 0.5, color: const Color(0xFFDCE4F2)),
                   Expanded(
@@ -968,7 +969,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                       alignment: Alignment.centerLeft,
-                      child: Text('Contrepartie', style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
+                      child: Text('Contrepartie'.tr(context), style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                     ),
                   ),
 
@@ -978,7 +979,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                       alignment: Alignment.centerLeft,
-                      child: Text('Encours brut',
+                      child: Text('Encours brut'.tr(context),
                           style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                     ),
                   ),
@@ -988,7 +989,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                       alignment: Alignment.centerLeft,
-                      child: Text('Provision',
+                      child: Text('Provision'.tr(context),
                           style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                     ),
                   ),
@@ -998,7 +999,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
                       alignment: Alignment.centerLeft,
-                      child: Text('Taux de couverture',
+                      child: Text('Taux de couverture'.tr(context),
                           style: _tableHeaderStyle().copyWith(color: Colors.white, fontWeight: FontWeight.w700)),
                     ),
                   ),
@@ -2533,7 +2534,7 @@ class _RwaSummaryTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            label.tr(context),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -2557,7 +2558,7 @@ class _RwaSummaryTile extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            caption,
+            caption.tr(context),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -3381,7 +3382,7 @@ class _ModeSwitchButton extends StatelessWidget {
         : AppColors.concentrationPrimary.withValues(alpha: 0.065);
 
     return Tooltip(
-      message: item.label,
+      message: item.label.tr(context),
       waitDuration: const Duration(milliseconds: 300),
       child: InkWell(
         onTap: item.onTap,
@@ -3416,7 +3417,7 @@ class _ModeSwitchButton extends StatelessWidget {
               Icon(item.icon, size: 12, color: color),
               const SizedBox(width: 5),
               Text(
-                item.label,
+                item.label.tr(context),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -4541,9 +4542,9 @@ class _RiskWeightShareMeterState extends State<_RiskWeightShareMeter> {
 
     return Tooltip(
       message: [
-        widget.label,
-        '${widget.shareLabel.replaceFirst('Part ', '')} : ${AppFormatters.percent(widget.share)}',
-        'Encours : ${_amountMd(widget.amount)} ${_amountUnitFcfaLabel()}',
+        widget.label.tr(context),
+        '${widget.shareLabel.replaceFirst('Part ', '').tr(context)} : ${AppFormatters.percent(widget.share)}',
+        '${'Encours'.tr(context)} : ${_amountMd(widget.amount)} ${_amountUnitFcfaLabel()}',
       ].join('\n'),
       waitDuration: const Duration(milliseconds: 220),
       showDuration: const Duration(seconds: 4),
@@ -5051,7 +5052,7 @@ class _KpiStepCardState extends State<_KpiStepCard> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    step.title,
+                    step.title.tr(context),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -5255,7 +5256,7 @@ class _KpiHeaderBadge extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              title,
+              title.tr(context),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
