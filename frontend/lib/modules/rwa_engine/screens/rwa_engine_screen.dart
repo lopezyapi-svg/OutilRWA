@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/utils/formatters.dart';
@@ -79,7 +80,11 @@ class _RwaEngineScreenState extends State<RwaEngineScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(child: Text('Erreur: ${snapshot.error}'));
+          return Center(
+            child: Text(
+              context.tr('Erreur: {{error}}', args: {'error': snapshot.error}),
+            ),
+          );
         }
 
         final data = snapshot.data;
@@ -687,7 +692,7 @@ class _SummaryCardState extends State<_SummaryCard> {
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
-                widget.title,
+                widget.title.tr(context),
                 maxLines: 1,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: Colors.indigo,
@@ -751,7 +756,7 @@ class _SummaryCardState extends State<_SummaryCard> {
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  widget.subtitle!,
+                  widget.subtitle!.tr(context),
                   maxLines: 1,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: _muted,
@@ -1019,7 +1024,8 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
   }) {
     final active = _sortKey == key;
     final suffix = active ? (_ascending ? ' ▴' : ' ▾') : '';
-    final text = _TableHeaderText('$label$suffix', alignRight: alignRight);
+    final text = _TableHeaderText('${label.tr(context)}$suffix',
+        alignRight: alignRight);
     return Expanded(
       flex: flex,
       child: Material(
@@ -1310,7 +1316,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                           height: headerHeight,
                                           color: _deepBlue,
                                           alignment: Alignment.center,
-                                          child: Text('N°', style: headerStyle),
+                                          child: Text('N°'.tr(context), style: headerStyle),
                                         ),
                                         Expanded(
                                           child: SingleChildScrollView(
@@ -1365,11 +1371,11 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                               padding: const EdgeInsets.symmetric(horizontal: 14),
                                               child: Row(
                                                 children: [
-                                                  Expanded(flex: 3, child: Text('Contrepartie', style: headerStyle)),
-                                                  Expanded(flex: 2, child: Text('Exposition', style: headerStyle)),
-                                                  Expanded(flex: 2, child: Text('EAD', style: headerStyle)),
-                                                  Expanded(flex: 2, child: Text('RWA', style: headerStyle)),
-                                                  Expanded(flex: 2, child: Text('Cap. Requis', style: headerStyle)),
+                                                  Expanded(flex: 3, child: Text('Contrepartie'.tr(context), style: headerStyle)),
+                                                  Expanded(flex: 2, child: Text('Exposition'.tr(context), style: headerStyle)),
+                                                  Expanded(flex: 2, child: Text('EAD'.tr(context), style: headerStyle)),
+                                                  Expanded(flex: 2, child: Text('RWA'.tr(context), style: headerStyle)),
+                                                  Expanded(flex: 2, child: Text('Cap. Requis'.tr(context), style: headerStyle)),
                                                 ],
                                               ),
                                             ),
@@ -1555,7 +1561,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                           color: _deepBlue,
                                           alignment: Alignment.centerRight,
                                           padding: const EdgeInsets.symmetric(horizontal: 14),
-                                          child: Text('% RWA', style: headerStyle),
+                                          child: Text('% RWA'.tr(context), style: headerStyle),
                                         ),
                                         Expanded(
                                           child: SingleChildScrollView(
@@ -1956,7 +1962,7 @@ class _MethodPhaseLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 44, bottom: 10),
       child: Text(
-        label.toUpperCase(),
+        label.tr(context).toUpperCase(),
         style: const TextStyle(
           color: _blue700,
           fontSize: 10.5,
@@ -2051,7 +2057,7 @@ class _MethodStep extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      title.tr(context),
                       style: TextStyle(
                         color: emphasized ? Colors.white : _deepBlue,
                         fontSize: 14,
@@ -2765,7 +2771,7 @@ class _TableHeaderText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      label,
+      label.tr(context),
       textAlign: alignRight ? TextAlign.right : TextAlign.left,
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
             color: Colors.white,

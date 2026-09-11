@@ -1432,6 +1432,35 @@ const Map<String, String> _englishTranslations = {
       'Cannot save: the file is probably already open. Close it and try again.',
   'Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk.':
       'Please import price data in the Excel file to evaluate the Value at Risk.',
+
+  // --- Pilotage RWA Crédit ---
+  'EXPOSITION EN CAS DE DÉFAUT': 'EXPOSURE AT DEFAULT',
+  'Montant exposé au risque': 'Amount at risk',
+  'RWA CRÉDIT': 'CREDIT RWA',
+  'Actifs pondérés au risque': 'Risk-weighted assets',
+  'CAPITAL REQUIS': 'REQUIRED CAPITAL',
+  'Phase 1 : Classification et mesure de l’exposition':
+      'Phase 1: Exposure classification and measurement',
+  'Phase 2 : Pondération et atténuation du risque':
+      'Phase 2: Risk weighting and mitigation',
+  'Phase 3 : Agrégation et exigences prudentielles':
+      'Phase 3: Aggregation and prudential requirements',
+  'Catégorisation des expositions': 'Exposure categorization',
+  'Calcul de l’exposition en cas de défaut (EAD)':
+      'Exposure at default (EAD) calculation',
+  'Détermination de la pondération applicable':
+      'Determination of the applicable risk weight',
+  'Atténuation du risque de crédit (ARC)': 'Credit risk mitigation (CRM)',
+  'Traitement des expositions en défaut': 'Treatment of defaulted exposures',
+  'Calcul et agrégation des RWA de crédit':
+      'Calculation and aggregation of credit RWA',
+  'Exigences minimales de fonds propres': 'Minimum capital requirements',
+  'N°': 'No.',
+  'Exposition': 'Exposure',
+  'Exposition totale': 'Total exposure',
+  'Cap. Requis': 'Req. Capital',
+  '% RWA': '% RWA',
+  'Contribution': 'Contribution',
 };
 
 const Map<String, String> _frenchTranslations = {
