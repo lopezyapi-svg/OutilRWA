@@ -2522,7 +2522,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
           ),
           icon: const Icon(CupertinoIcons.eye_fill, size: 15),
           label: Text(
-            'Colonnes ($visibleCount)'.tr(context),
+            context.tr('Colonnes ({{count}})', args: {'count': visibleCount}),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -3903,7 +3903,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: Text(context.tr('Choisir le format d export')),
+          title: Text(context.tr('Choisir le format d\'export')),
           content: SizedBox(
             width: 440,
             child: Column(

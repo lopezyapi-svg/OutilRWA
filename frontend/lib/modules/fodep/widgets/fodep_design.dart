@@ -51,12 +51,15 @@ class FodepRatioTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label.toUpperCase(), style: DashText.eyebrow(c, color: c.navy)),
+          Text(label.tr(context).toUpperCase(), style: DashText.eyebrow(c, color: c.navy)),
           const SizedBox(height: 10),
           Text('${_fr(ratio.value)} %', style: DashText.hero(c, size: 20)),
           const SizedBox(height: 6),
           Text(
-            'Seuil réglementaire : ${_fr(ratio.threshold)} %'.tr(context),
+            context.tr(
+              'Seuil réglementaire : {{seuil}} %',
+              args: {'seuil': _fr(ratio.threshold)},
+            ),
             style: DashText.caption(c),
           ),
           const SizedBox(height: 10),
@@ -98,12 +101,12 @@ class FodepValueTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label.toUpperCase(), style: DashText.eyebrow(c, color: c.navy)),
+          Text(label.tr(context).toUpperCase(), style: DashText.eyebrow(c, color: c.navy)),
           const SizedBox(height: 10),
           Text(value, style: DashText.hero(c, size: 18)),
           if (caption != null) ...[
             const SizedBox(height: 6),
-            Text(caption!, style: DashText.caption(c)),
+            Text(caption!.tr(context), style: DashText.caption(c)),
           ],
         ],
       ),
@@ -143,7 +146,7 @@ class FodepNotice extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(texte, style: DashText.value(c, color: c.ink, weight: FontWeight.w500).copyWith(fontSize: 12)),
+            child: Text(texte.tr(context), style: DashText.value(c, color: c.ink, weight: FontWeight.w500).copyWith(fontSize: 12)),
           ),
           if (onClose != null) ...[
             const SizedBox(width: 10),
@@ -214,7 +217,7 @@ class _Onglet extends StatelessWidget {
           border: Border(bottom: BorderSide(color: selected ? c.navy : Colors.transparent, width: 2)),
         ),
         child: Text(
-          label,
+          label.tr(context),
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
@@ -277,7 +280,7 @@ class FodepFormSection extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(titre.toUpperCase(), style: DashText.eyebrow(c, color: c.navy)),
+              child: Text(titre.tr(context).toUpperCase(), style: DashText.eyebrow(c, color: c.navy)),
             ),
             if (action != null) action!,
           ],
@@ -286,7 +289,7 @@ class FodepFormSection extends StatelessWidget {
           const SizedBox(height: 6),
           Padding(
             padding: const EdgeInsets.only(left: 32),
-            child: Text(consigne!, style: DashText.caption(c, color: c.muted)),
+            child: Text(consigne!.tr(context), style: DashText.caption(c, color: c.muted)),
           ),
         ],
         const SizedBox(height: 12),
@@ -369,7 +372,7 @@ class _FodepFieldState extends State<FodepField> {
           text: TextSpan(
             style: DashText.caption(c, color: c.muted).copyWith(fontWeight: FontWeight.w600),
             children: [
-              TextSpan(text: widget.label),
+              TextSpan(text: widget.label.tr(context)),
               if (widget.requis)
                 TextSpan(text: '  *', style: TextStyle(color: c.status(DashStatus.sousMinimum))),
             ],
@@ -412,7 +415,7 @@ class _FodepFieldState extends State<FodepField> {
         if (aErreur) ...[
           const SizedBox(height: 4),
           Text(
-            widget.error!,
+            widget.error!.tr(context),
             style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w500,
@@ -457,7 +460,7 @@ Widget fodepPrimaryButton({
         else if (icon != null)
           Icon(icon, size: 16),
         if (busy || icon != null) const SizedBox(width: 8),
-        Text(label),
+        Text(label.tr(context)),
       ],
     ),
   );
@@ -486,7 +489,7 @@ Widget fodepGhostButton({
       mainAxisSize: MainAxisSize.min,
       children: [
         if (icon != null) ...[Icon(icon, size: 15), const SizedBox(width: 7)],
-        Text(label),
+        Text(label.tr(context)),
       ],
     ),
   );
@@ -536,11 +539,11 @@ Future<T?> showFodepDialog<T>({
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (eyebrow != null) ...[
-                          Text(eyebrow.toUpperCase(), style: DashText.eyebrow(c, color: c.navy)),
+                          Text(eyebrow.tr(context).toUpperCase(), style: DashText.eyebrow(c, color: c.navy)),
                           const SizedBox(height: 5),
                         ],
                         Text(
-                          titre,
+                          titre.tr(context),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -667,7 +670,7 @@ void showFodepToast(
             const SizedBox(width: 10),
             Flexible(
               child: Text(
-                message,
+                message.tr(context),
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: c.ink),
               ),
             ),
@@ -695,7 +698,7 @@ class FodepRecapLigne extends StatelessWidget {
         children: [
           SizedBox(
             width: 150,
-            child: Text(label, style: DashText.caption(c, color: c.muted)),
+            child: Text(label.tr(context), style: DashText.caption(c, color: c.muted)),
           ),
           const SizedBox(width: 12),
           Expanded(

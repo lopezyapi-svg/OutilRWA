@@ -5940,7 +5940,7 @@ class _EquityTitleColumnVisibilityButtonState
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Colonnes ($count)'.tr(context),
+                    context.tr('Colonnes ({{count}})', args: {'count': count}),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -12916,7 +12916,7 @@ class _BondTitleColumnVisibilityButtonState
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Colonnes ($count)'.tr(context),
+                    context.tr('Colonnes ({{count}})', args: {'count': count}),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -22684,7 +22684,7 @@ class _MarketColumnVisibilityButtonState
                 const SizedBox(width: 3),
                 Expanded(
                   child: Text(
-                    'Colonnes ($count)'.tr(context),
+                    context.tr('Colonnes ({{count}})', args: {'count': count}),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

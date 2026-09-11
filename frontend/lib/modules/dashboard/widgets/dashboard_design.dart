@@ -305,7 +305,7 @@ class DashPanel extends StatelessWidget {
                       );
                     },
                     child: Text(
-                      title!.toUpperCase(),
+                      title!.tr(context).toUpperCase(),
                       key: ValueKey(title),
                       style: DashText.eyebrow(
                         c,
@@ -319,12 +319,12 @@ class DashPanel extends StatelessWidget {
                 if (trailing != null)
                   trailing!
                 else if (unit != null)
-                  Text(unit!, style: DashText.caption(c)),
+                  Text(unit!.tr(context), style: DashText.caption(c)),
               ],
             ),
             if (subtitle != null) ...[
               const SizedBox(height: 2),
-              Text(subtitle!, style: DashText.caption(c, color: c.muted)),
+              Text(subtitle!.tr(context), style: DashText.caption(c, color: c.muted)),
               const SizedBox(height: 10),
             ] else ...[
               const SizedBox(height: 10),
