@@ -10,6 +10,7 @@ import 'package:lottie/lottie.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/state/portfolio_amount_unit_scope.dart';
@@ -137,7 +138,7 @@ Widget _dropdown<T>(BuildContext context, String label, T? value, List<T> items,
             Icon(icon, size: 12, color: _kBlue),
             const SizedBox(width: 5)
           ],
-          Text(required ? '$label *' : label,
+          Text(required ? '${label.tr(context)} *' : label.tr(context),
               style: const TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
@@ -152,14 +153,14 @@ Widget _dropdown<T>(BuildContext context, String label, T? value, List<T> items,
           items: items
               .map((e) => DropdownMenuItem(
                     value: e,
-                    child: Text(e.toString(),
+                    child: Text(e.toString().tr(context),
                         style: const TextStyle(fontSize: 13.5),
                         overflow: TextOverflow.ellipsis),
                   ))
               .toList(),
           onChanged: onChanged,
           decoration: InputDecoration(
-            hintText: hint,
+            hintText: hint?.tr(context),
             hintStyle:
                 const TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
             filled: true,
@@ -173,7 +174,9 @@ Widget _dropdown<T>(BuildContext context, String label, T? value, List<T> items,
               borderSide: const BorderSide(color: _kBlue, width: 1.1),
             ),
           ),
-          validator: required ? (v) => v == null ? 'Champ requis' : null : null,
+          validator: required
+              ? (v) => v == null ? 'Champ requis'.tr(context) : null
+              : null,
         ),
       ],
     ),
@@ -424,7 +427,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: _kDanger,
-          content: Text('Erreur : $e'),
+          content: Text(context.tr('Erreur : {{error}}', args: {'error': e})),
         ));
       }
     } finally {
@@ -858,8 +861,8 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('Rapport enregistré',
-                              style: TextStyle(
+                          Text('Rapport enregistré'.tr(context),
+                              style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w800,
                                   color: _kSuccess)),
@@ -917,7 +920,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                         IconButton(
                           icon: const Icon(Icons.refresh_rounded,
                               size: 17, color: _kMuted),
-                          tooltip: 'Actualiser',
+                          tooltip: 'Actualiser'.tr(context),
                           onPressed: _previewLoading ? null : _loadPreview,
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
@@ -957,8 +960,8 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                             : const Icon(Icons.picture_as_pdf_outlined,
                                 size: 18, color: Colors.white),
                         label: _generating
-                            ? const Text('Génération en cours…',
-                                style: TextStyle(
+                            ? Text('Génération en cours…'.tr(context),
+                                style: const TextStyle(
                                     fontSize: 13.5,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white))
@@ -966,13 +969,13 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Générer le rapport',
-                                      style: TextStyle(
+                                  Text('Générer le rapport'.tr(context),
+                                      style: const TextStyle(
                                           fontSize: 13.5,
                                           fontWeight: FontWeight.w700,
                                           color: Colors.white,
                                           height: 1.2)),
-                                  Text(_periodeLabel,
+                                  Text(_periodeLabel.tr(context),
                                       style: TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w500,
@@ -1145,7 +1148,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          _periodeLabel,
+                          _periodeLabel.tr(context),
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w600,
@@ -1177,7 +1180,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
     return Row(
       children: [
         Text(
-          title,
+          title.tr(context),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w800,
@@ -1193,7 +1196,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
         ),
         const SizedBox(width: 8),
         Text(
-          subtitle,
+          subtitle.tr(context),
           style: TextStyle(
             fontSize: 10.5,
             fontWeight: FontWeight.w600,
@@ -1222,7 +1225,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
           border: Border.all(color: selected ? _kBlue : borderColor),
         ),
         child: Text(
-          period,
+          period.tr(context),
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 12,
@@ -1255,7 +1258,9 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
           const Icon(Icons.error_outline, size: 16, color: _kDanger),
           const SizedBox(width: 8),
           Expanded(
-              child: Text('Aperçu indisponible : $_previewError',
+              child: Text(
+                  context.tr('Aperçu indisponible : {{error}}',
+                      args: {'error': _previewError}),
                   style: const TextStyle(fontSize: 12, color: _kDanger))),
         ]),
       );
@@ -1339,7 +1344,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
             const SizedBox(height: 16),
             Divider(height: 1, color: Theme.of(context).dividerColor),
             const SizedBox(height: 12),
-            Text('Alertes à date',
+            Text('Alertes à date'.tr(context),
                 style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
@@ -1408,7 +1413,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label,
+                  Text(label.tr(context),
                       style: TextStyle(
                           fontSize: 10.5,
                           color: labelColor,
@@ -1455,7 +1460,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
             decoration: BoxDecoration(color: c, shape: BoxShape.circle),
           ),
           const SizedBox(width: 7),
-          Text('$label : ',
+          Text('${label.tr(context)} : ',
               style: TextStyle(
                   fontSize: 11.5,
                   color: labelColor,
@@ -1488,7 +1493,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text(label,
+            Text(label.tr(context),
                 style: const TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
@@ -1531,7 +1536,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                 initialDate: value ?? DateTime.now(),
                 firstDate: DateTime(2000),
                 lastDate: DateTime(2100),
-                helpText: 'Sélectionner une date',
+                helpText: 'Sélectionner une date'.tr(context),
               );
               if (picked != null) onPicked(picked);
             },

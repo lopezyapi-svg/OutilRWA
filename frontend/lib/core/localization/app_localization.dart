@@ -1376,6 +1376,37 @@ const Map<String, String> _englishTranslations = {
   'Export {{format}} enregistré: {{fichier}}':
       'Export {{format}} saved: {{fichier}}',
   'Export impossible: {{error}}': 'Export failed: {{error}}',
+
+  // --- Reporting global ---
+  'Reporting global': 'Global reporting',
+  'Génération du rapport consolidé : Dashboard, Crédit, Marché, Opérationnel':
+      'Consolidated report generation: Dashboard, Credit, Market, Operational',
+  'Aperçu de l\'export': 'Export preview',
+  'Génération en cours…': 'Generating…',
+  'Générer le rapport': 'Generate the report',
+  'Rapport enregistré': 'Report saved',
+  'Erreur : {{error}}': 'Error: {{error}}',
+  'Aperçu indisponible : {{error}}': 'Preview unavailable: {{error}}',
+  'Sélectionner une date': 'Select a date',
+  'Période du rapport': 'Report period',
+  'Sélection rapide': 'Quick selection',
+  'Détails de génération': 'Generation details',
+  'Dates et destinataire': 'Dates and recipient',
+  'Date de début': 'Start date',
+  'Date de fin': 'End date',
+  'Destinataire': 'Recipient',
+  'Organe exécutif': 'Executive body',
+  'Organe délibérant': 'Deliberative body',
+  'Commission Bancaire': 'Banking Commission',
+  'Paramètres du rapport': 'Report parameters',
+  'RWA Total': 'Total RWA',
+  'Capital Total (FPE)': 'Total capital (equity capital)',
+  'RWA Marché': 'Market RWA',
+  'RWA Opérationnel': 'Operational RWA',
+  'Alertes à date': 'Current alerts',
+  'Incidents non clôturés': 'Open incidents',
+  'Actions en retard': 'Overdue actions',
+  'Statut réglementaire': 'Regulatory status',
 };
 
 const Map<String, String> _frenchTranslations = {
