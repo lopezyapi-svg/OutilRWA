@@ -1419,7 +1419,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
                 borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               alignment: Alignment.center,
-              child: const Icon(
+              child: Icon(
                 Icons.info_outline_rounded,
                 size: 13,
                 color: AppTheme.accent,
@@ -1469,7 +1469,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             alignment: Alignment.center,
-            child: const Icon(
+            child: Icon(
               Icons.info_outline_rounded,
               size: 13,
               color: AppTheme.accent,
@@ -1521,7 +1521,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             alignment: Alignment.center,
-            child: const Icon(
+            child: Icon(
               Icons.info_outline_rounded,
               size: 13,
               color: AppTheme.accent,
@@ -1566,7 +1566,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
               borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             alignment: Alignment.center,
-            child: const Icon(
+            child: Icon(
               Icons.info_outline_rounded,
               size: 13,
               color: AppTheme.accent,
@@ -5219,7 +5219,7 @@ class _ExposureFormCardState extends State<ExposureFormCard> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(_exposureFormRadius),
-        borderSide: const BorderSide(color: AppTheme.accent, width: 1.0),
+        borderSide: BorderSide(color: AppTheme.accent, width: 1.0),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(_exposureFormRadius),
@@ -6616,7 +6616,7 @@ class _CompactFieldCard extends StatelessWidget {
                               context: context,
                               title: tooltipTitle,
                               message: inlineTooltip!,
-                              child: const Padding(
+                              child: Padding(
                                 padding: EdgeInsets.only(top: 1.5),
                                 child: Icon(
                                   Icons.info_outline_rounded,
@@ -6648,7 +6648,7 @@ class _CompactFieldCard extends StatelessWidget {
                               context: context,
                               title: tooltipTitle,
                               message: inlineTooltip!,
-                              child: const Padding(
+                              child: Padding(
                                 padding: EdgeInsets.only(top: 1.5),
                                 child: Icon(
                                   Icons.info_outline_rounded,
@@ -7171,7 +7171,7 @@ class _StepSurface extends StatelessWidget {
                             ).textTheme.bodyMedium?.copyWith(
                                   color: Colors.white,
                                 ),
-                            child: const Padding(
+                            child: Padding(
                               padding: EdgeInsets.only(top: 1.5),
                               child: Icon(
                                 Icons.info_outline_rounded,

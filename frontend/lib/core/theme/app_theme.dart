@@ -20,7 +20,12 @@ class AppTheme {
   static const double pageGap = 12;
   static const Color sidebar = Color(0xFF11047A);
   static const Color sidebarLight = Color(0xFF190793);
-  static const Color accent = Color(0xFF4318FF);
+  static const Color _defaultAccent = Color(0xFF4318FF);
+  // Couleur de sélection choisie dans Paramètres > Couleurs principales
+  // (voir onPrimaryColorChanged dans app.dart). Mutable - et non plus
+  // `const` - pour que les widgets qui la lisent reflètent réellement le
+  // choix de l'utilisateur, au lieu d'un bleu institutionnel figé.
+  static Color accent = _defaultAccent;
   static const Color success = Color(0xFF05CD99);
   static const Color warning = Color(0xFFFFB547);
   static const Color danger = Color(0xFFEE5D50);
@@ -37,7 +42,7 @@ class AppTheme {
 
   static ThemeData buildTheme({
     String fontFamily = defaultFontFamily,
-    Color accentColor = accent,
+    Color? accentColor,
   }) =>
       _buildTheme(
         brightness: Brightness.light,
@@ -48,12 +53,12 @@ class AppTheme {
         mutedColor: muted,
         inputFillColor: const Color(0xFFFBFCFF),
         fontFamily: fontFamily,
-        accentColor: accentColor,
+        accentColor: accentColor ?? accent,
       );
 
   static ThemeData buildDarkTheme({
     String fontFamily = defaultFontFamily,
-    Color accentColor = accent,
+    Color? accentColor,
   }) =>
       _buildTheme(
         brightness: Brightness.dark,
@@ -64,7 +69,7 @@ class AppTheme {
         mutedColor: darkMuted,
         inputFillColor: const Color(0xFF111827),
         fontFamily: fontFamily,
-        accentColor: accentColor,
+        accentColor: accentColor ?? accent,
       );
 
   static ThemeData _buildTheme({
@@ -79,6 +84,7 @@ class AppTheme {
     required Color accentColor,
   }) {
     AppTheme.fontFamily = fontFamily;
+    AppTheme.accent = accentColor;
     final baseTextTheme = ThemeData(
       brightness: brightness,
       fontFamily: fontFamily,

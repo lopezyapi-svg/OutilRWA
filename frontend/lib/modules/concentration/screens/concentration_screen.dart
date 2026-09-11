@@ -2931,7 +2931,7 @@ class _RwaExposureDataRowState extends State<_RwaExposureDataRow> {
           foregroundDecoration: BoxDecoration(
             border: Border(
               left: widget.selected && widget.showSelectionStripe
-                  ? const BorderSide(color: AppTheme.accent, width: 2.5)
+                  ? BorderSide(color: AppTheme.accent, width: 2.5)
                   : BorderSide.none,
               bottom: BorderSide(
                 color: widget.selected

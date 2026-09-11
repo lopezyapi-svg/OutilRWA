@@ -281,7 +281,7 @@ class SharedImportDropZone extends StatelessWidget {
                     color: AppTheme.accent.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     CupertinoIcons.cloud_upload_fill,
                     color: AppTheme.accent,
                     size: 27,
@@ -448,7 +448,7 @@ class SharedSecondaryDropTarget extends StatelessWidget {
                       color: AppTheme.accent.withValues(alpha: 0.18),
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     CupertinoIcons.doc_text_fill,
                     color: AppTheme.accent,
                     size: 28,

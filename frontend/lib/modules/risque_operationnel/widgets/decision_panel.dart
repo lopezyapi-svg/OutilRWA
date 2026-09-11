@@ -133,7 +133,7 @@ class _DecisionPanelState extends State<DecisionPanel> {
 
         // ── Organe de reporting ──────────────────────────────────────────────
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.account_balance_outlined, size: 16, color: AppTheme.accent),
+          Icon(Icons.account_balance_outlined, size: 16, color: AppTheme.accent),
           AppSpacing.hGapSm,
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -161,7 +161,7 @@ class _DecisionPanelState extends State<DecisionPanel> {
 
         // ── Recommandations ──────────────────────────────────────────────────
         Row(children: [
-          const Icon(Icons.checklist_outlined, size: 16, color: AppTheme.accent),
+          Icon(Icons.checklist_outlined, size: 16, color: AppTheme.accent),
           AppSpacing.hGapSm,
           Text('Recommandations',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700)),

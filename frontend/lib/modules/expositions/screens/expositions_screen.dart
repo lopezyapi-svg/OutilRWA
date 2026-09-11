@@ -2686,7 +2686,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
               actionsPadding: const EdgeInsets.fromLTRB(5, 8, 5, 4),
               title: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     CupertinoIcons.eye_fill,
                     size: 17,
                     color: AppTheme.accent,
@@ -2993,7 +2993,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(_screenBorderRadius),
-          borderSide: const BorderSide(color: AppTheme.accent, width: 1.2),
+          borderSide: BorderSide(color: AppTheme.accent, width: 1.2),
         ),
       ),
     );

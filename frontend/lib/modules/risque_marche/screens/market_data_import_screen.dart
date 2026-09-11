@@ -910,19 +910,22 @@ class _VerificationMetricCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.surfaceColor,
-    this.color = AppTheme.accent,
+    this.color,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final Color surfaceColor;
-  final Color color;
+  // Null = couleur d'accent courante (Paramètres > Couleurs principales),
+  // résolue au build plutôt que figée à la construction du widget const.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     final colors = SharedImportColors.of(context);
-    final showAccentDot = color != AppTheme.accent;
+    final resolvedColor = color ?? AppTheme.accent;
+    final showAccentDot = color != null;
 
     return Container(
       constraints: const BoxConstraints(minWidth: 118, maxWidth: 156),
@@ -941,10 +944,10 @@ class _VerificationMetricCard extends StatelessWidget {
             height: 26,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: resolvedColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
-            child: Icon(icon, size: 14, color: color),
+            child: Icon(icon, size: 14, color: resolvedColor),
           ),
           const SizedBox(width: 8),
           Column(
@@ -967,7 +970,7 @@ class _VerificationMetricCard extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: showAccentDot ? color : colors.text,
+                  color: showAccentDot ? resolvedColor : colors.text,
                   fontSize: 12.8,
                   fontWeight: FontWeight.w500,
                   letterSpacing: -0.15,

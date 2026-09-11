@@ -52,7 +52,9 @@ enum OperationalRiskView {
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
-const _kBlue = AppTheme.accent;
+// Getter (pas une constante) : AppTheme.accent change avec le choix de
+// l'utilisateur dans Paramètres > Couleurs principales.
+Color get _kBlue => AppTheme.accent;
 const _kSuccess = AppTheme.success;
 const _kWarning = AppTheme.warning;
 const _kDanger = AppTheme.danger;
@@ -192,7 +194,7 @@ Widget _artInfo(String artRef) {
         borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: const Icon(Icons.info_outline_rounded, size: 14, color: _kBlue),
+      child: Icon(Icons.info_outline_rounded, size: 14, color: _kBlue),
     ),
   );
 }
@@ -373,20 +375,23 @@ Widget _errorBox(Object e) => Center(
 // ─── Form helpers ─────────────────────────────────────────────────────────────
 
 // Titre de section dans un formulaire
-Widget _formSection(String title, {IconData? icon, Color color = _kBlue}) => Padding(
-  padding: const EdgeInsets.only(top: 8, bottom: 12),
-  child: Row(
-    children: [
-      Container(width: 3, height: 15,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
-      const SizedBox(width: 8),
-      if (icon != null) ...[Icon(icon, size: 12, color: color), const SizedBox(width: 5)],
-      Text(title,
-        style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
-          color: color, letterSpacing: 0.3)),
-    ],
-  ),
-);
+Widget _formSection(String title, {IconData? icon, Color? color}) {
+  final resolvedColor = color ?? _kBlue;
+  return Padding(
+    padding: const EdgeInsets.only(top: 8, bottom: 12),
+    child: Row(
+      children: [
+        Container(width: 3, height: 15,
+          decoration: BoxDecoration(color: resolvedColor, borderRadius: BorderRadius.circular(2))),
+        const SizedBox(width: 8),
+        if (icon != null) ...[Icon(icon, size: 12, color: resolvedColor), const SizedBox(width: 5)],
+        Text(title,
+          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700,
+            color: resolvedColor, letterSpacing: 0.3)),
+      ],
+    ),
+  );
+}
 
 // Deux champs côte à côte
 Widget _formRow(Widget left, Widget right) => Row(
@@ -445,7 +450,7 @@ Widget _dateField(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          const Icon(Icons.calendar_month_outlined, size: 12, color: _kBlue),
+          Icon(Icons.calendar_month_outlined, size: 12, color: _kBlue),
           const SizedBox(width: 5),
           Text(required ? '$label *' : label,
             style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
@@ -469,7 +474,7 @@ Widget _dateField(
                 color: _kBlue.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
-              child: const Icon(Icons.calendar_month_outlined, size: 14, color: _kBlue),
+              child: Icon(Icons.calendar_month_outlined, size: 14, color: _kBlue),
             ),
           ),
           validator: required ? (v) => (v == null || v.isEmpty) ? 'Champ requis' : null : null,
@@ -510,7 +515,7 @@ Widget _sliderInt(String label, int value, void Function(int) onChanged) {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(children: [
-              const Icon(Icons.bar_chart_rounded, size: 12, color: _kBlue),
+              Icon(Icons.bar_chart_rounded, size: 12, color: _kBlue),
               const SizedBox(width: 5),
               Text(label, style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600,
                 color: _kMuted, letterSpacing: 0.1)),
@@ -2347,7 +2352,7 @@ class _PertesSummaryBar extends StatelessWidget {
               ),
               textStyle: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
               padding: const EdgeInsets.all(14),
-              child: const Icon(Icons.info_outline_rounded, size: 15, color: AppTheme.accent),
+              child: Icon(Icons.info_outline_rounded, size: 15, color: AppTheme.accent),
             ),
           ],
         ),
@@ -3392,7 +3397,7 @@ class _CartographieViewState extends State<_CartographieView> {
                   color: _kBlue.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
-                child: const Icon(Icons.map_rounded, color: _kBlue, size: 18),
+                child: Icon(Icons.map_rounded, color: _kBlue, size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -3813,7 +3818,7 @@ class _CartographieSummaryBar extends StatelessWidget {
               ),
               textStyle: const TextStyle(fontSize: 12, color: Colors.white, height: 1.5),
               padding: const EdgeInsets.all(14),
-              child: const Icon(Icons.info_outline_rounded, size: 15, color: AppTheme.accent),
+              child: Icon(Icons.info_outline_rounded, size: 15, color: AppTheme.accent),
             ),
           ],
         ),
@@ -4147,7 +4152,7 @@ class _WorkflowViewState extends State<_WorkflowView> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(inc.reference, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _kBlue)),
+                                  Text(inc.reference, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: _kBlue)),
                                   const SizedBox(height: 4),
                                   Text(inc.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
                                   const SizedBox(height: 6),
@@ -5775,7 +5780,7 @@ class _RegistreViewState extends State<_RegistreView> {
                   color: _kBlue.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
-                child: const Icon(Icons.edit_outlined, color: _kBlue, size: 18),
+                child: Icon(Icons.edit_outlined, color: _kBlue, size: 18),
               ),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -5808,7 +5813,7 @@ class _RegistreViewState extends State<_RegistreView> {
                           numeric: false,
                           required: true,
                           hint: 'jj/mm/aaaa',
-                          suffixIcon: const Icon(Icons.calendar_month_outlined, size: 16, color: _kBlue),
+                          suffixIcon: Icon(Icons.calendar_month_outlined, size: 16, color: _kBlue),
                           onTap: () async {
                             DateTime? current;
                             try {
@@ -10344,7 +10349,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                       color: _kBlue.withValues(alpha: 0.10),
                       borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
-                    child: const Icon(Icons.report_problem_outlined, color: _kBlue, size: 18),
+                    child: Icon(Icons.report_problem_outlined, color: _kBlue, size: 18),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -10457,7 +10462,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
               numeric: false,
               required: true,
               hint: 'jj/mm/aaaa',
-              suffixIcon: const Icon(Icons.calendar_month_outlined, size: 16, color: _kBlue),
+              suffixIcon: Icon(Icons.calendar_month_outlined, size: 16, color: _kBlue),
               onTap: () async {
                 DateTime? current;
                 try {
@@ -10588,7 +10593,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Icon(Icons.calculate_outlined, size: 13, color: _kBlue),
                       SizedBox(width: 6),
@@ -10707,7 +10712,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
     children: [
       Text(label, style: const TextStyle(fontSize: 9, color: _kMuted)),
       const SizedBox(height: 2),
-      Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _kBlue)),
+      Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _kBlue)),
     ],
   );
 
@@ -10943,7 +10948,7 @@ class _RoRiskMatrix extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: _kBlue.withValues(alpha: 0.15)),
             ),
-            child: const Row(children: [
+            child: Row(children: [
               Icon(Icons.touch_app_rounded, size: 11, color: _kBlue),
               SizedBox(width: 5),
               Text('Survolez une cellule pour voir les risques',
@@ -11134,15 +11139,15 @@ class _IncidentsDashSection extends StatelessWidget {
   final RoDashboardData data;
   final bool isWide;
 
-  static const _palette = <Color>[
+  static List<Color> get _palette => <Color>[
     _kBlue,
     _kSuccess,
     _kWarning,
     _kDanger,
     AppColors.prudentialSolvency,
     AppColors.marketNeutral,
-    Color(0xFFF97316),
-    Color(0xFF84CC16),
+    const Color(0xFFF97316),
+    const Color(0xFF84CC16),
   ];
 
   @override

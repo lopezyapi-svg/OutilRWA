@@ -17,20 +17,22 @@ class UemoiFormCard extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
-    this.color = AppTheme.accent,
+    this.color,
     required this.children,
     this.trailing,
   });
 
   final String title;
   final String? subtitle;
-  final Color color;
+  // Null = couleur d'accent courante (Paramètres > Couleurs principales).
+  final Color? color;
   final List<Widget> children;
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final resolvedColor = color ?? AppTheme.accent;
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
@@ -51,7 +53,7 @@ class UemoiFormCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(height: 4, color: color),
+          Container(height: 4, color: resolvedColor),
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             child: Row(
@@ -196,7 +198,7 @@ class UemoiFormField extends StatelessWidget {
         disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(4),
-          borderSide: const BorderSide(color: AppTheme.accent, width: 1.2),
+          borderSide: BorderSide(color: AppTheme.accent, width: 1.2),
         ),
         filled: true,
         fillColor: fillColor,
@@ -393,7 +395,7 @@ class UemoiFormDropdown<T> extends StatelessWidget {
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(4),
-                    borderSide: const BorderSide(color: AppTheme.accent, width: 1.2),
+                    borderSide: BorderSide(color: AppTheme.accent, width: 1.2),
                   ),
                   filled: true,
                   fillColor: fillColor,
