@@ -1407,6 +1407,31 @@ const Map<String, String> _englishTranslations = {
   'Incidents non clôturés': 'Open incidents',
   'Actions en retard': 'Overdue actions',
   'Statut réglementaire': 'Regulatory status',
+
+  // --- Value at Risk (VaR) ---
+  'Échec de l\'actualisation : {{error}}': 'Refresh failed: {{error}}',
+  'Téléchargement impossible : {{error}}': 'Download failed: {{error}}',
+  'ex. 500': 'e.g. 500',
+  'Historique de prix': 'Price history',
+  'VaR 99 % à 1 jour': 'VaR 99% at 1 day',
+  'Historique importé avec succès.': 'History imported successfully.',
+  'Réessayer': 'Retry',
+  'Méthodologie': 'Methodology',
+  'VALEUR DU PORTEFEUILLE': 'PORTFOLIO VALUE',
+  'VAR HISTORIQUE': 'HISTORICAL VAR',
+  'VAR PARAMÉTRIQUE': 'PARAMETRIC VAR',
+  'VAR MONTE-CARLO': 'MONTE CARLO VAR',
+  'EXPECTED SHORTFALL': 'EXPECTED SHORTFALL',
+  'PIRE PERTE SIMULÉE': 'WORST SIMULATED LOSS',
+  'PIRE PERTE OBSERVÉE': 'WORST OBSERVED LOSS',
+  'La VaR est donc la 3ᵉ perte du classement':
+      'The VaR is therefore the 3rd worst loss in the ranking',
+  '3ᵉ perte du classement': '3rd worst loss in the ranking',
+  'Moyenne des rangs 1 à 3': 'Average of ranks 1 to 3',
+  'Impossible d\'enregistrer : le fichier est probablement déjà ouvert. Fermez-le puis réessayez.':
+      'Cannot save: the file is probably already open. Close it and try again.',
+  'Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk.':
+      'Please import price data in the Excel file to evaluate the Value at Risk.',
 };
 
 const Map<String, String> _frenchTranslations = {

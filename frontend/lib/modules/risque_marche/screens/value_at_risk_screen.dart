@@ -13,6 +13,7 @@ import 'package:intl/intl.dart' show NumberFormat;
 import 'dart:io' show PathAccessException;
 
 import 'package:file_selector/file_selector.dart';
+import '../../../core/localization/app_localization.dart';
 import '../../../core/services/api_client.dart';
 import '../../../shared/utils/file_save.dart';
 import '../../../core/services/rwa_api_service.dart';
@@ -330,7 +331,9 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Échec de l\'actualisation : $e'),
+          content: Text(
+            context.tr('Échec de l\'actualisation : {{error}}', args: {'error': e}),
+          ),
           backgroundColor: _varDanger,
         ),
       );
@@ -359,8 +362,8 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Historique importé avec succès.'),
+        SnackBar(
+          content: Text('Historique importé avec succès.'.tr(context)),
           backgroundColor: Colors.green,
         ),
       );
@@ -394,18 +397,19 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Modèle enregistré.'),
+        SnackBar(
+          content: Text('Modèle enregistré.'.tr(context)),
           backgroundColor: Colors.green,
         ),
       );
     } on PathAccessException {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
             'Impossible d\'enregistrer : le fichier est probablement déjà '
-            'ouvert. Fermez-le puis réessayez.',
+            'ouvert. Fermez-le puis réessayez.'
+                .tr(context),
           ),
           backgroundColor: _varDanger,
         ),
@@ -414,7 +418,9 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Téléchargement impossible : $e'),
+          content: Text(
+            context.tr('Téléchargement impossible : {{error}}', args: {'error': e}),
+          ),
           backgroundColor: _varDanger,
         ),
       );
@@ -777,10 +783,11 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Text(
                     _saisieRequise
-                        ? _erreur!
+                        ? _erreur!.tr(context)
                         : _donneesAbsentes
                             ? 'Veuillez importer les données de prix dans le fichier Excel pour évaluer la Value at Risk.'
-                            : _erreur!,
+                                .tr(context)
+                            : _erreur!.tr(context),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: _varMuted, fontSize: 13),
                   ),
@@ -804,7 +811,7 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
                     ],
                     OutlinedButton(
                       onPressed: _charger,
-                      child: const Text('Réessayer'),
+                      child: Text('Réessayer'.tr(context)),
                     ),
                   ],
                 ),
@@ -918,7 +925,7 @@ class _OngletMethode extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              methode.libelle,
+              methode.libelle.tr(context),
               style: TextStyle(
                 color: actif ? Colors.white : _varNavy,
                 fontSize: 12.5,
@@ -939,7 +946,7 @@ class _OngletMethode extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  'Méthodologie',
+                  'Méthodologie'.tr(context),
                   style: TextStyle(
                     color: actif ? Colors.white : _varMuted,
                     fontSize: 9.5,
@@ -1334,7 +1341,7 @@ class _ChampValeurPortefeuilleState extends State<_ChampValeurPortefeuille> {
           ),
           decoration: InputDecoration(
             isDense: true,
-            hintText: 'ex. 500',
+            hintText: 'ex. 500'.tr(context),
             hintStyle: const TextStyle(color: _varMuted, fontSize: 12),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -1383,7 +1390,7 @@ class _GroupeChoix<T> extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            libelle,
+            libelle.tr(context),
             style: const TextStyle(
               color: _varMuted,
               fontSize: 10,
@@ -1538,7 +1545,7 @@ class _CarteKpi extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            libelle,
+            libelle.tr(context),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -1842,7 +1849,7 @@ class _BoutonImportModele extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bouton = PopupMenuButton<_ActionImportModele>(
-      tooltip: 'Historique de prix',
+      tooltip: 'Historique de prix'.tr(context),
       onSelected: (action) {
         switch (action) {
           case _ActionImportModele.importer:
@@ -3010,7 +3017,7 @@ class _EncadreFormule extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            legende,
+            legende.tr(context),
             style: const TextStyle(
               color: _varMuted,
               fontSize: 11.5,
@@ -3180,7 +3187,7 @@ class _ResultatCas extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            libelle,
+            libelle.tr(context),
             style: const TextStyle(
               color: _varMuted,
               fontSize: 11,
@@ -3200,7 +3207,7 @@ class _ResultatCas extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            note,
+            note.tr(context),
             style: const TextStyle(
               color: _varMuted,
               fontSize: 10.5,
