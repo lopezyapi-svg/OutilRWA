@@ -1461,6 +1461,47 @@ const Map<String, String> _englishTranslations = {
   'Cap. Requis': 'Req. Capital',
   '% RWA': '% RWA',
   'Contribution': 'Contribution',
+
+  // --- FODEP : écran Analyser ---
+  'Analyse des fonds propres, des risques pondérés et de la conformité':
+      'Analysis of capital, risk-weighted assets and compliance',
+  'Ratios de solvabilité': 'Solvency ratios',
+  'Actifs Pondérés des risques (APR)': 'Risk-weighted assets (RWA)',
+  'Ratio de fonds propres CET 1 (%)': 'CET1 capital ratio (%)',
+  'Ratio de fonds propres de base T1 (%)': 'Tier 1 capital ratio (%)',
+  'Ratio de solvabilité total (%)': 'Total solvency ratio (%)',
+  'Norme de division des risques': 'Risk diversification standard',
+  'Ratio de levier': 'Leverage ratio',
+  'CODE': 'CODE',
+  'RÉF.': 'REF.',
+  'INTITULÉ DE LA NORME PRUDENTIELLE': 'PRUDENTIAL STANDARD TITLE',
+  'OBSERVÉ': 'OBSERVED',
+  'PLAFOND': 'CEILING',
+  'STATUT': 'STATUS',
+  'Actifs pondérés au titre du risque de crédit':
+      'Risk-weighted assets for credit risk',
+  'Catégorie prudentielle': 'Prudential category',
+  'Pondération moy.': 'Avg. weighting',
+  'APR': 'RWA',
+  'TOTAL': 'TOTAL',
+  'LIBELLÉ': 'LABEL',
+  'MONTANT': 'AMOUNT',
+  '#': '#',
+  'CAPITAL ÉMETTRICE (M)': 'ISSUER CAPITAL (M)',
+  'MONTANT NET DÉTENU (M)': 'NET AMOUNT HELD (M)',
+  '% DÉTENTION': '% HOLDING',
+  'Aucune participation enregistrée pour cet arrêté.':
+      'No participation recorded for this reporting date.',
+  'DÉNOMINATION DE L\'ÉMETTRICE': 'ISSUER NAME',
+  'Utilisez le bouton "Ajouter une participation" en bas de l\'écran pour déclarer vos détentions.':
+      'Use the "Add a participation" button at the bottom of the screen to declare your holdings.',
+  'INTITULÉ DU POSTE & DESCRIPTION': 'ITEM TITLE & DESCRIPTION',
+  'CATÉGORIE DE BÉNÉFICIAIRE': 'BENEFICIARY CATEGORY',
+  'CONCOURS PR001 (M)': 'FACILITIES PR001 (M)',
+  'ENGAGEMENTS PR002 (M)': 'COMMITMENTS PR002 (M)',
+  'SOUS-TOTAL (M)': 'SUBTOTAL (M)',
+  'TOTAL GÉNÉRAL DES PRÊTS ET ENGAGEMENTS':
+      'GRAND TOTAL OF LOANS AND COMMITMENTS',
 };
 
 const Map<String, String> _frenchTranslations = {

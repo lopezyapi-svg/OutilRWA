@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../dashboard/widgets/dashboard_design.dart';
 import '../../risque_operationnel/models/ro_models.dart';
@@ -762,33 +763,33 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             color: _deepblue,
-            child: const Row(
+            child: Row(
               children: [
                 SizedBox(
                   width: 60,
-                  child: Text('CODE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+                  child: Text('CODE'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                 ),
                 SizedBox(
                   width: 55,
-                  child: Text('RÉF.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white70)),
+                  child: Text('RÉF.'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white70)),
                 ),
                 Expanded(
                   flex: 5,
-                  child: Text('INTITULÉ DE LA NORME PRUDENTIELLE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+                  child: Text('INTITULÉ DE LA NORME PRUDENTIELLE'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                 ),
                 SizedBox(
                   width: 110,
-                  child: Text('OBSERVÉ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white), textAlign: TextAlign.right),
+                  child: Text('OBSERVÉ'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white), textAlign: TextAlign.right),
                 ),
                 SizedBox(width: 16),
                 SizedBox(
                   width: 110,
-                  child: Text('PLAFOND', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white70), textAlign: TextAlign.right),
+                  child: Text('PLAFOND'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white70), textAlign: TextAlign.right),
                 ),
                 SizedBox(width: 16),
                 SizedBox(
                   width: 130,
-                  child: Text('STATUT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white), textAlign: TextAlign.right),
+                  child: Text('STATUT'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white), textAlign: TextAlign.right),
                 ),
               ],
             ),
@@ -841,7 +842,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                     Expanded(
                       flex: 5,
                       child: Text(
-                        ligne.libelle,
+                        ligne.libelle.tr(context),
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: estInfraction ? FontWeight.w700 : FontWeight.w500,
@@ -1014,12 +1015,12 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                 end: Alignment.centerRight,
               ),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Expanded(flex: 5, child: Text('Catégorie prudentielle', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
-                Expanded(flex: 3, child: Text('Exposition brute', textAlign: TextAlign.right, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
-                Expanded(flex: 2, child: Text('Pondération moy.', textAlign: TextAlign.right, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
-                Expanded(flex: 3, child: Text('APR', textAlign: TextAlign.right, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
+                Expanded(flex: 5, child: Text('Catégorie prudentielle'.tr(context), style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
+                Expanded(flex: 3, child: Text('Exposition brute'.tr(context), textAlign: TextAlign.right, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
+                Expanded(flex: 2, child: Text('Pondération moy.'.tr(context), textAlign: TextAlign.right, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
+                Expanded(flex: 3, child: Text('APR'.tr(context), textAlign: TextAlign.right, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.4))),
               ],
             ),
           ),
@@ -1057,7 +1058,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
             ),
             child: Row(
               children: [
-                const Expanded(flex: 5, child: Text('TOTAL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white))),
+                Expanded(flex: 5, child: Text('TOTAL'.tr(context), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white))),
                 Expanded(flex: 3, child: Text(_fmtFcfa(analyse.totals.grossExposure), textAlign: TextAlign.right, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: Dash.tabular))),
                 const Expanded(flex: 2, child: SizedBox()),
                 Expanded(flex: 3, child: Text(_fmtFcfa(analyse.totals.rwa), textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, fontFeatures: Dash.tabular))),
@@ -1578,7 +1579,7 @@ class FodepTableGroup extends StatelessWidget {
           ),
           const SizedBox(width: 7),
           Text(
-            title.toUpperCase(),
+            title.tr(context).toUpperCase(),
             style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w800,
@@ -1834,15 +1835,15 @@ class _CarteFondsPropres extends StatelessWidget {
           // ── Détail des postes ──────────────────────────────────────────
           if (lignes.isNotEmpty) ...[
             const SizedBox(height: 10),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18),
               child: Row(
                 children: [
-                  Expanded(flex: 7, child: Text('LIBELLÉ', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.6))),
+                  Expanded(flex: 7, child: Text('LIBELLÉ'.tr(context), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.6))),
                   SizedBox(width: 10),
                   Expanded(
                     flex: 4,
-                    child: Text('MONTANT', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.6), textAlign: TextAlign.right),
+                    child: Text('MONTANT'.tr(context), style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.6), textAlign: TextAlign.right),
                   ),
                 ],
               ),
@@ -2598,13 +2599,13 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
             color: const Color(0xFFF8FAFC),
             child: Row(
               children: [
-                const SizedBox(width: 32, child: Text('#', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                Expanded(flex: 4, child: Text('DÉNOMINATION DE L\'ÉMETTRICE', style: DashText.eyebrow(c, color: c.muted))),
-                const SizedBox(width: 140, child: Text('CAPITAL ÉMETTRICE (M)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
+                SizedBox(width: 32, child: Text('#'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
+                Expanded(flex: 4, child: Text('DÉNOMINATION DE L\'ÉMETTRICE'.tr(context), style: DashText.eyebrow(c, color: c.muted))),
+                SizedBox(width: 140, child: Text('CAPITAL ÉMETTRICE (M)'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
                 const SizedBox(width: 16),
-                const SizedBox(width: 140, child: Text('MONTANT NET DÉTENU (M)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
+                SizedBox(width: 140, child: Text('MONTANT NET DÉTENU (M)'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
                 const SizedBox(width: 16),
-                const SizedBox(width: 100, child: Text('% DÉTENTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
+                SizedBox(width: 100, child: Text('% DÉTENTION'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
                 const SizedBox(width: 60),
               ],
             ),
@@ -2619,9 +2620,9 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                 children: [
                   Icon(Icons.business_center_outlined, size: 36, color: c.muted.withValues(alpha: 0.5)),
                   const SizedBox(height: 10),
-                  Text('Aucune participation enregistrée pour cet arrêté.', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: c.muted)),
+                  Text('Aucune participation enregistrée pour cet arrêté.'.tr(context), style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: c.muted)),
                   const SizedBox(height: 4),
-                  Text('Utilisez le bouton "Ajouter une participation" en bas de l\'écran pour déclarer vos détentions.', style: TextStyle(fontSize: 11, color: c.muted)),
+                  Text('Utilisez le bouton "Ajouter une participation" en bas de l\'écran pour déclarer vos détentions.'.tr(context), style: TextStyle(fontSize: 11, color: c.muted)),
                 ],
               ),
             )
@@ -2716,7 +2717,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                         width: 52,
                         child: IconButton(
                           icon: const Icon(Icons.delete_outline, size: 18, color: Color(0xFFDC2626)),
-                          tooltip: 'Supprimer',
+                          tooltip: 'Supprimer'.tr(context),
                           onPressed: () => setState(() => _participations = [..._participations]..removeAt(i)),
                         ),
                       ),
@@ -2770,8 +2771,8 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
             color: const Color(0xFFF8FAFC),
             child: Row(
               children: [
-                const SizedBox(width: 60, child: Text('CODE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                Expanded(child: Text('INTITULÉ DU POSTE & DESCRIPTION', style: DashText.eyebrow(c, color: c.muted))),
+                SizedBox(width: 60, child: Text('CODE'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
+                Expanded(child: Text('INTITULÉ DU POSTE & DESCRIPTION'.tr(context), style: DashText.eyebrow(c, color: c.muted))),
                 const SizedBox(width: 140, child: Text('MONTANT (M FCFA)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
               ],
             ),
@@ -2862,13 +2863,13 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
             color: const Color(0xFFF8FAFC),
             child: Row(
               children: [
-                const SizedBox(width: 32, child: Text('#', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
-                Expanded(flex: 4, child: Text('CATÉGORIE DE BÉNÉFICIAIRE', style: DashText.eyebrow(c, color: c.muted))),
-                const SizedBox(width: 140, child: Text('CONCOURS PR001 (M)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
+                SizedBox(width: 32, child: Text('#'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)))),
+                Expanded(flex: 4, child: Text('CATÉGORIE DE BÉNÉFICIAIRE'.tr(context), style: DashText.eyebrow(c, color: c.muted))),
+                SizedBox(width: 140, child: Text('CONCOURS PR001 (M)'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
                 const SizedBox(width: 16),
-                const SizedBox(width: 140, child: Text('ENGAGEMENTS PR002 (M)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
+                SizedBox(width: 140, child: Text('ENGAGEMENTS PR002 (M)'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
                 const SizedBox(width: 16),
-                const SizedBox(width: 120, child: Text('SOUS-TOTAL (M)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
+                SizedBox(width: 120, child: Text('SOUS-TOTAL (M)'.tr(context), style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF64748B)), textAlign: TextAlign.right)),
               ],
             ),
           ),
@@ -2924,9 +2925,9 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
             child: Row(
               children: [
                 const SizedBox(width: 32),
-                const Expanded(
+                Expanded(
                   flex: 4,
-                  child: Text('TOTAL GÉNÉRAL DES PRÊTS ET ENGAGEMENTS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _deepblue)),
+                  child: Text('TOTAL GÉNÉRAL DES PRÊTS ET ENGAGEMENTS'.tr(context), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _deepblue)),
                 ),
                 const SizedBox(width: 16),
                 SizedBox(
@@ -3090,7 +3091,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('$label : ', style: TextStyle(fontSize: 10.5, color: Colors.white.withValues(alpha: 0.8), fontWeight: FontWeight.w500)),
+          Text('${label.tr(context)} : ', style: TextStyle(fontSize: 10.5, color: Colors.white.withValues(alpha: 0.8), fontWeight: FontWeight.w500)),
           Text(valeur, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: couleurValeur ?? Colors.white)),
         ],
       ),
