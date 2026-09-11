@@ -343,7 +343,7 @@ class _MarketYieldCurvesWorkspaceState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           PageHeader(
-            title: 'Courbe des taux',
+            title: 'Courbe des taux'.tr(context),
             titleFontSize: 26,
             trailing: _YieldCurveHeaderActions(
               refreshing: _refreshing,
@@ -4058,7 +4058,7 @@ class _MarketIndicatorsWorkspace extends StatelessWidget {
           padding: const EdgeInsets.all(AppTheme.pagePadding),
           child: dataset == null || dataset.rowCount == 0
               ? _MarketNoImportedDataState(
-                  title: 'Aucune donnée chargée',
+                  title: 'Aucune donnée chargée'.tr(context),
                   subtitle: selectedType == MarketPortfolioType.equities
                       ? 'Chargez un portefeuille actions depuis Import données pour afficher les indicateurs clés.'
                       : 'Chargez un portefeuille obligataire depuis Import données pour afficher les indicateurs clés.',
@@ -4082,7 +4082,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _BondKeyIndicatorSpec(
-        label: 'Exposition Totale',
+        label: 'Exposition Totale'.tr(context),
         value: _bondIndicatorMdValue(dataset.totalExposure),
         unit: PortfolioAmountUnitPreference.current.label,
         icon: CupertinoIcons.money_dollar_circle_fill,
@@ -4096,7 +4096,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
             'Représente le risque nominal total engagé sur le marché actions au cours actuel.',
       ),
       _BondKeyIndicatorSpec(
-        label: 'Plus/Moins-value Latente',
+        label: 'Plus/Moins-value Latente'.tr(context),
         value: _bondIndicatorMdValue(dataset.totalLatentGain),
         unit: PortfolioAmountUnitPreference.current.label,
         icon: CupertinoIcons.money_dollar,
@@ -4110,7 +4110,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
             'Montre la création ou destruction de valeur latente qui n\'a pas encore été réalisée.',
       ),
       _BondKeyIndicatorSpec(
-        label: 'Capital Prudentiel',
+        label: 'Capital Prudentiel'.tr(context),
         value: _bondIndicatorMdValue(
             dataset.prudentialCapital.capitalRequirement),
         unit: PortfolioAmountUnitPreference.current.label,
@@ -4126,7 +4126,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
             'Montant de fonds propres exigé réglementairement pour couvrir le risque de ces positions.',
       ),
       _BondKeyIndicatorSpec(
-        label: 'Risques Pondérés (RWA)',
+        label: 'Risques Pondérés (RWA)'.tr(context),
         value: _bondIndicatorMdValue(dataset.prudentialCapital.marketRwa),
         unit: PortfolioAmountUnitPreference.current.label,
         icon: CupertinoIcons.arrow_merge,
@@ -4140,7 +4140,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
             'Poids que représentent ces actions dans le calcul global du ratio de solvabilité.',
       ),
       _BondKeyIndicatorSpec(
-        label: 'Rendement Espéré',
+        label: 'Rendement Espéré'.tr(context),
         value: _bondIndicatorPercent(dataset.expectedReturn),
         unit: '',
         icon: CupertinoIcons.arrow_up_right_circle_fill,
@@ -4154,7 +4154,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
         reading: 'Estimation de la performance future.',
       ),
       _BondKeyIndicatorSpec(
-        label: 'Bêta Pondéré',
+        label: 'Bêta Pondéré'.tr(context),
         value: dataset.weightedBeta.toStringAsFixed(2),
         unit: '',
         icon: CupertinoIcons.waveform_path_ecg,
@@ -4169,7 +4169,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
             'Indicateur de risque systématique reflétant l\'exposition aux mouvements généraux du marché.',
       ),
       _BondKeyIndicatorSpec(
-        label: 'Volatilité Annualisée',
+        label: 'Volatilité Annualisée'.tr(context),
         value: _bondIndicatorPercent(dataset.annualizedVolatility),
         unit: '',
         icon: CupertinoIcons.graph_square_fill,
@@ -4184,7 +4184,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
             'Permet d\'apprécier l\'ampleur potentielle des fluctuations du portefeuille.',
       ),
       _BondKeyIndicatorSpec(
-        label: 'Poids du premier émetteur',
+        label: 'Poids du premier émetteur'.tr(context),
         value: _bondIndicatorPercent(dataset.concentrationRatio),
         unit: '',
         icon: CupertinoIcons.chart_pie_fill,
@@ -4199,7 +4199,7 @@ class _EquityIndicatorsStatsView extends StatelessWidget {
             'Mesure la concentration du risque sur la principale contrepartie.',
       ),
       _BondKeyIndicatorSpec(
-        label: 'Émetteur Dominant',
+        label: 'Émetteur Dominant'.tr(context),
         value: dataset.dominantIssuer.isEmpty ? '-' : dataset.dominantIssuer,
         unit: '',
         icon: CupertinoIcons.building_2_fill,
@@ -4279,7 +4279,7 @@ class _EquityIndicatorContentBoardState
         Row(
           children: [
             _MarketExportButton(
-              tooltip: 'Exporter le tableau de bord Actions (Excel)',
+              tooltip: 'Exporter le tableau de bord Actions (Excel)'.tr(context),
               onPressed: () => _exportEquityDashboard(),
             ),
             const Spacer(),
@@ -4665,7 +4665,7 @@ class _EquityIndicatorContentBoardState
     final location = await getSaveLocation(
       suggestedName: 'tableau_bord_actions_$ts.xlsx',
       acceptedTypeGroups: [
-        const XTypeGroup(label: 'Excel', extensions: ['xlsx']),
+        XTypeGroup(label: 'Excel'.tr(context), extensions: ['xlsx']),
       ],
     );
     if (location == null || !mounted) return;
@@ -4677,9 +4677,9 @@ class _EquityIndicatorContentBoardState
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         backgroundColor: Color(0xFF16A34A),
-        content: Text('Export Actions enregistré avec succès.'),
+        content: Text('Export Actions enregistré avec succès.'.tr(context)),
       ),
     );
   }
@@ -4814,10 +4814,10 @@ class _EquityTop5RankingPanelState extends State<_EquityTop5RankingPanel> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (top5.isEmpty)
-                          const Center(
+                          Center(
                               child: Padding(
                             padding: EdgeInsets.all(16.0),
-                            child: Text('Aucune donnée disponible'),
+                            child: Text('Aucune donnée disponible'.tr(context)),
                           ))
                         else
                           ...top5.asMap().entries.map((entry) {
@@ -6025,7 +6025,7 @@ class _EquityTitleColumnVisibilityPanel extends StatelessWidget {
                   ),
                 ),
                 _MarketColumnQuickAction(
-                  label: 'Tout',
+                  label: 'Tout'.tr(context),
                   active: allSelected,
                   onTap: () => onDraftChanged(allColumns),
                 ),
@@ -6041,7 +6041,7 @@ class _EquityTitleColumnVisibilityPanel extends StatelessWidget {
                   ),
                 ),
                 _MarketColumnQuickAction(
-                  label: 'Essentiel',
+                  label: 'Essentiel'.tr(context),
                   active: essentialSelected,
                   onTap: () => onDraftChanged(essentialColumns),
                 ),
@@ -6210,9 +6210,9 @@ class _MarketIndicatorsStatsView extends StatelessWidget {
       builder: (context, snapshot) {
         final stats = snapshot.data;
         if (stats == null) {
-          return const _MarketDeferredLoadingState(
-            title: 'Chargement des indicateurs',
-            subtitle: 'Nous préparons les chiffres du portefeuille.',
+          return _MarketDeferredLoadingState(
+            title: 'Chargement des indicateurs'.tr(context),
+            subtitle: 'Nous préparons les chiffres du portefeuille.'.tr(context),
           );
         }
         return _BondKeyIndicatorsSection(stats: stats);
@@ -6762,8 +6762,8 @@ class _MarketCrdEvolutionWorkspace extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.all(AppTheme.pagePadding),
           child: dataset == null || dataset.rowCount == 0
-              ? const _MarketNoImportedDataState(
-                  title: 'Aucune donnée obligataire chargée',
+              ? _MarketNoImportedDataState(
+                  title: 'Aucune donnée obligataire chargée'.tr(context),
                   subtitle:
                       'Chargez un portefeuille obligataire pour projeter l’évolution du capital restant dû.',
                   icon: CupertinoIcons.chart_bar_alt_fill,
@@ -6934,28 +6934,28 @@ class _MarketCrdEvolutionKpis extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _MarketCrdKpiSpec(
-        label: 'CRD actuel',
+        label: 'CRD actuel'.tr(context),
         value: _money(result.currentCrd, displayCurrency),
         detail: '${result.activeCount}/${result.totalCount} titres actifs',
         color: _marketPrimary,
         icon: CupertinoIcons.creditcard_fill,
       ),
       _MarketCrdKpiSpec(
-        label: 'Amortissement projeté',
+        label: 'Amortissement projeté'.tr(context),
         value: _money(result.projectedAmortization, displayCurrency),
         detail: 'Capital remboursé sur l’horizon',
         color: _marketWarning,
         icon: CupertinoIcons.arrow_down_right_square_fill,
       ),
       _MarketCrdKpiSpec(
-        label: 'CRD fin de période',
+        label: 'CRD fin de période'.tr(context),
         value: _money(result.endingCrd, displayCurrency),
         detail: _bondCrdShortDate(result.endDate),
         color: _marketSuccess,
         icon: CupertinoIcons.checkmark_seal_fill,
       ),
       _MarketCrdKpiSpec(
-        label: 'Amortissement moyen',
+        label: 'Amortissement moyen'.tr(context),
         value: _money(result.averageMonthlyAmortization, displayCurrency),
         detail: 'Moyenne mensuelle',
         color: _marketCyan,
@@ -7152,24 +7152,24 @@ class _MarketCrdInputsPanel extends StatelessWidget {
               height: 1,
             ),
           ),
-          const SizedBox(height: 3),
+          SizedBox(height: 3),
           _MarketCrdInputLine(
-            label: 'Date d’analyse',
+            label: 'Date d’analyse'.tr(context),
             value: _bondCrdShortDate(result.analysisDate),
             icon: CupertinoIcons.calendar,
           ),
-          const _MarketCrdInputLine(
-            label: 'Maturités',
+          _MarketCrdInputLine(
+            label: 'Maturités'.tr(context),
             value: 'Calculées depuis les dates',
             icon: CupertinoIcons.time,
           ),
-          const _MarketCrdInputLine(
-            label: 'Capital',
+          _MarketCrdInputLine(
+            label: 'Capital'.tr(context),
             value: 'CRD reconstitué',
             icon: CupertinoIcons.creditcard_fill,
           ),
-          const _MarketCrdInputLine(
-            label: 'Rythme',
+          _MarketCrdInputLine(
+            label: 'Rythme'.tr(context),
             value: 'Profil amortissement',
             icon: CupertinoIcons.repeat,
           ),
@@ -8643,10 +8643,10 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (top5.isEmpty)
-                          const Center(
+                          Center(
                               child: Padding(
                             padding: EdgeInsets.all(16.0),
-                            child: Text('Aucune donnée disponible'),
+                            child: Text('Aucune donnée disponible'.tr(context)),
                           ))
                         else
                           ...top5.asMap().entries.map((entry) {
@@ -8898,8 +8898,8 @@ class _BondIndicatorContentBoardState
             children: [
               Row(
                 children: [
-                  const _MarketExportButton(
-                    tooltip: 'Exporter le tableau de bord Obligations (Excel)',
+                  _MarketExportButton(
+                    tooltip: 'Exporter le tableau de bord Obligations (Excel)'.tr(context),
                     onPressed: null,
                   ),
                   const Spacer(),
@@ -8967,10 +8967,10 @@ class _BondIndicatorContentBoardState
                         ],
                       ),
                     )
-                  : const Expanded(
+                  : Expanded(
                       child: _MarketDeferredLoadingState(
-                        title: 'Chargement du tableau',
-                        subtitle: 'Nous préparons les titres à afficher.',
+                        title: 'Chargement du tableau'.tr(context),
+                        subtitle: 'Nous préparons les titres à afficher.'.tr(context),
                       ),
                     ),
             ],
@@ -8993,7 +8993,7 @@ class _BondIndicatorContentBoardState
         Row(
           children: [
             _MarketExportButton(
-              tooltip: 'Exporter le tableau de bord Obligations (Excel)',
+              tooltip: 'Exporter le tableau de bord Obligations (Excel)'.tr(context),
               onPressed: () => _exportBondDashboard(rows),
             ),
             const Spacer(),
@@ -9601,7 +9601,7 @@ class _BondIndicatorContentBoardState
     final location = await getSaveLocation(
       suggestedName: 'tableau_bord_obligations_$ts.xlsx',
       acceptedTypeGroups: [
-        const XTypeGroup(label: 'Excel', extensions: ['xlsx']),
+        XTypeGroup(label: 'Excel'.tr(context), extensions: ['xlsx']),
       ],
     );
     if (location == null || !mounted) return;
@@ -9613,9 +9613,9 @@ class _BondIndicatorContentBoardState
     );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         backgroundColor: Color(0xFF16A34A),
-        content: Text('Export Obligations enregistré avec succès.'),
+        content: Text('Export Obligations enregistré avec succès.'.tr(context)),
       ),
     );
   }
@@ -10579,7 +10579,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                               color: Colors.indigo.withValues(alpha: 0.5),
                               width: 1.2),
                         ),
-                        child: const Text('i',
+                        child: Text('i'.tr(context),
                             style: TextStyle(
                                 fontFamily: 'serif',
                                 fontStyle: FontStyle.italic,
@@ -11105,7 +11105,7 @@ class _BondZoneRadarProfileChartState
                         color: Colors.indigo.withValues(alpha: 0.5),
                         width: 1.2),
                   ),
-                  child: const Text('i',
+                  child: Text('i'.tr(context),
                       style: TextStyle(
                           fontFamily: 'serif',
                           fontStyle: FontStyle.italic,
@@ -11622,7 +11622,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                   bottomTitles: AxisTitles(
                     axisNameWidget: Padding(
                       padding: const EdgeInsets.only(top: 8.0),
-                      child: Text('Maturité (en mois)',
+                      child: Text('Maturité (en mois)'.tr(context),
                           style: TextStyle(
                               color: muted,
                               fontSize: 10,
@@ -11650,7 +11650,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                   leftTitles: AxisTitles(
                     axisNameWidget: Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
-                      child: Text('Convexité',
+                      child: Text('Convexité'.tr(context),
                           style: TextStyle(
                               color: muted,
                               fontSize: 10,
@@ -11881,7 +11881,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                           color: Colors.indigo.withValues(alpha: 0.5),
                           width: 1.2),
                     ),
-                    child: const Text('i',
+                    child: Text('i'.tr(context),
                         style: TextStyle(
                             fontFamily: 'serif',
                             fontStyle: FontStyle.italic,
@@ -13001,7 +13001,7 @@ class _BondTitleColumnVisibilityPanel extends StatelessWidget {
                   ),
                 ),
                 _MarketColumnQuickAction(
-                  label: 'Tout',
+                  label: 'Tout'.tr(context),
                   active: allSelected,
                   onTap: () => onDraftChanged(allColumns),
                 ),
@@ -13017,7 +13017,7 @@ class _BondTitleColumnVisibilityPanel extends StatelessWidget {
                   ),
                 ),
                 _MarketColumnQuickAction(
-                  label: 'Essentiel',
+                  label: 'Essentiel'.tr(context),
                   active: essentialSelected,
                   onTap: () => onDraftChanged(essentialColumns),
                 ),
@@ -14350,9 +14350,9 @@ class _BondInstitutionalDashboard extends StatelessWidget {
       builder: (context, snapshot) {
         final stats = snapshot.data;
         if (stats == null) {
-          return const _MarketDeferredLoadingState(
-            title: 'Chargement du dashboard',
-            subtitle: 'Nous préparons la vue du portefeuille.',
+          return _MarketDeferredLoadingState(
+            title: 'Chargement du dashboard'.tr(context),
+            subtitle: 'Nous préparons la vue du portefeuille.'.tr(context),
           );
         }
         return _BondInstitutionalDashboardContent(stats: stats);
@@ -15454,7 +15454,7 @@ class _BondRiskNotificationButtonState
         cursor: SystemMouseCursors.click,
         child: Semantics(
           button: true,
-          label: 'Afficher les alertes de risque',
+          label: 'Afficher les alertes de risque'.tr(context),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _toggleOverlay,
@@ -16193,7 +16193,7 @@ class _BondIssuerConcentrationPanelState
     final topN = _topOptions[_selectedIndex];
     return _BondSectionPanel(
       height: 350,
-      title: 'Principaux émetteurs',
+      title: 'Principaux émetteurs'.tr(context),
       subtitle: 'Top $topN par poids d\u2019encours',
       actions: _BondSegmentToggle(
         options: const ['Top 3', 'Top 5', 'Top 8', 'Top 10'],
@@ -16222,7 +16222,7 @@ class _BondMaturityPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _BondSectionPanel(
       height: 268,
-      title: 'Structure des maturités',
+      title: 'Structure des maturités'.tr(context),
       subtitle:
           "Durée résiduelle moyenne : ${stats.weightedMaturityYears.toStringAsFixed(1).replaceAll('.', ',')} ans",
       child: _BondMaturityHistogramChart(
@@ -16242,8 +16242,8 @@ class _BondCouponMaturityPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return _BondSectionPanel(
       height: 268,
-      title: 'Coupon par maturité',
-      subtitle: 'Encours par tranche de maturité résiduelle',
+      title: 'Coupon par maturité'.tr(context),
+      subtitle: 'Encours par tranche de maturité résiduelle'.tr(context),
       child: _BondCouponCurveChart(
         buckets: stats.couponBuckets,
       ),
@@ -18480,7 +18480,7 @@ class _MarketConcentrationPanel extends StatelessWidget {
       title: isBonds
           ? 'Principaux émetteurs obligataires'
           : 'Principaux émetteurs actions',
-      subtitle: 'Top 5 par poids de marché',
+      subtitle: 'Top 5 par poids de marché'.tr(context),
       action: _marketDistributionAction(
         context,
         all: all,
@@ -19017,7 +19017,7 @@ class _MarketEquityLatentPnlPanel extends StatelessWidget {
     const shown = 5;
 
     return _MarketVisualPanel(
-      title: 'Plus et moins-values latentes',
+      title: 'Plus et moins-values latentes'.tr(context),
       subtitle: hasData
           ? '${lines.where((l) => l.gain > 0).length} émetteur'
               '${lines.where((l) => l.gain > 0).length > 1 ? 's' : ''} en '
@@ -19029,11 +19029,11 @@ class _MarketEquityLatentPnlPanel extends StatelessWidget {
       action: lines.length <= shown
           ? null
           : _MarketGhostButton(
-              label: 'Voir tout',
+              label: 'Voir tout'.tr(context),
               onPressed: () => _MarketDetailDialog.show(
                 context,
-                title: 'Plus et moins-values latentes',
-                subtitle: 'Détail complet des émetteurs',
+                title: 'Plus et moins-values latentes'.tr(context),
+                subtitle: 'Détail complet des émetteurs'.tr(context),
                 columns: const [
                   _MarketDetailColumn('Émetteur', flex: 6),
                   _MarketDetailColumn('Coût de revient', flex: 4, right: true),
@@ -19083,7 +19083,7 @@ class _MarketEquityLatentPnlPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: _MarketMicroMetric(
-                  label: 'Plus-values latentes',
+                  label: 'Plus-values latentes'.tr(context),
                   value: _marketCompactMoney(gainTotal),
                   color: _marketSuccess,
                 ),
@@ -19091,7 +19091,7 @@ class _MarketEquityLatentPnlPanel extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: _MarketMicroMetric(
-                  label: 'Moins-values latentes',
+                  label: 'Moins-values latentes'.tr(context),
                   value: _marketCompactMoney(lossTotal),
                   color: _marketDanger,
                 ),
@@ -19496,11 +19496,11 @@ Widget? _marketDistributionAction(
 }) {
   if (all.length <= shown) return null;
   return _MarketGhostButton(
-    label: 'Voir tout',
+    label: 'Voir tout'.tr(context),
     onPressed: () => _MarketDetailDialog.show(
       context,
       title: title,
-      subtitle: 'Détail complet des positions classées par valeur de marché',
+      subtitle: 'Détail complet des positions classées par valeur de marché'.tr(context),
       columns: [
         _MarketDetailColumn(columnLabel, flex: 6),
         const _MarketDetailColumn('Valeur de marché', flex: 4, right: true),
@@ -19533,11 +19533,11 @@ Widget? _marketBreakdownAction(
 }) {
   if (all.length <= shown) return null;
   return _MarketGhostButton(
-    label: 'Voir tout',
+    label: 'Voir tout'.tr(context),
     onPressed: () => _MarketDetailDialog.show(
       context,
       title: title,
-      subtitle: 'Détail complet',
+      subtitle: 'Détail complet'.tr(context),
       columns: [
         _MarketDetailColumn(columnLabel, flex: 6),
         const _MarketDetailColumn('Précision', flex: 5),
@@ -19692,7 +19692,7 @@ class _MarketDetailDialog extends StatelessWidget {
                     ),
                     const SizedBox(width: 16),
                     _MarketGhostButton(
-                      label: 'Fermer',
+                      label: 'Fermer'.tr(context),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
@@ -19966,13 +19966,13 @@ class _MarketEquityAccountingScopePanel extends StatelessWidget {
     final rows = allRows.toList(growable: false);
 
     return _MarketVisualPanel(
-      title: 'Périmètre comptable',
+      title: 'Périmètre comptable'.tr(context),
       subtitle: 'Positions soumises à l\'exigence de fonds propres',
       action: _marketBreakdownAction(
         context,
         all: allRows,
         shown: rows.length,
-        title: 'Périmètre comptable',
+        title: 'Périmètre comptable'.tr(context),
         unit: 'intention',
         columnLabel: 'Intention comptable',
       ),
@@ -20054,13 +20054,13 @@ class _MarketEquityCurrencyPanel extends StatelessWidget {
     final rows = allRows.toList(growable: false);
 
     return _MarketVisualPanel(
-      title: 'Exposition par devise',
-      subtitle: 'Valeur de marché convertie au taux courant',
+      title: 'Exposition par devise'.tr(context),
+      subtitle: 'Valeur de marché convertie au taux courant'.tr(context),
       action: _marketBreakdownAction(
         context,
         all: allRows,
         shown: rows.length,
-        title: 'Exposition par devise',
+        title: 'Exposition par devise'.tr(context),
         unit: 'devise',
         columnLabel: 'Devise',
       ),
@@ -20136,18 +20136,18 @@ class _MarketEquityDividendPanel extends StatelessWidget {
     final contributors = lines.take(6).toList(growable: false);
 
     return _MarketVisualPanel(
-      title: 'Revenu de dividendes attendu',
+      title: 'Revenu de dividendes attendu'.tr(context),
       subtitle: lines.isEmpty
           ? 'Colonne « Rendement dividende (%) » absente ou nulle'
           : 'Dividendes projetés sur douze mois',
       action: lines.length <= contributors.length
           ? null
           : _MarketGhostButton(
-              label: 'Voir tout',
+              label: 'Voir tout'.tr(context),
               onPressed: () => _MarketDetailDialog.show(
                 context,
-                title: 'Revenu de dividendes attendu',
-                subtitle: 'Détail complet des lignes distributrices',
+                title: 'Revenu de dividendes attendu'.tr(context),
+                subtitle: 'Détail complet des lignes distributrices'.tr(context),
                 columns: const [
                   _MarketDetailColumn('Émetteur', flex: 6),
                   _MarketDetailColumn('Secteur', flex: 5),
@@ -20361,8 +20361,8 @@ class _MarketRiskSignalPanel extends StatelessWidget {
     if (!isBonds) return _buildEquityProfile(context);
 
     return _MarketVisualPanel(
-      title: 'Maturité et portage',
-      subtitle: 'Échelonnement du capital restant dû',
+      title: 'Maturité et portage'.tr(context),
+      subtitle: 'Échelonnement du capital restant dû'.tr(context),
       child: Column(
         children: [
           SizedBox(
@@ -20384,7 +20384,7 @@ class _MarketRiskSignalPanel extends StatelessWidget {
           _MarketRiskTileGrid(
             items: [
               _MarketRiskTileData(
-                label: 'Perte sur choc de +100 pb',
+                label: 'Perte sur choc de +100 pb'.tr(context),
                 value: _marketCompactMoney(
                   dataset.weightedModifiedDuration *
                       dataset.totalExposure *
@@ -20393,7 +20393,7 @@ class _MarketRiskSignalPanel extends StatelessWidget {
                 color: _marketDanger,
               ),
               _MarketRiskTileData(
-                label: 'Convexité pondérée',
+                label: 'Convexité pondérée'.tr(context),
                 value: dataset.bondCashflowConvexity > 0
                     ? dataset.bondCashflowConvexity
                         .toStringAsFixed(1)
@@ -20418,7 +20418,7 @@ class _MarketRiskSignalPanel extends StatelessWidget {
     final visible = math.min(shown, all.length);
 
     return _MarketVisualPanel(
-      title: 'Profil bêta et rendement par émetteur',
+      title: 'Profil bêta et rendement par émetteur'.tr(context),
       subtitle: all.isEmpty
           ? 'Aucune position valorisée'
           : 'Volatilité annualisée '
@@ -20428,11 +20428,11 @@ class _MarketRiskSignalPanel extends StatelessWidget {
       action: all.length <= shown
           ? null
           : _MarketGhostButton(
-              label: 'Voir tout',
+              label: 'Voir tout'.tr(context),
               onPressed: () => _MarketDetailDialog.show(
                 context,
-                title: 'Profil bêta et rendement par émetteur',
-                subtitle: 'Détail complet des émetteurs',
+                title: 'Profil bêta et rendement par émetteur'.tr(context),
+                subtitle: 'Détail complet des émetteurs'.tr(context),
                 columns: const [
                   _MarketDetailColumn('Émetteur', flex: 6),
                   _MarketDetailColumn('Valeur de marché', flex: 4, right: true),
@@ -22046,7 +22046,7 @@ class _MarketPortfolioDetailsTableState
       builder: (context) => _MarketPortfolioEditDialog(
         portfolioType: widget.portfolioType,
         record: emptyRecord,
-        title: 'Ajouter un titre',
+        title: 'Ajouter un titre'.tr(context),
         confirmLabel: 'Ajouter',
       ),
     );
@@ -22767,7 +22767,7 @@ class _MarketColumnVisibilityPanel extends StatelessWidget {
                   ),
                 ),
                 _MarketColumnQuickAction(
-                  label: 'Tout',
+                  label: 'Tout'.tr(context),
                   active: allSelected,
                   onTap: () => onDraftChanged(allHeaders),
                 ),
@@ -22783,7 +22783,7 @@ class _MarketColumnVisibilityPanel extends StatelessWidget {
                   ),
                 ),
                 _MarketColumnQuickAction(
-                  label: 'Défaut',
+                  label: 'Défaut'.tr(context),
                   active: defaultSelected,
                   onTap: () => onDraftChanged(
                     defaultHeaders,
@@ -23573,7 +23573,7 @@ class _MarketPortfolioEditDialogState
         initialValue: currentValue,
         style: style,
         iconSize: 18,
-        decoration: decoration.copyWith(hintText: 'Sélectionner...'),
+        decoration: decoration.copyWith(hintText: 'Sélectionner...'.tr(context)),
         dropdownColor:
             _isMarketDark(context) ? const Color(0xFF1B2235) : Colors.white,
         items: dropdownOptions
@@ -23597,7 +23597,7 @@ class _MarketPortfolioEditDialogState
         style: style,
         readOnly: true,
         decoration: decoration.copyWith(
-          hintText: 'JJ/MM/AAAA',
+          hintText: 'JJ/MM/AAAA'.tr(context),
           suffixIcon: Icon(CupertinoIcons.calendar, size: 18, color: muted),
         ),
         onTap: () async {
@@ -23806,14 +23806,14 @@ class _MarketPortfolioActionRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _MarketPortfolioActionButton(
-            tooltip: 'Modifier le titre',
+            tooltip: 'Modifier le titre'.tr(context),
             icon: CupertinoIcons.square_pencil,
             color: _marketTextFor(context),
             onTap: onEdit,
           ),
           const SizedBox(width: 3),
           _MarketPortfolioActionButton(
-            tooltip: 'Supprimer le titre',
+            tooltip: 'Supprimer le titre'.tr(context),
             icon: CupertinoIcons.trash,
             color: _marketDanger,
             onTap: onDelete,
@@ -24872,7 +24872,7 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
                     AppTheme.pagePadding,
                   ),
                   child: PageHeader(
-                    title: 'VALUE AT RISK (VaR)',
+                    title: 'VALUE AT RISK (VaR)'.tr(context),
                     titleFontSize: 26,
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -24908,8 +24908,8 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
                             ),
                           )
                         else if (dataset == null || dataset.rowCount == 0)
-                          const _MarketNoImportedDataState(
-                            title: 'Aucune donnée chargée',
+                          _MarketNoImportedDataState(
+                            title: 'Aucune donnée chargée'.tr(context),
                             subtitle:
                                 'Chargez un portefeuille depuis Import données pour calculer la VaR et lancer les simulations.',
                             accent: _marketDashboardDeepBlue,
@@ -24924,8 +24924,8 @@ class _ValueAtRiskModuleState extends State<_ValueAtRiskModule> {
                             builder: (context, portfolioSnapshot) {
                               final portfolio = portfolioSnapshot.data;
                               if (portfolio == null) {
-                                return const _MarketDeferredLoadingState(
-                                  title: 'Chargement de la VaR',
+                                return _MarketDeferredLoadingState(
+                                  title: 'Chargement de la VaR'.tr(context),
                                   subtitle:
                                       'Nous préparons les données de risque.',
                                 );
@@ -25193,11 +25193,11 @@ class _UnifiedVarMethodView extends StatelessWidget {
                           activeIndex: method.index,
                           children: [
                             _ParameterStack(
-                              title: 'Paramètres de calcul',
+                              title: 'Paramètres de calcul'.tr(context),
                               children: _historicalParameters(),
                             ),
                             _ParameterStack(
-                              title: 'Paramètres dynamiques',
+                              title: 'Paramètres dynamiques'.tr(context),
                               children: _parametricParameters(
                                 parametricResult,
                                 defaultVolatility: defaultParamVolatility,
@@ -25207,7 +25207,7 @@ class _UnifiedVarMethodView extends StatelessWidget {
                               ),
                             ),
                             _ParameterStack(
-                              title: 'Paramètres de simulation',
+                              title: 'Paramètres de simulation'.tr(context),
                               children: _monteCarloParameters(),
                             ),
                           ],
@@ -25236,7 +25236,7 @@ class _UnifiedVarMethodView extends StatelessWidget {
                             ),
                           ),
                           _VarChartPanel(
-                            title: 'Courbe normale Delta-Normale',
+                            title: 'Courbe normale Delta-Normale'.tr(context),
                             subtitle:
                                 'Quantile normal et zone de perte estimée',
                             kpis: kpiItems,
@@ -25247,8 +25247,8 @@ class _UnifiedVarMethodView extends StatelessWidget {
                             ),
                           ),
                           _VarChartPanel(
-                            title: 'Distribution P&L simulée',
-                            subtitle: 'Scénarios simulés et pertes extrêmes',
+                            title: 'Distribution P&L simulée'.tr(context),
+                            subtitle: 'Scénarios simulés et pertes extrêmes'.tr(context),
                             kpis: kpiItems,
                             onResetDefaults: onResetDefaults,
                             child: _MonteCarloDistributionChart(
@@ -26128,7 +26128,7 @@ class _FormulaDetailsTooltip extends StatelessWidget {
                 color: spec.color.withValues(alpha: 0.12),
               ),
               _FormulaTextSection(
-                title: 'Formules de calcul',
+                title: 'Formules de calcul'.tr(context),
                 color: spec.color,
                 child: Column(
                   children: [
@@ -26151,7 +26151,7 @@ class _FormulaDetailsTooltip extends StatelessWidget {
                 color: spec.color.withValues(alpha: 0.12),
               ),
               _FormulaTextSection(
-                title: 'Variables',
+                title: 'Variables'.tr(context),
                 color: spec.color,
                 body: spec.variables,
               ),
@@ -26768,7 +26768,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
           ),
           const SizedBox(height: 3),
           _SliderParameter(
-            label: 'Volatilité σ',
+            label: 'Volatilité σ'.tr(context),
             value: widget.result.annualVolatility
                 .clamp(0.0, volatilityMax)
                 .toDouble(),
@@ -26779,7 +26779,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
             onChanged: widget.onVolatilityChanged,
           ),
           _SliderParameter(
-            label: 'Valeur du portefeuille',
+            label: 'Valeur du portefeuille'.tr(context),
             value: widget.result.portfolioValue
                 .clamp(0.0, portfolioMax)
                 .toDouble(),
@@ -26791,7 +26791,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
             onChanged: widget.onPortfolioValueChanged,
           ),
           _SliderParameter(
-            label: 'Duration modifiée',
+            label: 'Duration modifiée'.tr(context),
             value: widget.result.duration.clamp(0.0, durationMax).toDouble(),
             min: 0,
             max: durationMax,
@@ -27200,8 +27200,8 @@ class _HistoricalLossHistogramState extends State<_HistoricalLossHistogram> {
   @override
   Widget build(BuildContext context) {
     if (widget.result.losses.isEmpty) {
-      return const _VarEmptyChartState(
-        title: 'Aucune donnée historique chargée',
+      return _VarEmptyChartState(
+        title: 'Aucune donnée historique chargée'.tr(context),
         subtitle:
             'Chargez un portefeuille avec des données de marché pour afficher l’histogramme des pertes.',
         accent: _marketPrimary,
@@ -27552,7 +27552,7 @@ class _HistoricalHistogramTooltip extends StatelessWidget {
     }
     if (hover.kind == _HistoricalHoverKind.percentile95) {
       return (
-        title: '95e percentile',
+        title: '95e percentile'.tr(context),
         value: _money(metrics.percentile95, displayCurrency),
         detail: result.isProxy
             ? 'Repère de pertes élevées : 95% des scénarios reconstruits restent sous ce niveau.'
@@ -27561,7 +27561,7 @@ class _HistoricalHistogramTooltip extends StatelessWidget {
     }
     if (hover.kind == _HistoricalHoverKind.percentile99) {
       return (
-        title: '99e percentile',
+        title: '99e percentile'.tr(context),
         value: _money(metrics.percentile99, displayCurrency),
         detail: result.isProxy
             ? 'Queue extrême : 1% des scénarios reconstruits dépassent ce repère.'
@@ -27942,8 +27942,8 @@ class _NormalCurveChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (result.portfolioValue <= 0 || result.lossStdDev <= 0) {
-      return const _VarEmptyChartState(
-        title: 'Données insuffisantes',
+      return _VarEmptyChartState(
+        title: 'Données insuffisantes'.tr(context),
         subtitle:
             'Chargez un portefeuille avec une valeur et une volatilité exploitables pour tracer la courbe Delta-Normale.',
         accent: _marketDashboardDeepBlue,
@@ -28692,8 +28692,8 @@ class _MonteCarloDistributionChartState
   @override
   Widget build(BuildContext context) {
     if (widget.result.losses.isEmpty) {
-      return const _VarEmptyChartState(
-        title: 'Aucune simulation disponible',
+      return _VarEmptyChartState(
+        title: 'Aucune simulation disponible'.tr(context),
         subtitle:
             'Chargez un portefeuille avec des données exploitables pour générer la distribution Monte-Carlo.',
         accent: _marketPrimary,
@@ -32335,10 +32335,10 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
             ),
           ),
         ),
-        child: const Row(children: [
+        child: Row(children: [
           Expanded(
             flex: 1,
-            child: Text('Total',
+            child: Text('Total'.tr(context),
                 style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
@@ -32460,33 +32460,33 @@ class _TauxSummaryRow extends StatelessWidget {
       children: [
         Expanded(
             child: _TauxSummaryItem(
-                label: 'Risque Spécifique',
+                label: 'Risque Spécifique'.tr(context),
                 value: specificRisk,
-                subtitle: 'Exigence liée à la qualité de chaque émetteur')),
+                subtitle: 'Exigence liée à la qualité de chaque émetteur'.tr(context))),
         const SizedBox(width: 10),
         Expanded(
             child: _TauxSummaryItem(
-                label: 'Risque Général',
+                label: 'Risque Général'.tr(context),
                 value: generalRisk,
-                subtitle: 'Exigence liée aux variations du marché des taux')),
+                subtitle: 'Exigence liée aux variations du marché des taux'.tr(context))),
         const SizedBox(width: 10),
         Expanded(
             child: _TauxSummaryItem(
-                label: 'Exigence FP Taux',
+                label: 'Exigence FP Taux'.tr(context),
                 value: exigenceFP,
-                subtitle: 'Risque spécifique + risque général')),
+                subtitle: 'Risque spécifique + risque général'.tr(context))),
         const SizedBox(width: 10),
         Expanded(
             child: _TauxSummaryItem(
-                label: 'RWA Taux',
+                label: 'RWA Taux'.tr(context),
                 value: rwa,
-                subtitle: 'Équivalent en actifs pondérés des risques')),
+                subtitle: 'Équivalent en actifs pondérés des risques'.tr(context))),
         const SizedBox(width: 10),
         Expanded(
             child: _TauxSummaryItem(
-                label: 'Contribution Risque Marché',
+                label: 'Contribution Risque Marché'.tr(context),
                 value: contribution,
-                subtitle: 'Part du risque de taux dans le RWA de marché')),
+                subtitle: 'Part du risque de taux dans le RWA de marché'.tr(context))),
       ],
     );
   }
@@ -32790,7 +32790,7 @@ class _MarketRwaStructureCardState extends State<_MarketRwaStructureCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _TauxBlockHeader(title: 'Structure du RWA Marché'),
+          _TauxBlockHeader(title: 'Structure du RWA Marché'.tr(context)),
           const SizedBox(height: 4),
           Text(
             'Part de chaque type de risque dans le RWA Marché',
@@ -33312,7 +33312,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Méthodologie'),
+        title: Text('Méthodologie'.tr(context)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -33367,7 +33367,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Fermer'),
+            child: Text('Fermer'.tr(context)),
           ),
         ],
       ),
@@ -33411,7 +33411,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _showImportExcelDialog,
                       icon: const Icon(Icons.file_upload_outlined, size: 16),
-                      label: const Text('Importer',
+                      label: Text('Importer'.tr(context),
                           style: TextStyle(fontSize: 13)),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -33428,7 +33428,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                       onPressed: _showAddPositionDialog,
                       icon: const Icon(Icons.add, size: 16),
                       label:
-                          const Text('Ajouter', style: TextStyle(fontSize: 13)),
+                          Text('Ajouter'.tr(context), style: TextStyle(fontSize: 13)),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         shape: RoundedRectangleBorder(
@@ -33487,7 +33487,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
           children: [
             Icon(Icons.inbox_outlined,
                 size: 48, color: _marketMutedFor(context)),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Aucune position de change',
               style: TextStyle(color: _marketMutedFor(context)),
@@ -33500,15 +33500,15 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
-        columns: const [
-          DataColumn(label: Text('Devise')),
-          DataColumn(label: Text('Actifs'), numeric: true),
-          DataColumn(label: Text('Passifs'), numeric: true),
-          DataColumn(label: Text('Achats à terme'), numeric: true),
-          DataColumn(label: Text('Ventes à terme'), numeric: true),
-          DataColumn(label: Text('Position nette'), numeric: true),
-          DataColumn(label: Text('Sens')),
-          DataColumn(label: Text('Actions')),
+        columns: [
+          DataColumn(label: Text('Devise'.tr(context))),
+          DataColumn(label: Text('Actifs'.tr(context)), numeric: true),
+          DataColumn(label: Text('Passifs'.tr(context)), numeric: true),
+          DataColumn(label: Text('Achats à terme'.tr(context)), numeric: true),
+          DataColumn(label: Text('Ventes à terme'.tr(context)), numeric: true),
+          DataColumn(label: Text('Position nette'.tr(context)), numeric: true),
+          DataColumn(label: Text('Sens'.tr(context))),
+          DataColumn(label: Text('Actions'.tr(context))),
         ],
         rows: _positions.map((pos) {
           final type = pos.netPosition > 0
@@ -33573,7 +33573,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                     IconButton(
                       icon: const Icon(Icons.edit, size: 16),
                       onPressed: () => _showEditPositionDialog(pos),
-                      tooltip: 'Modifier',
+                      tooltip: 'Modifier'.tr(context),
                       padding: EdgeInsets.zero,
                       constraints:
                           const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -33582,7 +33582,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                       icon:
                           const Icon(Icons.delete, size: 16, color: Colors.red),
                       onPressed: () => _deletePosition(pos.currency),
-                      tooltip: 'Supprimer',
+                      tooltip: 'Supprimer'.tr(context),
                       padding: EdgeInsets.zero,
                       constraints:
                           const BoxConstraints(minWidth: 32, minHeight: 32),
@@ -33621,7 +33621,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
               Expanded(
                 child: _buildSummaryCard(
                   context,
-                  label: 'Total Longues',
+                  label: 'Total Longues'.tr(context),
                   value: _fmt(fx.totalLongPositions),
                   icon: Icons.trending_up_rounded,
                   color: Colors.green,
@@ -33631,7 +33631,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
               Expanded(
                 child: _buildSummaryCard(
                   context,
-                  label: 'Total Courtes',
+                  label: 'Total Courtes'.tr(context),
                   value: _fmt(fx.totalShortPositions),
                   icon: Icons.trending_down_rounded,
                   color: Colors.red,
@@ -33641,7 +33641,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
               Expanded(
                 child: _buildSummaryCard(
                   context,
-                  label: 'Position Nette Globale',
+                  label: 'Position Nette Globale'.tr(context),
                   value: _fmt(fx.globalNetPosition),
                   icon: Icons.straighten_rounded,
                   color: Colors.blue,
@@ -33730,7 +33730,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
           // Ligne 1: Exigence FP Change
           _buildCalculationLine(
             context,
-            label: 'Exigence FP Change',
+            label: 'Exigence FP Change'.tr(context),
             formula: 'PNG (${_fmt(fx.globalNetPosition)}) × 9 %',
             value: _fmt(fx.capitalRequirement),
             valueColor: Colors.orange[700],
@@ -33740,7 +33740,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
           // Ligne 2: RWA Change
           _buildCalculationLine(
             context,
-            label: 'RWA Change',
+            label: 'RWA Change'.tr(context),
             formula: '${_fmt(fx.capitalRequirement)} × 11,11',
             value: _fmt(fx.marketRwa),
             valueColor: Colors.red[700],
@@ -33760,7 +33760,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('RWA Taux',
+                      Text('RWA Taux'.tr(context),
                           style: TextStyle(
                               fontSize: 11, color: _marketMutedFor(context))),
                       Text(_fmt(result.tauxRwa),
@@ -33774,7 +33774,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('RWA Actions',
+                      Text('RWA Actions'.tr(context),
                           style: TextStyle(
                               fontSize: 11, color: _marketMutedFor(context))),
                       Text(_fmt(result.actionsRwa),
@@ -33791,7 +33791,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('RWA Marché Total',
+                    Text('RWA Marché Total'.tr(context),
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -33807,7 +33807,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Contribution Change',
+                    Text('Contribution Change'.tr(context),
                         style: TextStyle(
                             fontSize: 11, color: _marketMutedFor(context))),
                     Text('${result.fxContributionPercent.toStringAsFixed(2)} %',
@@ -33883,8 +33883,8 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
   /// Importe des positions depuis un fichier Excel
   Future<void> _showImportExcelDialog() async {
     final file = await openFile(
-      acceptedTypeGroups: const [
-        XTypeGroup(label: 'Excel', extensions: ['xlsx']),
+      acceptedTypeGroups: [
+        XTypeGroup(label: 'Excel'.tr(context), extensions: ['xlsx']),
       ],
     );
     if (file == null) return;
@@ -33908,8 +33908,8 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
       if (dataSheet == null || sheetName == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text('Aucune donnée trouvée dans le fichier Excel')),
+            SnackBar(
+                content: Text('Aucune donnée trouvée dans le fichier Excel'.tr(context))),
           );
         }
         return;
@@ -34016,34 +34016,34 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
               TextField(
                 controller: currencyController,
                 decoration:
-                    const InputDecoration(labelText: 'Devise (ex: USD)'),
+                    InputDecoration(labelText: 'Devise (ex: USD)'.tr(context)),
                 enabled: !isEditing,
               ),
               const SizedBox(height: 3),
               TextField(
                 controller: assetsController,
-                decoration: const InputDecoration(labelText: 'Actifs'),
+                decoration: InputDecoration(labelText: 'Actifs'.tr(context)),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 3),
               TextField(
                 controller: liabilitiesController,
-                decoration: const InputDecoration(labelText: 'Passifs'),
+                decoration: InputDecoration(labelText: 'Passifs'.tr(context)),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 3),
               TextField(
                 controller: forwardPurchasesController,
-                decoration: const InputDecoration(labelText: 'Achats à terme'),
+                decoration: InputDecoration(labelText: 'Achats à terme'.tr(context)),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 3),
               TextField(
                 controller: forwardSalesController,
-                decoration: const InputDecoration(labelText: 'Ventes à terme'),
+                decoration: InputDecoration(labelText: 'Ventes à terme'.tr(context)),
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
               ),
@@ -34053,7 +34053,7 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
+            child: Text('Annuler'.tr(context)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -34086,20 +34086,20 @@ class _ChangeRiskScreenState extends State<_ChangeRiskScreen> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Supprimer la position'),
+        title: Text('Supprimer la position'.tr(context)),
         content:
             Text('Êtes-vous sûr de vouloir supprimer la position $currency ?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
+            child: Text('Annuler'.tr(context)),
           ),
           ElevatedButton(
             onPressed: () {
               _repository.deletePosition(currency);
               Navigator.pop(dialogContext);
             },
-            child: const Text('Supprimer'),
+            child: Text('Supprimer'.tr(context)),
           ),
         ],
       ),
@@ -34320,28 +34320,28 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
             // les agrégats (exigence, RWA).
             items: [
               _SummaryItemData(
-                  label: 'Position brute',
+                  label: 'Position brute'.tr(context),
                   value: _fcfa(gross),
-                  subtitle: 'Somme des valeurs absolues des positions'),
+                  subtitle: 'Somme des valeurs absolues des positions'.tr(context)),
               _SummaryItemData(
-                  label: 'Risque spécifique (9%)',
+                  label: 'Risque spécifique (9%)'.tr(context),
                   value: _fcfa(specific),
-                  subtitle: 'Position brute × 9 %'),
+                  subtitle: 'Position brute × 9 %'.tr(context)),
               _SummaryItemData(
-                  label: 'Position Nette',
+                  label: 'Position Nette'.tr(context),
                   value: _fcfa(net),
-                  subtitle: 'Positions longues moins positions courtes'),
+                  subtitle: 'Positions longues moins positions courtes'.tr(context)),
               _SummaryItemData(
-                  label: 'Risque général (9%)',
+                  label: 'Risque général (9%)'.tr(context),
                   value: _fcfa(general),
-                  subtitle: '|Position nette| × 9 %'),
+                  subtitle: '|Position nette| × 9 %'.tr(context)),
               _SummaryItemData(
-                  label: 'Exigence FP Actions',
+                  label: 'Exigence FP Actions'.tr(context),
                   value: _fcfa(exigence),
                   subtitle:
                       'Risque sp\u00e9cifique + risque g\u00e9n\u00e9ral'),
               _SummaryItemData(
-                  label: 'RWA Actions',
+                  label: 'RWA Actions'.tr(context),
                   value: _fcfa(rwa),
                   subtitle:
                       '\u00c9quivalent en actifs pond\u00e9r\u00e9s des risques'),
@@ -34391,8 +34391,8 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
         children: [
           Row(
             children: [
-              const Flexible(
-                  child: _TauxBlockHeader(title: 'Portefeuille Actions')),
+              Flexible(
+                  child: _TauxBlockHeader(title: 'Portefeuille Actions'.tr(context))),
               const SizedBox(width: 10),
               // Nature de la position affichée UNE fois : un portefeuille de
               // titres achetés est long par nature, inutile d'une colonne.
@@ -34402,7 +34402,7 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
                   color: _marketSuccess.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(2),
                 ),
-                child: const Text('POSITIONS LONGUES',
+                child: Text('POSITIONS LONGUES'.tr(context),
                     style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.w700,
@@ -35074,7 +35074,7 @@ class _EquityPortfolioTableState extends State<_EquityPortfolioTable> {
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     alignment: Alignment.centerLeft,
                     decoration: _footerDecoration(isDark),
-                    child: Text('TOTAL',
+                    child: Text('TOTAL'.tr(context),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -35372,31 +35372,31 @@ Exigence FP Marché = Σ exigences par risque
 RWA Marché = Exigence FP Marché × 11,11''',
                         items: [
                           _SummaryItemData(
-                              label: 'Encours total',
+                              label: 'Encours total'.tr(context),
                               value: _fcfa(totalExposure),
                               subtitle:
                                   'Exposition brute globale (Actions + Obligations)'),
                           _SummaryItemData(
-                              label: 'Exigence FP Taux',
+                              label: 'Exigence FP Taux'.tr(context),
                               value: _fcfa(r.interestRateRisk),
                               subtitle:
                                   'Risque spécifique et général sur les taux'),
                           _SummaryItemData(
-                              label: 'Exigence FP Actions',
+                              label: 'Exigence FP Actions'.tr(context),
                               value: _fcfa(r.equityRisk),
-                              subtitle: 'Risque spécifique et général sur les actions'),
+                              subtitle: 'Risque spécifique et général sur les actions'.tr(context)),
                           _SummaryItemData(
-                              label: 'Exigence FP Change',
+                              label: 'Exigence FP Change'.tr(context),
                               value: _fcfa(r.foreignExchangeRisk),
-                              subtitle: 'Risque de change sur la position nette globale'),
+                              subtitle: 'Risque de change sur la position nette globale'.tr(context)),
                           _SummaryItemData(
-                              label: 'Exigence FP Marché',
+                              label: 'Exigence FP Marché'.tr(context),
                               value: _fcfa(r.capitalRequirement),
-                              subtitle: 'Somme des exigences de fonds propres'),
+                              subtitle: 'Somme des exigences de fonds propres'.tr(context)),
                           _SummaryItemData(
-                              label: 'RWA Marché',
+                              label: 'RWA Marché'.tr(context),
                               value: _fcfa(r.marketRwa),
-                              subtitle: 'Exigence globale convertie en risques pondérés'),
+                              subtitle: 'Exigence globale convertie en risques pondérés'.tr(context)),
                         ],
                       ),
                       const SizedBox(height: 3),
@@ -35428,31 +35428,31 @@ Exigence FP Marché = Σ exigences par risque
 RWA Marché = Exigence FP Marché × 11,11''',
                         items: [
                           _SummaryItemData(
-                              label: 'Encours total',
+                              label: 'Encours total'.tr(context),
                               value: _fcfa(totalExposure),
                               subtitle:
                                   'Exposition brute globale (Actions + Obligations)'),
                           _SummaryItemData(
-                              label: 'Exigence FP Taux',
+                              label: 'Exigence FP Taux'.tr(context),
                               value: _fcfa(r.interestRateRisk),
                               subtitle:
                                   'Risque spécifique et général sur les taux'),
                           _SummaryItemData(
-                              label: 'Exigence FP Actions',
+                              label: 'Exigence FP Actions'.tr(context),
                               value: _fcfa(r.equityRisk),
-                              subtitle: 'Risque spécifique et général sur les actions'),
+                              subtitle: 'Risque spécifique et général sur les actions'.tr(context)),
                           _SummaryItemData(
-                              label: 'Exigence FP Change',
+                              label: 'Exigence FP Change'.tr(context),
                               value: _fcfa(r.foreignExchangeRisk),
-                              subtitle: 'Risque de change sur la position nette globale'),
+                              subtitle: 'Risque de change sur la position nette globale'.tr(context)),
                           _SummaryItemData(
-                              label: 'Exigence FP Marché',
+                              label: 'Exigence FP Marché'.tr(context),
                               value: _fcfa(r.capitalRequirement),
-                              subtitle: 'Somme des exigences de fonds propres'),
+                              subtitle: 'Somme des exigences de fonds propres'.tr(context)),
                           _SummaryItemData(
-                              label: 'RWA Marché',
+                              label: 'RWA Marché'.tr(context),
                               value: _fcfa(r.marketRwa),
-                              subtitle: 'Exigence globale convertie en risques pondérés'),
+                              subtitle: 'Exigence globale convertie en risques pondérés'.tr(context)),
                         ],
                       ),
                       const SizedBox(height: 16),
