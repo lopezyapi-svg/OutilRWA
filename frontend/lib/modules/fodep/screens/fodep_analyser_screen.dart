@@ -852,12 +852,15 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                     SizedBox(
                       width: 110,
                       child: Text(
-                        observe == null ? '—' : '${observe.toStringAsFixed(2)} %',
+                        // Tiret court et discret pour l'absence de valeur :
+                        // le tiret cadratin en gras (w800) rendait une barre
+                        // épaisse, plus visible qu'un vrai résultat.
+                        observe == null ? '–' : '${observe.toStringAsFixed(2)} %',
                         textAlign: TextAlign.right,
                         style: TextStyle(
                           fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
-                          color: couleur,
+                          fontWeight: observe == null ? FontWeight.w400 : FontWeight.w800,
+                          color: observe == null ? c.faint : couleur,
                           fontFeatures: Dash.tabular,
                         ),
                       ),
@@ -866,12 +869,12 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                     SizedBox(
                       width: 110,
                       child: Text(
-                        seuil == null ? '—' : '${seuil.toStringAsFixed(2)} %',
+                        seuil == null ? '–' : '${seuil.toStringAsFixed(2)} %',
                         textAlign: TextAlign.right,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: c.muted,
+                          color: seuil == null ? c.faint : c.muted,
                           fontFeatures: Dash.tabular,
                         ),
                       ),
