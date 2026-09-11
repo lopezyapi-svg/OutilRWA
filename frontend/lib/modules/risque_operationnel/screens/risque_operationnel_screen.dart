@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
@@ -352,11 +353,11 @@ Future<void> _confirm(BuildContext ctx, String msg, Future<void> Function() acti
   final ok = await showDialog<bool>(
     context: ctx,
     builder: (dialogCtx) => AlertDialog(
-      title: const Text('Confirmation'),
+      title: Text('Confirmation'.tr(ctx)),
       content: Text(msg),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: const Text('Annuler')),
-        FilledButton(onPressed: () => Navigator.pop(dialogCtx, true), child: const Text('Confirmer')),
+        TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: Text('Annuler'.tr(ctx))),
+        FilledButton(onPressed: () => Navigator.pop(dialogCtx, true), child: Text('Confirmer'.tr(ctx))),
       ],
     ),
   );
@@ -792,25 +793,25 @@ class _DashboardViewState extends State<_DashboardView> {
 
                           final monitoringCards = <Widget>[
                             RoHeroStatCard(
-                              label: 'Non clôturés',
+                              label: 'Non clôturés'.tr(context),
                               value: '${d.widget2.incidentsNonClos}',
                               valueColor: _kWarning,
                               subtitle: 'Incidents ouverts à traiter',
                             ),
                             RoHeroStatCard(
-                              label: 'Évolution N-1',
+                              label: 'Évolution N-1'.tr(context),
                               value: evoStr,
                               valueColor: evoColor,
                               subtitle: 'Pertes vs même période N-1',
                             ),
                             RoHeroStatCard(
-                              label: 'Actions en retard',
+                              label: 'Actions en retard'.tr(context),
                               value: '${d.widget3.actionsEnRetard}',
                               valueColor: d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
                               subtitle: "Plans d'action non clôturés",
                             ),
                             RoHeroStatCard(
-                              label: 'Contrôles non conformes',
+                              label: 'Contrôles non conformes'.tr(context),
                               value: '${d.widget3.controlesNonConformes}',
                               valueColor:
                                   d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
@@ -996,7 +997,7 @@ class _RoDashboardHeader extends StatelessWidget {
           const SizedBox(width: 8),
           _RoDashboardIconButton(
             icon: Icons.refresh_rounded,
-            tooltip: 'Actualiser',
+            tooltip: 'Actualiser'.tr(context),
             onTap: onRefresh,
             colors: c,
           ),
@@ -1146,37 +1147,37 @@ class _RoDashSummaryRow extends StatelessWidget {
 
     final items = <({String label, String value, Color color, String subtitle})>[
       (
-        label: 'Capital minimum (Art. 89)',
+        label: 'Capital minimum (Art. 89)'.tr(context),
         value: roAmount(context, data.widget1.exigenceFondsPropres),
         color: _kBlue,
         subtitle: '15 % × PNB moyen positif (BIA)',
       ),
       (
-        label: 'RWA opérationnel',
+        label: 'RWA opérationnel'.tr(context),
         value: roAmount(context, data.widget1.aprRisqueOp),
         color: AppColors.prudentialSolvency,
         subtitle: 'Capital minimum × 11,11 (1 / 9 %)',
       ),
       (
-        label: 'Statut réglementaire',
+        label: 'Statut réglementaire'.tr(context),
         value: data.widget1.statutReglementaire,
         color: statutColor,
         subtitle: 'Conforme si seuils respectés',
       ),
       (
-        label: 'Incidents (mois)',
+        label: 'Incidents (mois)'.tr(context),
         value: '${data.widget2.totalIncidentsMois}',
         color: _kWarning,
         subtitle: "Nombre d'incidents déclarés",
       ),
       (
-        label: 'Pertes nettes (mois)',
+        label: 'Pertes nettes (mois)'.tr(context),
         value: roAmount(context, data.widget2.pertesNettesMois),
         color: _kDanger,
         subtitle: 'Perte brute - Récupérations',
       ),
       (
-        label: 'KRI hors seuil',
+        label: 'KRI hors seuil'.tr(context),
         value: '${data.widget3.kriHorsSeuil}',
         color: data.widget3.kriHorsSeuil > 0 ? _kDanger : _kSuccess,
         subtitle: "Indicateurs en zone d'alerte",
@@ -1373,7 +1374,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                                 child: const Icon(Icons.tune_rounded, size: 15, color: Color(0xFF1565C0)),
                               ),
                               const SizedBox(width: 10),
-                              const Expanded(child: Text('Paramètres',
+                              Expanded(child: Text('Paramètres'.tr(context),
                                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
                               _badge('Art. 545', const Color(0xFF1565C0)),
                             ]),
@@ -1406,7 +1407,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                                   _pSection('Seuil de résistance', Icons.speed_rounded, _kWarning),
                                   const SizedBox(height: 8),
                                   Row(children: [
-                                    const Text('Ratio cible', style: TextStyle(fontSize: 11, color: _kMuted)),
+                                    Text('Ratio cible'.tr(context), style: TextStyle(fontSize: 11, color: _kMuted)),
                                     const Spacer(),
                                     Text('${_seuilValue.toStringAsFixed(1)} %',
                                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _kMuted)),
@@ -1425,12 +1426,12 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                                       onChanged: (v) => setState(() { _seuilValue = v; _simulated = true; }),
                                     ),
                                   ),
-                                  const Row(
+                                  Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('4 %',          style: TextStyle(fontSize: 10, color: _kMuted)),
-                                      Text('BCEAO : 8 %',  style: TextStyle(fontSize: 10, color: _kMuted)),
-                                      Text('25 %',         style: TextStyle(fontSize: 10, color: _kMuted)),
+                                      Text('4 %'.tr(context),          style: TextStyle(fontSize: 10, color: _kMuted)),
+                                      Text('BCEAO : 8 %'.tr(context),  style: TextStyle(fontSize: 10, color: _kMuted)),
+                                      Text('25 %'.tr(context),         style: TextStyle(fontSize: 10, color: _kMuted)),
                                     ],
                                   ),
                                 ],
@@ -1450,7 +1451,7 @@ class _SimulationCriseViewState extends State<_SimulationCriseView> {
                         : Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                             Icon(Icons.science_outlined, size: 64, color: _kMuted.withValues(alpha: 0.3)),
                             const SizedBox(height: 16),
-                            const Text('Saisissez au moins un paramètre\npour lancer la simulation',
+                            Text('Saisissez au moins un paramètre\npour lancer la simulation'.tr(context),
                               textAlign: TextAlign.center,
                               style: TextStyle(color: _kMuted, fontSize: 14, height: 1.5)),
                             const SizedBox(height: 6),
@@ -1704,7 +1705,7 @@ class _CriseScenarioCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  const Text('Ratio résistance', style: TextStyle(fontSize: 9, color: _kMuted)),
+                  Text('Ratio résistance'.tr(context), style: TextStyle(fontSize: 9, color: _kMuted)),
                   const Spacer(),
                   Text(ratioStr,
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
@@ -2018,19 +2019,19 @@ class _PertesTop5Card extends StatelessWidget {
               Container(width: 3, height: 16, decoration: BoxDecoration(
                 color: _kDanger, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 10),
-              const Expanded(child: Text('Top 5 - Incidents par perte nette',
+              Expanded(child: Text('Top 5 - Incidents par perte nette'.tr(context),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
               if (top5.isEmpty)
-                const Text('Aucun incident', style: TextStyle(fontSize: 11, color: _kMuted))
+                Text('Aucun incident'.tr(context), style: TextStyle(fontSize: 11, color: _kMuted))
               else
                 _badge('${top5.length} incidents', _kDanger),
             ]),
           ),
           // Corps
           if (top5.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(24),
-              child: Center(child: Text('Aucun incident enregistré.', style: TextStyle(color: _kMuted))),
+              child: Center(child: Text('Aucun incident enregistré.'.tr(context), style: TextStyle(color: _kMuted))),
             )
           else
             Padding(
@@ -2187,7 +2188,7 @@ class _PertesLigneCard extends StatelessWidget {
               Container(width: 3, height: 16, decoration: BoxDecoration(
                 color: _kBlue, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 10),
-              const Expanded(child: Text('Pertes par ligne de métier',
+              Expanded(child: Text('Pertes par ligne de métier'.tr(context),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
               Text(AppFormatters.currency(totalNette),
                 style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kDanger)),
@@ -2195,9 +2196,9 @@ class _PertesLigneCard extends StatelessWidget {
           ),
           // Corps
           if (sorted.isEmpty)
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(24),
-              child: Center(child: Text('Aucune donnée.', style: TextStyle(color: _kMuted))),
+              child: Center(child: Text('Aucune donnée.'.tr(context), style: TextStyle(color: _kMuted))),
             )
           else
             Padding(
@@ -2295,31 +2296,31 @@ class _PertesSummaryBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = <({String label, String value, Color color, String subtitle})>[
       (
-        label: 'Perte brute totale',
+        label: 'Perte brute totale'.tr(context),
         value: AppFormatters.currency(totalBrute),
         color: _kDanger,
         subtitle: 'Exposition totale avant atténuation',
       ),
       (
-        label: 'Perte nette totale',
+        label: 'Perte nette totale'.tr(context),
         value: AppFormatters.currency(totalNette),
         color: _kDanger,
         subtitle: 'Brute − récupérée (base calcul BIA)',
       ),
       (
-        label: 'Taux de récupération',
+        label: 'Taux de récupération'.tr(context),
         value: '${tauxRecup.toStringAsFixed(1)} %',
         color: _kSuccess,
         subtitle: 'Récupérée / brute × 100',
       ),
       (
-        label: 'Pertes significatives',
+        label: 'Pertes significatives'.tr(context),
         value: '$significatifs',
         color: _kWarning,
         subtitle: 'Incidents dépassant le seuil',
       ),
       (
-        label: 'Perte moy. / incident',
+        label: 'Perte moy. / incident'.tr(context),
         value: AppFormatters.currency(moyenne),
         color: _kMuted,
         subtitle: "Nette / nombre d'incidents",
@@ -2516,7 +2517,7 @@ class _KriViewState extends State<_KriView> {
           final unit = _manualKriResultUnit(selectedKriId);
           final isRatio = _isRatioKri(selectedKriId);
           return AlertDialog(
-            title: const Text('Saisie des données KRI'),
+            title: Text('Saisie des données KRI'.tr(context)),
             content: SingleChildScrollView(
               child: Form(
                 key: formKey,
@@ -2524,7 +2525,7 @@ class _KriViewState extends State<_KriView> {
                   DropdownButtonFormField<String>(
                     initialValue: selectedKriId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Indicateur', isDense: true),
+                    decoration: InputDecoration(labelText: 'Indicateur'.tr(context), isDense: true),
                     items: availableKris.map((k) => DropdownMenuItem(
                       value: k.definition.id,
                       child: Text(
@@ -2581,7 +2582,7 @@ class _KriViewState extends State<_KriView> {
                   TextFormField(
                     controller: dateCtrl,
                     readOnly: true,
-                    decoration: const InputDecoration(labelText: 'Date de mesure', isDense: true, suffixIcon: Icon(Icons.calendar_month_outlined, size: 18)),
+                    decoration: InputDecoration(labelText: 'Date de mesure'.tr(context), isDense: true, suffixIcon: Icon(Icons.calendar_month_outlined, size: 18)),
                     onTap: () async {
                       final current = DateTime.tryParse(dateCtrl.text) ?? DateTime.now();
                       final picked = await showDatePicker(
@@ -2600,7 +2601,7 @@ class _KriViewState extends State<_KriView> {
                   TextFormField(
                     controller: commentaireCtrl,
                     maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Commentaire (optionnel)', isDense: true),
+                    decoration: InputDecoration(labelText: 'Commentaire (optionnel)'.tr(context), isDense: true),
                   ),
                   const SizedBox(height: 14),
                   if (computedValue != null)
@@ -2623,12 +2624,12 @@ class _KriViewState extends State<_KriView> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(ctx2).pop(false), child: const Text('Annuler')),
+              TextButton(onPressed: () => Navigator.of(ctx2).pop(false), child: Text('Annuler'.tr(context))),
               FilledButton(
                 onPressed: () async {
                   if (!formKey.currentState!.validate()) return;
                   if (computedValue == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Valeur KRI invalide.')));
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Valeur KRI invalide.'.tr(context))));
                     return;
                   }
                   try {
@@ -2645,7 +2646,7 @@ class _KriViewState extends State<_KriView> {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur lors de l\'enregistrement.')));
                   }
                 },
-                child: const Text('Enregistrer'),
+                child: Text('Enregistrer'.tr(context)),
               ),
             ],
           );
@@ -2655,7 +2656,7 @@ class _KriViewState extends State<_KriView> {
       if (saved == true) {
         _reload();
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Valeur KRI enregistrée.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Valeur KRI enregistrée.'.tr(context))));
       }
     });
   }
@@ -2760,7 +2761,7 @@ class _KriViewState extends State<_KriView> {
                         _kriPanelSection('Distribution', Icons.bar_chart_rounded, _kMuted),
                         const SizedBox(height: 8),
                         if (kris.isNotEmpty) _kriDistBar(normal, alerte, critique, nonRens, kris.length)
-                        else const Text('Aucun KRI', style: TextStyle(fontSize: 11, color: _kMuted)),
+                        else Text('Aucun KRI'.tr(context), style: TextStyle(fontSize: 11, color: _kMuted)),
 
                         const SizedBox(height: 16),
                         // Filtre par statut
@@ -2790,7 +2791,7 @@ class _KriViewState extends State<_KriView> {
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               textStyle: const TextStyle(fontSize: 12),
                             ),
-                            label: const Text('Saisir données KRI'),
+                            label: Text('Saisir données KRI'.tr(context)),
                           ),
                         ),
 
@@ -3038,7 +3039,7 @@ class _KriBanner extends StatelessWidget {
         Expanded(child: Column(
           crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('INDICATEURS CLÉS DE RISQUE · ART. 313 BCEAO/UMOA',
+            Text('INDICATEURS CLÉS DE RISQUE · ART. 313 BCEAO/UMOA'.tr(context),
               style: TextStyle(color: _kMuted,
                 fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 0.7)),
             const SizedBox(height: 2),
@@ -3403,7 +3404,7 @@ class _CartographieViewState extends State<_CartographieView> {
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(edit == null ? 'Nouveau risque cartographié' : 'Modifier le risque',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Cartographie des risques opérationnels',
+                Text('Cartographie des risques opérationnels'.tr(context),
                   style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
               ])),
             ]),
@@ -3448,7 +3449,7 @@ class _CartographieViewState extends State<_CartographieView> {
           actions: [
             OutlinedButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler'),
+              child: Text('Annuler'.tr(context)),
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
@@ -3507,7 +3508,7 @@ class _CartographieViewState extends State<_CartographieView> {
                 FilledButton.icon(
                   onPressed: () => _showForm(),
                   icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Nouveau risque'),
+                  label: Text('Nouveau risque'.tr(context)),
                 ),
               ],
             ),
@@ -3534,12 +3535,12 @@ class _CartographieViewState extends State<_CartographieView> {
                         ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                             Icon(Icons.map_outlined, size: 52, color: _kMuted.withValues(alpha: 0.3)),
                             const SizedBox(height: 12),
-                            const Text('Aucun risque enregistré.', style: TextStyle(color: _kMuted, fontSize: 13)),
+                            Text('Aucun risque enregistré.'.tr(context), style: TextStyle(color: _kMuted, fontSize: 13)),
                             const SizedBox(height: 8),
                             OutlinedButton.icon(
                               onPressed: () => _showForm(),
                               icon: const Icon(Icons.add_rounded, size: 16),
-                              label: const Text('Ajouter le premier risque'),
+                              label: Text('Ajouter le premier risque'.tr(context)),
                             ),
                           ]))
                         : Column(
@@ -3635,7 +3636,7 @@ class _RisqueListItem extends StatelessWidget {
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: lc, height: 1.0)),
               ),
               const SizedBox(height: 3),
-              Text('P×I', style: TextStyle(fontSize: 8, color: lc.withValues(alpha: 1.0),
+              Text('P×I'.tr(context), style: TextStyle(fontSize: 8, color: lc.withValues(alpha: 1.0),
                 fontWeight: FontWeight.w700)),
             ]),
           ),
@@ -3664,17 +3665,17 @@ class _RisqueListItem extends StatelessWidget {
                   Row(children: [
                     _metricTile('P', '${r.probabilite}', _kWarning),
                     Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Text('×', style: TextStyle(fontSize: 12,
+                      child: Text('×'.tr(context), style: TextStyle(fontSize: 12,
                         color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 1.0)))),
                     _metricTile('I', '${r.impact}', const Color(0xFFF97316)),
                     Padding(padding: const EdgeInsets.symmetric(horizontal: 5),
-                      child: Text('=', style: TextStyle(fontSize: 12,
+                      child: Text('='.tr(context), style: TextStyle(fontSize: 12,
                         color: (isDark ? AppTheme.darkMuted : _kMuted).withValues(alpha: 1.0)))),
                     _metricTile('Score', '$score', lc),
                     const SizedBox(width: 14),
                     Icon(Icons.arrow_forward_ios_rounded, size: 9, color: _kMuted.withValues(alpha: 0.4)),
                     const SizedBox(width: 6),
-                    const Text('Résiduel ', style: TextStyle(fontSize: 10, color: _kMuted)),
+                    Text('Résiduel '.tr(context), style: TextStyle(fontSize: 10, color: _kMuted)),
                     Text(r.niveauResiduel.toStringAsFixed(1),
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
                         color: isDark ? AppTheme.darkText : AppTheme.text)),
@@ -3768,25 +3769,25 @@ class _CartographieSummaryBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = <({String label, String value, Color color, String subtitle})>[
       (
-        label: 'Risques cartographiés',
+        label: 'Risques cartographiés'.tr(context),
         value: '$total',
         color: _kBlue,
         subtitle: 'Total du référentiel de risques',
       ),
       (
-        label: 'Niveau faible',
+        label: 'Niveau faible'.tr(context),
         value: '$faible',
         color: _kSuccess,
         subtitle: 'P×I ≤ 4 - surveillance standard',
       ),
       (
-        label: 'Niveau élevé',
+        label: 'Niveau élevé'.tr(context),
         value: '$eleve',
         color: const Color(0xFFF97316),
         subtitle: 'P×I 10–16 - plan recommandé',
       ),
       (
-        label: 'Niveau critique',
+        label: 'Niveau critique'.tr(context),
         value: '$critique',
         color: _kDanger,
         subtitle: 'P×I > 16 - action immédiate',
@@ -3913,7 +3914,7 @@ class _ControlesViewState extends State<_ControlesView> {
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(edit == null ? 'Nouveau contrôle interne' : 'Modifier le contrôle',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Dispositif de contrôle opérationnel',
+                Text('Dispositif de contrôle opérationnel'.tr(context),
                   style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
               ])),
             ]),
@@ -3965,7 +3966,7 @@ class _ControlesViewState extends State<_ControlesView> {
           actions: [
             OutlinedButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler'),
+              child: Text('Annuler'.tr(context)),
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
@@ -4015,7 +4016,7 @@ class _ControlesViewState extends State<_ControlesView> {
                 const SizedBox(width: 10),
                 _badge('Taux moyen : ${tauxMoyen.toStringAsFixed(1)} %', tauxMoyen >= 80 ? _kSuccess : _kWarning),
                 const Spacer(),
-                FilledButton.icon(onPressed: () => _showForm(), icon: const Icon(Icons.add, size: 18), label: const Text('Nouveau contrôle')),
+                FilledButton.icon(onPressed: () => _showForm(), icon: const Icon(Icons.add, size: 18), label: Text('Nouveau contrôle'.tr(context))),
               ],
             ),
             const SizedBox(height: 12),
@@ -4031,7 +4032,7 @@ class _ControlesViewState extends State<_ControlesView> {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: items.isEmpty
-                    ? const Center(child: Text('Aucun contrôle enregistré.', style: TextStyle(color: _kMuted)))
+                    ? Center(child: Text('Aucun contrôle enregistré.'.tr(context), style: TextStyle(color: _kMuted)))
                     : SingleChildScrollView(
                         child: Table(
                           columnWidths: const {0: FixedColumnWidth(110), 1: FlexColumnWidth(2), 2: FixedColumnWidth(100), 3: FixedColumnWidth(90), 4: FixedColumnWidth(100), 5: FixedColumnWidth(90), 6: FixedColumnWidth(90)},
@@ -4300,7 +4301,7 @@ class _PlansViewState extends State<_PlansView> {
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(edit == null ? 'Nouveau plan d\'action' : 'Modifier le plan',
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                  const Text('Suivi et traçabilité des actions correctives',
+                  Text('Suivi et traçabilité des actions correctives'.tr(context),
                     style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
                 ])),
               ]),
@@ -4359,9 +4360,9 @@ class _PlansViewState extends State<_PlansView> {
                               TextFormField(
                                 controller: auditCtrl,
                                 style: const TextStyle(fontSize: 13.5),
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   isDense: true,
-                                  hintText: 'AUD-2024-Q1',
+                                  hintText: 'AUD-2024-Q1'.tr(context),
                                   hintStyle: TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
                                   contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.zero),
@@ -4378,10 +4379,10 @@ class _PlansViewState extends State<_PlansView> {
                                   border: Border.all(color: AppTheme.border),
                                   color: const Color(0xFFFBFCFF),
                                 ),
-                                child: const Row(children: [
+                                child: Row(children: [
                                   Icon(Icons.info_outline, size: 14, color: _kMuted),
                                   SizedBox(width: 8),
-                                  Text('Aucun enregistrement disponible',
+                                  Text('Aucun enregistrement disponible'.tr(context),
                                     style: TextStyle(fontSize: 12.5, color: _kMuted)),
                                 ]),
                               )
@@ -4390,9 +4391,9 @@ class _PlansViewState extends State<_PlansView> {
                                 initialValue: sourceRef,
                                 isExpanded: true,
                                 icon: const Icon(Icons.expand_more_rounded, size: 18, color: _kMuted),
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   isDense: true,
-                                  hintText: 'Sélectionner…',
+                                  hintText: 'Sélectionner…'.tr(context),
                                   hintStyle: TextStyle(fontSize: 12.5, color: Color(0xFFB0BAD0)),
                                   contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.zero),
@@ -4432,7 +4433,7 @@ class _PlansViewState extends State<_PlansView> {
             actions: [
               OutlinedButton(
                 onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Annuler'),
+                child: Text('Annuler'.tr(context)),
               ),
               const SizedBox(width: 8),
               FilledButton.icon(
@@ -4596,7 +4597,7 @@ class _PlansViewState extends State<_PlansView> {
                             Icon(Icons.analytics_rounded, size: 12,
                               color: txReal >= 80 ? _kSuccess : _kWarning),
                             const SizedBox(width: 5),
-                            const Text('Taux global BCEAO',
+                            Text('Taux global BCEAO'.tr(context),
                               style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600)),
                           ]),
                           const SizedBox(height: 6),
@@ -4635,10 +4636,10 @@ class _PlansViewState extends State<_PlansView> {
                             border: Border.all(color: _kDanger.withValues(alpha: 0.3)),
                           ),
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            const Row(children: [
+                            Row(children: [
                               Icon(Icons.gavel_rounded, size: 12, color: _kDanger),
                               SizedBox(width: 5),
-                              Text('Délai 90j dépassé',
+                              Text('Délai 90j dépassé'.tr(context),
                                 style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: _kDanger)),
                             ]),
                             const SizedBox(height: 4),
@@ -4691,7 +4692,7 @@ class _PlansViewState extends State<_PlansView> {
                           ),
                           onPressed: () => _showForm(),
                           icon: const Icon(Icons.add_rounded, size: 16),
-                          label: const Text('Nouveau plan'),
+                          label: Text('Nouveau plan'.tr(context)),
                         ),
                       ),
                     ]),
@@ -4735,7 +4736,7 @@ class _PlansViewState extends State<_PlansView> {
                       Container(
                         padding: const EdgeInsets.all(32),
                         alignment: Alignment.center,
-                        child: const Text('Aucun plan correspondant au filtre.',
+                        child: Text('Aucun plan correspondant au filtre.'.tr(context),
                           style: TextStyle(color: _kMuted, fontSize: 13)),
                       )
                     else
@@ -4954,10 +4955,10 @@ class _PlanCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(color: _kDanger.withValues(alpha: 0.35)),
                           ),
-                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
                             Icon(Icons.gavel_rounded, size: 9, color: _kDanger),
                             SizedBox(width: 3),
-                            Text('+90j UEMOA', style: TextStyle(fontSize: 9, color: _kDanger,
+                            Text('+90j UEMOA'.tr(context), style: TextStyle(fontSize: 9, color: _kDanger,
                               fontWeight: FontWeight.w800)),
                           ]),
                         ),
@@ -5019,7 +5020,7 @@ class _PlanCard extends StatelessWidget {
                         ],
                         if (p.enRetard) ...[
                           const SizedBox(height: 2),
-                          const Text('En retard', style: TextStyle(fontSize: 9.5, color: _kDanger,
+                          Text('En retard'.tr(context), style: TextStyle(fontSize: 9.5, color: _kDanger,
                             fontWeight: FontWeight.w700)),
                         ] else if (p.joursRestants > 0 && p.statut != 'Terminé') ...[
                           const SizedBox(height: 2),
@@ -5072,14 +5073,14 @@ class _PlanCard extends StatelessWidget {
                       // Actions
                       IconButton(
                         icon: const Icon(Icons.edit_outlined, size: 16),
-                        tooltip: 'Modifier',
+                        tooltip: 'Modifier'.tr(context),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         onPressed: onEdit,
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete_outline, size: 16, color: _kDanger),
-                        tooltip: 'Supprimer',
+                        tooltip: 'Supprimer'.tr(context),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                         onPressed: onDelete,
@@ -5249,7 +5250,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                         color: accent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
-                      child: Text('xlsx / pdf',
+                      child: Text('xlsx / pdf'.tr(context),
                           style: TextStyle(fontSize: 10, color: accent, fontWeight: FontWeight.w600)),
                     ),
                     const Spacer(),
@@ -5261,13 +5262,13 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                     ),
                   ]),
                   const SizedBox(height: 6),
-                  Text('Sélectionnez le format du fichier à générer.',
+                  Text('Sélectionnez le format du fichier à générer.'.tr(context),
                       style: TextStyle(fontSize: 12, color: muted)),
                   const SizedBox(height: 18),
                   optionRow(
                     icon: Icons.table_chart_outlined,
                     color: const Color(0xFF1E88E5),
-                    label: 'Excel',
+                    label: 'Excel'.tr(context),
                     badge: '.xlsx',
                     description: 'Tableur éditable - formules, filtres et tri',
                     value: 'excel',
@@ -5276,7 +5277,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                   optionRow(
                     icon: Icons.picture_as_pdf_outlined,
                     color: const Color(0xFFE53935),
-                    label: 'PDF',
+                    label: 'PDF'.tr(context),
                     badge: '.pdf',
                     description: 'Document mis en page, prêt à imprimer ou partager',
                     value: 'pdf',
@@ -5287,7 +5288,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                     child: TextButton(
                       onPressed: () => Navigator.pop(ctx),
                       style: TextButton.styleFrom(foregroundColor: muted),
-                      child: const Text('Annuler'),
+                      child: Text('Annuler'.tr(context)),
                     ),
                   ),
                 ],
@@ -5395,7 +5396,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
         requiredExtension: '.xlsx', suggestedName: 'historique_ro_$ts.xlsx');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export Excel réussi'), backgroundColor: _kSuccess),
+        SnackBar(content: Text('Export Excel réussi'.tr(context)), backgroundColor: _kSuccess),
       );
     }
   }
@@ -5426,7 +5427,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
           padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: const pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.all(pw.Radius.circular(4))),
           child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-            pw.Text('Historique Événements - Risque Opérationnel',
+            pw.Text('Historique Événements - Risque Opérationnel'.tr(context),
               style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.white, font: fontBold)),
             pw.Text(dateStr, style: pw.TextStyle(fontSize: 9, color: const PdfColor.fromInt(0xFFB0C4D8), font: fontNormal)),
           ]),
@@ -5489,7 +5490,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
         requiredExtension: '.pdf', suggestedName: 'historique_ro_$ts.pdf');
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Export PDF réussi'), backgroundColor: _kSuccess),
+        SnackBar(content: Text('Export PDF réussi'.tr(context)), backgroundColor: _kSuccess),
       );
     }
   }
@@ -5526,7 +5527,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                       children: [
                         const Icon(Icons.lock_outline, size: 14, color: _kMuted),
                         const SizedBox(width: 6),
-                        const Text('Journal non modifiable - conservation 7 ans (UMOA)',
+                        Text('Journal non modifiable - conservation 7 ans (UMOA)'.tr(context),
                             style: TextStyle(fontSize: 12, color: _kMuted)),
                         const Spacer(),
                         // Date début
@@ -5568,7 +5569,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                             icon: _exporting
                                 ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                                 : const Icon(Icons.file_download_outlined, size: 15),
-                            label: const Text('Exporter', style: TextStyle(fontSize: 12)),
+                            label: Text('Exporter'.tr(context), style: TextStyle(fontSize: 12)),
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -5786,7 +5787,7 @@ class _RegistreViewState extends State<_RegistreView> {
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Modifier - ${edit.reference}',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                const Text('Mise à jour conforme Art. 313.b UMOA',
+                Text('Mise à jour conforme Art. 313.b UMOA'.tr(context),
                   style: TextStyle(fontSize: 11, color: _kMuted, fontWeight: FontWeight.w400)),
               ])),
             ]),
@@ -5832,7 +5833,7 @@ class _RegistreViewState extends State<_RegistreView> {
                           },
                         ),
                         UemoiFormDropdown<String>(
-                          label: 'Statut',
+                          label: 'Statut'.tr(context),
                           value: statut,
                           items: _statutsIncident,
                           required: true,
@@ -5847,7 +5848,7 @@ class _RegistreViewState extends State<_RegistreView> {
                       color: _kWarning,
                       children: [
                         UemoiFormDropdown<String>(
-                          label: 'Ligne de métier',
+                          label: 'Ligne de métier'.tr(context),
                           value: ligne,
                           items: _lignesMetier,
                           required: true,
@@ -5861,7 +5862,7 @@ class _RegistreViewState extends State<_RegistreView> {
                           onChanged: (v) => setD(() => type = v),
                         ),
                         UemoiFormDropdown<String>(
-                          label: 'Cause racine',
+                          label: 'Cause racine'.tr(context),
                           value: causeRacine,
                           items: _causesRacine,
                           onChanged: (v) => setD(() => causeRacine = v),
@@ -5890,13 +5891,13 @@ class _RegistreViewState extends State<_RegistreView> {
                       color: _kDanger,
                       children: [
                         UemoiFormField(
-                          label: 'Perte brute',
+                          label: 'Perte brute'.tr(context),
                           controller: brutCtrl,
                           suffixText: ' FCFA',
                           required: true,
                         ),
                         UemoiFormField(
-                          label: 'Perte récupérée',
+                          label: 'Perte récupérée'.tr(context),
                           controller: recupCtrl,
                           suffixText: ' FCFA',
                         ),
@@ -5911,7 +5912,7 @@ class _RegistreViewState extends State<_RegistreView> {
           actions: [
             OutlinedButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler'),
+              child: Text('Annuler'.tr(context)),
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
@@ -5937,7 +5938,7 @@ class _RegistreViewState extends State<_RegistreView> {
                   }
                 }
               },
-              label: const Text('Enregistrer'),
+              label: Text('Enregistrer'.tr(context)),
             ),
           ],
         ),
@@ -6069,7 +6070,7 @@ class _RegistreViewState extends State<_RegistreView> {
                   Row(children: [
                     Icon(Icons.file_download_outlined, color: accent, size: 22),
                     const SizedBox(width: 10),
-                    Text('Exporter le registre',
+                    Text('Exporter le registre'.tr(context),
                         style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -6082,7 +6083,7 @@ class _RegistreViewState extends State<_RegistreView> {
                         color: accent.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
-                      child: Text('xlsx / pdf',
+                      child: Text('xlsx / pdf'.tr(context),
                           style: TextStyle(
                               fontSize: 10,
                               color: accent,
@@ -6106,7 +6107,7 @@ class _RegistreViewState extends State<_RegistreView> {
                   optionRow(
                     icon: Icons.table_chart_outlined,
                     color: const Color(0xFF1E88E5),
-                    label: 'Excel',
+                    label: 'Excel'.tr(context),
                     badge: '.xlsx',
                     description:
                         'Tableur éditable - formules, filtres et tri',
@@ -6116,7 +6117,7 @@ class _RegistreViewState extends State<_RegistreView> {
                   optionRow(
                     icon: Icons.picture_as_pdf_outlined,
                     color: const Color(0xFFE53935),
-                    label: 'PDF',
+                    label: 'PDF'.tr(context),
                     badge: '.pdf',
                     description:
                         'Document mis en page, prêt à imprimer ou partager',
@@ -6129,7 +6130,7 @@ class _RegistreViewState extends State<_RegistreView> {
                     child: TextButton(
                       onPressed: () => Navigator.pop(ctx),
                       style: TextButton.styleFrom(foregroundColor: muted),
-                      child: const Text('Annuler'),
+                      child: Text('Annuler'.tr(context)),
                     ),
                   ),
                 ],
@@ -6325,8 +6326,8 @@ class _RegistreViewState extends State<_RegistreView> {
     await saveBytesAtLocation(location, Uint8List.fromList(rawBytes),
         requiredExtension: '.xlsx', suggestedName: 'registre_ro_$ts.xlsx');
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Export Excel réussi'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Export Excel réussi'.tr(context)),
         backgroundColor: Color(0xFF14A44D),
       ));
     }
@@ -6474,7 +6475,7 @@ class _RegistreViewState extends State<_RegistreView> {
         child: pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('Registre des Pertes - Risque Opérationnel BCEAO',
+            pw.Text('Registre des Pertes - Risque Opérationnel BCEAO'.tr(context),
               style: mutedStyle),
             pw.Text('Export du $dateStr', style: mutedStyle),
           ],
@@ -6489,7 +6490,7 @@ class _RegistreViewState extends State<_RegistreView> {
         child: pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
-            pw.Text('Confidentiel - Usage interne', style: mutedStyle),
+            pw.Text('Confidentiel - Usage interne'.tr(context), style: mutedStyle),
             pw.Text('Page ${ctx.pageNumber} / ${ctx.pagesCount}',
               style: mutedStyle),
           ],
@@ -6509,7 +6510,7 @@ class _RegistreViewState extends State<_RegistreView> {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Text('REGISTRE DES PERTES OPÉRATIONNELLES',
+              pw.Text('REGISTRE DES PERTES OPÉRATIONNELLES'.tr(context),
                 style: pw.TextStyle(
                   fontSize: 16, fontWeight: pw.FontWeight.bold,
                   color: PdfColors.white)),
@@ -6543,7 +6544,7 @@ class _RegistreViewState extends State<_RegistreView> {
         // ── 2. Registre détaillé ─────────────────────────────────────────
         sectionBanner('2. REGISTRE DÉTAILLÉ  (${items.length} incident${items.length > 1 ? "s" : ""})'),
         if (items.isEmpty)
-          pw.Text('Aucun incident dans le registre.', style: mutedStyle)
+          pw.Text('Aucun incident dans le registre.'.tr(context), style: mutedStyle)
         else ...[
           pw.TableHelper.fromTextArray(
             headers: tableHeaders,
@@ -6598,8 +6599,8 @@ class _RegistreViewState extends State<_RegistreView> {
     await saveBytesAtLocation(location, pdfBytes,
         requiredExtension: '.pdf', suggestedName: 'registre_ro_$ts.pdf');
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Export PDF réussi'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Export PDF réussi'.tr(context)),
         backgroundColor: Color(0xFF14A44D),
       ));
     }
@@ -6657,7 +6658,7 @@ class _RegistreViewState extends State<_RegistreView> {
               visualDensity: VisualDensity.compact,
             ),
             icon: const Icon(Icons.file_upload_outlined, size: 14),
-            label: const Text('Import'),
+            label: Text('Import'.tr(context)),
           ),
         ),
         const SizedBox(width: 8),
@@ -6674,7 +6675,7 @@ class _RegistreViewState extends State<_RegistreView> {
               visualDensity: VisualDensity.compact,
             ),
             icon: const Icon(Icons.file_download_outlined, size: 14),
-            label: const Text('Exporter'),
+            label: Text('Exporter'.tr(context)),
           ),
         ),
       ],
@@ -6739,7 +6740,7 @@ class _RegistreViewState extends State<_RegistreView> {
                       fontWeight: FontWeight.w500,
                     ),
                     decoration: InputDecoration(
-                      hintText: 'Rechercher une perte...',
+                      hintText: 'Rechercher une perte...'.tr(context),
                       hintStyle: TextStyle(
                         color: muted.withValues(alpha: 0.75),
                         fontSize: 10.2,
@@ -6765,14 +6766,14 @@ class _RegistreViewState extends State<_RegistreView> {
                   ),
                 ),
                 _buildPertesFilterDropdown(
-                  label: 'Statut',
+                  label: 'Statut'.tr(context),
                   value: _filterStatut ?? 'Tous',
                   values: ['Tous', ..._statutsIncident],
                   onChanged: (v) =>
                       setState(() => _filterStatut = v == 'Tous' ? null : v),
                 ),
                 _buildPertesFilterDropdown(
-                  label: 'Ligne de métier',
+                  label: 'Ligne de métier'.tr(context),
                   value: _filterLigne ?? 'Tous',
                   values: ['Tous', ..._lignesMetier],
                   onChanged: (v) =>
@@ -7278,7 +7279,7 @@ class _RegistreViewState extends State<_RegistreView> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           IconButton(
-            tooltip: 'Modifier',
+            tooltip: 'Modifier'.tr(context),
             onPressed: () => _showEditForm(i),
             visualDensity: VisualDensity.compact,
             icon: Icon(
@@ -7289,7 +7290,7 @@ class _RegistreViewState extends State<_RegistreView> {
             ),
           ),
           IconButton(
-            tooltip: 'Supprimer',
+            tooltip: 'Supprimer'.tr(context),
             onPressed: () => _confirm(
               context,
               'Supprimer cet incident ?',
@@ -7342,35 +7343,35 @@ class _RegistreViewState extends State<_RegistreView> {
       int count, double brute, double nette, double kro, double apr) {
     final stats = [
       CreditStatCard(
-        label: 'Pertes enregistrées',
+        label: 'Pertes enregistrées'.tr(context),
         value: '$count',
         helper: 'Registre consolidé',
         icon: Icons.list_alt_outlined,
         color: AppTheme.accent,
       ),
       CreditStatCard(
-        label: 'Perte brute',
+        label: 'Perte brute'.tr(context),
         value: AppFormatters.currency(brute),
         helper: 'Exposition totale avant atténuation',
         icon: Icons.trending_down_outlined,
         color: _kDanger,
       ),
       CreditStatCard(
-        label: 'Perte nette',
+        label: 'Perte nette'.tr(context),
         value: AppFormatters.currency(nette),
         helper: 'Base de calcul BIA - Art. 313.b UMOA',
         icon: Icons.account_balance_outlined,
         color: _kDanger,
       ),
       CreditStatCard(
-        label: 'Capital minimum (Art. 89)',
+        label: 'Capital minimum (Art. 89)'.tr(context),
         value: AppFormatters.currency(kro),
         helper: '15 % de la perte nette',
         icon: Icons.shield_outlined,
         color: AppColors.prudentialSolvency,
       ),
       CreditStatCard(
-        label: 'RWA opérationnel',
+        label: 'RWA opérationnel'.tr(context),
         value: AppFormatters.currency(apr),
         helper: 'Capital minimum × 12,5',
         icon: Icons.bar_chart_outlined,
@@ -7743,8 +7744,8 @@ class _CorepTabViewState extends State<_CorepTabView> {
       _populatePnbCtrl(refreshed);
       if (mounted) {
         setState(() { _result = refreshed; _saving = false; _view = 1; });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('PNB sauvegardé - résultats mis à jour'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('PNB sauvegardé - résultats mis à jour'.tr(context)),
           backgroundColor: Color(0xFF14A44D),
         ));
       }
@@ -7778,8 +7779,8 @@ class _CorepTabViewState extends State<_CorepTabView> {
       _populatePnbCtrl(refreshed);
       if (mounted) {
         setState(() { _result = refreshed; _saving = false; });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Paramètres mis à jour'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Paramètres mis à jour'.tr(context)),
           backgroundColor: Color(0xFF14A44D),
         ));
       }
@@ -7821,12 +7822,12 @@ class _CorepTabViewState extends State<_CorepTabView> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.cloud_off_outlined, size: 36, color: Colors.red),
           const SizedBox(height: 8),
-          Text('Impossible de charger les données BIC COREP', style: TextStyle(color: _txt)),
+          Text('Impossible de charger les données BIC COREP'.tr(context), style: TextStyle(color: _txt)),
           const SizedBox(height: 4),
           Text(_error!, style: TextStyle(fontSize: 11, color: _muted)),
           const SizedBox(height: 12),
           OutlinedButton.icon(onPressed: _load,
-              icon: const Icon(Icons.refresh), label: const Text('Réessayer')),
+              icon: const Icon(Icons.refresh), label: Text('Réessayer'.tr(context))),
         ]),
       );
     }
@@ -7924,10 +7925,10 @@ class _CorepTabViewState extends State<_CorepTabView> {
             borderRadius: BorderRadius.circular(4),
             border: Border.all(color: const Color(0xFF0891B2).withValues(alpha: 0.4)),
           ),
-          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.info_outline, size: 11, color: Color(0xFF0891B2)),
             SizedBox(width: 4),
-            Text('Art. 315–321 CRR3 • PNB saisi directement',
+            Text('Art. 315–321 CRR3 • PNB saisi directement'.tr(context),
               style: TextStyle(fontSize: 10, color: Color(0xFF0891B2), fontWeight: FontWeight.w600)),
           ]),
         ),
@@ -7955,7 +7956,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
                 color: cardColors[i],
                 children: [
                   UemoiFormField(
-                    label: 'PNB annuel',
+                    label: 'PNB annuel'.tr(context),
                     controller: _pnbCtrl[i],
                     suffixText: ' FCFA',
                     numeric: true,
@@ -8009,7 +8010,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text('Montants en FCFA', style: TextStyle(fontSize: 10.5, color: _muted)),
+            Text('Montants en FCFA'.tr(context), style: TextStyle(fontSize: 10.5, color: _muted)),
             const Spacer(),
             FilledButton.icon(
               onPressed: _saving ? null : _saveInputs,
@@ -8037,7 +8038,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.inbox_outlined, size: 40, color: _muted),
           const SizedBox(height: 10),
-          Text('Aucun PNB saisi', style: TextStyle(fontSize: 15, color: _txt)),
+          Text('Aucun PNB saisi'.tr(context), style: TextStyle(fontSize: 15, color: _txt)),
           const SizedBox(height: 4),
           Text('Entrez le PNB des 3 exercices dans l\'onglet Saisie PNB.',
               style: TextStyle(fontSize: 12, color: _muted)),
@@ -8045,7 +8046,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
           OutlinedButton.icon(
             onPressed: () => setState(() => _view = 0),
             icon: const Icon(Icons.edit_note_outlined),
-            label: const Text('Aller à la Saisie'),
+            label: Text('Aller à la Saisie'.tr(context)),
           ),
         ]),
       );
@@ -8153,7 +8154,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
               borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
             ),
-            child: const Row(children: [
+            child: Row(children: [
               Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange),
               SizedBox(width: 8),
               Expanded(
@@ -8164,15 +8165,15 @@ class _CorepTabViewState extends State<_CorepTabView> {
               ),
             ]),
           ),
-          const SizedBox(height: AppTheme.spacing),
+          SizedBox(height: AppTheme.spacing),
         ],
 
         CreditDataTableCard(
           title: 'Détail du calcul BIC (CRR3)',
-          columns: const [
-            DataColumn(label: Text('Composante')),
-            DataColumn(label: Text('Poste')),
-            DataColumn(label: Text('Valeur'), numeric: true),
+          columns: [
+            DataColumn(label: Text('Composante'.tr(context))),
+            DataColumn(label: Text('Poste'.tr(context))),
+            DataColumn(label: Text('Valeur'.tr(context)), numeric: true),
           ],
           rows: detailRows
               .map((row) => DataRow(cells: [
@@ -8195,12 +8196,12 @@ class _CorepTabViewState extends State<_CorepTabView> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.inbox_outlined, size: 40, color: _muted),
           const SizedBox(height: 10),
-          Text('Aucune donnée disponible', style: TextStyle(fontSize: 15, color: _txt)),
+          Text('Aucune donnée disponible'.tr(context), style: TextStyle(fontSize: 15, color: _txt)),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => setState(() => _view = 0),
             icon: const Icon(Icons.edit_note_outlined),
-            label: const Text('Aller à la Saisie'),
+            label: Text('Aller à la Saisie'.tr(context)),
           ),
         ]),
       );
@@ -8212,19 +8213,19 @@ class _CorepTabViewState extends State<_CorepTabView> {
 
     final stats = [
       KpiMetricCard(
-        label: 'OFR CRR3', value: _fcfa(r.ofrCrr3), helper: 'Fonds propres min. requis',
+        label: 'OFR CRR3'.tr(context), value: _fcfa(r.ofrCrr3), helper: 'Fonds propres min. requis',
         icon: Icons.shield_outlined, color: _kAccent,
       ),
       KpiMetricCard(
-        label: 'OFR BIA', value: _fcfa(r.ofrBia), helper: 'Approche indicateur de base',
+        label: 'OFR BIA'.tr(context), value: _fcfa(r.ofrBia), helper: 'Approche indicateur de base',
         icon: Icons.bar_chart_outlined, color: const Color(0xFF0891B2),
       ),
       KpiMetricCard(
-        label: 'Écart', value: _fcfa(r.ecart), helper: ecartPos ? 'CRR3 > BIA' : 'CRR3 ≤ BIA',
+        label: 'Écart'.tr(context), value: _fcfa(r.ecart), helper: ecartPos ? 'CRR3 > BIA' : 'CRR3 ≤ BIA',
         icon: Icons.compare_arrows_outlined, color: ecartPos ? _kRed : _kGreen,
       ),
       KpiMetricCard(
-        label: 'Tranche BIC', value: 'T${bi.trancheActive}', helper: 'Tranche active',
+        label: 'Tranche BIC'.tr(context), value: 'T${bi.trancheActive}', helper: 'Tranche active',
         icon: Icons.layers_outlined,
         color: bi.trancheActive == 1 ? _kGreen : bi.trancheActive == 2 ? Colors.orange : _kRed,
       ),
@@ -8259,13 +8260,13 @@ class _CorepTabViewState extends State<_CorepTabView> {
             children: [for (final s in stats) SizedBox(width: width, child: s)],
           );
         }),
-        const SizedBox(height: AppTheme.pageGap),
+        SizedBox(height: AppTheme.pageGap),
         CreditDataTableCard(
           title: 'Analyse rapide - BIC (CRR3) vs BIA',
-          columns: const [
-            DataColumn(label: Text('Bloc')),
-            DataColumn(label: Text('Indicateur')),
-            DataColumn(label: Text('Valeur'), numeric: true),
+          columns: [
+            DataColumn(label: Text('Bloc'.tr(context))),
+            DataColumn(label: Text('Indicateur'.tr(context))),
+            DataColumn(label: Text('Valeur'.tr(context)), numeric: true),
           ],
           rows: rows
               .map((row) => DataRow(cells: [
@@ -8308,7 +8309,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
           Text(_decisionError!, style: TextStyle(fontSize: 11, color: _muted)),
           const SizedBox(height: 12),
           OutlinedButton.icon(onPressed: _loadDecision,
-              icon: const Icon(Icons.refresh), label: const Text('Réessayer')),
+              icon: const Icon(Icons.refresh), label: Text('Réessayer'.tr(context))),
         ]),
       );
     }
@@ -8321,7 +8322,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
             child: RoHeroStatCard(
-              label: 'Niveau de pilotage',
+              label: 'Niveau de pilotage'.tr(context),
               value: d.niveauGlobal,
               subtitle: d.synthese,
               valueColor: color,
@@ -8330,7 +8331,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
           const SizedBox(width: 8),
           Expanded(
             child: RoHeroStatCard(
-              label: 'Score global',
+              label: 'Score global'.tr(context),
               value: '${d.scoreGlobal}/${d.scoreMax}',
               valueColor: color,
             ),
@@ -8386,7 +8387,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
   Widget _buildParamsView() {
     return SingleChildScrollView(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Art. 315–321 CRR3 (Règlement UE 2019/876 adapté BCEAO)',
+        Text('Art. 315–321 CRR3 (Règlement UE 2019/876 adapté BCEAO)'.tr(context),
           style: TextStyle(fontSize: 11, color: _muted)),
         const SizedBox(height: 12),
         LayoutBuilder(builder: (context, constraints) {
@@ -8397,10 +8398,10 @@ class _CorepTabViewState extends State<_CorepTabView> {
               subtitle: 'Tranches et plafond ILDC',
               color: const Color(0xFF1E40AF),
               children: [
-                UemoiFormField(label: 'Seuil plafond ILDC', controller: _pSeuilIldc, suffixText: ' %', hint: '2.26'),
-                UemoiFormField(label: 'Taux tranche 1', controller: _pCoef1, suffixText: ' %', hint: '12'),
-                UemoiFormField(label: 'Taux tranche 2', controller: _pCoef2, suffixText: ' %', hint: '18'),
-                UemoiFormField(label: 'Taux tranche 3', controller: _pCoef3, suffixText: ' %', hint: '24'),
+                UemoiFormField(label: 'Seuil plafond ILDC'.tr(context), controller: _pSeuilIldc, suffixText: ' %', hint: '2.26'),
+                UemoiFormField(label: 'Taux tranche 1'.tr(context), controller: _pCoef1, suffixText: ' %', hint: '12'),
+                UemoiFormField(label: 'Taux tranche 2'.tr(context), controller: _pCoef2, suffixText: ' %', hint: '18'),
+                UemoiFormField(label: 'Taux tranche 3'.tr(context), controller: _pCoef3, suffixText: ' %', hint: '24'),
               ],
             ),
             UemoiFormCard(
@@ -8408,8 +8409,8 @@ class _CorepTabViewState extends State<_CorepTabView> {
               subtitle: 'Bornes de tranches (FCFA)',
               color: const Color(0xFF1E3A8A),
               children: [
-                UemoiFormField(label: 'Seuil tranche 1→2', controller: _pSeuil1, suffixText: ' FCFA', hint: '0'),
-                UemoiFormField(label: 'Seuil tranche 2→3', controller: _pSeuil2, suffixText: ' FCFA', hint: '0'),
+                UemoiFormField(label: 'Seuil tranche 1→2'.tr(context), controller: _pSeuil1, suffixText: ' FCFA', hint: '0'),
+                UemoiFormField(label: 'Seuil tranche 2→3'.tr(context), controller: _pSeuil2, suffixText: ' FCFA', hint: '0'),
               ],
             ),
             UemoiFormCard(
@@ -8417,8 +8418,8 @@ class _CorepTabViewState extends State<_CorepTabView> {
               subtitle: 'Multiplicateur et taux de change',
               color: const Color(0xFF475569),
               children: [
-                UemoiFormField(label: 'Multiplicateur REA', controller: _pMultRea, hint: '12.5'),
-                UemoiFormField(label: 'Taux EUR→FCFA', controller: _pTauxConv, hint: '655.957'),
+                UemoiFormField(label: 'Multiplicateur REA'.tr(context), controller: _pMultRea, hint: '12.5'),
+                UemoiFormField(label: 'Taux EUR→FCFA'.tr(context), controller: _pTauxConv, hint: '655.957'),
               ],
             ),
           ];
@@ -8637,8 +8638,8 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       _populateControllers(refreshed);
       if (mounted) {
         setState(() { _result = refreshed; _saving = false; _view = 1; });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Données sauvegardées - résultats mis à jour'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Données sauvegardées - résultats mis à jour'.tr(context)),
           backgroundColor: Color(0xFF14A44D),
         ));
       }
@@ -8672,8 +8673,8 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       _populateControllers(refreshed);
       if (mounted) {
         setState(() { _result = refreshed; _saving = false; });
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Paramètres mis à jour'),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Paramètres mis à jour'.tr(context)),
           backgroundColor: Color(0xFF14A44D),
         ));
       }
@@ -8721,14 +8722,14 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const Icon(Icons.cloud_off_outlined, size: 36, color: Colors.red),
           const SizedBox(height: 8),
-          Text('Impossible de charger les données BIC', style: TextStyle(color: _txt)),
+          Text('Impossible de charger les données BIC'.tr(context), style: TextStyle(color: _txt)),
           const SizedBox(height: 4),
           Text(_error!, style: TextStyle(fontSize: 11, color: _muted)),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _load,
             icon: const Icon(Icons.refresh),
-            label: const Text('Réessayer'),
+            label: Text('Réessayer'.tr(context)),
           ),
         ]),
       );
@@ -8819,7 +8820,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         children: [
           const Icon(Icons.account_balance_outlined, size: 14, color: _kAccent),
           const SizedBox(width: 6),
-          Text('BIC / CRR3', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
+          Text('BIC / CRR3'.tr(context), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _txt)),
           const SizedBox(width: 8),
           // Sélecteur d'années - cliquer sur − / + pour changer l'exercice N
           Container(
@@ -8904,7 +8905,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         textAlign: TextAlign.right,
         style: TextStyle(fontSize: 12, color: _txt),
         decoration: InputDecoration(
-          hintText: '0',
+          hintText: '0'.tr(context),
           hintStyle: TextStyle(fontSize: 11.5, color: _muted),
           contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
           isDense: true,
@@ -8956,7 +8957,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           ),
           child: Row(
             children: [
-              const SizedBox(width: 240, child: Text('Poste',
+              SizedBox(width: 240, child: Text('Poste'.tr(context),
                 style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700))),
               for (var yi = 0; yi < 3; yi++) ...[
                 const SizedBox(width: 8),
@@ -9023,7 +9024,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text('Montants en FCFA · valeurs absolues (positif = produit, négatif = charge pour FC)',
+            Text('Montants en FCFA · valeurs absolues (positif = produit, négatif = charge pour FC)'.tr(context),
               style: TextStyle(fontSize: 10, color: _muted)),
             const Spacer(),
             MouseRegion(
@@ -9156,7 +9157,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
               FilledButton.icon(
                 onPressed: _openImportBicDialog,
                 icon: const Icon(Icons.file_upload_outlined, size: 18),
-                label: const Text('Importer', style: TextStyle(fontSize: 14)),
+                label: Text('Importer'.tr(context), style: TextStyle(fontSize: 14)),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF1E88E5),
                   foregroundColor: Colors.white,
@@ -9181,7 +9182,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                   Text('Rien à afficher pour l\'instant',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _txt)),
                   const SizedBox(height: 4),
-                  Text('Importez un fichier Excel BIC/CCR3 pour voir les données ici.',
+                  Text('Importez un fichier Excel BIC/CCR3 pour voir les données ici.'.tr(context),
                       style: TextStyle(fontSize: 11.5, color: _muted)),
                 ],
               ),
@@ -9200,7 +9201,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             ),
             child: Row(
               children: [
-                const SizedBox(width: 240, child: Text('Poste',
+                SizedBox(width: 240, child: Text('Poste'.tr(context),
                   style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700))),
                 for (var yi = 0; yi < years.length; yi++) ...[
                   const SizedBox(width: 8),
@@ -9289,7 +9290,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.inbox_outlined, size: 40, color: _muted),
           const SizedBox(height: 10),
-          Text('Aucune donnée saisie', style: TextStyle(fontSize: 15, color: _txt)),
+          Text('Aucune donnée saisie'.tr(context), style: TextStyle(fontSize: 15, color: _txt)),
           const SizedBox(height: 4),
           Text('Allez dans l\'onglet Saisie pour entrer les données des 3 exercices.',
               style: TextStyle(fontSize: 12, color: _muted)),
@@ -9297,7 +9298,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           OutlinedButton.icon(
             onPressed: () => setState(() => _view = 2),
             icon: const Icon(Icons.edit_note_outlined),
-            label: const Text('Aller à la Saisie'),
+            label: Text('Aller à la Saisie'.tr(context)),
           ),
         ]),
       );
@@ -9456,17 +9457,17 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.inbox_outlined, size: 40, color: _muted),
           const SizedBox(height: 10),
-          Text('Aucune donnée disponible', style: TextStyle(fontSize: 15, color: _txt)),
+          Text('Aucune donnée disponible'.tr(context), style: TextStyle(fontSize: 15, color: _txt)),
           const SizedBox(height: 4),
           if (widget.onlyAnalyseRapide)
-            Text('La saisie se fait depuis la section UEMOA.',
+            Text('La saisie se fait depuis la section UEMOA.'.tr(context),
                 style: TextStyle(fontSize: 11.5, color: _muted))
           else ...[
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: () => setState(() => _view = 2),
               icon: const Icon(Icons.edit_note_outlined),
-              label: const Text('Aller à la Saisie'),
+              label: Text('Aller à la Saisie'.tr(context)),
             ),
           ],
         ]),
@@ -9530,7 +9531,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
 
     return Row(children: [
       Expanded(child: RoHeroStatCard(
-        label: 'Exigence de fonds propres (OFR) CRR3',
+        label: 'Exigence de fonds propres (OFR) CRR3'.tr(context),
         value: roAmount(context, r.ofrCrr3),
         valueColor: _kAccent,
         subtitle: 'Besoin en fonds propres',
@@ -9543,7 +9544,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       )),
       const SizedBox(width: 12),
       Expanded(child: RoHeroStatCard(
-        label: 'Exigence de fonds propres (OFR) BIA',
+        label: 'Exigence de fonds propres (OFR) BIA'.tr(context),
         value: roAmount(context, r.ofrBia),
         subtitle: '15 % × PNB moy',
       )),
@@ -9595,7 +9596,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Composition du Business Indicator (BI)',
+          Text('Composition du Business Indicator (BI)'.tr(context),
               style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _txt)),
           const SizedBox(height: 12),
           // Barre empilée
@@ -9646,7 +9647,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           Row(children: [
             Icon(Icons.account_balance_wallet_outlined, size: 13, color: _muted),
             const SizedBox(width: 5),
-            Text('BI total : ', style: TextStyle(fontSize: 11, color: _muted)),
+            Text('BI total : '.tr(context), style: TextStyle(fontSize: 11, color: _muted)),
             Text(roAmount(context, bi),
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _txt)),
           ]),
@@ -9784,7 +9785,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Expanded(child: Text('Position Tranche BIC',
+            Expanded(child: Text('Position Tranche BIC'.tr(context),
                 style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _txt))),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -9807,7 +9808,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           Row(children: [
             Container(width: 10, height: 10, color: _kRed),
             const SizedBox(width: 6),
-            Text('Position BI actuelle', style: TextStyle(fontSize: 10.5, color: _muted)),
+            Text('Position BI actuelle'.tr(context), style: TextStyle(fontSize: 10.5, color: _muted)),
           ]),
           if (marge != null) ...[
             const SizedBox(height: 8),
@@ -9819,10 +9820,10 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             ]),
           ] else ...[
             const SizedBox(height: 8),
-            const Row(children: [
+            Row(children: [
               Icon(Icons.warning_amber_rounded, size: 12, color: _kRed),
               SizedBox(width: 5),
-              Text('Tranche maximale atteinte',
+              Text('Tranche maximale atteinte'.tr(context),
                   style: TextStyle(fontSize: 11, color: _kRed, fontWeight: FontWeight.w600)),
             ]),
           ],
@@ -9864,7 +9865,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Position du BI dans la grille de tranches',
+          Text('Position du BI dans la grille de tranches'.tr(context),
               style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: _txt)),
           const SizedBox(height: 12),
           // Barre de position (positionnement par fraction - Align dans
@@ -9936,7 +9937,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
               Positioned.fill(
                 child: Align(
                   alignment: Alignment(2 * s1Rel.clamp(0.0, 1.0) - 1, 0),
-                  child: Text('S1', style: TextStyle(
+                  child: Text('S1'.tr(context), style: TextStyle(
                       fontSize: 9.5, fontWeight: FontWeight.w700,
                       color: Colors.orange.withValues(alpha: 1.0))),
                 ),
@@ -9944,7 +9945,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
               Positioned.fill(
                 child: Align(
                   alignment: Alignment(2 * s2Rel.clamp(0.0, 1.0) - 1, 0),
-                  child: Text('S2', style: TextStyle(
+                  child: Text('S2'.tr(context), style: TextStyle(
                       fontSize: 9.5, fontWeight: FontWeight.w700,
                       color: _kRed.withValues(alpha: 1.0))),
                 ),
@@ -9974,10 +9975,10 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             ]),
           ] else ...[
             const SizedBox(height: 6),
-            const Row(children: [
+            Row(children: [
               Icon(Icons.warning_amber_rounded, size: 12, color: _kRed),
               SizedBox(width: 5),
-              Text('Tranche maximale atteinte',
+              Text('Tranche maximale atteinte'.tr(context),
                   style: TextStyle(fontSize: 11, color: _kRed, fontWeight: FontWeight.w600)),
             ]),
           ],
@@ -9985,13 +9986,13 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           // Légende zones
           Row(children: [
             _arDot(_kGreen), const SizedBox(width: 4),
-            Text('Tranche 1  (≤ S1)', style: TextStyle(fontSize: 10.5, color: _muted)),
+            Text('Tranche 1  (≤ S1)'.tr(context), style: TextStyle(fontSize: 10.5, color: _muted)),
             const SizedBox(width: 12),
             _arDot(Colors.orange), const SizedBox(width: 4),
-            Text('Tranche 2  (S1–S2)', style: TextStyle(fontSize: 10.5, color: _muted)),
+            Text('Tranche 2  (S1–S2)'.tr(context), style: TextStyle(fontSize: 10.5, color: _muted)),
             const SizedBox(width: 12),
             _arDot(_kRed), const SizedBox(width: 4),
-            Text('Tranche 3  (> S2)', style: TextStyle(fontSize: 10.5, color: _muted)),
+            Text('Tranche 3  (> S2)'.tr(context), style: TextStyle(fontSize: 10.5, color: _muted)),
           ]),
         ],
       ),
@@ -10058,7 +10059,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Coefficients et seuils BIC', style: TextStyle(
+                Text('Coefficients et seuils BIC'.tr(context), style: TextStyle(
                   fontSize: 13, fontWeight: FontWeight.w700, color: _txt)),
                 const SizedBox(height: 12),
                 paramField(_pSeuilIldc, 'Seuil ILDC (%)', '2.25'),
@@ -10068,7 +10069,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                 const SizedBox(height: 8),
                 Divider(color: _border),
                 const SizedBox(height: 8),
-                Text('Seuils en FCFA  (Option A recommandée : parité EUR/FCFA fixe = 655,957)',
+                Text('Seuils en FCFA  (Option A recommandée : parité EUR/FCFA fixe = 655,957)'.tr(context),
                     style: TextStyle(fontSize: 11, color: _muted)),
                 const SizedBox(height: 8),
                 paramField(_pSeuil1, 'Seuil 1 (FCFA)  ≈ 1 Md EUR', '655957000000'),
@@ -10352,12 +10353,12 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                     child: Icon(Icons.report_problem_outlined, color: _kBlue, size: 18),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Déclarer un incident', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                        Text('Risque opérationnel - Art. 313 BCEAO', style: TextStyle(fontSize: 11, color: _kMuted)),
+                        Text('Déclarer un incident'.tr(context), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        Text('Risque opérationnel - Art. 313 BCEAO'.tr(context), style: TextStyle(fontSize: 11, color: _kMuted)),
                       ],
                     ),
                   ),
@@ -10481,7 +10482,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
               },
             ),
             UemoiFormDropdown<String>(
-              label: 'Ligne de métier',
+              label: 'Ligne de métier'.tr(context),
               value: _ligne,
               items: _lignesMetier,
               required: true,
@@ -10526,7 +10527,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
               hint: 'Que s\'est-il passé ? Quels systèmes / processus sont concernés ?',
             ),
             UemoiFormDropdown<String>(
-              label: 'Cause racine identifiée',
+              label: 'Cause racine identifiée'.tr(context),
               value: _causeRacine,
               items: _causesRacine,
               onChanged: (v) { if (v != null) setState(() => _causeRacine = v); },
@@ -10555,14 +10556,14 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
           color: _kDanger,
           children: [
             UemoiFormField(
-              label: 'Perte brute',
+              label: 'Perte brute'.tr(context),
               controller: _brutCtrl,
               suffixText: ' FCFA',
               required: true,
               hint: 'Montant total avant récupérations',
             ),
             UemoiFormField(
-              label: 'Perte récupérée',
+              label: 'Perte récupérée'.tr(context),
               controller: _recupCtrl,
               suffixText: ' FCFA',
               hint: 'Assurances, provisions, reversements',
@@ -10597,7 +10598,7 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
                     children: [
                       Icon(Icons.calculate_outlined, size: 13, color: _kBlue),
                       SizedBox(width: 6),
-                      Text('Estimation BIA (Art. 89) - indicative', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kBlue)),
+                      Text('Estimation BIA (Art. 89) - indicative'.tr(context), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _kBlue)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -10744,11 +10745,11 @@ class _RoIncidentWizardDialogState extends State<_RoIncidentWizardDialog> {
         OutlinedButton.icon(
           onPressed: _prev,
           icon: const Icon(Icons.chevron_left, size: 18),
-          label: const Text('Précédent'),
+          label: Text('Précédent'.tr(context)),
           style: OutlinedButton.styleFrom(foregroundColor: _kMuted, side: const BorderSide(color: _kMuted)),
         ),
       const Spacer(),
-      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+      TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Annuler'.tr(context))),
       const SizedBox(width: 8),
       if (_step < _totalSteps)
         FilledButton.icon(
@@ -10817,10 +10818,10 @@ class _RoRiskMatrix extends StatelessWidget {
                   height: cellSz + 3,
                   child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                     if (pi == 2)
-                      const RotatedBox(quarterTurns: -1,
+                      RotatedBox(quarterTurns: -1,
                         child: Padding(
                           padding: EdgeInsets.only(right: 4),
-                          child: Text('PROBABILITÉ ↑',
+                          child: Text('PROBABILITÉ ↑'.tr(context),
                             style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700,
                               color: _kMuted, letterSpacing: 0.7)),
                         ))
@@ -10839,7 +10840,7 @@ class _RoRiskMatrix extends StatelessWidget {
               children: [
                 // Axe Impact
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  const Text('IMPACT →',
+                  Text('IMPACT →'.tr(context),
                     style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700,
                       color: _kMuted, letterSpacing: 0.8)),
                   const SizedBox(height: 4),
@@ -10951,7 +10952,7 @@ class _RoRiskMatrix extends StatelessWidget {
             child: Row(children: [
               Icon(Icons.touch_app_rounded, size: 11, color: _kBlue),
               SizedBox(width: 5),
-              Text('Survolez une cellule pour voir les risques',
+              Text('Survolez une cellule pour voir les risques'.tr(context),
                 style: TextStyle(fontSize: 10, color: _kMuted)),
             ]),
           ),
@@ -11160,8 +11161,8 @@ class _IncidentsDashSection extends StatelessWidget {
       child: SizedBox(
         height: 190,
         child: data.evolutionPertes.isEmpty
-            ? const Center(
-                child: Text('Aucune donnée', style: TextStyle(color: _kMuted)))
+            ? Center(
+                child: Text('Aucune donnée'.tr(context), style: TextStyle(color: _kMuted)))
             : CustomPaint(
                 painter: _RoLineChartPainter(
                   dataBlue:
@@ -11181,8 +11182,8 @@ class _IncidentsDashSection extends StatelessWidget {
       child: SizedBox(
         height: 190,
         child: data.repartitionType.isEmpty
-            ? const Center(
-                child: Text('Aucun incident', style: TextStyle(color: _kMuted)))
+            ? Center(
+                child: Text('Aucun incident'.tr(context), style: TextStyle(color: _kMuted)))
             : CustomPaint(
                 painter: _RoVertBarChartPainter(
                   items: data.repartitionType,
@@ -11200,8 +11201,8 @@ class _IncidentsDashSection extends StatelessWidget {
       child: SizedBox(
         height: 180,
         child: data.repartitionLigneMetier.isEmpty
-            ? const Center(
-                child: Text('Aucun incident', style: TextStyle(color: _kMuted)))
+            ? Center(
+                child: Text('Aucun incident'.tr(context), style: TextStyle(color: _kMuted)))
             : CustomPaint(
                 painter: _RoVertBarChartPainter(
                   items: data.repartitionLigneMetier,
@@ -11217,10 +11218,10 @@ class _IncidentsDashSection extends StatelessWidget {
       title: 'Répartition par type',
       subtitle: 'Lecture synthétique des causes',
       child: data.repartitionType.isEmpty
-          ? const Padding(
+          ? Padding(
               padding: EdgeInsets.all(20),
               child: Center(
-                  child: Text('Aucun incident',
+                  child: Text('Aucun incident'.tr(context),
                       style: TextStyle(color: _kMuted))),
             )
           : _RoPieChart(items: data.repartitionType),
