@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/section_card.dart';
 
@@ -50,7 +51,7 @@ class CreditDataTableCard extends StatelessWidget {
                 border: Border.all(color: Theme.of(context).dividerColor),
               ),
               child: Text(
-                emptyMessage,
+                emptyMessage.tr(context),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppTheme.muted,

@@ -1342,6 +1342,40 @@ const Map<String, String> _englishTranslations = {
   'Rapport officiel FODEP exporté en PDF.':
       'Official FODEP report exported as PDF.',
   'Classeur officiel FODEP exporté.': 'Official FODEP workbook exported.',
+
+  // --- Reporting Crédit ---
+  'Reporting': 'Reporting',
+  'Exports Excel/PDF et préparation de rapports de portefeuille, garanties et défauts à partir des données déjà disponibles.':
+      'Excel/PDF exports and report preparation for portfolio, guarantees and defaults, built from data already available.',
+  'Génération d\'un rapport': 'Report generation',
+  'Export...': 'Exporting...',
+  'Historique des exports': 'Export history',
+  'Rechercher un export, un fichier ou un sous-module':
+      'Search an export, a file or a sub-module',
+  'Famille': 'Family',
+  'Format': 'Format',
+  'Montant': 'Amount',
+  'Exports générés': 'Reports generated',
+  'Historique de reporting crédit': 'Credit reporting history',
+  'Exports Excel': 'Excel exports',
+  'Classeur(s) prêts au partage': 'Workbook(s) ready to share',
+  'Exports PDF': 'PDF exports',
+  'Pack(s) de diffusion': 'Distribution pack(s)',
+  'Périmètres couverts': 'Scopes covered',
+  'Portefeuille, garanties, défauts': 'Portfolio, guarantees, defaults',
+  'Famille de rapport': 'Report family',
+  'Période': 'Period',
+  'Semestriel': 'Semi-annual',
+  'Portefeuille': 'Portfolio',
+  'Vue consolidée des expositions de crédit':
+      'Consolidated view of credit exposures',
+  'Inventaire des garanties et couvertures CRM':
+      'Inventory of guarantees and CRM coverage',
+  'Surveillance prudentielle des défauts et retards':
+      'Prudential monitoring of defaults and arrears',
+  'Export {{format}} enregistré: {{fichier}}':
+      'Export {{format}} saved: {{fichier}}',
+  'Export impossible: {{error}}': 'Export failed: {{error}}',
 };
 
 const Map<String, String> _frenchTranslations = {

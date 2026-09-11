@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/services/rwa_api_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
@@ -71,7 +72,11 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
           return const Center(child: CircularProgressIndicator());
         }
         if (snapshot.hasError) {
-          return Center(child: Text('Erreur: ${snapshot.error}'));
+          return Center(
+            child: Text(
+              context.tr('Erreur: {{error}}', args: {'error': snapshot.error}),
+            ),
+          );
         }
 
         final data = snapshot.data!;
@@ -101,7 +106,7 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
               _buildFamilyOverview(data),
               const SizedBox(height: AppTheme.pageGap),
               SectionCard(
-                title: 'Génération d un rapport',
+                title: 'Génération d\'un rapport',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -116,8 +121,10 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
                               ? null
                               : () => _exportReport(CreditExportFormat.excel),
                           icon: const Icon(Icons.table_chart_rounded),
-                          label: Text(
-                              _exporting ? 'Export...' : 'Exporter en Excel'),
+                          label: Text((_exporting
+                                  ? 'Export...'
+                                  : 'Exporter en Excel')
+                              .tr(context)),
                         ),
                         FilledButton.icon(
                           onPressed: _exporting
@@ -127,14 +134,16 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFFB45309),
                           ),
-                          label: Text(
-                              _exporting ? 'Export...' : 'Exporter en PDF'),
+                          label: Text((_exporting
+                                  ? 'Export...'
+                                  : 'Exporter en PDF')
+                              .tr(context)),
                         ),
                       ],
                     ),
                     const SizedBox(height: AppTheme.spacing),
                     Text(
-                      _selectedFamily.subtitle,
+                      _selectedFamily.subtitle.tr(context),
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: AppTheme.muted,
                           ),
@@ -151,14 +160,14 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
                       'Rechercher un export, un fichier ou un sous-module',
                   onSearchChanged: (_) => setState(() {}),
                 ),
-                columns: const [
-                  DataColumn(label: Text('ID')),
-                  DataColumn(label: Text('Date')),
-                  DataColumn(label: Text('Famille')),
-                  DataColumn(label: Text('Format')),
-                  DataColumn(label: Text('Expositions')),
-                  DataColumn(label: Text('Montant couvert')),
-                  DataColumn(label: Text('Fichier')),
+                columns: [
+                  DataColumn(label: Text('ID'.tr(context))),
+                  DataColumn(label: Text('Date'.tr(context))),
+                  DataColumn(label: Text('Famille'.tr(context))),
+                  DataColumn(label: Text('Format'.tr(context))),
+                  DataColumn(label: Text('Expositions'.tr(context))),
+                  DataColumn(label: Text('Montant couvert'.tr(context))),
+                  DataColumn(label: Text('Fichier'.tr(context))),
                 ],
                 rows: filteredHistory
                     .map(
@@ -278,13 +287,13 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
       child: DropdownButtonFormField<CreditReportFamily>(
         initialValue: _selectedFamily,
         isExpanded: true,
-        decoration: const InputDecoration(labelText: 'Famille de rapport'),
+        decoration: InputDecoration(labelText: 'Famille de rapport'.tr(context)),
         items: CreditReportFamily.values
             .map(
               (item) => DropdownMenuItem<CreditReportFamily>(
                 value: item,
                 child: Text(
-                  item.label,
+                  item.label.tr(context),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -295,7 +304,7 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
               (item) => Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  item.label,
+                  item.label.tr(context),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -318,13 +327,13 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
       child: DropdownButtonFormField<String>(
         initialValue: _selectedPeriod,
         isExpanded: true,
-        decoration: const InputDecoration(labelText: 'Période'),
+        decoration: InputDecoration(labelText: 'Période'.tr(context)),
         items: periods
             .map(
               (item) => DropdownMenuItem<String>(
                 value: item,
                 child: Text(
-                  item,
+                  item.tr(context),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -335,7 +344,7 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
               (item) => Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  item,
+                  item.tr(context),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -394,7 +403,13 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
         SnackBar(
           backgroundColor: AppTheme.success,
           content: Text(
-            'Export ${format.label} enregistré: ${_extractFileName(savedFile.path)}',
+            context.tr(
+              'Export {{format}} enregistré: {{fichier}}',
+              args: {
+                'format': format.label,
+                'fichier': _extractFileName(savedFile.path),
+              },
+            ),
           ),
         ),
       );
@@ -405,7 +420,9 @@ class _ReportingCreditScreenState extends State<ReportingCreditScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppTheme.danger,
-          content: Text('Export impossible: $error'),
+          content: Text(
+            context.tr('Export impossible: {{error}}', args: {'error': error}),
+          ),
         ),
       );
     } finally {
@@ -535,7 +552,7 @@ class _FamilySnapshotCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              snapshot.family.label,
+              snapshot.family.label.tr(context),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w500,
                     color: color,
@@ -543,7 +560,7 @@ class _FamilySnapshotCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              snapshot.family.subtitle,
+              snapshot.family.subtitle.tr(context),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppTheme.muted,
                   ),
@@ -597,7 +614,7 @@ class _SnapshotPill extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            label.tr(context),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppTheme.muted,
                   fontWeight: FontWeight.w500,

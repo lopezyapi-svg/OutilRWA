@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/localization/app_localization.dart';
 import '../../../core/theme/app_theme.dart';
 
 class CreditModuleToolbar extends StatelessWidget {
@@ -32,7 +33,7 @@ class CreditModuleToolbar extends StatelessWidget {
             onChanged: onSearchChanged,
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.search_rounded),
-              hintText: searchHint,
+              hintText: searchHint.tr(context),
             ),
           ),
         ),
