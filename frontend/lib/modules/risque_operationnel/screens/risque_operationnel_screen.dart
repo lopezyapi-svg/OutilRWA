@@ -7517,7 +7517,7 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const PageHeader(
-            title: 'CCR3 / Dispositif UEMOA',
+            title: 'Bâle 3 / Dispositif UEMOA',
             titleFontSize: 26,
           ),
           const SizedBox(height: 14),

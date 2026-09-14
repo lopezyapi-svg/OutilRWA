@@ -259,7 +259,7 @@ const List<_MenuEntry> _operationalRiskChildren = [
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnelUemoiCcr3,
     icon: Icons.policy_outlined,
-    label: 'CCR3 / Dispositif UEMOA',
+    label: 'Bâle 3 / Dispositif UEMOA',
   ),
   _MenuEntry.leaf(
     module: AppModule.risqueOperationnelPertes,

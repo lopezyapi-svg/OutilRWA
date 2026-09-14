@@ -105,7 +105,7 @@ extension AppModuleLabel on AppModule {
       case AppModule.risqueOperationnelReporting:
         return 'Reporting global';
       case AppModule.risqueOperationnelUemoiCcr3:
-        return 'CCR3 / Dispositif UEMOA';
+        return 'Bâle 3 / Dispositif UEMOA';
       case AppModule.analyse:
         return 'Analyse';
       case AppModule.stressTest:
