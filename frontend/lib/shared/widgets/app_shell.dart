@@ -2060,6 +2060,9 @@ class _WorkspaceTopBar extends StatelessWidget {
               // des deux : c'est ce qui la rendait visible au téléphone et
               // introuvable sur ordinateur.
               const _ZoneCompte(),
+              _PortfolioAmountUnitPicker(
+                  amountUnitListenable: portfolioAmountUnit),
+              const SizedBox(width: 6),
               if (showActionButtons) ...[
                 // Les actions secondaires et primaires ne s'affichent que sur les écrans larges.
                 const SizedBox(width: 8),
