@@ -534,47 +534,70 @@ class _YieldCurveRefreshDialog extends StatelessWidget {
                                 )
                               : null,
                         ),
-                        child: Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: 80,
-                              child: Text(
-                                statuses[index].zone,
-                                style: TextStyle(
-                                  color: text,
-                                  fontSize: 12.3,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
+                            Row(
+                              children: [
+                                SizedBox(
+                                  width: 80,
+                                  child: Text(
+                                    statuses[index].zone,
+                                    style: TextStyle(
+                                      color: text,
+                                      fontSize: 12.3,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 100,
+                                  child: Text(
+                                    (statuses[index].updated
+                                            ? 'Actualisée'
+                                            : 'Échec de vérification')
+                                        .tr(context),
+                                    style: TextStyle(
+                                      color: statuses[index].updated
+                                          ? text.withValues(alpha: 0.88)
+                                          : _marketWarning,
+                                      fontSize: 12.3,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    '${statuses[index].source} · '
+                                    '${statuses[index].sourceDateLabel}',
+                                    style: TextStyle(
+                                      color: text.withValues(alpha: 0.88),
+                                      fontSize: 12.3,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (!statuses[index].updated) ...[
+                              const SizedBox(height: 2),
+                              Padding(
+                                padding: const EdgeInsets.only(left: 80),
+                                child: Text(
+                                  '${'Donnée locale conservée, non revérifiée'.tr(context)}'
+                                  '${statuses[index].error == null ? '' : ' (${statuses[index].error})'}',
+                                  style: TextStyle(
+                                    color: _marketWarning.withValues(alpha: 0.9),
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.3,
+                                  ),
                                 ),
                               ),
-                            ),
-                            SizedBox(
-                              width: 100,
-                              child: Text(
-                                (statuses[index].updated
-                                        ? 'Actualisée'
-                                        : 'Maintenue')
-                                    .tr(context),
-                                style: TextStyle(
-                                  color: text.withValues(alpha: 0.88),
-                                  fontSize: 12.3,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                '${statuses[index].source} · '
-                                '${statuses[index].sourceDateLabel}',
-                                style: TextStyle(
-                                  color: text.withValues(alpha: 0.88),
-                                  fontSize: 12.3,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -2888,6 +2911,7 @@ class _YieldCurveRepository {
           updated: false,
           source: localUemoa.sourceName,
           sourceDateLabel: localUemoa.sourceDateLabel,
+          error: error.toString(),
         ),
       );
     }
@@ -2915,6 +2939,7 @@ class _YieldCurveRepository {
           updated: false,
           source: localCemac.sourceName,
           sourceDateLabel: localCemac.sourceDateLabel,
+          error: error.toString(),
         ),
       );
     }
@@ -3251,12 +3276,17 @@ class _YieldCurveRefreshStatus {
     required this.updated,
     required this.source,
     required this.sourceDateLabel,
+    this.error,
   });
 
   final String zone;
   final bool updated;
   final String source;
   final String sourceDateLabel;
+  /// Raison de l'échec de récupération en ligne (null si `updated` est true).
+  /// Un échec ne signifie PAS que la source n'a pas changé : la donnée
+  /// locale conservée peut être périmée.
+  final String? error;
 }
 
 class _YieldCurveSourceCandidate {
