@@ -7492,7 +7492,7 @@ class _Ccr3UemoiHubViewState extends State<_Ccr3UemoiHubView> {
 
   static const _tabDefs = [
     'Dispositif UEMOA',
-    'CCR3',
+    'Bâle 3',
   ];
 
   // Onglets de premier niveau temporairement désactivés (non fonctionnels).
