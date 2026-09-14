@@ -581,6 +581,38 @@ def _ajouter_feuille_attestation(wb: Any, attestation: Any, etablissement: Any, 
               alignement=align_gauche, remplissage=fill_jaune, bordure_obj=bordure_fine)
         ws.row_dimensions[ligne].height = 16
 
+    def _inserer_signature(ligne_debut: int, ligne_fin: int, b64: str | None) -> None:
+        """Dépose l'image de signature strictement dans les colonnes C-E, entre
+        `ligne_debut` et `ligne_fin` (1-based, inclus).
+
+        Un ancrage "une cellule" (position + taille en pixels fixes) ne se
+        redimensionne pas avec les cellules : selon le moteur de rendu, l'image
+        peut largement déborder de sa case et chevaucher le texte voisin (ex. la
+        ligne "Fonction :" ou la signature suivante). Un ancrage "deux cellules"
+        borne l'image exactement entre les deux coins indiqués, quel que soit le
+        moteur qui l'affiche.
+        """
+        if not b64:
+            return
+        try:
+            import base64
+            from io import BytesIO
+
+            from openpyxl.drawing.spreadsheet_drawing import (
+                AnchorMarker,
+                TwoCellAnchor,
+            )
+
+            img = openpyxl.drawing.image.Image(BytesIO(base64.b64decode(b64)))
+            marker_debut = AnchorMarker(col=2, colOff=0, row=ligne_debut - 1, rowOff=0)
+            marker_fin = AnchorMarker(col=5, colOff=0, row=ligne_fin, rowOff=0)
+            img.anchor = TwoCellAnchor(
+                editAs="twoCell", _from=marker_debut, to=marker_fin
+            )
+            ws.add_image(img)
+        except Exception:
+            pass
+
     def _ligne_tel_poste(ligne: int, tel: str, poste: str) -> None:
         _fusion(ligne, 1, ligne, 2)
         _case(ligne, 1, "Téléphone :", police=police_label, alignement=align_gauche)
@@ -602,8 +634,11 @@ def _ajouter_feuille_attestation(wb: Any, attestation: Any, etablissement: Any, 
     r += 2
 
     # ── Identification ───────────────────────────────────────────────────────
-    _fusion(r, 1, r, 4)
-    _case(r, 1, f"ETAT :", police=police_label, alignement=align_gauche)
+    _fusion(r, 1, r, 2)
+    _case(r, 1, "ETAT :", police=police_label, alignement=align_gauche)
+    _fusion(r, 3, r, 4)
+    _case(r, 3, _champ(etablissement, "pays", "etat"), police=police_valeur,
+          alignement=align_gauche, remplissage=fill_jaune, bordure_obj=bordure_fine)
     _fusion(r, 5, r, 6)
     _case(r, 5, "ETABLISSEMENT :", police=police_label, alignement=align_gauche)
     _fusion(r, 7, r, 8)
@@ -695,16 +730,7 @@ def _ajouter_feuille_attestation(wb: Any, attestation: Any, etablissement: Any, 
     # Espace pour l'image 1
     _fusion(r, 1, r+1, 8)
     sign1_b64 = _champ(attestation, "sign1_image")
-    if sign1_b64:
-        try:
-            import base64
-            from io import BytesIO
-            sig_img = openpyxl.drawing.image.Image(BytesIO(base64.b64decode(sign1_b64)))
-            sig_img.width = 150
-            sig_img.height = 50
-            ws.add_image(sig_img, f"D{r}")
-        except Exception:
-            pass
+    _inserer_signature(r, r + 1, sign1_b64)
     ws.row_dimensions[r].height = 25
     ws.row_dimensions[r+1].height = 25
     r += 2
@@ -733,16 +759,7 @@ def _ajouter_feuille_attestation(wb: Any, attestation: Any, etablissement: Any, 
     # Espace pour l'image 2
     _fusion(r, 1, r+1, 8)
     sign2_b64 = _champ(attestation, "sign2_image")
-    if sign2_b64:
-        try:
-            import base64
-            from io import BytesIO
-            sig_img = openpyxl.drawing.image.Image(BytesIO(base64.b64decode(sign2_b64)))
-            sig_img.width = 150
-            sig_img.height = 50
-            ws.add_image(sig_img, f"D{r}")
-        except Exception:
-            pass
+    _inserer_signature(r, r + 1, sign2_b64)
     ws.row_dimensions[r].height = 25
     ws.row_dimensions[r+1].height = 25
     r += 2
