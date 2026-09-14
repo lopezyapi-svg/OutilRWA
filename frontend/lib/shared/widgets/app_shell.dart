@@ -2047,7 +2047,6 @@ class _WorkspaceTopBar extends StatelessWidget {
         builder: (context, constraints) {
           // Ces seuils permettent de simplifier progressivement la barre sur des largeurs réduites.
           final showActionButtons = constraints.maxWidth >= 1380;
-          final showHeaderStatus = constraints.maxWidth >= 1080;
 
           return Row(
             children: [
@@ -2061,21 +2060,6 @@ class _WorkspaceTopBar extends StatelessWidget {
               // des deux : c'est ce qui la rendait visible au téléphone et
               // introuvable sur ordinateur.
               const _ZoneCompte(),
-              _HeaderIconButton(
-                icon: CupertinoIcons.circle_grid_3x3_fill,
-                accent: Theme.of(context).colorScheme.primary,
-                onPressed: onReturnToWelcome,
-              ),
-              const SizedBox(width: 6),
-              if (showHeaderStatus) ...[
-                const SizedBox(width: 6),
-              ],
-              _PortfolioAmountUnitPicker(
-                  amountUnitListenable: portfolioAmountUnit),
-              const SizedBox(width: 6),
-              _PortfolioCurrencyPicker(
-                selectedCurrencyListenable: portfolioDisplayCurrency,
-              ),
               if (showActionButtons) ...[
                 // Les actions secondaires et primaires ne s'affichent que sur les écrans larges.
                 const SizedBox(width: 8),
