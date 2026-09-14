@@ -708,6 +708,19 @@ def _ajouter_feuille_attestation(wb: Any, attestation: Any, etablissement: Any, 
     r += 5
 
     # ── Signature 1 ──────────────────────────────────────────────────────────
+    # Saut de page manuel juste avant les signatures : le contenu qui precede
+    # (identification, personnes-responsables, certification) et celui qui
+    # suit (2 signatures + note) tiennent chacun confortablement sur leur
+    # propre page. Sans ce saut explicite, le moteur PDF pagine ce long onglet
+    # tout seul - et coupe alors au milieu d'un bloc de signature, ce qui
+    # desynchronise la position des images de signature (calculee par rapport
+    # au sommet de l'onglet entier) de la page ou leurs lignes atterrissent
+    # reellement : les signatures apparaissaient plus bas que leur bloc, quasi
+    # superposees l'une a l'autre.
+    from openpyxl.worksheet.pagebreak import Break
+
+    ws.row_breaks.append(Break(id=r - 1))
+
     row_s1 = r
     _fusion(r, 1, r, 2)
     _case(r, 1, "Code Signature :", police=police_label, alignement=align_gauche)
@@ -778,7 +791,13 @@ def _ajouter_feuille_attestation(wb: Any, attestation: Any, etablissement: Any, 
     from openpyxl.worksheet.properties import PageSetupProperties
 
     ws.page_setup.orientation = "landscape"
-    ws.print_area = "A1:H26"
+    # `r` pointe ici sur la derniere ligne effectivement ecrite (note de
+    # confidentialite). Une borne codee en dur ("H26") a deja fait perdre
+    # silencieusement la signature 2 et la note : des qu'un champ optionnel
+    # (poste, telephone...) est absent ou que le contenu s'allonge d'une
+    # ligne, le contenu reel depasse la zone d'impression et tout ce qui suit
+    # est exclu du rendu PDF sans aucune erreur.
+    ws.print_area = f"A1:H{r}"
     ws.sheet_properties.pageSetUpPr = PageSetupProperties(fitToPage=True, autoPageBreaks=False)
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0

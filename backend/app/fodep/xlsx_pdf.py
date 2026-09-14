@@ -32,7 +32,6 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.platypus import (
     BaseDocTemplate,
-    Flowable,
     Frame,
     Image,
     NextPageTemplate,
@@ -638,7 +637,43 @@ def _plage_utilisee(feuille: Any) -> _Plage:
     return _Plage(derniere_ligne, derniere_colonne)
 
 
-def _carte_fusions(feuille: Any, plage: _Plage) -> tuple[dict, set]:
+def _segments_pagination(feuille: Any, plage: _Plage) -> list[tuple[int, int]]:
+    """Sauts de page manuels (``ws.row_breaks``) : decoupe la plage utile en
+    segments consecutifs, chacun rendu comme un tableau independant sur sa
+    propre page.
+
+    Necessaire pour que les images ancrees (signatures) se positionnent par
+    rapport au sommet de LEUR page plutot que par rapport a la premiere ligne
+    de tout l'onglet : le fractionnement automatique de reportlab reste
+    correct pour le texte (qui suit le flux), mais pas pour une image dessinee
+    a une position absolue - une image ancree loin dans un onglet qui deborde
+    sur plusieurs pages se retrouvait dessinee bien plus bas que sa ligne, sur
+    la derniere page du tableau plutot que la sienne.
+    """
+
+    brk = getattr(feuille.row_breaks, "brk", None) or []
+    sauts = sorted(
+        {
+            int(b.id)
+            for b in brk
+            if isinstance(getattr(b, "id", None), int) and 0 < b.id < plage.lignes
+        }
+    )
+    if not sauts:
+        return [(1, plage.lignes)]
+
+    segments: list[tuple[int, int]] = []
+    debut = 1
+    for saut in sauts:
+        segments.append((debut, saut))
+        debut = saut + 1
+    segments.append((debut, plage.lignes))
+    return segments
+
+
+def _carte_fusions(
+    feuille: Any, plage: _Plage, ligne_debut: int = 1
+) -> tuple[dict, set]:
     """Cellules pilotes des fusions, et cellules qu'elles recouvrent."""
 
     ancres: dict[tuple[int, int], tuple[int, int]] = {}
@@ -646,6 +681,8 @@ def _carte_fusions(feuille: Any, plage: _Plage) -> tuple[dict, set]:
 
     for fusion in feuille.merged_cells.ranges:
         if fusion.min_row > plage.lignes or fusion.min_col > plage.colonnes:
+            continue
+        if fusion.max_row < ligne_debut or fusion.min_row < ligne_debut:
             continue
         ligne_fin = min(fusion.max_row, plage.lignes)
         colonne_fin = min(fusion.max_col, plage.colonnes)
@@ -688,8 +725,15 @@ def _construire_table(
     moteur: MoteurFormules,
     theme: dict[str, str],
     echelle: float,
+    ligne_debut: int = 1,
+    ligne_fin: int | None = None,
 ) -> Table:
-    """Assemble la table reportlab correspondant a un onglet."""
+    """Assemble la table reportlab correspondant a un onglet (ou a un segment
+    de lignes [ligne_debut, ligne_fin] quand l'onglet a ete decoupe par
+    `_segments_pagination`, cf. cette fonction)."""
+
+    l0 = ligne_debut
+    l1 = ligne_fin if ligne_fin is not None else plage.lignes
 
     largeurs = [
         _largeur_colonne_points(feuille, index) * echelle
@@ -697,10 +741,10 @@ def _construire_table(
     ]
     hauteurs = [
         _hauteur_ligne_points(feuille, index) * echelle
-        for index in range(1, plage.lignes + 1)
+        for index in range(l0, l1 + 1)
     ]
 
-    ancres, couvertes = _carte_fusions(feuille, plage)
+    ancres, couvertes = _carte_fusions(feuille, plage, ligne_debut=l0)
     regles_mfc = _extraire_regles_mfc(feuille, theme)
 
     donnees: list[list[str]] = []
@@ -709,7 +753,7 @@ def _construire_table(
     # Valeurs brutes de toutes les cellules : elles servent aussi a savoir si
     # une voisine est occupee, ce qui determine si un texte peut deborder.
     valeurs: dict[tuple[int, int], Any] = {}
-    for index_ligne in range(1, plage.lignes + 1):
+    for index_ligne in range(l0, l1 + 1):
         for index_colonne in range(1, plage.colonnes + 1):
             cellule = feuille.cell(index_ligne, index_colonne)
             valeur = cellule.value
@@ -719,11 +763,11 @@ def _construire_table(
                 valeur = _substituer_glyphes_non_supportes(valeur)
             valeurs[(index_ligne, index_colonne)] = valeur
 
-    for index_ligne in range(1, plage.lignes + 1):
+    for index_ligne in range(l0, l1 + 1):
         ligne_rendue: list[str] = []
 
         for index_colonne in range(1, plage.colonnes + 1):
-            position = (index_colonne - 1, index_ligne - 1)
+            position = (index_colonne - 1, index_ligne - l0)
 
             if (index_ligne, index_colonne) in couvertes:
                 ligne_rendue.append("")
@@ -766,8 +810,8 @@ def _construire_table(
                     )
                     texte = "\n".join(lignes_texte)
                     besoin = len(lignes_texte) * interligne
-                    if fin_ligne == index_ligne and besoin > hauteurs[index_ligne - 1]:
-                        hauteurs[index_ligne - 1] = besoin
+                    if fin_ligne == index_ligne and besoin > hauteurs[index_ligne - l0]:
+                        hauteurs[index_ligne - l0] = besoin
                 elif est_nombre:
                     # Un nombre ne se deverse JAMAIS dans les cellules voisines,
                     # contrairement au texte : Excel afficherait ### plutot que
@@ -812,7 +856,7 @@ def _construire_table(
             if regle is not None and regle.genre == "superieur_nombre" and regle.couleur_fond is not None:
                 fond = regle.couleur_fond
             if fond is not None:
-                commandes.append(("BACKGROUND", position, (fin_colonne - 1, fin_ligne - 1), fond))
+                commandes.append(("BACKGROUND", position, (fin_colonne - 1, fin_ligne - l0), fond))
 
             commandes.append(("ALIGN", position, position, horizontal))
             commandes.append(
@@ -836,18 +880,18 @@ def _construire_table(
                 epaisseur = max(_EPAISSEUR_BORDURE.get(bordure.style, 0.4) * echelle, 0.15)
                 trait = _couleur(bordure.color, theme) or colors.black
                 commandes.append(
-                    (commande, position, (fin_colonne - 1, fin_ligne - 1), epaisseur, trait)
+                    (commande, position, (fin_colonne - 1, fin_ligne - l0), epaisseur, trait)
                 )
 
         donnees.append(ligne_rendue)
 
-    for (ligne_debut, colonne_debut), (ligne_fin, colonne_fin) in ancres.items():
-        if (ligne_fin, colonne_fin) != (ligne_debut, colonne_debut):
+    for (ligne_debut_f, colonne_debut), (ligne_fin_f, colonne_fin) in ancres.items():
+        if (ligne_fin_f, colonne_fin) != (ligne_debut_f, colonne_debut):
             commandes.append(
                 (
                     "SPAN",
-                    (colonne_debut - 1, ligne_debut - 1),
-                    (colonne_fin - 1, ligne_fin - 1),
+                    (colonne_debut - 1, ligne_debut_f - l0),
+                    (colonne_fin - 1, ligne_fin_f - l0),
                 )
             )
 
@@ -866,38 +910,60 @@ def _construire_table(
     return table
 
 
-class _ImageAncree(Flowable):
-    """Image d'un onglet, dessinee a sa position d'ancrage reelle (et non
-    ajoutee en flux apres le tableau, ce qui la ferait deborder sur une page
-    suivante). Ne consomme aucun espace de flot (wrap -> 0, 0)."""
+@dataclass
+class _ImageAncree:
+    """Position d'ancrage reelle d'une image d'un onglet (coin bas-gauche en
+    points, page-absolu).
 
-    def __init__(self, donnees: bytes, x: float, y: float, largeur: float, hauteur: float):
-        super().__init__()
-        self.donnees = donnees
-        self.x = x
-        self.y = y
-        self.largeur = largeur
-        self.hauteur = hauteur
+    Dessinee via le callback `onPage` d'un `PageTemplate` plutot qu'en flux
+    apres le tableau : un Flowable en flux (`wrap` -> (0, 0)) semble ne rien
+    consommer, mais `Flowable.drawOn` translate quand meme le canevas a la
+    position ou le flot en est rendu avant d'appeler `draw()` - une image
+    positionnee en coordonnees page-absolues s'y retrouve donc dessinee
+    decalee de cette translation, potentiellement hors de la page (invisible)
+    des que l'onglet ne tient plus sur une seule Table (segments multiples,
+    cf. `_segments_pagination`). Le canevas recu par `onPage` n'a lui aucune
+    translation de flot active : les coordonnees y sont directement celles de
+    la page.
+    """
 
-    def wrap(self, *args):
-        return (0, 0)
+    donnees: bytes
+    x: float
+    y: float
+    largeur: float
+    hauteur: float
 
-    def draw(self):
-        if self.donnees:
-            self.canv.drawImage(
-                ImageReader(io.BytesIO(self.donnees)),
-                self.x,
-                self.y,
-                self.largeur,
-                self.hauteur,
+
+def _dessiner_images_page(images: list[_ImageAncree]):
+    """Callback `onPage` : dessine les images d'un segment sur le canevas de
+    sa propre page, en coordonnees page-absolues."""
+
+    def _dessiner(canv: Any, _doc: Any) -> None:
+        for image in images:
+            if not image.donnees:
+                continue
+            canv.drawImage(
+                ImageReader(io.BytesIO(image.donnees)),
+                image.x,
+                image.y,
+                image.largeur,
+                image.hauteur,
                 mask="auto",
             )
 
+    return _dessiner
+
 
 def _images_feuille(
-    feuille: Any, echelle: float, marge: float, format_page: tuple[float, float]
-) -> list[Flowable]:
-    """Images d'un onglet, dessinees a leur ancre d'origine (logo de page de
+    feuille: Any,
+    echelle: float,
+    marge: float,
+    format_page: tuple[float, float],
+    ligne_debut: int = 1,
+    ligne_fin: int | None = None,
+) -> list[_ImageAncree]:
+    """Images d'un onglet (ou d'un segment [ligne_debut, ligne_fin] issu de
+    `_segments_pagination`), dessinees a leur ancre d'origine (logo de page de
     garde, signature de l'attestation, etc.).
 
     Dans le classeur, chaque image est ancree sur des cellules (souvent
@@ -905,38 +971,81 @@ def _images_feuille(
     restitue en surimpression, a l'echelle de la feuille, exactement la ou
     Excel les place, plutot qu'en flux apres le tableau (ce qui les ferait
     basculer sur une page supplementaire).
+
+    Seules les images dont la ligne d'ancrage tombe dans [ligne_debut,
+    ligne_fin] sont retenues, et leur position verticale est calculee par
+    rapport au sommet de CE segment (donc de la page ou il est rendu) plutot
+    que de la premiere ligne de tout l'onglet.
     """
 
     images = getattr(feuille, "_images", None)
     if not images:
         return []
 
-    resultats: list[Flowable] = []
+    l1 = ligne_fin if ligne_fin is not None else float("inf")
+
+    def _position_marqueur(marqueur: Any) -> tuple[float, float]:
+        """Position (gauche, haut) en points d'un AnchorMarker openpyxl,
+        haut mesure depuis le sommet du segment [ligne_debut, ligne_fin]."""
+        col_off = (marqueur.colOff or 0) / 12700.0
+        row_off = (marqueur.rowOff or 0) / 12700.0
+        gauche_pt = (
+            sum(_largeur_colonne_points(feuille, c + 1) for c in range(marqueur.col)) + col_off
+        )
+        haut_pt = (
+            sum(
+                _hauteur_ligne_points(feuille, r + 1)
+                for r in range(ligne_debut - 1, marqueur.row)
+            )
+            + row_off
+        )
+        return gauche_pt, haut_pt
+
+    resultats: list[_ImageAncree] = []
     for brut in images:
         ancrage = getattr(brut, "anchor", None)
         if not hasattr(ancrage, "_from"):
             continue
+        ligne_ancrage = ancrage._from.row + 1  # AnchorMarker.row est 0-based
+        if ligne_ancrage < ligne_debut or ligne_ancrage > l1:
+            continue
         try:
             donnees = brut._data()
-            largeur_native = float(brut.width) * _POINTS_PAR_PIXEL
-            hauteur_native = float(brut.height) * _POINTS_PAR_PIXEL
         except Exception:
             continue
-        if largeur_native <= 0 or hauteur_native <= 0:
+
+        gauche_pt, haut_pt = _position_marqueur(ancrage._from)
+
+        # La taille reelle de l'image dans le classeur vient de son ancrage,
+        # pas des dimensions natives du fichier source (`brut.width`/`.height`) :
+        # sur une image a une cellule (OneCellAnchor), `brut.width`/`.height`
+        # redonnent la taille native du PNG/JPEG embarque apres un aller-retour
+        # save/load, en ignorant tout redimensionnement applique avant l'ajout
+        # (ex. `image.width = 150`). Seul `anchor.ext` conserve la taille
+        # voulue. Sur une image a deux cellules (TwoCellAnchor), c'est l'ecart
+        # entre les deux coins d'ancrage qui fait foi.
+        droite_pt: float | None = None
+        bas_pt: float | None = None
+        vers = getattr(ancrage, "to", None)
+        if vers is not None:
+            droite_pt, bas_pt = _position_marqueur(vers)
+            largeur_pt = droite_pt - gauche_pt
+            hauteur_pt = bas_pt - haut_pt
+        elif getattr(ancrage, "ext", None) is not None:
+            largeur_pt = float(ancrage.ext.cx) / 12700.0
+            hauteur_pt = float(ancrage.ext.cy) / 12700.0
+        else:
+            try:
+                largeur_pt = float(brut.width) * _POINTS_PAR_PIXEL
+                hauteur_pt = float(brut.height) * _POINTS_PAR_PIXEL
+            except Exception:
+                continue
+
+        if largeur_pt <= 0 or hauteur_pt <= 0:
             continue
 
-        depart = ancrage._from
-        col_off = (depart.colOff or 0) / 12700.0
-        row_off = (depart.rowOff or 0) / 12700.0
-        gauche_pt = (
-            sum(_largeur_colonne_points(feuille, c + 1) for c in range(depart.col)) + col_off
-        )
-        haut_pt = (
-            sum(_hauteur_ligne_points(feuille, r + 1) for r in range(depart.row)) + row_off
-        )
-
-        largeur = largeur_native * echelle
-        hauteur = hauteur_native * echelle
+        largeur = largeur_pt * echelle
+        hauteur = hauteur_pt * echelle
         x = marge + gauche_pt * echelle
         y_haut = (format_page[1] - marge) - haut_pt * echelle
         y = y_haut - hauteur
@@ -1014,38 +1123,60 @@ def convertir_classeur_en_pdf(contenu_xlsx: bytes) -> bytes:
         if largeur_brute > 0 and hauteur_brute > 0:
             hauteur_contenu = hauteur_brute * echelle
             if hauteur_contenu <= hauteur_utile * 1.25:
-                echelle = min(echelle, hauteur_utile / hauteur_brute)
+                # Marge de securite (5 %) : un ajustement exact a hauteur_utile
+                # laisse une tolerance nulle a l'arrondi du moteur de rendu
+                # (metrique de police des cellules a retour a la ligne,
+                # epaisseur des bordures...). Le moindre ecart declenche une
+                # coupure de page au milieu du tableau.
+                echelle = min(echelle, (hauteur_utile * 0.95) / hauteur_brute)
 
-        identifiant = f"onglet-{len(modeles)}"
-        modeles.append(
-            PageTemplate(
-                id=identifiant,
-                pagesize=format_page,
-                frames=[
-                    Frame(
-                        marge,
-                        marge,
-                        format_page[0] - 2 * marge,
-                        format_page[1] - 2 * marge,
-                        leftPadding=0,
-                        rightPadding=0,
-                        topPadding=0,
-                        bottomPadding=0,
-                        id=f"cadre-{identifiant}",
-                    )
-                ],
+        # Un onglet avec sauts de page manuels (cf. `_segments_pagination`) est
+        # rendu segment par segment, chacun comme un tableau independant sur sa
+        # propre page. Sans saut manuel, un seul segment couvrant tout l'onglet
+        # reproduit exactement le comportement precedent (fractionnement
+        # automatique de reportlab si le contenu deborde quand meme).
+        #
+        # Chaque segment recoit son PROPRE PageTemplate, dont le callback
+        # `onPage` dessine les images ancrees de CE segment : le canevas recu
+        # par `onPage` n'a aucune translation de flot active (contrairement a
+        # un Flowable en flux, cf. docstring de `_ImageAncree`), donc les
+        # coordonnees page-absolues calculees par `_images_feuille` y sont
+        # fiables quel que soit le nombre de pages de l'onglet.
+        for i, (l0, l1) in enumerate(_segments_pagination(feuille, plage)):
+            images_segment = _images_feuille(feuille, echelle, marge, format_page, l0, l1)
+
+            identifiant = f"onglet-{len(modeles)}"
+            modeles.append(
+                PageTemplate(
+                    id=identifiant,
+                    pagesize=format_page,
+                    onPage=_dessiner_images_page(images_segment),
+                    frames=[
+                        Frame(
+                            marge,
+                            marge,
+                            format_page[0] - 2 * marge,
+                            format_page[1] - 2 * marge,
+                            leftPadding=0,
+                            rightPadding=0,
+                            topPadding=0,
+                            bottomPadding=0,
+                            id=f"cadre-{identifiant}",
+                        )
+                    ],
+                )
             )
-        )
 
-        # Le changement de modele ne prend effet qu'a la page suivante : il est
-        # donc annonce avant le saut, et le premier onglet ouvre le document.
-        elements.append(NextPageTemplate(identifiant))
-        if len(modeles) > 1:
-            elements.append(PageBreak())
-        elements.append(_construire_table(feuille, plage, moteur, theme, echelle))
+            # Le changement de modele ne prend effet qu'a la page suivante : il
+            # est donc annonce avant le saut, et le tout premier segment du
+            # tout premier onglet ouvre le document sans saut prealable.
+            elements.append(NextPageTemplate(identifiant))
+            if len(modeles) > 1:
+                elements.append(PageBreak())
 
-        for image in _images_feuille(feuille, echelle, marge, format_page):
-            elements.append(image)
+            elements.append(
+                _construire_table(feuille, plage, moteur, theme, echelle, l0, l1)
+            )
 
     if not modeles:
         raise ValueError("Le classeur ne contient aucun onglet imprimable.")
