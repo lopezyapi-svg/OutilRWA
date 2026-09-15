@@ -782,82 +782,17 @@ class _DashboardViewState extends State<_DashboardView> {
                     final isWide = constraints.maxWidth >= 900;
                     return SingleChildScrollView(
                       padding: const EdgeInsets.all(16),
-                      child: Builder(
-                        builder: (context) {
-                          final evo = d.widget2.evolutionPertesPct;
-                          final evoStr = evo != null
-                              ? '${evo >= 0 ? '+' : ''}${evo.toStringAsFixed(1)} %'
-                              : 'N/A';
-                          final evoColor =
-                              evo == null ? _kMuted : (evo > 0 ? _kDanger : _kSuccess);
-
-                          final monitoringCards = <Widget>[
-                            RoHeroStatCard(
-                              label: 'Non clôturés'.tr(context),
-                              value: '${d.widget2.incidentsNonClos}',
-                              valueColor: _kWarning,
-                              subtitle: 'Incidents ouverts à traiter',
-                            ),
-                            RoHeroStatCard(
-                              label: 'Évolution N-1'.tr(context),
-                              value: evoStr,
-                              valueColor: evoColor,
-                              subtitle: 'Pertes vs même période N-1',
-                            ),
-                            RoHeroStatCard(
-                              label: 'Actions en retard'.tr(context),
-                              value: '${d.widget3.actionsEnRetard}',
-                              valueColor: d.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
-                              subtitle: "Plans d'action non clôturés",
-                            ),
-                            RoHeroStatCard(
-                              label: 'Contrôles non conformes'.tr(context),
-                              value: '${d.widget3.controlesNonConformes}',
-                              valueColor:
-                                  d.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
-                              subtitle: 'Dernier cycle de contrôle',
-                            ),
-                          ];
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _RoDashSummaryRow(data: d),
-                              const SizedBox(height: 16),
-                              if (isWide)
-                                Row(
-                                  children: [
-                                    for (var i = 0; i < monitoringCards.length; i++) ...[
-                                      if (i > 0) const SizedBox(width: 12),
-                                      Expanded(child: monitoringCards[i]),
-                                    ],
-                                  ],
-                                )
-                              else
-                                Column(
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(child: monitoringCards[0]),
-                                        const SizedBox(width: 12),
-                                        Expanded(child: monitoringCards[1]),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Expanded(child: monitoringCards[2]),
-                                        const SizedBox(width: 12),
-                                        Expanded(child: monitoringCards[3]),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              const SizedBox(height: 16),
-                              _IncidentsDashSection(data: d, isWide: isWide),
-                            ],
-                          );
-                        },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Les 10 indicateurs de synthèse (capital, RWA,
+                          // statut, incidents, KRI, actions, contrôles...)
+                          // partagent tous la même grille responsive, donc la
+                          // même taille de carte d'une rangée à l'autre.
+                          _RoDashSummaryRow(data: d),
+                          const SizedBox(height: 16),
+                          _IncidentsDashSection(data: d, isWide: isWide),
+                        ],
                       ),
                     );
                   },
@@ -1182,12 +1117,46 @@ class _RoDashSummaryRow extends StatelessWidget {
         color: data.widget3.kriHorsSeuil > 0 ? _kDanger : _kSuccess,
         subtitle: "Indicateurs en zone d'alerte",
       ),
+      // Ex-"monitoringCards" : ces 4 cartes vivaient dans une Row/Column
+      // séparée, avec sa propre logique de largeur (4 colonnes égales dès
+      // 900px, indépendante des seuils de cette grille) - les cartes des deux
+      // rangées n'avaient donc jamais la même largeur d'une rangée à
+      // l'autre. Une seule grille pour les 10 cartes règle l'incohérence.
+      (
+        label: 'Non clôturés'.tr(context),
+        value: '${data.widget2.incidentsNonClos}',
+        color: _kWarning,
+        subtitle: 'Incidents ouverts à traiter',
+      ),
+      (
+        label: 'Évolution N-1'.tr(context),
+        value: data.widget2.evolutionPertesPct != null
+            ? '${data.widget2.evolutionPertesPct! >= 0 ? '+' : ''}'
+                '${data.widget2.evolutionPertesPct!.toStringAsFixed(1)} %'
+            : 'N/A',
+        color: data.widget2.evolutionPertesPct == null
+            ? _kMuted
+            : (data.widget2.evolutionPertesPct! > 0 ? _kDanger : _kSuccess),
+        subtitle: 'Pertes vs même période N-1',
+      ),
+      (
+        label: 'Actions en retard'.tr(context),
+        value: '${data.widget3.actionsEnRetard}',
+        color: data.widget3.actionsEnRetard > 0 ? _kDanger : _kSuccess,
+        subtitle: "Plans d'action non clôturés",
+      ),
+      (
+        label: 'Contrôles non conformes'.tr(context),
+        value: '${data.widget3.controlesNonConformes}',
+        color: data.widget3.controlesNonConformes > 0 ? _kWarning : _kSuccess,
+        subtitle: 'Dernier cycle de contrôle',
+      ),
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= 1100
-            ? 6
+        final columns = constraints.maxWidth >= 1200
+            ? 5
             : constraints.maxWidth >= 760
                 ? 3
                 : 2;
