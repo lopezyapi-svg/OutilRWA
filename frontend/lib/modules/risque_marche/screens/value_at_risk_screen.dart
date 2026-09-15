@@ -855,8 +855,6 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
               chargement: _chargement,
               erreur: _erreur,
               onReinitialiser: _reinitialiser,
-              onImporterHistorique: _importerHistorique,
-              onTelechargerModele: _telechargerModele,
               onRecadrer: _recadrerAxe,
             ),
           ),
@@ -1628,8 +1626,6 @@ class _PanneauGraphique extends StatelessWidget {
     required this.chargement,
     required this.erreur,
     required this.onReinitialiser,
-    required this.onImporterHistorique,
-    required this.onTelechargerModele,
     required this.onRecadrer,
   });
 
@@ -1642,8 +1638,6 @@ class _PanneauGraphique extends StatelessWidget {
   final bool chargement;
   final String? erreur;
   final VoidCallback onReinitialiser;
-  final VoidCallback onImporterHistorique;
-  final VoidCallback onTelechargerModele;
   final VoidCallback onRecadrer;
 
   @override
@@ -1719,11 +1713,6 @@ class _PanneauGraphique extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            _BoutonImportModele(
-              onImporter: onImporterHistorique,
-              onTelecharger: onTelechargerModele,
             ),
             const SizedBox(width: 8),
             Tooltip(
