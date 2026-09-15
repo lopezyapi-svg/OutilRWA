@@ -383,7 +383,7 @@ Widget _formSection(String title, {IconData? icon, Color? color}) {
     child: Row(
       children: [
         Container(width: 3, height: 15,
-          decoration: BoxDecoration(color: resolvedColor, borderRadius: BorderRadius.circular(2))),
+          decoration: BoxDecoration(color: resolvedColor, borderRadius: BorderRadius.circular(AppTheme.radius))),
         const SizedBox(width: 8),
         if (icon != null) ...[Icon(icon, size: 12, color: resolvedColor), const SizedBox(width: 5)],
         Text(title,
@@ -1658,7 +1658,7 @@ class _CriseScenarioCard extends StatelessWidget {
               Row(children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(color: _kMuted, borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(color: _kMuted, borderRadius: BorderRadius.circular(AppTheme.radius)),
                   child: Text(r.code,
                     style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
                 ),
@@ -1672,7 +1672,7 @@ class _CriseScenarioCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E3455) : const Color(0xFFE8EBF0),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(r.factorLabel,
                   style: const TextStyle(fontSize: 9.5, color: _kMuted, fontWeight: FontWeight.w600)),
@@ -1715,7 +1715,7 @@ class _CriseScenarioCard extends StatelessWidget {
                 ]),
                 const SizedBox(height: 4),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   child: LinearProgressIndicator(
                     value: ratioProgress,
                     minHeight: 5,
@@ -2027,7 +2027,7 @@ class _PertesTop5Card extends StatelessWidget {
             ),
             child: Row(children: [
               Container(width: 3, height: 16, decoration: BoxDecoration(
-                color: _kDanger, borderRadius: BorderRadius.circular(2))),
+                color: _kDanger, borderRadius: BorderRadius.circular(AppTheme.radius))),
               const SizedBox(width: 10),
               Expanded(child: Text('Top 5 - Incidents par perte nette'.tr(context),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
@@ -2089,7 +2089,7 @@ class _PertesTop5Card extends StatelessWidget {
                                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: _kWarning.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(3),
+                                    borderRadius: BorderRadius.circular(AppTheme.radius),
                                   ),
                                   child: Text(i.typeEvenement,
                                     style: const TextStyle(fontSize: 9, color: _kWarning, fontWeight: FontWeight.w600),
@@ -2114,7 +2114,7 @@ class _PertesTop5Card extends StatelessWidget {
                         const SizedBox(height: 6),
                         // Barre de progression relative
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                           child: Stack(children: [
                             Container(height: 5, color: isDark
                                 ? rc.withValues(alpha: 0.12) : rc.withValues(alpha: 0.08)),
@@ -2124,7 +2124,7 @@ class _PertesTop5Card extends StatelessWidget {
                                 height: 5,
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(colors: [rc.withValues(alpha: 0.7), rc]),
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: BorderRadius.circular(AppTheme.radius),
                                 ),
                               ),
                             ),
@@ -2196,7 +2196,7 @@ class _PertesLigneCard extends StatelessWidget {
             ),
             child: Row(children: [
               Container(width: 3, height: 16, decoration: BoxDecoration(
-                color: _kBlue, borderRadius: BorderRadius.circular(2))),
+                color: _kBlue, borderRadius: BorderRadius.circular(AppTheme.radius))),
               const SizedBox(width: 10),
               Expanded(child: Text('Pertes par ligne de métier'.tr(context),
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700))),
@@ -2241,7 +2241,7 @@ class _PertesLigneCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(
                               color: c.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(3),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
                             ),
                             child: Text('$count incident${count > 1 ? 's' : ''}',
                               style: TextStyle(fontSize: 9, color: c, fontWeight: FontWeight.w600)),
@@ -2937,7 +2937,7 @@ class _KriViewState extends State<_KriView> {
     ].where((e) => e.$1 > 0).toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       ClipRRect(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Row(
           children: parts.map((e) => Expanded(
             flex: e.$1,
@@ -2986,7 +2986,7 @@ class _KriViewState extends State<_KriView> {
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             decoration: BoxDecoration(
               color: _kMuted.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Text(count,
               style: TextStyle(fontSize: 9.5, color: isSelected ? textColor : _kMuted, fontWeight: FontWeight.w700)),
@@ -3199,7 +3199,7 @@ class _KriCard extends StatelessWidget {
                     height: 6,
                     decoration: BoxDecoration(
                       color: mutedColor.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                 ] else ...[
@@ -3329,7 +3329,7 @@ class _KriGaugePainter extends CustomPainter {
 
     canvas.save();
     canvas.clipRRect(RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, barTop, w, barH), const Radius.circular(4)));
+      Rect.fromLTWH(0, barTop, w, barH), const Radius.circular(AppTheme.radius)));
 
     if (sup) {
       canvas.drawRect(Rect.fromLTWH(0, barTop, pA, barH), pLow);
@@ -3726,7 +3726,7 @@ class _RisqueListItem extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
     decoration: BoxDecoration(
       color: color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       border: Border.all(color: color.withValues(alpha: 0.20)),
     ),
     child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -3741,7 +3741,7 @@ class _RisqueListItem extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
     decoration: BoxDecoration(
       color: color.withValues(alpha: 0.09),
-      borderRadius: BorderRadius.circular(3),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
     ),
     child: RichText(
       text: TextSpan(children: [
@@ -4182,7 +4182,7 @@ class _WorkflowViewState extends State<_WorkflowView> {
                                       onTap: () => _updateStatut(inc, ns),
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(color: _statutColor(ns).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(3), border: Border.all(color: _statutColor(ns).withValues(alpha: 0.4))),
+                                        decoration: BoxDecoration(color: _statutColor(ns).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(AppTheme.radius), border: Border.all(color: _statutColor(ns).withValues(alpha: 0.4))),
                                         child: Text('→ $ns', style: TextStyle(fontSize: 10, color: _statutColor(ns), fontWeight: FontWeight.w600)),
                                       ),
                                     )).toList(),
@@ -4628,7 +4628,7 @@ class _PlansViewState extends State<_PlansView> {
                             backgroundColor: (txReal >= 80 ? _kSuccess : _kWarning).withValues(alpha: 0.15),
                             color: txReal >= 80 ? _kSuccess : _kWarning,
                             minHeight: 4,
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                           const SizedBox(height: 4),
                           Text(txReal >= 80 ? 'Conforme UEMOA' : 'Sous le seuil (80 %)',
@@ -4841,7 +4841,7 @@ class _PlansViewState extends State<_PlansView> {
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             decoration: BoxDecoration(
               color: c.withValues(alpha: active ? 0.15 : 0.07),
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Text(count, style: TextStyle(fontSize: 9.5, color: active ? c : _kMuted, fontWeight: FontWeight.w700)),
           ),
@@ -4921,7 +4921,7 @@ class _PlanCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: AppColors.marketNeutral.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                         child: Text(p.reference,
                           style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800,
@@ -4943,7 +4943,7 @@ class _PlanCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFF5C6BC0).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                         child: Text(p.typeAction,
                           style: const TextStyle(fontSize: 9.5, color: Color(0xFF5C6BC0),
@@ -4955,7 +4955,7 @@ class _PlanCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: sourceColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                           border: Border.all(color: sourceColor.withValues(alpha: 0.25)),
                         ),
                         child: Text(p.source,
@@ -4968,7 +4968,7 @@ class _PlanCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: _kDanger.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                             border: Border.all(color: _kDanger.withValues(alpha: 0.35)),
                           ),
                           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -5062,7 +5062,7 @@ class _PlanCard extends StatelessWidget {
                                 color: progressColor)),
                             const SizedBox(width: 8),
                             Expanded(child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
                               child: LinearProgressIndicator(
                                 value: prog.clamp(0.0, 1.0),
                                 backgroundColor: progressColor.withValues(alpha: 0.12),
@@ -5230,7 +5230,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                     child: Text(badge, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
                   ),
@@ -5441,7 +5441,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
         pw.Container(
           width: double.infinity,
           padding: const pw.EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: const pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.all(pw.Radius.circular(4))),
+          decoration: const pw.BoxDecoration(color: headerBg, borderRadius: pw.BorderRadius.all(pw.Radius.circular(AppTheme.radius))),
           child: pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
             pw.Text('Historique Événements - Risque Opérationnel'.tr(context),
               style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.white, font: fontBold)),
@@ -5560,7 +5560,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
                               excludeFromSemantics: true,
                               message: 'Réinitialiser les filtres',
                               child: InkWell(
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(AppTheme.radius),
                                 onTap: () => setState(() {
                                   _dateDebutCtrl.clear();
                                   _dateFinCtrl.clear();
@@ -5657,7 +5657,7 @@ class _HistoriqueViewState extends State<_HistoriqueView> {
           labelStyle: const TextStyle(fontSize: 11, color: _kMuted),
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
           suffixIcon: const Icon(Icons.calendar_today_outlined, size: 14, color: _kMuted),
         ),
       ),
@@ -6048,7 +6048,7 @@ class _RegistreViewState extends State<_RegistreView> {
                                 horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
                               color: color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
                             ),
                             child: Text(badge,
                                 style: TextStyle(
@@ -6397,7 +6397,7 @@ class _RegistreViewState extends State<_RegistreView> {
       padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: pw.BoxDecoration(
         color: headerBg,
-        borderRadius: pw.BorderRadius.circular(3),
+        borderRadius: pw.BorderRadius.circular(AppTheme.radius),
       ),
       child: pw.Text(text,
         style: pw.TextStyle(
@@ -6411,7 +6411,7 @@ class _RegistreViewState extends State<_RegistreView> {
           padding: const pw.EdgeInsets.all(8),
           decoration: pw.BoxDecoration(
             border: pw.Border.all(color: borderCol),
-            borderRadius: pw.BorderRadius.circular(4),
+            borderRadius: pw.BorderRadius.circular(AppTheme.radius),
           ),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -6670,7 +6670,7 @@ class _RegistreViewState extends State<_RegistreView> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               textStyle: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w500, height: 1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
               visualDensity: VisualDensity.compact,
             ),
             icon: const Icon(Icons.file_upload_outlined, size: 14),
@@ -6687,7 +6687,7 @@ class _RegistreViewState extends State<_RegistreView> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               textStyle: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w500, height: 1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
               visualDensity: VisualDensity.compact,
             ),
             icon: const Icon(Icons.file_download_outlined, size: 14),
@@ -6727,7 +6727,7 @@ class _RegistreViewState extends State<_RegistreView> {
       decoration: BoxDecoration(
         color: _tableSurfaceColor(isDark),
         border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.035),
@@ -6771,11 +6771,11 @@ class _RegistreViewState extends State<_RegistreView> {
                       contentPadding:
                           const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                         borderSide: BorderSide(color: border),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                         borderSide: const BorderSide(color: _kTablePrimary),
                       ),
                     ),
@@ -6806,14 +6806,14 @@ class _RegistreViewState extends State<_RegistreView> {
                   message: 'Réinitialiser les filtres',
                   child: InkWell(
                     onTap: _resetFilters,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     child: Container(
                       height: 30,
                       width: 30,
                       decoration: BoxDecoration(
                         color: _tableSoftColor(isDark),
                         border: Border.all(color: border),
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       child: Icon(Icons.restart_alt_rounded, size: 15, color: muted),
                     ),
@@ -6837,7 +6837,7 @@ class _RegistreViewState extends State<_RegistreView> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
             ),
@@ -6969,7 +6969,7 @@ class _RegistreViewState extends State<_RegistreView> {
         final middleWidth = widths.skip(1).fold(0.0, (a, b) => a + b);
 
         return ClipRRect(
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           child: Container(
             decoration: BoxDecoration(
               color: _tableSurfaceColor(isDark),
@@ -7337,7 +7337,7 @@ class _RegistreViewState extends State<_RegistreView> {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Text(
         statut,
@@ -7457,7 +7457,7 @@ class _RegistreViewState extends State<_RegistreView> {
         decoration: BoxDecoration(
           color: _tableSoftColor(isDark),
           border: Border.all(color: border),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Row(
           children: [
@@ -7938,7 +7938,7 @@ class _CorepTabViewState extends State<_CorepTabView> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: const Color(0xFF0891B2).withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: const Color(0xFF0891B2).withValues(alpha: 0.4)),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -8842,7 +8842,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           Container(
             decoration: BoxDecoration(
               color: _kAccent.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: _kAccent.withValues(alpha: 0.25)),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -8899,7 +8899,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
   Widget _yearBtn(IconData icon, VoidCallback onTap) => Material(
     color: Colors.transparent,
     child: InkWell(
-      borderRadius: BorderRadius.circular(3),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
@@ -8928,15 +8928,15 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           filled: true,
           fillColor: _surf,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             borderSide: BorderSide(color: _border),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             borderSide: BorderSide(color: _border),
           ),
           focusedBorder: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(4)),
+            borderRadius: BorderRadius.all(Radius.circular(AppTheme.radius)),
             borderSide: BorderSide(color: _kAccent, width: 1.5),
           ),
         ),
@@ -9129,7 +9129,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
       decoration: BoxDecoration(
         color: _surf,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _border),
       ),
       child: Text(
@@ -9228,7 +9228,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                         color: currentWindow.contains(years[yi])
                             ? _kAccent.withValues(alpha: 0.10)
                             : null,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       child: Text('${years[yi]}',
                         textAlign: TextAlign.center,
@@ -9617,7 +9617,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           const SizedBox(height: 12),
           // Barre empilée
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             child: SizedBox(
               height: 24,
               child: Row(
@@ -9642,7 +9642,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
               for (final (lbl, v, c) in components) ...[
                 Container(
                   width: 10, height: 10,
-                  decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2)),
+                  decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(AppTheme.radius)),
                 ),
                 const SizedBox(width: 5),
                 Expanded(
@@ -9712,7 +9712,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
             children: [
               for (final (lbl, v, c) in bars) ...[
                 Container(width: 10, height: 10,
-                    decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(2))),
+                    decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(AppTheme.radius))),
                 const SizedBox(width: 4),
                 Text('$lbl : ${roAmount(context, v)}',
                     style: TextStyle(fontSize: 10.5, color: _muted)),
@@ -9764,7 +9764,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
               height: 16,
               child: Stack(clipBehavior: Clip.none, children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   child: Row(children: [
                     Expanded(flex: startFlex, child: Container(color: _border.withValues(alpha: 0.5))),
                     if (end > start)
@@ -9890,7 +9890,7 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
           Stack(clipBehavior: Clip.none, children: [
             // Fond 3 zones colorées
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               child: SizedBox(
                 height: 18,
                 child: Row(children: [
@@ -10045,12 +10045,12 @@ class _Ccr3TabViewState extends State<_Ccr3TabView> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     isDense: true,
                     filled: true, fillColor: _surf,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(4),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius),
                         borderSide: BorderSide(color: _border)),
-                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius),
                         borderSide: BorderSide(color: _border)),
                     focusedBorder: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(4)),
+                        borderRadius: BorderRadius.all(Radius.circular(AppTheme.radius)),
                         borderSide: BorderSide(color: _kAccent, width: 1.5)),
                   ),
                 ),
@@ -10205,7 +10205,7 @@ class _BicBarPainter extends CustomPainter {
       final rect = Rect.fromLTWH(
         centerX - barW / 2, chartB - barH, barW, barH);
       final rRect = RRect.fromRectAndCorners(rect,
-          topLeft: const Radius.circular(3), topRight: const Radius.circular(3));
+          topLeft: const Radius.circular(AppTheme.radius), topRight: const Radius.circular(AppTheme.radius));
       canvas.drawRRect(rRect, Paint()..color = c.withValues(alpha: 0.90)..style = PaintingStyle.fill);
 
       // Valeur au-dessus de la barre
@@ -10984,7 +10984,7 @@ class _RoRiskMatrix extends StatelessWidget {
         width: 12, height: 12,
         decoration: BoxDecoration(
           color: c.withValues(alpha: 0.22),
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: c.withValues(alpha: 0.55)),
         ),
       ),
@@ -11329,7 +11329,7 @@ class _RoVertBarChartPainter extends CustomPainter {
       // Fond de barre
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-            Rect.fromLTWH(x, padT, barW, h), const Radius.circular(4)),
+            Rect.fromLTWH(x, padT, barW, h), const Radius.circular(AppTheme.radius)),
         Paint()..color = color.withValues(alpha: isDark ? 0.12 : 0.08),
       );
 
@@ -11337,7 +11337,7 @@ class _RoVertBarChartPainter extends CustomPainter {
       if (barH > 0) {
         canvas.drawRRect(
           RRect.fromRectAndRadius(
-              Rect.fromLTWH(x, y, barW, barH), const Radius.circular(4)),
+              Rect.fromLTWH(x, y, barW, barH), const Radius.circular(AppTheme.radius)),
           Paint()
             ..shader = LinearGradient(
               colors: [color.withValues(alpha: 0.70), color],

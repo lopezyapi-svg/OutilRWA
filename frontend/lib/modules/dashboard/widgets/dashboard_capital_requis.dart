@@ -323,7 +323,7 @@ class _DashboardCapitalRequisState extends State<DashboardCapitalRequis> {
                               horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
                             color: c.surface,
-                            borderRadius: BorderRadius.circular(5),
+                            borderRadius: BorderRadius.circular(Dash.radius),
                             border: Border.all(color: c.navy.withValues(alpha: 0.15), width: 1),
                             boxShadow: [
                               BoxShadow(

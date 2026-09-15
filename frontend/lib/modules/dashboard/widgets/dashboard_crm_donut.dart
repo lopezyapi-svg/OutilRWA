@@ -74,7 +74,7 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
           backgroundColor: c.accent,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(Dash.radius),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           minimumSize: Size.zero,
@@ -130,7 +130,7 @@ class _DashboardCrmDonutState extends State<DashboardCrmDonut> {
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: c.surface,
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(Dash.radius),
                                     boxShadow: [
                                       BoxShadow(
                                         color: c.ink.withValues(alpha: 0.1),
@@ -241,7 +241,7 @@ class _LegendItem extends StatelessWidget {
             height: 24,
             decoration: BoxDecoration(
               color: sector.color,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(Dash.radius),
             ),
           ),
           const SizedBox(width: 8),
@@ -901,7 +901,7 @@ class _CrmDetailsDialogState extends State<_CrmDetailsDialog> {
           style: ButtonStyle(
             visualDensity: VisualDensity.compact,
             shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(1)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(Dash.radius)),
             ),
             backgroundColor: WidgetStateProperty.resolveWith((states) {
               return states.contains(WidgetState.selected) ? c.navy : null;
@@ -937,15 +937,15 @@ class _CrmDetailsDialogState extends State<_CrmDetailsDialog> {
                     const BoxConstraints(minWidth: 32, minHeight: 32),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(1),
+                  borderRadius: BorderRadius.circular(Dash.radius),
                   borderSide: BorderSide(color: c.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(1),
+                  borderRadius: BorderRadius.circular(Dash.radius),
                   borderSide: BorderSide(color: c.border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(1),
+                  borderRadius: BorderRadius.circular(Dash.radius),
                   borderSide: BorderSide(color: c.navy),
                 ),
               ),
@@ -958,7 +958,7 @@ class _CrmDetailsDialogState extends State<_CrmDetailsDialog> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: c.navy.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(1),
+            borderRadius: BorderRadius.circular(Dash.radius),
             border: Border.all(color: c.navy.withValues(alpha: 0.1)),
           ),
           child: Row(
@@ -1399,7 +1399,7 @@ class _CrmDetailsDialogState extends State<_CrmDetailsDialog> {
                   margin: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F1C34),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(Dash.radius),
                     border: Border.all(color: const Color(0xFF2D4B7A), width: 1),
                     boxShadow: const [
                       BoxShadow(

@@ -24,6 +24,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../shared/utils/file_save.dart';
 import '../../../shared/widgets/import/shared_import_layout.dart';
 import '../models/dashboard_models.dart';
+import 'dashboard_design.dart';
 
 // ─── Les 11 postes attendus (doit rester synchronisé avec
 // FONDS_PROPRES_INPUT_FIELDS côté backend) ──────────────────────────────────
@@ -512,7 +513,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: _bg,
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(Dash.radius),
                     border: Border.all(color: _border),
                   ),
                   child: _buildExpectedFormat(),
@@ -539,7 +540,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _isDark ? const Color(0xFF161F2E) : const Color(0xFFF6F8FA),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: _border),
       ),
       child: Column(
@@ -596,7 +597,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _isDark ? const Color(0xFF161F2E) : const Color(0xFFF6F8FA),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: _border),
       ),
       child: Column(
@@ -645,7 +646,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       padding: const EdgeInsets.fromLTRB(7, 7, 7, 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Column(
@@ -678,7 +679,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
       decoration: BoxDecoration(
         color: _bg,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
       child: Text(
@@ -701,14 +702,14 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
         color: Colors.transparent,
         child: InkWell(
           onTap: _isParsing || _isImporting ? null : _pickFile,
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(Dash.radius),
           child: AnimatedContainer(
             width: double.infinity,
             height: 178,
             duration: const Duration(milliseconds: 180),
             decoration: BoxDecoration(
               color: _isDragging ? Color.lerp(_bg, _accent, 0.05) : _bg,
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(Dash.radius),
               border: Border.all(color: _isDragging ? _accent : _border, width: _isDragging ? 1.3 : 1),
             ),
             child: Center(
@@ -722,7 +723,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
                     height: 58,
                     decoration: BoxDecoration(
                       color: _isDragging ? _accent.withValues(alpha: 0.14) : _accent.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(Dash.radius),
                       border: Border.all(color: _accent.withValues(alpha: 0.18)),
                     ),
                     child: Icon(
@@ -756,7 +757,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
     return Container(
       decoration: BoxDecoration(
         color: _bg,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: _border),
       ),
       child: Column(
@@ -767,7 +768,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: _isDark ? const Color(0xFF172130) : const Color(0xFFF4F7FC),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(Dash.radius)),
               border: Border(bottom: BorderSide(color: _border)),
             ),
             child: Row(
@@ -850,7 +851,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: _bg,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: _border),
       ),
       child: Row(
@@ -950,7 +951,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
     return Container(
       decoration: BoxDecoration(
         color: _isDark ? const Color(0xFF1B273A) : const Color(0xFFF9FAFB),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: _border),
       ),
       clipBehavior: Clip.antiAlias,
@@ -1037,7 +1038,7 @@ class _FondsPropresImportDialogState extends State<_FondsPropresImportDialog> {
         decoration: BoxDecoration(
           color: _bg,
           border: Border.all(color: _border),
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(Dash.radius),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

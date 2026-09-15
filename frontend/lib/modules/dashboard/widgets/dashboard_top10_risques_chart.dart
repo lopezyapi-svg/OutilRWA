@@ -192,7 +192,7 @@ class DashboardTop10RisquesChart extends StatelessWidget {
                         toY: amount,
                         width: 24,
                         color: c.ramp[index % c.ramp.length],
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(Dash.radius)),
                       ),
                     ],
                   );

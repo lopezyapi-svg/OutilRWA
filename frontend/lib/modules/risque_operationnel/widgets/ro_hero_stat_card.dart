@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../dashboard/widgets/dashboard_design.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Carte KPI "hero" - même habillage que les cartes de la vue Analyse rapide
 /// BIC/CRR3 (libellé en capitales, filet séparateur, grande valeur, sous-titre
@@ -92,7 +93,7 @@ class _RoHeroStatCardState extends State<RoHeroStatCard> {
                     horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E293B),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(
                   widget.subtitle!,

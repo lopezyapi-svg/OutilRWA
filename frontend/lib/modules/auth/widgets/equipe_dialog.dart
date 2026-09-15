@@ -261,7 +261,7 @@ class _EquipeDialogState extends State<EquipeDialog> {
                   style: FilledButton.styleFrom(
                     backgroundColor: _navy,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(3),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                   onPressed: _envoi ? null : _ajouter,
@@ -281,7 +281,7 @@ class _EquipeDialogState extends State<EquipeDialog> {
         isDense: true,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(3)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
       );
 }
 

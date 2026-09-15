@@ -87,12 +87,12 @@ class _HeaderButton extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(Dash.radius),
         side: BorderSide(color: c.border),
       ),
       child: InkWell(
         onTap: onTap ?? () {},
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(Dash.radius),
         child: Container(
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 14),

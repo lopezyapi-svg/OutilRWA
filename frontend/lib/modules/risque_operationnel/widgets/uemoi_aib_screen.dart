@@ -185,7 +185,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                             elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
                           ),
                           icon: saving
                               ? const SizedBox(
@@ -388,7 +388,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(2)),
+                            borderRadius: BorderRadius.circular(AppTheme.radius)),
                       ),
                     ),
                   ),
@@ -554,7 +554,7 @@ class _UemoiAibScreenState extends State<UemoiAibScreen> {
                         horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                     child: const Text('Exclu (négatif)',
                         style: TextStyle(

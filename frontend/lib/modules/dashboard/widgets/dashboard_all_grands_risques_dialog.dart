@@ -63,7 +63,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   border: Border.all(color: borderColor, width: 1.5),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(Dash.radius),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -73,7 +73,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                       decoration: const BoxDecoration(
                         color: headerBg,
                         borderRadius:
-                            BorderRadius.vertical(top: Radius.circular(2.5)),
+                            BorderRadius.vertical(top: Radius.circular(Dash.radius)),
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 0),
@@ -298,7 +298,7 @@ class DashboardAllGrandsRisquesDialog extends StatelessWidget {
                                                     e.status == 'Alerte'
                                                 ? const Color(0xFFFFEBE6)
                                                 : const Color(0xFFFFF0B3)),
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius: BorderRadius.circular(Dash.radius),
                                       ),
                                       child: Text(
                                         e.status.tr(context),

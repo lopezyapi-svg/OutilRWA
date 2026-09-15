@@ -87,7 +87,7 @@ class DashboardCapitalConsumption extends StatelessWidget {
                 height: 12,
                 decoration: BoxDecoration(
                   color: c.surfaceAlt,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(Dash.radius),
                 ),
               ),
               // Barre remplie (Capped at 20% for visual scale)
@@ -97,7 +97,7 @@ class DashboardCapitalConsumption extends StatelessWidget {
                   height: 12,
                   decoration: BoxDecoration(
                     color: statusColor,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(Dash.radius),
                   ),
                 ),
               ),

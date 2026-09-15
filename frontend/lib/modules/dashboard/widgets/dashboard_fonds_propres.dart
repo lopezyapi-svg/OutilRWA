@@ -100,7 +100,7 @@ class DashboardFondsPropres extends StatelessWidget {
             margin: const EdgeInsets.only(top: 8),
             decoration: BoxDecoration(
               border: Border.all(color: c.divider.withValues(alpha: 0.3)),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(Dash.radius),
             ),
             child: IntrinsicHeight(
               child: Row(
@@ -299,7 +299,7 @@ class DashboardFondsPropres extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(Dash.radius),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.06),

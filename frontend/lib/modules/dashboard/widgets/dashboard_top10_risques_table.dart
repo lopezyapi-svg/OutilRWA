@@ -61,7 +61,7 @@ class DashboardTop10RisquesTable extends StatelessWidget {
                     ),
                   );
                 },
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(Dash.radius),
                 hoverColor: c.navy.withValues(alpha: 0.08),
                 splashColor: c.navy.withValues(alpha: 0.12),
                 highlightColor: Colors.transparent,

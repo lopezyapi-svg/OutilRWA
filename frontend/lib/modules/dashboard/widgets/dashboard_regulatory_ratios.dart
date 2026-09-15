@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../../../core/theme/app_theme.dart';
+import 'dashboard_design.dart';
 
 class RegulatoryRatioSpec {
   const RegulatoryRatioSpec({
@@ -116,7 +117,7 @@ class DashboardRegulatoryRatios extends StatelessWidget {
                   color: isDark
                       ? const Color(0xFF334155)
                       : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(Dash.radius),
                 ),
               ),
               FractionallySizedBox(
@@ -126,7 +127,7 @@ class DashboardRegulatoryRatios extends StatelessWidget {
                   height: 8,
                   decoration: BoxDecoration(
                     color: barColor,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(Dash.radius),
                   ),
                 ),
               ),

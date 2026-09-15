@@ -518,7 +518,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                                               ),
                                               border: OutlineInputBorder(
                                                 borderRadius:
-                                                    BorderRadius.circular(4),
+                                                    BorderRadius.circular(AppTheme.radius),
                                                 borderSide: BorderSide(
                                                   color: c.border,
                                                 ),
@@ -585,7 +585,7 @@ class _FodepImportDialogState extends State<_FodepImportDialog> {
                                             decoration: BoxDecoration(
                                               color: c.surfaceAlt,
                                               borderRadius:
-                                                  BorderRadius.circular(4),
+                                                  BorderRadius.circular(AppTheme.radius),
                                             ),
                                             child: Text(
                                               entry.key.toUpperCase(),

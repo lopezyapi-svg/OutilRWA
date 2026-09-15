@@ -112,7 +112,7 @@ class DashboardRwaStructure extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(Dash.radius),
           child: LinearProgressIndicator(
             value: p.percent / 100,
             backgroundColor: c.divider,

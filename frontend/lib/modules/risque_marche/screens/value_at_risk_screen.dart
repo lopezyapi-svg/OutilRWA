@@ -901,7 +901,7 @@ class _SelecteurMethode extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: _varSurface,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _varBorder),
       ),
       child: Row(
@@ -948,12 +948,12 @@ class _OngletMethode extends StatelessWidget {
     final sansCalcul = methode.sansCalculPossible;
     final onglet = InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: actif ? Colors.indigo : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -977,7 +977,7 @@ class _OngletMethode extends StatelessWidget {
                   color: actif
                       ? Colors.white.withValues(alpha: 0.22)
                       : _varMuted.withValues(alpha: 0.13),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(
                   'Méthodologie'.tr(context),
@@ -1382,11 +1382,11 @@ class _ChampValeurPortefeuilleState extends State<_ChampValeurPortefeuille> {
             filled: true,
             fillColor: Colors.white,
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               borderSide: const BorderSide(color: _varBorder),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               borderSide: const BorderSide(color: _varPrimary),
             ),
           ),
@@ -1435,7 +1435,7 @@ class _GroupeChoix<T> extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: _varSurfaceSoft,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: _varBorder),
             ),
             child: Row(
@@ -1446,14 +1446,14 @@ class _GroupeChoix<T> extends StatelessWidget {
                       onTap: () {
                         if (choix != valeur) onChanged(choix);
                       },
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
                           color: choix == valeur
                               ? _varDeepBlue
                               : Colors.transparent,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                         child: Text(
                           libellePour(choix),
@@ -1559,7 +1559,7 @@ class _CarteKpi extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.indigo.shade50,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: accent.withValues(alpha: 0.08),
@@ -1689,7 +1689,7 @@ class _PanneauGraphique extends StatelessWidget {
               message: 'Recadrer l\'axe sur la distribution courante',
               child: InkWell(
                 onTap: onRecadrer,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 child: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
@@ -1709,7 +1709,7 @@ class _PanneauGraphique extends StatelessWidget {
               message: 'Réinitialiser les paramètres',
               child: InkWell(
                 onTap: onReinitialiser,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 child: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
@@ -2359,8 +2359,8 @@ class _HistogrammeVarPainter extends CustomPainter {
       canvas.drawRRect(
         RRect.fromRectAndCorners(
           rect,
-          topLeft: const Radius.circular(2),
-          topRight: const Radius.circular(2),
+          topLeft: const Radius.circular(AppTheme.radius),
+          topRight: const Radius.circular(AppTheme.radius),
         ),
         Paint()..color = couleur.withValues(alpha: 0.85),
       );
@@ -2599,7 +2599,7 @@ class _HistogrammeVarPainter extends CustomPainter {
       peintre.width + 14,
       peintre.height + 8,
     );
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(AppTheme.radius));
     canvas.drawRRect(
         rrect, Paint()..color = Colors.white.withValues(alpha: 0.92));
     canvas.drawRRect(
@@ -2647,7 +2647,7 @@ class _CarteVar extends StatelessWidget {
       padding: padding,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: borderColor),
       ),
       child: child,
@@ -2794,7 +2794,7 @@ class _PanneauVarHistoriqueMethodologie extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: _varOrange.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       child: const Text(
                         'Données d\'illustration',
@@ -2953,7 +2953,7 @@ class _EtapeMethodologie extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: _varDeepBlue,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Text(
               '$numero',
@@ -3009,7 +3009,7 @@ class _EncadreFormule extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: _varDeepBlue.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: const Border(
           left: BorderSide(color: _varDeepBlue, width: 2.5),
         ),
@@ -3056,7 +3056,7 @@ class _TableauPertesClassees extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: _varBorder),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -3192,7 +3192,7 @@ class _ResultatCas extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: couleur.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

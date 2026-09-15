@@ -13,7 +13,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../models/exposition_models.dart';
 
-const double _exposureFormRadius = 4;
+const double _exposureFormRadius = AppTheme.radius;
 const double _wizardBorderWidth = 1.0;
 
 bool _isExposureDark(BuildContext context) =>
@@ -6545,7 +6545,7 @@ class _CompactFieldCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF0F1C34),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: const Color(0xFF2D4B7A), width: 1),
         boxShadow: const [
           BoxShadow(

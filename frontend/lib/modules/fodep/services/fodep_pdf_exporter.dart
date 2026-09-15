@@ -4,6 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../models/fodep_models.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Générateur du document officiel FODEP au format PDF conforme aux normes
 /// de la Commission Bancaire de l'UMOA et de la BCEAO.
@@ -144,7 +145,7 @@ class FodepPdfExporter {
             padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 14),
             decoration: pw.BoxDecoration(
               color: primaryNavy,
-              borderRadius: pw.BorderRadius.circular(3),
+              borderRadius: pw.BorderRadius.circular(AppTheme.radius),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -171,7 +172,7 @@ class FodepPdfExporter {
                   padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: pw.BoxDecoration(
                     color: accentBlue,
-                    borderRadius: pw.BorderRadius.circular(2),
+                    borderRadius: pw.BorderRadius.circular(AppTheme.radius),
                   ),
                   child: pw.Text(
                     'ARRÊTÉ : $periodeStr',
@@ -192,7 +193,7 @@ class FodepPdfExporter {
             padding: const pw.EdgeInsets.all(8),
             decoration: pw.BoxDecoration(
               color: lightHeaderBg,
-              borderRadius: pw.BorderRadius.circular(3),
+              borderRadius: pw.BorderRadius.circular(AppTheme.radius),
               border: pw.Border.all(color: borderGrey, width: 0.5),
             ),
             child: pw.Row(
@@ -542,7 +543,7 @@ class FodepPdfExporter {
             padding: const pw.EdgeInsets.all(10),
             decoration: pw.BoxDecoration(
               border: pw.Border.all(color: borderGrey, width: 0.5),
-              borderRadius: pw.BorderRadius.circular(3),
+              borderRadius: pw.BorderRadius.circular(AppTheme.radius),
             ),
             child: pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,

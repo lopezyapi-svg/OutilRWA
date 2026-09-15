@@ -694,7 +694,7 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(3)),
+                      borderRadius: BorderRadius.circular(AppTheme.radius)),
                 ),
               ),
             ),
@@ -794,10 +794,10 @@ class _UemoiAsScreenState extends State<UemoiAsScreen> {
                         ? const Color(0xFF162642)
                         : const Color(0xFFF3F7FD),
                     enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                         borderSide: BorderSide(color: border)),
                     focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                         borderSide:
                             const BorderSide(color: _kPrimary, width: 1.2)),
                   ),

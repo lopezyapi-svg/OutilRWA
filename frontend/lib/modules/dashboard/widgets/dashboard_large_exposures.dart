@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/localization/app_localization.dart';
 import '../../../core/utils/currency_conversion.dart';
 import '../models/dashboard_models.dart';
+import 'dashboard_design.dart';
 
 class DashboardLargeExposures extends StatelessWidget {
   const DashboardLargeExposures({
@@ -29,7 +30,7 @@ class DashboardLargeExposures extends StatelessWidget {
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
@@ -136,7 +137,7 @@ class DashboardLargeExposures extends StatelessWidget {
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.redAccent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(Dash.radius),
                   ),
                   child: Text(
                     'Limite 25% dépassée'.tr(context),

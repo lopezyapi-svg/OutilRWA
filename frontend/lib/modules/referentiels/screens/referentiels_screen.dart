@@ -279,7 +279,7 @@ class _SettingsOverview extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(4, 3, 4, 3),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF111C33) : const Color(0xFFF8FAFF),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark ? const Color(0xFF22304B) : const Color(0xFFE3E9F6),
         ),
@@ -292,7 +292,7 @@ class _SettingsOverview extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Icon(
               CupertinoIcons.slider_horizontal_3,
@@ -397,7 +397,7 @@ class _OverviewPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9),
       decoration: BoxDecoration(
         color: color.withValues(alpha: isDark ? 0.18 : 0.09),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: color.withValues(alpha: 0.18)),
       ),
       child: Row(
@@ -484,7 +484,7 @@ class _SettingsPanel extends StatelessWidget {
         color: isDark
             ? const Color(0xFF111C33).withValues(alpha: 0.92)
             : Colors.white,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark ? const Color(0xFF22304B) : const Color(0xFFE3E9F6),
         ),
@@ -507,7 +507,7 @@ class _SettingsPanel extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Icon(icon, color: accent, size: 18),
               ),
@@ -627,7 +627,7 @@ class _ChoiceTile<T> extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           curve: Curves.easeOutCubic,
@@ -637,7 +637,7 @@ class _ChoiceTile<T> extends StatelessWidget {
             color: selected
                 ? primary.withValues(alpha: isDark ? 0.18 : 0.09)
                 : (isDark ? const Color(0xFF0F1B31) : const Color(0xFFF8FAFF)),
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
               color: selected
                   ? primary.withValues(alpha: 0.42)
@@ -657,7 +657,7 @@ class _ChoiceTile<T> extends StatelessWidget {
                   color: selected
                       ? primary.withValues(alpha: 0.16)
                       : muted.withValues(alpha: 0.09),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Icon(
                   option.icon,
@@ -740,7 +740,7 @@ class _ColorChoiceGroup extends StatelessWidget {
                   selected.toARGB32() == choice.color.toARGB32();
               return InkWell(
                 onTap: () => onChanged(choice.color),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
                   width: 146,
@@ -752,7 +752,7 @@ class _ColorChoiceGroup extends StatelessWidget {
                         : (isDark
                             ? const Color(0xFF0F1B31)
                             : const Color(0xFFF8FAFF)),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     border: Border.all(
                       color: selectedColor
                           ? choice.color.withValues(alpha: 0.48)
@@ -768,7 +768,7 @@ class _ColorChoiceGroup extends StatelessWidget {
                         height: 20,
                         decoration: BoxDecoration(
                           color: choice.color,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -863,7 +863,7 @@ class _ServiceTile extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F1B31) : const Color(0xFFF8FAFF),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark ? const Color(0xFF22304B) : const Color(0xFFE6EBF6),
         ),
@@ -877,7 +877,7 @@ class _ServiceTile extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Icon(icon, color: primary, size: 16),
           ),

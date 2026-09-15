@@ -61,7 +61,7 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.indigo.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(Dash.radius),
                 ),
                 child: Text.rich(
                   TextSpan(
@@ -96,7 +96,7 @@ class _DashboardRwaDonutState extends State<DashboardRwaDonut> {
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.indigo.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(Dash.radius),
                 ),
                 child: Text.rich(
                   TextSpan(

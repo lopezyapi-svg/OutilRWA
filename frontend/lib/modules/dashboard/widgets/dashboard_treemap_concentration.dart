@@ -26,7 +26,7 @@ class DashboardTreemapConcentration extends StatelessWidget {
       title: 'Concentration des risques - top 10 contreparties'.tr(context),
       unit: 'En % des fonds propres'.tr(context),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(Dash.radius),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

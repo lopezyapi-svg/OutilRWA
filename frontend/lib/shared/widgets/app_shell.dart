@@ -15,12 +15,12 @@ import 'sidebar_navigation.dart';
 const double _sidebarToggleButtonWidth = 28;
 const double _sidebarToggleButtonHeight = 28;
 const double _sidebarToggleHitArea = 42;
-const double _sidebarToggleButtonRadius = 6;
+const double _sidebarToggleButtonRadius = AppTheme.radius;
 const double _desktopPanelGap = 2.0;
 const double _desktopRailWidth = 54;
 const double _desktopOverlayWidth = 250;
 const double _workspaceTopBarControlHeight = 24;
-const double _workspaceTopBarControlRadius = 2;
+const double _workspaceTopBarControlRadius = AppTheme.radius;
 const Duration _desktopSidebarOpenDuration = Duration(milliseconds: 60);
 const Duration _desktopSidebarCloseDuration = Duration(milliseconds: 60);
 
@@ -1185,7 +1185,7 @@ class _SettingsOverlayCard extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F1B31) : Colors.white,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark ? const Color(0xFF22304B) : const Color(0xFFDDE6F4),
         ),
@@ -1216,7 +1216,7 @@ class _SettingsOverlayCard extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Icon(icon, color: primary, size: 17),
               ),
@@ -1282,14 +1282,14 @@ class _SettingsIconButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Container(
           width: 28,
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF14233D) : const Color(0xFFF7F8FD),
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
               color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
             ),
@@ -1338,7 +1338,7 @@ class _SettingsMenuButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 140),
             curve: Curves.easeOutCubic,
@@ -1346,7 +1346,7 @@ class _SettingsMenuButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               color: bgColor,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: bdColor),
               boxShadow: [
                 if (selected)
@@ -1367,7 +1367,7 @@ class _SettingsMenuButton extends StatelessWidget {
                     color: selected
                         ? Colors.white.withValues(alpha: 0.16)
                         : color.withValues(alpha: isDark ? 0.18 : 0.10),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: Icon(
                     icon,
@@ -1480,14 +1480,14 @@ class _SettingsOptionTile<T> extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: selected ? selectedBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Row(
             children: [
@@ -1546,14 +1546,14 @@ class _SettingsCountryFlag extends StatelessWidget {
       width: 24,
       height: 18,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark ? const Color(0xFF2A3A58) : const Color(0xFFD5DCEA),
           width: 0.7,
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(1.4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: CustomPaint(
           painter: _SettingsCountryFlagPainter(code),
         ),
@@ -1669,14 +1669,14 @@ class _SettingsCurrencyOptionRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 130),
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: selected ? selectedBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Row(
             children: [
@@ -1860,14 +1860,14 @@ class _SettingsColorTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: selected ? selectedBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Row(
             children: [
@@ -1876,7 +1876,7 @@ class _SettingsColorTile extends StatelessWidget {
                 height: 24,
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
               const SizedBox(width: 3),
@@ -1921,7 +1921,7 @@ class _SettingsServiceTile extends StatelessWidget {
       child: Container(
         height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(2)),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(AppTheme.radius)),
         child: Row(
           children: [
             Container(
@@ -2031,7 +2031,7 @@ class _WorkspaceTopBar extends StatelessWidget {
         color: isDark
             ? const Color(0xFF0F1B31).withValues(alpha: 0.94)
             : Colors.white.withValues(alpha: 0.90),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark ? const Color(0xFF22304B) : const Color(0xFFE7EAF5),
         ),

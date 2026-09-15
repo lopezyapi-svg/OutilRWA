@@ -10,7 +10,7 @@ import 'desktop_asset_image.dart';
 import 'rwa_tool_logo.dart';
 
 const Color _sidebarDeepBlue = Color.fromARGB(255, 6, 24, 57);
-const double _sidebarPanelRadius = 4.0;
+const double _sidebarPanelRadius = AppTheme.radius;
 
 /// Couleur de l'état sélectionné = navy institutionnel (accord avec le
 /// dashboard). En mode sombre, navy éclairci pour rester lisible sur le fond.
@@ -1264,7 +1264,7 @@ class _ExpandedNavTile extends StatelessWidget {
                       height: 24,
                       decoration: BoxDecoration(
                         color: tileColor,
-                        borderRadius: BorderRadius.circular(3.0),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       child: Icon(
                         entry.iconFor(selected),

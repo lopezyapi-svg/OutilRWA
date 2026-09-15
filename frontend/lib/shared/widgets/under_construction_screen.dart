@@ -31,7 +31,7 @@ class UnderConstructionScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 44),
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: border, width: 0.6),
           ),
           child: Column(

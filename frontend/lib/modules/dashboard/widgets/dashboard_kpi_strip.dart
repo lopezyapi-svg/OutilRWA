@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/localization/app_localization.dart';
+import 'dashboard_design.dart';
 
 class DashboardKpiSubItem {
   const DashboardKpiSubItem({
@@ -83,7 +84,7 @@ class _CleanKpiCard extends StatelessWidget {
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(

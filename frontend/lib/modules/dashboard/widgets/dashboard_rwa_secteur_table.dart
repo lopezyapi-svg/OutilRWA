@@ -30,7 +30,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: c.divider.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: c.divider.withValues(alpha: 0.2)),
       ),
       child: Column(
@@ -113,7 +113,7 @@ class DashboardRwaSecteurChart extends StatelessWidget {
           const SizedBox(height: 6),
           // Progress bar
           ClipRRect(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(Dash.radius),
             child: LinearProgressIndicator(
               value: percentage,
               backgroundColor: c.divider.withValues(alpha: 0.55),

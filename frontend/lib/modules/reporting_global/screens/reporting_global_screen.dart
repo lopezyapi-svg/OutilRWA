@@ -472,7 +472,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
           margin: const pw.EdgeInsets.only(bottom: 6),
           padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: pw.BoxDecoration(
-              color: headerBg, borderRadius: pw.BorderRadius.circular(3)),
+              color: headerBg, borderRadius: pw.BorderRadius.circular(AppTheme.radius)),
           child: pw.Text(text,
               style: pw.TextStyle(
                   fontSize: 11,
@@ -488,7 +488,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                       padding: const pw.EdgeInsets.all(8),
                       decoration: pw.BoxDecoration(
                           border: pw.Border.all(color: borderCol),
-                          borderRadius: pw.BorderRadius.circular(4)),
+                          borderRadius: pw.BorderRadius.circular(AppTheme.radius)),
                       child: pw.Column(
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
@@ -1129,7 +1129,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
                     height: 30,
                     decoration: BoxDecoration(
                       color: AppTheme.sidebar,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -1405,7 +1405,7 @@ class _ReportingGlobalScreenState extends State<ReportingGlobalScreen> {
               width: 3,
               decoration: BoxDecoration(
                 color: c,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
             ),
             const SizedBox(width: 9),

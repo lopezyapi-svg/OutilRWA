@@ -851,7 +851,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
       padding: const EdgeInsets.fromLTRB(7, 7, 7, 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Column(
@@ -905,7 +905,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
       decoration: BoxDecoration(
         color: _background,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
       child: Text(
@@ -930,7 +930,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
       padding: const EdgeInsets.fromLTRB(7, 7, 7, 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: color.withValues(alpha: 0.22)),
       ),
       child: Column(
@@ -1006,12 +1006,12 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _copyLabel(name, kind: 'Colonne'),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
             decoration: BoxDecoration(
               color: _background,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: color.withValues(alpha: 0.28)),
             ),
             child: Row(
@@ -1461,7 +1461,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 7.0),
         decoration: BoxDecoration(
           color: _background,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: _border),
         ),
         child: Row(
@@ -1525,7 +1525,7 @@ class _ExcelImportDialogState extends State<_ExcelImportDialog> {
               height: 26,
               decoration: BoxDecoration(
                 color: selected ? accent.withValues(alpha: 0.16) : _cardSoft,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Icon(
                 icon,

@@ -65,7 +65,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
   static const double _filterControlHeight = 30;
   static const double _optionControlHeight = 34;
   static const double _textFilterControlHeight = 44;
-  static const double _screenBorderRadius = 4;
+  static const double _screenBorderRadius = AppTheme.radius;
   static const double _tableRowHeight = 36;
   static const String _filterId = 'id';
   static const String _filterCounterparty = 'counterparty';
@@ -292,13 +292,13 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
                                           padding: const EdgeInsets.only(top: 8.0, left: 4.0, right: 16.0),
                                           child: Row(
                                             children: [
-                                              Container(width: 12, height: 12, decoration: BoxDecoration(color: const Color(0xFFFFECEC), border: Border.all(color: Colors.red.shade200, width: 0.5), borderRadius: BorderRadius.circular(2))),
+                                              Container(width: 12, height: 12, decoration: BoxDecoration(color: const Color(0xFFFFECEC), border: Border.all(color: Colors.red.shade200, width: 0.5), borderRadius: BorderRadius.circular(AppTheme.radius))),
                                               const SizedBox(width: 4),
                                               const Text('Expirée', style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.amber)),
                                               const SizedBox(width: 8),
                                               Text('|', style: TextStyle(fontSize: 12, color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[600] : Colors.grey[400])),
                                               const SizedBox(width: 8),
-                                              Container(width: 12, height: 12, decoration: BoxDecoration(color: const Color(0xFFE6F9EE), border: Border.all(color: Colors.green.shade200, width: 0.5), borderRadius: BorderRadius.circular(2))),
+                                              Container(width: 12, height: 12, decoration: BoxDecoration(color: const Color(0xFFE6F9EE), border: Border.all(color: Colors.green.shade200, width: 0.5), borderRadius: BorderRadius.circular(AppTheme.radius))),
                                               const SizedBox(width: 4),
                                               const Text('Entièrement remboursée', style: TextStyle(fontSize: 11, fontStyle: FontStyle.italic, color: Colors.amber)),
                                               const SizedBox(width: 8),
@@ -2034,7 +2034,7 @@ class _ExpositionsScreenState extends State<ExpositionsScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: background,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

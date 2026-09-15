@@ -171,7 +171,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
           _charger();
         }
       },
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Container(
         height: 28,
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -179,7 +179,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         decoration: BoxDecoration(
           color: c.surface,
           border: Border.all(color: const Color(0xFFCBD5E1), width: 1.0),
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -228,7 +228,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: _deepblue,
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -629,7 +629,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   border: Border.all(color: const Color(0xFFE2E8F0), width: Dash.hairline),
                 ),
                 child: Text(
@@ -703,7 +703,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                   decoration: BoxDecoration(
                     color: marge >= 0 ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: Text(
                     '${marge >= 0 ? '+' : ''}${marge.toStringAsFixed(2)} %',
@@ -746,7 +746,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
         boxShadow: [
           BoxShadow(
@@ -824,7 +824,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE2E8F0),
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                         child: Text(
                           ligne.code,
@@ -990,7 +990,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
         boxShadow: [
           BoxShadow(
@@ -1215,7 +1215,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
         boxShadow: [
           BoxShadow(
@@ -1242,7 +1242,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
                     height: 14,
                     decoration: BoxDecoration(
                       color: c.navy,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1499,7 +1499,7 @@ class FodepTable extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
         boxShadow: [
           BoxShadow(
@@ -1574,7 +1574,7 @@ class FodepTableGroup extends StatelessWidget {
             height: 11,
             decoration: BoxDecoration(
               color: c.navy,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
           ),
           const SizedBox(width: 7),
@@ -1734,7 +1734,7 @@ class _CarteFondsPropres extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
         boxShadow: [
           BoxShadow(
@@ -2442,7 +2442,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: c.surface,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: c.border, width: Dash.hairline),
             boxShadow: [
               BoxShadow(
@@ -2495,12 +2495,12 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
         _erreur = null;
         _succes = null;
       }),
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
         decoration: BoxDecoration(
           color: actif ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: actif
               ? [
                   BoxShadow(
@@ -2536,7 +2536,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
               decoration: BoxDecoration(
                 color: actif ? _deepblue.withValues(alpha: 0.1) : const Color(0xFFE2E8F0),
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Text(
                 tab.ref,
@@ -2652,7 +2652,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                             isDense: true,
                             hintText: 'Ex : Société Commerciale SA',
                             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(3), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
                           ),
                           onChanged: (v) => _participations[i] = _participations[i].copyWith(denominationEmettrice: v),
                         ),
@@ -2669,7 +2669,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                             isDense: true,
                             hintText: '0,00',
                             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(3), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
                           ),
                           onChanged: (v) => setState(() => _participations[i] = _participations[i].copyWith(capitalEmettrice: _parseNombre(v))),
                         ),
@@ -2686,7 +2686,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                             isDense: true,
                             hintText: '0,00',
                             contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(3), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
                           ),
                           onChanged: (v) => setState(() => _participations[i] = _participations[i].copyWith(montantNet: _parseNombre(v))),
                         ),
@@ -2698,7 +2698,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                           decoration: BoxDecoration(
                             color: pct > 25 ? const Color(0xFFFEE2E2) : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                           child: Text(
                             pct > 0 ? '${pct.toStringAsFixed(1)} %' : '-',
@@ -2794,7 +2794,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFE2E8F0),
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                         child: Text(
                           item.$1.toUpperCase(),
@@ -2988,7 +2988,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: estPositif ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                           child: Text(
                             estPositif ? '(+) AJOUT' : '(-) DÉDUCTION',
@@ -3046,7 +3046,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: const Color(0xFFE2E8F0),
-                              borderRadius: BorderRadius.circular(3),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
                             ),
                             child: Text(
                               p.$1.toUpperCase(),
@@ -3085,7 +3085,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
       margin: const EdgeInsets.only(left: 8),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: Dash.hairline),
       ),
       child: Row(
@@ -3108,7 +3108,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
     return Container(
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
         boxShadow: [
           BoxShadow(
@@ -3177,9 +3177,9 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
         decoration: InputDecoration(
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(3), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(3), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(3), borderSide: const BorderSide(color: _deepblue, width: 1.3)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide(color: c.border, width: Dash.hairline)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: const BorderSide(color: _deepblue, width: 1.3)),
           hintText: '0,00',
         ),
       ),
@@ -3194,7 +3194,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         side: const BorderSide(color: _deepblue, width: 1.2),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
       ),
     );
   }
@@ -3206,7 +3206,7 @@ class _NormesOperationsPanelState extends State<_NormesOperationsPanel> {
         backgroundColor: _deepblue,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
         elevation: 0,
       ),
       child: Row(

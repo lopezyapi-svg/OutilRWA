@@ -238,7 +238,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
             final bool isInvalid = value.isNotEmpty && (parsed == null || parsed < 0);
             
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(1)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
               backgroundColor: _isDark ? AppTheme.darkCard : AppTheme.card,
               title: Text('Saisir le montant', style: TextStyle(color: _textColor, fontSize: 16, fontWeight: FontWeight.bold)),
               content: SizedBox(
@@ -260,13 +260,13 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
                       labelText: 'Montant versé',
                       suffixText: _suivi?.devise ?? '',
                       suffixStyle: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(1)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(1),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                         borderSide: BorderSide(color: (isOverLimit || isInvalid) ? Colors.red : AppTheme.accent, width: 1.5),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(1),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                         borderSide: BorderSide(color: (isOverLimit || isInvalid) ? Colors.red : Colors.grey.withValues(alpha: 0.5), width: 1.0),
                       ),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
@@ -279,7 +279,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
                       decoration: BoxDecoration(
                         color: Colors.red.withValues(alpha: 0.1),
                         border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       child: const Row(
                         children: [
@@ -304,7 +304,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
               ),
               actions: [
                 TextButton(
-                  style: TextButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(1))),
+                  style: TextButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius))),
                   onPressed: () => Navigator.of(dialogContext).pop(),
                   child: const Text('Annuler'),
                 ),
@@ -312,7 +312,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AppTheme.success,
                     disabledBackgroundColor: Colors.grey,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(1)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
                   ),
                   onPressed: (value.isEmpty || parsed == null || isInvalid || isOverLimit) ? null : () {
                     Navigator.of(dialogContext).pop(parsed);
@@ -514,7 +514,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
                           color: const Color(0xFF001F4E).withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                         child: Text(
                           widget.exposureId,
@@ -594,7 +594,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: _isDark ? const Color(0xFF1E293B) : const Color(0xFFEEF2FF),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Text(
             value,
@@ -639,7 +639,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
@@ -656,7 +656,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: bg.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Icon(icon, size: 24, color: fg),
           ),
@@ -793,7 +793,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: _isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: _isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.06),
         ),
@@ -1015,21 +1015,21 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
       elevation: 0,
       color: bg,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(1),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         side: BorderSide(color: fg.withValues(alpha: 0.15), width: 0.5),
       ),
       child: Container(
         width: 82,
         height: 36,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(1),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Stack(
           children: [
             Positioned.fill(
               child: InkWell(
                 onTap: (_isBusy || isFuture) ? null : () => _promptMontant(periode, entry),
-                borderRadius: BorderRadius.circular(1),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 child: Padding(
                   padding: const EdgeInsets.only(left: 6, top: 2, bottom: 2, right: 18),
                   child: Column(
@@ -1111,7 +1111,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.success,
               side: BorderSide(color: AppTheme.success.withValues(alpha: 0.6)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
             ),
             label: const Text('Lever le déclassement'),
           )
@@ -1122,7 +1122,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.danger,
               side: BorderSide(color: AppTheme.danger.withValues(alpha: 0.6)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
             ),
             label: const Text('Déclasser en douteuse'),
           ),
@@ -1131,7 +1131,7 @@ class _SuiviVersementsDialogState extends State<SuiviVersementsDialog> {
           onPressed: () => Navigator.of(context).pop(_dirty),
           style: FilledButton.styleFrom(
             backgroundColor: const Color(0xFF001F4E),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
           ),
           child: const Text('Terminé'),
         ),

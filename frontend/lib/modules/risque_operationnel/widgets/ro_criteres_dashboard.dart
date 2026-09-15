@@ -366,7 +366,7 @@ class _CritereCard extends StatelessWidget {
                             horizontal: 7, vertical: 2.5),
                         decoration: BoxDecoration(
                           color: blue.withValues(alpha: 0.09),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                           border:
                               Border.all(color: blue.withValues(alpha: 0.25)),
                         ),

@@ -146,8 +146,8 @@ class DashboardCapitalVsRequired extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(2),
-                bottomRight: Radius.circular(2),
+                topRight: Radius.circular(Dash.radius),
+                bottomRight: Radius.circular(Dash.radius),
               ),
             ),
           ),

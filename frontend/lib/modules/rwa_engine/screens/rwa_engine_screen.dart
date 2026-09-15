@@ -15,7 +15,7 @@ import '../models/rwa_credit_analysis.dart';
 import '../../../core/theme/app_theme.dart';
 
 
-const double _pageRadius = 4;
+const double _pageRadius = AppTheme.radius;
 const Color _deepBlue = Color(0xFF001F4E);
 const Color _blue700 = Color(0xFF0B4DBA);
 const Color _ink = Color(0xFF0F1B3D);
@@ -577,7 +577,7 @@ class _SectionPanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -785,7 +785,7 @@ class _AgentTablePanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -927,7 +927,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
           child: Container(
             decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(color: _line),
           ),
           clipBehavior: Clip.antiAlias,
@@ -1212,7 +1212,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
             return Dialog(
               backgroundColor: Colors.white,
               alignment: Alignment.bottomCenter,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
               child: Container(
                 width: 1200,
                 height: 500,
@@ -1238,7 +1238,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                             backgroundColor: _deepBlue,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
                             textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                           ),
                           child: Text(showAll ? 'Voir le top 6' : 'Voir tout'),
@@ -1261,7 +1261,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               border: Border.all(color: _line.withValues(alpha: 0.5), width: 0.5),
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
                             ),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -1288,7 +1288,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: _deepBlue, width: 1.0),
-                          borderRadius: BorderRadius.circular(1),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: Material(
@@ -1344,7 +1344,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                                                         alignment: Alignment.center,
                                                         decoration: BoxDecoration(
                                                           color: _deepBlue.withValues(alpha: 0.1),
-                                                          borderRadius: BorderRadius.circular(4),
+                                                          borderRadius: BorderRadius.circular(AppTheme.radius),
                                                         ),
                                                         child: Text('${i + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: _deepBlue)),
                                                       ),
@@ -1634,7 +1634,7 @@ class _AgentContributionTableState extends State<_AgentContributionTable> {
                           padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 16),
                           decoration: BoxDecoration(
                             border: Border.all(color: _line.withValues(alpha: 0.5), width: 0.5),
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2279,7 +2279,7 @@ class _WeightSourceTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: const Color(0xFFF2F6FC),
-        borderRadius: BorderRadius.circular(1),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: const Color(0xFFD7E2F2), width: 0.8),
       ),
       child: Column(
@@ -3131,7 +3131,7 @@ class _TopExposuresChart extends StatelessWidget {
                   toY: e.value.percentage * 100,
                   color: isSelected ? Colors.blueGrey.shade800 : palette[e.key % palette.length],
                   width: 32,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radius)),
                   backDrawRodData: BackgroundBarChartRodData(
                     show: true,
                     toY: 100,
@@ -3168,7 +3168,7 @@ class _AgentRwaChartCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -3188,7 +3188,7 @@ class _AgentRwaChartCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(3),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(color: _line),
               ),
               child: BarChart(
@@ -3301,7 +3301,7 @@ class _AgentRwaChartCard extends StatelessWidget {
                         toY: e.value.rwa,
                         color: palette[e.key % palette.length],
                         width: 70,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppTheme.radius)),
                         backDrawRodData: BackgroundBarChartRodData(
                           show: true,
                           toY: maxRwa * 1.2,

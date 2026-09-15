@@ -30,7 +30,7 @@ class DashChartTooltip extends StatelessWidget {
       excludeFromSemantics: true,
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(Dash.radius),
         border: Border.all(color: c.border),
         boxShadow: [
           BoxShadow(

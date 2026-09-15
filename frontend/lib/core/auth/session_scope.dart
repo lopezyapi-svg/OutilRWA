@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'session_controller.dart';
+import '../../core/theme/app_theme.dart';
 
 /// Rend la session accessible depuis n'importe quel écran.
 class SessionScope extends InheritedNotifier<SessionController> {
@@ -85,7 +86,7 @@ class BandeauConsultation extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

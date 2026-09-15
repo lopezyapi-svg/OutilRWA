@@ -17,7 +17,7 @@ class RwaToolLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: DesktopAssetImage(
         _assetPath,
         width: size,

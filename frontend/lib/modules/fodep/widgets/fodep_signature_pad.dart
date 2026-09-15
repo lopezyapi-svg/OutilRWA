@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import '../../../core/theme/app_theme.dart';
 
 /// Pad de signature : l'utilisateur dessine son signature au doigt, à la souris
 /// ou au stylet. Le rendu est exporté en PNG (transparent) via [onChanged].
@@ -114,11 +115,11 @@ class _FodepSignaturePadState extends State<FodepSignaturePad> {
             width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: Colors.grey.shade300),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               child: Stack(
                 children: [
                   CustomPaint(

@@ -393,7 +393,7 @@ class _UemoiSyntheseScreenState extends State<UemoiSyntheseScreen> {
                           horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: _kPrimary.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                         border: Border.all(
                             color: _kPrimary.withValues(alpha: 0.25)),
                       ),

@@ -479,7 +479,7 @@ class _YieldCurveRefreshDialog extends StatelessWidget {
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   border: Border.all(color: border.withValues(alpha: 0.8)),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -618,7 +618,7 @@ class _YieldCurveRefreshDialog extends StatelessWidget {
                     ),
                     minimumSize: const Size(0, 36),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                   child: Text(
@@ -711,7 +711,7 @@ class _YieldCurveRefreshButton extends StatelessWidget {
               minimumSize: const Size.square(32),
               fixedSize: const Size.square(32),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
             ),
             child: refreshing
@@ -746,7 +746,7 @@ class _YieldCurveRefreshLink extends StatelessWidget {
       button: true,
       child: InkWell(
         onTap: refreshing ? null : onPressed,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
           child: Row(
@@ -1243,7 +1243,7 @@ class _YieldCurveInterpretationButtonState
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   side: BorderSide(
                     color: color.withValues(
                       alpha: _isOpen
@@ -1301,7 +1301,7 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
           color: isDark
               ? Colors.white.withValues(alpha: 0.08)
@@ -1438,7 +1438,7 @@ class _YieldCurveInterpretationFloatingCard extends StatelessWidget {
                     height: 12,
                     decoration: BoxDecoration(
                       color: muted.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                 ),
@@ -1681,7 +1681,7 @@ class _YieldCurveSeriesControlChip extends StatelessWidget {
                     : border.withValues(alpha: available ? 0.9 : 0.4),
                 width: 1,
               ),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -1692,7 +1692,7 @@ class _YieldCurveSeriesControlChip extends StatelessWidget {
                     height: 8,
                     decoration: BoxDecoration(
                       color: chipColor,
-                      borderRadius: BorderRadius.circular(1),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -1770,7 +1770,7 @@ class _YieldCurveDataTableState extends State<_YieldCurveDataTable> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: border.withValues(alpha: 0.8)),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -4388,7 +4388,7 @@ class _EquityIndicatorContentBoardState
                 color: _currentPage > 0
                     ? _marketPrimary.withValues(alpha: 0.1)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Icon(
                 CupertinoIcons.chevron_left,
@@ -4434,7 +4434,7 @@ class _EquityIndicatorContentBoardState
                 color: _currentPage < _totalPages - 1
                     ? _marketPrimary.withValues(alpha: 0.1)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Icon(
                 CupertinoIcons.chevron_right,
@@ -4770,7 +4770,7 @@ class _EquityTop5RankingPanelState extends State<_EquityTop5RankingPanel> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
             color: _marketDashboardDeepBlue.withValues(alpha: 0.2), width: 0.3),
         boxShadow: [
@@ -4789,8 +4789,8 @@ class _EquityTop5RankingPanelState extends State<_EquityTop5RankingPanel> {
             decoration: BoxDecoration(
               color: isDark ? Colors.white10 : Colors.grey.shade100,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(3),
-                topRight: Radius.circular(3),
+                topLeft: Radius.circular(AppTheme.radius),
+                topRight: Radius.circular(AppTheme.radius),
               ),
             ),
             child: Column(
@@ -4882,7 +4882,7 @@ class _EquityTop5RankingPanelState extends State<_EquityTop5RankingPanel> {
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: isSelected ? baseColor : Colors.transparent,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                             border: Border.all(
                               color: isSelected
                                   ? baseColor
@@ -4949,7 +4949,7 @@ class _EquityTop5RankingPanelState extends State<_EquityTop5RankingPanel> {
             : (isDark
                 ? Colors.white.withValues(alpha: 0.04)
                 : Colors.grey.shade50),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -5005,7 +5005,7 @@ class _EquityTop5RankingPanelState extends State<_EquityTop5RankingPanel> {
                     height: 4,
                     decoration: BoxDecoration(
                       color: isDark ? Colors.white12 : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                   FractionallySizedBox(
@@ -5014,7 +5014,7 @@ class _EquityTop5RankingPanelState extends State<_EquityTop5RankingPanel> {
                       height: 4,
                       decoration: BoxDecoration(
                         color: _bondZoneAccent(zoneValue),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                     ),
                   ),
@@ -5413,7 +5413,7 @@ class _EquityTitleIndicatorsTableState
         color: _marketSurfaceFor(context).withValues(
           alpha: isDark ? 0.88 : 0.98,
         ),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.070),
@@ -5463,7 +5463,7 @@ class _EquityTitleIndicatorsTableState
           const SizedBox(height: 8),
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: isDark
@@ -5882,11 +5882,11 @@ class _EquityIssuerSearchField extends StatelessWidget {
             vertical: 6,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             borderSide: BorderSide(color: border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             borderSide: const BorderSide(color: _marketPrimary),
           ),
         ),
@@ -5950,7 +5950,7 @@ class _EquityTitleColumnVisibilityButtonState
         return InkWell(
           onTap: () =>
               controller.isOpen ? controller.close() : _open(controller),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           hoverColor: Colors.transparent,
           focusColor: Colors.transparent,
           highlightColor: Colors.transparent,
@@ -5962,7 +5962,7 @@ class _EquityTitleColumnVisibilityButtonState
             decoration: BoxDecoration(
               color: _marketSurfaceFor(context),
               border: Border.all(color: border),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Row(
               children: [
@@ -6022,7 +6022,7 @@ class _EquityTitleColumnVisibilityPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.13),
@@ -6717,7 +6717,7 @@ class _MarketNoImportedDataState extends StatelessWidget {
                       alpha: isDark ? 0.42 : 0.72,
                     ),
                     border: Border.all(color: border.withValues(alpha: 0.86)),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -6732,7 +6732,7 @@ class _MarketNoImportedDataState extends StatelessWidget {
                             border: Border.all(
                               color: accent.withValues(alpha: 0.22),
                             ),
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                           child: Icon(icon, color: accent, size: 24),
                         )
@@ -6742,7 +6742,7 @@ class _MarketNoImportedDataState extends StatelessWidget {
                           height: 3,
                           decoration: BoxDecoration(
                             color: accent.withValues(alpha: 0.55),
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                         ),
                       const SizedBox(height: 4),
@@ -6906,7 +6906,7 @@ class _MarketCrdEvolutionHeader extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: _marketWarning.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: const Icon(
             CupertinoIcons.graph_square_fill,
@@ -7043,7 +7043,7 @@ class _MarketCrdKpiCard extends StatelessWidget {
         color: isDark
             ? Colors.white.withValues(alpha: 0.030)
             : item.color.withValues(alpha: 0.052),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: item.color.withValues(alpha: 0.18)),
       ),
       child: Row(
@@ -7054,7 +7054,7 @@ class _MarketCrdKpiCard extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: item.color.withValues(alpha: 0.11),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Icon(item.icon, size: 14, color: item.color),
           ),
@@ -7725,7 +7725,7 @@ class _BondCrdEvolutionChartPainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         Rect.fromLTWH(legendX, legendY - 6, 12, 10),
-        const Radius.circular(2),
+        const Radius.circular(AppTheme.radius),
       ),
       Paint()..color = _marketPrimary,
     );
@@ -8347,7 +8347,7 @@ class _BondViewModeToggle extends StatelessWidget {
               color: selected
                   ? _marketPrimary.withValues(alpha: isDark ? 0.25 : 0.12)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(
                 color: selected
                     ? _marketPrimary.withValues(alpha: 0.3)
@@ -8373,7 +8373,7 @@ class _BondViewModeToggle extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E2C) : const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border.withValues(alpha: 0.6)),
         boxShadow: [
           if (!isDark)
@@ -8416,12 +8416,12 @@ class _MarketExportButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E1E2C) : const Color(0xFFF8F9FA),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               border: Border.all(color: border.withValues(alpha: 0.6)),
             ),
             child: Row(
@@ -8529,7 +8529,7 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
       return Container(
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
               color: _marketDashboardDeepBlue.withValues(alpha: 0.2),
               width: 0.3),
@@ -8564,7 +8564,7 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
             color: _marketDashboardDeepBlue.withValues(alpha: 0.2), width: 0.3),
         boxShadow: [
@@ -8583,8 +8583,8 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
             decoration: BoxDecoration(
               color: isDark ? Colors.white10 : Colors.grey.shade100,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(3),
-                topRight: Radius.circular(3),
+                topLeft: Radius.circular(AppTheme.radius),
+                topRight: Radius.circular(AppTheme.radius),
               ),
             ),
             child: Column(
@@ -8716,7 +8716,7 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: isSelected ? baseColor : Colors.transparent,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                             border: Border.all(
                               color: isSelected
                                   ? baseColor
@@ -8798,7 +8798,7 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
             : (isDark
                 ? Colors.white.withValues(alpha: 0.04)
                 : Colors.grey.shade50),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -8854,7 +8854,7 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
                     height: 4,
                     decoration: BoxDecoration(
                       color: isDark ? Colors.white12 : Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                     ),
                   ),
                   FractionallySizedBox(
@@ -8863,7 +8863,7 @@ class _BondTop5RankingPanelState extends State<_BondTop5RankingPanel> {
                       height: 4,
                       decoration: BoxDecoration(
                         color: _bondZoneAccent(row.zone),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                     ),
                   ),
@@ -9113,7 +9113,7 @@ class _BondIndicatorContentBoardState
                 color: _currentPage > 0
                     ? _marketPrimary.withValues(alpha: 0.1)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Icon(
                 CupertinoIcons.chevron_left,
@@ -9150,7 +9150,7 @@ class _BondIndicatorContentBoardState
                 color: _currentPage < _totalPages - 1
                     ? _marketPrimary.withValues(alpha: 0.1)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Icon(
                 CupertinoIcons.chevron_right,
@@ -9998,7 +9998,7 @@ class _BondIndicatorOverviewToggle extends StatelessWidget {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border.withValues(alpha: 0.82)),
         boxShadow: [
           BoxShadow(
@@ -10060,7 +10060,7 @@ class _BondIndicatorOverviewToggleButton extends StatelessWidget {
             color: selected
                 ? _marketPrimary.withValues(alpha: isDark ? 0.30 : 0.12)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Icon(
             icon,
@@ -10090,7 +10090,7 @@ class _BondIndicatorKpiPanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(3, 7, 3, 8),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161622) : const Color(0xFFF8F9FB),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(
             color: _marketDashboardDeepBlue.withValues(alpha: 0.2), width: 0.3),
         boxShadow: [
@@ -10174,7 +10174,7 @@ class _BondZoneMonetaryTable extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: _marketPrimary.withValues(alpha: isDark ? 0.18 : 0.10),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: const Icon(
                   CupertinoIcons.globe,
@@ -10309,7 +10309,7 @@ class _BondZoneCapitalPieChartState extends State<_BondZoneCapitalPieChart> {
       decoration: BoxDecoration(
         color:
             isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: muted.withValues(alpha: 0.1)),
       ),
       child: Column(
@@ -10414,7 +10414,7 @@ class _BondZoneCapitalPieChartState extends State<_BondZoneCapitalPieChart> {
                               height: 12,
                               decoration: BoxDecoration(
                                 color: _bondZoneAccent(row.zone),
-                                borderRadius: BorderRadius.circular(3),
+                                borderRadius: BorderRadius.circular(AppTheme.radius),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -10529,7 +10529,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
       decoration: BoxDecoration(
         color:
             isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: muted.withValues(alpha: 0.1)),
       ),
       child: Column(
@@ -10845,7 +10845,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                           end: Alignment.topCenter,
                         ),
                         borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(4)),
+                            top: Radius.circular(AppTheme.radius)),
                       ),
                       BarChartRodData(
                         toY: maxDuration > 0 ? row.duration / maxDuration : 0,
@@ -10864,7 +10864,7 @@ class _BondZoneMetricsBarChartsState extends State<_BondZoneMetricsBarCharts> {
                           end: Alignment.topCenter,
                         ),
                         borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(4)),
+                            top: Radius.circular(AppTheme.radius)),
                       ),
                     ],
                   );
@@ -11304,7 +11304,7 @@ class _BondZoneRadarProfileChartState
                                 color: isDark
                                     ? const Color(0xFF1E293B)
                                     : Colors.white,
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(AppTheme.radius),
                                 border: Border.all(
                                     color: muted.withValues(alpha: 0.25)),
                                 boxShadow: [
@@ -11485,7 +11485,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
       decoration: BoxDecoration(
         color:
             isDark ? Colors.white.withValues(alpha: 0.03) : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: muted.withValues(alpha: 0.1)),
       ),
       child: Column(
@@ -11525,7 +11525,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                                 ? color.withValues(alpha: 0.5)
                                 : muted.withValues(alpha: 0.2),
                           ),
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                         child: Text(
                           zone.toUpperCase(),
@@ -11548,7 +11548,7 @@ class _BondZoneRiskBubbleChartState extends State<_BondZoneRiskBubbleChart> {
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     border: Border.all(color: muted.withValues(alpha: 0.3)),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -12387,7 +12387,7 @@ class _BondTitleIndicatorsTableState extends State<_BondTitleIndicatorsTable> {
         color: _marketSurfaceFor(context).withValues(
           alpha: isDark ? 0.88 : 0.98,
         ),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.070),
@@ -12437,7 +12437,7 @@ class _BondTitleIndicatorsTableState extends State<_BondTitleIndicatorsTable> {
           const SizedBox(height: 8),
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: isDark
@@ -12858,11 +12858,11 @@ class _BondIssuerSearchField extends StatelessWidget {
             vertical: 6,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             borderSide: BorderSide(color: border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             borderSide: const BorderSide(color: _marketPrimary),
           ),
         ),
@@ -12926,7 +12926,7 @@ class _BondTitleColumnVisibilityButtonState
         return InkWell(
           onTap: () =>
               controller.isOpen ? controller.close() : _open(controller),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           hoverColor: Colors.transparent,
           focusColor: Colors.transparent,
           highlightColor: Colors.transparent,
@@ -12938,7 +12938,7 @@ class _BondTitleColumnVisibilityButtonState
             decoration: BoxDecoration(
               color: _marketSurfaceFor(context),
               border: Border.all(color: border),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: Row(
               children: [
@@ -12998,7 +12998,7 @@ class _BondTitleColumnVisibilityPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.13),
@@ -13790,13 +13790,13 @@ class _BondInstitutionalIndicatorCardState
       child: Material(
         elevation: 4,
         shadowColor: Colors.black.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
               color: _hovered ? _deepBlue : _deepBlue.withValues(alpha: 0.15),
               width: 0.5,
@@ -14106,7 +14106,7 @@ class _MarketVisualEmptyState extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: _marketSurfaceSoftFor(context),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _marketBorderFor(context)),
       ),
       child: Column(
@@ -15497,7 +15497,7 @@ class _BondRiskNotificationButtonState
               decoration: BoxDecoration(
                 color:
                     _isOpen ? _marketWarning.withValues(alpha: 0.10) : surface,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
                 border: Border.all(
                   color: _marketWarning.withValues(
                     alpha: _isOpen ? 0.38 : 0.18,
@@ -15959,8 +15959,8 @@ class _BondRatingBarChartPainter extends CustomPainter {
         canvas.drawRRect(
           RRect.fromRectAndCorners(
             glowRect,
-            topLeft: const Radius.circular(1),
-            topRight: const Radius.circular(1),
+            topLeft: const Radius.circular(AppTheme.radius),
+            topRight: const Radius.circular(AppTheme.radius),
           ),
           Paint()
             ..isAntiAlias = true
@@ -15975,8 +15975,8 @@ class _BondRatingBarChartPainter extends CustomPainter {
       canvas.drawRRect(
         RRect.fromRectAndCorners(
           rect,
-          topLeft: const Radius.circular(1),
-          topRight: const Radius.circular(1),
+          topLeft: const Radius.circular(AppTheme.radius),
+          topRight: const Radius.circular(AppTheme.radius),
         ),
         barPaint,
       );
@@ -16183,7 +16183,7 @@ class _BondSegmentToggle extends StatelessWidget {
                     color: selected == index
                         ? _marketPrimary.withValues(alpha: isDark ? 0.30 : 0.12)
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                   child: Text(
                     options[index],
@@ -16472,7 +16472,7 @@ class _BondProfileBreakdownLegendRow extends StatelessWidget {
           height: compact ? 9 : 10,
           decoration: BoxDecoration(
             color: entry.color,
-            borderRadius: BorderRadius.circular(1.5),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
         ),
         SizedBox(width: compact ? 7 : 9),
@@ -16890,7 +16890,7 @@ class _BondDistributionBarRowState extends State<_BondDistributionBarRow> {
                             color: _marketPrimary.withValues(
                               alpha: widget.isDark ? 0.13 : 0.075,
                             ),
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                         ),
                         FractionallySizedBox(
@@ -16905,7 +16905,7 @@ class _BondDistributionBarRowState extends State<_BondDistributionBarRow> {
                                     ? (baseAlpha + 0.16).clamp(0.0, 1.0)
                                     : baseAlpha,
                               ),
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
                               boxShadow: _hovered
                                   ? [
                                       BoxShadow(
@@ -17110,7 +17110,7 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
                               color: indigoFonce.withValues(
                                 alpha: widget.isDark ? 0.13 : 0.075,
                               ),
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
                             ),
                           ),
                           FractionallySizedBox(
@@ -17125,7 +17125,7 @@ class _BondIssuerRankedRowState extends State<_BondIssuerRankedRow> {
                                       ? (baseAlpha + 0.15).clamp(0.0, 1.0)
                                       : baseAlpha,
                                 ),
-                                borderRadius: BorderRadius.circular(2),
+                                borderRadius: BorderRadius.circular(AppTheme.radius),
                                 boxShadow: _hovered
                                     ? [
                                         BoxShadow(
@@ -17397,7 +17397,7 @@ class _BondZoneDonutLegendItem extends StatelessWidget {
         color: highlighted
             ? color.withValues(alpha: _isMarketDark(context) ? 0.15 : 0.06)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Row(
         children: [
@@ -17493,7 +17493,7 @@ class _BondZoneRowState extends State<_BondZoneRow> {
                 ? (_hovered ? 0.18 : 0.12)
                 : (_hovered ? 0.085 : 0.052),
           ),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: _hovered
               ? [
                   BoxShadow(
@@ -17546,7 +17546,7 @@ class _BondZoneRowState extends State<_BondZoneRow> {
             ),
             const SizedBox(height: 3),
             ClipRRect(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               child: TweenAnimationBuilder<double>(
                 tween: Tween<double>(
                   begin: 0,
@@ -17875,7 +17875,7 @@ class _BondLossDistributionPainter extends CustomPainter {
       final isTail = midpoint >= varValue;
       final barColor = isTail ? danger : color;
       canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+        RRect.fromRectAndRadius(rect, const Radius.circular(AppTheme.radius)),
         Paint()
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
@@ -18104,7 +18104,7 @@ class _BondMaturityHistogramPainter extends CustomPainter {
         animatedHeight,
       );
       canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+        RRect.fromRectAndRadius(rect, const Radius.circular(AppTheme.radius)),
         Paint()
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
@@ -18361,7 +18361,7 @@ class _BondCouponCurvePainter extends CustomPainter {
         animatedHeight,
       );
       canvas.drawRRect(
-        RRect.fromRectAndRadius(rect, const Radius.circular(2)),
+        RRect.fromRectAndRadius(rect, const Radius.circular(AppTheme.radius)),
         Paint()
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
@@ -18776,7 +18776,7 @@ class _MarketDonutBreakdownState extends State<_MarketDonutBreakdown> {
                       ),
                       decoration: BoxDecoration(
                         color: concentrationColor.withValues(alpha: 0.11),
-                        borderRadius: BorderRadius.circular(1),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       child: Text(
                         concentrationLabel,
@@ -19287,7 +19287,7 @@ String _marketSignedMoney(double value) {
 }
 
 /// Rayon des tableaux et tuiles du tableau de bord marché.
-const double _marketTileRadius = 4;
+const double _marketTileRadius = AppTheme.radius;
 
 /// Ligne d'une ventilation du portefeuille actions (périmètre, devise).
 class _MarketBreakdownRow {
@@ -21787,7 +21787,7 @@ class _MarketPortfolioTypeSwitch extends StatelessWidget {
     final border = _marketBorderFor(context);
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: isDark
@@ -22099,7 +22099,7 @@ class _MarketPortfolioDetailsTableState
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           title: Text('Supprimer le titre ?'.tr(context)),
           content: Text(
@@ -22278,7 +22278,7 @@ class _MarketPortfolioDetailsTableState
           const SizedBox(height: 8),
           Expanded(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               child: Container(
                 decoration: BoxDecoration(
                   border: Border.all(color: border),
@@ -22438,7 +22438,7 @@ class _MarketPortfolioTableToolbar extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF101B31) : Colors.white,
         border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.035),
@@ -22483,11 +22483,11 @@ class _MarketPortfolioTableToolbar extends StatelessWidget {
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     borderSide: BorderSide(color: border),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     borderSide: const BorderSide(color: _marketPrimary),
                   ),
                 ),
@@ -22520,7 +22520,7 @@ class _MarketPortfolioTableToolbar extends StatelessWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
             ),
@@ -22577,7 +22577,7 @@ class _MarketSortButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: _marketSurfaceSoftFor(context),
           border: Border.all(color: border),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Row(
           children: [
@@ -22683,7 +22683,7 @@ class _MarketColumnVisibilityButtonState
         return InkWell(
           onTap: () =>
               controller.isOpen ? controller.close() : _open(controller),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           hoverColor: Colors.transparent,
           focusColor: Colors.transparent,
           highlightColor: Colors.transparent,
@@ -22695,7 +22695,7 @@ class _MarketColumnVisibilityButtonState
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: border),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.07),
@@ -22765,7 +22765,7 @@ class _MarketColumnVisibilityPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.13),
@@ -22883,7 +22883,7 @@ class _MarketColumnQuickAction extends StatelessWidget {
     final muted = _marketMutedFor(context);
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
         child: Text(
@@ -23396,7 +23396,7 @@ class _MarketPortfolioEditDialogState
     }
 
     return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius)),
       title: Text(
         widget.title.tr(context),
         style: TextStyle(
@@ -23419,7 +23419,7 @@ class _MarketPortfolioEditDialogState
                   height: 6,
                   decoration: BoxDecoration(
                     color: _currentStep == index ? _marketPrimary : border,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                 );
               }),
@@ -23464,7 +23464,7 @@ class _MarketPortfolioEditDialogState
               backgroundColor: _marketPrimary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
             ),
             child: Text(widget.confirmLabel.tr(context)),
@@ -23480,7 +23480,7 @@ class _MarketPortfolioEditDialogState
               backgroundColor: _marketPrimary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
             ),
             child: Text('Suivant'.tr(context)),
@@ -23575,11 +23575,11 @@ class _MarketPortfolioEditDialogState
           ? const Color(0xFF131A2A)
           : const Color(0xFFF9FAFB),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(1),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         borderSide: BorderSide(color: border.withValues(alpha: 0.4)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(1),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         borderSide: const BorderSide(color: _marketPrimary, width: 1.5),
       ),
       isDense: true,
@@ -23700,7 +23700,7 @@ class _MarketPortfolioEditDialogState
                 color: _errorFields.contains(header)
                     ? Colors.red.shade600.withValues(alpha: 0.15)
                     : _marketPrimary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Text(
                 (index + 1).toString().padLeft(2, '0'),
@@ -24098,7 +24098,7 @@ class _MarketPortfolioValueBadge extends StatelessWidget {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: style.background,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -25657,7 +25657,7 @@ class _VarEmptyChartState extends StatelessWidget {
               alpha: isDark ? 0.44 : 0.74,
             ),
             border: Border.all(color: border.withValues(alpha: 0.78)),
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -25668,7 +25668,7 @@ class _VarEmptyChartState extends StatelessWidget {
                 height: 3,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
               const SizedBox(height: 3),
@@ -26252,7 +26252,7 @@ class _FormulaTextSection extends StatelessWidget {
               height: 14,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
             ),
             const SizedBox(width: 10),
@@ -26746,7 +26746,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
                 height: 16,
                 decoration: BoxDecoration(
                   color: _marketPrimary,
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
               const SizedBox(width: 8),
@@ -26774,14 +26774,14 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
                 button: true,
                 child: InkWell(
                   onTap: widget.onResetDefaults,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                   child: Container(
                     width: 24,
                     height: 24,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: _marketPrimary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(AppTheme.radius),
                       border: Border.all(
                         color: _marketPrimary.withValues(alpha: 0.18),
                       ),
@@ -26876,7 +26876,7 @@ class _FloatingParametricPanelState extends State<_FloatingParametricPanel> {
                 height: 15,
                 decoration: BoxDecoration(
                   color: _marketPrimary,
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
               const SizedBox(width: 7),
@@ -27128,7 +27128,7 @@ class _VarMiniKpiCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
         color: surface.withValues(alpha: _isMarketDark(context) ? 0.72 : 1.0),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: border),
       ),
       child: Row(
@@ -27139,7 +27139,7 @@ class _VarMiniKpiCard extends StatelessWidget {
             height: double.infinity,
             decoration: BoxDecoration(
               color: item.color,
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
           ),
           const SizedBox(width: 8),
@@ -31456,13 +31456,13 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
             toY: val.exigence,
             color: exigenceColor,
             width: 14,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
           BarChartRodData(
             toY: val.rwa,
             color: rwaColor,
             width: 14,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
           ),
         ],
       );
@@ -31472,7 +31472,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
       decoration: BoxDecoration(
         color: _marketSurfaceFor(context),
         border: Border.all(color: _marketBorderFor(context)),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF1E3A5F).withValues(alpha: 0.05),
@@ -31509,7 +31509,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                       color: _deepBlue.withValues(alpha: 0.18),
                       width: 0.8,
                     ),
-                    tooltipBorderRadius: BorderRadius.circular(4),
+                    tooltipBorderRadius: BorderRadius.circular(AppTheme.radius),
                     tooltipPadding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 10,
@@ -31727,7 +31727,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                   margin: const EdgeInsets.only(right: 6),
                   decoration: BoxDecoration(
                     color: _deepBlue,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                   ),
                 ),
                 Expanded(
@@ -31751,7 +31751,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
                 decoration: BoxDecoration(
                   color: _marketSurfaceFor(context),
                   border: Border.all(color: _marketBorderFor(context)),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: _selectedView == 0 && specificData.isEmpty ||
@@ -31856,7 +31856,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
             height: 38,
             decoration: BoxDecoration(
               color: AppColors.accent.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: const Icon(
               CupertinoIcons.tray,
@@ -32424,7 +32424,7 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _line),
       ),
       child: Row(
@@ -32447,15 +32447,15 @@ class _TauxRiskScreenState extends State<_TauxRiskScreen> {
         _selectedView = index;
         _selectedRowIndex = null;
       }),
-      borderRadius: BorderRadius.circular(3),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? _deepBlue : Colors.transparent,
           borderRadius: BorderRadius.horizontal(
-            left: index == 0 ? const Radius.circular(3) : Radius.zero,
+            left: index == 0 ? const Radius.circular(AppTheme.radius) : Radius.zero,
             right: index == _views.length - 1
-                ? const Radius.circular(3)
+                ? const Radius.circular(AppTheme.radius)
                 : Radius.zero,
           ),
         ),
@@ -32641,7 +32641,7 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: _line),
           boxShadow: _hovered
               ? [
@@ -32658,7 +32658,7 @@ class _TauxSummaryItemState extends State<_TauxSummaryItem> {
         // couleur translucide, il apparaissait entrecoupé aux largeurs
         // fractionnaires des cartes.
         foregroundDecoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
             color: _hovered
                 ? Color.alphaBlend(
@@ -32754,7 +32754,7 @@ class _TauxBlockHeader extends StatelessWidget {
         margin: const EdgeInsets.only(right: 5),
         decoration: BoxDecoration(
           color: _deepBlue,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
       ),
       Flexible(
@@ -32896,7 +32896,7 @@ class _MarketRwaStructureCardState extends State<_MarketRwaStructureCard> {
                               : segments[i].color.withValues(alpha: 0.32),
                           width: _hoveredBar == i ? 82 : 72,
                           borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(3)),
+                              top: Radius.circular(AppTheme.radius)),
                           backDrawRodData: BackgroundBarChartRodData(
                             show: _hoveredBar == i,
                             toY: maxY,
@@ -33020,7 +33020,7 @@ class _MarketRwaStructureCardState extends State<_MarketRwaStructureCard> {
           color: highlighted
               ? segment.color.withValues(alpha: 0.08)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -33030,7 +33030,7 @@ class _MarketRwaStructureCardState extends State<_MarketRwaStructureCard> {
               height: 10,
               decoration: BoxDecoration(
                 color: isZero ? _marketBorderFor(context) : segment.color,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppTheme.radius),
               ),
             ),
             const SizedBox(width: 8),
@@ -34430,7 +34430,7 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _marketSuccess.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text('POSITIONS LONGUES'.tr(context),
                     style: TextStyle(
@@ -34599,14 +34599,14 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
                         color: marketColor,
                         width: 16,
                         borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(2)),
+                            top: Radius.circular(AppTheme.radius)),
                       ),
                       BarChartRodData(
                         toY: item.value, // RWA
                         color: const Color(0xFFC62828), // Red / Risky
                         width: 16,
                         borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(2)),
+                            top: Radius.circular(AppTheme.radius)),
                       ),
                     ],
                   );
@@ -34619,7 +34619,7 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
                       color: _deepBlue.withValues(alpha: 0.18),
                       width: 0.8,
                     ),
-                    tooltipBorderRadius: BorderRadius.circular(4),
+                    tooltipBorderRadius: BorderRadius.circular(AppTheme.radius),
                     tooltipPadding:
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     tooltipMargin: 8,
@@ -34699,7 +34699,7 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
                     height: 12,
                     decoration: BoxDecoration(
                         color: marketColor,
-                        borderRadius: BorderRadius.circular(2)),
+                        borderRadius: BorderRadius.circular(AppTheme.radius)),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -34720,7 +34720,7 @@ RWA Actions = Exigence FP Actions × 11,11 (DISPRUD UMOA, Art. 395-401)''',
                     height: 12,
                     decoration: BoxDecoration(
                         color: const Color(0xFFC62828),
-                        borderRadius: BorderRadius.circular(2)),
+                        borderRadius: BorderRadius.circular(AppTheme.radius)),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -35014,7 +35014,7 @@ class _EquityPortfolioTableState extends State<_EquityPortfolioTable> {
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: _marketBorderFor(context)),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       clipBehavior: Clip.antiAlias,
       child: LayoutBuilder(builder: (context, constraints) {
@@ -35668,7 +35668,7 @@ class _MarketCapitalRequirementPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: surface,
         border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -35781,7 +35781,7 @@ class _MarketCapitalRequirementPanel extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           border: Border.all(color: border),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Text(
           'Aucune exigence calculée : importez un portefeuille de marché.',
@@ -35797,7 +35797,7 @@ class _MarketCapitalRequirementPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           child: SizedBox(
             height: 34,
             child: Row(
@@ -36084,12 +36084,12 @@ class _MarketTop5ConcentrationChartState
       final selected = _filter == f;
       return InkWell(
         onTap: () => setState(() => _filter = f),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
             color: selected ? dotColor.withValues(alpha: 0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
               color: selected ? dotColor.withValues(alpha: 0.3) : border,
             ),
@@ -36112,7 +36112,7 @@ class _MarketTop5ConcentrationChartState
       decoration: BoxDecoration(
         color: surface,
         border: Border.all(color: border),
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -36168,7 +36168,7 @@ class _MarketTop5ConcentrationChartState
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: couleur.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(3),
+                              borderRadius: BorderRadius.circular(AppTheme.radius),
                             ),
                             child: Text(
                               '${index + 1}',
@@ -36202,7 +36202,7 @@ class _MarketTop5ConcentrationChartState
                                   height: 18,
                                   decoration: BoxDecoration(
                                     color: muted.withValues(alpha: 0.08),
-                                    borderRadius: BorderRadius.circular(1),
+                                    borderRadius: BorderRadius.circular(AppTheme.radius),
                                   ),
                                 ),
                                 FractionallySizedBox(
@@ -36212,7 +36212,7 @@ class _MarketTop5ConcentrationChartState
                                     height: 18,
                                     decoration: BoxDecoration(
                                       color: couleur,
-                                      borderRadius: BorderRadius.circular(1),
+                                      borderRadius: BorderRadius.circular(AppTheme.radius),
                                     ),
                                   ),
                                 ),

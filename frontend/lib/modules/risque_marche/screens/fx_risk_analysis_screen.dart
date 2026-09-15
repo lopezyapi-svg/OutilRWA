@@ -255,7 +255,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                         margin: const EdgeInsets.only(right: 10),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E3A5F),
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                       ),
                       const Flexible(
@@ -281,7 +281,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                               horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: _fxSuccess.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                           child: const Text('POSITIONS LONGUES',
                               style: TextStyle(
@@ -341,7 +341,7 @@ class _FxRiskAnalysisScreenState extends State<FxRiskAnalysisScreen> {
                 margin: const EdgeInsets.only(right: 8),
                 decoration: BoxDecoration(
                   color: const Color(0xFF1E3A5F),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
               Expanded(
@@ -475,7 +475,7 @@ class _FxInfoButton extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.75)
         : navy;
     return InkWell(
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       onTap: () => showDialog<void>(
         context: context,
         builder: (_) => _FxMethodologyDialog(result: result),
@@ -485,7 +485,7 @@ class _FxInfoButton extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border.all(
               color: accent.withValues(alpha: 0.35), width: 0.8),
-          borderRadius: BorderRadius.circular(2),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
         ),
         child: Text('MÉTHODOLOGIE',
             style: TextStyle(
@@ -516,7 +516,7 @@ class _FxMethodologyDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: _fxSurfaceFor(context),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         side: BorderSide(color: _fxBorderFor(context)),
       ),
       child: ConstrainedBox(
@@ -715,7 +715,7 @@ class _FxEmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: _fxSurfaceFor(context),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: _fxBorderFor(context)),
       ),
       child: Center(
@@ -729,7 +729,7 @@ class _FxEmptyState extends StatelessWidget {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: accent.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Icon(icon, color: accent, size: 20),
               ),
@@ -978,7 +978,7 @@ class _FxShockChartState extends State<_FxShockChart> {
                 margin: const EdgeInsets.only(right: 8),
                 decoration: BoxDecoration(
                   color: accent,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
               Expanded(
@@ -998,7 +998,7 @@ class _FxShockChartState extends State<_FxShockChart> {
                 decoration: BoxDecoration(
                   border: Border.all(
                       color: accent.withValues(alpha: 0.35), width: 0.8),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
                 child: Text(
                   (sel != null ? sel.currency : 'PORTEFEUILLE').toUpperCase(),
@@ -1378,7 +1378,7 @@ class _FxRatesBar extends StatelessWidget {
 
     return InkWell(
       onTap: fixed ? null : () => onEdit(code),
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: BorderRadius.circular(AppTheme.radius),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
         decoration: BoxDecoration(
@@ -1826,7 +1826,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(color: line),
           boxShadow: _hovered
               ? [
@@ -1841,7 +1841,7 @@ class _FxKpiCardState extends State<_FxKpiCard> {
         // Anneau de survol au premier plan, couleur opaque : évite la bordure
         // entrecoupée (anti-aliasing sur largeurs fractionnaires).
         foregroundDecoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           border: Border.all(
             color: _hovered
                 ? Color.alphaBlend(
@@ -2233,7 +2233,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
         decoration: BoxDecoration(
           color: _fxSurfaceFor(context),
           border: Border.all(color: _fxBorderFor(context)),
-          borderRadius: BorderRadius.circular(1),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           boxShadow: [
             BoxShadow(
                 color: Colors.black.withValues(alpha: 0.06),
@@ -2242,7 +2242,7 @@ class _FxSecuritiesTableState extends State<_FxSecuritiesTable> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(1),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           child: Builder(
             builder: (context) {
               return Column(children: [

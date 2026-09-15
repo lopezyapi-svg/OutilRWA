@@ -287,7 +287,7 @@ class _RatioTile extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: bgColor,
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(Dash.radius),
                   border: Border.all(color: borderColor, width: 1),
                 ),
                 child: Text(

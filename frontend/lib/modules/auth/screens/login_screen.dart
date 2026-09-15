@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         border: Border.all(
                           color: const Color(0xFFB42318).withValues(alpha: 0.3),
                         ),
-                        borderRadius: BorderRadius.circular(3),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       child: Row(
                         children: [
@@ -166,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: FilledButton.styleFrom(
                         backgroundColor: _navy,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                         ),
                       ),
                       onPressed: _enCours ? null : _soumettre,
@@ -208,15 +208,15 @@ class _LoginScreenState extends State<LoginScreen> {
       isDense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         borderSide: const BorderSide(color: Color(0xFFE3E7EE)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         borderSide: const BorderSide(color: Color(0xFFE3E7EE)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         borderSide: const BorderSide(color: _navy),
       ),
     );

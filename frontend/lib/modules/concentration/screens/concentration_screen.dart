@@ -19,7 +19,7 @@ import 'package:fl_chart/fl_chart.dart';
 const int _counterpartyTopCount = 10;
 const int _issuerResidenceCountryTopCount = 10;
 const int _concentrationViewModelVersion = 5;
-const double _concentrationRadius = 4;
+const double _concentrationRadius = AppTheme.radius;
 const List<String> _counterpartyRatingOrder = [
   'AAA',
   'AA+',
@@ -607,7 +607,7 @@ class _ConcentrationScreenState extends State<ConcentrationScreen> {
                                   height: 10,
                                   decoration: BoxDecoration(
                                     color: chartEntries[i].color,
-                                    borderRadius: BorderRadius.circular(2),
+                                    borderRadius: BorderRadius.circular(AppTheme.radius),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -3386,7 +3386,7 @@ class _ModeSwitchButton extends StatelessWidget {
       waitDuration: const Duration(milliseconds: 300),
       child: InkWell(
         onTap: item.onTap,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
@@ -3394,7 +3394,7 @@ class _ModeSwitchButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
             color: background,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: BorderRadius.circular(AppTheme.radius),
             border: Border.all(
               color: item.selected
                   ? AppColors.concentrationPrimary
@@ -3760,8 +3760,8 @@ class _AnimatedVerticalBarChartState extends State<_AnimatedVerticalBarChart> {
                 color: e.value.$2,
                 width: 14,
                 borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(3),
-                  topRight: Radius.circular(3),
+                  topLeft: Radius.circular(AppTheme.radius),
+                  topRight: Radius.circular(AppTheme.radius),
                 ),
                 backDrawRodData: BackgroundBarChartRodData(
                   show: true,
@@ -3977,7 +3977,7 @@ class _SeeAllButtonState extends State<_SeeAllButton> {
             overlayColor: Colors.transparent,
             elevation: _hovered ? 3 : 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
           ),
           child: const Text(
@@ -4233,7 +4233,7 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                       child: Text(
                         '${widget.rank}',
@@ -4275,7 +4275,7 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
                         color: widget.color.withValues(
                           alpha: _hovered ? 0.14 : 0.09,
                         ),
-                        borderRadius: BorderRadius.circular(3),
+                        borderRadius: BorderRadius.circular(AppTheme.radius),
                       ),
                     ),
                     FractionallySizedBox(
@@ -4288,7 +4288,7 @@ class _HorizontalShareRowState extends State<_HorizontalShareRow> {
                           color: widget.color.withValues(
                             alpha: _hovered ? 1 : 0.94,
                           ),
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(AppTheme.radius),
                           boxShadow: _hovered
                               ? [
                                   BoxShadow(
@@ -5173,7 +5173,7 @@ class _KpiNarrativeBullet extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(1.5),
+              borderRadius: BorderRadius.circular(AppTheme.radius),
             ),
             child: const SizedBox(width: 5.5, height: 5.5),
           ),

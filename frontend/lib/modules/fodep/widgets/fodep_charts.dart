@@ -43,7 +43,7 @@ class FodepGraphPanel extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(22, 18, 22, 20),
       decoration: BoxDecoration(
         color: c.surface,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: c.border, width: Dash.hairline),
         boxShadow: [fodepOmbre(context)],
       ),
@@ -57,7 +57,7 @@ class FodepGraphPanel extends StatelessWidget {
                 height: 14,
                 decoration: BoxDecoration(
                   color: c.navy,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppTheme.radius),
                 ),
               ),
               const SizedBox(width: 8),

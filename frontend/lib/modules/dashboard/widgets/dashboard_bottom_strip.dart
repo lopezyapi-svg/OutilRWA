@@ -106,7 +106,7 @@ class _Cell extends StatelessWidget {
           if (progress != null) ...[
             const SizedBox(height: 10),
             ClipRRect(
-              borderRadius: BorderRadius.circular(1),
+              borderRadius: BorderRadius.circular(Dash.radius),
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 3,

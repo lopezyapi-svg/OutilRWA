@@ -73,7 +73,7 @@ class SectionCard extends StatelessWidget {
                           margin: const EdgeInsets.only(right: 3),
                           decoration: BoxDecoration(
                             color: AppTheme.accent,
-                            borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(AppTheme.radius),
                           ),
                         ),
                         Expanded(

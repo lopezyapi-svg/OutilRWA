@@ -193,11 +193,11 @@ class UemoiFormField extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w400,
         ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
-        disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide.none),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide.none),
+        disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide.none),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppTheme.radius),
           borderSide: BorderSide(color: AppTheme.accent, width: 1.2),
         ),
         filled: true,
@@ -297,7 +297,7 @@ class UemoiInfoRow extends StatelessWidget {
               height: 32,
               alignment: Alignment.centerRight,
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(color: fillColor, borderRadius: BorderRadius.circular(4)),
+              decoration: BoxDecoration(color: fillColor, borderRadius: BorderRadius.circular(AppTheme.radius)),
               child: Text(
                 value,
                 textAlign: TextAlign.right,
@@ -391,10 +391,10 @@ class UemoiFormDropdown<T> extends StatelessWidget {
                 decoration: InputDecoration(
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(4), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide.none),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(AppTheme.radius), borderSide: BorderSide.none),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppTheme.radius),
                     borderSide: BorderSide(color: AppTheme.accent, width: 1.2),
                   ),
                   filled: true,

@@ -468,7 +468,7 @@ class _DashboardFondsPropresDialogState
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(Dash.radius),
                   ),
                 ),
                 child: _isLoading
@@ -676,15 +676,15 @@ class _DashboardFondsPropresDialogState
                     fontWeight: FontWeight.w400,
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(Dash.radius),
                     borderSide: BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(Dash.radius),
                     borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(Dash.radius),
                     borderSide:
                         const BorderSide(color: AppColors.sidebar, width: 1.2),
                   ),
