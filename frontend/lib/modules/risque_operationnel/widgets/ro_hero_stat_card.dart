@@ -30,6 +30,7 @@ class _RoHeroStatCardState extends State<RoHeroStatCard> {
   @override
   Widget build(BuildContext context) {
     final c = DashColors.of(context);
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return MouseRegion(
       onEnter: (_) {
         if (mounted) setState(() => _hovered = true);
@@ -43,11 +44,18 @@ class _RoHeroStatCardState extends State<RoHeroStatCard> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
           color: c.surface,
-          borderRadius: BorderRadius.circular(Dash.radius),
+          // Rayon "grande surface" (14, contre 4 pour les filets internes) et
+          // ombre douce du systeme Dash (deja definie, jamais appliquee ici) :
+          // une carte KPI sans la moindre profondeur lit comme un gabarit
+          // generique meme avec les bonnes couleurs. La palette reste
+          // strictement navy/neutre - aucune couleur n'est ajoutee, seule la
+          // matiere de la carte change.
+          borderRadius: BorderRadius.circular(Dash.radiusLg),
           border: Border.all(
             color: _hovered ? Colors.indigo.shade300 : c.border,
             width: 1.0,
           ),
+          boxShadow: _hovered ? Dash.shadowRaised(dark) : Dash.shadow(dark),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

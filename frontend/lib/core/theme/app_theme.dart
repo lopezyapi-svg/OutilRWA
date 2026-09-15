@@ -14,10 +14,30 @@ class AppTheme {
     'General Sans',
     'Nunito Sans',
   ];
-  static const double radius = 4;
+  // Rayon d'arrondi partage par les cartes, boutons, champs et dialogues :
+  // un arrondi trop serre (l'ancien 4) lit comme un gabarit d'admin generique
+  // ; un arrondi plus genereux (10) est ce qui distingue visuellement un
+  // produit fini d'un squelette Material par defaut, sans toucher la mise
+  // en page (spacing/pagePadding inchanges).
+  static const double radius = 10;
   static const double spacing = 4;
   static const double pagePadding = 14;
   static const double pageGap = 12;
+
+  /// Ombre portee douce partagee par les cartes "riches" (KPI, panneaux de
+  /// synthese) : une carte plate sans profondeur est ce qui rend un tableau
+  /// de bord generique meme avec de bonnes couleurs. A utiliser explicitement
+  /// (les CardTheme systeme restent sur l'elevation Material standard) via
+  /// `BoxDecoration(boxShadow: AppTheme.richCardShadow)`.
+  static List<BoxShadow> richCardShadow({bool dark = false}) => [
+        BoxShadow(
+          color: (dark ? Colors.black : const Color(0xFF1B2559))
+              .withValues(alpha: dark ? 0.35 : 0.08),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
+          spreadRadius: -4,
+        ),
+      ];
   static const Color sidebar = Color(0xFF11047A);
   static const Color sidebarLight = Color(0xFF190793);
   static const Color _defaultAccent = Color(0xFF4318FF);

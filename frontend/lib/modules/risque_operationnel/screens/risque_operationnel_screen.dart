@@ -1889,7 +1889,11 @@ class _PertesContent extends StatefulWidget {
 }
 
 class _PertesContentState extends State<_PertesContent> {
-  late Future<List<RoIncident>> _future;
+  // Le seuil de significativite est recupere avec les incidents : sans lui,
+  // le KPI "Pertes significatives" affiche un compte sans jamais dire par
+  // rapport a quoi (l'utilisateur doit deviner ou fouiller un ecran de
+  // parametres separe pour le retrouver).
+  late Future<(List<RoIncident>, ParametresSeuils)> _future;
 
   @override
   void initState() {
@@ -1898,17 +1902,22 @@ class _PertesContentState extends State<_PertesContent> {
   }
 
   void _reload() {
-    setState(() { _future = widget.api.fetchRoIncidents(); });
+    setState(() {
+      _future = Future.wait([
+        widget.api.fetchRoIncidents(),
+        widget.api.fetchPertesSeuils(),
+      ]).then((r) => (r[0] as List<RoIncident>, r[1] as ParametresSeuils));
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<RoIncident>>(
+    return FutureBuilder<(List<RoIncident>, ParametresSeuils)>(
       future: _future,
       builder: (ctx, snap) {
         if (snap.connectionState != ConnectionState.done) return _loadingBox();
         if (snap.hasError) return _errorBox(snap.error!);
-        final items = snap.data!;
+        final (items, seuils) = snap.data!;
         final totalBrute = items.fold(0.0, (s, e) => s + e.perteBrute);
         final totalNette = items.fold(0.0, (s, e) => s + e.perteNette);
         final totalRecup = items.fold(0.0, (s, e) => s + e.perteRecuperee);
@@ -1938,6 +1947,7 @@ class _PertesContentState extends State<_PertesContent> {
                 tauxRecup: tauxRecup,
                 significatifs: significatifs,
                 moyenne: moyenne,
+                seuilSignificativite: seuils.seuilInterne,
               ),
               const SizedBox(height: 14),
               Row(
@@ -2288,9 +2298,11 @@ class _PertesSummaryBar extends StatelessWidget {
     required this.tauxRecup,
     required this.significatifs,
     required this.moyenne,
+    required this.seuilSignificativite,
   });
   final double totalBrute, totalNette, tauxRecup, moyenne;
   final int significatifs;
+  final double seuilSignificativite;
 
   @override
   Widget build(BuildContext context) {
@@ -2317,7 +2329,10 @@ class _PertesSummaryBar extends StatelessWidget {
         label: 'Pertes significatives'.tr(context),
         value: '$significatifs',
         color: _kWarning,
-        subtitle: 'Incidents dépassant le seuil',
+        // Le seuil reel configure (Pertes > Parametres) plutot qu'une
+        // formulation vague : sans la valeur, ce KPI ne dit pas par rapport
+        // a quoi un incident est "significatif".
+        subtitle: '${'Seuil'.tr(context)} : ${AppFormatters.currency(seuilSignificativite)}',
       ),
       (
         label: 'Perte moy. / incident'.tr(context),
@@ -2344,7 +2359,8 @@ class _PertesSummaryBar extends StatelessWidget {
                   'Perte brute : Σ perte_brute (exposition totale avant atténuation)\n'
                   'Perte nette : Σ (perte_brute − perte_récupérée) - base calcul BIA\n'
                   'Taux récup. : (Σ récupérée / Σ brute) × 100\n'
-                  'Significatives : incidents dépassant le seuil de significativité\n'
+                  'Significatives : incidents dont la perte nette ≥ ${AppFormatters.currency(seuilSignificativite)} '
+                  '(seuil de reporting interne)\n'
                   'Moy./incident : Σ perte_nette / nombre d\'incidents',
               preferBelow: false,
               decoration: BoxDecoration(
