@@ -34,6 +34,25 @@ const Color _varSurfaceSoft = Color(0xFFF8FAFC);
 
 const double _parameterPanelWidth = 220;
 
+/// Couleur de fond de la carte du graphique selon la provenance des données
+/// (`reponse.sourceDonnees`) : plutôt qu'un badge textuel superposé au
+/// graphique ("Données simulées"), la carte elle-même porte une teinte douce
+/// - ambre pour une série simulée (repli de démonstration, aucune donnée
+/// réelle), bleu pour une estimation sur la courbe UEMOA actualisée (donnée
+/// réelle mais pas encore un portefeuille importé). Les données réelles
+/// ("reelles") gardent la carte neutre habituelle.
+Color _couleurCarteSelonSource(String source) => switch (source) {
+      'simulation' => Color.alphaBlend(_varOrange.withValues(alpha: 0.06), _varSurface),
+      'courbe' => Color.alphaBlend(_varPrimary.withValues(alpha: 0.05), _varSurface),
+      _ => _varSurface,
+    };
+
+Color _couleurBordureSelonSource(String source) => switch (source) {
+      'simulation' => _varOrange.withValues(alpha: 0.45),
+      'courbe' => _varPrimary.withValues(alpha: 0.35),
+      _ => _varBorder,
+    };
+
 final NumberFormat _formatMd = NumberFormat('#,##0.0', 'fr_FR');
 final NumberFormat _formatAxe = NumberFormat('#,##0.#', 'fr_FR');
 final NumberFormat _formatPct2 = NumberFormat('#,##0.00', 'fr_FR');
@@ -845,6 +864,8 @@ class _ValueAtRiskScreenState extends State<ValueAtRiskScreen> {
         const SizedBox(height: 12),
         Expanded(
           child: _CarteVar(
+            color: _couleurCarteSelonSource(reponse.sourceDonnees),
+            borderColor: _couleurBordureSelonSource(reponse.sourceDonnees),
             child: _PanneauGraphique(
               methode: _methode,
               reponse: reponse,
@@ -1655,43 +1676,12 @@ class _PanneauGraphique extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      if (reponse.sourceDonnees == 'simulation' ||
-                          reponse.sourceDonnees == 'courbe') ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _varSurfaceSoft,
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: _varBorder),
-                          ),
-                          child: Text(
-                            reponse.sourceDonnees == 'courbe'
-                                ? 'Estimation courbe UEMOA'
-                                : 'Données simulées',
-                            style: const TextStyle(
-                              color: _varMuted,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                      if (chargement) ...[
-                        const SizedBox(width: 10),
-                        const SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(strokeWidth: 1.6),
-                        ),
-                      ],
-                    ],
-                  ),
+                  if (chargement)
+                    const SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(strokeWidth: 1.6),
+                    ),
                 ],
               ),
             ),
@@ -2643,11 +2633,13 @@ class _CarteVar extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(14),
     this.color = _varSurface,
+    this.borderColor = _varBorder,
   });
 
   final Widget child;
   final EdgeInsets padding;
   final Color color;
+  final Color borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -2656,7 +2648,7 @@ class _CarteVar extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: _varBorder),
+        border: Border.all(color: borderColor),
       ),
       child: child,
     );
