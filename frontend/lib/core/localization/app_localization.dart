@@ -1315,7 +1315,7 @@ const Map<String, String> _englishTranslations = {
       '{{label}}: Conservation buffer (in {{unit}})',
 
   // --- FODEP : écran Générer ---
-  'Générer un FODEP': 'Generate a FODEP',
+  'Génération d\'un FODEP': 'FODEP Generation',
   'Complétez l\'attestation, puis exportez le FODEP.':
       'Complete the certification, then export the FODEP.',
   'Établissement assujetti FODEP': 'Entity subject to FODEP',
@@ -1463,6 +1463,7 @@ const Map<String, String> _englishTranslations = {
   'Contribution': 'Contribution',
 
   // --- FODEP : écran Analyser ---
+  'Analyse d\'un FODEP': 'FODEP Analysis',
   'Analyse des fonds propres, des risques pondérés et de la conformité':
       'Analysis of capital, risk-weighted assets and compliance',
   'Ratios de solvabilité': 'Solvency ratios',

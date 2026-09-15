@@ -422,13 +422,13 @@ const _entryReportingGlobal = _MenuEntry.leaf(
 const _entryFodepAnalyser = _MenuEntry.leaf(
   module: AppModule.fodepAnalyser,
   icon: Icons.fact_check_outlined,
-  label: 'Analyse',
+  label: 'Analyse d\'un FODEP',
 );
 
 const _entryFodepGenerer = _MenuEntry.leaf(
   module: AppModule.fodepGenerer,
   icon: Icons.note_add_outlined,
-  label: 'Générer un FODEP',
+  label: 'Génération d\'un FODEP',
 );
 
 const _groupParametres = _MenuEntry.group(

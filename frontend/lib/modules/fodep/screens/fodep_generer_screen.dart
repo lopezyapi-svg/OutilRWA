@@ -156,7 +156,7 @@ class _FodepGenererScreenState extends State<FodepGenererScreen> {
             ),
           ),
           child: const PageHeader(
-            title: 'Générer un FODEP',
+            title: 'Génération d\'un FODEP',
             subtitle: 'Complétez l\'attestation, puis exportez le FODEP.',
             titleFontSize: 24,
             subtitleFontSize: 13,

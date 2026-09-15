@@ -289,7 +289,7 @@ class _FodepAnalyserScreenState extends State<FodepAnalyserScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               PageHeader(
-                title: 'Analyse',
+                title: 'Analyse d\'un FODEP',
                 subtitle: 'Analyse des fonds propres, des risques pondérés et de la conformité',
                 titleFontSize: 22,
                 subtitleFontSize: 12.5,
