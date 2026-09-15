@@ -127,7 +127,7 @@ def _log(conn, menu: str, type_action: str, element: str, ancienne: str = "", no
 
 # ─── Incidents ────────────────────────────────────────────────────────────────
 
-def _row_to_incident(row) -> IncidentView:
+def _row_to_incident(row, seuil_significativite: float) -> IncidentView:
     perte_nette = (row["perte_brute"] or 0) - (row["perte_recuperee"] or 0)
     return IncidentView(
         id=row["id"],
@@ -141,7 +141,12 @@ def _row_to_incident(row) -> IncidentView:
         perte_recuperee=row["perte_recuperee"] or 0,
         perte_nette=perte_nette,
         statut=row["statut"],
-        significatif=perte_nette > 0,
+        # "Significatif" = franchit le seuil de reporting interne (Pilier 2,
+        # 500 000 FCFA par defaut, cf. op_parametres_seuils) - PAS "toute
+        # perte nette positive", qui aurait compte quasiment tous les
+        # incidents (des qu'une recuperation n'est pas totale) et rendu le
+        # KPI "Incidents significatifs" affiche a l'ecran denue de sens.
+        significatif=perte_nette >= seuil_significativite,
         cree_le=row["cree_le"],
         modifie_le=row["modifie_le"],
     )
@@ -159,7 +164,8 @@ def list_incidents(statut: str | None = None, ligne_metier: str | None = None) -
             params.append(ligne_metier)
         query += " ORDER BY date_occurrence DESC"
         rows = conn.execute(query, params).fetchall()
-    return [_row_to_incident(r) for r in rows]
+    seuil = get_pertes_seuils().seuil_reporting_interne
+    return [_row_to_incident(r, seuil) for r in rows]
 
 
 def create_incident(data: IncidentCreate) -> IncidentView:
@@ -178,7 +184,7 @@ def create_incident(data: IncidentCreate) -> IncidentView:
         _log(conn, "Incidents", "CREATE", ref, "", data.description[:80])
     with database_manager.transaction() as conn:
         row = conn.execute("SELECT * FROM ro_incidents WHERE id = ?", (id_,)).fetchone()
-    return _row_to_incident(row)
+    return _row_to_incident(row, get_pertes_seuils().seuil_reporting_interne)
 
 
 def update_incident(id_: str, data: IncidentUpdate) -> IncidentView:
@@ -189,7 +195,7 @@ def update_incident(id_: str, data: IncidentUpdate) -> IncidentView:
             row = conn.execute("SELECT * FROM ro_incidents WHERE id = ?", (id_,)).fetchone()
         if row is None:
             raise ValueError(f"Incident {id_} introuvable.")
-        return _row_to_incident(row)
+        return _row_to_incident(row, get_pertes_seuils().seuil_reporting_interne)
     set_clause = ", ".join(f"{k} = ?" for k in updates)
     with database_manager.transaction() as conn:
         old = conn.execute("SELECT * FROM ro_incidents WHERE id = ?", (id_,)).fetchone()
@@ -202,7 +208,7 @@ def update_incident(id_: str, data: IncidentUpdate) -> IncidentView:
         row = conn.execute("SELECT * FROM ro_incidents WHERE id = ?", (id_,)).fetchone()
     if row is None:
         raise ValueError(f"Incident {id_} introuvable.")
-    return _row_to_incident(row)
+    return _row_to_incident(row, get_pertes_seuils().seuil_reporting_interne)
 
 
 def delete_incident(id_: str) -> None:

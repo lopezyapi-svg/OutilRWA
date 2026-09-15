@@ -255,6 +255,46 @@ def test_calcul_as_plancher_a_zero_si_k_total_negatif(temp_db) -> None:
     assert detail["k_retenu"] == pytest.approx(0.0)
 
 
+def test_incident_significatif_franchit_le_seuil_de_reporting_pas_juste_positif(
+    temp_db,
+) -> None:
+    """`significatif` doit refléter le franchissement du seuil de reporting
+    interne (500 000 FCFA par défaut), pas seulement une perte nette > 0 -
+    sinon le KPI « Incidents significatifs » de l'écran compte quasiment
+    tous les incidents (dès qu'une récupération n'est pas totale)."""
+
+    incident_mineur = dict(
+        date_occurrence="01/01/2025",
+        description="Erreur de saisie mineure",
+        ligne_metier="Banque de détail",
+        type_evenement="Erreur d'exécution",
+        perte_brute=100_000.0,
+        perte_recuperee=0.0,  # perte nette 100 000 < seuil 500 000
+    )
+    incident_majeur = dict(
+        date_occurrence="02/01/2025",
+        description="Fraude externe",
+        ligne_metier="Banque de détail",
+        type_evenement="Fraude externe",
+        perte_brute=2_000_000.0,
+        perte_recuperee=500_000.0,  # perte nette 1 500 000 >= seuil
+    )
+
+    r = client.post("/risque-operationnel/incidents", json=incident_mineur)
+    assert r.status_code == 201, r.text
+    assert r.json()["significatif"] is False
+
+    r = client.post("/risque-operationnel/incidents", json=incident_majeur)
+    assert r.status_code == 201, r.text
+    assert r.json()["significatif"] is True
+
+    r = client.get("/risque-operationnel/incidents")
+    assert r.status_code == 200, r.text
+    par_desc = {i["description"]: i["significatif"] for i in r.json()}
+    assert par_desc["Erreur de saisie mineure"] is False
+    assert par_desc["Fraude externe"] is True
+
+
 def test_calcul_aib_et_as_signalent_l_absence_de_donnees(temp_db) -> None:
     """Sans aucune saisie, les deux approches doivent le dire explicitement
     (`donnees_insuffisantes`), jamais renvoyer silencieusement un capital à 0
