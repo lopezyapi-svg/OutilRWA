@@ -879,15 +879,21 @@ class _SelecteurMethode extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // VaR Monte-Carlo et Historique desactivees a la demande : seule la
+          // VaR Parametrique reste visible et selectionnable (cf. memoire /
+          // demande utilisateur du 15/09/2026). Les deux autres methodes
+          // restent dans l'enum `VarMethode` (logique de calcul intacte cote
+          // backend) mais ne sont plus exposees dans ce selecteur.
           for (final methode in VarMethode.values)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 1),
-              child: _OngletMethode(
-                methode: methode,
-                actif: methode == selection,
-                onTap: () => onChanged(methode),
+            if (methode == VarMethode.parametrique)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1),
+                child: _OngletMethode(
+                  methode: methode,
+                  actif: methode == selection,
+                  onTap: () => onChanged(methode),
+                ),
               ),
-            ),
         ],
       ),
     );
