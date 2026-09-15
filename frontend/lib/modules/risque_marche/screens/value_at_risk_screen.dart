@@ -137,6 +137,7 @@ class _ReponseVar {
     this.icVarHaute,
     this.durationModifiee,
     this.durationModifieePortefeuille,
+    this.avertissements = const [],
   });
 
   final String methode;
@@ -158,6 +159,10 @@ class _ReponseVar {
   final double? icVarBasse;
   final double? icVarHaute;
   final double? durationModifiee;
+  /// Avertissements métier renvoyés par le backend (ex. mode réglementaire
+  /// faute d'historique, aucun portefeuille importé...). Le backend les
+  /// calcule avec soin ; l'écran doit les afficher, pas les ignorer.
+  final List<String> avertissements;
 
   /// Duration modifiée du portefeuille calculée par le backend (flux
   /// amortis, pondérée par le capital restant dû) : valeur de référence.
@@ -207,6 +212,10 @@ class _ReponseVar {
           json['duration_modifiee_portefeuille'] == null
               ? null
               : _d(json['duration_modifiee_portefeuille']),
+      avertissements: [
+        for (final message in (json['avertissements'] as List? ?? const []))
+          message as String,
+      ],
     );
   }
 }
@@ -1754,6 +1763,21 @@ class _PanneauGraphique extends StatelessWidget {
               'La distribution observée s\'écarte de la loi normale '
               '(asymétrie ou queues épaisses), la VaR paramétrique peut '
               'sous-estimer le risque.',
+              style: TextStyle(
+                color: _varOrange.withValues(alpha: 0.95),
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        // Avertissements métier du backend (mode réglementaire faute
+        // d'historique, aucun portefeuille importé, série simulée...) :
+        // le backend les rédige avec soin, l'écran ne doit pas les taire.
+        for (final avertissement in reponse.avertissements)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              avertissement.tr(context),
               style: TextStyle(
                 color: _varOrange.withValues(alpha: 0.95),
                 fontSize: 11.5,
