@@ -106,6 +106,18 @@ class RwaApiService {
     throw StateError('Réponse CEMAC invalide.');
   }
 
+  Future<Map<String, dynamic>> refreshUemoaYieldCurves() async {
+    final payload =
+        await _client.post('/market/yield-curves/uemoa/refresh', {});
+    if (payload is Map<String, dynamic>) {
+      return payload;
+    }
+    if (payload is Map) {
+      return Map<String, dynamic>.from(payload);
+    }
+    throw StateError('Réponse UEMOA invalide.');
+  }
+
   /// Appelle un endpoint VaR du backend (/var/historique, /var/parametrique
   /// ou /var/montecarlo). Tous les calculs sont effectués côté serveur ; le
   /// client ne fait que de l'affichage.

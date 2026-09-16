@@ -11,7 +11,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_math_fork/flutter_math.dart' as fm;
-import 'package:http/http.dart' as http;
 import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -2536,16 +2535,8 @@ class _YieldCurveRepository {
   static const _historyCacheKey = 'market_yield_curves.history.v1';
   static const _umoaPageUrl =
       'https://www.umoatitres.org/fr/ressources-2/courbe-des-taux/';
-  static const _umoaSeedWorkbookUrl =
-      'https://www.umoatitres.org/wp-content/uploads/2026/06/COURBES-DE-TAUX.au_.29.05.2026.xlsx';
   static const _beacPdfUrl =
       'https://www.beac.int/wp-content/uploads/2016/10/Courbe-des-taux-de-rendement-des-titres-publics-CEMAC-mars-26.pdf';
-  static const _onlineHeaders = {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-            '(KHTML, like Gecko) Chrome/125.0 Safari/537.36',
-  };
 
   static const List<_YieldCurveSnapshot> seedSnapshots = [
     _YieldCurveSnapshot(
@@ -2891,8 +2882,11 @@ class _YieldCurveRepository {
     final statuses = <_YieldCurveRefreshStatus>[];
     var refreshed = false;
 
+    final uemoaSeed = seedSnapshots.firstWhere((seed) => seed.id == 'uemoa');
     try {
-      final uemoa = await _fetchUemoaCurve();
+      final uemoa = await _fetchUemoaCurveViaBackend(
+        updatedById['uemoa'] ?? uemoaSeed,
+      );
       updatedById[uemoa.id] = uemoa;
       refreshed = true;
       statuses.add(
@@ -2998,82 +2992,41 @@ class _YieldCurveRepository {
     _clearBondDashboardStatsCaches();
   }
 
-  Future<_YieldCurveSnapshot> _fetchUemoaCurve() async {
-    final pageResponse = await http
-        .get(Uri.parse(_umoaPageUrl), headers: _onlineHeaders)
-        .timeout(const Duration(seconds: 18));
-    if (pageResponse.statusCode >= 400) {
-      throw StateError('UMOA-Titres indisponible.');
+  // Le téléchargement et le parsing du classeur UMOA-Titres se font côté
+  // serveur (voir POST /market/yield-curves/uemoa/refresh) : un appel direct
+  // depuis le navigateur échoue systématiquement avec un ClientException
+  // « Failed to fetch » car umoatitres.org ne renvoie pas d'en-têtes CORS
+  // pour les requêtes cross-origin émises depuis l'application web.
+  Future<_YieldCurveSnapshot> _fetchUemoaCurveViaBackend(
+    _YieldCurveSnapshot current,
+  ) async {
+    final payload = await api
+        .refreshUemoaYieldCurves()
+        .timeout(const Duration(seconds: 140));
+    final countryCurves = _parseYieldCountryCurves(payload['curves']);
+    final aggregatePoints = _parseYieldCurvePoints(payload['aggregate_points']);
+    if (countryCurves.isEmpty || aggregatePoints.length < 2) {
+      throw StateError('Extraction UEMOA non exploitable.');
     }
 
-    // La date est lue dans le nom du fichier .xlsx : le balisage du texte
-    // des liens change au fil des publications du site et n'est pas fiable.
-    final linkPattern = RegExp(
-      r'''href=["']([^"']+\.xlsx)["']''',
-      caseSensitive: false,
+    final sourceUrl = (payload['source_url'] as String?)?.trim();
+    final sourceDateLabel = (payload['source_date_label'] as String?)?.trim();
+    final methodology = (payload['methodology'] as String?)?.trim();
+
+    return current.copyWith(
+      sourceUrl: sourceUrl == null || sourceUrl.isEmpty
+          ? current.sourceUrl
+          : sourceUrl,
+      sourceDateLabel: sourceDateLabel == null || sourceDateLabel.isEmpty
+          ? current.sourceDateLabel
+          : sourceDateLabel,
+      methodology: methodology == null || methodology.isEmpty
+          ? 'Courbe agrégée par moyenne des taux après lissage publiés par pays UEMOA.'
+          : methodology,
+      points: aggregatePoints,
+      countryCurves: countryCurves,
+      checkedAt: DateTime.now(),
     );
-    final candidates = <_YieldCurveSourceCandidate>[
-      _YieldCurveSourceCandidate(
-        url: _umoaSeedWorkbookUrl,
-        sourceDate: DateTime(2026, 5, 29),
-      ),
-    ];
-    final seenUrls = <String>{_umoaSeedWorkbookUrl};
-    for (final match in linkPattern.allMatches(pageResponse.body)) {
-      final url = Uri.parse(_umoaPageUrl)
-          .resolve(match.group(1)!.replaceAll('&amp;', '&'))
-          .toString();
-      if (!seenUrls.add(url)) continue;
-      final date = _parseUemoaWorkbookFileDate(url);
-      if (date == null) continue;
-      candidates.add(_YieldCurveSourceCandidate(url: url, sourceDate: date));
-    }
-
-    // Le site publie parfois une entrée dont le href est erroné : la date
-    // n'apparaît alors que dans le libellé. On tente l'URL conventionnelle
-    // du fichier ; la boucle de téléchargement écarte celles qui n'existent
-    // pas.
-    final labelPattern = RegExp(
-      r'COURBES\s+D(?:E|ES)\s+TAUX\s+au\s+(\d{2})[./-](\d{2})[./-](\d{4})',
-      caseSensitive: false,
-    );
-    for (final match in labelPattern.allMatches(pageResponse.body)) {
-      final date = _yieldSourceDateOrNull(
-        year: int.parse(match.group(3)!),
-        month: int.parse(match.group(2)!),
-        day: int.parse(match.group(1)!),
-      );
-      if (date == null) continue;
-      String two(int value) => value.toString().padLeft(2, '0');
-      final url = 'https://www.umoatitres.org/wp-content/uploads/${date.year}/'
-          '${two(date.month)}/COURBES-DE-TAUX.au_.${two(date.day)}.'
-          '${two(date.month)}.${date.year}.xlsx';
-      if (!seenUrls.add(url)) continue;
-      candidates.add(_YieldCurveSourceCandidate(url: url, sourceDate: date));
-    }
-
-    candidates
-        .sort((left, right) => right.sourceDate.compareTo(left.sourceDate));
-
-    Object lastError = StateError('Fichier UMOA-Titres indisponible.');
-    for (final selected in candidates.take(3)) {
-      try {
-        final workbookResponse = await http
-            .get(Uri.parse(selected.url), headers: _onlineHeaders)
-            .timeout(const Duration(seconds: 24));
-        if (workbookResponse.statusCode >= 400) {
-          throw StateError('Fichier UMOA-Titres indisponible.');
-        }
-        return _parseUemoaWorkbook(
-          workbookResponse.bodyBytes,
-          sourceUrl: selected.url,
-          sourceDateLabel: _formatYieldSourceDate(selected.sourceDate),
-        );
-      } catch (error) {
-        lastError = error;
-      }
-    }
-    throw lastError;
   }
 
   Future<_YieldCurveSnapshot> _fetchCemacCurveViaAi(
@@ -3108,120 +3061,6 @@ class _YieldCurveRepository {
     );
   }
 
-  _YieldCurveSnapshot _parseUemoaWorkbook(
-    Uint8List bytes, {
-    required String sourceUrl,
-    required String sourceDateLabel,
-  }) {
-    final workbook = Excel.decodeBytes(bytes);
-    final smoothedRatesByMaturity = <double, List<double>>{};
-    final rawRatesByMaturity = <double, List<double>>{};
-    final countryCurves = <_YieldCurveCountryCurve>[];
-
-    for (final entry in workbook.tables.entries) {
-      final sheetName = _normalizeYieldText(entry.key);
-      if (sheetName.startsWith('feuil')) continue;
-      final rows = entry.value.rows;
-      final sheetSmoothedRatesByMaturity = <double, List<double>>{};
-      final sheetRawRatesByMaturity = <double, List<double>>{};
-      int? maturityColumn;
-      int? rawRateColumn;
-      int? smoothedRateColumn;
-      var headerRow = -1;
-
-      for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-        final row = rows[rowIndex];
-        for (var columnIndex = 0; columnIndex < row.length; columnIndex++) {
-          final header = _normalizeYieldText(_yieldCellText(row[columnIndex]));
-          if (header == 'maturite') {
-            maturityColumn = columnIndex;
-          }
-          if (header.contains('taux avant') ||
-              header.contains('taux brut') ||
-              header.contains('zero coupon') ||
-              header.contains('zero-coupon')) {
-            rawRateColumn = columnIndex;
-          }
-          if (header.contains('taux apres') || header.contains('taux lisse')) {
-            smoothedRateColumn = columnIndex;
-          }
-        }
-        if (maturityColumn != null && smoothedRateColumn != null) {
-          headerRow = rowIndex;
-          break;
-        }
-      }
-
-      if (headerRow < 0 ||
-          maturityColumn == null ||
-          smoothedRateColumn == null) {
-        continue;
-      }
-
-      for (final row in rows.skip(headerRow + 1)) {
-        if (maturityColumn >= row.length || smoothedRateColumn >= row.length) {
-          continue;
-        }
-        final years = _parseYieldMaturityYears(
-          _yieldCellText(row[maturityColumn]),
-        );
-        final smoothedRate = _yieldCellNumber(row[smoothedRateColumn]);
-        if (years == null || smoothedRate == null || !smoothedRate.isFinite) {
-          continue;
-        }
-        final rawRate = rawRateColumn != null && rawRateColumn < row.length
-            ? _yieldCellNumber(row[rawRateColumn])
-            : null;
-        final percentSmoothedRate =
-            smoothedRate.abs() <= 1 ? smoothedRate * 100 : smoothedRate;
-        final percentRawRate = rawRate == null || !rawRate.isFinite
-            ? percentSmoothedRate
-            : rawRate.abs() <= 1
-                ? rawRate * 100
-                : rawRate;
-        smoothedRatesByMaturity
-            .putIfAbsent(years, () => [])
-            .add(percentSmoothedRate);
-        rawRatesByMaturity.putIfAbsent(years, () => []).add(percentRawRate);
-        sheetSmoothedRatesByMaturity
-            .putIfAbsent(years, () => [])
-            .add(percentSmoothedRate);
-        sheetRawRatesByMaturity
-            .putIfAbsent(years, () => [])
-            .add(percentRawRate);
-      }
-
-      if (sheetSmoothedRatesByMaturity.length >= 2) {
-        final country = _canonicalUemoaCountry(entry.key) ?? entry.key.trim();
-        countryCurves.add(
-          _YieldCurveCountryCurve(
-            country: country,
-            points: _averageYieldPoints(
-              sheetSmoothedRatesByMaturity,
-              rawValues: sheetRawRatesByMaturity,
-            ),
-          ),
-        );
-      }
-    }
-
-    if (smoothedRatesByMaturity.length < 2) {
-      throw StateError('Courbe UMOA-Titres non lisible.');
-    }
-
-    final points = _averageYieldPoints(
-      smoothedRatesByMaturity,
-      rawValues: rawRatesByMaturity,
-    );
-
-    return seedSnapshots.first.copyWith(
-      sourceUrl: sourceUrl,
-      sourceDateLabel: sourceDateLabel,
-      checkedAt: DateTime.now(),
-      points: points,
-      countryCurves: countryCurves,
-    );
-  }
 }
 
 _YieldCurveSnapshot _hydrateYieldSnapshotFromSeed(
@@ -3289,16 +3128,6 @@ class _YieldCurveRefreshStatus {
   final String? error;
 }
 
-class _YieldCurveSourceCandidate {
-  const _YieldCurveSourceCandidate({
-    required this.url,
-    required this.sourceDate,
-  });
-
-  final String url;
-  final DateTime sourceDate;
-}
-
 List<_YieldCurveCountryCurve> _parseYieldCountryCurves(Object? payload) {
   final items = payload is List ? payload : const [];
   final curves = <_YieldCurveCountryCurve>[];
@@ -3363,28 +3192,6 @@ List<_YieldCurvePoint> _parseYieldCurvePoints(Object? payload) {
     );
   }
   points.sort((left, right) => left.years.compareTo(right.years));
-  return points;
-}
-
-List<_YieldCurvePoint> _averageYieldPoints(
-  Map<double, List<double>> values, {
-  Map<double, List<double>> rawValues = const {},
-}) {
-  final points = values.entries.map((entry) {
-    final average =
-        entry.value.reduce((left, right) => left + right) / entry.value.length;
-    final rawItems = rawValues[entry.key];
-    final rawAverage = rawItems == null || rawItems.isEmpty
-        ? average
-        : rawItems.reduce((left, right) => left + right) / rawItems.length;
-    return _YieldCurvePoint(
-      _formatYieldMaturityLabel(entry.key),
-      entry.key,
-      average,
-      rawRate: rawAverage,
-    );
-  }).toList()
-    ..sort((left, right) => left.years.compareTo(right.years));
   return points;
 }
 
@@ -3838,25 +3645,6 @@ Set<String> _sanitizeYieldSelection(
   return sanitized;
 }
 
-String? _canonicalUemoaCountry(String value) {
-  final normalized = _normalizeYieldText(value);
-  const aliases = {
-    'burkina': 'Burkina Faso',
-    'cote d\'ivoire': 'Côte d\'Ivoire',
-    'cote d ivoire': 'Côte d\'Ivoire',
-    'guinee bissau': 'Guinée-Bissau',
-  };
-  for (final entry in aliases.entries) {
-    if (normalized.contains(entry.key)) return entry.value;
-  }
-  for (final country in _uemoaYieldCountries) {
-    if (normalized.contains(_normalizeYieldText(country))) {
-      return country;
-    }
-  }
-  return null;
-}
-
 _YieldCurveDisplaySeries? _primaryYieldSeries(
   List<_YieldCurveDisplaySeries> series,
 ) {
@@ -3930,74 +3718,6 @@ List<_YieldCurvePointStripItem> _yieldPointStripItems(
   ];
 }
 
-// Conventions observées sur umoatitres.org : COURBES-DE-TAUX.au_.03.07.2026,
-// COURBES-DES-TAUX-au-03.04.26, YC-29.mai_.26-1.
-DateTime? _parseUemoaWorkbookFileDate(String url) {
-  final fileName = _normalizeYieldText(
-    Uri.decodeComponent(url.split('/').last),
-  );
-  if (!fileName.contains('courbe') && !fileName.contains('yc')) {
-    return null;
-  }
-  var match = RegExp(r'(\d{2})[._-](\d{2})[._-](\d{4})').firstMatch(fileName);
-  if (match != null) {
-    return _yieldSourceDateOrNull(
-      year: int.parse(match.group(3)!),
-      month: int.parse(match.group(2)!),
-      day: int.parse(match.group(1)!),
-    );
-  }
-  match = RegExp(r'(\d{2})[._-](\d{2})[._-](\d{2})(?!\d)').firstMatch(fileName);
-  if (match != null) {
-    return _yieldSourceDateOrNull(
-      year: 2000 + int.parse(match.group(3)!),
-      month: int.parse(match.group(2)!),
-      day: int.parse(match.group(1)!),
-    );
-  }
-  match = RegExp(
-    r'(\d{1,2})[._-]*(janv|fev|mar|avr|mai|juin|juil|aou|sep|oct|nov|dec)[a-z]*[._-]*(\d{2,4})',
-  ).firstMatch(fileName);
-  if (match != null) {
-    const monthsByToken = {
-      'janv': 1,
-      'fev': 2,
-      'mar': 3,
-      'avr': 4,
-      'mai': 5,
-      'juin': 6,
-      'juil': 7,
-      'aou': 8,
-      'sep': 9,
-      'oct': 10,
-      'nov': 11,
-      'dec': 12,
-    };
-    final rawYear = int.parse(match.group(3)!);
-    return _yieldSourceDateOrNull(
-      year: rawYear < 100 ? 2000 + rawYear : rawYear,
-      month: monthsByToken[match.group(2)!]!,
-      day: int.parse(match.group(1)!),
-    );
-  }
-  return null;
-}
-
-DateTime? _yieldSourceDateOrNull({
-  required int year,
-  required int month,
-  required int day,
-}) {
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-  if (year < 2010 || year > 2100) return null;
-  return DateTime(year, month, day);
-}
-
-String _formatYieldSourceDate(DateTime value) {
-  String two(int number) => number.toString().padLeft(2, '0');
-  return '${two(value.day)}/${two(value.month)}/${value.year}';
-}
-
 String _formatYieldMaturityLabel(double years) {
   if (years < 1) {
     final months = (years * 12).round();
@@ -4036,32 +3756,6 @@ String _normalizeYieldText(String value) {
       .replaceAll('’', "'")
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
-}
-
-String _yieldCellText(Data? cell) {
-  final value = cell?.value;
-  if (value == null) return '';
-  return switch (value) {
-    TextCellValue() => value.value.text ?? '',
-    IntCellValue() => value.value.toString(),
-    DoubleCellValue() => value.value.toString(),
-    BoolCellValue() => value.value.toString(),
-    DateCellValue() => value.asDateTimeLocal().toIso8601String(),
-    DateTimeCellValue() => value.asDateTimeLocal().toIso8601String(),
-    TimeCellValue() => value.toString(),
-    _ => value.toString(),
-  };
-}
-
-double? _yieldCellNumber(Data? cell) {
-  final value = cell?.value;
-  if (value == null) return null;
-  return switch (value) {
-    IntCellValue() => value.value.toDouble(),
-    DoubleCellValue() => value.value,
-    TextCellValue() => _parseYieldNumber(value.value.text ?? ''),
-    _ => _parseYieldNumber(value.toString()),
-  };
 }
 
 double? _parseYieldNumber(String value) {

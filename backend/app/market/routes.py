@@ -9,6 +9,7 @@ import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import date
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, status, UploadFile, File
@@ -17,6 +18,7 @@ from fastapi.responses import Response
 from app.core.config import settings
 import pandas as pd
 from app.market.services import MARKET_CAPITAL_REQUIREMENT_KEY
+from app.var_marche import courbe_umoa
 from database.connection import database_manager, utcnow_iso
 import os
 from pathlib import Path
@@ -768,6 +770,64 @@ def save_capital_requirement(body: dict[str, Any]) -> dict[str, Any]:
         )
 
     return {"status": "ok", "saved_at": saved_at}
+
+
+@router.post("/yield-curves/uemoa/refresh")
+def refresh_uemoa_yield_curve() -> dict[str, Any]:
+    """Actualise les courbes pays UEMOA depuis le classeur UMOA-Titres.
+
+    Le telechargement et le parsing (100% deterministe, sans IA) se font
+    cote serveur : contrairement a un appel direct depuis le navigateur,
+    ceci evite les echecs CORS observes sur www.umoatitres.org."""
+
+    try:
+        resultat = courbe_umoa.recuperer_toutes_les_courbes()
+    except courbe_umoa.ErreurCourbeUmoa as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "SOURCE_DOWNLOAD_FAILED", "message": str(exc)},
+        ) from exc
+
+    date_fichier = date.fromisoformat(resultat["date_fichier"])
+    source_date_label = date_fichier.strftime("%d/%m/%Y")
+
+    curves = [
+        {
+            "country": courbe["pays"],
+            "points": [
+                {
+                    "maturity": _format_maturity_label(point["maturite_annees"]),
+                    "years": round(point["maturite_annees"], 6),
+                    "rate": round(point["taux_pct"], 6),
+                    "raw_rate": round(point["taux_pct"], 6),
+                    "smoothed_rate": round(point["taux_pct"], 6),
+                }
+                for point in courbe["points"]
+            ],
+        }
+        for courbe in resultat["courbes"]
+    ]
+    present = {curve["country"] for curve in curves}
+    absent = sorted(set(courbe_umoa.PAYS_UEMOA) - present)
+    aggregate_points = _aggregate_points(curves)
+
+    return {
+        "status": "ok",
+        "zone": "UEMOA",
+        "source": "UMOA-Titres",
+        "source_url": resultat["source_url"],
+        "source_date_label": source_date_label,
+        "methodology": (
+            "Actualisation UEMOA depuis le classeur Excel publie par "
+            "UMOA-Titres (parsing tabulaire deterministe cote serveur, "
+            "sans extraction par IA)."
+        ),
+        "curves": curves,
+        "aggregate_points": aggregate_points,
+        "countries_absent_from_document": absent,
+        "warnings": [],
+        "message": f"UEMOA actualisee: {len(curves)} courbe(s) pays extraite(s).",
+    }
 
 
 @router.post("/yield-curves/cemac/refresh")

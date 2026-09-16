@@ -27,7 +27,7 @@ from datetime import date
 
 import openpyxl
 
-PAGE_COURBES = "https://www.umoatitres.org/en/ressources-2/courbe-des-taux/"
+PAGE_COURBES = "https://www.umoatitres.org/fr/ressources-2/courbe-des-taux/"
 
 _ENTETE_HTTP = {"User-Agent": "Mozilla/5.0 (compatible; OutilRWA/1.0)"}
 _DELAI = 30
@@ -92,6 +92,7 @@ def lien_courbe_la_plus_recente() -> tuple[str, date]:
     liens = re.findall(
         r"https://[^\"'\s]+[Cc]ourbe[s]?-?[- ]?[Dd]e-?[- ]?[Tt]aux[^\"'\s]+\.xlsx",
         html,
+        flags=re.IGNORECASE,
     )
     liens = list(dict.fromkeys(liens))
     if not liens:
@@ -166,6 +167,64 @@ def _points_feuille(feuille) -> tuple[list[tuple[float, float]], date | None]:
             points.append((round(annees, 4), round(float(taux) * 100.0, 4)))
         rang += 1
     return points, date_courbe
+
+
+def recuperer_toutes_les_courbes() -> dict:
+    """Télécharge une seule fois le classeur le plus récent et renvoie les
+    courbes de TOUS les pays UEMOA qu'il contient.
+
+    Retourne {source_url, date_fichier, courbes: [{pays, date, points}]}.
+    Lève ErreurCourbeUmoa en cas d'échec réseau/lecture ou si aucun pays
+    n'est exploitable dans le classeur.
+    """
+
+    try:
+        url, date_fichier = lien_courbe_la_plus_recente()
+        contenu = _lire_url(url)
+    except ErreurCourbeUmoa:
+        raise
+    except Exception as exc:  # réseau, timeout, etc.
+        raise ErreurCourbeUmoa(
+            f"Récupération de la courbe UMOA-Titres impossible : {exc}"
+        ) from exc
+
+    try:
+        classeur = openpyxl.load_workbook(io.BytesIO(contenu), data_only=True)
+    except Exception as exc:
+        raise ErreurCourbeUmoa(
+            f"Fichier de courbe illisible : {exc}"
+        ) from exc
+
+    courbes = []
+    for pays in PAYS_UEMOA:
+        feuille = _feuille_du_pays(classeur, pays)
+        if feuille is None:
+            continue
+        points, date_feuille = _points_feuille(feuille)
+        if not points:
+            continue
+        jour = (date_feuille or date_fichier).isoformat()
+        courbes.append(
+            {
+                "pays": pays,
+                "date": jour,
+                "points": [
+                    {"maturite_annees": annees, "taux_pct": taux}
+                    for annees, taux in points
+                ],
+            }
+        )
+
+    if not courbes:
+        raise ErreurCourbeUmoa(
+            "Aucune courbe pays exploitable dans le classeur UMOA-Titres."
+        )
+
+    return {
+        "source_url": url,
+        "date_fichier": date_fichier.isoformat(),
+        "courbes": courbes,
+    }
 
 
 def recuperer_courbe(pays: str) -> dict:
