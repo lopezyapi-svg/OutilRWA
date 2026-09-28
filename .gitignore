@@ -64,10 +64,24 @@ backend/test_clean.xlsx
 # reconstruits a partir du code par l'hebergeur et l'installeur).
 OutilRiskM/
 OutilRiskM*.zip
+risk_management/
+risk_management*.zip
+*.zip
 
-# Documentation de reference (versionnee : cahier des charges, exemples).
+# Scripts et tests temporaires ponctuels a la racine
+fix_*.py
+check_db*.py
+clean_*.py
+test_python*.py
+test_python*.xlsx
+test_api*.py
+
+# Documentation de reference (versionnee : cahier des charges, guides, specifications).
 docs/*
 !docs/*.pdf
+!docs/*.md
+!docs/*.html
+!docs/*.txt
 
 # Configuration locale Claude Code
 .claude/
