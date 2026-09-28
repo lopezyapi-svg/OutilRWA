@@ -65,8 +65,9 @@ backend/test_clean.xlsx
 OutilRiskM/
 OutilRiskM*.zip
 
-# Documentation de reference conservee en local uniquement.
-docs/
+# Documentation de reference (versionnee : cahier des charges, exemples).
+docs/*
+!docs/*.pdf
 
 # Configuration locale Claude Code
 .claude/
