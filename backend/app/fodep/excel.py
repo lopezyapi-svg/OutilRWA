@@ -11,18 +11,13 @@ from typing import Any
 
 from app.fodep.dispru import FONDS_PROPRES_CODES
 
-_CHEMINS_MATRICE_OFFICIELLE = (
-    Path(__file__).parent / "templates" / "Matrice_FODEP_Officielle.xlsx",
-    Path(r"C:\RisqueManagement\backend\app\fodep\templates\Matrice_FODEP_Officielle.xlsx"),
-    Path(r"C:\RisqueManagement\Matrice_FODEP_Officielle.xlsx"),
-)
+_CHEMIN_MATRICE_OFFICIELLE = Path(__file__).parent / "templates" / "Matrice_FODEP_Officielle.xlsx"
 
 
 def get_matrice_officielle_path() -> Path | None:
     """Retourne le chemin absolu vers le classeur officiel FODEP BCEAO."""
-    for candidat in _CHEMINS_MATRICE_OFFICIELLE:
-        if candidat.exists():
-            return candidat
+    if _CHEMIN_MATRICE_OFFICIELLE.exists():
+        return _CHEMIN_MATRICE_OFFICIELLE
     return None
 
 
