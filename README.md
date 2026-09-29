@@ -1,6 +1,6 @@
 # Risque Management
 
-Base modulaire d'un outil de calcul et de pilotage des RWA et des risques, avec un backend Python et un frontend Flutter.
+Plateforme modulaire de gestion des risques prudentiels bancaires (BCEAO / UMOA / Bâle III), avec un backend Python et un frontend Flutter. Au-delà du calcul des RWA, elle couvre l'ensemble du cycle de gestion des risques d'un établissement : suivi des expositions et contreparties (CRM), risque de marché (VaR, courbes de taux), risque opérationnel, ICAAP (Pilier 2), déclarations réglementaires FODEP, tableaux de bord et reporting.
 
 ## Architecture
 
