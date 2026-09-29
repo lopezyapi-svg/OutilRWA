@@ -4,18 +4,31 @@ Base modulaire d'un outil de calcul et de pilotage des RWA et des risques, avec 
 
 ## Architecture
 
-- `backend/` expose les APIs metier et les calculs prudentiels.
-- `frontend/` contient l'interface Flutter structuree par modules.
-- Chaque module suit la meme logique: modeles, services, routes ou ecrans.
+- `backend/` (Python / FastAPI) expose les APIs metier et les calculs prudentiels. Point d'entree : `backend/app/main.py`, qui monte un routeur FastAPI par module (`backend/app/<module>/`).
+- `frontend/` (Flutter, desktop Windows + web) contient l'interface, structuree par modules sous `frontend/lib/modules/<module>/`.
+- Chaque module backend suit la meme logique interne : modeles, services, routes. Chaque module frontend suit la meme logique : ecrans, widgets, services.
+- Les deux cotes partagent le meme decoupage fonctionnel (ex. `risque_marche` cote backend `market/` et cote frontend `risque_marche/`).
 
 ## Modules metier
 
-- Dashboard
-- Expositions
-- Hors Bilan
-- CRM
-- Referentiels
-- Rapports
+Cote backend (`backend/app/`) :
+
+- `auth` : authentification et gestion des sessions/roles
+- `dashboard` : tableau de bord et KPI agreges
+- `expositions` : gestion des expositions (credit)
+- `hors_bilan` : engagements hors bilan
+- `crm` : suivi des contreparties (CRM)
+- `referentiels` : donnees de reference (nomenclatures, taux, echeanciers...)
+- `rapports` : generation de rapports
+- `rwa_credit` : calcul des RWA credit (densite, ponderations...)
+- `market` / `var_marche` : risque de marche, courbes de taux (UEMOA/CEMAC), Value at Risk
+- `risque_operationnel` : calculs de risque operationnel
+- `icaap` : Pilier 2 / PIEAFP (capital economique, stress tests, rapport ICAAP)
+- `fodep` : declarations FODEP (matrice reglementaire BCEAO)
+- `core` : configuration, base de donnees, utilitaires partages
+- `validators` : regles de validation transverses
+
+Cote frontend (`frontend/lib/modules/`), en plus des equivalents ci-dessus : `vue_ensemble`, `concentration`, `garanties`, `defauts_impayes`, `importations`, `reporting_credit`, `reporting_global`, `risque_credit_shared`, `rwa_engine`, `analyse`.
 
 ## Demarrage backend
 
@@ -78,17 +91,32 @@ Toutes les documentations techniques, fonctionnelles et réglementaires sont cen
 Pour lancer l'application (backend + interface desktop) directement :
 Double-cliquez sur `Demarrer_OutilRWA.bat` à la racine.
 
+## Tests
+
+- Backend : `cd backend && pytest` (suites dans `backend/tests/`, une par fonctionnalité : calculs, ICAAP, FODEP, risque de marché, authentification...).
+- Frontend : `cd frontend && flutter test` (suites dans `frontend/test/`, une par écran/service).
+
 ## Arborescence
 
 ```text
-├── backend/            # API FastAPI, calculs prudentiels, base SQLite
-├── frontend/           # Application Flutter (Desktop Windows & Web)
-├── docs/               # Documentation technique, réglementaire et manuels
-├── deploy/             # Configurations Caddy / reverse proxy
-├── scripts/            # Scripts de build d'installeur Windows (.exe) et d'audit
-├── modeles_import/     # Modèles et générateurs de matrices d'import Excel
+├── backend/             # API FastAPI, calculs prudentiels, base SQLite
+│   ├── app/              # Un sous-dossier par module métier (voir "Modules métier")
+│   │   └── main.py         # Point d'entrée FastAPI, montage des routeurs
+│   ├── data/             # Base SQLite de démo + fichiers runtime (versionnés pour le poste de démo uniquement)
+│   ├── database/         # Migrations / accès base
+│   ├── scripts/          # Scripts d'exploitation backend (seed, audits...)
+│   ├── tests/            # Suite de tests pytest
+│   └── run_server.py     # Lanceur du serveur (voir avertissement ci-dessus)
+├── frontend/            # Application Flutter (Desktop Windows & Web)
+│   ├── lib/modules/      # Un sous-dossier par module métier (voir "Modules métier")
+│   ├── assets/           # Polices, images, animations
+│   └── test/             # Suite de tests Flutter
+├── docs/                # Documentation technique, réglementaire et manuels
+├── deploy/              # Configurations Caddy / reverse proxy (interne & public)
+├── scripts/             # Build de l'installeur Windows (.exe) et audits (ex. duration obligataire)
+├── modeles_import/      # Générateurs et modèles Excel d'import (marché, opérationnel, crédit, fonds propres)
 ├── Demarrer_OutilRWA.bat # Lanceur rapide pour poste Windows
-├── Dockerfile          # Image de production tout-en-un (Web + API)
-├── docker-compose.yml  # Déploiement multi-conteneurs avec proxy HTTPS
-└── render.yaml         # Blueprint de déploiement cloud Render
+├── Dockerfile           # Image de production tout-en-un (Web + API)
+├── docker-compose.yml   # Déploiement multi-conteneurs avec proxy HTTPS
+└── render.yaml          # Blueprint de déploiement cloud Render
 ```
